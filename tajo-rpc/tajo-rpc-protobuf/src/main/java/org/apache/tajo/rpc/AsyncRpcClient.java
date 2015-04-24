@@ -26,7 +26,7 @@ import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class AsyncRpcClient extends NettyClientBase {
 
@@ -75,16 +75,9 @@ public class AsyncRpcClient extends NettyClientBase {
     return handler;
   }
 
-  private static final AtomicIntegerFieldUpdater<ProxyRpcChannel> ASYNC_SEQUENCE_UPDATER;
-
-  static {
-    /* AtomicIntegerFieldUpdater can save the memory usage instead of AtomicInteger instance */
-    ASYNC_SEQUENCE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ProxyRpcChannel.class, "sequence");
-  }
-
   private class ProxyRpcChannel implements RpcChannel {
 
-    private volatile int sequence = 0;
+    private final AtomicInteger sequence = new AtomicInteger(0);
 
     public void callMethod(final MethodDescriptor method,
                            final RpcController controller,
@@ -92,7 +85,7 @@ public class AsyncRpcClient extends NettyClientBase {
                            final Message responseType,
                            final RpcCallback<Message> done) {
 
-      int nextSeqId = ASYNC_SEQUENCE_UPDATER.getAndIncrement(this);
+      int nextSeqId = sequence.getAndIncrement();
       Message rpcRequest = buildRequest(nextSeqId, method, param);
 
       getHandler().registerCallback(nextSeqId, new ResponseCallback(controller, responseType, done));

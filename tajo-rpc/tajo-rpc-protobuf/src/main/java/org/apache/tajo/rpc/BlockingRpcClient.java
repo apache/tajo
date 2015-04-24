@@ -27,7 +27,7 @@ import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BlockingRpcClient extends NettyClientBase {
 
@@ -76,16 +76,9 @@ public class BlockingRpcClient extends NettyClientBase {
     return handler;
   }
 
-  private static final AtomicIntegerFieldUpdater<ProxyRpcChannel> BLOCKING_SEQUENCE_UPDATER;
-
-  static {
-    /* AtomicIntegerFieldUpdater can save the memory usage instead of AtomicInteger instance */
-    BLOCKING_SEQUENCE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ProxyRpcChannel.class, "sequence");
-  }
-
   private class ProxyRpcChannel implements BlockingRpcChannel {
 
-    private volatile int sequence = 0;
+    private final AtomicInteger sequence = new AtomicInteger(0);
 
     @Override
     public Message callBlockingMethod(final MethodDescriptor method,
@@ -94,7 +87,7 @@ public class BlockingRpcClient extends NettyClientBase {
                                       final Message responsePrototype)
         throws TajoServiceException {
 
-      int nextSeqId = BLOCKING_SEQUENCE_UPDATER.getAndIncrement(this);
+      int nextSeqId = sequence.getAndIncrement();
       Message rpcRequest = buildRequest(nextSeqId, method, param);
 
       ProtoCallFuture callFuture = new ProtoCallFuture(controller, responsePrototype);
