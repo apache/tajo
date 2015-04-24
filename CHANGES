@@ -89,6 +89,9 @@ Release 0.10.1 - unreleased
   
   TASKS
 
+    TAJO-1575: HBASE_HOME guidance is duplicated in tajo-env.sh.
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
     TAJO-1571: Merge TAJO-1497 and TAJO-1569 to 0.10.1. (jinho)
 
     TAJO-1568: Apply UnpooledByteBufAllocator when a tajo.test.enabled 
