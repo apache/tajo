@@ -21,6 +21,7 @@ package org.apache.tajo.plan.function.python;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.*;
@@ -85,7 +86,7 @@ public abstract class TajoScriptEngine {
    */
   public abstract Datum callScalarFunc(Tuple input);
 
-  public abstract void callAggFunc(Tuple input);
+  public abstract void callAggFunc(FunctionContext functionContext, Tuple input, boolean needFuncContextUpdate);
 
   public abstract Tuple getPartialResult();
 

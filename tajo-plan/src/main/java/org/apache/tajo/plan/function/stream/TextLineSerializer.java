@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function.stream;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -31,15 +32,22 @@ import java.io.OutputStream;
 public abstract class TextLineSerializer {
   protected Schema schema;
   protected TableMeta meta;
+  protected Schema varNameSchema;
 
   public TextLineSerializer(Schema schema, TableMeta meta) {
     this.schema = schema;
     this.meta = meta;
+    varNameSchema = new Schema();
+    for (int i = 0; i < schema.size(); i++) {
+      varNameSchema.addColumn("var_" + i, TajoDataTypes.Type.TEXT);
+    }
   }
 
   public abstract void init();
 
   public abstract int serialize(OutputStream out, Tuple input) throws IOException;
+
+  public abstract int serializeVarNames(OutputStream out, String[] varNames) throws IOException;
 
   public abstract void release();
 }

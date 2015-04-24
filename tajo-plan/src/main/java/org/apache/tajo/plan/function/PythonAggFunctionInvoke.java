@@ -20,7 +20,6 @@ package org.apache.tajo.plan.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
@@ -31,12 +30,42 @@ import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Cloneable {
 
   private transient PythonScriptEngine scriptEngine;
+  private transient FunctionContext prevContext;
+
+  public static class PythonAggFunctionContext implements FunctionContext {
+    Map<String, Datum> namedVals = TUtil.newHashMap();
+    Map<Integer, String> nameOrders = TUtil.newHashMap();
+    int order = 0;
+
+    public void addNamedVal(String name, Datum val) {
+      nameOrders.put(order++, name);
+      namedVals.put(name, val);
+    }
+
+    public Datum getNamedVal(String name) {
+      return namedVals.get(name);
+    }
+
+    public String[] getAllNames() {
+      String[] names = new String[nameOrders.size()];
+      for (int i = 0; i < nameOrders.size(); i++) {
+        names[i] = nameOrders.get(i);
+      }
+      return names;
+    }
+
+    public Tuple getAllTuples() {
+
+    }
+  }
 
   public PythonAggFunctionInvoke(FunctionDesc functionDesc) {
     super(functionDesc);
@@ -49,13 +78,16 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
 
   @Override
   public FunctionContext newContext() {
-    // nothing to do
-    return null;
+    return new PythonAggFunctionContext();
   }
 
   @Override
   public void eval(FunctionContext context, Tuple params) {
-    scriptEngine.callAggFunc(params);
+    boolean needFuncContextUpdate = prevContext != context;
+    scriptEngine.callAggFunc(context, params, needFuncContextUpdate);
+    if (needFuncContextUpdate) {
+      prevContext = context;
+    }
   }
 
   @Override
@@ -70,7 +102,11 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
       input.put(i, EvalNodeDeserializer.deserialize(namedTuple.getDatums(i)));
     }
 
-    scriptEngine.callAggFunc(input);
+    boolean needFuncContextUpdate = prevContext != context;
+    scriptEngine.callAggFunc(context, input, needFuncContextUpdate);
+    if (needFuncContextUpdate) {
+      prevContext = context;
+    }
   }
 
   @Override

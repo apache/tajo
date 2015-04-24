@@ -822,6 +822,13 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testPythonUdaf2() throws Exception {
+    ResultSet res = executeString("select countpy(), count(*) from lineitem group by l_linenumber");
+    System.out.println(resultSetToString(res));
+    cleanupQuery(res);
+  }
+
+//  @Test
   public final void testPythonUdafWithHaving() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -835,7 +842,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  @Test
+//  @Test
   public final void testComplexTargetWithPythonUdaf() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

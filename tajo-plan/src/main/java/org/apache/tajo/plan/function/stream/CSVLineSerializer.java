@@ -78,11 +78,33 @@ public class CSVLineSerializer extends TextLineSerializer {
   }
 
   @Override
+  public int serializeVarNames(OutputStream out, String[] varNames) throws IOException {
+    int writtenBytes = 0;
+
+    for (int i = 0; i < varNames.length; i++) {
+      String typeStr = "C";
+      out.write(typeStr.getBytes());
+      out.write(PARAM_DELIM.getBytes());
+
+      byte[] bytes = varNames[i].getBytes();
+      out.write(bytes);
+      writtenBytes += bytes.length;
+
+      if (varNames.length - 1 > i) {
+        out.write(delimiter);
+        writtenBytes += delimiter.length;
+      }
+    }
+
+    return writtenBytes;
+  }
+
+  @Override
   public void release() {
 
   }
 
-  private static String getTypeString(Datum val) {
+  public static String getTypeString(Datum val) {
     switch (val.type()) {
       case NULL_TYPE:
         return "-";

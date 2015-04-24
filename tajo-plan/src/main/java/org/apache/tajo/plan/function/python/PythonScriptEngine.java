@@ -29,6 +29,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.function.*;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.PythonAggFunctionInvoke;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -225,6 +227,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
 
   private static final String PYTHON_LANGUAGE = "python";
+//private static final String PYTHON_LANGUAGE = "pypy";
   private static final String PYTHON_ROOT_PATH = "/python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
@@ -495,7 +498,15 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   @Override
-  public void callAggFunc(Tuple input) {
+  public void callAggFunc(FunctionContext functionContext, Tuple input, final boolean needFuncContextUpdate) {
+    if (needFuncContextUpdate) {
+      try {
+        beforeCallAggFunc((PythonAggFunctionInvoke.PythonAggFunctionContext) functionContext);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     String methodName;
     if (!intermediatePhase && !finalPhase) {
       // eval
@@ -518,10 +529,62 @@ public class PythonScriptEngine extends TajoScriptEngine {
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e);
     }
+
     try {
       outputHandler.getNext().get(0);
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
+    }
+    if (needFuncContextUpdate) {
+      try {
+        afterCallAvgFunc((PythonAggFunctionInvoke.PythonAggFunctionContext) functionContext);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  /**
+   * Set aggregated values in the function context to member variables of the Python UDAF instance
+   * @param functionContext
+   */
+  private void beforeCallAggFunc(PythonAggFunctionInvoke.PythonAggFunctionContext functionContext) throws IOException {
+
+    try {
+      inputHandler.putNext("prepare_aggregate", functionContext.getNamedTuple().getTuple(),
+          functionContext.getNamedTuple().getNames());
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    try {
+      outputHandler.getNext().get(0);
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+  }
+
+  /**
+   * Get aggregated values from the Python UDAF instance
+   * @param functionContext
+   */
+  private void afterCallAvgFunc(PythonAggFunctionInvoke.PythonAggFunctionContext functionContext) throws IOException {
+
+    try {
+      inputHandler.putNext("finalize_aggregate", emptyInput);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    Tuple tuple;
+    try {
+      tuple = outputHandler.getNext();
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+
+    for (int i = 0; i < tuple.size(); i+=2) {
+
     }
   }
 
