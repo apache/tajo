@@ -1405,7 +1405,7 @@ public class Stage implements EventHandler<StageEvent> {
               stage.timeoutChecker.start();
             }
           } else {
-            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+            stage.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
           }
         }
       } catch (Throwable t) {

@@ -21,4 +21,11 @@ package org.apache.tajo.rpc;
 public class RpcConstants {
 
   public static final String PING_PACKET = "TAJO";
+  public static final String RPC_CLIENT_RETRY_MAX = "tajo.rpc.client.retry.max";
+  public static final String RPC_CLIENT_TIMEOUT_SECS = "tajo.rpc.client.timeout-secs";
+
+  public static final int DEFAULT_RPC_RETRIES = 3;
+  public static final int DEFAULT_RPC_TIMEOUT_SECONDS = 180;
+  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;  // 60 sec
+  public static final int DEFAULT_PAUSE = 1000; // 1 sec
 }

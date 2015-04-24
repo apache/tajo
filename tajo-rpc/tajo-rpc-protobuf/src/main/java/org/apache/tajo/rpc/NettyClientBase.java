@@ -50,9 +50,6 @@ import java.util.concurrent.TimeUnit;
 public abstract class NettyClientBase implements Closeable {
   public final Log LOG = LogFactory.getLog(getClass());
 
-  public static final int CONNECTION_TIMEOUT = 60000;  // 60 sec
-  public static final int PAUSE = 1000; // 1 sec
-
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
   private final RpcConnectionKey key;
@@ -77,7 +74,7 @@ public abstract class NettyClientBase implements Closeable {
         .handler(initializer)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.SO_REUSEADDR, true)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, RpcConstants.DEFAULT_CONNECT_TIMEOUT)
         .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
         .option(ChannelOption.TCP_NODELAY, true);
   }
@@ -143,7 +140,7 @@ public abstract class NettyClientBase implements Closeable {
                   }
                 });
               }
-            }, PAUSE, TimeUnit.MILLISECONDS);
+            }, RpcConstants.DEFAULT_PAUSE, TimeUnit.MILLISECONDS);
           } else {
             /* Max retry count has been exceeded or internal failure */
             getHandler().exceptionCaught(getChannel().pipeline().lastContext(),
@@ -195,7 +192,7 @@ public abstract class NettyClientBase implements Closeable {
 
         LOG.warn(future.cause() + " Try to reconnect : " + getKey().addr);
         try {
-          Thread.sleep(PAUSE);
+          Thread.sleep(RpcConstants.DEFAULT_PAUSE);
         } catch (InterruptedException e) {
         }
 

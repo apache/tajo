@@ -21,10 +21,7 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
@@ -47,6 +44,8 @@ import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
@@ -170,11 +169,19 @@ public class TajoMaster extends CompositeService {
     try {
       RackResolver.init(systemConf);
 
+      RpcClientManager rpcManager = RpcClientManager.getInstance();
+      rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
+      rpcManager.setTimeoutSeconds(
+          systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
+
       initResourceManager();
 
       this.dispatcher = new AsyncDispatcher();
       addIfService(dispatcher);
 
+      // check the system directory and create if they are not created.
+      checkAndInitializeSystemDirectories();
+      diagnoseTajoMaster();
       this.storeManager = StorageManager.getFileStorageManager(systemConf);
 
       catalogServer = new CatalogServer(loadFunctions());
@@ -310,14 +317,12 @@ public class TajoMaster extends CompositeService {
   public void serviceStart() throws Exception {
     LOG.info("TajoMaster is starting up");
 
-    // check the system directory and create if they are not created.
-    checkAndInitializeSystemDirectories();
-    diagnoseTajoMaster();
+    startJvmPauseMonitor();
 
     // check base tablespace and databases
     checkBaseTBSpaceAndDatabase();
 
-    initWebServer();
+    super.serviceStart();
 
     // Setting the system global configs
     systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
@@ -329,11 +334,11 @@ public class TajoMaster extends CompositeService {
       LOG.error(e.getMessage(), e);
     }
 
+    initWebServer();
     initSystemMetrics();
-    startJvmPauseMonitor();
+
     haService = ServiceTrackerFactory.get(systemConf);
     haService.register();
-    super.serviceStart();
 
     historyWriter = new HistoryWriter(getMasterName(), true);
     historyWriter.init(getConfig());
