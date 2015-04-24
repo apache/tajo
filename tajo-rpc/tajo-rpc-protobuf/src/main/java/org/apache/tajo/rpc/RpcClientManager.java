@@ -38,9 +38,10 @@ import java.util.concurrent.TimeUnit;
 public class RpcClientManager {
   private static final Log LOG = LogFactory.getLog(RpcClientManager.class);
 
-  public static final int RPC_RETRIES = 3;
+  public static final int DEFAULT_RPC_RETRIES = 3;
   public static final int DEFAULT_TIMEOUT_SECONDS = 180;
-  private int timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+  private volatile int timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+  private volatile int retries = DEFAULT_RPC_RETRIES;
 
   /* entries will be removed by ConnectionCloseFutureListener */
   private static final Map<RpcConnectionKey, NettyClientBase>
@@ -88,7 +89,7 @@ public class RpcClientManager {
     synchronized (clients) {
       client = clients.get(key);
       if (client == null) {
-        clients.put(key, client = makeClient(key, RPC_RETRIES, getTimeoutSeconds(), TimeUnit.NANOSECONDS, true));
+        clients.put(key, client = makeClient(key, retries, getTimeoutSeconds(), TimeUnit.NANOSECONDS, true));
       }
     }
 
@@ -193,6 +194,14 @@ public class RpcClientManager {
 
   public void setTimeoutSeconds(int timeoutSeconds) {
     this.timeoutSeconds = timeoutSeconds;
+  }
+
+  public int getRetries() {
+    return retries;
+  }
+
+  public void setRetries(int retries) {
+    this.retries = retries;
   }
 
   static class RpcConnectionKey {

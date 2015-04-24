@@ -18,16 +18,21 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
+import com.google.protobuf.ServiceException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
+import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.io.Closeable;
 import java.lang.reflect.Method;
@@ -38,30 +43,28 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class NettyClientBase implements Closeable {
-  private static final Log LOG = LogFactory.getLog(NettyClientBase.class);
-  private static final int CONNECTION_TIMEOUT = 60000;  // 60 sec
-  private static final int PAUSE = 1000; // 1 sec
+  public final Log LOG = LogFactory.getLog(getClass());
 
-  private final int maxRetries;
+  public static final int CONNECTION_TIMEOUT = 60000;  // 60 sec
+  public static final int PAUSE = 1000; // 1 sec
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
-
-  protected final Class<?> protocol;
-  protected final AtomicInteger sequence = new AtomicInteger(0);
-
   private final RpcConnectionKey key;
+  private final int maxRetries;
+  private boolean enableMonitor;
+
   private final Set<ChannelEventListener> channelEventListeners =
       Collections.synchronizedSet(new HashSet<ChannelEventListener>());
 
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
       throws ClassNotFoundException, NoSuchMethodException {
     this.key = rpcConnectionKey;
-    this.protocol = rpcConnectionKey.protocolClass;
     this.maxRetries = numRetries;
   }
 
@@ -70,13 +73,13 @@ public abstract class NettyClientBase implements Closeable {
     this.bootstrap = new Bootstrap();
     this.bootstrap
         .group(RpcChannelFactory.getSharedClientEventloopGroup())
-      .channel(NioSocketChannel.class)
-      .handler(initializer)
-      .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-      .option(ChannelOption.SO_REUSEADDR, true)
-      .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT)
-      .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
-      .option(ChannelOption.TCP_NODELAY, true);
+        .channel(NioSocketChannel.class)
+        .handler(initializer)
+        .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+        .option(ChannelOption.SO_REUSEADDR, true)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT)
+        .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
+        .option(ChannelOption.TCP_NODELAY, true);
   }
 
   public RpcClientManager.RpcConnectionKey getKey() {
@@ -84,39 +87,38 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   protected final Class<?> getServiceClass() throws ClassNotFoundException {
-    String serviceClassName = protocol.getName() + "$" + protocol.getSimpleName() + "Service";
+    String serviceClassName = getKey().protocolClass.getName() + "$" +
+        getKey().protocolClass.getSimpleName() + "Service";
     return Class.forName(serviceClassName);
   }
 
   @SuppressWarnings("unchecked")
-  protected final <T> T getStub(Method stubMethod, Object rpcChannel) {
+  protected final <I> I getStub(Method stubMethod, Object rpcChannel) {
     try {
-      return (T) stubMethod.invoke(null, rpcChannel);
+      return (I) stubMethod.invoke(null, rpcChannel);
     } catch (Exception e) {
       throw new RemoteException(e.getMessage(), e);
     }
   }
 
-  public abstract <T> T getStub();
+  public abstract <I> I getStub();
 
-  public abstract int getActiveRequests();
+  protected static Message buildRequest(int seqId,
+                                        Descriptors.MethodDescriptor method,
+                                        Message param) {
+    RpcProtos.RpcRequest.Builder requestBuilder = RpcProtos.RpcRequest.newBuilder()
+        .setId(seqId)
+        .setMethodName(method.getName());
 
-  public abstract ChannelInboundHandler getHandler();
+    if (param != null) {
+      requestBuilder.setRequestMessage(param.toByteString());
+    }
 
-  public boolean subscribeEvent(ChannelEventListener listener) {
-    return channelEventListeners.add(listener);
-  }
-
-  public void removeSubscribers() {
-    channelEventListeners.clear();
-  }
-
-  public Collection<ChannelEventListener> getSubscribers() {
-    return channelEventListeners;
+    return requestBuilder.build();
   }
 
   /**
-   *  Repeat invoke rpc request until the connection attempt succeeds or exceeded retries
+   * Repeat invoke rpc request until the connection attempt succeeds or exceeded retries
    */
   protected void invoke(final Message rpcRequest, final int requestId, final int retry) {
 
@@ -152,7 +154,7 @@ public abstract class NettyClientBase implements Closeable {
     });
   }
 
-  private InetSocketAddress resolveAddress(InetSocketAddress address) {
+  private static InetSocketAddress resolveAddress(InetSocketAddress address) {
     if (address.isUnresolved()) {
       return RpcUtils.createSocketAddr(address.getHostName(), address.getPort());
     }
@@ -208,6 +210,8 @@ public abstract class NettyClientBase implements Closeable {
     }
   }
 
+  protected abstract NettyChannelInboundHandler getHandler();
+
   public Channel getChannel() {
     return channelFuture == null ? null : channelFuture.channel();
   }
@@ -222,12 +226,162 @@ public abstract class NettyClientBase implements Closeable {
     return channel == null ? null : channel.remoteAddress();
   }
 
+  public int getActiveRequests() {
+    return getHandler().requests.size();
+  }
+
+  public boolean subscribeEvent(ChannelEventListener listener) {
+    return channelEventListeners.add(listener);
+  }
+
+  public void removeSubscribers() {
+    channelEventListeners.clear();
+  }
+
+  public Collection<ChannelEventListener> getSubscribers() {
+    return channelEventListeners;
+  }
+
+  private String getErrorMessage(String message) {
+    return "Exception [" + getKey().protocolClass.getCanonicalName() +
+        "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
+        getChannel().remoteAddress()) + ")]: " + message;
+  }
+
   @Override
   public void close() {
+    getHandler().sendExceptions(getClass().getSimpleName() + "terminates all the connections");
+
     Channel channel = getChannel();
     if (channel != null && channel.isOpen()) {
       LOG.debug("Proxy will be disconnected from remote " + channel.remoteAddress());
       channel.close().syncUninterruptibly();
+    }
+  }
+
+  protected abstract class NettyChannelInboundHandler<T> extends SimpleChannelInboundHandler<RpcResponse> {
+
+    private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
+
+    protected void registerCallback(int seqId, T callback) {
+      if (requests.putIfAbsent(seqId, callback) != null) {
+        throw new RemoteException(
+            getErrorMessage("Duplicate Sequence Id " + seqId));
+      }
+    }
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+      MonitorClientHandler handler = ctx.pipeline().get(MonitorClientHandler.class);
+      if (handler != null) {
+        enableMonitor = true;
+      }
+
+      for (ChannelEventListener listener : getSubscribers()) {
+        listener.channelRegistered(ctx);
+      }
+      super.channelRegistered(ctx);
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+      for (ChannelEventListener listener : getSubscribers()) {
+        listener.channelUnregistered(ctx);
+      }
+      super.channelUnregistered(ctx);
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+      super.channelActive(ctx);
+      LOG.debug("Connection established successfully : " + ctx.channel());
+    }
+
+    @Override
+    protected final void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
+      T callback = requests.remove(response.getId());
+      if (callback == null)
+        LOG.warn("Dangling rpc call");
+      else run(response, callback);
+    }
+
+    /**
+     * A {@link #channelRead0} received a message.
+     * @param response response proto of type {@link RpcResponse}.
+     * @param callback callback of type {@link T}.
+     * @throws Exception
+     */
+    protected abstract void run(RpcResponse response, T callback) throws Exception;
+
+    /**
+     * Calls from exceptionCaught
+     * @param callback callback of type {@link T}.
+     * @param message the error message to handle
+     */
+    protected abstract void handleException(T callback, String message);
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+        throws Exception {
+
+      if (LOG.isDebugEnabled()) {
+        LOG.error(getRemoteAddress() + "," + getKey().protocolClass + "," +
+            ExceptionUtils.getRootCauseMessage(cause), cause);
+      } else {
+        LOG.error(getRemoteAddress() + "," + getKey().protocolClass + "," +
+            ExceptionUtils.getRootCauseMessage(cause));
+      }
+
+      if (cause instanceof RecoverableException) {
+        sendException((RecoverableException) cause);
+      } else {
+        /* unrecoverable fatal error*/
+        sendExceptions(ExceptionUtils.getRootCauseMessage(cause));
+        if (ctx.channel().isOpen()) {
+          ctx.close();
+        }
+      }
+    }
+
+    /**
+     * Send an error to all callback
+     */
+    private void sendExceptions(String message) {
+      for (int requestId : requests.keySet()) {
+        handleException(requests.remove(requestId), message);
+      }
+    }
+
+    /**
+     * Send an error to callback
+     */
+    private void sendException(RecoverableException e) {
+      T callback = requests.remove(e.getSeqId());
+
+      if (callback != null) {
+        handleException(callback, ExceptionUtils.getRootCauseMessage(e));
+      }
+    }
+
+    /**
+     * Trigger timeout event
+     */
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+
+      if (!enableMonitor && evt instanceof IdleStateEvent) {
+        IdleStateEvent e = (IdleStateEvent) evt;
+        /* If all requests is done and event is triggered, idle channel close. */
+        if (e.state() == IdleState.READER_IDLE && requests.isEmpty()) {
+          ctx.close();
+          LOG.info("Idle connection closed successfully :" + ctx.channel());
+        }
+      } else if (evt instanceof MonitorStateEvent) {
+        MonitorStateEvent e = (MonitorStateEvent) evt;
+        if (e.state() == MonitorStateEvent.MonitorState.PING_EXPIRED) {
+          exceptionCaught(ctx, new ServiceException("Server has not respond: " + ctx.channel()));
+        }
+      }
     }
   }
 }
