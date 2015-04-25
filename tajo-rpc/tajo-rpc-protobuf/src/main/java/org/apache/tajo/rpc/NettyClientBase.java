@@ -48,7 +48,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 public abstract class NettyClientBase implements Closeable {
-  public final Log LOG = LogFactory.getLog(getClass());
+  public final static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;

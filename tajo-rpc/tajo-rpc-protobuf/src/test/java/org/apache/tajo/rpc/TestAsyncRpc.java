@@ -276,9 +276,9 @@ public class TestAsyncRpc {
     tearDownRpcServer();
 
     stub.echo(future.getController(), echoMessage, future);
-    EchoMessage response = future.get();
 
-    assertNull(response);
+    assertNull(future.get());
+    assertTrue(future.isDone());
     assertTrue(future.getController().failed());
     assertNotNull(future.getController().errorText(), future.getController().errorText());
   }
@@ -293,9 +293,9 @@ public class TestAsyncRpc {
 
     Interface stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
-    EchoMessage response = future.get();
 
-    assertNull(response);
+    assertNull(future.get());
+    assertTrue(future.isDone());
     assertTrue(future.getController().failed());
     assertNotNull(future.getController().errorText(), future.getController().errorText());
   }

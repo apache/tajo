@@ -148,6 +148,7 @@ public class BlockingRpcClient extends NettyClientBase {
 
   static class ProtoCallFuture implements Future<Message> {
     private Semaphore sem = new Semaphore(0);
+    private boolean done = false;
     private Message response = null;
     private Message returnType;
 
@@ -167,7 +168,8 @@ public class BlockingRpcClient extends NettyClientBase {
 
     @Override
     public Message get() throws InterruptedException, ExecutionException {
-      sem.acquire();
+      if(!isDone()) sem.acquire();
+
       if (ee != null) {
         throw ee;
       }
@@ -177,14 +179,16 @@ public class BlockingRpcClient extends NettyClientBase {
     @Override
     public Message get(long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      if (sem.tryAcquire(timeout, unit)) {
-        if (ee != null) {
-          throw ee;
+      if(!isDone()) {
+        if (!sem.tryAcquire(timeout, unit)) {
+          throw new TimeoutException();
         }
-        return response;
-      } else {
-        throw new TimeoutException();
       }
+
+      if (ee != null) {
+        throw ee;
+      }
+      return response;
     }
 
     @Override
@@ -194,11 +198,12 @@ public class BlockingRpcClient extends NettyClientBase {
 
     @Override
     public boolean isDone() {
-      return sem.availablePermits() > 0;
+      return done;
     }
 
     public void setResponse(Message response) {
       this.response = response;
+      done = true;
       sem.release();
     }
 
@@ -207,6 +212,7 @@ public class BlockingRpcClient extends NettyClientBase {
         this.controller.setFailed(errorText);
       }
       ee = new ExecutionException(errorText, t);
+      done = true;
       sem.release();
     }
   }

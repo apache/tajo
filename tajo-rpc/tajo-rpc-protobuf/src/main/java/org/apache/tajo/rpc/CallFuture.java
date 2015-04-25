@@ -64,6 +64,8 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
 
   @Override
   public T get() throws InterruptedException {
+    if(isDone()) return response;
+
     sem.acquire();
     return response;
   }
@@ -71,6 +73,8 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   @Override
   public T get(long timeout, TimeUnit unit)
       throws InterruptedException, TimeoutException {
+    if(isDone()) return response;
+
     if (sem.tryAcquire(timeout, unit)) {
       return response;
     } else {
