@@ -292,6 +292,11 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     }
 
     @Override
+    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+      sendExceptions("client was shutdown");
+    }
+
+    @Override
     protected final void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
       T callback = requests.remove(response.getId());
       if (callback == null)
@@ -372,6 +377,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
           exceptionCaught(ctx, new ServiceException("Server has not respond: " + ctx.channel()));
         }
       }
+
+      super.userEventTriggered(ctx, evt);
     }
   }
 }
