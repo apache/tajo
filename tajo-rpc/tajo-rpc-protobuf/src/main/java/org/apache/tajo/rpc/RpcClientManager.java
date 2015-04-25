@@ -59,11 +59,11 @@ public class RpcClientManager {
     return instance;
   }
 
-  private NettyClientBase makeClient(RpcConnectionKey rpcConnectionKey,
-                                     int retries,
-                                     long timeout,
-                                     TimeUnit timeUnit,
-                                     boolean enablePing)
+  private <T extends NettyClientBase> T makeClient(RpcConnectionKey rpcConnectionKey,
+                                                   int retries,
+                                                   long timeout,
+                                                   TimeUnit timeUnit,
+                                                   boolean enablePing)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
@@ -71,15 +71,15 @@ public class RpcClientManager {
     } else {
       client = new BlockingRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing);
     }
-    return client;
+    return (T) client;
   }
 
   /**
    * Connect a {@link NettyClientBase} to the remote {@link NettyServerBase}, and returns rpc client by protocol.
    * This client will be shared per protocol and address. Client is removed in shared map when a client is closed
    */
-  public NettyClientBase getClient(InetSocketAddress addr,
-                                   Class<?> protocolClass, boolean asyncMode)
+  public <T extends NettyClientBase> T getClient(InetSocketAddress addr,
+                                                 Class<?> protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
@@ -112,32 +112,33 @@ public class RpcClientManager {
     }
 
     assert client.isConnected();
-    return client;
+    return (T) client;
   }
 
   /**
    * Connect a {@link NettyClientBase} to the remote {@link NettyServerBase}, and returns rpc client by protocol.
    * This client does not managed. It should close.
    */
-  public synchronized NettyClientBase newClient(InetSocketAddress addr,
-                                                Class<?> protocolClass,
-                                                boolean asyncMode,
-                                                int retries,
-                                                long timeout,
-                                                TimeUnit timeUnit,
-                                                boolean enablePing)
+  public synchronized <T extends NettyClientBase> T newClient(InetSocketAddress addr,
+                                                              Class<?> protocolClass,
+                                                              boolean asyncMode,
+                                                              int retries,
+                                                              long timeout,
+                                                              TimeUnit timeUnit,
+                                                              boolean enablePing)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
     return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), retries, timeout, timeUnit, enablePing);
   }
 
-  public synchronized NettyClientBase newClient(RpcConnectionKey key,
-                                                int retries,
-                                                long timeout,
-                                                TimeUnit timeUnit,
-                                                boolean enablePing)
+  public synchronized <T extends NettyClientBase> T newClient(RpcConnectionKey key,
+                                                              int retries,
+                                                              long timeout,
+                                                              TimeUnit timeUnit,
+                                                              boolean enablePing)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
-    NettyClientBase client = makeClient(key, retries, timeout, timeUnit, enablePing);
+
+    T client = makeClient(key, retries, timeout, timeUnit, enablePing);
     client.connect();
     assert client.isConnected();
     return client;

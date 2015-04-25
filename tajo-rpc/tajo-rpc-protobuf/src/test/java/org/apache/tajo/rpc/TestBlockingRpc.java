@@ -246,7 +246,7 @@ public class TestBlockingRpc {
   }
 
   @Test(timeout = 60000)
-  public void testServerShutdown() throws Exception {
+  public void testServerShutdown1() throws Exception {
     EchoMessage message = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
 
@@ -359,9 +359,8 @@ public class TestBlockingRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, false);
 
-    NettyClientBase client = manager.newClient(rpcConnectionKey,
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey,
         retries, 0, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof BlockingRpcClient);
     assertTrue(client.isConnected());
 
     BlockingInterface stub = client.getStub();
@@ -408,7 +407,7 @@ public class TestBlockingRpc {
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
-    NettyClientBase client = null;
+    BlockingRpcClient client = null;
     try {
       RpcClientManager.RpcConnectionKey rpcConnectionKey =
           new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
@@ -452,8 +451,7 @@ public class TestBlockingRpc {
   public void testStubRecovery() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
-    NettyClientBase client = manager.newClient(rpcConnectionKey, 1, 0, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof BlockingRpcClient);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, 1, 0, TimeUnit.MILLISECONDS, false);
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -484,8 +482,7 @@ public class TestBlockingRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
     //500 millis idle timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof BlockingRpcClient);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);   //timeout
@@ -506,8 +503,7 @@ public class TestBlockingRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
 
     //500 millis request timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
-    assertTrue(client instanceof BlockingRpcClient);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);
@@ -524,8 +520,7 @@ public class TestBlockingRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
     //500 millis idle timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof BlockingRpcClient);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
     assertTrue(client.isConnected());
 
     BlockingInterface stub = client.getStub();
@@ -548,10 +543,7 @@ public class TestBlockingRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
 
     //500 millis request timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
-    assertTrue(client instanceof BlockingRpcClient);
-
-    client.connect();
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
     assertTrue(client.isConnected());
 
     BlockingInterface stub = client.getStub();

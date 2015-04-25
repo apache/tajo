@@ -29,7 +29,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class BlockingRpcClient extends NettyClientBase {
+public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCallFuture> {
 
   private final Method stubMethod;
   private final ProxyRpcChannel rpcChannel;
@@ -118,7 +118,7 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   @ChannelHandler.Sharable
-  public class ClientChannelInboundHandler extends NettyChannelInboundHandler<ProtoCallFuture> {
+  public class ClientChannelInboundHandler extends NettyChannelInboundHandler {
 
     @Override
     protected void run(RpcResponse rpcResponse, ProtoCallFuture callback) throws Exception {

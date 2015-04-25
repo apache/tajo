@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-public abstract class NettyClientBase implements Closeable {
+public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable {
   public final static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
   private Bootstrap bootstrap;
@@ -58,6 +58,7 @@ public abstract class NettyClientBase implements Closeable {
 
   private final Set<ChannelEventListener> channelEventListeners =
       Collections.synchronizedSet(new HashSet<ChannelEventListener>());
+  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
 
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
       throws ClassNotFoundException, NoSuchMethodException {
@@ -97,8 +98,6 @@ public abstract class NettyClientBase implements Closeable {
       throw new RemoteException(e.getMessage(), e);
     }
   }
-
-  public abstract <I> I getStub();
 
   protected static Message buildRequest(int seqId,
                                         Descriptors.MethodDescriptor method,
@@ -224,7 +223,7 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   public int getActiveRequests() {
-    return getHandler().requests.size();
+    return requests.size();
   }
 
   public boolean subscribeEvent(ChannelEventListener listener) {
@@ -256,9 +255,7 @@ public abstract class NettyClientBase implements Closeable {
     }
   }
 
-  protected abstract class NettyChannelInboundHandler<T> extends SimpleChannelInboundHandler<RpcResponse> {
-
-    private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
+  protected abstract class NettyChannelInboundHandler extends SimpleChannelInboundHandler<RpcResponse> {
 
     protected void registerCallback(int seqId, T callback) {
       if (requests.putIfAbsent(seqId, callback) != null) {
@@ -322,19 +319,14 @@ public abstract class NettyClientBase implements Closeable {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
 
-      if (LOG.isDebugEnabled()) {
-        LOG.error(getRemoteAddress() + "," + getKey().protocolClass + "," +
-            ExceptionUtils.getRootCauseMessage(cause), cause);
-      } else {
-        LOG.error(getRemoteAddress() + "," + getKey().protocolClass + "," +
-            ExceptionUtils.getRootCauseMessage(cause));
-      }
+      Throwable rootCause = ExceptionUtils.getRootCause(cause);
+      LOG.error(getKey().addr + "," + getKey().protocolClass + "," + ExceptionUtils.getMessage(rootCause), rootCause);
 
       if (cause instanceof RecoverableException) {
         sendException((RecoverableException) cause);
       } else {
         /* unrecoverable fatal error*/
-        sendExceptions(ExceptionUtils.getRootCauseMessage(cause));
+        sendExceptions(ExceptionUtils.getMessage(rootCause));
         if (ctx.channel().isOpen()) {
           ctx.close();
         }

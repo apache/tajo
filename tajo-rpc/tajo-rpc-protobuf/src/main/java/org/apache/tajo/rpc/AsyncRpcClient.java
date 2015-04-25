@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class AsyncRpcClient extends NettyClientBase {
+public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallback> {
 
   private final Method stubMethod;
   private final ProxyRpcChannel rpcChannel;
@@ -66,7 +66,7 @@ public class AsyncRpcClient extends NettyClientBase {
   }
 
   @Override
-  public <T> T getStub() {
+  public <I> I getStub() {
     return getStub(stubMethod, rpcChannel);
   }
 
@@ -94,7 +94,7 @@ public class AsyncRpcClient extends NettyClientBase {
   }
 
   @ChannelHandler.Sharable
-  private class ClientChannelInboundHandler extends NettyChannelInboundHandler<ResponseCallback> {
+  private class ClientChannelInboundHandler extends NettyChannelInboundHandler {
 
     @Override
     protected void run(RpcResponse response, ResponseCallback callback) throws Exception {

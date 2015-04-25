@@ -268,7 +268,7 @@ public class TestAsyncRpc {
   }
 
   @Test(timeout = 60000)
-  public void testServerShutdown() throws Exception {
+  public void testServerShutdown1() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
@@ -331,9 +331,8 @@ public class TestAsyncRpc {
 
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
-    NettyClientBase client = manager.newClient(rpcConnectionKey,
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey,
         retries, 0, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof AsyncRpcClient);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
@@ -384,7 +383,7 @@ public class TestAsyncRpc {
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
-    NettyClientBase client = null;
+    AsyncRpcClient client = null;
     try {
       RpcClientManager.RpcConnectionKey rpcConnectionKey =
           new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
@@ -432,12 +431,10 @@ public class TestAsyncRpc {
   public void testStubRecovery() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
-    NettyClientBase client = manager.newClient(rpcConnectionKey, 1, 0, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof AsyncRpcClient);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, 2, 0, TimeUnit.MILLISECONDS, false);
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
     int repeat = 5;
 
     assertTrue(client.isConnected());
@@ -448,6 +445,7 @@ public class TestAsyncRpc {
 
     for (int i = 0; i < repeat; i++) {
       try {
+        CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
         stub.echo(future.getController(), echoMessage, future);
         assertEquals(echoMessage, future.get());
         assertTrue(future.isDone());
@@ -465,8 +463,7 @@ public class TestAsyncRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
     //500 millis idle timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof AsyncRpcClient);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);  //timeout
@@ -487,8 +484,7 @@ public class TestAsyncRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
 
     //500 millis request timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
-    assertTrue(client instanceof AsyncRpcClient);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);
@@ -505,8 +501,7 @@ public class TestAsyncRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
     //500 millis idle timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
-    assertTrue(client instanceof AsyncRpcClient);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, false);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
@@ -534,10 +529,7 @@ public class TestAsyncRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
 
     //500 millis request timeout
-    NettyClientBase client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
-    assertTrue(client instanceof AsyncRpcClient);
-
-    client.connect();
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 500, TimeUnit.MILLISECONDS, true);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();

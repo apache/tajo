@@ -23,6 +23,7 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 import io.netty.channel.*;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -107,10 +108,9 @@ public class BlockingRpcServer extends NettyServerBase {
         }
         ctx.writeAndFlush(builder.build());
       } catch (RemoteCallException e) {
-        ctx.writeAndFlush(e.getResponse());
+        exceptionCaught(ctx, e);
       } catch (Throwable throwable) {
-        RemoteCallException exception = new RemoteCallException(request.getId(), methodDescriptor, throwable);
-        ctx.writeAndFlush(exception.getResponse());
+        exceptionCaught(ctx, new RemoteCallException(request.getId(), methodDescriptor, throwable));
       }
     }
 
@@ -119,13 +119,19 @@ public class BlockingRpcServer extends NettyServerBase {
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());
+
+        if(LOG.isDebugEnabled()) {
+          Throwable rootCause = ExceptionUtils.getRootCause(cause);
+          LOG.debug(ExceptionUtils.getMessage(rootCause), rootCause);
+        }
       } else {
         /* unhandled exception. */
         if (ctx.channel().isOpen()) {
           /* client can be triggered channelInactiveEvent */
           ctx.close();
         }
-        LOG.fatal(cause.getMessage(), cause);
+        Throwable rootCause = ExceptionUtils.getRootCause(cause);
+        LOG.fatal(ExceptionUtils.getMessage(rootCause), rootCause);
       }
     }
   }
