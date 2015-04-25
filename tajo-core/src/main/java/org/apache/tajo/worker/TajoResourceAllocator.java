@@ -324,9 +324,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       }
 
       WorkerResourceAllocationResponse response = null;
-      while(!stopped.get() && !callBack.getController().failed()) {
+      while(!stopped.get()) {
         try {
-          response = callBack.get(3, TimeUnit.SECONDS);
+          response = callBack.getAndThrow(3, TimeUnit.SECONDS);
           break;
         } catch (InterruptedException e) {
           if(stopped.get()) {
@@ -335,11 +335,10 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         } catch (TimeoutException e) {
           LOG.info("No available worker resource for " + event.getExecutionBlockId());
           continue;
+        } catch (ExecutionException e) {
+          LOG.error(e.getMessage(), e);
+          break;
         }
-      }
-
-      if(callBack.getController().failed()) {
-          LOG.error(callBack.getController().errorText());
       }
 
       int numAllocatedContainers = 0;

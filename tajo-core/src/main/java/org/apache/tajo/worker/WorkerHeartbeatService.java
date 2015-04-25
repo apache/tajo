@@ -19,13 +19,12 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ServerStatusProto;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
@@ -186,18 +185,14 @@ public class WorkerHeartbeatService extends AbstractService {
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 
-          TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
-          if(response != null) {
-            ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
-            if(clusterResourceSummary.getNumWorkers() > 0) {
-              context.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
-            }
-            context.setClusterResource(clusterResourceSummary);
-          } else {
-            if(callBack.getController().failed()) {
-              throw new ServiceException(callBack.getController().errorText());
-            }
+          TajoHeartbeatResponse response = callBack.getAndThrow(2, TimeUnit.SECONDS);
+
+          QueryCoordinatorProtocol.ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
+          if(clusterResourceSummary.getNumWorkers() > 0) {
+            context.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
           }
+          context.setClusterResource(clusterResourceSummary);
+
         } catch (InterruptedException e) {
           break;
         } catch (TimeoutException te) {

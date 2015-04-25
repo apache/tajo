@@ -227,7 +227,7 @@ public class TaskRunner extends AbstractService {
               }
               try {
                 // wait for an assigning task for 3 seconds
-                taskRequest = callFuture.get(3, TimeUnit.SECONDS);
+                taskRequest = callFuture.getAndThrow(3, TimeUnit.SECONDS);
               } catch (InterruptedException e) {
                 if(stopped) {
                   break;
@@ -236,17 +236,15 @@ public class TaskRunner extends AbstractService {
                 if(stopped) {
                   break;
                 }
-
-                if(callFuture.getController().failed()){
-                  LOG.error(callFuture.getController().errorText());
-                  break;
-                }
                 // if there has been no assigning task for a given period,
                 // TaskRunner will retry to request an assigning task.
                 if (LOG.isDebugEnabled()) {
                   LOG.info("Retry assigning task:" + getId());
                 }
                 continue;
+              } catch (ExecutionException ee) {
+                LOG.error(ee.getMessage(), ee);
+                break;
               }
 
               if (taskRequest != null) {

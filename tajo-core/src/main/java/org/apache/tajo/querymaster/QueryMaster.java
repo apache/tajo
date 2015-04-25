@@ -237,7 +237,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       masterService.getAllWorkerResource(callBack.getController(),
           PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
-      WorkerResourcesRequest workerResourcesRequest = callBack.get(2, TimeUnit.SECONDS);
+      WorkerResourcesRequest workerResourcesRequest = callBack.getAndThrow(2, TimeUnit.SECONDS);
       return workerResourcesRequest.getWorkerResourcesList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -341,6 +341,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
+        future.getAndThrow(10, TimeUnit.SECONDS);
       }  catch (Exception e) {
         //this function will be closed in new thread.
         //When tajo do stop cluster, tajo master maybe throw closed connection exception
@@ -441,9 +442,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
                   QueryCoordinatorProtocol.class, true);
               QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
-              CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
               TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(eachTask);
-              masterClientService.heartbeat(callBack.getController(), queryHeartbeat, callBack);
+              masterClientService.heartbeat(null, queryHeartbeat, NullCallback.get());
             } catch (Throwable t) {
               t.printStackTrace();
             }
