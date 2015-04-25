@@ -27,10 +27,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.FunctionContext;
-import org.apache.tajo.plan.function.PythonAggFunctionInvoke;
+import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -269,7 +268,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
 
-  private Tuple emptyInput;
+  private final Tuple EMPTY_INPUT = new VTuple(0);
+  private final Schema EMPTY_SCHEMA = new Schema();
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
@@ -396,10 +396,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
         outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
       }
     }
-    emptyInput = new VTuple(inSchema.size());
-    for (int i = 0; i < inSchema.size(); i++) {
-      emptyInput.put(i, NullDatum.get());
-    }
+//    emptyInput = new VTuple(inSchema.size());
+//    for (int i = 0; i < inSchema.size(); i++) {
+//      emptyInput.put(i, NullDatum.get());
+//    }
     projectionCols = new int[outSchema.size()];
     for (int i = 0; i < outSchema.size(); i++) {
       projectionCols[i] = i;
@@ -416,7 +416,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   private void createInputHandlers() throws IOException {
     setSchema();
-    TextLineSerializer serializer = lineSerDe.createSerializer(inSchema, pipeMeta);
+    TextLineSerializer serializer = lineSerDe.createSerializer(pipeMeta);
     serializer.init();
     this.inputHandler = new InputHandler(serializer);
     inputHandler.bindTo(stdin);
@@ -475,14 +475,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
   @Override
   public Datum callScalarFunc(Tuple input) {
     try {
-      if (input == null) {
-        // When nothing is passed into the UDF the tuple
-        // being sent is the full tuple for the relation.
-        // We want it to be nothing (since that's what the user wrote).
-        input = emptyInput;
-      }
+//      if (input == null) {
+//        // When nothing is passed into the UDF the tuple
+//        // being sent is the full tuple for the relation.
+//        // We want it to be nothing (since that's what the user wrote).
+//        input = emptyInput;
+//      }
 
-      inputHandler.putNext(input);
+      inputHandler.putNext(input, inSchema);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
@@ -498,14 +498,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   @Override
-  public void callAggFunc(FunctionContext functionContext, Tuple input, final boolean needFuncContextUpdate) {
-    if (needFuncContextUpdate) {
-      try {
-        beforeCallAggFunc((PythonAggFunctionInvoke.PythonAggFunctionContext) functionContext);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+  public void callAggFunc(FunctionContext functionContext, Tuple input) {
 
     String methodName;
     if (!intermediatePhase && !finalPhase) {
@@ -517,14 +510,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
 
     try {
-      if (input == null) {
-        // When nothing is passed into the UDF the tuple
-        // being sent is the full tuple for the relation.
-        // We want it to be nothing (since that's what the user wrote).
-        input = emptyInput;
-      }
+//      if (input == null) {
+//        // When nothing is passed into the UDF the tuple
+//        // being sent is the full tuple for the relation.
+//        // We want it to be nothing (since that's what the user wrote).
+//        input = emptyInput;
+//      }
 
-      inputHandler.putNext(methodName, input);
+      inputHandler.putNext(methodName, input, inSchema);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e);
@@ -535,65 +528,50 @@ public class PythonScriptEngine extends TajoScriptEngine {
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
     }
-    if (needFuncContextUpdate) {
-      try {
-        afterCallAvgFunc((PythonAggFunctionInvoke.PythonAggFunctionContext) functionContext);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 
   /**
-   * Set aggregated values in the function context to member variables of the Python UDAF instance
+   * Set aggregated values in the function context to member variables of the Python instance
    * @param functionContext
    */
-  private void beforeCallAggFunc(PythonAggFunctionInvoke.PythonAggFunctionContext functionContext) throws IOException {
+  public void updatePythonSideContext(PythonAggFunctionContext functionContext) throws IOException {
 
     try {
-      inputHandler.putNext("prepare_aggregate", functionContext.getNamedTuple().getTuple(),
-          functionContext.getNamedTuple().getNames());
+      inputHandler.putNext("update_context", functionContext);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
     }
     try {
-      outputHandler.getNext().get(0);
+      outputHandler.getNext();
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
     }
   }
 
   /**
-   * Get aggregated values from the Python UDAF instance
+   * Get aggregated values from the Python instance
    * @param functionContext
    */
-  private void afterCallAvgFunc(PythonAggFunctionInvoke.PythonAggFunctionContext functionContext) throws IOException {
+  public void updateJavaSideContext(PythonAggFunctionContext functionContext) throws IOException {
 
     try {
-      inputHandler.putNext("finalize_aggregate", emptyInput);
+      inputHandler.putNext("get_context", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
     }
-    Tuple tuple;
     try {
-      tuple = outputHandler.getNext();
+      outputHandler.getNext(functionContext);
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
-    }
-
-    for (int i = 0; i < tuple.size(); i+=2) {
-
     }
   }
 
   @Override
-  public Tuple getPartialResult() {
+  public Tuple getPartialResult(FunctionContext functionContext) {
     try {
-      Tuple input = emptyInput;
-
-      inputHandler.putNext("get_partial_result", input);
+      inputHandler.putNext("get_partial_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
@@ -608,11 +586,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return result;
   }
 
-  public Datum getFinalResult() {
+  @Override
+  public Datum getFinalResult(FunctionContext functionContext) {
     try {
-      Tuple input = emptyInput;
-
-      inputHandler.putNext("get_final_result", input);
+      inputHandler.putNext("get_final_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);

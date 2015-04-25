@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function.stream;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
+import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
@@ -96,6 +97,26 @@ public class OutputHandler implements Closeable {
       throw new IOException(textLineParsingError);
     }
     return tuple;
+  }
+
+  public FunctionContext getNext(FunctionContext context) throws IOException {
+    if (in == null) {
+      return null;
+    }
+
+    currValue = null;
+    if (!readValue()) {
+      return null;
+    }
+    buf.clear();
+    buf.writeBytes(currValue.getBytes());
+    try {
+      deserializer.deserialize(buf, context);
+    } catch (TextLineParsingError textLineParsingError) {
+      throw new IOException(textLineParsingError);
+    }
+
+    return context;
   }
 
   private boolean readValue() throws IOException {

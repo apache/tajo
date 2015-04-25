@@ -19,6 +19,7 @@ import sys
 import os
 import logging
 import base64
+import json
 
 from datetime import datetime
 try:
@@ -74,16 +75,16 @@ MERGE_FUNC = "merge"
 GET_PARTIAL_RESULT_FUNC = "get_partial_result"
 GET_FINAL_RESULT_FUNC = "get_final_result"
 GET_INTERM_SCHEMA_FUNC = "get_interm_schema"
-PREPARE_AGGREGATE = "prepare_aggregate"
-FINALIZE_AGGREGATE = "finalize_aggregate"
+UPDATE_CONTEXT = "update_context"
+GET_CONTEXT = "get_context"
 
 WRAPPED_EVAL_FUNC = PRE_WRAP_DELIM + EVAL_FUNC + POST_WRAP_DELIM
 WRAPPED_MERGE_FUNC = PRE_WRAP_DELIM + MERGE_FUNC + POST_WRAP_DELIM
 WRAPPED_GET_PARTIAL_RESULT_FUNC = PRE_WRAP_DELIM + GET_PARTIAL_RESULT_FUNC + POST_WRAP_DELIM
 WRAPPED_GET_FINAL_RESULT_FUNC = PRE_WRAP_DELIM + GET_FINAL_RESULT_FUNC + POST_WRAP_DELIM
 WRAPPED_GET_INTERM_SCHEMA_FUNC = PRE_WRAP_DELIM + GET_INTERM_SCHEMA_FUNC + POST_WRAP_DELIM
-WRAPPED_PREPARE_AGGREGATE = PRE_WRAP_DELIM + PREPARE_AGGREGATE + POST_WRAP_DELIM
-WRAPPED_FINALIZE_AGGREGATE = PRE_WRAP_DELIM + FINALIZE_AGGREGATE + POST_WRAP_DELIM
+WRAPPED_UPDATE_CONTEXT = PRE_WRAP_DELIM + UPDATE_CONTEXT + POST_WRAP_DELIM
+WRAPPED_GET_CONTEXT = PRE_WRAP_DELIM + GET_CONTEXT + POST_WRAP_DELIM
 
 END_OF_STREAM = TYPE_CHARARRAY + "\x04" + END_RECORD_DELIM
 TURN_ON_OUTPUT_CAPTURING = TYPE_CHARARRAY + "TURN_ON_OUTPUT_CAPTURING" + END_RECORD_DELIM
@@ -92,6 +93,10 @@ NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
 class PythonStreamingController:
     udaf_instance = None
+    should_log = True
+    log_message = logging.info
+    module_name = None
+    output_schema = None
 
     def __init__(self, profiling_mode=False):
         self.profiling_mode = profiling_mode
@@ -114,13 +119,16 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        should_log = False
-        if should_log:
+        if self.should_log:
             logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
             logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
                          "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
+        self.module_name = module_name
+        self.output_schema = output_schema
         input_str = self.get_next_input()
+
+        logging.info('main: ' + input_str)
 
         # try:
         #     func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
@@ -129,67 +137,83 @@ class PythonStreamingController:
         #     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
         #     self.close_controller(-1)
 
-        log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
-            log_message = logging.debug
+            self.log_message = logging.debug
 
         while input_str != END_OF_STREAM:
+            logging.info('while: ' + func_type)
+
             if func_type == 'UDAF':
                 class_name = name
+                logging.info('udaf.class_name : ' + class_name)
                 func_name = self.get_func_name(input_str)
-                func = self.load_udaf(module_name, class_name, func_name)
+                logging.info('udaf.func_name : ' + func_name)
                 data_start = input_str.find(WRAPPED_PARAMETER_DELIMITER) + len(WRAPPED_PARAMETER_DELIMITER)
                 input_str = input_str[data_start:]
+
+                logging.info('udaf.input_str : ' + input_str)
+
+                if func_name == UPDATE_CONTEXT:
+                    self.update_context(input_str)
+                elif func_name == GET_CONTEXT:
+                    self.get_context()
+                else:
+                    func = self.load_udaf(module_name, class_name, func_name)
+                    self.process_input(func_name, func, input_str)
+
             elif func_type == 'UDF':
                 func_name = name
                 func = self.load_udf(module_name, func_name)
+                self.process_input(func_name, func, input_str)
             else:
                 raise Exception("Unsupported type: " + func_type)
 
-            try:
-                try:
-                    if should_log:
-                        log_message("Serialized Input: %s" % (input_str))
-                    inputs = deserialize_input(input_str)
-                    if should_log:
-                        log_message("Deserialized Input: %s" % (unicode(inputs)))
-                except:
-                    # Capture errors where the user passes in bad data.
-                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-                    self.close_controller(-3)
-
-                try:
-                    if func_name == GET_PARTIAL_RESULT_FUNC or func_name == GET_FINAL_RESULT_FUNC:
-                        func_output = func()
-                    else:
-                        func_output = func(*inputs)
-                    if should_log:
-                        log_message("UDF Output: %s" % (unicode(func_output)))
-                except:
-                    # These errors should always be caused by user code.
-                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-                    self.close_controller(-2)
-
-                output = serialize_output(func_output, output_schema)
-                if should_log:
-                    log_message("Serialized Output: %s" % (output))
-
-                self.stream_output.write( "%s%s" % (output, END_RECORD_DELIM) )
-            except Exception as e:
-                # This should only catch internal exceptions with the controller
-                # and pig- not with user code.
-                import traceback
-                traceback.print_exc(file=self.stream_error)
-                sys.exit(-3)
-
-            sys.stdout.flush()
-            sys.stderr.flush()
-            self.stream_output.flush()
-            self.stream_error.flush()
-
             input_str = self.get_next_input()
 
+    def process_input(self, func_name, func, input_str):
+        try:
+            try:
+                if self.should_log:
+                    self.log_message("Serialized Input: %s" % (input_str))
+                inputs = deserialize_input(input_str)
+                if self.should_log:
+                    self.log_message("Deserialized Input: %s" % (unicode(inputs)))
+            except:
+                # Capture errors where the user passes in bad data.
+                write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+                self.close_controller(-3)
+
+            try:
+                if func_name == GET_PARTIAL_RESULT_FUNC or func_name == GET_FINAL_RESULT_FUNC:
+                    func_output = func()
+                else:
+                    func_output = func(*inputs)
+                if self.should_log:
+                    self.log_message("UDF Output: %s" % (unicode(func_output)))
+            except:
+                # These errors should always be caused by user code.
+                write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+                self.close_controller(-2)
+
+            output = serialize_output(func_output, self.output_schema)
+            if self.should_log:
+                self.log_message("Serialized Output: %s" % (output))
+
+            self.stream_output.write( "%s%s" % (output, END_RECORD_DELIM) )
+        except Exception as e:
+            # This should only catch internal exceptions with the controller
+            # and pig- not with user code.
+            import traceback
+            traceback.print_exc(file=self.stream_error)
+            sys.exit(-3)
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.stream_output.flush()
+        self.stream_error.flush()
+
     def get_next_input(self):
+        logging.info('get_next_input')
         input_stream = self.input_stream
         # log_stream = self.log_stream
 
@@ -253,8 +277,52 @@ class PythonStreamingController:
             return GET_FINAL_RESULT_FUNC
         elif splits[0] == WRAPPED_GET_INTERM_SCHEMA_FUNC:
             return GET_INTERM_SCHEMA_FUNC
+        elif splits[0] == WRAPPED_UPDATE_CONTEXT:
+            return UPDATE_CONTEXT
+        elif splits[0] == WRAPPED_GET_CONTEXT:
+            return GET_CONTEXT
         else:
             raise Exception("Not supported function: " + splits[0])
+
+    def update_context(self, input_str):
+        logging.info('update_context.input_str : ' + input_str)
+        if self.udaf_instance is not None:
+            deserialize_class(self.udaf_instance, input_str)
+        self.stream_output.write(END_RECORD_DELIM)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.stream_output.flush()
+        self.stream_error.flush()
+
+    def get_context(self):
+        logging.info('get_context')
+        serialized = ''
+        if self.udaf_instance is not None:
+            serialized = serialize_class(self.udaf_instance)
+        self.stream_output.write( "%s%s" % (serialized, END_RECORD_DELIM))
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.stream_output.flush()
+        self.stream_error.flush()
+
+def serialize_class(instance):
+    logging.info('serialize_class')
+    serialized = json.dumps(instance.__dict__)
+    return serialized
+
+def deserialize_class(instance, json_data):
+    logging.info('deserialize_class : ' + json_data)
+    if json_data == NULL_BYTE:
+        logging.info('json_data is null')
+        logging.info('before instance.__dict__ : ' + str(instance.__dict__))
+        instance.reset()
+        logging.info('after instance.__dict__ : ' + str(instance.__dict__))
+    else:
+        logging.info('json_data is not null : ' + json_data)
+        logging.info('before instance.__dict__ : ' + str(instance.__dict__))
+        instance.reset()
+        instance.__dict__ = json.loads(json_data)
+        logging.info('after instance.__dict__ : ' + str(instance.__dict__))
 
 def deserialize_input(input_str):
     if len(input_str) == 0:
@@ -280,30 +348,33 @@ def _deserialize_input(input_str, si, ei):
     schema = tokens[0];
     param = tokens[1];
 
-    if schema == NULL_BYTE:
+    return deserialize_data(schema, param)
+
+def deserialize_data(type, data_str):
+    if type == NULL_BYTE:
         return None
-    elif schema == TYPE_CHARARRAY:
-        return unicode(param, 'utf-8')
-    elif schema == TYPE_BYTEARRAY:
-        return bytearray(param)
-    elif schema == TYPE_INTEGER:
-        return int(param)
-    elif schema == TYPE_LONG or schema == TYPE_BIGINTEGER:
-        return long(param)
-    elif schema == TYPE_FLOAT or schema == TYPE_DOUBLE or schema == TYPE_BIGDECIMAL:
-        return float(param)
-    elif schema == TYPE_BOOLEAN:
-        return param == "true"
-    elif schema == TYPE_DATETIME:
+    elif type == TYPE_CHARARRAY:
+        return unicode(data_str, 'utf-8')
+    elif type == TYPE_BYTEARRAY:
+        return bytearray(data_str)
+    elif type == TYPE_INTEGER:
+        return int(data_str)
+    elif type == TYPE_LONG or type == TYPE_BIGINTEGER:
+        return long(data_str)
+    elif type == TYPE_FLOAT or type == TYPE_DOUBLE or type == TYPE_BIGDECIMAL:
+        return float(data_str)
+    elif type == TYPE_BOOLEAN:
+        return data_str == "true"
+    elif type == TYPE_DATETIME:
         # Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
         if USE_DATEUTIL:
-            return parser.parse(param)
+            return parser.parse(data_str)
         else:
             # Try to use datetime even though it doesn't handle time zones properly,
             # We only use the first 3 microsecond digits and drop time zone (first 23 characters)
-            return datetime.strptime(param, "%Y-%m-%dT%H:%M:%S.%f")
+            return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S.%f")
     else:
-        raise Exception("Can't determine type of input: %s" % param)
+        raise Exception("Can't determine type of input: %s" % data_str)
 
 def _deserialize_collection(input_str, return_type, si, ei):
     list_result = []

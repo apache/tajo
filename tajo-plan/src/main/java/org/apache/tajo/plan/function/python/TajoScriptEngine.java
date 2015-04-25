@@ -86,11 +86,11 @@ public abstract class TajoScriptEngine {
    */
   public abstract Datum callScalarFunc(Tuple input);
 
-  public abstract void callAggFunc(FunctionContext functionContext, Tuple input, boolean needFuncContextUpdate);
+  public abstract void callAggFunc(FunctionContext functionContext, Tuple input);
 
-  public abstract Tuple getPartialResult();
+  public abstract Tuple getPartialResult(FunctionContext functionContext);
 
-  public abstract Datum getFinalResult();
+  public abstract Datum getFinalResult(FunctionContext functionContext);
 
   public void setIntermediatePhase(boolean flag) {
     this.intermediatePhase = flag;

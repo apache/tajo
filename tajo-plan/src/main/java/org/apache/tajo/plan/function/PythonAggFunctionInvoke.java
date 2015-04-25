@@ -30,41 +30,46 @@ import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Cloneable {
 
   private transient PythonScriptEngine scriptEngine;
-  private transient FunctionContext prevContext;
+  private transient PythonAggFunctionContext prevContext;
+  private static int nextContextId = 0;
 
   public static class PythonAggFunctionContext implements FunctionContext {
-    Map<String, Datum> namedVals = TUtil.newHashMap();
-    Map<Integer, String> nameOrders = TUtil.newHashMap();
-    int order = 0;
+    final int id;
+    String jsonData;
 
-    public void addNamedVal(String name, Datum val) {
-      nameOrders.put(order++, name);
-      namedVals.put(name, val);
+    public PythonAggFunctionContext() {
+      this.id = nextContextId++;
     }
 
-    public Datum getNamedVal(String name) {
-      return namedVals.get(name);
+    public void setJsonData(String jsonData) {
+      this.jsonData = jsonData;
     }
 
-    public String[] getAllNames() {
-      String[] names = new String[nameOrders.size()];
-      for (int i = 0; i < nameOrders.size(); i++) {
-        names[i] = nameOrders.get(i);
-      }
-      return names;
+    public String getJsonData() {
+      return jsonData;
     }
 
-    public Tuple getAllTuples() {
-
-    }
+//    public String[] getAllNames() {
+//      String[] names = new String[nameOrders.size()];
+//      for (int i = 0; i < nameOrders.size(); i++) {
+//        names[i] = nameOrders.get(i);
+//      }
+//      return names;
+//    }
+//
+//    public Tuple getTuple() {
+//      Tuple tuple = new VTuple(nameOrders.size());
+//      for (int i = 0; i < nameOrders.size(); i++) {
+//        tuple.put(i, namedVals.get(nameOrders.get(i)));
+//      }
+//      return tuple;
+//    }
   }
 
   public PythonAggFunctionInvoke(FunctionDesc functionDesc) {
@@ -81,13 +86,25 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
     return new PythonAggFunctionContext();
   }
 
+  private void updateContextIfNecessary(FunctionContext context) {
+    PythonAggFunctionContext givenContext = (PythonAggFunctionContext) context;
+    if (prevContext == null || prevContext.id != givenContext.id) {
+      try {
+        if (prevContext != null) {
+          scriptEngine.updateJavaSideContext(prevContext);
+        }
+        scriptEngine.updatePythonSideContext(givenContext);
+        prevContext = givenContext;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   @Override
   public void eval(FunctionContext context, Tuple params) {
-    boolean needFuncContextUpdate = prevContext != context;
-    scriptEngine.callAggFunc(context, params, needFuncContextUpdate);
-    if (needFuncContextUpdate) {
-      prevContext = context;
-    }
+    updateContextIfNecessary(context);
+    scriptEngine.callAggFunc(context, params);
   }
 
   @Override
@@ -102,16 +119,14 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
       input.put(i, EvalNodeDeserializer.deserialize(namedTuple.getDatums(i)));
     }
 
-    boolean needFuncContextUpdate = prevContext != context;
-    scriptEngine.callAggFunc(context, input, needFuncContextUpdate);
-    if (needFuncContextUpdate) {
-      prevContext = context;
-    }
+    updateContextIfNecessary(context);
+    scriptEngine.callAggFunc(context, input);
   }
 
   @Override
   public Datum getPartialResult(FunctionContext context) {
-    Tuple intermResult = scriptEngine.getPartialResult();
+    updateContextIfNecessary(context);
+    Tuple intermResult = scriptEngine.getPartialResult(context);
     PlanProto.Tuple.Builder builder = PlanProto.Tuple.newBuilder();
     for (int i = 0; i < intermResult.size(); i++) {
       builder.addDatums(EvalNodeSerializer.serialize(intermResult.get(i)));
@@ -126,7 +141,8 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
 
   @Override
   public Datum terminate(FunctionContext context) {
-    return scriptEngine.getFinalResult();
+    updateContextIfNecessary(context);
+    return scriptEngine.getFinalResult(context);
   }
 
   @Override

@@ -24,6 +24,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -34,41 +36,43 @@ public class CSVLineSerializer extends TextLineSerializer {
 
   private byte[] nullChars;
   private byte[] delimiter;
-  private int columnNum;
+//  private int columnNum;
 
   public final static String PARAM_DELIM = "|\t_";
 
-  public CSVLineSerializer(Schema schema, TableMeta meta) {
-    super(schema, meta);
+  public CSVLineSerializer(TableMeta meta) {
+    super(meta);
   }
 
   @Override
   public void init() {
     nullChars = TextLineSerDe.getNullCharsAsBytes(meta);
     delimiter = "|,_".getBytes();
-    columnNum = schema.size();
+//    columnNum = schema.size();
 
     serde = new TextFieldSerializerDeserializer(meta);
   }
 
   @Override
-  public int serialize(OutputStream out, Tuple input) throws IOException {
+  public int serialize(OutputStream out, Tuple input, Schema schema) throws IOException {
     int writtenBytes = 0;
 
-    for (int i = 0; i < columnNum; i++) {
-      Datum datum = input.get(i);
-      String typeStr;
-      if (datum.type() == TajoDataTypes.Type.ANY) {
-        typeStr = getTypeString(((AnyDatum)datum).getActual());
-      } else {
-        typeStr = getTypeString(datum);
-      }
-      out.write(typeStr.getBytes());
-      out.write(PARAM_DELIM.getBytes());
+    for (int i = 0; i < input.size(); i++) {
+      writtenBytes += serializeDatum(out, input.get(i), schema.getColumn(i).getDataType());
+      
+//      Datum datum = input.get(i);
+//      String typeStr;
+//      if (datum.type() == TajoDataTypes.Type.ANY) {
+//        typeStr = getTypeString(((AnyDatum)datum).getActual());
+//      } else {
+//        typeStr = getTypeString(datum);
+//      }
+//      out.write(typeStr.getBytes());
+//      out.write(PARAM_DELIM.getBytes());
+//
+//      writtenBytes += serde.serialize(out, datum, schema.getColumn(i), i, nullChars);
 
-      writtenBytes += serde.serialize(out, datum, schema.getColumn(i), i, nullChars);
-
-      if (columnNum - 1 > i) {
+      if (input.size() - 1 > i) {
         out.write(delimiter);
         writtenBytes += delimiter.length;
       }
@@ -77,23 +81,32 @@ public class CSVLineSerializer extends TextLineSerializer {
     return writtenBytes;
   }
 
+  private int serializeDatum(OutputStream out, Datum datum, TajoDataTypes.DataType dataType) throws IOException {
+    String typeStr;
+    if (datum.type() == TajoDataTypes.Type.ANY) {
+      typeStr = getTypeString(((AnyDatum)datum).getActual());
+    } else {
+      typeStr = getTypeString(datum);
+    }
+    out.write(typeStr.getBytes());
+    out.write(PARAM_DELIM.getBytes());
+
+    return serde.serialize(out, datum, dataType, nullChars);
+  }
+
   @Override
-  public int serializeVarNames(OutputStream out, String[] varNames) throws IOException {
+  public int serializeContext(OutputStream out, FunctionContext context) throws IOException {
     int writtenBytes = 0;
+    PythonAggFunctionContext pythonContext = (PythonAggFunctionContext) context;
 
-    for (int i = 0; i < varNames.length; i++) {
-      String typeStr = "C";
-      out.write(typeStr.getBytes());
-      out.write(PARAM_DELIM.getBytes());
-
-      byte[] bytes = varNames[i].getBytes();
+    if (pythonContext.getJsonData() == null) {
+      byte[] bytes = "-".getBytes();
       out.write(bytes);
       writtenBytes += bytes.length;
-
-      if (varNames.length - 1 > i) {
-        out.write(delimiter);
-        writtenBytes += delimiter.length;
-      }
+    } else {
+      byte[] bytes = pythonContext.getJsonData().getBytes();
+      out.write(bytes);
+      writtenBytes += bytes.length;
     }
 
     return writtenBytes;
