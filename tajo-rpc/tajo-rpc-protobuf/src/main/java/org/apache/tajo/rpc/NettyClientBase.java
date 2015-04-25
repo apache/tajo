@@ -118,11 +118,17 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
    */
   protected void invoke(final RpcProtos.RpcRequest rpcRequest, final T callback, final int retry) {
 
-    getChannel().writeAndFlush(rpcRequest).addListener(new GenericFutureListener<ChannelFuture>() {
+    ChannelPromise promise = getChannel().newPromise();
+    promise.addListener(new GenericFutureListener<ChannelFuture>() {
+
       @Override
       public void operationComplete(final ChannelFuture future) throws Exception {
 
-        if (!future.isSuccess()) {
+        if (future.isSuccess()) {
+
+          getHandler().registerCallback(rpcRequest.getId(), callback);
+        } else {
+
           if (!future.channel().isActive() && retry < maxRetries) {
 
             /* schedule the current request for the retry */
@@ -141,16 +147,16 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
               }
             }, RpcConstants.DEFAULT_PAUSE, TimeUnit.MILLISECONDS);
           } else {
-            getHandler().registerCallback(rpcRequest.getId(), callback);
+
             /* Max retry count has been exceeded or internal failure */
+            getHandler().registerCallback(rpcRequest.getId(), callback);
             getHandler().exceptionCaught(getChannel().pipeline().lastContext(),
                 new RecoverableException(rpcRequest.getId(), future.cause()));
           }
-        } else {
-          getHandler().registerCallback(rpcRequest.getId(), callback);
         }
       }
     });
+    getChannel().writeAndFlush(rpcRequest, promise);
   }
 
   private static InetSocketAddress resolveAddress(InetSocketAddress address) {
@@ -286,6 +292,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         listener.channelUnregistered(ctx);
       }
       super.channelUnregistered(ctx);
+
     }
 
     @Override
@@ -296,6 +303,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      super.channelInactive(ctx);
       sendExceptions("Connection lost :" + getKey().addr);
     }
 
