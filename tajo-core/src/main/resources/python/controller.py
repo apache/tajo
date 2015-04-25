@@ -93,7 +93,7 @@ NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
 class PythonStreamingController:
     udaf_instance = None
-    should_log = True
+    should_log = False
     log_message = logging.info
     module_name = None
     output_schema = None
@@ -128,8 +128,6 @@ class PythonStreamingController:
         self.output_schema = output_schema
         input_str = self.get_next_input()
 
-        logging.info('main: ' + input_str)
-
         # try:
         #     func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
         # except:
@@ -141,17 +139,12 @@ class PythonStreamingController:
             self.log_message = logging.debug
 
         while input_str != END_OF_STREAM:
-            logging.info('while: ' + func_type)
 
             if func_type == 'UDAF':
                 class_name = name
-                logging.info('udaf.class_name : ' + class_name)
                 func_name = self.get_func_name(input_str)
-                logging.info('udaf.func_name : ' + func_name)
                 data_start = input_str.find(WRAPPED_PARAMETER_DELIMITER) + len(WRAPPED_PARAMETER_DELIMITER)
                 input_str = input_str[data_start:]
-
-                logging.info('udaf.input_str : ' + input_str)
 
                 if func_name == UPDATE_CONTEXT:
                     self.update_context(input_str)
@@ -213,7 +206,6 @@ class PythonStreamingController:
         self.stream_error.flush()
 
     def get_next_input(self):
-        logging.info('get_next_input')
         input_stream = self.input_stream
         # log_stream = self.log_stream
 
@@ -285,7 +277,6 @@ class PythonStreamingController:
             raise Exception("Not supported function: " + splits[0])
 
     def update_context(self, input_str):
-        logging.info('update_context.input_str : ' + input_str)
         if self.udaf_instance is not None:
             deserialize_class(self.udaf_instance, input_str)
         self.stream_output.write(END_RECORD_DELIM)
@@ -295,7 +286,6 @@ class PythonStreamingController:
         self.stream_error.flush()
 
     def get_context(self):
-        logging.info('get_context')
         serialized = ''
         if self.udaf_instance is not None:
             serialized = serialize_class(self.udaf_instance)
@@ -306,23 +296,15 @@ class PythonStreamingController:
         self.stream_error.flush()
 
 def serialize_class(instance):
-    logging.info('serialize_class')
     serialized = json.dumps(instance.__dict__)
     return serialized
 
 def deserialize_class(instance, json_data):
-    logging.info('deserialize_class : ' + json_data)
     if json_data == NULL_BYTE:
-        logging.info('json_data is null')
-        logging.info('before instance.__dict__ : ' + str(instance.__dict__))
-        instance.reset()
-        logging.info('after instance.__dict__ : ' + str(instance.__dict__))
+        instance.__init__()
     else:
-        logging.info('json_data is not null : ' + json_data)
-        logging.info('before instance.__dict__ : ' + str(instance.__dict__))
-        instance.reset()
+        instance.__init__()
         instance.__dict__ = json.loads(json_data)
-        logging.info('after instance.__dict__ : ' + str(instance.__dict__))
 
 def deserialize_input(input_str):
     if len(input_str) == 0:

@@ -30,11 +30,9 @@ import java.io.OutputStream;
  * Write a Tuple into single text formatted line
  */
 public abstract class TextLineSerializer {
-//  protected Schema schema;
   protected TableMeta meta;
 
   public TextLineSerializer(TableMeta meta) {
-//    this.schema = schema;
     this.meta = meta;
   }
 

@@ -31,6 +31,3 @@ def concat_py(str):
 @output_type('int4')
 def add_py(a,b):
     return a+b
-
-def haemi():
-    return "stop eat!"

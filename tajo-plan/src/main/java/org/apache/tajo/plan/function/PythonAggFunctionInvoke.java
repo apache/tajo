@@ -54,22 +54,6 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
     public String getJsonData() {
       return jsonData;
     }
-
-//    public String[] getAllNames() {
-//      String[] names = new String[nameOrders.size()];
-//      for (int i = 0; i < nameOrders.size(); i++) {
-//        names[i] = nameOrders.get(i);
-//      }
-//      return names;
-//    }
-//
-//    public Tuple getTuple() {
-//      Tuple tuple = new VTuple(nameOrders.size());
-//      for (int i = 0; i < nameOrders.size(); i++) {
-//        tuple.put(i, namedVals.get(nameOrders.get(i)));
-//      }
-//      return tuple;
-//    }
   }
 
   public PythonAggFunctionInvoke(FunctionDesc functionDesc) {

@@ -226,7 +226,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
 
   private static final String PYTHON_LANGUAGE = "python";
-//private static final String PYTHON_LANGUAGE = "pypy";
   private static final String PYTHON_ROOT_PATH = "/python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
@@ -396,10 +395,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
         outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
       }
     }
-//    emptyInput = new VTuple(inSchema.size());
-//    for (int i = 0; i < inSchema.size(); i++) {
-//      emptyInput.put(i, NullDatum.get());
-//    }
     projectionCols = new int[outSchema.size()];
     for (int i = 0; i < outSchema.size(); i++) {
       projectionCols[i] = i;
@@ -475,13 +470,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
   @Override
   public Datum callScalarFunc(Tuple input) {
     try {
-//      if (input == null) {
-//        // When nothing is passed into the UDF the tuple
-//        // being sent is the full tuple for the relation.
-//        // We want it to be nothing (since that's what the user wrote).
-//        input = emptyInput;
-//      }
-
       inputHandler.putNext(input, inSchema);
       stdin.flush();
     } catch (Exception e) {
@@ -510,13 +498,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
 
     try {
-//      if (input == null) {
-//        // When nothing is passed into the UDF the tuple
-//        // being sent is the full tuple for the relation.
-//        // We want it to be nothing (since that's what the user wrote).
-//        input = emptyInput;
-//      }
-
       inputHandler.putNext(methodName, input, inSchema);
       stdin.flush();
     } catch (Exception e) {

@@ -36,7 +36,6 @@ public class CSVLineSerializer extends TextLineSerializer {
 
   private byte[] nullChars;
   private byte[] delimiter;
-//  private int columnNum;
 
   public final static String PARAM_DELIM = "|\t_";
 
@@ -48,7 +47,6 @@ public class CSVLineSerializer extends TextLineSerializer {
   public void init() {
     nullChars = TextLineSerDe.getNullCharsAsBytes(meta);
     delimiter = "|,_".getBytes();
-//    columnNum = schema.size();
 
     serde = new TextFieldSerializerDeserializer(meta);
   }
@@ -59,18 +57,6 @@ public class CSVLineSerializer extends TextLineSerializer {
 
     for (int i = 0; i < input.size(); i++) {
       writtenBytes += serializeDatum(out, input.get(i), schema.getColumn(i).getDataType());
-      
-//      Datum datum = input.get(i);
-//      String typeStr;
-//      if (datum.type() == TajoDataTypes.Type.ANY) {
-//        typeStr = getTypeString(((AnyDatum)datum).getActual());
-//      } else {
-//        typeStr = getTypeString(datum);
-//      }
-//      out.write(typeStr.getBytes());
-//      out.write(PARAM_DELIM.getBytes());
-//
-//      writtenBytes += serde.serialize(out, datum, schema.getColumn(i), i, nullChars);
 
       if (input.size() - 1 > i) {
         out.write(delimiter);

@@ -22,9 +22,6 @@ class AvgPy:
     cnt = 0
 
     def __init__(self):
-        self.reset()
-
-    def reset(self):
         self.sum = 0
         self.cnt = 0
 
@@ -34,7 +31,7 @@ class AvgPy:
         self.cnt += 1
 
     # get intermediate result
-    @output_type('int8', 'int4')
+    @output_type('float8', 'int4')
     def get_partial_result(self):
         return [self.sum, self.cnt]
 
@@ -53,9 +50,6 @@ class CountPy:
     cnt = 0
 
     def __init__(self):
-        self.reset()
-
-    def reset(self):
         self.cnt = 0
 
     # eval at the first stage

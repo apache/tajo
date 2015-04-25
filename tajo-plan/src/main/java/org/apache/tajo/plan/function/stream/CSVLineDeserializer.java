@@ -102,56 +102,6 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     byte[] bytes = new byte[lineBuf.readableBytes()];
     lineBuf.readBytes(bytes);
     pythonContext.setJsonData(new String(bytes));
-
-//    final int rowLength = lineBuf.readableBytes();
-//    int start = 0, fieldLength = 0, end = 0;
-//
-//    while (end != -1) {
-//      // variable name
-//      end = lineBuf.forEachByte(start, rowLength - start, processor);
-//
-//      if (end < 0) {
-//        fieldLength = rowLength - start;
-//      } else {
-//        fieldLength = end - start - delimiterCompensation;
-//      }
-//
-//      lineBuf.setIndex(start, start + fieldLength);
-//      byte[] bytes = new byte[lineBuf.readableBytes()];
-//      lineBuf.readBytes(bytes);
-//      String varName = new String(bytes);
-//      start = end + 1;
-//
-//      // variable type
-//      end = lineBuf.forEachByte(start, rowLength - start, processor);
-//
-//      if (end < 0) {
-//        fieldLength = rowLength - start;
-//      } else {
-//        fieldLength = end - start - delimiterCompensation;
-//      }
-//
-//      lineBuf.setIndex(start, start + fieldLength);
-//      bytes = new byte[lineBuf.readableBytes()];
-//      lineBuf.readBytes(bytes);
-//      TajoDataTypes.Type varType = convertPyTypeToTajoType(new String(bytes));
-//      start = end + 1;
-//
-//      // variable value
-//      end = lineBuf.forEachByte(start, rowLength - start, processor);
-//
-//      if (end < 0) {
-//        fieldLength = rowLength - start;
-//      } else {
-//        fieldLength = end - start - delimiterCompensation;
-//      }
-//
-//      lineBuf.setIndex(start, start + fieldLength);
-//      Datum datum = fieldSerDer.deserialize(lineBuf, CatalogUtil.newSimpleDataType(varType), nullChars);
-//      pythonContext.setNamedVal(varName, datum);
-//
-//      start = end + 1;
-//    }
   }
 
   @Override
