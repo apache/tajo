@@ -92,25 +92,24 @@ public class RpcClientManager {
     }
 
     if (!client.isConnected()) {
-      client.connect();
-      client.getChannel().closeFuture().addListener(new ClientCloseFutureListener(key));
 
-      final NettyClientBase finalClient = client;
-      client.subscribeEvent(new ChannelEventListener() {
+      final NettyClientBase target = client;
+      client.subscribeEvent(target.getKey(), new ChannelEventListener() {
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) {
-          /* if client is recovered, it add in client map */
-          clients.put(finalClient.getKey(), finalClient);
-          finalClient.getChannel().closeFuture().addListener(new ClientCloseFutureListener(finalClient.getKey()));
+          /* Register client to managed map */
+          clients.put(target.getKey(), target);
+          target.getChannel().closeFuture().addListener(new ClientCloseFutureListener(target.getKey()));
         }
 
         @Override
         public void channelUnregistered(ChannelHandlerContext ctx) {
-          /* if channel is reused, event will not fired */
+          // nothing to do
         }
       });
     }
 
+    client.connect();
     assert client.isConnected();
     return (T) client;
   }

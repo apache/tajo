@@ -40,9 +40,6 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -56,8 +53,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   private final int maxRetries;
   private boolean enableMonitor;
 
-  private final Set<ChannelEventListener> channelEventListeners =
-      Collections.synchronizedSet(new HashSet<ChannelEventListener>());
+  private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners =
+      new ConcurrentHashMap<RpcConnectionKey, ChannelEventListener>();
   private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
 
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
@@ -235,8 +232,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     return requests.size();
   }
 
-  public boolean subscribeEvent(ChannelEventListener listener) {
-    return channelEventListeners.add(listener);
+  public boolean subscribeEvent(RpcConnectionKey key, ChannelEventListener listener) {
+    return channelEventListeners.putIfAbsent(key, listener) == null;
   }
 
   public void removeSubscribers() {
@@ -244,7 +241,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   }
 
   public Collection<ChannelEventListener> getSubscribers() {
-    return channelEventListeners;
+    return channelEventListeners.values();
   }
 
   private String getErrorMessage(String message) {
