@@ -131,7 +131,7 @@ public class TestAsyncRpc {
     rpcConnectionKey = new RpcClientManager.RpcConnectionKey(
         RpcUtils.getConnectAddress(server.getListenAddress()),
         DummyProtocol.class, true);
-    client = (AsyncRpcClient) manager.newClient(rpcConnectionKey, retries, 0, TimeUnit.SECONDS, false);
+    client = manager.newClient(rpcConnectionKey, retries, 10, TimeUnit.SECONDS, true);
     assertTrue(client.isConnected());
     stub = client.getStub();
   }
