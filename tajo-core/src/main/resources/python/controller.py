@@ -128,13 +128,6 @@ class PythonStreamingController:
         self.output_schema = output_schema
         input_str = self.get_next_input()
 
-        # try:
-        #     func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
-        # except:
-        #     # These errors should always be caused by user code.
-        #     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-        #     self.close_controller(-1)
-
         if udf_logging.udf_log_level == logging.DEBUG:
             self.log_message = logging.debug
 
