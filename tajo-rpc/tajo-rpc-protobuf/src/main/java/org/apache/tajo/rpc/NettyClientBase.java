@@ -99,7 +99,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     }
   }
 
-  protected static Message buildRequest(int seqId,
+  protected static RpcProtos.RpcRequest buildRequest(int seqId,
                                         Descriptors.MethodDescriptor method,
                                         Message param) {
     RpcProtos.RpcRequest.Builder requestBuilder = RpcProtos.RpcRequest.newBuilder()
@@ -116,18 +116,18 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   /**
    * Repeat invoke rpc request until the connection attempt succeeds or exceeded retries
    */
-  protected void invoke(final Message rpcRequest, final int requestId, final int retry) {
+  protected void invoke(final RpcProtos.RpcRequest rpcRequest, final T callback, final int retry) {
 
     getChannel().writeAndFlush(rpcRequest).addListener(new GenericFutureListener<ChannelFuture>() {
       @Override
       public void operationComplete(final ChannelFuture future) throws Exception {
 
         if (!future.isSuccess()) {
-
           if (!future.channel().isActive() && retry < maxRetries) {
-            LOG.warn(future.cause() + " Try to reconnect :" + getKey().addr);
 
             /* schedule the current request for the retry */
+            LOG.warn(future.cause() + " Try to reconnect :" + getKey().addr);
+
             final EventLoop loop = future.channel().eventLoop();
             loop.schedule(new Runnable() {
               @Override
@@ -135,16 +135,19 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
                 doConnect(getKey().addr).addListener(new GenericFutureListener<ChannelFuture>() {
                   @Override
                   public void operationComplete(ChannelFuture future) throws Exception {
-                    invoke(rpcRequest, requestId, retry + 1);
+                    invoke(rpcRequest, callback, retry + 1);
                   }
                 });
               }
             }, RpcConstants.DEFAULT_PAUSE, TimeUnit.MILLISECONDS);
           } else {
+            getHandler().registerCallback(rpcRequest.getId(), callback);
             /* Max retry count has been exceeded or internal failure */
             getHandler().exceptionCaught(getChannel().pipeline().lastContext(),
-                new RecoverableException(requestId, future.cause()));
+                new RecoverableException(rpcRequest.getId(), future.cause()));
           }
+        } else {
+          getHandler().registerCallback(rpcRequest.getId(), callback);
         }
       }
     });
@@ -292,8 +295,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-      sendExceptions("client was shutdown");
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      sendExceptions("Connection lost :" + getKey().addr);
     }
 
     @Override

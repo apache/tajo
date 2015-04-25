@@ -509,8 +509,6 @@ public class TestAsyncRpc {
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
     stub.delay(future.getController(), echoMessage, future); //3 sec delay
-
-    assertTrue(client.getActiveRequests() == 1);
     assertTrue(client.isConnected());
 
     assertFalse(future.isDone());
@@ -537,7 +535,6 @@ public class TestAsyncRpc {
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
     stub.busy(future.getController(), echoMessage, future); //30 sec delay
-    assertTrue(client.getActiveRequests() == 1);
     assertFalse(future.isDone());
 
     assertEquals(null, future.get());

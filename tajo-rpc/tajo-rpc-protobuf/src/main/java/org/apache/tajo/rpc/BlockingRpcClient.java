@@ -88,11 +88,10 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
         throws TajoServiceException {
 
       int nextSeqId = sequence.getAndIncrement();
-      Message rpcRequest = buildRequest(nextSeqId, method, param);
-
+      RpcProtos.RpcRequest rpcRequest = buildRequest(nextSeqId, method, param);
       ProtoCallFuture callFuture = new ProtoCallFuture(controller, responsePrototype);
-      getHandler().registerCallback(nextSeqId, callFuture);
-      invoke(rpcRequest, nextSeqId, 0);
+
+      invoke(rpcRequest, callFuture, 0);
 
       try {
         return callFuture.get();

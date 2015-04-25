@@ -86,10 +86,9 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
                            final RpcCallback<Message> done) {
 
       int nextSeqId = sequence.getAndIncrement();
-      Message rpcRequest = buildRequest(nextSeqId, method, param);
+      RpcProtos.RpcRequest rpcRequest = buildRequest(nextSeqId, method, param);
 
-      getHandler().registerCallback(nextSeqId, new ResponseCallback(controller, responseType, done));
-      invoke(rpcRequest, nextSeqId, 0);
+      invoke(rpcRequest, new ResponseCallback(controller, responseType, done), 0);
     }
   }
 
