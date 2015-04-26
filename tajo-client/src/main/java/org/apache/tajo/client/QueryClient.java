@@ -100,6 +100,8 @@ public interface QueryClient extends Closeable {
 
   public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException;
 
+  public QueryStatus pollQueryStatus(QueryId queryId, long timeout) throws ServiceException;
+
   public ResultSet getQueryResult(QueryId queryId) throws ServiceException, IOException;
 
   public ResultSet createNullResultSet(QueryId queryId) throws IOException;

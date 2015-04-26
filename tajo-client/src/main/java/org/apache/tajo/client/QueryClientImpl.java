@@ -271,18 +271,7 @@ public class QueryClientImpl implements QueryClient {
       return createNullResultSet(queryId);
     }
 
-    QueryStatus status = getQueryStatus(queryId);
-
-    while(status != null && !TajoClientUtil.isQueryComplete(status.getState())) {
-      try {
-        Thread.sleep(500);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-
-      status = getQueryStatus(queryId);
-    }
-
+    QueryStatus status = TajoClientUtil.pollQueryStatus(this, queryId);
     if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
       if (status.hasResult()) {
         return getQueryResult(queryId);
@@ -317,6 +306,32 @@ public class QueryClientImpl implements QueryClient {
 
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
+    }
+    return new QueryStatus(res);
+  }
+
+  @Override
+  public QueryStatus pollQueryStatus(QueryId queryId, long timeout) throws ServiceException {
+
+    ClientProtos.PollQueryStatusRequest.Builder builder = ClientProtos.PollQueryStatusRequest.newBuilder();
+    builder.setQueryId(queryId.getProto());
+    builder.setTimeout(timeout);
+
+    GetQueryStatusResponse res = null;
+
+    NettyClientBase tmClient = null;
+    try {
+      tmClient = connection.getTajoMasterConnection(false);
+      connection.checkSessionAndGet(tmClient);
+      builder.setSessionId(connection.sessionId);
+      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
+
+      res = tajoMasterService.pollQueryStatus(null, builder.build());
+
+    } catch (Exception e) {
+      throw new ServiceException(e.getMessage(), e);
+    } finally {
+      connection.connPool.releaseConnection(tmClient);
     }
     return new QueryStatus(res);
   }

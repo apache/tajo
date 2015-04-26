@@ -27,6 +27,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.History;
 
@@ -119,14 +120,34 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
     return queryMasterClientPort;
   }
 
-  public TajoProtos.QueryState getQueryState() {
+  public synchronized TajoProtos.QueryState getQueryState() {
     return queryState;
   }
 
-  public void setQueryState(TajoProtos.QueryState queryState) {
-    this.queryState = queryState;
+  public synchronized boolean isTerminalState() {
+    return isTerminalState(queryState);
   }
 
+  public static boolean isTerminalState(TajoProtos.QueryState state) {
+    return state == TajoProtos.QueryState.QUERY_FAILED ||
+        state == TajoProtos.QueryState.QUERY_ERROR ||
+        state == TajoProtos.QueryState.QUERY_KILLED ||
+        state == TajoProtos.QueryState.QUERY_SUCCEEDED;
+  }
+
+  public synchronized void setQueryState(TajoProtos.QueryState queryState) {
+    this.queryState = queryState;
+    notifyAll();
+  }
+
+  public synchronized boolean waitState(TajoProtos.QueryState expect, long timeout)
+      throws InterruptedException {
+    RpcUtils.Timer timer = new RpcUtils.Timer(timeout);
+    for (;!timer.isTimedOut() && expect != queryState && !isTerminalState(); timer.elapsed()) {
+      wait(timeout);
+    }
+    return expect == queryState;
+  }
   public long getStartTime() {
     return startTime;
   }

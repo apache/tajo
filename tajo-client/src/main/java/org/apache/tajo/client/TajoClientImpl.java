@@ -44,7 +44,6 @@ import java.util.List;
 @ThreadSafe
 public class TajoClientImpl extends SessionConnection implements TajoClient, QueryClient, CatalogAdminClient {
 
-  private final Log LOG = LogFactory.getLog(TajoClientImpl.class);
   QueryClient queryClient;
   CatalogAdminClient catalogClient;
 
@@ -116,6 +115,10 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
 
   public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException {
     return queryClient.getQueryStatus(queryId);
+  }
+
+  public QueryStatus pollQueryStatus(QueryId queryId, long timeout) throws ServiceException {
+    return queryClient.pollQueryStatus(queryId, timeout);
   }
 
   public ResultSet getQueryResult(QueryId queryId) throws ServiceException, IOException {

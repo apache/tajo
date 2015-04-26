@@ -46,6 +46,7 @@ service TajoMasterClientProtocolService {
 
   // Query And Resource Management APIs
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
+  rpc pollQueryStatus(PollQueryStatusRequest) returns (GetQueryStatusResponse);
   rpc getRunningQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc getFinishedQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc killQuery(QueryIdRequest) returns (BoolProto);
