@@ -89,17 +89,25 @@ public class PythonScriptEngine extends TajoScriptEngine {
         functionDescs.add(new FunctionDesc(signature, invocation, supplement));
       } else {
         AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
-        TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
-        signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
-            returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
-        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
-        invocation.setPythonAggregation(invocationDesc);
-        IntermFunctionSignature intermFunctionSignature = new IntermFunctionSignature(
-            getReturnTypes(aggFuncInfo.getPartialResultInfo));
-        functionDescs.add(new FunctionDesc(signature, invocation, supplement, intermFunctionSignature));
+        if (isValidUdaf(aggFuncInfo)) {
+          TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
+          signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
+              returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
+          PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
+          invocation.setPythonAggregation(invocationDesc);
+          functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+        }
       }
     }
     return functionDescs;
+  }
+
+  private static boolean isValidUdaf(AggFuncInfo aggFuncInfo) {
+    if (aggFuncInfo.className != null && aggFuncInfo.evalInfo != null && aggFuncInfo.mergeInfo != null
+      && aggFuncInfo.getPartialResultInfo != null && aggFuncInfo.getFinalResultInfo != null) {
+      return true;
+    }
+    return false;
   }
 
   private static TajoDataTypes.DataType[] createParamTypes(int paramNum) {
@@ -258,7 +266,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private InputStream stderr; // stderr of the process
 
   private final FunctionSignature functionSignature;
-  private final IntermFunctionSignature intermFunctionSignature; // for UDAF
   private final PythonInvocationDesc invocationDesc;
   private Schema inSchema;
   private Schema outSchema;
@@ -276,7 +283,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
-    intermFunctionSignature = functionDesc.getIntermSignature();
     setSchema();
   }
 
@@ -286,7 +292,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
-    intermFunctionSignature = functionDesc.getIntermSignature();
     this.intermediatePhase = intermediatePhase;
     this.finalPhase = finalPhase;
     setSchema();
@@ -387,11 +392,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
         for (int i = 0; i < paramTypes.length; i++) {
           inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
         }
-        outSchema = getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
+        outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
       } else if (intermediatePhase) {
-        inSchema = outSchema = getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
+        inSchema = outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
       } else if (finalPhase) {
-        inSchema = getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
+        inSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
         outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
       }
     }
@@ -399,14 +404,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     for (int i = 0; i < outSchema.size(); i++) {
       projectionCols[i] = i;
     }
-  }
-
-  private static Schema getSchemaFromTypes(TajoDataTypes.DataType[] types) {
-    Schema schema = new Schema();
-    for (int i = 0; i < types.length; i++) {
-      schema.addColumn("col_"+i, types[i]);
-    }
-    return schema;
   }
 
   private void createInputHandlers() throws IOException {
@@ -467,6 +464,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return controllerPath;
   }
 
+  /**
+   * Call Python scalar functions.
+   *
+   * @param input input tuple
+   * @return evaluated result datum
+   */
   @Override
   public Datum callScalarFunc(Tuple input) {
     try {
@@ -485,6 +488,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return result;
   }
 
+  /**
+   * Call Python aggregation functions.
+   *
+   * @param functionContext python function context
+   * @param input input tuple
+   */
   @Override
   public void callAggFunc(FunctionContext functionContext, Tuple input) {
 
@@ -505,14 +514,15 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
 
     try {
-      outputHandler.getNext().get(0);
+      outputHandler.getNext();
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
     }
   }
 
   /**
-   * Set aggregated values in the function context to member variables of the Python instance
+   * Restore the intermediate result in Python UDAF with the snapshot stored in the function context.
+   *
    * @param functionContext
    */
   public void updatePythonSideContext(PythonAggFunctionContext functionContext) throws IOException {
@@ -531,7 +541,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   /**
-   * Get aggregated values from the Python instance
+   * Get the snapshot of the intermediate result in the Python UDAF.
+   *
    * @param functionContext
    */
   public void updateJavaSideContext(PythonAggFunctionContext functionContext) throws IOException {
@@ -549,24 +560,33 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
   }
 
+  /**
+   * Get intermediate result after the first stage.
+   *
+   * @param functionContext
+   * @return
+   */
   @Override
-  public Tuple getPartialResult(FunctionContext functionContext) {
+  public String getPartialResult(FunctionContext functionContext) {
     try {
       inputHandler.putNext("get_partial_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
     }
-    Tuple result;
     try {
-      result = outputHandler.getNext();
+      return outputHandler.getPartialResultString();
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
     }
-
-    return result;
   }
 
+  /**
+   * Get final result after the last stage.
+   *
+   * @param functionContext
+   * @return
+   */
   @Override
   public Datum getFinalResult(FunctionContext functionContext) {
     try {

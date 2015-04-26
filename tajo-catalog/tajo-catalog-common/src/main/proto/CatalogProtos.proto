@@ -390,7 +390,6 @@ message FunctionDescProto {
   required FunctionSignatureProto signature = 1;
   required FunctionSupplementProto supplement = 2;
   required FunctionInvocationProto invocation = 3;
-  optional IntermFunctionSignatureProto intermSignature = 4;
 }
 
 message FunctionSignatureProto {
@@ -413,10 +412,6 @@ message FunctionInvocationProto {
   optional StaticMethodInvocationDescProto scalarJIT = 4;
   optional ClassBaseInvocationDescProto aggregationJIT = 5;
   optional PythonInvocationDescProto python = 6;
-}
-
-message IntermFunctionSignatureProto {
-  repeated DataType intermParamTypes = 1;
 }
 
 message ClassBaseInvocationDescProto {

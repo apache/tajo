@@ -88,7 +88,7 @@ public abstract class TajoScriptEngine {
 
   public abstract void callAggFunc(FunctionContext functionContext, Tuple input);
 
-  public abstract Tuple getPartialResult(FunctionContext functionContext);
+  public abstract String getPartialResult(FunctionContext functionContext);
 
   public abstract Datum getFinalResult(FunctionContext functionContext);
 

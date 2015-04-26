@@ -145,7 +145,17 @@ class PythonStreamingController:
                     self.get_context()
                 else:
                     func = self.load_udaf(module_name, class_name, func_name)
-                    self.process_input(func_name, func, input_str)
+                    if func_name == MERGE_FUNC:
+                        json_data = input_str.split(WRAPPED_PARAMETER_DELIMITER)[1]
+                        deserialized = json.loads(json_data)
+                        func(deserialized)
+                        self.stream_output.write(END_RECORD_DELIM)
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        self.stream_output.flush()
+                        self.stream_error.flush()
+                    else:
+                        self.process_input(func_name, func, input_str)
 
             elif func_type == 'UDF':
                 func_name = name
@@ -170,22 +180,24 @@ class PythonStreamingController:
                 self.close_controller(-3)
 
             try:
-                if func_name == GET_PARTIAL_RESULT_FUNC or func_name == GET_FINAL_RESULT_FUNC:
+                if func_name == GET_PARTIAL_RESULT_FUNC:
                     func_output = func()
+                    output = json.dumps(func_output)
+                elif func_name == GET_FINAL_RESULT_FUNC:
+                    func_output = func()
+                    output = serialize_output(func_output, self.output_schema)
                 else:
                     func_output = func(*inputs)
+                    output = serialize_output(func_output, self.output_schema)
+
                 if self.should_log:
-                    self.log_message("UDF Output: %s" % (unicode(func_output)))
+                    self.log_message("Serialized Output: %s" % output)
             except:
                 # These errors should always be caused by user code.
                 write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                 self.close_controller(-2)
 
-            output = serialize_output(func_output, self.output_schema)
-            if self.should_log:
-                self.log_message("Serialized Output: %s" % (output))
-
-            self.stream_output.write( "%s%s" % (output, END_RECORD_DELIM) )
+            self.stream_output.write("%s%s" % (output, END_RECORD_DELIM))
         except Exception as e:
             # This should only catch internal exceptions with the controller
             # and pig- not with user code.
@@ -282,7 +294,7 @@ class PythonStreamingController:
         serialized = ''
         if self.udaf_instance is not None:
             serialized = serialize_class(self.udaf_instance)
-        self.stream_output.write( "%s%s" % (serialized, END_RECORD_DELIM))
+        self.stream_output.write("%s%s" % (serialized, END_RECORD_DELIM))
         sys.stdout.flush()
         sys.stderr.flush()
         self.stream_output.flush()

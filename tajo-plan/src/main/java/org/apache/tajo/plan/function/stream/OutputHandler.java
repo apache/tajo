@@ -99,6 +99,18 @@ public class OutputHandler implements Closeable {
     return tuple;
   }
 
+  public String getPartialResultString() throws IOException {
+    if (in == null) {
+      return null;
+    }
+
+    currValue = null;
+    if (!readValue()) {
+      return null;
+    }
+    return currValue;
+  }
+
   public FunctionContext getNext(FunctionContext context) throws IOException {
     if (in == null) {
       return null;

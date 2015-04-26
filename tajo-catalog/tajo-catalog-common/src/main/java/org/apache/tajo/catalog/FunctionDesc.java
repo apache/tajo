@@ -43,7 +43,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   @Expose private FunctionSignature signature;
   @Expose private FunctionInvocation invocation;
   @Expose private FunctionSupplement supplement;
-  @Expose private IntermFunctionSignature intermSignature; // optional for UDAFs
 
   public FunctionDesc() {
   }
@@ -60,9 +59,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     this.signature = new FunctionSignature(proto.getSignature());
     this.invocation = new FunctionInvocation(proto.getInvocation());
     this.supplement = new FunctionSupplement(proto.getSupplement());
-    if (proto.hasIntermSignature()) {
-      this.intermSignature = new IntermFunctionSignature(proto.getIntermSignature());
-    }
   }
 
   public FunctionDesc(String signature, String className, FunctionType type,
@@ -75,12 +71,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     this.signature = signature;
     this.invocation = invocation;
     this.supplement = supplement;
-  }
-
-  public FunctionDesc(FunctionSignature signature, FunctionInvocation invocation, FunctionSupplement supplement,
-                      IntermFunctionSignature intermSignature) {
-    this(signature, invocation, supplement);
-    this.setIntermSignature(intermSignature);
   }
 
   public FunctionSignature getSignature() {
@@ -166,18 +156,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     supplement.setExample(example);
   }
 
-  public boolean hasIntermSignature() {
-    return this.intermSignature != null;
-  }
-
-  public void setIntermSignature(IntermFunctionSignature signature) {
-    this.intermSignature = signature;
-  }
-
-  public IntermFunctionSignature getIntermSignature() {
-    return intermSignature;
-  }
-
   @Override
   public int hashCode() {
     return Objects.hashCode(signature);
@@ -200,9 +178,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     desc.signature = signature.clone();
     desc.supplement = supplement.clone();
     desc.invocation = this.invocation;
-    if (intermSignature != null) {
-      desc.intermSignature = (IntermFunctionSignature) intermSignature.clone();
-    }
 
     return desc;
   }
@@ -217,9 +192,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     builder.setSignature(signature.getProto());
     builder.setSupplement(supplement.getProto());
     builder.setInvocation(invocation.getProto());
-    if (intermSignature != null) {
-      builder.setIntermSignature(intermSignature.getProto());
-    }
     return builder.build();
   }
   

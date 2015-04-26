@@ -31,14 +31,13 @@ class AvgPy:
         self.cnt += 1
 
     # get intermediate result
-    @output_type('float8', 'int4')
     def get_partial_result(self):
         return [self.sum, self.cnt]
 
     # merge intermediate results
-    def merge(self, sum, cnt):
-        self.sum += sum
-        self.cnt += cnt
+    def merge(self, list):
+        self.sum += list[0]
+        self.cnt += list[1]
 
     # get final result
     @output_type('float8')
@@ -57,9 +56,8 @@ class CountPy:
         self.cnt += 1
 
     # get intermediate result
-    @output_type('int4')
     def get_partial_result(self):
-        return [self.cnt]
+        return self.cnt
 
     # merge intermediate results
     def merge(self, cnt):

@@ -24,7 +24,7 @@ Please note that you can specify multiple paths with ``','`` as a delimiter. Eac
 
 .. code-block:: python
 
-  # /path/to/script1.py
+  # /path/to/udf1.py
 
   @output_type('int4')
   def return_one():
@@ -76,7 +76,7 @@ Followings are typical examples of Python UDAFs.
 
 .. code-block:: python
 
-  # /path/to/script1.py
+  # /path/to/udaf1.py
 
   class AvgPy:
     sum = 0
@@ -92,19 +92,18 @@ Followings are typical examples of Python UDAFs.
         self.cnt += 1
 
     # get intermediate result
-    @output_type('int8', 'int4')
     def get_partial_result(self):
         return [self.sum, self.cnt]
 
     # merge intermediate results
-    def merge(self, sum, cnt):
-        self.sum += sum
-        self.cnt += cnt
+    def merge(self, list):
+        self.sum += list[0] # partial_result.sum
+        self.cnt += list[1] # partial_result.cnt
 
     # get final result
     @output_type('float8')
     def get_final_result(self):
-        return self.sum / (float)self.cnt
+        return self.sum / float(self.cnt)
 
 
   class CountPy:
@@ -118,9 +117,8 @@ Followings are typical examples of Python UDAFs.
         self.cnt += 1
 
     # get intermediate result
-    @output_type('int4')
     def get_partial_result(self):
-        return [self.cnt]
+        return self.cnt
 
     # merge intermediate results
     def merge(self, cnt):
@@ -134,6 +132,7 @@ Followings are typical examples of Python UDAFs.
 
 These classes must provide ``eval()``, ``merge()``, ``get_partial_result()``, and ``get_final_result()`` functions.
 
+* ``__init__()`` resets the aggregation state.
 * ``eval()`` evaluates input tuples in the first stage.
 * ``merge()`` merges intermediate results of the first stage.
 * ``get_partial_result()`` returns intermediate results of the first stage. Output type must be same with the input type of ``merge()``.

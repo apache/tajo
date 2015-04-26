@@ -22,14 +22,10 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
-import org.apache.tajo.plan.serder.EvalNodeDeserializer;
-import org.apache.tajo.plan.serder.EvalNodeSerializer;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 
@@ -39,9 +35,18 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
   private transient PythonAggFunctionContext prevContext;
   private static int nextContextId = 0;
 
+  /**
+   * Aggregated result should be kept in Tajo task rather than Python UDAF to control memory usage.
+   * {@link PythonAggFunctionContext} is to support executing aggregation with keys.
+   * It stores a snapshot of Python UDAF class instance as a json string.
+   *
+   * For each UDAF call with different aggregation key,
+   * {@link PythonAggFunctionInvoke} calls {@link PythonAggFunctionInvoke#updateContextIfNecessary} to backup and restore
+   * intermediate aggregation states for the previous key and the current key, respectively.
+   */
   public static class PythonAggFunctionContext implements FunctionContext {
-    final int id;
-    String jsonData;
+    final int id; // id to identify each context
+    String jsonData; // snapshot of Python class
 
     public PythonAggFunctionContext() {
       this.id = nextContextId++;
@@ -70,6 +75,13 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
     return new PythonAggFunctionContext();
   }
 
+  /**
+   * Context does not need to be updated per every UDAF call.
+   * If the current aggregation key is same with the previous one,
+   * python-side context doesn't need to be updated because it already contains necessary intermediate result.
+   *
+   * @param context
+   */
   private void updateContextIfNecessary(FunctionContext context) {
     PythonAggFunctionContext givenContext = (PythonAggFunctionContext) context;
     if (prevContext == null || prevContext.id != givenContext.id) {
@@ -96,31 +108,21 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
     if (params.get(0) instanceof NullDatum) {
       return;
     }
-    ProtobufDatum protobufDatum = (ProtobufDatum) params.get(0);
-    PlanProto.Tuple namedTuple = (PlanProto.Tuple) protobufDatum.get();
-    Tuple input = new VTuple(namedTuple.getDatumsCount());
-    for (int i = 0; i < namedTuple.getDatumsCount(); i++) {
-      input.put(i, EvalNodeDeserializer.deserialize(namedTuple.getDatums(i)));
-    }
 
     updateContextIfNecessary(context);
-    scriptEngine.callAggFunc(context, input);
+    scriptEngine.callAggFunc(context, params);
   }
 
   @Override
   public Datum getPartialResult(FunctionContext context) {
     updateContextIfNecessary(context);
-    Tuple intermResult = scriptEngine.getPartialResult(context);
-    PlanProto.Tuple.Builder builder = PlanProto.Tuple.newBuilder();
-    for (int i = 0; i < intermResult.size(); i++) {
-      builder.addDatums(EvalNodeSerializer.serialize(intermResult.get(i)));
-    }
-    return new ProtobufDatum(builder.build());
+    // partial results are stored as json strings.
+    return DatumFactory.createText(scriptEngine.getPartialResult(context));
   }
 
   @Override
   public TajoDataTypes.DataType getPartialResultType() {
-    return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.Tuple.class.getName());
+    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT);
   }
 
   @Override
