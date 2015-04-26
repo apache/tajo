@@ -311,11 +311,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   @Override
   public void shutdown() {
     process.destroy();
-    FileUtil.cleanup(LOG, stdin);
-    FileUtil.cleanup(LOG, stdout);
-    FileUtil.cleanup(LOG, stderr);
-    FileUtil.cleanup(LOG, inputHandler);
-    FileUtil.cleanup(LOG, outputHandler);
+    FileUtil.cleanup(LOG, stdin, stdout, stderr, inputHandler, outputHandler);
     stdin = null;
     stdout = stderr = null;
     inputHandler = null;

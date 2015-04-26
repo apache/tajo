@@ -959,8 +959,7 @@ public class GlobalPlanner {
 
         firstPhaseEvals[i].setFirstPhase();
         firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
-        FieldEval param;
-        param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+        FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
 
         secondPhaseEvals[i].setFinalPhase();
         secondPhaseEvals[i].setArgs(new EvalNode[]{param});

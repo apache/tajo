@@ -497,7 +497,3 @@ enum TransmitType {
   PULL_TRANSMIT = 1;
   FILE_WRITE = 2;
 }
-
-message Tuple {
-  repeated Datum datums = 1;
-}

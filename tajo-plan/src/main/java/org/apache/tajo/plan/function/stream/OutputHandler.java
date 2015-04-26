@@ -20,9 +20,12 @@ package org.apache.tajo.plan.function.stream;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.FileUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,6 +36,8 @@ import java.io.InputStream;
  * Tajo-Streaming external command.
  */
 public class OutputHandler implements Closeable {
+
+  private static final Log LOG = LogFactory.getLog(OutputHandler.class);
   private static int DEFAULT_BUFFER = 64 * 1024;
   private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
 
@@ -44,7 +49,7 @@ public class OutputHandler implements Closeable {
 
   private InputStream istream;
 
-  private final ByteBuf buf = BufferPool.directBuffer(DEFAULT_BUFFER);
+  private ByteBuf buf;
 
   // Both of these ignore the trailing "\n".  So if the default delimiter is "\n", recordDelimStr is "".
   private String recordDelimStr = null;
@@ -72,6 +77,7 @@ public class OutputHandler implements Closeable {
   public void bindTo(InputStream is) throws IOException {
     this.istream  = is;
     this.in = new ByteBufLineReader(new ByteBufInputChannel(istream));
+    this.buf = BufferPool.directBuffer(DEFAULT_BUFFER);
   }
 
   /**
@@ -199,7 +205,8 @@ public class OutputHandler implements Closeable {
    */
   public void close() throws IOException {
     if(!alreadyClosed) {
-      istream.close();
+      FileUtil.cleanup(LOG, istream, in);
+      in = null;
       istream = null;
       alreadyClosed = true;
       if (this.buf.refCnt() > 0) {
