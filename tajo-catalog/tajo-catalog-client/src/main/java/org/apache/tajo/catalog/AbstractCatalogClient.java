@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
@@ -42,6 +43,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * CatalogClient provides a client API to access the catalog server.
@@ -53,6 +55,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   protected RpcClientManager manager;
   protected InetSocketAddress catalogServerAddr;
   protected TajoConf conf;
+  protected NettyClientBase client;
 
   abstract CatalogProtocolService.BlockingInterface getStub(NettyClientBase client);
 
@@ -74,6 +77,20 @@ public abstract class AbstractCatalogClient implements CatalogService {
         return serviceTracker.getCatalogAddress();
       }
     }
+  }
+
+  public synchronized NettyClientBase getCatalogConnection() throws ServiceException {
+    if (client == null || !client.isConnected()) {
+      try {
+        this.manager = RpcClientManager.getInstance();
+        int retry = conf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES);
+        this.client = manager.newClient(getCatalogServerAddr(), CatalogProtocol.class, false,
+            retry, 0, TimeUnit.SECONDS, false);
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      }
+    }
+    return client;
   }
 
   @Override
