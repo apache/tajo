@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.UnsignedInteger;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
@@ -68,7 +69,7 @@ public class Inet4Datum extends Datum {
 
 	@Override
 	public long asInt8() {
-	  return this.address;
+	  return UnsignedInteger.asUnsigned(address).longValue();
 	}
 
 	@Override
