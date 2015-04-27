@@ -27,6 +27,9 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1580: Error line number is incorrect.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
+    
     TAJO-1419: Tsql session command doesn't work. (Contributed by DaeMyung Kang,
     Committed by jihoon)
 
