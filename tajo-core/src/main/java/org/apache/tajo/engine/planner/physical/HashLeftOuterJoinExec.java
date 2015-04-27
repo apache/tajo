@@ -61,15 +61,8 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
       }
 
       // getting corresponding right
-      List<Tuple> hashed = tupleSlots.get(toKey(leftTuple));
-      Iterator<Tuple> rightTuples = rightFiltered(hashed);
-      if (!rightTuples.hasNext()) {
-        //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway
-        //output a tuple with the nulls padded rightTuple
-        iterator = nullIterator(rightNumCols);
-        continue;
-      }
-      iterator = rightTuples;
+      Iterator<Tuple> filtered = filter(leftTuple);
+      iterator = filtered.hasNext() ? filtered : nullIterator(rightNumCols);
     }
 
     return null;

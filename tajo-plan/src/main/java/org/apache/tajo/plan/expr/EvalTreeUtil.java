@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.ColumnReferenceExpr;

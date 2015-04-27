@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -35,11 +34,8 @@ import java.util.List;
 
 public class MergeFullOuterJoinExec extends CommonJoinExec {
 
-  // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
   private Tuple rightTuple = null;
-  private Tuple outTuple = null;
   private Tuple leftNext = null;
 
   private List<Tuple> leftTupleSlots;
@@ -74,10 +70,6 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
         rightChild.getSchema(), sortSpecs);
     this.tupleComparator = PhysicalPlanUtil.getComparatorsFromJoinQual(
         plan.getJoinQual(), leftChild.getSchema(), rightChild.getSchema());
-
-    // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
 
     leftNumCols = leftChild.getSchema().size();
     rightNumCols = rightChild.getSchema().size();
@@ -269,9 +261,10 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           Tuple aTuple = new VTuple(rightTupleSlots.get(posRightTupleSlots));
           posRightTupleSlots = posRightTupleSlots + 1;
           frameTuple.set(leftNext, aTuple);
-          joinQual.eval(frameTuple);
-          projector.eval(frameTuple, outTuple);
-          return outTuple;
+          if (joinQual == null || joinQual.eval(frameTuple).asBool()) {
+            projector.eval(frameTuple, outTuple);
+            return outTuple;
+          }
         } else {
           // right (inner) slots reached end and should be rewind if there are still tuples in the outer slots
           if(posLeftTupleSlots <= (leftTupleSlots.size()-1)) {
@@ -283,9 +276,10 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
             frameTuple.set(leftNext, aTuple);
-            joinQual.eval(frameTuple);
-            projector.eval(frameTuple, outTuple);
-            return outTuple;
+            if (joinQual == null || joinQual.eval(frameTuple).asBool()) {
+              projector.eval(frameTuple, outTuple);
+              return outTuple;
+            }
           }
         }
       } // the second if end false

@@ -35,7 +35,15 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
   @Override
   protected Map<Tuple, List<Tuple>> convert(Map<Tuple, List<Tuple>> hashed, boolean fromCache)
       throws IOException {
+    if (isThetaJoin()) {
+      return new TreeMap<Tuple, List<Tuple>>(hashed);
+    }
     return fromCache ? new HashMap<Tuple, List<Tuple>>(hashed) : hashed;
+  }
+
+  @Override
+  protected Iterable<Tuple> toTuples(List<Tuple> value) {
+    return value;
   }
 
   @Override
@@ -59,18 +67,12 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
       frameTuple.setLeft(leftTuple);
 
       // getting corresponding right
-      Iterable<Tuple> hashed = getRights(toKey(leftTuple));
-      Iterator<Tuple> rightTuples = rightFiltered(hashed);
-      if (rightTuples.hasNext()) {
-        iterator = rightTuples;
+      Iterator<Tuple> filtered = filter(leftTuple);
+      if (filtered.hasNext()) {
+        iterator = filtered;
       }
     }
 
     return null;
   }
-
-  private Iterable<Tuple> getRights(Tuple key) {
-    return tupleSlots.get(key);
-  }
-
 }

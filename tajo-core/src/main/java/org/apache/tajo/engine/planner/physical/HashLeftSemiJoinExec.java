@@ -23,6 +23,7 @@ import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -72,8 +73,8 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       frameTuple.setLeft(leftTuple);
 
       // Try to find a hash bucket in in-memory hash table
-      List<Tuple> hashed = tupleSlots.get(toKey(leftTuple));
-      if (hashed != null && rightFiltered(hashed).hasNext()) {
+      Iterator<Tuple> filtered = filter(leftTuple);
+      if (filtered.hasNext()) {
         // if found, it gets a hash bucket from the hash table.
         iterator = nullIterator(0);
       }

@@ -1988,10 +1988,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     if (checkIfBeEvaluatedAtJoin(block, evalNode, node, isTopMostJoin)) {
 
-      if (isNonEquiThetaJoinQual(block, node, evalNode)) {
-        return false;
-      }
-
       if (PlannerUtil.isOuterJoin(node.getJoinType())) {
         /*
          * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
@@ -2006,7 +2002,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
          * Only join predicates should be evaluated at join if the join type is inner or cross. (TAJO-1445)
          */
         if (!EvalTreeUtil.isJoinQual(block, node.getLeftChild().getOutSchema(), node.getRightChild().getOutSchema(),
-            evalNode, false)) {
+            evalNode, true)) {
           return false;
         }
       }
@@ -2015,18 +2011,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     return false;
-  }
-
-  public static boolean isNonEquiThetaJoinQual(final LogicalPlan.QueryBlock block,
-                                               final JoinNode joinNode,
-                                               final EvalNode evalNode) {
-    if (EvalTreeUtil.isJoinQual(block, joinNode.getLeftChild().getOutSchema(),
-        joinNode.getRightChild().getOutSchema(), evalNode, true) &&
-        evalNode.getType() != EvalType.EQUAL) {
-      return true;
-    } else {
-      return false;
-    }
   }
 
   public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node,

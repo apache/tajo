@@ -104,18 +104,8 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
         continue;
       }
       // getting corresponding right
-      Pair<Boolean, List<Tuple>> hashed = tupleSlots.get(toKey(leftTuple));
-      if (hashed == null) {
-        iterator = nullIterator(rightNumCols);
-        continue;
-      }
-      Iterator<Tuple> rightTuples = rightFiltered(hashed.getSecond());
-      if (!rightTuples.hasNext()) {
-        iterator = nullIterator(rightNumCols);
-        continue;
-      }
-      iterator = rightTuples;
-      hashed.setFirst(true);   // match found
+      Iterator<Tuple> filtered = filter(leftTuple);
+      iterator = !filtered.hasNext() ? nullIterator(rightNumCols) : filtered;
     }
 
     return null;
@@ -124,12 +114,39 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
   @Override
   protected Map<Tuple, Pair<Boolean, List<Tuple>>> convert(Map<Tuple, List<Tuple>> hashed, boolean fromCache)
       throws IOException {
-    Map<Tuple, Pair<Boolean, List<Tuple>>> tuples = new HashMap<Tuple, Pair<Boolean, List<Tuple>>>(hashed.size());
+    Map<Tuple, Pair<Boolean, List<Tuple>>> tuples =
+        isThetaJoin() ? new TreeMap<Tuple, Pair<Boolean, List<Tuple>>>() :
+            new HashMap<Tuple, Pair<Boolean, List<Tuple>>>(hashed.size());
     for (Map.Entry<Tuple, List<Tuple>> entry : hashed.entrySet()) {
       // flag: initially false (whether this join key had at least one match on the counter part)
       tuples.put(entry.getKey(), new Pair<Boolean, List<Tuple>>(false, entry.getValue()));
     }
     return tuples;
+  }
+
+  @Override
+  protected Iterable<Tuple> toTuples(Pair<Boolean, List<Tuple>> value) {
+    return value.getSecond();
+  }
+
+  @Override
+  protected Iterator<Tuple> filterRight(Pair<Boolean, List<Tuple>> rightTuples) {
+    Iterator<Tuple> iterator = super.filterRight(rightTuples);
+    if (iterator.hasNext()) {
+      rightTuples.setFirst(true);  // has match
+    }
+    return iterator;
+  }
+
+  @Override
+  protected Iterator<Tuple> filterRights(Iterable<Pair<Boolean, List<Tuple>>> rightTuples) {
+    Iterator<Tuple> iterator = super.filterRights(rightTuples);
+    if (iterator.hasNext()) {
+      for (Pair<Boolean, List<Tuple>> pair : rightTuples) {
+        pair.setFirst(true);  // has match
+      }
+    }
+    return iterator;
   }
 
   @Override

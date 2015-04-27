@@ -64,6 +64,10 @@ public class FrameTuple implements Tuple, Cloneable {
     return this;
   }
 
+  public boolean isSetLeft() {
+    return left != null;
+  }
+
   @Override
   public int size() {
     return size;
@@ -93,7 +97,9 @@ public class FrameTuple implements Tuple, Cloneable {
 
   @Override
   public void clear() {
-    throw new UnsupportedException();
+    this.left = null;
+    this.right = null;
+    this.leftSize = 0;
   }
 
   @Override

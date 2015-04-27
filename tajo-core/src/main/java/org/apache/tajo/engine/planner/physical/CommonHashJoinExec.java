@@ -18,6 +18,9 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.utils.CacheHolder;
@@ -35,6 +38,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 
 public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
@@ -56,12 +60,14 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected boolean finished;
 
+  protected Predicate<Tuple> predicate;
+
+  @SuppressWarnings("unchecked")
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
 
-    // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
-        inner.getSchema(), false);
+    joinKeyPairs = PlannerUtil.getJoinKeyPairs(isThetaJoin() ? thetaQual : equiQual,
+        outer.getSchema(), inner.getSchema(), true);
 
     leftKeyList = new int[joinKeyPairs.size()];
     rightKeyList = new int[joinKeyPairs.size()];
@@ -78,6 +84,17 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     rightNumCols = inner.getSchema().size();
 
     keyTuple = new VTuple(leftKeyList.length);
+  }
+
+  @Override
+  public void init() throws IOException {
+    super.init();
+    predicate = toFramePredicate(joinQual);
+  }
+
+  @Override
+  public boolean isHashJoin() {
+    return true;
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -140,6 +157,31 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     }
     return keyTuple;
   }
+
+  protected Iterator<Tuple> filter(Tuple leftTuple) {
+    Iterator<Tuple> rightTuples;
+    Tuple leftKey = toKey(leftTuple);
+    if (thetaOp != null) {
+      rightTuples = filterRights(thetaOp.filter((SortedMap<Tuple, T>) tupleSlots, leftKey));
+    } else {
+      rightTuples = filterRight(tupleSlots.get(leftKey));
+    }
+    return filter(predicate, rightTuples);
+  }
+
+  protected Iterator<Tuple> filterRights(Iterable<T> rightTuples) {
+    List<Iterable<Tuple>> iterables = new ArrayList<Iterable<Tuple>>();
+    for (T rightTuple : rightTuples) {
+      iterables.add(toTuples(rightTuple));
+    }
+    return filterRight(Iterables.concat(iterables));
+  }
+
+  protected Iterator<Tuple> filterRight(T rightTuples) {
+    return rightTuples == null ? Iterators.<Tuple>emptyIterator() : filterRight(toTuples(rightTuples));
+  }
+
+  protected abstract Iterable<Tuple> toTuples(T value);
 
   @Override
   public void rescan() throws IOException {

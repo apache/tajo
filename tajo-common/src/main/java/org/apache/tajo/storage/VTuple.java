@@ -28,7 +28,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-public class VTuple implements Tuple, Cloneable {
+public class VTuple implements Tuple, Cloneable, Comparable<Tuple> {
 	@Expose public Datum [] values;
 	@Expose private long offset;
 	
@@ -236,5 +236,22 @@ public class VTuple implements Tuple, Cloneable {
     }
     str.append(')');
     return str.toString();
+  }
+
+  @Override
+  public int compareTo(Tuple other) {
+    for (int i = 0; i < size(); i++) {
+      if (isNull(i) && other.isNull(i)) {
+        continue;
+      }
+      if (isNull(i) || other.isNull(i)) {
+        return isNull(i) ? 1 : -1;
+      }
+      int compare = get(i).compareTo(other.get(i));
+      if (compare != 0) {
+        return compare;
+      }
+    }
+    return 0;
   }
 }

@@ -286,6 +286,7 @@ public class AlgebraicUtil {
     case AND:
     case OR:
     case EQUAL:
+    case NOT_EQUAL:
     case PLUS:
     case MINUS:
     case MULTIPLY: // these types can be commutated w/o any change

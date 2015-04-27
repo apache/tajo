@@ -18,10 +18,9 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Predicate;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -30,18 +29,22 @@ public class NLJoinExec extends CommonJoinExec {
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
-  private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
-  private Tuple outTuple = null;
+
+  private Predicate<Tuple> predicate;
 
   public NLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
     super(context, plan, outer, inner);
     // for join
     needNewOuter = true;
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
+  }
+
+  @SuppressWarnings("unchecked")
+  public void init() throws IOException {
+    super.init();
+    predicate = mergePredicates(toPredicate(equiQual), toPredicate(joinQual));
   }
 
   public Tuple next() throws IOException {
@@ -62,12 +65,7 @@ public class NLJoinExec extends CommonJoinExec {
       }
 
       frameTuple.set(outerTuple, innerTuple);
-      if (hasJoinQual) {
-        if (joinQual.eval(frameTuple).isTrue()) {
-          projector.eval(frameTuple, outTuple);
-          return outTuple;
-        }
-      } else {
+      if (predicate == null || predicate.apply(frameTuple)) {
         projector.eval(frameTuple, outTuple);
         return outTuple;
       }

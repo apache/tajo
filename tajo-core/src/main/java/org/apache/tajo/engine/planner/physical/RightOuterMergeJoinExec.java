@@ -294,7 +294,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
           posRightTupleSlots = posRightTupleSlots + 1;
 
           frameTuple.set(nextLeft, aTuple);
-          if (joinQual.eval(frameTuple).asBool()) {
+          if (joinQual == null || joinQual.eval(frameTuple).asBool()) {
             projector.eval(frameTuple, outTuple);
             return outTuple;
           } else {
@@ -316,7 +316,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
 
             frameTuple.set(nextLeft, aTuple);
 
-            if (joinQual.eval(frameTuple).asBool()) {
+            if (joinQual == null || joinQual.eval(frameTuple).asBool()) {
               projector.eval(frameTuple, outTuple);
               return outTuple;
             } else {

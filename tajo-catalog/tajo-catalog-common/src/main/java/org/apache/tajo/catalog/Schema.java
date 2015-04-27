@@ -313,7 +313,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
   public boolean containsAny(Collection<Column> columns) {
     for (Column column : columns) {
-      if (fields.contains(column)) {
+      if (contains(column)) {
         return true;
       }
     }
