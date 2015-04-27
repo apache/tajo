@@ -192,10 +192,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
         tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, NullCallback.get());
-      } catch (RuntimeException e) {
-        LOG.warn("Ignoring RuntimeException. " + e.getMessage(), e);
-        continue;
       } catch (Exception e) {
+        LOG.warn("Ignoring exception. " + e.getMessage(), e);
         continue;
       }
     }
