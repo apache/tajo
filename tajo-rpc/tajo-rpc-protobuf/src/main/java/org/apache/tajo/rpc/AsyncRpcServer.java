@@ -86,7 +86,8 @@ public class AsyncRpcServer extends NettyServerBase {
 
       try {
         if (methodDescriptor == null) {
-          throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
+          exceptionCaught(ctx, new RemoteCallException(request.getId(), new NoSuchMethodException(methodName)));
+          return;
         }
 
         Message paramProto = null;

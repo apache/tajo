@@ -86,8 +86,10 @@ public class BlockingRpcServer extends NettyServerBase {
       final MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
       try {
         if (methodDescriptor == null) {
-          throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
+          exceptionCaught(ctx, new RemoteCallException(request.getId(), new NoSuchMethodException(methodName)));
+          return;
         }
+
         Message paramProto = null;
         if (request.hasRequestMessage()) {
           paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
