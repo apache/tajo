@@ -35,9 +35,12 @@ import org.apache.tajo.util.TUtil;
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
   @Expose private SortSpec [] sortSpecs;
   @Expose LogicalWindowSpec.LogicalWindowFrame logicalWindowFrame;
-  private Tuple params;
 
-  public static enum WindowFunctionType {
+  // set Function Type to determine whether window frame is applied or not
+  //    NONFRAMABLE: builtin window function that works on entire partition
+  //    FRAMABLE: builtin window function that works on window frame
+  //    AGGREGATION: aggregation functions that work on window frame
+  public enum WindowFunctionType {
     NONFRAMABLE,
     FRAMABLE,
     AGGREGATION

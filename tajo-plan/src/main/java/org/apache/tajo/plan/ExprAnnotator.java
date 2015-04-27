@@ -765,10 +765,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
             new LogicalWindowBound(WindowFrameBoundType.CURRENT_ROW));
     }
 
-    // set Function Type to determine whether window frame is applied or not
-    //    NONFRAMABLE: builtin window function that works on entire partition
-    //    FRAMABLE: builtin window function that works on window frame
-    //    AGGREGATION: aggregation functions that work on window frame
     if (NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       windowFunctionType = WindowFunctionEval.WindowFunctionType.NONFRAMABLE;
     } else if (FRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
@@ -777,11 +773,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       windowFunctionType = WindowFunctionEval.WindowFunctionType.AGGREGATION;
     }
 
-    // set Frame type to determine the range of data used in the function
-    //    ENTIRE_PARTITION: from UNBOUNDED_PRECEDING to UNBOUNDED_FOLLOWING
-    //    TO_CURRENT_ROW: from UNBOUNDED_PRECEDING to some position relative to CURRENT_ROW
-    //    FROM_CURRENT_ROW: from some position relative to CURRENT_ROW to UNBOUNDED_FOLLOWING
-    //    SLIDING_WINDOW: from some position relative to CURRENT_ROW to other position relative to CURRENT_ROW
     if (sortKeys == null || NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       frame.setFrameType(LogicalWindowFrame.WindowFrameType.ENTIRE_PARTITION);
     } else {
@@ -820,18 +811,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   // fill the start point and end point of window frame
   private LogicalWindowFrame convertWindowFrameToLogical(Context ctx, Stack<Expr> stack, WindowSpec.WindowFrame frame) throws PlanningException {
     if (frame != null) {
-      WindowSpec.WindowStartBound exprStartBound = frame.getStartBound();
+      WindowSpec.WindowBound exprStartBound = frame.getStartBound();
       LogicalWindowBound startBound = new LogicalWindowBound(exprStartBound.getBoundType());
       if (exprStartBound.hasNumber()) {
-        int startOffset = getOffset(ctx, stack, exprStartBound.getNumber());
+        int startOffset = getWindowFrameOffset(ctx, stack, exprStartBound.getNumber());
         startBound.setNumber(exprStartBound.getBoundType() == WindowFrameBoundType.PRECEDING ? -startOffset : startOffset);
       }
       LogicalWindowBound endBound;
       if (frame.hasEndBound()) {
-        WindowSpec.WindowEndBound exprEndBound = frame.getEndBound();
+        WindowSpec.WindowBound exprEndBound = frame.getEndBound();
         endBound = new LogicalWindowBound(exprEndBound.getBoundType());
         if (exprEndBound.hasNumber()) {
-          int endOffset = getOffset(ctx, stack, exprEndBound.getNumber());
+          int endOffset = getWindowFrameOffset(ctx, stack, exprEndBound.getNumber());
           endBound.setNumber(exprEndBound.getBoundType() == WindowFrameBoundType.PRECEDING ? -endOffset : endOffset);
 
           // check if window frame has valid parameter
@@ -857,19 +848,24 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     return null;
   }
 
-  private int getOffset(Context ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
+  private int getWindowFrameOffset(Context ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
     EvalNode number = visit(ctx, stack, expr);
 
+    int windowFrameOffset = -1;
     if (number instanceof ConstEval) {
       ConstEval constEval = (ConstEval)number;
       switch(constEval.getValue().type()) {
         case INT4:
         case INT8:
-          return constEval.getValue().asInt4();
+          windowFrameOffset = constEval.getValue().asInt4();
       }
     }
 
-    throw new PlanningException("only non-negative integer literal value is allowed for window frame specification");
+    if (windowFrameOffset < 0) {
+      throw new PlanningException("only non-negative integer literal value is allowed for window frame specification");
+    } else {
+      return windowFrameOffset;
+    }
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

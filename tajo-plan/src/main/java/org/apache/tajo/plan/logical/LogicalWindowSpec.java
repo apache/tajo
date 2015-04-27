@@ -113,6 +113,11 @@ public class LogicalWindowSpec {
       return this.unit;
     }
 
+    // set Frame type to determine the range of data used in the function
+    //    ENTIRE_PARTITION: from UNBOUNDED_PRECEDING to UNBOUNDED_FOLLOWING
+    //    TO_CURRENT_ROW: from UNBOUNDED_PRECEDING to some position relative to CURRENT_ROW
+    //    FROM_CURRENT_ROW: from some position relative to CURRENT_ROW to UNBOUNDED_FOLLOWING
+    //    SLIDING_WINDOW: from some position relative to CURRENT_ROW to other position relative to CURRENT_ROW
     public enum WindowFrameType {
       ENTIRE_PARTITION,
       TO_CURRENT_ROW,

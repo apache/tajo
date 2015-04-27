@@ -480,8 +480,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
         if (checkIfExist(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
           Window_frame_betweenContext between = frameContext.window_frame_extent().window_frame_between();
-          WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
-          WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
+          WindowSpec.WindowBound startBound = buildWindowStartBound(between.window_frame_start_bound());
+          WindowSpec.WindowBound endBound = buildWindowEndBound(between.window_frame_end_bound());
 
           // PRECEDING and FOLLOWING with Integer number cannot come with RANGE
           if (unit == WindowSpec.WindowFrameUnit.RANGE) {
@@ -491,7 +491,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           }
           windowFrame = new WindowSpec.WindowFrame(unit, startBound, endBound);
         } else { // if there is only start bound
-          WindowSpec.WindowStartBound startBound =
+          WindowSpec.WindowBound startBound =
               buildWindowStartBound(frameContext.window_frame_extent().window_frame_start_bound());
 
           // PRECEDING and FOLLOWING with Integer number cannot come with RANGE
@@ -511,7 +511,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return windowSpec;
   }
 
-  public WindowSpec.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
+  public WindowSpec.WindowBound buildWindowStartBound(Window_frame_start_boundContext context) {
     WindowFrameBoundType boundType = null;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameBoundType.UNBOUNDED_PRECEDING;
@@ -525,7 +525,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       throw new SQLSyntaxError("Window frame - unknown start bound type");
     }
 
-    WindowSpec.WindowStartBound bound = new WindowSpec.WindowStartBound(boundType);
+    WindowSpec.WindowBound bound = new WindowSpec.WindowBound(boundType);
     if (boundType == WindowFrameBoundType.PRECEDING || boundType == WindowFrameBoundType.FOLLOWING) {
       bound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
@@ -533,7 +533,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return bound;
   }
 
-  public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
+  public WindowSpec.WindowBound buildWindowEndBound(Window_frame_end_boundContext context) {
     WindowFrameBoundType boundType;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameBoundType.UNBOUNDED_FOLLOWING;
@@ -547,7 +547,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       throw new SQLSyntaxError("Window frame - unknown end bound type");
     }
 
-    WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(boundType);
+    WindowSpec.WindowBound endBound = new WindowSpec.WindowBound(boundType);
     if (boundType == WindowFrameBoundType.PRECEDING || boundType == WindowFrameBoundType.FOLLOWING) {
       endBound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
