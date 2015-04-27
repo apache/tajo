@@ -94,7 +94,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, logicalPlan);
     GlobalPlanner globalPlanner = new GlobalPlanner(masterContext.getConf(), masterContext.getCatalog());
     try {
-      globalPlanner.build(masterPlan);
+      globalPlanner.build(queryContext, masterPlan);
     } catch (PlanningException e) {
       throw new RuntimeException(e);
     }

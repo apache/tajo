@@ -120,18 +120,59 @@ public class ExecutionBlock {
     return hasUnionPlan;
   }
 
-  public void addBroadcastTable(String tableName) {
+  public void addBroadcastRelation(String tableName) {
     broadcasted.add(tableName);
     enforcer.addBroadcast(tableName);
   }
 
-  public void removeBroadcastTable(String tableName) {
+  public void removeBroadcastRelation(String tableName) {
     broadcasted.remove(tableName);
     enforcer.removeBroadcast(tableName);
   }
 
-  public boolean isBroadcastTable(String tableName) {
+  public boolean isBroadcastRelation(String tableName) {
     return broadcasted.contains(tableName);
+  }
+
+  public boolean hasBroadcastRelation() {
+    return broadcasted.size() > 0;
+  }
+
+  /**
+   * Check this execution block is broadcastable.
+   * This execution block is broadcastable only when its every input is broadcastable.
+   * @return true if broadcastable
+   */
+  public boolean isBroadcastable(final long broadcastThreshold) {
+    long totalTableVolume = 0;
+    for (ScanNode scanNode : scanlist) {
+      totalTableVolume += getTableVolume(scanNode);
+      if (totalTableVolume > broadcastThreshold) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Get a volume of a table of a partitioned table
+   * @param scanNode ScanNode corresponding to a table
+   * @return table volume (bytes)
+   */
+  private static long getTableVolume(ScanNode scanNode) {
+    if (scanNode.getTableDesc().hasStats()) {
+      long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
+      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
+        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
+        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+          scanBytes = 0L;
+        }
+      }
+
+      return scanBytes;
+    } else {
+      return Long.MAX_VALUE;
+    }
   }
 
   public Collection<String> getBroadcastTables() {

@@ -130,7 +130,7 @@ public class TestGlobalPlanner {
     LogicalPlan plan = planner.createPlan(context, expr);
     optimizer.optimize(context, plan);
     MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), context, plan);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(context, masterPlan);
     return masterPlan;
   }
 
