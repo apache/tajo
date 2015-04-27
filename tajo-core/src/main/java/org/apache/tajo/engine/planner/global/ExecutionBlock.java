@@ -146,7 +146,11 @@ public class ExecutionBlock {
   public boolean isBroadcastable(final long broadcastThreshold) {
     long totalTableVolume = 0;
     for (ScanNode scanNode : scanlist) {
-      totalTableVolume += getTableVolume(scanNode);
+      long volume = getTableVolume(scanNode);
+      if (volume == Long.MAX_VALUE) {
+        return false;
+      }
+      totalTableVolume += volume;
       if (totalTableVolume > broadcastThreshold) {
         return false;
       }

@@ -170,14 +170,14 @@ public class GlobalPlanner {
     masterPlan.setTerminal(terminalBlock);
     LOG.info("\nNon-optimized master plan" + masterPlan.toString());
 
-    rewriteEngine.rewrite(queryContext, masterPlan);
+    masterPlan = rewriteEngine.rewrite(queryContext, masterPlan);
     LOG.info("\nOptimized master plan\n" + masterPlan.toString());
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType(CatalogProtos.StoreType.CSV);
+    outputChannel.setStoreType(CatalogProtos.StoreType.TEXTFILE);
     outputChannel.setSchema(outputSchema);
   }
 

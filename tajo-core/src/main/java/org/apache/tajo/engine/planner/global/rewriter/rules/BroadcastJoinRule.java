@@ -27,6 +27,7 @@ import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 
@@ -78,14 +79,15 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       }
       if (current.hasJoin()) {
         boolean needMerge = false;
-        for (ExecutionBlock child : plan.getChilds(current)) {
+        List<ExecutionBlock> childs = plan.getChilds(current);
+        for (ExecutionBlock child : childs) {
           if (child.isBroadcastable(broadcastTableSizeThreshold)) {
             needMerge = true;
             break;
           }
         }
         if (needMerge) {
-          for (ExecutionBlock child : plan.getChilds(current)) {
+          for (ExecutionBlock child : childs) {
             merge(plan, child, current);
           }
         }
@@ -151,6 +153,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         plan.removeExecBlock(child.getId());
       }
     }
+
+    // connect parent and grand childs
 
     parent.setPlan(parent.getPlan());
 
