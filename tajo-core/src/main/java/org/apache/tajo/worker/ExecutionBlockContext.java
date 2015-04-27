@@ -20,7 +20,6 @@ package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import io.netty.channel.ConnectTimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -45,6 +44,7 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -154,7 +154,7 @@ public class ExecutionBlockContext {
   }
 
   public NettyClientBase getQueryMasterConnection()
-      throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
+      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
     return connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
   }
 

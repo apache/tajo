@@ -69,8 +69,51 @@ public class WorkerResponse {
     return connectionInfo;
   }
 
-  public void setConnectionInfo(WorkerConnectionInfoResponse connectionInfo) {
-    this.connectionInfo = connectionInfo;
+  public int getCpuCoreSlots() {
+    return cpuCoreSlots;
   }
 
+  public int getMemoryMB() {
+    return memoryMB;
+  }
+
+  public float getUsedDiskSlots() {
+    return usedDiskSlots;
+  }
+
+  public int getUsedMemoryMB() {
+    return usedMemoryMB;
+  }
+
+  public int getUsedCpuCoreSlots() {
+    return usedCpuCoreSlots;
+  }
+
+  public long getMaxHeap() {
+    return maxHeap;
+  }
+
+  public long getFreeHeap() {
+    return freeHeap;
+  }
+
+  public long getTotalHeap() {
+    return totalHeap;
+  }
+
+  public int getNumRunningTasks() {
+    return numRunningTasks;
+  }
+
+  public int getNumQueryMasterTasks() {
+    return numQueryMasterTasks;
+  }
+
+  public long getLastHeartbeatTime() {
+    return lastHeartbeatTime;
+  }
+
+  public float getDiskSlots() {
+    return diskSlots;
+  }
 }

@@ -16,19 +16,16 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.rpc.test";
-option java_outer_classname = "DummyProtocol";
-option java_generic_services = true;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.rpc;
 
-import "TestProtos.proto";
+public class RpcConstants {
 
-service DummyProtocolService {
-  rpc sum (SumRequest) returns (SumResponse);
-  rpc echo (EchoMessage) returns (EchoMessage);
-  rpc getError (EchoMessage) returns (EchoMessage);
-  rpc getNull (EchoMessage) returns (EchoMessage);
-  rpc delay (EchoMessage) returns (EchoMessage);
-  rpc busy (EchoMessage) returns (EchoMessage);
-  rpc throwException (EchoMessage) returns (EchoMessage);
+  public static final String PING_PACKET = "TAJO";
+  public static final String RPC_CLIENT_RETRY_MAX = "tajo.rpc.client.retry.max";
+  public static final String RPC_CLIENT_TIMEOUT_SECS = "tajo.rpc.client.timeout-secs";
+
+  public static final int DEFAULT_RPC_RETRIES = 3;
+  public static final int DEFAULT_RPC_TIMEOUT_SECONDS = 180;
+  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;  // 60 sec
+  public static final int DEFAULT_PAUSE = 1000; // 1 sec
 }

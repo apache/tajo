@@ -18,18 +18,25 @@
 
 package org.apache.tajo.rpc;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+/* RecoverableException can be handle a failure request */
+public class RecoverableException extends RemoteException {
+  private int seqId;
 
-public class ConnectionCloseFutureListener implements GenericFutureListener {
-  private RpcClientManager.RpcConnectionKey key;
-
-  public ConnectionCloseFutureListener(RpcClientManager.RpcConnectionKey key) {
-    this.key = key;
+  public RecoverableException(int seqId, String message) {
+    super(message);
+    this.seqId = seqId;
   }
 
-  @Override
-  public void operationComplete(Future future) throws Exception {
-    RpcClientManager.remove(key);
+  public RecoverableException(int seqId, Throwable t) {
+    this(seqId, t.getMessage(), t);
+  }
+
+  public RecoverableException(int seqId, String message, Throwable t) {
+    super(message, t);
+    this.seqId = seqId;
+  }
+
+  public int getSeqId() {
+    return seqId;
   }
 }
