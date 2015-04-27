@@ -64,43 +64,29 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   }
 
   @Override
-  public T get() throws InterruptedException {
+  public T get() throws InterruptedException, ExecutionException {
     if (!isDone())
       sem.acquire();
 
+    throwIfFailed();
     return response;
   }
 
   @Override
-  public T get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+  public T get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException {
     if (!isDone()) {
       if (!sem.tryAcquire(timeout, unit)) {
         throw new TimeoutException();
       }
     }
 
+    throwIfFailed();
     return response;
   }
 
-
-  public T getAndThrow() throws InterruptedException, ExecutionException {
-    get();
-
+  private void throwIfFailed() throws ExecutionException {
     if (controller.failed()) {
       throw new ExecutionException(new ServiceException(controller.errorText()));
     }
-
-    return response;
-  }
-
-  public T getAndThrow(long timeout, TimeUnit unit)
-      throws InterruptedException, TimeoutException, ExecutionException {
-    get(timeout, unit);
-
-    if (controller.failed()) {
-      throw new ExecutionException(new ServiceException(controller.errorText()));
-    }
-
-    return response;
   }
 }

@@ -43,6 +43,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -245,8 +246,13 @@ public class TestAsyncRpc {
     stub.throwException(future.getController(), echoMessage, future);
 
     assertFalse(future.isDone());
-    assertNull(future.get());
+    EchoMessage result = null;
+    try {
+      result = future.get();
+    } catch (ExecutionException e) {
+    }
 
+    assertEquals(null, result);
     assertTrue(future.isDone());
     assertTrue(future.getController().failed());
     assertNotNull(future.getController().errorText());
@@ -277,7 +283,13 @@ public class TestAsyncRpc {
 
     stub.echo(future.getController(), echoMessage, future);
 
-    assertNull(future.get());
+    EchoMessage result = null;
+    try {
+      result = future.get();
+    } catch (ExecutionException e) {
+    }
+
+    assertEquals(null, result);
     assertTrue(future.isDone());
     assertTrue(future.getController().failed());
     assertNotNull(future.getController().errorText(), future.getController().errorText());
@@ -294,7 +306,13 @@ public class TestAsyncRpc {
     Interface stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
 
-    assertNull(future.get());
+    EchoMessage result = null;
+    try {
+      result = future.get();
+    } catch (ExecutionException e) {
+    }
+
+    assertEquals(null, result);
     assertTrue(future.isDone());
     assertTrue(future.getController().failed());
     assertNotNull(future.getController().errorText(), future.getController().errorText());
@@ -372,7 +390,13 @@ public class TestAsyncRpc {
     stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
 
-    assertNull(future.get());
+    EchoMessage result = null;
+    try {
+      result = future.get();
+    } catch (ExecutionException e) {
+    }
+
+    assertEquals(null, result);
     assertTrue(future.isDone());
     assertTrue(future.getController().failed());
     assertNotNull(future.getController().errorText(), future.getController().errorText());
@@ -537,7 +561,13 @@ public class TestAsyncRpc {
     stub.busy(future.getController(), echoMessage, future); //30 sec delay
     assertFalse(future.isDone());
 
-    assertEquals(null, future.get());
+    EchoMessage result = null;
+    try {
+      result = future.get();
+    } catch (ExecutionException e) {
+    }
+
+    assertEquals(null, result);
     assertTrue(future.getController().errorText(), future.getController().failed());
     assertTrue(client.getActiveRequests() == 0);
     client.close();

@@ -326,7 +326,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       WorkerResourceAllocationResponse response = null;
       while(!stopped.get()) {
         try {
-          response = callBack.getAndThrow(3, TimeUnit.SECONDS);
+          response = callBack.get(3, TimeUnit.SECONDS);
           break;
         } catch (InterruptedException e) {
           if(stopped.get()) {

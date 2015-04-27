@@ -227,7 +227,7 @@ public class TaskRunner extends AbstractService {
               }
               try {
                 // wait for an assigning task for 3 seconds
-                taskRequest = callFuture.getAndThrow(3, TimeUnit.SECONDS);
+                taskRequest = callFuture.get(3, TimeUnit.SECONDS);
               } catch (InterruptedException e) {
                 if(stopped) {
                   break;
