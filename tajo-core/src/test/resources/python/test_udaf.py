@@ -22,6 +22,9 @@ class AvgPy:
     cnt = 0
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.sum = 0
         self.cnt = 0
 
@@ -49,6 +52,9 @@ class CountPy:
     cnt = 0
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.cnt = 0
 
     # eval at the first stage

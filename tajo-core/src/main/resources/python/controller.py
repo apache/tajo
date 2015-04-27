@@ -306,9 +306,9 @@ def serialize_class(instance):
 
 def deserialize_class(instance, json_data):
     if json_data == NULL_BYTE:
-        instance.__init__()
+        instance.reset()
     else:
-        instance.__init__()
+        instance.reset()
         instance.__dict__ = json.loads(json_data)
 
 def deserialize_input(input_str):
