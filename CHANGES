@@ -199,6 +199,12 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1559: Fix data model description (tinyint, smallint).
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1575: HBASE_HOME guidance is duplicated in tajo-env.sh.
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
     TAJO-1568: Apply UnpooledByteBufAllocator when a tajo.test.enabled
     is set to enable. (jinho)
 
