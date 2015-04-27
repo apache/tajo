@@ -1132,14 +1132,26 @@ public class GlobalPlanner {
     Preconditions.checkState(node.hasTargetTable(), "A target table must be a partitioned table.");
     PartitionMethodDesc partitionMethod = node.getPartitionMethod();
 
-    if (node.getType() == NodeType.INSERT) {
-      InsertNode insertNode = (InsertNode) node;
-      channel.setSchema(((InsertNode)node).getProjectedSchema());
-      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
-      int i = 0;
+    if (node.getType() == NodeType.INSERT || node.getType() == NodeType.CREATE_TABLE) {
+      Schema tableSchema = null, projectedSchema = null;
+      if (node.getType() == NodeType.INSERT) {
+        tableSchema = ((InsertNode) node).getTableSchema();
+        projectedSchema = ((InsertNode) node).getProjectedSchema();
+      } else {
+        tableSchema = node.getOutSchema();
+        projectedSchema = node.getInSchema();
+      }
+      channel.setSchema(projectedSchema);
+
+      Column[] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
+      int i = 0, id = 0;
       for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
-        int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
-        shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
+        if (node.getType() == NodeType.INSERT) {
+          id = tableSchema.getColumnId(column.getQualifiedName());
+        } else {
+          id = tableSchema.getColumns().size() + i;
+        }
+        shuffleKeys[i++] = projectedSchema.getColumn(id);
       }
       channel.setShuffleKeys(shuffleKeys);
       channel.setShuffleType(SCATTERED_HASH_SHUFFLE);

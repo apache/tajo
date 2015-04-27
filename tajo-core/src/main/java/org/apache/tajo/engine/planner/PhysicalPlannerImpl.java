@@ -861,6 +861,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           sortSpecs[i++] = new SortSpec(insertNode.getProjectedSchema().getColumn(id), true, false);
         }
       }
+    } else if (storeTableNode.getType() == NodeType.CREATE_TABLE) {
+      int i = 0;
+      for (int j = 0; j < partitionKeyColumns.length; j++) {
+        int id = storeTableNode.getOutSchema().getColumns().size() + j;
+        Column column = storeTableNode.getInSchema().getColumn(id);
+        sortSpecs[i++] = new SortSpec(column, true, false);
+      }
+
     } else {
       for (int i = 0; i < partitionKeyColumns.length; i++) {
         sortSpecs[i] = new SortSpec(partitionKeyColumns[i], true, false);
