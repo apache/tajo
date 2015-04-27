@@ -21,6 +21,7 @@ package org.apache.tajo.querymaster;
 import org.apache.tajo.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.master.QueryManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -39,7 +40,7 @@ public class TestQueryState {
     client = cluster.newTajoClient();
   }
 
-  @Test
+  @Test(timeout = 10000)
   public void testSucceededState() throws Exception {
     String queryStr = "select l_orderkey from lineitem group by l_orderkey order by l_orderkey";
     /*
@@ -79,6 +80,14 @@ public class TestQueryState {
       assertEquals(StageState.SUCCEEDED, stage.getState());
     }
 
+    /* wait for heartbeat from QueryMaster */
+    QueryManager queryManager = cluster.getMaster().getContext().getQueryJobManager();
+    for (; ; ) {
+      if (queryManager.getFinishedQuery(queryId) != null) break;
+      else Thread.sleep(100);
+    }
+
+    /* get status from TajoMaster */
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId).getState());
   }
 }
