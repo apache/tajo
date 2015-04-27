@@ -18,9 +18,6 @@
 
 package org.apache.tajo.cli.tsql;
 
-import org.apache.tajo.cli.tsql.InvalidStatementException;
-import org.apache.tajo.cli.tsql.ParsedResult;
-import org.apache.tajo.cli.tsql.SimpleParser;
 import org.junit.Test;
 
 import java.util.List;
@@ -159,6 +156,8 @@ public class TestSimpleParser {
     assertEquals("select * from test1", res1.get(0).getHistoryStatement());
     assertEquals("select * from test2", res1.get(1).getHistoryStatement());
 
+    // select * from
+    // test1; select * from test2;
     simpleParser = new SimpleParser();
     res1 = simpleParser.parseLines("select * from ");
     assertEquals(0, res1.size());
@@ -182,7 +181,6 @@ public class TestSimpleParser {
     assertEquals("select * from test3", res1.get(0).getHistoryStatement());
     assertEquals("select * from \n--test1; select * from test2;\ntest3", res1.get(0).getStatement());
 
-
     // select * from
     // test1 --select * from test2;
     // where col1 = '123';
@@ -195,6 +193,20 @@ public class TestSimpleParser {
     assertEquals(1, res1.size());
     assertEquals("select * from test1 where col1 = '123'", res1.get(0).getHistoryStatement());
     assertEquals("select * from \ntest1 --select * from test2;\nwhere col1 = '123'", res1.get(0).getStatement());
+
+    // Case for sql statement already including '\n'
+    // This test is important for tsql because CLI input always has '\n'.
+    simpleParser = new SimpleParser();
+    res1 = simpleParser.parseLines("select\n");
+    assertEquals(0, res1.size());
+    res1 = simpleParser.parseLines("*\n");
+    assertEquals(0, res1.size());
+    res1 = simpleParser.parseLines("from\n");
+    assertEquals(0, res1.size());
+    res1 = simpleParser.parseLines("test1;\n");
+    assertEquals(1, res1.size());
+    assertEquals("select\n*\nfrom\ntest1", res1.get(0).getStatement());
+    assertEquals("select * from test1", res1.get(0).getHistoryStatement());
   }
 
   @Test

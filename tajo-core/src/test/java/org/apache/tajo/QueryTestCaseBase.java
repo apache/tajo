@@ -21,12 +21,9 @@ package org.apache.tajo;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
@@ -60,7 +57,6 @@ import org.junit.runner.Description;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -226,7 +222,9 @@ public class QueryTestCaseBase {
   @Before
   public void printTestName() {
     /* protect a travis stalled build */
-    System.out.println("Run: " + name.getMethodName());
+    System.out.println("Run: " + name.getMethodName() +
+         " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
+        / (1024 * 1024)) + "MBytes");
   }
 
   public QueryTestCaseBase() {
