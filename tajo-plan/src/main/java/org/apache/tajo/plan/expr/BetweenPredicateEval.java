@@ -80,7 +80,7 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   private static interface Checker {
-    void bind(Schema schema);
+    void bind(EvalContext evalContext, Schema schema);
     Datum eval(Tuple param);
   }
 
@@ -103,8 +103,8 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     @Override
-    public void bind(Schema schema) {
-      predicand.bind(schema);
+    public void bind(EvalContext evalContext, Schema schema) {
+      predicand.bind(evalContext, schema);
     }
 
     @Override
@@ -134,10 +134,10 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     @Override
-    public void bind(Schema schema) {
-      predicand.bind(schema);
-      begin.bind(schema);
-      end.bind(schema);
+    public void bind(EvalContext evalContext, Schema schema) {
+      predicand.bind(evalContext, schema);
+      begin.bind(evalContext, schema);
+      end.bind(evalContext, schema);
     }
 
     @Override
@@ -170,10 +170,10 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     @Override
-    public void bind(Schema schema) {
-      predicand.bind(schema);
-      begin.bind(schema);
-      end.bind(schema);
+    public void bind(EvalContext evalContext, Schema schema) {
+      predicand.bind(evalContext, schema);
+      begin.bind(evalContext, schema);
+      end.bind(evalContext, schema);
     }
 
     @Override
@@ -227,8 +227,8 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public EvalNode bind(Schema schema) {
-    super.bind(schema);
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
     if (begin.getType() == EvalType.CONST && end.getType() == EvalType.CONST) {
       Datum beginValue = ((ConstEval)begin).getValue();
       Datum endValue = ((ConstEval)end).getValue();
@@ -245,7 +245,7 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
         checker = new AsymmetricChecker(not, predicand, begin, end);
       }
     }
-    checker.bind(schema);
+    checker.bind(evalContext, schema);
     return this;
   }
 

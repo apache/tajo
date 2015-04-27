@@ -201,6 +201,7 @@ message RunExecutionBlockRequestProto {
 
     required KeyValueSetProto queryContext = 6;
     required string planJson = 7;
+    required ShuffleType shuffleType = 8;
 }
 
 message ExecutionBlockListProto {

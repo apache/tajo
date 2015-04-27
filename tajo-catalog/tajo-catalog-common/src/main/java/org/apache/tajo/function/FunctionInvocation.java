@@ -35,6 +35,8 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   StaticMethodInvocationDesc scalarJIT;
   @Expose
   ClassBaseInvocationDesc<?> aggregationJIT;
+  @Expose
+  PythonInvocationDesc python;
 
   public FunctionInvocation() {
   }
@@ -54,6 +56,9 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     }
     if (proto.hasAggregationJIT()) {
       this.aggregationJIT = new ClassBaseInvocationDesc(proto.getAggregation());
+    }
+    if (proto.hasPython()) {
+      this.python = new PythonInvocationDesc(proto.getPython());
     }
   }
 
@@ -121,6 +126,18 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     return aggregationJIT;
   }
 
+  public boolean hasPython() {
+    return python != null;
+  }
+
+  public void setPython(PythonInvocationDesc python) {
+    this.python = python;
+  }
+
+  public PythonInvocationDesc getPython() {
+    return python;
+  }
+
   @Override
   public FunctionInvocationProto getProto() {
     FunctionInvocationProto.Builder builder = FunctionInvocationProto.newBuilder();
@@ -139,16 +156,19 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (hasAggregationJIT()) {
       builder.setAggregationJIT(aggregationJIT.getProto());
     }
+    if (hasPython()) {
+      builder.setPython(python.getProto());
+    }
     return builder.build();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(legacy, scalar, scalarJIT);
+    return Objects.hashCode(legacy, scalar, scalarJIT, python);
   }
 
   public String toString() {
     return "legacy=" + hasLegacy() + ",scalar=" + hasScalar() + ",agg=" + hasAggregation() +
-        ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT();
+        ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT() + ",python=" + hasPython();
   }
 }

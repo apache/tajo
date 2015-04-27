@@ -39,7 +39,7 @@ public class SelectionExec extends UnaryPhysicalExec  {
   @Override
   public void init() throws IOException {
     super.init();
-    qual.bind(inSchema);
+    qual.bind(context.getEvalContext(), inSchema);
   }
 
   @Override

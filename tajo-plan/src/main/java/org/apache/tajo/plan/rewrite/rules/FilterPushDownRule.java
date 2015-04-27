@@ -856,7 +856,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         }
         Column column = columns.iterator().next();
 
-        // If catalog runs with HCatalog, partition column is a qualified name
+        // If catalog runs with HiveCatalogStore, partition column is a qualified name
         // Else partition column is a simple name
         boolean isPartitionColumn = false;
         if (hasQualifiedName) {

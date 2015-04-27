@@ -18,6 +18,8 @@
 
 package org.apache.tajo.function;
 
+import org.apache.tajo.catalog.FunctionDesc;
+
 import java.util.Collection;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
@@ -52,5 +54,13 @@ public class FunctionUtil {
 
   public static boolean isNullableParam(Class<?> clazz) {
     return !clazz.isPrimitive();
+  }
+
+  public static boolean isLegacyFunction(FunctionDesc desc) {
+    return desc.getInvocation().hasLegacy();
+  }
+
+  public static boolean isScriptFunction(FunctionDesc desc) {
+    return desc.getInvocation().hasPython();
   }
 }

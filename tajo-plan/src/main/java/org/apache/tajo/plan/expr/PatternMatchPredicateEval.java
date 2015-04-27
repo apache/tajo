@@ -74,8 +74,8 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   }
 
   @Override
-  public EvalNode bind(Schema schema) {
-    super.bind(schema);
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
     compile(pattern);
     return this;
   }

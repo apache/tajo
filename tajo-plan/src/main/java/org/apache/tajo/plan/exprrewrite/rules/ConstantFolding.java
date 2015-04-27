@@ -18,16 +18,22 @@
 
 package org.apache.tajo.plan.exprrewrite.rules;
 
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizationRule;
 import org.apache.tajo.plan.annotator.Prioritized;
 import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
+import java.io.IOException;
 import java.util.Stack;
 
 @Prioritized(priority = 10)
 public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanContext>
     implements EvalTreeOptimizationRule {
+
+  private final static String SLEEP_FUNCTION_NAME = "sleep";
 
   @Override
   public EvalNode optimize(LogicalPlanner.PlanContext context, EvalNode evalNode) {
@@ -49,7 +55,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
-      binaryEval.bind(null);
+      binaryEval.bind(null, null);
       return new ConstEval(binaryEval.eval(null));
     }
 
@@ -62,8 +68,9 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     EvalNode child = visit(context, unaryEval.getChild(), stack);
     stack.pop();
 
+    unaryEval.setChild(child);
     if (child.getType() == EvalType.CONST) {
-      unaryEval.bind(null);
+      unaryEval.bind(null, null);
       return new ConstEval(unaryEval.eval(null));
     }
 
@@ -74,7 +81,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
   public EvalNode visitFuncCall(LogicalPlanner.PlanContext context, FunctionEval evalNode, Stack<EvalNode> stack) {
     boolean constantOfAllDescendents = true;
 
-    if ("sleep".equals(evalNode.getFuncDesc().getFunctionName())) {
+    if (SLEEP_FUNCTION_NAME.equals(evalNode.getFuncDesc().getFunctionName())) {
       constantOfAllDescendents = false;
     } else {
       for (EvalNode arg : evalNode.getArgs()) {
@@ -84,8 +91,24 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-      evalNode.bind(null);
-      return new ConstEval(evalNode.eval(null));
+      if (evalNode.getFuncDesc().getInvocation().hasPython()) {
+        TajoScriptEngine executor = new PythonScriptEngine(evalNode.getFuncDesc());
+        try {
+          executor.start(context.getQueryContext().getConf());
+          EvalContext evalContext = new EvalContext();
+          evalContext.addScriptEngine(evalNode, executor);
+          evalNode.bind(evalContext, null);
+          Datum funcRes = evalNode.eval(null);
+          executor.shutdown();
+          return new ConstEval(funcRes);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        evalNode.bind(null, null);
+        return new ConstEval(evalNode.eval(null));
+      }
+
     } else {
       return evalNode;
     }

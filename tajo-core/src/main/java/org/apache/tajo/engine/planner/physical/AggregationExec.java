@@ -63,7 +63,7 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
     for (EvalNode aggFunction : aggFunctions) {
-      aggFunction.bind(inSchema);
+      aggFunction.bind(context.getEvalContext(), inSchema);
     }
   }
 }

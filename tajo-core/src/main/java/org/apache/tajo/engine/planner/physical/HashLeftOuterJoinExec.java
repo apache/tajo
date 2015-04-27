@@ -121,9 +121,9 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
     rightNumCols = rightChild.getSchema().size();
 
-    joinQual.bind(inSchema);
+    joinQual.bind(context.getEvalContext(), inSchema);
     if (joinFilter != null) {
-      joinFilter.bind(inSchema);
+      joinFilter.bind(context.getEvalContext(), inSchema);
     }
   }
 

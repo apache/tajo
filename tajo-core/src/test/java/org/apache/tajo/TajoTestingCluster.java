@@ -57,6 +57,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,9 +87,9 @@ public class TajoTestingCluster {
 	    System.getProperty("tajo.test.data.dir", "test-data");
 
   /**
-   * True If HCatalogStore is used. Otherwise, it is FALSE.
+   * True If HiveCatalogStore is used. Otherwise, it is FALSE.
    */
-  public Boolean isHCatalogStoreUse = false;
+  public Boolean isHiveCatalogStoreUse = false;
 
   private static final String LOG_LEVEL;
 
@@ -159,6 +160,8 @@ public class TajoTestingCluster {
 
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
+
+    conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
 
     /* Since Travi CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
@@ -320,8 +323,8 @@ public class TajoTestingCluster {
     return this.catalogServer;
   }
 
-  public boolean isHCatalogStoreRunning() {
-    return isHCatalogStoreUse;
+  public boolean isHiveCatalogStoreRunning() {
+    return isHiveCatalogStoreUse;
   }
 
   ////////////////////////////////////////////////////////
@@ -383,31 +386,31 @@ public class TajoTestingCluster {
   }
 
   private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException {
-    final String HCATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HCatalogStore";
-    boolean hcatalogClassExists = false;
+    final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
+    boolean hiveCatalogClassExists = false;
     try {
-      getClass().getClassLoader().loadClass(HCATALOG_CLASS_NAME);
-      hcatalogClassExists = true;
+      getClass().getClassLoader().loadClass(HIVE_CATALOG_CLASS_NAME);
+      hiveCatalogClassExists = true;
     } catch (ClassNotFoundException e) {
-      LOG.info("HCatalogStore is not available.");
+      LOG.info("HiveCatalogStore is not available.");
     }
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
 
-    if (hcatalogClassExists &&
-        driverClass != null && driverClass.equals(HCATALOG_CLASS_NAME)) {
+    if (hiveCatalogClassExists &&
+        driverClass != null && driverClass.equals(HIVE_CATALOG_CLASS_NAME)) {
       try {
-        getClass().getClassLoader().loadClass(HCATALOG_CLASS_NAME);
+        getClass().getClassLoader().loadClass(HIVE_CATALOG_CLASS_NAME);
         String jdbcUri = "jdbc:derby:;databaseName="+ testBuildDir.toURI().getPath()  + "/metastore_db;create=true";
         c.set("hive.metastore.warehouse.dir", TajoConf.getWarehouseDir(c).toString() + "/default");
         c.set("javax.jdo.option.ConnectionURL", jdbcUri);
         c.set(TajoConf.ConfVars.WAREHOUSE_DIR.varname, conf.getVar(ConfVars.WAREHOUSE_DIR));
-        c.set(CatalogConstants.STORE_CLASS, HCATALOG_CLASS_NAME);
+        c.set(CatalogConstants.STORE_CLASS, HIVE_CATALOG_CLASS_NAME);
         Path defaultDatabasePath = new Path(TajoConf.getWarehouseDir(c).toString() + "/default");
         FileSystem fs = defaultDatabasePath.getFileSystem(c);
         if (!fs.exists(defaultDatabasePath)) {
           fs.mkdirs(defaultDatabasePath);
         }
-        isHCatalogStoreUse = true;
+        isHiveCatalogStoreUse = true;
       } catch (ClassNotFoundException cnfe) {
         throw new IOException(cnfe);
       }

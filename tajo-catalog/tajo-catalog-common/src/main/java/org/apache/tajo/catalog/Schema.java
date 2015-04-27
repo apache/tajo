@@ -327,9 +327,6 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public synchronized Schema addColumn(String name, Type type) {
-    if (type == Type.CHAR) {
-      return addColumn(name, CatalogUtil.newDataTypeWithLen(type, 1));
-    }
     return addColumn(name, CatalogUtil.newSimpleDataType(type));
   }
 

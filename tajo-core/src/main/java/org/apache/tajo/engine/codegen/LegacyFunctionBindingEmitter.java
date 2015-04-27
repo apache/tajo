@@ -63,12 +63,12 @@ public class LegacyFunctionBindingEmitter {
     FunctionDesc desc = func.getFuncDesc();
 
     String fieldName = context.symbols.get(func);
-    String funcDescName = "L" + TajoGeneratorAdapter.getInternalName(desc.getFuncClass()) + ";";
+    String funcDescName = "L" + TajoGeneratorAdapter.getInternalName(desc.getLegacyFuncClass()) + ";";
 
     context.aload(0);
     context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, context.owner, fieldName, funcDescName);
     context.aload(TUPLE);
-    context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
+    context.invokeVirtual(desc.getLegacyFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
 
     context.convertToPrimitive(func.getValueType());
   }

@@ -19,19 +19,14 @@
 package org.apache.tajo.worker.rule;
 
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rule.*;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
-
-import java.net.InetSocketAddress;
 
 /**
  * With this rule, Tajo worker will check the connectivity to tajo master server.
@@ -42,20 +37,11 @@ import java.net.InetSocketAddress;
 public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
   
   private void checkTajoMasterConnectivity(TajoConf tajoConf) throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.getPool();
-    NettyClientBase masterClient = null;
-    InetSocketAddress masterAddress = null;
-    
-    try {
-      ServiceTracker serviceTracker = ServiceTrackerFactory.get(tajoConf);
-      masterClient = pool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
-      masterClient.getStub();
-    } finally {
-      if (masterClient != null) {
-        pool.releaseConnection(masterClient);
-      }
-    }
-    
+    RpcClientManager manager = RpcClientManager.getInstance();
+
+    ServiceTracker serviceTracker = ServiceTrackerFactory.get(tajoConf);
+    NettyClientBase masterClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+    masterClient.getStub();
   }
 
   @Override

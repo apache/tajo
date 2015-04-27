@@ -30,6 +30,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
@@ -854,6 +855,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           sortSpecs[i++] = new SortSpec(insertNode.getProjectedSchema().getColumn(id), true, false);
         }
       }
+    } else if (storeTableNode.getType() == NodeType.CREATE_TABLE) {
+      int i = 0;
+      for (int j = 0; j < partitionKeyColumns.length; j++) {
+        int id = storeTableNode.getOutSchema().getColumns().size() + j;
+        Column column = storeTableNode.getInSchema().getColumn(id);
+        sortSpecs[i++] = new SortSpec(column, true, false);
+      }
+
     } else {
       for (int i = 0; i < partitionKeyColumns.length; i++) {
         sortSpecs[i] = new SortSpec(partitionKeyColumns[i], true, false);

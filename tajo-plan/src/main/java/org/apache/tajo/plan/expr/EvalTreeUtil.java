@@ -570,8 +570,8 @@ public class EvalTreeUtil {
     return findUniqueColumns(evalNode).size() == 0 && findDistinctAggFunction(evalNode).size() == 0;
   }
 
-  public static Datum evaluateImmediately(EvalNode evalNode) {
-    evalNode.bind(null);
+  public static Datum evaluateImmediately(EvalContext evalContext, EvalNode evalNode) {
+    evalNode.bind(evalContext, null);
     return evalNode.eval(null);
   }
 

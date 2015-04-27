@@ -250,7 +250,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       }
 
       for (AggregationFunctionCallEval eachFunction: aggFunctions) {
-        eachFunction.bind(inSchema);
+        eachFunction.bind(context.getEvalContext(), inSchema);
         eachFunction.setFirstPhase();
       }
 

@@ -49,8 +49,8 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	}
 
   @Override
-  public EvalNode bind(Schema schema) {
-    super.bind(schema);
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
     this.params = new VTuple(argEvals.length);
     return this;
   }

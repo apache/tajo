@@ -48,7 +48,7 @@ public class LogicalPlanEqualityTester implements LogicalPlanRewriteRule {
   public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     LogicalNode root = plan.getRootBlock().getRoot();
     PlanProto.LogicalNodeTree serialized = LogicalNodeSerializer.serialize(plan.getRootBlock().getRoot());
-    LogicalNode deserialized = LogicalNodeDeserializer.deserialize(queryContext, serialized);
+    LogicalNode deserialized = LogicalNodeDeserializer.deserialize(queryContext, null, serialized);
     assert root.deepEquals(deserialized);
     return plan;
   }
