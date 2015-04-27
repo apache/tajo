@@ -84,12 +84,12 @@ public class AsyncRpcServer extends NettyServerBase {
       String methodName = request.getMethodName();
       final MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
 
-      try {
-        if (methodDescriptor == null) {
-          exceptionCaught(ctx, new RemoteCallException(request.getId(), new NoSuchMethodException(methodName)));
-          return;
-        }
+      if (methodDescriptor == null) {
+        exceptionCaught(ctx, new RemoteCallException(request.getId(), new NoSuchMethodException(methodName)));
+        return;
+      }
 
+      try {
         Message paramProto = null;
         if (request.hasRequestMessage()) {
           paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
