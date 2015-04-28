@@ -57,7 +57,12 @@ public class LocalCatalogWrapper extends AbstractCatalogClient {
   }
 
   @Override
-  CatalogProtocol.CatalogProtocolService.BlockingInterface getStub(NettyClientBase client) {
+  CatalogProtocol.CatalogProtocolService.BlockingInterface getStub() {
     return stub;
+  }
+
+  @Override
+  public void close() {
+    //nothing to do
   }
 }

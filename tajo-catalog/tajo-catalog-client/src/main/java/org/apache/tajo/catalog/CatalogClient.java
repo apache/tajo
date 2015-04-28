@@ -18,10 +18,12 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
@@ -43,10 +45,7 @@ public class CatalogClient extends AbstractCatalogClient {
   }
 
   @Override
-  BlockingInterface getStub(NettyClientBase client) {
-    return client.getStub();
-  }
-
-  public void close() {
+  BlockingInterface getStub() throws ServiceException {
+    return getCatalogConnection().getStub();
   }
 }

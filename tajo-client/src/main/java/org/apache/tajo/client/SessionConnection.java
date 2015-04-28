@@ -112,6 +112,8 @@ public class SessionConnection implements Closeable {
   public synchronized NettyClientBase getTajoMasterConnection() throws ServiceException {
     if (client == null || !client.isConnected()) {
       try {
+        RpcClientManager.cleanup(client);
+
         this.client = manager.newClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, false,
             manager.getRetries(), manager.getTimeoutSeconds(), TimeUnit.SECONDS, false);
       } catch (Exception e) {
