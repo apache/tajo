@@ -19,11 +19,13 @@
 package org.apache.tajo.storage;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.net.InetAddress;
 import java.util.Arrays;
@@ -42,7 +44,7 @@ public class VTuple implements Tuple, Cloneable {
 
   public VTuple(Datum[] datum) {
     this(datum.length);
-    put(datum);
+    this.values = Arrays.copyOf(datum, datum.length);
   }
 
 	@Override
@@ -55,17 +57,17 @@ public class VTuple implements Tuple, Cloneable {
 	}
 
   @Override
-  public boolean isNull(int fieldid) {
+  public boolean isBlank(int fieldid) {
+    return values[fieldid] == null;
+  }
+
+  @Override
+  public boolean isBlankOrNull(int fieldid) {
     return values[fieldid] == null || values[fieldid].isNull();
   }
 
   @Override
-  public boolean isNotNull(int fieldid) {
-    return !isNull(fieldid);
-  }
-
-  @Override
-  public void clear() {   
+  public void clear() {
     for (int i=0; i < values.length; i++) {
       values[i] = null;
     }
@@ -79,23 +81,24 @@ public class VTuple implements Tuple, Cloneable {
 	}
 
   @Override
-  public void put(int fieldId, Datum[] values) {
-    for (int i = fieldId, j = 0; j < values.length; i++, j++) {
-      values[i] = values[j];
-    }
+  public Datum asDatum(int fieldId) {
+    return values[fieldId] == null ? null : values[fieldId];
   }
 
   @Override
-  public void put(int fieldId, Tuple tuple) {
-    for (int i = fieldId, j = 0; j < tuple.size(); i++, j++) {
-      values[i] = tuple.get(j);
-    }
+  public TajoDataTypes.Type type(int fieldId) {
+    return values[fieldId].type();
+  }
+
+  @Override
+  public int size(int fieldId) {
+    return values[fieldId].size();
   }
 
   public void put(Datum [] values) {
     System.arraycopy(values, 0, this.values, 0, values.length);
 	}
-	
+
 	//////////////////////////////////////////////////////
 	// Getter
 	//////////////////////////////////////////////////////
@@ -130,6 +133,11 @@ public class VTuple implements Tuple, Cloneable {
 	public byte [] getBytes(int fieldId) {
 		return values[fieldId].asByteArray();
 	}
+
+  @Override
+  public byte[] getTextBytes(int fieldId) {
+    return values[fieldId].asTextBytes();
+  }
 
   @Override
 	public short getInt2(int fieldId) {
@@ -178,6 +186,11 @@ public class VTuple implements Tuple, Cloneable {
 	}
 
   @Override
+  public TimeMeta getTimeDate(int fieldId) {
+    return values[fieldId].asTimeMeta();
+  }
+
+  @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
     return (ProtobufDatum) values[fieldId];
   }
@@ -193,7 +206,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public Tuple clone() throws CloneNotSupportedException {
+  public VTuple clone() throws CloneNotSupportedException {
     VTuple tuple = (VTuple) super.clone();
 
     tuple.values = new Datum[size()];

@@ -24,7 +24,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -57,24 +56,23 @@ public class Concat_ws extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum sepDatum = params.get(0);
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    if(sepDatum instanceof NullDatum) return NullDatum.get();
+    String separator = params.getText(0);
 
-    String seperator = ((TextDatum)sepDatum).asChars();
-
-    String opSperator = "";
     StringBuilder result = new StringBuilder();
 
     int paramSize = params.size();
     for(int i = 1; i < paramSize; i++) {
-      Datum datum = params.get(i);
-      if(datum instanceof NullDatum) {
+      if (params.isBlankOrNull(i)) {
         continue;
-      } else {
-        result.append(opSperator).append(datum.asChars());
       }
-      opSperator = seperator;
+      if (result.length() > 0) {
+        result.append(separator);
+      }
+      result.append(params.getText(i));
     }
     return DatumFactory.createText(result.toString());
   }

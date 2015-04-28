@@ -51,7 +51,7 @@ public class RandomInt extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    return DatumFactory.createInt4(random.nextInt(params.get(0).asInt4()));
+    return DatumFactory.createInt4(random.nextInt(params.getInt4(0)));
   }
 
 }

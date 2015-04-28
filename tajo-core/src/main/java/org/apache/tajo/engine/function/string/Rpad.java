@@ -68,25 +68,26 @@ public class Rpad extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    Datum lengthDatum = params.get(1);
-
-    if(datum instanceof NullDatum) return NullDatum.get();
-    if(lengthDatum instanceof NullDatum) return NullDatum.get();
-
-    Datum fillText=NullDatum.get();
-    if(hasFillCharacters) {
-      fillText=params.get(2);
-    }
-    else {
-      fillText=DatumFactory.createText(" ");
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
     }
 
-    int templen = lengthDatum.asInt4() - datum.asChars().length();
+    String fillText;
+    if (hasFillCharacters) {
+      fillText = params.getText(2);
+    } else {
+      fillText = " ";
+    }
 
-    if(templen<=0)
-      return DatumFactory.createText(datum.asChars().substring(0,lengthDatum.asInt4()));
+    String input = params.getText(0);
+    int expected = params.getInt4(1);
 
-    return DatumFactory.createText(StringUtils.rightPad(datum.asChars(), lengthDatum.asInt4(), fillText.asChars()));
+    int templen = expected - params.size(0);
+
+    if (templen <= 0) {
+      return DatumFactory.createText(input.substring(0, expected));
+    }
+
+    return DatumFactory.createText(StringUtils.rightPad(input, expected, fillText));
   }
 }

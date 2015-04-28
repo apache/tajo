@@ -20,10 +20,9 @@ package org.apache.tajo.storage;
 
 import com.google.protobuf.Message;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.util.Bytes;
@@ -40,34 +39,43 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
   public static final byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
 
+  public TextSerializerDeserializer() {}
+
+  public TextSerializerDeserializer(Schema schema) {
+    init(schema);
+  }
+
+  private Schema schema;
+
   @Override
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException {
+  public void init(Schema schema) {
+    this.schema = schema;
+  }
+
+  @Override
+  public int serialize(int index, Tuple tuple, OutputStream out, byte[] nullCharacters)
+      throws IOException {
+
+    Column col = schema.getColumn(index);
+    TajoDataTypes.Type type = col.getDataType().getType();
+    if (tuple.isBlankOrNull(index)) {
+      if (type == TajoDataTypes.Type.CHAR || type == TajoDataTypes.Type.TEXT) {
+        out.write(nullCharacters);
+        return nullCharacters.length;
+      }
+      return 0;
+    }
 
     byte[] bytes;
     int length = 0;
-    TajoDataTypes.DataType dataType = col.getDataType();
-
-    if (datum == null || datum instanceof NullDatum) {
-      switch (dataType.getType()) {
-        case CHAR:
-        case TEXT:
-          length = nullCharacters.length;
-          out.write(nullCharacters);
-          break;
-        default:
-          break;
-      }
-      return length;
-    }
-
-    switch (dataType.getType()) {
+    switch (type) {
       case BOOLEAN:
-        out.write(datum.asBool() ? trueBytes : falseBytes);
+        out.write(tuple.getBool(index) ? trueBytes : falseBytes);
         length = trueBytes.length;
         break;
       case CHAR:
-        byte[] pad = new byte[dataType.getLength() - datum.size()];
-        bytes = datum.asTextBytes();
+        byte[] pad = new byte[col.getDataType().getLength() - tuple.size(index)];
+        bytes = tuple.getTextBytes(index);
         out.write(bytes);
         out.write(pad);
         length = bytes.length + pad.length;
@@ -82,28 +90,28 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case INET4:
       case DATE:
       case INTERVAL:
-        bytes = datum.asTextBytes();
+        bytes = tuple.getTextBytes(index);
         length = bytes.length;
         out.write(bytes);
         break;
       case TIME:
-        bytes = ((TimeDatum)datum).asChars(TimeZone.getDefault(), true).getBytes();
+        bytes = TimeDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;
       case TIMESTAMP:
-        bytes = ((TimestampDatum)datum).asChars(TimeZone.getDefault(), true).getBytes();
+        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;
       case INET6:
       case BLOB:
-        bytes = Base64.encodeBase64(datum.asByteArray(), false);
+        bytes = Base64.encodeBase64(tuple.getBytes(index), false);
         length = bytes.length;
         out.write(bytes, 0, length);
         break;
       case PROTOBUF:
-        ProtobufDatum protobuf = (ProtobufDatum) datum;
+        ProtobufDatum protobuf = (ProtobufDatum) tuple.getProtobufDatum(index);
         byte[] protoBytes = protobufJsonFormat.printToString(protobuf.get()).getBytes();
         length = protoBytes.length;
         out.write(protoBytes, 0, protoBytes.length);
@@ -116,10 +124,13 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
   }
 
   @Override
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException {
+  public Datum deserialize(int index, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException {
+
+    Column col = schema.getColumn(index);
+    TajoDataTypes.Type type = col.getDataType().getType();
 
     Datum datum;
-    switch (col.getDataType().getType()) {
+    switch (type) {
       case BOOLEAN:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createBool(bytes[offset] == 't' || bytes[offset] == 'T');

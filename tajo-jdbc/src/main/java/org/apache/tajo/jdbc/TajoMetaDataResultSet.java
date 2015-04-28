@@ -20,7 +20,6 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -70,20 +69,11 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
 
   @Override
   public String getString(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    if(datum == null) {
-      return null;
-    }
-
-    return datum.asChars();
+    return cur.getText(fieldId - 1);
   }
 
   @Override
   public String getString(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    if(datum == null) {
-      return null;
-    }
-    return datum.asChars();
+    return cur.getText(findColumn(name));
   }
 }

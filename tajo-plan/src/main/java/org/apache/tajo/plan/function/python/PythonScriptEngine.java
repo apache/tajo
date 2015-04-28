@@ -358,7 +358,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     Datum result;
     try {
-      result = outputHandler.getNext().get(0);
+      result = outputHandler.getNext().asDatum(0);
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
     }

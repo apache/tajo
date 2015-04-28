@@ -51,11 +51,10 @@ public class AbsFloat extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createFloat4(Math.abs(valueDatum.asFloat4()));
+    return DatumFactory.createFloat4(Math.abs(params.getFloat4(0)));
   }
 }

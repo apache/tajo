@@ -56,19 +56,19 @@ public class Encode extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    Datum formatType = params.get(1);
     String encodedBase64Text="";
     String encodedHexString="";
 
-    if(datum instanceof NullDatum) return NullDatum.get();
-    if(formatType instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
+    }
 
-
-    if(formatType.asChars().toLowerCase().equals("base64")) {
+    String input = params.getText(0);
+    String formatType = params.getText(1).toLowerCase();
+    if(formatType.equals("base64")) {
       try {
         // Base64
-        encodedBase64Text = new String(Base64.encodeBase64(StringEscapeUtils.unescapeJava(datum.asChars()).getBytes()));
+        encodedBase64Text = new String(Base64.encodeBase64(StringEscapeUtils.unescapeJava(input).getBytes()));
       }
       catch (Exception e) {
         return NullDatum.get();
@@ -76,10 +76,10 @@ public class Encode extends GeneralFunction {
 
       return DatumFactory.createText(encodedBase64Text);
     }
-    else if(formatType.asChars().toLowerCase().equals("hex")) {
+    else if(formatType.equals("hex")) {
       try {
         // Hex
-        encodedHexString = HexStringConverter.getInstance().encodeHex(StringEscapeUtils.unescapeJava(datum.asChars()));
+        encodedHexString = HexStringConverter.getInstance().encodeHex(StringEscapeUtils.unescapeJava(input));
       }
       catch (Exception e) {
         return NullDatum.get();

@@ -111,7 +111,7 @@ public class TestRightOuterMergeJoinExec {
     Appender appender1 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
         .getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
-    Tuple tuple = new VTuple(dep3Schema.size());
+    VTuple tuple = new VTuple(dep3Schema.size());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createText("dept_" + i),
@@ -150,7 +150,7 @@ public class TestRightOuterMergeJoinExec {
     Appender appender4 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
         .getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
-    Tuple tuple4 = new VTuple(dep4Schema.size());
+    VTuple tuple4 = new VTuple(dep4Schema.size());
     for (int i = 0; i < 11; i++) {
       tuple4.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createText("dept_" + i),
@@ -182,7 +182,7 @@ public class TestRightOuterMergeJoinExec {
     Appender appender2 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
         .getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
-    Tuple tuple2 = new VTuple(job3Schema.size());
+    VTuple tuple2 = new VTuple(job3Schema.size());
     for (int i = 1; i < 4; i++) {
       int x = 100 + i;
       tuple2.put(new Datum[] { DatumFactory.createInt4(100 + i),
@@ -222,7 +222,7 @@ public class TestRightOuterMergeJoinExec {
     Appender appender3 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
         .getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
-    Tuple tuple3 = new VTuple(emp3Schema.size());
+    VTuple tuple3 = new VTuple(emp3Schema.size());
 
     for (int i = 1; i < 4; i += 2) {
       int x = 10 + i;

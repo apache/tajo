@@ -80,8 +80,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   public Tuple next() throws IOException {
     if(initialize) {
       //TODO : more complicated condition
-      Tuple key = new VTuple(datum.length);
-      key.put(datum);
+      Tuple key = new VTuple(datum);
       long offset = reader.find(key);
       if (offset == -1) {
         reader.close();

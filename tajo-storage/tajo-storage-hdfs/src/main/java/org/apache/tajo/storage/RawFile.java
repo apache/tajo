@@ -634,10 +634,10 @@ public class RawFile {
       nullFlags.clear();
       for (int i = 0; i < schema.size(); i++) {
         if (enabledStats) {
-          stats.analyzeField(i, t.get(i));
+          stats.analyzeField(i, t);
         }
 
-        if (t.isNull(i)) {
+        if (t.isBlankOrNull(i)) {
           nullFlags.set(i);
           continue;
         }
