@@ -26,6 +26,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.util.TUtil;
 
@@ -98,23 +99,56 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   }
 
   private ExecutionBlock merge(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
-    return mergeJoinTwoPhase(plan, child, parent);
+    if (parent.hasJoin()) {
+      return mergeJoinTwoPhase(plan, child, parent);
+    } else {
+      return mergeNonJoinTwoPhase(plan, child, parent);
+    }
   }
 
   private ExecutionBlock mergeNonJoinTwoPhase(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
       throws PlanningException {
-    return null;
-  }
 
-  private static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
-    ScanNode scanForChild = null;
-    for (ScanNode scanNode : parent.getScanNodes()) {
-      if (scanNode.getTableName().equals(child.getId().toString())) {
-        scanForChild = scanNode;
-        break;
+    ScanNode scanForChild = findScanForChildEb(child, parent);
+    if (scanForChild == null) {
+      throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
+    }
+
+    parentFinder.set(scanForChild);
+    parentFinder.find(parent.getPlan());
+    LogicalNode parentOfScanForChild = parentFinder.found;
+    if (parentOfScanForChild == null) {
+      throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
+    }
+
+    LogicalNode rootOfChild = child.getPlan();
+    if (rootOfChild.getType() == NodeType.STORE) {
+      rootOfChild = ((StoreTableNode)rootOfChild).getChild();
+    }
+    if (rootOfChild.getType() == parentOfScanForChild.getType()) {
+      // merge two-phase plan into one-phase plan.
+      // remove the second-phase plan
+      parentFinder.set(parentOfScanForChild);
+      parentFinder.find(parent.getPlan());
+      parentOfScanForChild = parentFinder.found;
+      if (parentOfScanForChild == null) {
+        throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
+      }
+
+      if (rootOfChild.getType() == NodeType.GROUP_BY) {
+        GroupbyNode groupbyNode = (GroupbyNode) rootOfChild;
+        for (AggregationFunctionCallEval aggFunc : groupbyNode.getAggFunctions()) {
+          aggFunc.setFirstPhase();
+          aggFunc.setFinalPhase();
+        }
       }
     }
-    return scanForChild;
+
+    parent = mergeExecutionBlocks(plan, child, parent);
+
+    parent.setPlan(parent.getPlan());
+
+    return parent;
   }
 
   /**
@@ -144,21 +178,49 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       rootOfChild = ((StoreTableNode)rootOfChild).getChild();
     }
 
-    if (parentOfScanForChild instanceof UnaryNode) {
-      ((UnaryNode) parentOfScanForChild).setChild(rootOfChild);
-    } else if (parentOfScanForChild instanceof BinaryNode) {
-      BinaryNode binary = (BinaryNode) parentOfScanForChild;
-      if (binary.getLeftChild().equals(scanForChild)) {
-        binary.setLeftChild(rootOfChild);
-      } else if (binary.getRightChild().equals(scanForChild)) {
-        binary.setRightChild(rootOfChild);
-      } else {
-        throw new PlanningException(scanForChild.getPID() + " is not a child of " + parentOfScanForChild.getPID());
-      }
-    } else {
-      throw new PlanningException(parentOfScanForChild + " seems to not have any children");
-    }
+//    if (parentOfScanForChild instanceof UnaryNode) {
+//      ((UnaryNode) parentOfScanForChild).setChild(rootOfChild);
+//    } else if (parentOfScanForChild instanceof BinaryNode) {
+//      BinaryNode binary = (BinaryNode) parentOfScanForChild;
+//      if (binary.getLeftChild().equals(scanForChild)) {
+//        binary.setLeftChild(rootOfChild);
+//      } else if (binary.getRightChild().equals(scanForChild)) {
+//        binary.setRightChild(rootOfChild);
+//      } else {
+//        throw new PlanningException(scanForChild.getPID() + " is not a child of " + parentOfScanForChild.getPID());
+//      }
+//    } else {
+//      throw new PlanningException(parentOfScanForChild + " seems to not have any children");
+//    }
+    replaceChild(rootOfChild, scanForChild, parentOfScanForChild);
 
+//    for (String broadcastable : child.getBroadcastTables()) {
+//      parent.addBroadcastRelation(broadcastable);
+//    }
+//
+//    // connect parent and grand children
+//    List<ExecutionBlock> grandChilds = plan.getChilds(child);
+//    for (ExecutionBlock eachGrandChild : grandChilds) {
+//      plan.addConnect(eachGrandChild, parent, plan.getChannel(eachGrandChild, child).getShuffleType());
+//      plan.disconnect(eachGrandChild, child);
+//    }
+//
+//    plan.disconnect(child, parent);
+//    List<DataChannel> channels = plan.getIncomingChannels(child.getId());
+//    if (channels == null || channels.size() == 0) {
+//      channels = plan.getOutgoingChannels(child.getId());
+//      if (channels == null || channels.size() == 0) {
+//        plan.removeExecBlock(child.getId());
+//      }
+//    }
+    parent = mergeExecutionBlocks(plan, child, parent);
+
+    parent.setPlan(parent.getPlan());
+
+    return parent;
+  }
+
+  private static ExecutionBlock mergeExecutionBlocks(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
     for (String broadcastable : child.getBroadcastTables()) {
       parent.addBroadcastRelation(broadcastable);
     }
@@ -178,10 +240,36 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         plan.removeExecBlock(child.getId());
       }
     }
-
-    parent.setPlan(parent.getPlan());
-
     return parent;
+  }
+
+  private static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent)
+      throws PlanningException {
+    if (parent instanceof UnaryNode) {
+      ((UnaryNode) parent).setChild(newChild);
+    } else if (parent instanceof BinaryNode) {
+      BinaryNode binary = (BinaryNode) parent;
+      if (binary.getLeftChild().equals(originalChild)) {
+        binary.setLeftChild(newChild);
+      } else if (binary.getRightChild().equals(originalChild)) {
+        binary.setRightChild(newChild);
+      } else {
+        throw new PlanningException(originalChild.getPID() + " is not a child of " + parent.getPID());
+      }
+    } else {
+      throw new PlanningException(parent.getPID() + " seems to not have any children");
+    }
+  }
+
+  private static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
+    ScanNode scanForChild = null;
+    for (ScanNode scanNode : parent.getScanNodes()) {
+      if (scanNode.getTableName().equals(child.getId().toString())) {
+        scanForChild = scanNode;
+        break;
+      }
+    }
+    return scanForChild;
   }
 
   /**
