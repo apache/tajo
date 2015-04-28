@@ -16,19 +16,9 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.rpc.test";
-option java_outer_classname = "DummyProtocol";
-option java_generic_services = true;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.rpc;
 
-import "TestProtos.proto";
+interface ProtoDeclaration {
 
-service DummyProtocolService {
-  rpc sum (SumRequest) returns (SumResponse);
-  rpc echo (EchoMessage) returns (EchoMessage);
-  rpc getError (EchoMessage) returns (EchoMessage);
-  rpc getNull (EchoMessage) returns (EchoMessage);
-  rpc delay (EchoMessage) returns (EchoMessage);
-  rpc busy (EchoMessage) returns (EchoMessage);
-  rpc throwException (EchoMessage) returns (EchoMessage);
+  <I> I getStub();
 }
