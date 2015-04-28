@@ -92,7 +92,9 @@ NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
 
 class PythonStreamingController:
+    scalar_func = None
     udaf_instance = None
+
     should_log = False
     log_message = logging.info
     module_name = None
@@ -154,13 +156,16 @@ class PythonStreamingController:
                         sys.stderr.flush()
                         self.stream_output.flush()
                         self.stream_error.flush()
+                        del deserialized
+                        del json_data
                     else:
                         self.process_input(func_name, func, input_str)
 
             elif func_type == 'UDF':
                 func_name = name
-                func = self.load_udf(module_name, func_name)
-                self.process_input(func_name, func, input_str)
+                if self.scalar_func is None:
+                    self.scalar_func = self.load_udf(module_name, func_name)
+                self.process_input(func_name, self.scalar_func, input_str)
             else:
                 raise Exception("Unsupported type: " + func_type)
 
