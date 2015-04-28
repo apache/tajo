@@ -318,7 +318,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         tmClient = RpcClientManager.getInstance().
             getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-        masterClientService.allocateWorkerResources(null, request, callBack);
+        masterClientService.allocateWorkerResources(callBack.getController(), request, callBack);
       } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
       }
@@ -335,8 +335,12 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         } catch (TimeoutException e) {
           LOG.info("No available worker resource for " + event.getExecutionBlockId());
           continue;
+        } catch (ExecutionException e) {
+          LOG.error(e.getMessage(), e);
+          break;
         }
       }
+
       int numAllocatedContainers = 0;
 
       if(response != null) {

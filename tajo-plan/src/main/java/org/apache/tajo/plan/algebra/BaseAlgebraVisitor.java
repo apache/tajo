@@ -364,7 +364,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   @Override
   public RESULT visitJoin(CONTEXT ctx, Stack<Expr> stack, Join expr) throws PlanningException {
     stack.push(expr);
-    visit(ctx, stack, expr.getQual());
+    if (expr.getQual() != null) {
+      visit(ctx, stack, expr.getQual());
+    }
     visit(ctx, stack, expr.getLeft());
     RESULT result = visit(ctx, stack, expr.getRight());
     stack.pop();

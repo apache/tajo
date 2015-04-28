@@ -28,10 +28,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestRpcClientManager {
 
@@ -39,59 +38,141 @@ public class TestRpcClientManager {
   public void testRaceCondition() throws Exception {
     final int parallelCount = 50;
     final DummyProtocolAsyncImpl service = new DummyProtocolAsyncImpl();
+    ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
+
     NettyServerBase server = new AsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress("127.0.0.1", 0), parallelCount);
     server.start();
+    try {
+      final InetSocketAddress address = server.getListenAddress();
+      final RpcClientManager manager = RpcClientManager.getInstance();
 
-    final InetSocketAddress address = server.getListenAddress();
-    final RpcClientManager manager = RpcClientManager.getInstance();
-
-    ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
-    List<Future> tasks = new ArrayList<Future>();
-    for (int i = 0; i < parallelCount; i++) {
-      tasks.add(executor.submit(new Runnable() {
-            @Override
-            public void run() {
-              NettyClientBase client = null;
-              try {
-                client = manager.getClient(address, DummyProtocol.class, false);
-              } catch (Throwable e) {
-                fail(e.getMessage());
+      List<Future> tasks = new ArrayList<Future>();
+      for (int i = 0; i < parallelCount; i++) {
+        tasks.add(executor.submit(new Runnable() {
+              @Override
+              public void run() {
+                NettyClientBase client = null;
+                try {
+                  client = manager.getClient(address, DummyProtocol.class, false);
+                } catch (Throwable e) {
+                  fail(e.getMessage());
+                }
+                assertTrue(client.isConnected());
               }
-              assertTrue(client.isConnected());
-            }
-          })
-      );
-    }
+            })
+        );
+      }
 
-    for (Future future : tasks) {
-      future.get();
-    }
+      for (Future future : tasks) {
+        future.get();
+      }
 
-    NettyClientBase clientBase = manager.getClient(address, DummyProtocol.class, false);
-    RpcClientManager.cleanup(clientBase);
-    server.shutdown();
-    executor.shutdown();
+      NettyClientBase clientBase = manager.getClient(address, DummyProtocol.class, false);
+      RpcClientManager.cleanup(clientBase);
+    } finally {
+      server.shutdown();
+      executor.shutdown();
+      RpcClientManager.close();
+    }
   }
 
   @Test
-  public void testCloseFuture() throws Exception {
+  public void testClientCloseEvent() throws Exception {
     final DummyProtocolAsyncImpl service = new DummyProtocolAsyncImpl();
     NettyServerBase server = new AsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress("127.0.0.1", 0), 3);
     server.start();
+    RpcClientManager manager = RpcClientManager.getInstance();
 
-    final RpcClientManager manager = RpcClientManager.getInstance();
+    try {
 
-    NettyClientBase client = manager.getClient(server.getListenAddress(), DummyProtocol.class, true);
-    assertTrue(client.isConnected());
-    assertTrue(client.getChannel().isWritable());
+      NettyClientBase client = manager.getClient(server.getListenAddress(), DummyProtocol.class, true);
+      assertTrue(client.isConnected());
+      assertTrue(client.getChannel().isWritable());
 
-    RpcClientManager.RpcConnectionKey key = client.getKey();
-    assertTrue(RpcClientManager.contains(key));
+      RpcClientManager.RpcConnectionKey key = client.getKey();
+      assertTrue(RpcClientManager.contains(key));
 
-    client.close();
-    assertFalse(RpcClientManager.contains(key));
-    server.shutdown();
+      client.close();
+      assertFalse(RpcClientManager.contains(key));
+    } finally {
+      server.shutdown();
+      RpcClientManager.close();
+    }
+  }
+
+  @Test
+  public void testClientCloseEventWithReconnect() throws Exception {
+    final DummyProtocolAsyncImpl service = new DummyProtocolAsyncImpl();
+    NettyServerBase server = new AsyncRpcServer(DummyProtocol.class,
+        service, new InetSocketAddress("127.0.0.1", 0), 3);
+    server.start();
+    int repeat = 10;
+    RpcClientManager manager = RpcClientManager.getInstance();
+
+    try {
+
+      NettyClientBase client = manager.getClient(server.getListenAddress(), DummyProtocol.class, true);
+      assertTrue(client.isConnected());
+
+      RpcClientManager.RpcConnectionKey key = client.getKey();
+      assertTrue(RpcClientManager.contains(key));
+
+      client.close();
+      assertFalse(client.isConnected());
+      assertFalse(RpcClientManager.contains(key));
+
+      for (int i = 0; i < repeat; i++) {
+        client.connect();
+        assertTrue(client.isConnected());
+        assertTrue(RpcClientManager.contains(key));
+
+        client.close();
+        assertFalse(client.isConnected());
+        assertFalse(RpcClientManager.contains(key));
+      }
+    } finally {
+      server.shutdown();
+      RpcClientManager.close();
+    }
+  }
+
+  @Test
+  public void testUnManagedClient() throws Exception {
+    final DummyProtocolAsyncImpl service = new DummyProtocolAsyncImpl();
+    NettyServerBase server = new AsyncRpcServer(DummyProtocol.class,
+        service, new InetSocketAddress("127.0.0.1", 0), 3);
+    server.start();
+    RpcClientManager.RpcConnectionKey key =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    RpcClientManager.close();
+    RpcClientManager manager = RpcClientManager.getInstance();
+
+    try {
+      NettyClientBase client1 = manager.newClient(key, 0, 0, TimeUnit.SECONDS, false);
+      assertTrue(client1.isConnected());
+      assertFalse(RpcClientManager.contains(key));
+
+      NettyClientBase client2 = manager.newClient(key, 0, 0, TimeUnit.SECONDS, false);
+      assertTrue(client2.isConnected());
+      assertFalse(RpcClientManager.contains(key));
+
+      assertEquals(client1.getRemoteAddress(), client2.getRemoteAddress());
+      assertNotEquals(client1.getChannel(), client2.getChannel());
+
+      client1.close();
+      assertFalse(client1.isConnected());
+      assertTrue(client2.isConnected());
+
+      client1.connect();
+      client2.close();
+      assertFalse(client2.isConnected());
+      assertTrue(client1.isConnected());
+
+      RpcClientManager.cleanup(client1, client2);
+    } finally {
+      server.shutdown();
+    }
   }
 }
