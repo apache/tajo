@@ -40,6 +40,7 @@ import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
@@ -322,8 +323,23 @@ public class TajoWorker extends CompositeService {
 
     tajoMasterInfo = new TajoMasterInfo();
     if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
-      tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
+      long timeoutMillis = systemConf.getLongVar(TajoConf.ConfVars.TAJO_MASTER_HA_INITIALIZATION_TIMEOUT);
+      long deadline = System.currentTimeMillis() + timeoutMillis;
+      boolean done = false;
+
+      while (!done) {
+        if (deadline <= System.currentTimeMillis()) {
+          try {
+            tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
+            tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
+            done = true;
+          } catch (ServiceTrackerException e) {
+          }
+        } else {
+          done = true;
+          break;
+        }
+      }
     } else {
       tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
           .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));

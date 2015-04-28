@@ -142,6 +142,7 @@ public class TajoConf extends Configuration {
     // High availability configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
     TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
+    TAJO_MASTER_HA_INITIALIZATION_TIMEOUT("tajo.master.ha.initialization.timeout-secs", 120 * 1000), // seconds
 
     // Service discovery
     DEFAULT_SERVICE_TRACKER_CLASS("tajo.discovery.service-tracker.class", BaseServiceTracker.class.getCanonicalName()),
