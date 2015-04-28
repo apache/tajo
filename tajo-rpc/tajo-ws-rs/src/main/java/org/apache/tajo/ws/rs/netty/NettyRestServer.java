@@ -21,12 +21,13 @@ package org.apache.tajo.ws.rs.netty;
 import io.netty.channel.ChannelHandler;
 import java.net.InetSocketAddress;
 
+import org.apache.tajo.rpc.PublicServiceProvider;
 import org.apache.tajo.rpc.NettyServerBase;
 
 /**
  * JAX-RS Http Server on Netty implementation.
  */
-public class NettyRestServer extends NettyServerBase {
+public class NettyRestServer extends NettyServerBase implements PublicServiceProvider {
   
   private ChannelHandler handler;
   private int workerCount;
@@ -37,7 +38,7 @@ public class NettyRestServer extends NettyServerBase {
 
   public NettyRestServer(String serviceName, InetSocketAddress address, int workerCount) {
     super(serviceName, address);
-    
+
     this.workerCount = workerCount;
   }
 

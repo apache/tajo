@@ -53,13 +53,15 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.rpc.PublicServiceFactory;
+import org.apache.tajo.rpc.PublicServiceProvider;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.NoSuchSessionVariableException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.util.DefaultAccessFactory;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
@@ -78,7 +80,7 @@ public class TajoMasterClientService extends AbstractService {
   private final TajoConf conf;
   private final CatalogService catalog;
   private final TajoMasterClientProtocolServiceHandler clientHandler;
-  private BlockingRpcServer server;
+  private PublicServiceProvider server;
   private InetSocketAddress bindAddress;
 
   private final BoolProto BOOL_TRUE =
@@ -96,29 +98,36 @@ public class TajoMasterClientService extends AbstractService {
 
   @Override
   public void start() {
-
+    LOG.info("Starting TajoMasterClientService");
     // start the rpc server
     String confClientServiceAddr = conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
-    InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     int workerNum = conf.getIntVar(ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
+
     try {
-      server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa, workerNum);
+      String factoryName = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_FACTORY);
+      PublicServiceFactory factory = DefaultAccessFactory.newFactory(factoryName);
+      server = factory.create(confClientServiceAddr, TajoMasterClientProtocol.class, clientHandler, workerNum);
+      server.start();
     } catch (Exception e) {
-      LOG.error(e);
-      throw new RuntimeException(e);
+      LOG.error(e.getMessage(), e);
+      throw new RuntimeException("Failed to start TajoMasterClientService", e);
     }
-    server.start();
 
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
-    LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
+    LOG.info(server.getServiceName() + " in TajoMasterClientService is bind to " + bindAddress);
+
     super.start();
   }
 
   @Override
   public void stop() {
     if (server != null) {
-      server.shutdown();
+      try {
+        server.shutdown();
+      } catch (Exception e) {
+        LOG.warn("Failed to shutdown server", e);
+      }
     }
     super.stop();
   }
