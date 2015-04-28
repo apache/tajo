@@ -1,0 +1,7 @@
+id,name,num,first_value_1,first_value_2,first_value_3,last_value_1,last_value_2,last_value_3
+-------------------------------
+1,abc,3,3,null,null,3,null,null
+2,abd,3,3,null,9,2,null,2
+2,abe,9,3,3,2,4,3,4
+2,def,2,9,3,4,4,9,4
+2,ghi,4,2,9,null,4,2,null

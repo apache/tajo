@@ -458,13 +458,17 @@ public class WindowAggExec extends UnaryPhysicalExec {
    */
   private Tuple getFunctionSpecificInput(String funcName, int dataStart, int dataEnd) {
     if (funcName.equals("first_value")) {
+      // adjust dataStart not to go beyond the partition
+      dataStart = Math.max(dataStart, 0);
       // check the frame start is within the partition
-      if (dataStart <= dataEnd && dataStart >= 0 && dataStart < accumulatedInTuples.size()) {
+      if (dataStart <= dataEnd && dataStart < accumulatedInTuples.size()) {
         return accumulatedInTuples.get(dataStart);
       }
     } else if (funcName.equals("last_value")) {
+      // adjust dataEnd not to exceed the partition
+      dataEnd = Math.min(dataEnd, accumulatedInTuples.size() - 1);
       // check the frame end is within the partition
-      if (dataStart <= dataEnd && dataEnd >= 0 && dataEnd < accumulatedInTuples.size()) {
+      if (dataStart <= dataEnd && dataEnd >= 0) {
         return accumulatedInTuples.get(dataEnd);
       }
     }

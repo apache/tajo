@@ -41,7 +41,6 @@
         <configuration>
           <excludes>
             <exclude>tajo-hive/**</exclude>
-            <exclude>tajo-hcatalog/**</exclude>
           </excludes>
         </configuration>
       </plugin>

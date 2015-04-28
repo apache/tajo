@@ -514,4 +514,31 @@ public class TestWindowQuery extends QueryTestCaseBase {
       executeString("DROP TABLE table4");
     }
   }
+
+  @Test
+  public final void testWindowFrame5() throws Exception {
+    executeDDL("table1DDL.sql", "table1", "table5");
+
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table5");
+    }
+  }
+
+  @Test
+  public final void testWindowFrame6() throws Exception {
+    executeDDL("table1DDL.sql", "table1", "table6");
+
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table6");
+    }
+  }
+
 }
