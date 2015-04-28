@@ -83,6 +83,9 @@ Followings are typical examples of Python UDAFs.
     cnt = 0
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.sum = 0
         self.cnt = 0
 
@@ -97,8 +100,8 @@ Followings are typical examples of Python UDAFs.
 
     # merge intermediate results
     def merge(self, list):
-        self.sum += list[0] # partial_result.sum
-        self.cnt += list[1] # partial_result.cnt
+        self.sum += list[0]
+        self.cnt += list[1]
 
     # get final result
     @output_type('float8')
@@ -110,6 +113,9 @@ Followings are typical examples of Python UDAFs.
     cnt = 0
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.cnt = 0
 
     # eval at the first stage
@@ -130,9 +136,9 @@ Followings are typical examples of Python UDAFs.
         return self.cnt
 
 
-These classes must provide ``eval()``, ``merge()``, ``get_partial_result()``, and ``get_final_result()`` functions.
+These classes must provide ``reset()``, ``eval()``, ``merge()``, ``get_partial_result()``, and ``get_final_result()`` functions.
 
-* ``__init__()`` resets the aggregation state.
+* ``reset()`` resets the aggregation state.
 * ``eval()`` evaluates input tuples in the first stage.
 * ``merge()`` merges intermediate results of the first stage.
 * ``get_partial_result()`` returns intermediate results of the first stage. Output type must be same with the input type of ``merge()``.
