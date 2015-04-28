@@ -280,7 +280,7 @@ public class EvalNodeSerializer
       AggregationFunctionCallEval aggFunc = (AggregationFunctionCallEval) function;
 
       PlanProto.AggFunctionEvalSpec.Builder aggFunctionEvalBuilder = PlanProto.AggFunctionEvalSpec.newBuilder();
-      aggFunctionEvalBuilder.setIntermediatePhase(aggFunc.isIntermediatePhase());
+      aggFunctionEvalBuilder.setFirstPhase(aggFunc.isFirstPhase());
       aggFunctionEvalBuilder.setFinalPhase(aggFunc.isFinalPhase());
       if (aggFunc.hasAlias()) {
         aggFunctionEvalBuilder.setAlias(aggFunc.getAlias());

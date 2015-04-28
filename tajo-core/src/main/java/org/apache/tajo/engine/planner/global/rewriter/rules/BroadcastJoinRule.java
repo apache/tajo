@@ -69,7 +69,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       // in leaf execution blocks, find input tables which size is less than the predefined threshold.
       for (ScanNode scanNode : current.getScanNodes()) {
         if (getTableVolume(scanNode) <= broadcastTableSizeThreshold) {
-          current.addBroadcastRelation(scanNode.getTableName());
+          current.addBroadcastRelation(scanNode.getCanonicalName());
         }
       }
     } else {
@@ -77,7 +77,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       for (ExecutionBlock child : plan.getChilds(current)) {
         rewrite(plan, child);
       }
-      if (current.hasJoin()) {
+//      if (current.hasJoin()) {
+      if (!plan.isTerminal(current)) {
         boolean needMerge = false;
         List<ExecutionBlock> childs = plan.getChilds(current);
         for (ExecutionBlock child : childs) {
@@ -91,8 +92,29 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             merge(plan, child, current);
           }
         }
+//      }
       }
     }
+  }
+
+  private ExecutionBlock merge(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
+    return mergeJoinTwoPhase(plan, child, parent);
+  }
+
+  private ExecutionBlock mergeNonJoinTwoPhase(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
+      throws PlanningException {
+    return null;
+  }
+
+  private static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
+    ScanNode scanForChild = null;
+    for (ScanNode scanNode : parent.getScanNodes()) {
+      if (scanNode.getTableName().equals(child.getId().toString())) {
+        scanForChild = scanNode;
+        break;
+      }
+    }
+    return scanForChild;
   }
 
   /**
@@ -100,16 +122,12 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
    *
    * @param plan master plan
    * @param child child block
-   * @param parent parent block
+   * @param parent parent block who has join nodes
    * @return
    */
-  private ExecutionBlock merge(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
-    ScanNode scanForChild = null;
-    for (ScanNode scanNode : parent.getScanNodes()) {
-      if (scanNode.getTableName().equals(child.getId().toString())) {
-        scanForChild = scanNode;
-      }
-    }
+  private ExecutionBlock mergeJoinTwoPhase(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
+      throws PlanningException {
+    ScanNode scanForChild = findScanForChildEb(child, parent);
     if (scanForChild == null) {
       throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
@@ -145,6 +163,13 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       parent.addBroadcastRelation(broadcastable);
     }
 
+    // connect parent and grand children
+    List<ExecutionBlock> grandChilds = plan.getChilds(child);
+    for (ExecutionBlock eachGrandChild : grandChilds) {
+      plan.addConnect(eachGrandChild, parent, plan.getChannel(eachGrandChild, child).getShuffleType());
+      plan.disconnect(eachGrandChild, child);
+    }
+
     plan.disconnect(child, parent);
     List<DataChannel> channels = plan.getIncomingChannels(child.getId());
     if (channels == null || channels.size() == 0) {
@@ -153,8 +178,6 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         plan.removeExecBlock(child.getId());
       }
     }
-
-    // connect parent and grand childs
 
     parent.setPlan(parent.getPlan());
 

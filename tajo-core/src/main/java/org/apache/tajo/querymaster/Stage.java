@@ -883,7 +883,8 @@ public class Stage implements EventHandler<StageEvent> {
       }
 
       // We assume this execution block the first stage of join if two or more tables are included in this block,
-      if (parent != null && parent.getScanNodes().length >= 2) {
+//      if (parent != null && (parent.getScanNodes().length - parent.getBroadcastTables().size()) >= 2) {
+      if (parent != null && (parent.getNonBroadcastRelNum()) >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer
@@ -990,8 +991,11 @@ public class Stage implements EventHandler<StageEvent> {
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock execBlock = stage.getBlock();
       if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
+      // Some execution blocks can have broadcast table even though they don't have any join nodes
+//      if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getNonBroadcastRelNum() <= 1) { // Case 1: Just Scan
         scheduleFragmentsForLeafQuery(stage);
       } else if (execBlock.getScanNodes().length > 1) { // Case 2: Join
+//      } else if (execBlock.getNonBroadcastRelNum() > 1) { // Case 2: Join
         Repartitioner.scheduleFragmentsForJoinQuery(stage.schedulerContext, stage);
       } else { // Case 3: Others (Sort or Aggregation)
         int numTasks = getNonLeafTaskNum(stage);
@@ -1076,7 +1080,9 @@ public class Stage implements EventHandler<StageEvent> {
     private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException {
       ExecutionBlock execBlock = stage.getBlock();
       ScanNode[] scans = execBlock.getScanNodes();
-      Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
+      Preconditions.checkArgument(scans.length <= 1, "Must be Scan Query");
+//      Preconditions.checkArgument(execBlock.getNonBroadcastRelNum() <= 1,
+//          "A leaf stage should not scan two or more large fragments");
       ScanNode scan = scans[0];
       TableDesc table = stage.context.getTableDescMap().get(scan.getCanonicalName());
 

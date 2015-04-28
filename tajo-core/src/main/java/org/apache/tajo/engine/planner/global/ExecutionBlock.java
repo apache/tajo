@@ -108,6 +108,16 @@ public class ExecutionBlock {
     return store;
   }
 
+  public int getNonBroadcastRelNum() {
+    int nonBroadcastRelNum = 0;
+    for (ScanNode scanNode : scanlist) {
+      if (!broadcasted.contains(scanNode.getCanonicalName())) {
+        nonBroadcastRelNum++;
+      }
+    }
+    return nonBroadcastRelNum;
+  }
+
   public ScanNode [] getScanNodes() {
     return this.scanlist.toArray(new ScanNode[scanlist.size()]);
   }

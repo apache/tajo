@@ -168,10 +168,10 @@ public class GlobalPlanner {
     }
 
     masterPlan.setTerminal(terminalBlock);
-    LOG.info("\nNon-optimized master plan" + masterPlan.toString());
+    LOG.info("\n\nNon-optimized master plan\n" + masterPlan.toString());
 
     masterPlan = rewriteEngine.rewrite(queryContext, masterPlan);
-    LOG.info("\nOptimized master plan\n" + masterPlan.toString());
+    LOG.info("\n\nOptimized master plan\n" + masterPlan.toString());
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
