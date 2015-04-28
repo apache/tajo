@@ -52,16 +52,27 @@ public class WorkerConnectionInfoResponse {
     return id;
   }
 
-  public void setId(int id) {
-    this.id = id;
-  }
-
   public String getHost() {
     return host;
   }
 
-  public void setHost(String host) {
-    this.host = host;
+  public int getPeerRpcPort() {
+    return peerRpcPort;
   }
-  
+
+  public int getPullServerPort() {
+    return pullServerPort;
+  }
+
+  public int getQueryMasterPort() {
+    return queryMasterPort;
+  }
+
+  public int getClientPort() {
+    return clientPort;
+  }
+
+  public int getHttpInfoPort() {
+    return httpInfoPort;
+  }
 }

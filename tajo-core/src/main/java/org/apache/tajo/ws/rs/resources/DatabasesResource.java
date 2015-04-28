@@ -254,14 +254,18 @@ public class DatabasesResource {
       if (selectedDatabase != null) {
         List<TablespaceProto> tablespacesList = catalogService.getAllTablespaces();
         TablespaceProto selectedTablespace = null;
-        
+
         for (TablespaceProto tablespace: tablespacesList) {
           if (tablespace.hasId() && tablespace.getId() == selectedDatabase.getSpaceId()) {
             selectedTablespace = tablespace;
             break;
           }
         }
-        
+
+        if(selectedTablespace ==  null) {
+          return ResourcesUtil.createExceptionResponse(LOG, "Tablespace not found.");
+        }
+
         DatabaseInfoResponse databaseInfo = new DatabaseInfoResponse();
         databaseInfo.setId(selectedDatabase.getId());
         databaseInfo.setName(selectedDatabase.getName());

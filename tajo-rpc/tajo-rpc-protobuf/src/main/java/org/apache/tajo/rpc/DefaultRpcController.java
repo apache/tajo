@@ -28,7 +28,7 @@ public class DefaultRpcController implements RpcController {
 
   @Override
   public void reset() {
-    errorText = "";
+    errorText = null;
     error = false;
     canceled = false;
   }
