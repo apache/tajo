@@ -428,5 +428,5 @@ message StaticMethodInvocationDescProto {
 message PythonInvocationDescProto {
   required string funcName = 1;
   required string filePath = 2;
-  required bool udf = 3;
+  required bool isScalarFunction = 3;
 }

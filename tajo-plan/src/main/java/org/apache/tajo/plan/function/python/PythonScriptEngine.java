@@ -366,13 +366,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
     command[CONTROLLER_LOG_FILE_PATH] = controllerLogFileName;
     command[OUT_SCHEMA] = outSchema.getColumn(0).getDataType().getType().name().toLowerCase();
     command[FUNCTION_OR_CLASS_NAME] = funcName;
-    command[FUNCTION_TYPE] = invocationDesc.isUdf() ? "UDF" : "UDAF";
+    command[FUNCTION_TYPE] = invocationDesc.isScalarFunction() ? "UDF" : "UDAF";
 
     return command;
   }
 
   private void setSchema() {
-    if (invocationDesc.isUdf()) {
+    if (invocationDesc.isScalarFunction()) {
       TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
       inSchema = new Schema();
       for (int i = 0; i < paramTypes.length; i++) {

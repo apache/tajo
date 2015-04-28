@@ -127,7 +127,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   public boolean hasPython() {
-    return python != null && python.isUdf();
+    return python != null && python.isScalarFunction();
   }
 
   public void setPython(PythonInvocationDesc python) {
@@ -139,7 +139,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   public boolean hasPythonAggregation() {
-    return python != null && !python.isUdf();
+    return python != null && !python.isScalarFunction();
   }
 
   public void setPythonAggregation(PythonInvocationDesc pythonAggregation) {
