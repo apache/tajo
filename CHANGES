@@ -22,6 +22,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1311: Enable Scattered Hash Shuffle for CTAS statement. (jaehwa)
+
     TAJO-1548: Refactoring condition code for CHAR into CatalogUtil.
     (Contributed by DaeMyung Kang, Committed by jaehwa)
 
@@ -101,6 +103,15 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1574: Fix NPE on natural join.
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1581: Does not update last state of query stage in non-hash shuffle.
+    (jinho)
+
+    TAJO-1580: Error line number is incorrect.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
 
     TAJO-1419: Tsql session command doesn't work. (Contributed by DaeMyung Kang,
     Committed by jihoon)
@@ -198,6 +209,12 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1559: Fix data model description (tinyint, smallint).
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1575: HBASE_HOME guidance is duplicated in tajo-env.sh.
+    (Contributed by Jongyoung Park, Committed by jihoon)
 
     TAJO-1568: Apply UnpooledByteBufAllocator when a tajo.test.enabled
     is set to enable. (jinho)
