@@ -1009,10 +1009,10 @@ public class HBaseStorageManager extends StorageManager {
         List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
 
         TupleComparator comparator = new BaseTupleComparator(inputSchema, sortSpecs);
-        Tuple previousTuple = dataRange.getStart();
+        VTuple previousTuple = dataRange.getStart();
 
         for (byte[] eachEndKey : endKeys) {
-          Tuple endTuple = new VTuple(sortSpecs.length);
+          VTuple endTuple = new VTuple(sortSpecs.length);
           byte[][] rowKeyFields;
           if (sortSpecs.length > 1) {
             byte[][] splitValues = BytesUtils.splitPreserveAllTokens(

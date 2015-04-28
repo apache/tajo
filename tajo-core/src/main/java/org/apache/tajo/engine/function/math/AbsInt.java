@@ -51,11 +51,10 @@ public class AbsInt extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createInt4(Math.abs(valueDatum.asInt4()));
+    return DatumFactory.createInt4(Math.abs(params.getInt4(0)));
   }
 }

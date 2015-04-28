@@ -145,7 +145,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<TablespaceProto> tablespaces = masterContext.getCatalog().getAllTablespaces();
     List<Tuple> tuples = new ArrayList<Tuple>(tablespaces.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (TablespaceProto tablespace: tablespaces) {
       aTuple = new VTuple(outSchema.size());
@@ -180,7 +180,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<DatabaseProto> databases = masterContext.getCatalog().getAllDatabases();
     List<Tuple> tuples = new ArrayList<Tuple>(databases.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (DatabaseProto database: databases) {
       aTuple = new VTuple(outSchema.size());
@@ -210,7 +210,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<TableDescriptorProto> tables = masterContext.getCatalog().getAllTables();
     List<Tuple> tuples = new ArrayList<Tuple>(tables.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (TableDescriptorProto table: tables) {
       aTuple = new VTuple(outSchema.size());
@@ -246,7 +246,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<ColumnProto> columnsList = masterContext.getCatalog().getAllColumns();
     List<Tuple> tuples = new ArrayList<Tuple>(columnsList.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     int columnId = 1, prevtid = -1, tid = 0;
     
     for (ColumnProto column: columnsList) {
@@ -294,7 +294,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<IndexProto> indexList = masterContext.getCatalog().getAllIndexes();
     List<Tuple> tuples = new ArrayList<Tuple>(indexList.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (IndexProto index: indexList) {
       aTuple = new VTuple(outSchema.size());
@@ -333,7 +333,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<TableOptionProto> optionList = masterContext.getCatalog().getAllTableOptions();
     List<Tuple> tuples = new ArrayList<Tuple>(optionList.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (TableOptionProto option: optionList) {
       aTuple = new VTuple(outSchema.size());
@@ -360,7 +360,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<TableStatsProto> statList = masterContext.getCatalog().getAllTableStats();
     List<Tuple> tuples = new ArrayList<Tuple>(statList.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (TableStatsProto stat: statList) {
       aTuple = new VTuple(outSchema.size());
@@ -387,7 +387,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<TablePartitionProto> partitionList = masterContext.getCatalog().getAllPartitions();
     List<Tuple> tuples = new ArrayList<Tuple>(partitionList.size());
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple;
+    VTuple aTuple;
     
     for (TablePartitionProto partition: partitionList) {
       aTuple = new VTuple(outSchema.size());
@@ -418,7 +418,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private Tuple getQueryMasterTuple(Schema outSchema, Worker aWorker) {
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple = new VTuple(outSchema.size());
+    VTuple aTuple = new VTuple(outSchema.size());
     WorkerResource aResource = aWorker.getResource();
     
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
@@ -464,7 +464,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private Tuple getWorkerTuple(Schema outSchema, Worker aWorker) {
     List<Column> columns = outSchema.getColumns();
-    Tuple aTuple = new VTuple(outSchema.size());
+    VTuple aTuple = new VTuple(outSchema.size());
     WorkerResource aResource = aWorker.getResource();
     
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {

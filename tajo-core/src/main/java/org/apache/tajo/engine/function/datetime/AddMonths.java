@@ -53,12 +53,12 @@ public class AddMonths extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum dateDatum = params.get(0);
-    int val = params.get(1).asInt4();
+    Datum dateDatum = params.asDatum(0);
+    int val = params.getInt4(1);
     if (val >= 0) {
       return dateDatum.plus(new IntervalDatum(val, 0));
     } else {
-      return dateDatum.minus(new IntervalDatum(0- val, 0));
+      return dateDatum.minus(new IntervalDatum(-val, 0));
     }
   }
 }

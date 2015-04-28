@@ -175,7 +175,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     while(!context.isStopped() && (tuple = child.next()) != null) {
       Tuple groupingKey = new VTuple(groupingKeyIndexes.length);
       for (int i = 0; i < groupingKeyIndexes.length; i++) {
-        groupingKey.put(i, tuple.get(groupingKeyIndexes[i]));
+        groupingKey.put(i, tuple.asDatum(groupingKeyIndexes[i]));
       }
       for (int i = 0; i < distinctAggregators.length; i++) {
         distinctAggregators[i].compute(groupingKey, tuple);
@@ -360,7 +360,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     public void compute(Tuple groupingKey, Tuple tuple) throws IOException {
       Tuple distinctKeyTuple = new VTuple(distinctKeyIndexes.length);
       for (int i = 0; i < distinctKeyIndexes.length; i++) {
-        distinctKeyTuple.put(i, tuple.get(distinctKeyIndexes[i]));
+        distinctKeyTuple.put(i, tuple.asDatum(distinctKeyIndexes[i]));
       }
 
       Set<Tuple> distinctEntry = distinctAggrDatas.get(groupingKey);
@@ -415,7 +415,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       }
       // node sequence, groupingKeys, 1'st distinctKeys, 2'st distinctKeys, ...
       // If n'st == this.nodeSequence set with real data, otherwise set with NullDatum
-      Tuple tuple = new VTuple(resultTupleLength);
+      VTuple tuple = new VTuple(resultTupleLength);
       int tupleIndex = 0;
       tuple.put(tupleIndex++, nodeSequenceDatum);
 
@@ -423,7 +423,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       Tuple groupingKeyTuple = currentGroupingTuples.getKey();
       int groupingKeyLength = groupingKeyTuple.size();
       for (int i = 0; i < groupingKeyLength; i++, tupleIndex++) {
-        tuple.put(tupleIndex, groupingKeyTuple.get(i));
+        tuple.put(tupleIndex, groupingKeyTuple.asDatum(i));
       }
 
       // merge distinctKey
@@ -432,13 +432,13 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
           Tuple distinctKeyTuple = distinctKeyIterator.next();
           int distinctKeyLength = distinctKeyTuple.size();
           for (int j = 0; j < distinctKeyLength; j++, tupleIndex++) {
-            tuple.put(tupleIndex, distinctKeyTuple.get(j));
+            tuple.put(tupleIndex, distinctKeyTuple.asDatum(j));
           }
         } else {
           Tuple dummyTuple = distinctAggregators[i].getDummyTuple();
           int dummyTupleSize = dummyTuple.size();
           for (int j = 0; j < dummyTupleSize; j++, tupleIndex++) {
-            tuple.put(tupleIndex, dummyTuple.get(j));
+            tuple.put(tupleIndex, dummyTuple.asDatum(j));
           }
         }
       }
@@ -457,7 +457,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
         }
         int tupleSize = nonDistinctTuple.size();
         for (int j = 0; j < tupleSize; j++, tupleIndex++) {
-          tuple.put(tupleIndex, nonDistinctTuple.get(j));
+          tuple.put(tupleIndex, nonDistinctTuple.asDatum(j));
         }
       }
       return tuple;

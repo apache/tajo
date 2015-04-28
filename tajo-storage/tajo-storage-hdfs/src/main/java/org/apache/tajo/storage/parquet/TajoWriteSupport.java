@@ -22,7 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import parquet.hadoop.api.WriteSupport;
 import parquet.io.api.Binary;
@@ -98,11 +97,10 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
       if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE) {
         continue;
       }
-      Datum datum = tuple.get(tajoIndex);
       Type fieldType = fields.get(index);
-      if (!tuple.isNull(tajoIndex)) {
+      if (!tuple.isBlankOrNull(tajoIndex)) {
         recordConsumer.startField(fieldType.getName(), index);
-        writeValue(fieldType, column, datum);
+        writeValue(fieldType, column, tuple, tajoIndex);
         recordConsumer.endField(fieldType.getName(), index);
       } else if (fieldType.isRepetition(Type.Repetition.REQUIRED)) {
         throw new RuntimeException("Null-value for required field: " +
@@ -112,34 +110,34 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
     }
   }
 
-  private void writeValue(Type fieldType, Column column, Datum datum) {
+  private void writeValue(Type fieldType, Column column, Tuple tuple, int index) {
     switch (column.getDataType().getType()) {
       case BOOLEAN:
-        recordConsumer.addBoolean(datum.asBool());
+        recordConsumer.addBoolean(tuple.getBool(index));
         break;
       case BIT:
       case INT2:
       case INT4:
-        recordConsumer.addInteger(datum.asInt4());
+        recordConsumer.addInteger(tuple.getInt4(index));
         break;
       case INT8:
-        recordConsumer.addLong(datum.asInt8());
+        recordConsumer.addLong(tuple.getInt8(index));
         break;
       case FLOAT4:
-        recordConsumer.addFloat(datum.asFloat4());
+        recordConsumer.addFloat(tuple.getFloat4(index));
         break;
       case FLOAT8:
-        recordConsumer.addDouble(datum.asFloat8());
+        recordConsumer.addDouble(tuple.getFloat8(index));
         break;
       case CHAR:
       case TEXT:
-        recordConsumer.addBinary(Binary.fromByteArray(datum.asTextBytes()));
+        recordConsumer.addBinary(Binary.fromByteArray(tuple.getBytes(index)));
         break;
       case PROTOBUF:
       case BLOB:
       case INET4:
       case INET6:
-        recordConsumer.addBinary(Binary.fromByteArray(datum.asByteArray()));
+        recordConsumer.addBinary(Binary.fromByteArray(tuple.getBytes(index)));
         break;
       default:
         break;

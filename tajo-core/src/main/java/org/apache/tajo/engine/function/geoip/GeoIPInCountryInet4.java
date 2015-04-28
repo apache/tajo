@@ -48,12 +48,12 @@ public class GeoIPInCountryInet4 extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    if (params.get(0) instanceof NullDatum || params.get(1) instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    String addr = params.get(0).asChars();
-    String otherCode = params.get(1).asChars();
+    String addr = params.getText(0);
+    String otherCode = params.getText(1);
     String thisCode = GeoIPUtil.getCountryCode(addr);
 
     return DatumFactory.createBool(thisCode.equals(otherCode));

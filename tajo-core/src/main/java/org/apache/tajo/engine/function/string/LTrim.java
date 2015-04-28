@@ -67,13 +67,15 @@ public class LTrim extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
+    String input = params.getText(0);
     if (!hasTrimCharacters) {
-      return DatumFactory.createText(StringUtils.stripStart(datum.asChars(), null));
+      return DatumFactory.createText(StringUtils.stripStart(input, null));
     } else {
-      return DatumFactory.createText(StringUtils.stripStart(datum.asChars(), params.get(1).asChars()));
+      return DatumFactory.createText(StringUtils.stripStart(input, params.getText(1)));
     }
   }
 }
