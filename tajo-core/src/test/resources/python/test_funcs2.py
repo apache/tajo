@@ -14,19 +14,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from tajo_util import outputType
+from tajo_util import output_type
 
 #Percent- Percentage
-@outputType("float8")
+@output_type("float8")
 def percent(num, total):
     return num * 100 / float(total)
 
 #commaFormat- format a number with commas, 12345-> 12,345
-@outputType("text")
+@output_type("text")
 def comma_format(num):
     return '{:,}'.format(num)
 
 #concatMultiple- concat multiple words
-@outputType("text")
+@output_type("text")
 def concat4(word1, word2, word3, word4):
     return word1 + " " + word2 + " " + word3 + " " + word4
