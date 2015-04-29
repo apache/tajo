@@ -186,10 +186,9 @@ public class EvalNodeDeserializer {
               evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
             }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
-            AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {
               AggregationFunctionCallEval aggFunc =
-                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), params);
 
               PlanProto.AggFunctionEvalSpec aggFunctionProto = protoNode.getAggFunction();
               if (aggFunctionProto.getFirstPhase()) {
@@ -203,11 +202,16 @@ public class EvalNodeDeserializer {
               }
               current = aggFunc;
 
+              if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
+                evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc,
+                    aggFunc.isIntermediatePhase(), aggFunc.isFinalPhase()));
+              }
+
             } else {
               WinFunctionEvalSpec windowFuncProto = protoNode.getWinFunction();
 
               WindowFunctionEval winFunc =
-                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params,
+                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), params,
                       convertWindowFrame(windowFuncProto.getWindowFrame()));
 
               if (windowFuncProto.getSortSpecCount() > 0) {

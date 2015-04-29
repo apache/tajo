@@ -18,6 +18,8 @@
 
 package org.apache.tajo.plan.function.stream;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.util.TUtil;
 
 import java.io.File;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 public class StreamingUtil {
+
+  private static final Log LOG = LogFactory.getLog(StreamingUtil.class);
 
   private static final String BASH = "bash";
   private static final String PATH = "PATH";
@@ -57,6 +61,14 @@ public class StreamingUtil {
       sb.append("exec ");
       sb.append(argvAsString);
       cmdArgs.add(sb.toString());
+    }
+
+    if (LOG.isDebugEnabled()) {
+      StringBuffer sb = new StringBuffer("command: ");
+      for (String cmd : cmdArgs) {
+        sb.append(cmd).append(" ");
+      }
+      LOG.debug(sb.toString());
     }
 
     // Start the external process

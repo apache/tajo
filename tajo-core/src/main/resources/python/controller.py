@@ -19,6 +19,7 @@ import sys
 import os
 import logging
 import base64
+import json
 
 from datetime import datetime
 try:
@@ -69,17 +70,42 @@ TYPE_DATETIME = "T"
 TYPE_BIGINTEGER = "N"
 TYPE_BIGDECIMAL = "E"
 
+EVAL_FUNC = "eval"
+MERGE_FUNC = "merge"
+GET_PARTIAL_RESULT_FUNC = "get_partial_result"
+GET_FINAL_RESULT_FUNC = "get_final_result"
+GET_INTERM_SCHEMA_FUNC = "get_interm_schema"
+UPDATE_CONTEXT = "update_context"
+GET_CONTEXT = "get_context"
+
+WRAPPED_EVAL_FUNC = PRE_WRAP_DELIM + EVAL_FUNC + POST_WRAP_DELIM
+WRAPPED_MERGE_FUNC = PRE_WRAP_DELIM + MERGE_FUNC + POST_WRAP_DELIM
+WRAPPED_GET_PARTIAL_RESULT_FUNC = PRE_WRAP_DELIM + GET_PARTIAL_RESULT_FUNC + POST_WRAP_DELIM
+WRAPPED_GET_FINAL_RESULT_FUNC = PRE_WRAP_DELIM + GET_FINAL_RESULT_FUNC + POST_WRAP_DELIM
+WRAPPED_GET_INTERM_SCHEMA_FUNC = PRE_WRAP_DELIM + GET_INTERM_SCHEMA_FUNC + POST_WRAP_DELIM
+WRAPPED_UPDATE_CONTEXT = PRE_WRAP_DELIM + UPDATE_CONTEXT + POST_WRAP_DELIM
+WRAPPED_GET_CONTEXT = PRE_WRAP_DELIM + GET_CONTEXT + POST_WRAP_DELIM
+
 END_OF_STREAM = TYPE_CHARARRAY + "\x04" + END_RECORD_DELIM
 TURN_ON_OUTPUT_CAPTURING = TYPE_CHARARRAY + "TURN_ON_OUTPUT_CAPTURING" + END_RECORD_DELIM
 NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
+
 class PythonStreamingController:
+    scalar_func = None
+    udaf_instance = None
+
+    should_log = False
+    log_message = logging.info
+    module_name = None
+    output_schema = None
+
     def __init__(self, profiling_mode=False):
         self.profiling_mode = profiling_mode
 
     def main(self,
-             module_name, file_path, func_name, cache_path,
-             output_stream_path, error_stream_path, log_file_name, output_schema):
+             module_name, file_path, cache_path,
+             output_stream_path, error_stream_path, log_file_name, output_schema, name, func_type):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.
@@ -88,72 +114,106 @@ class PythonStreamingController:
 
         self.input_stream = sys.stdin
         # TODO: support controller logging
-        # self.log_stream = open(output_stream_path, 'a')
-        # sys.stderr = open(error_stream_path, 'w')
+        self.log_stream = open(output_stream_path, 'a')
+        sys.stderr = open(error_stream_path, 'w')
 
         sys.path.append(file_path)
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        should_log = False
-        if should_log:
+        if self.should_log:
             logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
             logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
                          "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
+        self.module_name = module_name
+        self.output_schema = output_schema
         input_str = self.get_next_input()
 
-        try:
-            func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
-        except:
-            # These errors should always be caused by user code.
-            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-            self.close_controller(-1)
-
-        log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
-            log_message = logging.debug
+            self.log_message = logging.debug
 
         while input_str != END_OF_STREAM:
-            try:
-                try:
-                    if should_log:
-                        log_message("Serialized Input: %s" % (input_str))
-                    inputs = deserialize_input(input_str)
-                    if should_log:
-                        log_message("Deserialized Input: %s" % (unicode(inputs)))
-                except:
-                    # Capture errors where the user passes in bad data.
-                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-                    self.close_controller(-3)
 
-                try:
-                    func_output = func(*inputs)
-                    if should_log:
-                        log_message("UDF Output: %s" % (unicode(func_output)))
-                except:
-                    # These errors should always be caused by user code.
-                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-                    self.close_controller(-2)
+            if func_type == 'UDAF':
+                class_name = name
+                func_name = self.get_func_name(input_str)
+                data_start = input_str.find(WRAPPED_PARAMETER_DELIMITER) + len(WRAPPED_PARAMETER_DELIMITER)
+                input_str = input_str[data_start:]
 
-                output = serialize_output(func_output, output_schema)
-                if should_log:
-                    log_message("Serialized Output: %s" % (output))
+                if func_name == UPDATE_CONTEXT:
+                    self.update_context(input_str)
+                elif func_name == GET_CONTEXT:
+                    self.get_context()
+                else:
+                    func = self.load_udaf(module_name, class_name, func_name)
+                    if func_name == MERGE_FUNC:
+                        json_data = input_str.split(WRAPPED_PARAMETER_DELIMITER)[1]
+                        deserialized = json.loads(json_data)
+                        func(deserialized)
+                        self.stream_output.write(END_RECORD_DELIM)
+                        sys.stdout.flush()
+                        sys.stderr.flush()
+                        self.stream_output.flush()
+                        self.stream_error.flush()
+                        del deserialized
+                        del json_data
+                    else:
+                        self.process_input(func_name, func, input_str)
 
-                self.stream_output.write( "%s%s" % (output, END_RECORD_DELIM) )
-            except Exception as e:
-                # This should only catch internal exceptions with the controller
-                # and pig- not with user code.
-                import traceback
-                traceback.print_exc(file=self.stream_error)
-                sys.exit(-3)
-
-            sys.stdout.flush()
-            sys.stderr.flush()
-            self.stream_output.flush()
-            self.stream_error.flush()
+            elif func_type == 'UDF':
+                func_name = name
+                if self.scalar_func is None:
+                    self.scalar_func = self.load_udf(module_name, func_name)
+                self.process_input(func_name, self.scalar_func, input_str)
+            else:
+                raise Exception("Unsupported type: " + func_type)
 
             input_str = self.get_next_input()
+
+    def process_input(self, func_name, func, input_str):
+        try:
+            try:
+                if self.should_log:
+                    self.log_message("Serialized Input: %s" % (input_str))
+                inputs = deserialize_input(input_str)
+                if self.should_log:
+                    self.log_message("Deserialized Input: %s" % (unicode(inputs)))
+            except:
+                # Capture errors where the user passes in bad data.
+                write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+                self.close_controller(-3)
+
+            try:
+                if func_name == GET_PARTIAL_RESULT_FUNC:
+                    func_output = func()
+                    output = json.dumps(func_output)
+                elif func_name == GET_FINAL_RESULT_FUNC:
+                    func_output = func()
+                    output = serialize_output(func_output, self.output_schema)
+                else:
+                    func_output = func(*inputs)
+                    output = serialize_output(func_output, self.output_schema)
+
+                if self.should_log:
+                    self.log_message("Serialized Output: %s" % output)
+            except:
+                # These errors should always be caused by user code.
+                write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+                self.close_controller(-2)
+
+            self.stream_output.write("%s%s" % (output, END_RECORD_DELIM))
+        except Exception as e:
+            # This should only catch internal exceptions with the controller
+            # and pig- not with user code.
+            import traceback
+            traceback.print_exc(file=self.stream_error)
+            sys.exit(-3)
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.stream_output.flush()
+        self.stream_error.flush()
 
     def get_next_input(self):
         input_stream = self.input_stream
@@ -185,6 +245,77 @@ class PythonStreamingController:
         self.stream_output.close()
         sys.exit(exit_code)
 
+    def load_udf(self, module_name, func_name):
+        try:
+            func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
+            return func
+        except:
+            # These errors should always be caused by user code.
+            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+            self.close_controller(-1)
+
+    def load_udaf(self, module_name, class_name, func_name):
+        try:
+            if self.udaf_instance is None:
+                clazz = __import__(module_name, globals(), locals(), [class_name]).__dict__[class_name]
+                self.udaf_instance = clazz()
+            func = getattr(self.udaf_instance, func_name)
+            return func
+        except:
+            # These errors should always be caused by user code.
+            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+            self.close_controller(-1)
+
+    @staticmethod
+    def get_func_name(input_str):
+        splits = input_str.split(WRAPPED_PARAMETER_DELIMITER)
+        if splits[0] == WRAPPED_EVAL_FUNC:
+            return EVAL_FUNC
+        elif splits[0] == WRAPPED_MERGE_FUNC:
+            return MERGE_FUNC
+        elif splits[0] == WRAPPED_GET_PARTIAL_RESULT_FUNC:
+            return GET_PARTIAL_RESULT_FUNC
+        elif splits[0] == WRAPPED_GET_FINAL_RESULT_FUNC:
+            return GET_FINAL_RESULT_FUNC
+        elif splits[0] == WRAPPED_GET_INTERM_SCHEMA_FUNC:
+            return GET_INTERM_SCHEMA_FUNC
+        elif splits[0] == WRAPPED_UPDATE_CONTEXT:
+            return UPDATE_CONTEXT
+        elif splits[0] == WRAPPED_GET_CONTEXT:
+            return GET_CONTEXT
+        else:
+            raise Exception("Not supported function: " + splits[0])
+
+    def update_context(self, input_str):
+        if self.udaf_instance is not None:
+            deserialize_class(self.udaf_instance, input_str)
+        self.stream_output.write(END_RECORD_DELIM)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.stream_output.flush()
+        self.stream_error.flush()
+
+    def get_context(self):
+        serialized = ''
+        if self.udaf_instance is not None:
+            serialized = serialize_class(self.udaf_instance)
+        self.stream_output.write("%s%s" % (serialized, END_RECORD_DELIM))
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.stream_output.flush()
+        self.stream_error.flush()
+
+def serialize_class(instance):
+    serialized = json.dumps(instance.__dict__)
+    return serialized
+
+def deserialize_class(instance, json_data):
+    if json_data == NULL_BYTE:
+        instance.reset()
+    else:
+        instance.reset()
+        instance.__dict__ = json.loads(json_data)
+
 def deserialize_input(input_str):
     if len(input_str) == 0:
         return []
@@ -209,30 +340,33 @@ def _deserialize_input(input_str, si, ei):
     schema = tokens[0];
     param = tokens[1];
 
-    if schema == NULL_BYTE:
+    return deserialize_data(schema, param)
+
+def deserialize_data(type, data_str):
+    if type == NULL_BYTE:
         return None
-    elif schema == TYPE_CHARARRAY:
-        return unicode(param, 'utf-8')
-    elif schema == TYPE_BYTEARRAY:
-        return bytearray(param)
-    elif schema == TYPE_INTEGER:
-        return int(param)
-    elif schema == TYPE_LONG or schema == TYPE_BIGINTEGER:
-        return long(param)
-    elif schema == TYPE_FLOAT or schema == TYPE_DOUBLE or schema == TYPE_BIGDECIMAL:
-        return float(param)
-    elif schema == TYPE_BOOLEAN:
-        return param == "true"
-    elif schema == TYPE_DATETIME:
+    elif type == TYPE_CHARARRAY:
+        return unicode(data_str, 'utf-8')
+    elif type == TYPE_BYTEARRAY:
+        return bytearray(data_str)
+    elif type == TYPE_INTEGER:
+        return int(data_str)
+    elif type == TYPE_LONG or type == TYPE_BIGINTEGER:
+        return long(data_str)
+    elif type == TYPE_FLOAT or type == TYPE_DOUBLE or type == TYPE_BIGDECIMAL:
+        return float(data_str)
+    elif type == TYPE_BOOLEAN:
+        return data_str == "true"
+    elif type == TYPE_DATETIME:
         # Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
         if USE_DATEUTIL:
-            return parser.parse(param)
+            return parser.parse(data_str)
         else:
             # Try to use datetime even though it doesn't handle time zones properly,
             # We only use the first 3 microsecond digits and drop time zone (first 23 characters)
-            return datetime.strptime(param, "%Y-%m-%dT%H:%M:%S.%f")
+            return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S.%f")
     else:
-        raise Exception("Can't determine type of input: %s" % param)
+        raise Exception("Can't determine type of input: %s" % data_str)
 
 def _deserialize_collection(input_str, return_type, si, ei):
     list_result = []
@@ -313,6 +447,8 @@ def serialize_output(output, out_schema, utfEncodeAllFields=False):
         result = str(output)
     elif output_type == datetime:
         result = output.isoformat()
+    elif output_type == list:
+        result = list_to_str(output, out_schema)
     elif utfEncodeAllFields or output_type == str or output_type == unicode:
         # unicode is necessary in cases where we're encoding non-strings.
         result = unicode(output).encode('utf-8')
@@ -324,7 +460,14 @@ def serialize_output(output, out_schema, utfEncodeAllFields=False):
     else:
         return result
 
+def list_to_str(list_of_item, out_schema):
+    result = ''
+    for item in list_of_item:
+        result += serialize_output(item, out_schema) + WRAPPED_FIELD_DELIMITER
+    result = result[:len(result)-len(WRAPPED_FIELD_DELIMITER)]
+    return result
+
 if __name__ == '__main__':
     controller = PythonStreamingController()
     controller.main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8])
+                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9])

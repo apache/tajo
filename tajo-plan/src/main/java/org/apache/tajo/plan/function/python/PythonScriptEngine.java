@@ -27,10 +27,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.function.FunctionInvocation;
-import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.function.FunctionSupplement;
-import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.function.*;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -70,23 +69,45 @@ public class PythonScriptEngine extends TajoScriptEngine {
     Set<FunctionDesc> functionDescs = TUtil.newHashSet();
 
     InputStream in = getScriptAsStream(path);
-    List<FuncInfo> functions = null;
+    List<FunctionInfo> functions = null;
     try {
       functions = getFunctions(in);
     } finally {
       in.close();
     }
-    for(FuncInfo funcInfo : functions) {
-      TajoDataTypes.DataType returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(funcInfo.returnType));
-      FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, funcInfo.funcName,
-          returnType, createParamTypes(funcInfo.paramNum));
+    for(FunctionInfo funcInfo : functions) {
+      FunctionSignature signature;
       FunctionInvocation invocation = new FunctionInvocation();
-      PythonInvocationDesc invocationDesc = new PythonInvocationDesc(funcInfo.funcName, path.getPath());
-      invocation.setPython(invocationDesc);
       FunctionSupplement supplement = new FunctionSupplement();
-      functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+      if (funcInfo instanceof ScalarFuncInfo) {
+        ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
+        TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
+        signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
+            returnType, createParamTypes(scalarFuncInfo.paramNum));
+        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
+        invocation.setPython(invocationDesc);
+        functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+      } else {
+        AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
+        if (isValidUdaf(aggFuncInfo)) {
+          TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
+          signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
+              returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
+          PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
+          invocation.setPythonAggregation(invocationDesc);
+          functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+        }
+      }
     }
     return functionDescs;
+  }
+
+  private static boolean isValidUdaf(AggFuncInfo aggFuncInfo) {
+    if (aggFuncInfo.className != null && aggFuncInfo.evalInfo != null && aggFuncInfo.mergeInfo != null
+      && aggFuncInfo.getPartialResultInfo != null && aggFuncInfo.getFinalResultInfo != null) {
+      return true;
+    }
+    return false;
   }
 
   private static TajoDataTypes.DataType[] createParamTypes(int paramNum) {
@@ -97,34 +118,63 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return paramTypes;
   }
 
-  private static final Pattern pSchema = Pattern.compile("^\\s*\\W+outputType.*");
-  private static final Pattern pDef = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
+  private static TajoDataTypes.DataType[] getReturnTypes(ScalarFuncInfo scalarFuncInfo) {
+    TajoDataTypes.DataType[] returnTypes = new TajoDataTypes.DataType[scalarFuncInfo.returnTypes.length];
+    for (int i = 0; i < scalarFuncInfo.returnTypes.length; i++) {
+      returnTypes[i] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(scalarFuncInfo.returnTypes[i]));
+    }
+    return returnTypes;
+  }
 
-  private static class FuncInfo {
-    String returnType;
+  private static final Pattern pSchema = Pattern.compile("^\\s*\\W+output_type.*");
+  private static final Pattern pDef = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
+  private static final Pattern pClass = Pattern.compile("class.*");
+
+  private interface FunctionInfo {
+
+  }
+
+  private static class AggFuncInfo implements FunctionInfo {
+    String className;
+    String funcName;
+    ScalarFuncInfo evalInfo;
+    ScalarFuncInfo mergeInfo;
+    ScalarFuncInfo getPartialResultInfo;
+    ScalarFuncInfo getFinalResultInfo;
+  }
+
+  private static class ScalarFuncInfo implements FunctionInfo {
+    String[] returnTypes;
     String funcName;
     int paramNum;
 
-    public FuncInfo(String returnType, String funcName, int paramNum) {
-      this.returnType = returnType.toUpperCase();
+    public ScalarFuncInfo(String[] quotedSchemaStrings, String funcName, int paramNum) {
+      this.returnTypes = new String[quotedSchemaStrings.length];
+      for (int i = 0; i < quotedSchemaStrings.length; i++) {
+        String quotedString = quotedSchemaStrings[i].trim();
+        String[] tokens = quotedString.substring(1, quotedString.length()-1).split(":");
+        this.returnTypes[i] = tokens.length == 1 ? tokens[0].toUpperCase() : tokens[1].toUpperCase();
+      }
       this.funcName = funcName;
       this.paramNum = paramNum;
     }
   }
 
   // TODO: python parser must be improved.
-  private static List<FuncInfo> getFunctions(InputStream is) throws IOException {
-    List<FuncInfo> functions = TUtil.newList();
+  private static List<FunctionInfo> getFunctions(InputStream is) throws IOException {
+    List<FunctionInfo> functions = TUtil.newList();
     InputStreamReader in = new InputStreamReader(is, Charset.defaultCharset());
     BufferedReader br = new BufferedReader(in);
     String line = br.readLine();
-    String schemaString = null;
+    String[] quotedSchemaStrings = null;
+    AggFuncInfo aggFuncInfo = null;
     while (line != null) {
       if (pSchema.matcher(line).matches()) {
-        int start = line.indexOf("(") + 2; //drop brackets/quotes
-        int end = line.lastIndexOf(")") - 1;
-        schemaString = line.substring(start,end).trim();
+        int start = line.indexOf("(") + 1; //drop brackets
+        int end = line.lastIndexOf(")");
+        quotedSchemaStrings = line.substring(start,end).trim().split(",");
       } else if (pDef.matcher(line).matches()) {
+        boolean isUdaf = aggFuncInfo != null && line.indexOf("def ") > 0;
         int nameStart = line.indexOf("def ") + "def ".length();
         int nameEnd = line.indexOf('(');
         int signatureEnd = line.indexOf(')');
@@ -135,13 +185,47 @@ public class PythonScriptEngine extends TajoScriptEngine {
         } else {
           paramNum = params.length;
         }
+        if (params[0].trim().equals("self")) {
+          paramNum--;
+        }
 
         String functionName = line.substring(nameStart, nameEnd).trim();
-        schemaString = schemaString == null ? "blob" : schemaString;
-        functions.add(new FuncInfo(schemaString, functionName, paramNum));
-        schemaString = null;
+        quotedSchemaStrings = quotedSchemaStrings == null ? new String[] {"'blob'"} : quotedSchemaStrings;
+
+        if (isUdaf) {
+          if (functionName.equals("eval")) {
+            aggFuncInfo.evalInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+          } else if (functionName.equals("merge")) {
+            aggFuncInfo.mergeInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+          } else if (functionName.equals("get_partial_result")) {
+            aggFuncInfo.getPartialResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+          } else if (functionName.equals("get_final_result")) {
+            aggFuncInfo.getFinalResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+          }
+        } else {
+          aggFuncInfo = null;
+          functions.add(new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum));
+        }
+
+        quotedSchemaStrings = null;
+      } else if (pClass.matcher(line).matches()) {
+        // UDAF
+        if (aggFuncInfo != null) {
+          functions.add(aggFuncInfo);
+        }
+        aggFuncInfo = new AggFuncInfo();
+        int classNameStart = line.indexOf("class ") + "class ".length();
+        int classNameEnd = line.indexOf("(");
+        if (classNameEnd < 0) {
+          classNameEnd = line.indexOf(":");
+        }
+        aggFuncInfo.className = line.substring(classNameStart, classNameEnd).trim();
+        aggFuncInfo.funcName = aggFuncInfo.className.toLowerCase();
       }
       line = br.readLine();
+    }
+    if (aggFuncInfo != null) {
+      functions.add(aggFuncInfo);
     }
     br.close();
     in.close();
@@ -162,12 +246,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final int PATH_TO_CONTROLLER_FILE = 1;
   private static final int UDF_FILE_NAME = 2; // Name of file where UDF function is defined
   private static final int UDF_FILE_PATH = 3; // Path to directory containing file where UDF function is defined
-  private static final int UDF_NAME = 4; // Name of UDF function being called.
-  private static final int PATH_TO_FILE_CACHE = 5; // Directory where required files (like tajo_util) are cached on cluster nodes.
-  private static final int STD_OUT_OUTPUT_PATH = 6; // File for output from when user writes to standard output.
-  private static final int STD_ERR_OUTPUT_PATH = 7; // File for output from when user writes to standard error.
-  private static final int CONTROLLER_LOG_FILE_PATH = 8; // Controller log file logs progress through the controller script not user code.
-  private static final int OUT_SCHEMA = 9; // the schema of the output column
+  private static final int PATH_TO_FILE_CACHE = 4; // Directory where required files (like tajo_util) are cached on cluster nodes.
+  private static final int STD_OUT_OUTPUT_PATH = 5; // File for output from when user writes to standard output.
+  private static final int STD_ERR_OUTPUT_PATH = 6; // File for output from when user writes to standard error.
+  private static final int CONTROLLER_LOG_FILE_PATH = 7; // Controller log file logs progress through the controller script not user code.
+  private static final int OUT_SCHEMA = 8; // the schema of the output column
+  private static final int FUNCTION_OR_CLASS_NAME = 9; // if FUNCTION_TYPE is UDF, function name; if FUNCTION_TYPE is UDAF, class name.
+  private static final int FUNCTION_TYPE = 10; // UDF or UDAF
 
   private Configuration systemConf;
 
@@ -182,36 +267,42 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   private final FunctionSignature functionSignature;
   private final PythonInvocationDesc invocationDesc;
-  private final Schema inSchema;
-  private final Schema outSchema;
-  private final int [] projectionCols = new int[]{0};
+  private Schema inSchema;
+  private Schema outSchema;
+  private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
 
-  private static final Tuple EMPTY_INPUT = new VTuple(0);
+  private final Tuple EMPTY_INPUT = new VTuple(0);
+  private final Schema EMPTY_SCHEMA = new Schema();
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
-    if (!functionDesc.getInvocation().hasPython()) {
+    if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
+    setSchema();
+  }
 
-    TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-    inSchema = new Schema();
-    for (int i = 0; i < paramTypes.length; i++) {
-      inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+  public PythonScriptEngine(FunctionDesc functionDesc, boolean intermediatePhase, boolean finalPhase) {
+    if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
+      throw new IllegalStateException("Function type must be 'python'");
     }
-    outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+    functionSignature = functionDesc.getSignature();
+    invocationDesc = functionDesc.getInvocation().getPython();
+    this.intermediatePhase = intermediatePhase;
+    this.finalPhase = finalPhase;
+    setSchema();
   }
 
   @Override
   public void start(Configuration systemConf) throws IOException {
     this.systemConf = systemConf;
     startUdfController();
-    createInputHandlers();
     setStreams();
+    createInputHandlers();
     if (LOG.isDebugEnabled()) {
       LOG.debug("PythonScriptExecutor starts up");
     }
@@ -220,11 +311,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   @Override
   public void shutdown() {
     process.destroy();
-    FileUtil.cleanup(LOG, stdin);
-    FileUtil.cleanup(LOG, stdout);
-    FileUtil.cleanup(LOG, stderr);
-    FileUtil.cleanup(LOG, inputHandler);
-    FileUtil.cleanup(LOG, outputHandler);
+    FileUtil.cleanup(LOG, stdin, stdout, stderr, inputHandler, outputHandler);
     stdin = null;
     stdout = stderr = null;
     inputHandler = null;
@@ -245,7 +332,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
    * @throws IOException
    */
   private String[] buildCommand() throws IOException {
-    String[] command = new String[10];
+    String[] command = new String[11];
 
     // TODO: support controller logging
     String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
@@ -269,7 +356,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     fileName = fileName.endsWith(FILE_EXTENSION) ? fileName.substring(0, fileName.length()-3) : fileName;
     command[UDF_FILE_NAME] = fileName;
     command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
-    command[UDF_NAME] = funcName;
     String fileCachePath = systemConf.get(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname());
     if (fileCachePath == null) {
       throw new IOException(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname() + " must be set.");
@@ -279,17 +365,53 @@ public class PythonScriptEngine extends TajoScriptEngine {
     command[STD_ERR_OUTPUT_PATH] = errOutFileName;
     command[CONTROLLER_LOG_FILE_PATH] = controllerLogFileName;
     command[OUT_SCHEMA] = outSchema.getColumn(0).getDataType().getType().name().toLowerCase();
+    command[FUNCTION_OR_CLASS_NAME] = funcName;
+    command[FUNCTION_TYPE] = invocationDesc.isScalarFunction() ? "UDF" : "UDAF";
 
     return command;
   }
 
-  private void createInputHandlers() {
-    TextLineSerializer serializer = lineSerDe.createSerializer(inSchema, pipeMeta);
+  private void setSchema() {
+    if (invocationDesc.isScalarFunction()) {
+      TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
+      inSchema = new Schema();
+      for (int i = 0; i < paramTypes.length; i++) {
+        inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+      }
+      outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+    } else {
+      // UDAF
+      if (!intermediatePhase && !finalPhase) {
+        // first phase
+        TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
+        inSchema = new Schema();
+        for (int i = 0; i < paramTypes.length; i++) {
+          inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+        }
+        outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+      } else if (intermediatePhase) {
+        inSchema = outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+      } else if (finalPhase) {
+        inSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+      }
+    }
+    projectionCols = new int[outSchema.size()];
+    for (int i = 0; i < outSchema.size(); i++) {
+      projectionCols[i] = i;
+    }
+  }
+
+  private void createInputHandlers() throws IOException {
+    setSchema();
+    TextLineSerializer serializer = lineSerDe.createSerializer(pipeMeta);
     serializer.init();
     this.inputHandler = new InputHandler(serializer);
+    inputHandler.bindTo(stdin);
     TextLineDeserializer deserializer = lineSerDe.createDeserializer(outSchema, pipeMeta, projectionCols);
     deserializer.init();
     this.outputHandler = new OutputHandler(deserializer);
+    outputHandler.bindTo(stdout);
   }
 
   /**
@@ -297,13 +419,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
    *
    * @throws IOException
    */
-  private void setStreams() throws IOException {
+  private void setStreams() {
     stdout = new DataInputStream(new BufferedInputStream(process.getInputStream()));
-    outputHandler.bindTo(stdout);
-
     stdin = new DataOutputStream(new BufferedOutputStream(process.getOutputStream()));
-    inputHandler.bindTo(stdin);
-
     stderr = new DataInputStream(new BufferedInputStream(process.getErrorStream()));
   }
 
@@ -342,16 +460,133 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return controllerPath;
   }
 
-  public Datum eval(Tuple input) {
+  /**
+   * Call Python scalar functions.
+   *
+   * @param input input tuple
+   * @return evaluated result datum
+   */
+  @Override
+  public Datum callScalarFunc(Tuple input) {
     try {
-      if (input == null) {
-        // When nothing is passed into the UDF the tuple
-        // being sent is the full tuple for the relation.
-        // We want it to be nothing (since that's what the user wrote).
-        input = EMPTY_INPUT;
-      }
+      inputHandler.putNext(input, inSchema);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    Datum result;
+    try {
+      result = outputHandler.getNext().get(0);
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
 
-      inputHandler.putNext(input);
+    return result;
+  }
+
+  /**
+   * Call Python aggregation functions.
+   *
+   * @param functionContext python function context
+   * @param input input tuple
+   */
+  @Override
+  public void callAggFunc(FunctionContext functionContext, Tuple input) {
+
+    String methodName;
+    if (!intermediatePhase && !finalPhase) {
+      // eval
+      methodName = "eval";
+    } else {
+      // merge
+      methodName = "merge";
+    }
+
+    try {
+      inputHandler.putNext(methodName, input, inSchema);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e);
+    }
+
+    try {
+      outputHandler.getNext();
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+  }
+
+  /**
+   * Restore the intermediate result in Python UDAF with the snapshot stored in the function context.
+   *
+   * @param functionContext
+   */
+  public void updatePythonSideContext(PythonAggFunctionContext functionContext) throws IOException {
+
+    try {
+      inputHandler.putNext("update_context", functionContext);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    try {
+      outputHandler.getNext();
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+  }
+
+  /**
+   * Get the snapshot of the intermediate result in the Python UDAF.
+   *
+   * @param functionContext
+   */
+  public void updateJavaSideContext(PythonAggFunctionContext functionContext) throws IOException {
+
+    try {
+      inputHandler.putNext("get_context", EMPTY_INPUT, EMPTY_SCHEMA);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    try {
+      outputHandler.getNext(functionContext);
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+  }
+
+  /**
+   * Get intermediate result after the first stage.
+   *
+   * @param functionContext
+   * @return
+   */
+  @Override
+  public String getPartialResult(FunctionContext functionContext) {
+    try {
+      inputHandler.putNext("get_partial_result", EMPTY_INPUT, EMPTY_SCHEMA);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    try {
+      return outputHandler.getPartialResultString();
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+  }
+
+  /**
+   * Get final result after the last stage.
+   *
+   * @param functionContext
+   * @return
+   */
+  @Override
+  public Datum getFinalResult(FunctionContext functionContext) {
+    try {
+      inputHandler.putNext("get_final_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
