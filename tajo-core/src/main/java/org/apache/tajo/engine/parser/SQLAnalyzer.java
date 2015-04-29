@@ -38,8 +38,7 @@ import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameBoundType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -477,56 +476,79 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           unit = WindowSpec.WindowFrameUnit.ROW;
         }
 
-        WindowSpec.WindowFrame windowFrame;
+        WindowSpec.WindowFrame windowFrame = null;
 
         if (checkIfExist(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
           Window_frame_betweenContext between = frameContext.window_frame_extent().window_frame_between();
-          WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
-          WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
+          WindowSpec.WindowBound startBound = buildWindowStartBound(between.window_frame_start_bound());
+          WindowSpec.WindowBound endBound = buildWindowEndBound(between.window_frame_end_bound());
 
+          // PRECEDING and FOLLOWING with Integer number cannot come with RANGE
+          if (unit == WindowSpec.WindowFrameUnit.RANGE) {
+            if (startBound.hasNumber() || endBound.hasNumber()) {
+              throw new SQLSyntaxError("PRECEDING and FOLLOWING are allowed with ROWS only");
+            }
+          }
           windowFrame = new WindowSpec.WindowFrame(unit, startBound, endBound);
         } else { // if there is only start bound
-          WindowSpec.WindowStartBound startBound =
+          WindowSpec.WindowBound startBound =
               buildWindowStartBound(frameContext.window_frame_extent().window_frame_start_bound());
+
+          // PRECEDING and FOLLOWING with Integer number cannot come with RANGE
+          if (unit == WindowSpec.WindowFrameUnit.RANGE) {
+            if (startBound.hasNumber()) {
+              throw new SQLSyntaxError("PRECEDING and FOLLOWING are allowed with ROWS only");
+            }
+          }
           windowFrame = new WindowSpec.WindowFrame(unit, startBound);
         }
 
+        // At this point, windowFrame has information only specified in SQL string
+        // , which means has no implicit information about default window frame values
         windowSpec.setWindowFrame(windowFrame);
       }
     }
     return windowSpec;
   }
 
-  public WindowSpec.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
-    WindowFrameStartBoundType boundType = null;
+  public WindowSpec.WindowBound buildWindowStartBound(Window_frame_start_boundContext context) {
+    WindowFrameBoundType boundType = null;
     if (checkIfExist(context.UNBOUNDED())) {
-      boundType = WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
-    } else if (checkIfExist(context.unsigned_value_specification())) {
-      boundType = WindowFrameStartBoundType.PRECEDING;
+      boundType = WindowFrameBoundType.UNBOUNDED_PRECEDING;
+    } else if (checkIfExist(context.PRECEDING())) {
+      boundType = WindowFrameBoundType.PRECEDING;
+    } else if (checkIfExist(context.FOLLOWING())) {
+      boundType = WindowFrameBoundType.FOLLOWING;
+    } else if (checkIfExist(context.CURRENT())){
+      boundType = WindowFrameBoundType.CURRENT_ROW;
     } else {
-      boundType = WindowFrameStartBoundType.CURRENT_ROW;
+      throw new SQLSyntaxError("Window frame - unknown start bound type");
     }
 
-    WindowSpec.WindowStartBound bound = new WindowSpec.WindowStartBound(boundType);
-    if (boundType == WindowFrameStartBoundType.PRECEDING) {
+    WindowSpec.WindowBound bound = new WindowSpec.WindowBound(boundType);
+    if (boundType == WindowFrameBoundType.PRECEDING || boundType == WindowFrameBoundType.FOLLOWING) {
       bound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
 
     return bound;
   }
 
-  public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
-    WindowFrameEndBoundType boundType;
+  public WindowSpec.WindowBound buildWindowEndBound(Window_frame_end_boundContext context) {
+    WindowFrameBoundType boundType;
     if (checkIfExist(context.UNBOUNDED())) {
-      boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
-    } else if (checkIfExist(context.unsigned_value_specification())) {
-      boundType = WindowFrameEndBoundType.FOLLOWING;
+      boundType = WindowFrameBoundType.UNBOUNDED_FOLLOWING;
+    } else if (checkIfExist(context.PRECEDING())) {
+      boundType = WindowFrameBoundType.PRECEDING;
+    } else if (checkIfExist(context.FOLLOWING())) {
+      boundType = WindowFrameBoundType.FOLLOWING;
+    } else if (checkIfExist(context.CURRENT())){
+      boundType = WindowFrameBoundType.CURRENT_ROW;
     } else {
-      boundType = WindowFrameEndBoundType.CURRENT_ROW;
+      throw new SQLSyntaxError("Window frame - unknown end bound type");
     }
 
-    WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(boundType);
-    if (boundType == WindowFrameEndBoundType.FOLLOWING) {
+    WindowSpec.WindowBound endBound = new WindowSpec.WindowBound(boundType);
+    if (boundType == WindowFrameBoundType.PRECEDING || boundType == WindowFrameBoundType.FOLLOWING) {
       endBound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
 

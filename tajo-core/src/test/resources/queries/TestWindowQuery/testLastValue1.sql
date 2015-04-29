@@ -1,12 +1,12 @@
 SELECT
   l_orderkey,
-  last_value(l_shipmode) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as shipmode_last,
-  last_value(l_linenumber) over (PARTITION BY L_ORDERKEY order by l_linenumber ) as linenumber_last,
-  last_value(l_suppkey_t) over (PARTITION BY L_ORDERKEY order by l_suppkey_t ) as suppkey_last,
-  last_value(l_shipdate_t) over (PARTITION BY L_ORDERKEY order by l_shipdate_t ) as shipdate_last,
-  last_value(l_commitdate_t) over (PARTITION BY L_ORDERKEY order by l_commitdate_t ) as commitdate_last,
-  last_value(l_extendedprice) over (PARTITION BY L_ORDERKEY order by l_extendedprice ) as extendedprice_last,
-  last_value(l_discount_t) over (PARTITION BY L_ORDERKEY order by l_discount_t ) as discount_last
+  last_value(l_shipmode) over (PARTITION BY L_ORDERKEY order by l_shipmode ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as shipmode_last,
+  last_value(l_linenumber) over (PARTITION BY L_ORDERKEY order by l_linenumber ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as linenumber_last,
+  last_value(l_suppkey_t) over (PARTITION BY L_ORDERKEY order by l_suppkey_t ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as suppkey_last,
+  last_value(l_shipdate_t) over (PARTITION BY L_ORDERKEY order by l_shipdate_t ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as shipdate_last,
+  last_value(l_commitdate_t) over (PARTITION BY L_ORDERKEY order by l_commitdate_t ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as commitdate_last,
+  last_value(l_extendedprice) over (PARTITION BY L_ORDERKEY order by l_extendedprice ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as extendedprice_last,
+  last_value(l_discount_t) over (PARTITION BY L_ORDERKEY order by l_discount_t ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) as discount_last
 FROM
 (
   SELECT

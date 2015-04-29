@@ -1,0 +1,7 @@
+id,name,num,first_value_rows,first_value_range,last_value_rows,last_value_range
+-------------------------------
+1,abc,3,3,3,3,3
+2,abd,3,3,3,3,3
+2,abe,9,3,3,9,9
+2,def,2,3,3,2,2
+2,ghi,4,3,3,4,4

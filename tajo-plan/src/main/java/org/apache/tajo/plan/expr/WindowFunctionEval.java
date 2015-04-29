@@ -28,18 +28,31 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
-import org.apache.tajo.plan.logical.WindowSpec;
+import org.apache.tajo.plan.logical.LogicalWindowSpec;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
   @Expose private SortSpec [] sortSpecs;
-  @Expose WindowSpec.WindowFrame windowFrame;
+  @Expose LogicalWindowSpec.LogicalWindowFrame logicalWindowFrame;
+
+  // set Function Type to determine whether window frame is applied or not
+  //    NONFRAMABLE: builtin window function that works on entire partition
+  //    FRAMABLE: builtin window function that works on window frame
+  //    AGGREGATION: aggregation functions that work on window frame
+  public enum WindowFunctionType {
+    NONFRAMABLE,
+    FRAMABLE,
+    AGGREGATION
+  }
+
+  private WindowFunctionType type;
 
   public WindowFunctionEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs,
-                            WindowSpec.WindowFrame windowFrame) {
+                            LogicalWindowSpec.LogicalWindowFrame logicalWindowFrame, WindowFunctionType type) {
     super(EvalType.WINDOW_FUNCTION, desc, instance, givenArgs);
-    this.windowFrame = windowFrame;
+    this.logicalWindowFrame = logicalWindowFrame;
+    this.type = type;
   }
 
   public boolean hasSortSpecs() {
@@ -54,8 +67,12 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     return sortSpecs;
   }
 
-  public WindowSpec.WindowFrame getWindowFrame() {
-    return windowFrame;
+  public LogicalWindowSpec.LogicalWindowFrame getLogicalWindowFrame() {
+    return logicalWindowFrame;
+  }
+
+  public WindowFunctionType getFunctionType() {
+    return type;
   }
 
   @Override
@@ -81,7 +98,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     final int prime = 31;
     int result = super.hashCode();
     result = prime * result + Arrays.hashCode(sortSpecs);
-    result = prime * result + ((windowFrame == null) ? 0 : windowFrame.hashCode());
+    result = prime * result + ((logicalWindowFrame == null) ? 0 : logicalWindowFrame.hashCode());
     return result;
   }
 
@@ -90,7 +107,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     if (obj instanceof WindowFunctionEval) {
       WindowFunctionEval other = (WindowFunctionEval) obj;
       boolean eq = TUtil.checkEquals(sortSpecs, other.sortSpecs);
-      eq &= TUtil.checkEquals(windowFrame, other.windowFrame);
+      eq &= TUtil.checkEquals(logicalWindowFrame, other.logicalWindowFrame);
       return eq;
     } else {
       return false;
@@ -106,7 +123,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
         windowFunctionEval.sortSpecs[i] = (SortSpec) sortSpecs[i].clone();
       }
     }
-    windowFunctionEval.windowFrame = windowFrame.clone();
+    windowFunctionEval.logicalWindowFrame = logicalWindowFrame.clone();
     return windowFunctionEval;
   }
 

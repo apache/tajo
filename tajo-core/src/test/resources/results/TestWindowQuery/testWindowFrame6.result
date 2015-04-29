@@ -1,0 +1,7 @@
+id,name,num,sum1,sum2,sum3
+-------------------------------
+1,abc,3,3,null,null
+2,abd,3,14,null,11
+2,abe,9,18,3,6
+2,def,2,15,12,4
+2,ghi,4,6,11,null

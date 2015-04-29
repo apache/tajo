@@ -120,39 +120,39 @@ public class WindowSpec implements Cloneable {
 
   }
 
-  public static enum WindowFrameUnit {
+  public enum WindowFrameUnit {
     ROW,
     RANGE
   }
 
-  public static enum WindowFrameStartBoundType {
+  public enum WindowFrameBoundType {
     UNBOUNDED_PRECEDING,
-    CURRENT_ROW,
-    PRECEDING
-  }
-
-  public static enum WindowFrameEndBoundType {
     UNBOUNDED_FOLLOWING,
     CURRENT_ROW,
+    PRECEDING,
     FOLLOWING
   }
 
   public static class WindowFrame implements Cloneable {
     @Expose private WindowFrameUnit unit;
-    @Expose private WindowStartBound startBound;
-    @Expose private WindowEndBound endBound;
+    @Expose private WindowBound startBound;
+    @Expose private WindowBound endBound;
 
-    public WindowFrame(WindowFrameUnit unit, WindowStartBound startBound) {
+    public WindowFrame(WindowFrameUnit unit, WindowBound startBound) {
       this.unit = unit;
       this.startBound = startBound;
     }
 
-    public WindowFrame(WindowFrameUnit unit, WindowStartBound startBound, WindowEndBound endBound) {
+    public WindowFrame(WindowFrameUnit unit, WindowBound startBound, WindowBound endBound) {
       this(unit, startBound);
       this.endBound = endBound;
     }
 
-    public WindowStartBound getStartBound() {
+    public WindowFrameUnit getFrameUnit() {
+      return unit;
+    }
+
+    public WindowBound getStartBound() {
       return startBound;
     }
 
@@ -160,7 +160,7 @@ public class WindowSpec implements Cloneable {
       return endBound != null;
     }
 
-    public WindowEndBound getEndBound() {
+    public WindowBound getEndBound() {
       return endBound;
     }
 
@@ -168,21 +168,21 @@ public class WindowSpec implements Cloneable {
     public Object clone() throws CloneNotSupportedException {
       WindowFrame frame = (WindowFrame) super.clone();
       frame.unit = unit;
-      frame.startBound = (WindowStartBound) startBound.clone();
-      frame.endBound = (WindowEndBound) endBound.clone();
+      frame.startBound = (WindowBound) startBound.clone();
+      frame.endBound = (WindowBound) endBound.clone();
       return frame;
     }
   }
 
-  public static class WindowStartBound implements Cloneable {
-    @Expose private WindowFrameStartBoundType boundType;
+  public static class WindowBound implements Cloneable {
+    @Expose private WindowFrameBoundType boundType;
     @Expose private Expr number;
 
-    public WindowStartBound(WindowFrameStartBoundType type) {
+    public WindowBound(WindowFrameBoundType type) {
       this.boundType = type;
     }
 
-    public WindowFrameStartBoundType getBoundType() {
+    public WindowFrameBoundType getBoundType() {
       return boundType;
     }
 
@@ -200,43 +200,10 @@ public class WindowSpec implements Cloneable {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-      WindowStartBound start = (WindowStartBound) super.clone();
+      WindowBound start = (WindowBound) super.clone();
       start.boundType = boundType;
       start.number = (Expr) number.clone();
       return start;
-    }
-  }
-
-  public static class WindowEndBound implements Cloneable {
-    @Expose private WindowFrameEndBoundType boundType;
-    @Expose private Expr number;
-
-    public WindowEndBound(WindowFrameEndBoundType type) {
-      this.boundType = type;
-    }
-
-    public WindowFrameEndBoundType getBoundType() {
-      return boundType;
-    }
-
-    public boolean hasNumber() {
-      return this.number != null;
-    }
-
-    public void setNumber(Expr number) {
-      this.number = number;
-    }
-
-    public Expr getNumber() {
-      return number;
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-      WindowEndBound end = (WindowEndBound) super.clone();
-      end.boundType = boundType;
-      end.number = (Expr) number.clone();
-      return end;
     }
   }
 }

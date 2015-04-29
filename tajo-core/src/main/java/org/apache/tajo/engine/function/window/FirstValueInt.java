@@ -31,7 +31,7 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     returnType = Type.INT4,
     paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
 )
-public class FirstValueInt extends FirstValue {
+public class FirstValueInt extends CurrentValue {
 
   public FirstValueInt() {
     super(new Column[] {

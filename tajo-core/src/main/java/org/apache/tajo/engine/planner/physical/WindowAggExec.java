@@ -19,18 +19,19 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
+import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.logical.LogicalWindowSpec;
 import org.apache.tajo.plan.logical.WindowAggNode;
-import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -65,8 +66,6 @@ public class WindowAggExec extends UnaryPhysicalExec {
   private boolean [] orderedFuncFlags;
   private boolean [] aggFuncFlags;
   private boolean [] windowFuncFlags;
-  private boolean [] endUnboundedFollowingFlags;
-  private boolean [] endCurrentRowFlags;
 
   // operator state
   enum WindowState {
@@ -113,28 +112,16 @@ public class WindowAggExec extends UnaryPhysicalExec {
       windowFuncFlags = new boolean[functions.length];
       aggFuncFlags = new boolean[functions.length];
 
-      endUnboundedFollowingFlags = new boolean[functions.length];
-      endCurrentRowFlags = new boolean[functions.length];
-
       List<Column> additionalSortKeyColumns = Lists.newArrayList();
       Schema rewrittenSchema = new Schema(outSchema);
       for (int i = 0; i < functions.length; i++) {
-        WindowSpec.WindowEndBound endBound = functions[i].getWindowFrame().getEndBound();
-        switch (endBound.getBoundType()) {
-        case CURRENT_ROW:
-          endCurrentRowFlags[i] = true; break;
-        case UNBOUNDED_FOLLOWING:
-          endUnboundedFollowingFlags[i] = true; break;
-        default:
-        }
-
         switch (functions[i].getFuncDesc().getFuncType()) {
-        case AGGREGATION:
-        case DISTINCT_AGGREGATION:
-          aggFuncFlags[i] = true; break;
-        case WINDOW:
-          windowFuncFlags[i] = true; break;
-        default:
+          case AGGREGATION:
+          case DISTINCT_AGGREGATION:
+            aggFuncFlags[i] = true; break;
+          case WINDOW:
+            windowFuncFlags[i] = true; break;
+          default:
         }
 
         if (functions[i].hasSortSpecs()) {
@@ -143,13 +130,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
           for (SortSpec sortSpec : functions[i].getSortSpecs()) {
             if (!rewrittenSchema.contains(sortSpec.getSortKey())) {
               // check if additionalSortKeyColumns already has that sort key
-              boolean newKey = true;
-              for (Column c : additionalSortKeyColumns) {
-                if (c.equals(sortSpec.getSortKey())) {
-                  newKey = false;
-                }
-              }
-              if (newKey) {
+              if (!additionalSortKeyColumns.contains(sortSpec.getSortKey())) {
                 additionalSortKeyColumns.add(sortSpec.getSortKey());
               }
             }
@@ -282,7 +263,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
   }
 
   private void evaluationWindowFrame() {
-    TupleComparator comp;
+    BaseTupleComparator comp;
 
     evaluatedTuples = new ArrayList<Tuple>();
 
@@ -301,30 +282,52 @@ public class WindowAggExec extends UnaryPhysicalExec {
     }
 
     for (int idx = 0; idx < functions.length; idx++) {
+      comp = null;
       if (orderedFuncFlags[idx]) {
-        comp = new BaseTupleComparator(inSchema, functions[idx].getSortSpecs());
-        Collections.sort(accumulatedInTuples, comp);
-        comp = new BaseTupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
+        SortSpec[] sortSpecs = functions[idx].getSortSpecs();
+        comp = new BaseTupleComparator(schemaForOrderBy, sortSpecs);
         Collections.sort(evaluatedTuples, comp);
+        // following comparator is used later when RANGE unit is handled to check whether order by value is changed or not
+        comp = new BaseTupleComparator(inSchema, sortSpecs);
+        Collections.sort(accumulatedInTuples, comp);
       }
 
-      for (int i = 0; i < accumulatedInTuples.size(); i++) {
-        Tuple inTuple = accumulatedInTuples.get(i);
-        Tuple outTuple = evaluatedTuples.get(i);
+      LogicalWindowSpec.LogicalWindowFrame windowFrame = functions[idx].getLogicalWindowFrame();
 
-        functions[idx].merge(contexts[idx], inTuple);
+      /*
+         Following code handles evaluation of window functions with two nested switch statements
+         Basically, ROWS handling has more cases then RANGE handling
+         First switch distinguishes among
+            1) built-in window functions without window frame support
+            2) buiit-in window functions with window frame support
+            3) aggregation functions, where window frame is supported
 
-        if (windowFuncFlags[idx]) {
-          Datum result = functions[idx].terminate(contexts[idx]);
-          outTuple.put(nonFunctionColumnNum + idx, result);
+         In window frame support case, there exists four types of window frame which is also handled by switch statement
+            a) Entire window partition
+            b) From the start of window partition to the moving end point relative to current row position
+            c) From the moving start point relative to current row position to the end of window partition
+            d) Both start point and end point of window frame are moving relative to the current row position
+
+         In the case of RANGE, there can be three window frame type
+            i) From the start of window partition to the last row that has the same order by key as the current row
+            ii) From the first row that has the same order by key as the current row to the end of window partition
+            iii) For all rows that has the same order by key as the current row
+       */
+      switch (functions[idx].getFunctionType()) {
+        case NONFRAMABLE:   // 1) built-in window functions without window frame support
+        {
+          evaluateNonframableWindowFunction(idx);
+          break;
         }
-      }
-
-      if (aggFuncFlags[idx]) {
-        for (int i = 0; i < evaluatedTuples.size(); i++) {
-          Datum result = functions[idx].terminate(contexts[idx]);
-          Tuple outTuple = evaluatedTuples.get(i);
-          outTuple.put(nonFunctionColumnNum + idx, result);
+        case FRAMABLE:  // 2) built-in window functions with window frame support
+        {
+          evaluateFramableWindowFunction(idx, windowFrame, comp);
+          break;
+        }
+        case AGGREGATION:     // 3) aggregation functions, where window frame is supported
+        {
+          evaluateAggregationFunction(idx, windowFrame, comp);
+          break;
         }
       }
     }
@@ -345,6 +348,406 @@ public class WindowAggExec extends UnaryPhysicalExec {
       }
       transition(WindowState.NEW_WINDOW);
     }
+  }
+
+
+  private void evaluateNonframableWindowFunction(int functionIndex) {
+    for (int i = 0; i < accumulatedInTuples.size(); i++) {
+      Tuple inTuple = accumulatedInTuples.get(i);
+      Tuple outTuple = evaluatedTuples.get(i);
+
+      functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+      if (windowFuncFlags[functionIndex]) {
+        Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+    }
+
+    if (aggFuncFlags[functionIndex]) {
+      for (int i = 0; i < evaluatedTuples.size(); i++) {
+        Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+        Tuple outTuple = evaluatedTuples.get(i);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+    }
+  }
+
+  private void evaluateFramableWindowFunction(int functionIndex, LogicalWindowSpec.LogicalWindowFrame windowFrame,
+                                              BaseTupleComparator comp) {
+    LogicalWindowSpec.LogicalWindowFrame.WindowFrameType windowFrameType = windowFrame.getFrameType();
+    WindowSpec.WindowFrameUnit windowFrameUnit = windowFrame.getFrameUnit();
+    int windowFrameStartOffset = windowFrame.getStartBound().getNumber();
+    int windowFrameEndOffset = windowFrame.getEndBound().getNumber();
+
+    String funcName = functions[functionIndex].getName();
+    int sameStartRange = 0; int sameEndRange = 0;
+    int frameStart = 0, frameEnd = accumulatedInTuples.size() - 1;
+    int actualStart = 0;
+
+    for (int i = 0; i < accumulatedInTuples.size(); i++) {
+      switch(windowFrameType) {
+        case TO_CURRENT_ROW:
+          frameEnd = i + windowFrameEndOffset; break;
+        case FROM_CURRENT_ROW:
+          frameStart = i + windowFrameStartOffset; break;
+        case SLIDING_WINDOW:
+          frameStart = i + windowFrameStartOffset;
+          frameEnd = i + windowFrameEndOffset;
+          break;
+      }
+
+      // RANGE window frame SHOULD include all the rows that has the same order by value with the current row
+      //   if comp == null, there is no order by and window frame is set as the entire partition
+      if (comp != null && windowFrameUnit == WindowSpec.WindowFrameUnit.RANGE) {
+        // move frame end point to the last row of the same order by value
+        if (sameEndRange == 0) {
+          sameEndRange = numOfTuplesWithTheSameKeyValue(frameEnd, comp, true);
+        }
+        sameEndRange --;
+        frameEnd += sameEndRange;
+
+        // move frame start point to the first row of the same order by value
+        if (sameStartRange == 0) {
+          sameStartRange = numOfTuplesWithTheSameKeyValue(frameStart, comp, true);
+          actualStart = frameStart;
+        }
+        sameStartRange --;
+        frameStart = actualStart;
+      }
+      // As the number of built-in window functions that support window frame is only three,
+      // special treatment for each function seems to be reasonable.
+      // There are three functions, first_value(), last_value(), and nth_value(), and
+      // only nth_value is not implemented yet.
+      Tuple inTuple = getFunctionSpecificInput(funcName, frameStart, frameEnd);
+      Datum result = NullDatum.get();
+
+      if (inTuple != null) {
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+        result = functions[functionIndex].terminate(contexts[functionIndex]);
+      }
+      Tuple outTuple = evaluatedTuples.get(i);
+      outTuple.put(nonFunctionColumnNum + functionIndex, result);
+    }
+  }
+
+  // it returns the number of Tuples with the same order by key value
+  // if only one Tuple for the given order by key exists, it returns 1
+  private int numOfTuplesWithTheSameKeyValue(int startOffset, BaseTupleComparator comp, boolean isForward) {
+    int numberOfTuples = 0;
+
+    Tuple inTuple = accumulatedInTuples.get(startOffset);
+    if (isForward) {
+      do {
+        numberOfTuples++;
+        startOffset++;
+      } while (startOffset < accumulatedInTuples.size() && comp.compare(accumulatedInTuples.get(startOffset), inTuple) == 0);
+    } else {      // backward direction
+      do {
+        numberOfTuples++;
+        startOffset--;
+      } while (startOffset >= 0 && comp.compare(accumulatedInTuples.get(startOffset), inTuple) == 0);
+    }
+
+    return numberOfTuples;
+  }
+
+  /*
+   * NOTE: Built-in window functions with frame support SHOULD be added in this function.
+   * TODO: add support for nth_value()
+   */
+  private Tuple getFunctionSpecificInput(String funcName, int dataStart, int dataEnd) {
+    if (funcName.equals("first_value")) {
+      // adjust dataStart not to go beyond the partition
+      dataStart = Math.max(dataStart, 0);
+      // check the frame start is within the partition
+      if (dataStart <= dataEnd && dataStart < accumulatedInTuples.size()) {
+        return accumulatedInTuples.get(dataStart);
+      }
+    } else if (funcName.equals("last_value")) {
+      // adjust dataEnd not to exceed the partition
+      dataEnd = Math.min(dataEnd, accumulatedInTuples.size() - 1);
+      // check the frame end is within the partition
+      if (dataStart <= dataEnd && dataEnd >= 0) {
+        return accumulatedInTuples.get(dataEnd);
+      }
+    }
+    return null;
+  }
+
+  private void evaluateAggregationFunction(int functionIndex, LogicalWindowSpec.LogicalWindowFrame windowFrame,
+                                           BaseTupleComparator comp) {
+    LogicalWindowSpec.LogicalWindowFrame.WindowFrameType windowFrameType = windowFrame.getFrameType();
+    WindowSpec.WindowFrameUnit windowFrameUnit = windowFrame.getFrameUnit();
+    int windowFrameStartOffset = windowFrame.getStartBound().getNumber();
+    int windowFrameEndOffset = windowFrame.getEndBound().getNumber();
+
+    switch(windowFrameType) {
+      case ENTIRE_PARTITION:
+      {
+        Datum result = aggregateInRange(functionIndex, 0, accumulatedInTuples.size());
+
+        for (int j = 0; j < evaluatedTuples.size(); j++) {
+          Tuple outTuple = evaluatedTuples.get(j);
+
+          outTuple.put(nonFunctionColumnNum + functionIndex, result);
+        }
+        break;
+      }
+      case TO_CURRENT_ROW:
+      {
+        if (windowFrameUnit == WindowSpec.WindowFrameUnit.RANGE) {
+          aggregateRangeFromStartToCurrent(functionIndex, comp);
+        } else {
+          aggregateRowsFromStartToCurrent(functionIndex, windowFrameEndOffset);
+        }
+        break;
+      }
+      /* For current_row to partition end case,
+       * we calculate aggregation by feeding from last rows to current row, i.e., in reverse order.
+       * Because it can exploit the incremental aggregation of function
+       * Following code is almost the same as TO_CURRENT_ROW case except the row feeding order is reversed.
+       **/
+      case FROM_CURRENT_ROW:
+      {
+        if (windowFrameUnit == WindowSpec.WindowFrameUnit.RANGE) {
+          aggregateRangeFromCurrentToEnd(functionIndex, comp);
+        } else {
+          aggregateRowsFromCurrentToEnd(functionIndex, windowFrameStartOffset);
+        }
+        break;
+      }
+      case SLIDING_WINDOW:
+      {
+        if (windowFrameUnit == WindowSpec.WindowFrameUnit.RANGE) {
+          aggregateRangeInSlidingFrame(functionIndex, comp);
+        } else {
+          aggregateRowsInSlidingFrame(functionIndex, windowFrameStartOffset, windowFrameEndOffset);
+        }
+        break;
+      }
+    }
+  }
+
+  private void aggregateRangeFromStartToCurrent(int functionIndex, BaseTupleComparator comparator) {
+    // If RANGE is used, it is guaranteed that the frame ends to current row with no offset
+    int sameEndRange = 0;
+    for (int i = 0; i < accumulatedInTuples.size(); i++) {
+      // including all rows that has the same order by value
+      if (sameEndRange == 0) {
+        sameEndRange = aggregateTuplesWithSameKey(functionIndex, i, comparator, true);
+      }
+      sameEndRange --;
+
+      Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+      Tuple outTuple = evaluatedTuples.get(i);
+      outTuple.put(nonFunctionColumnNum + functionIndex, result);
+    }
+  }
+
+  private void aggregateRowsFromStartToCurrent(int functionIndex, int offsetFromCurrentRow) {
+    if (offsetFromCurrentRow > 0) {
+      int inputTupleIndex = 0; int outputTupleIndex = 0;
+
+      // input range: [0, offsetFromCurrentRow)
+      // aggregated value would be reflected on every resulting rows of window function
+      for (; inputTupleIndex < Math.min(accumulatedInTuples.size(), offsetFromCurrentRow); inputTupleIndex++) {
+        Tuple inTuple = accumulatedInTuples.get(inputTupleIndex);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+      }
+
+      // input range: [offsetFromCurrentRow, partition end)
+      // output range: [0, partition end - offsetFromCurrentRow)
+      // Each output is the result of partial aggregation up to corresponding input Tuple
+      for (; inputTupleIndex < accumulatedInTuples.size(); inputTupleIndex++, outputTupleIndex++) {
+        Tuple inTuple = accumulatedInTuples.get(inputTupleIndex);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+        Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+        Tuple outTuple = evaluatedTuples.get(outputTupleIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+
+      // output range: (partition end - offsetFromCurrentRow, partition end)
+      // output remain unchanged in this range
+      Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+      for (; outputTupleIndex < evaluatedTuples.size(); outputTupleIndex++) {
+        Tuple outTuple = evaluatedTuples.get(outputTupleIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+    } else {
+      int inputTupleIndex = offsetFromCurrentRow; int outputTupleIndex = 0;
+
+      // output range: [0, -offsetFromCurrentRow)   --- note that offsetFromCurrentRow <= 0
+      // As no corresponding input exists, aggregation result is the return value of function with no input
+      Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+      for (; inputTupleIndex < 0 && outputTupleIndex < evaluatedTuples.size(); inputTupleIndex++, outputTupleIndex++) {
+        Tuple outTuple = evaluatedTuples.get(outputTupleIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+
+      // input range: [0, partition end + offsetFromCurrentRow)
+      // output range: (-offsetFromCurrentRow, partition end]
+      // Each output is the result of partial aggregation up to corresponding input Tuple
+      for (; outputTupleIndex < evaluatedTuples.size(); inputTupleIndex++, outputTupleIndex++) {
+        Tuple inTuple = accumulatedInTuples.get(inputTupleIndex);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+        result = functions[functionIndex].terminate(contexts[functionIndex]);
+        Tuple outTuple = evaluatedTuples.get(outputTupleIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+    }
+  }
+
+  private void aggregateRangeFromCurrentToEnd(int functionIndex, BaseTupleComparator comparator) {
+    // If RANGE is used, it is guaranteed that the frame starts from current row with no offset
+    int sameStartRange = 0;
+    for (int i = accumulatedInTuples.size() - 1; i >= 0; i--) {
+      // including all rows that has the same order by value
+      if (sameStartRange == 0) {
+        sameStartRange = aggregateTuplesWithSameKey(functionIndex, i, comparator, false);
+      }
+      sameStartRange --;
+
+      Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+      Tuple outTuple = evaluatedTuples.get(i);
+      outTuple.put(nonFunctionColumnNum + functionIndex, result);
+    }
+  }
+
+  private void aggregateRowsFromCurrentToEnd(int functionIndex, int offsetFromCurrentRow) {
+    if (offsetFromCurrentRow > 0) {
+      int inputTupleIndex = offsetFromCurrentRow; int outputTupleIndex = evaluatedTuples.size() - 1;
+
+      // output range: (partition end - offsetFromCurrentRow, partition end)
+      // there is no input corresponding this output range,
+      // As no corresponding input exists, aggregation result is the return value of function with no input
+      for (; inputTupleIndex > 0 && outputTupleIndex >= 0; inputTupleIndex--, outputTupleIndex--) {
+        Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+        Tuple outTuple = evaluatedTuples.get(outputTupleIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+
+      // input range: [offsetFromCurrentRow, partition end)
+      // output range: [0, partition end - offsetFromCurrentRow)
+      // Each output is the result of partial aggregation up to corresponding input Tuple (in reverse order)
+      for (inputTupleIndex = accumulatedInTuples.size() - 1; outputTupleIndex >= 0; inputTupleIndex--, outputTupleIndex--) {
+        Tuple inTuple = accumulatedInTuples.get(inputTupleIndex);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+        Tuple outTuple = evaluatedTuples.get(outputTupleIndex);
+        Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+    } else {
+      // input range: (partition end + offsetFromCurrentRow, partition end)
+      // aggregated value would be reflected on every resulting rows of window function
+      int inputIndex = accumulatedInTuples.size() -  1; int outputIndex = evaluatedTuples.size() - 1;
+      for (; inputIndex >= Math.max(0, accumulatedInTuples.size() + offsetFromCurrentRow); inputIndex--) {
+        Tuple inTuple = accumulatedInTuples.get(inputIndex);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+      }
+
+      // input range: [0, partition end + offsetFromCurrentRow)
+      // output range: [-offsetFromCurrentRow, partition end)
+      // Each output is the result of partial aggregation up to corresponding input Tuple
+      for (; inputIndex >= 0; inputIndex--, outputIndex--) {
+        Tuple inTuple = accumulatedInTuples.get(inputIndex);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+        Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+        Tuple outTuple = evaluatedTuples.get(outputIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+
+      // output range: [0, -offsetFromCurrentRow)
+      // output remain unchanged in this range
+      Datum result = functions[functionIndex].terminate(contexts[functionIndex]);
+      for (; outputIndex >= 0; outputIndex--) {
+        Tuple outTuple = evaluatedTuples.get(outputIndex);
+        outTuple.put(nonFunctionColumnNum + functionIndex, result);
+      }
+    }
+  }
+
+  private void aggregateRangeInSlidingFrame(int functionIndex, BaseTupleComparator comparator) {
+    // the only case is RANGE BETWEEN CURRENT_ROW AND CURRENT_ROW
+    int actualStart = 0; int actualEnd = 0;
+    for (int i = 0; i < accumulatedInTuples.size(); i++) {
+      // When the same key range is over,
+      // re-calculate the start and end point of the same order by key range.
+      // range is [actualStart, actualEnd), which means does not contain actualEnd in it.
+      if (i == actualEnd) {
+        actualStart = i;
+        actualEnd = i + numOfTuplesWithTheSameKeyValue(i, comparator, true);
+      }
+
+      contexts[functionIndex] = functions[functionIndex].newContext();
+
+      Datum result = aggregateInRange(functionIndex, actualStart, actualEnd);
+      Tuple outTuple = evaluatedTuples.get(i);
+      outTuple.put(nonFunctionColumnNum + functionIndex, result);
+    }
+  }
+
+  private void aggregateRowsInSlidingFrame(int functionIndex, int startOffset, int endOffset) {
+    int frameStart, frameEnd;
+    for (int i = 0; i < accumulatedInTuples.size(); i++) {
+      frameStart = i + startOffset;
+      frameEnd = i + endOffset;
+      contexts[functionIndex] = functions[functionIndex].newContext();
+
+      // sliding frame should stay inside the partition, whose range is [0, accumulatedInTuples.size())
+      Datum result = aggregateInRange(functionIndex, Math.max(frameStart, 0),
+          Math.min(frameEnd + 1, accumulatedInTuples.size()));
+      Tuple outTuple = evaluatedTuples.get(i);
+      outTuple.put(nonFunctionColumnNum + functionIndex, result);
+    }
+  }
+
+  // it calculates aggregation on [start, end)
+  // and returns resulting Datum
+  private Datum aggregateInRange(int functionIndex, int start, int end) {
+    for (int i = start; i < end; i++) {
+      Tuple inTuple = accumulatedInTuples.get(i);
+      functions[functionIndex].merge(contexts[functionIndex], inTuple);
+    }
+
+    return functions[functionIndex].terminate(contexts[functionIndex]);
+  }
+
+  // it aggregates the Tuples of the same order by key value for the given direction
+  //  and returns number of aggregated Tuples
+  private int aggregateTuplesWithSameKey(int functionIndex, int startOffset,
+                                         BaseTupleComparator comp, boolean isForward) {
+    int numberOfBackwardTuples = 0;
+    int numberOfForwardTuples = 0;
+    int backwardOffset = startOffset;
+    int forwardOffset = startOffset;
+
+    Tuple inTuple;
+    if (isForward) {
+      do {
+        inTuple = accumulatedInTuples.get(forwardOffset);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+        numberOfForwardTuples++;
+        forwardOffset++;
+      } while (forwardOffset < accumulatedInTuples.size() &&
+          comp.compare(accumulatedInTuples.get(forwardOffset), inTuple) == 0);
+    } else {    // backward
+      do {
+        inTuple = accumulatedInTuples.get(backwardOffset);
+        functions[functionIndex].merge(contexts[functionIndex], inTuple);
+
+        numberOfBackwardTuples++;
+        backwardOffset--;
+      } while (backwardOffset >= 0 && comp.compare(accumulatedInTuples.get(backwardOffset), inTuple) == 0);
+
+    }
+
+    return isForward ? numberOfForwardTuples : numberOfBackwardTuples;
   }
 
   @Override
