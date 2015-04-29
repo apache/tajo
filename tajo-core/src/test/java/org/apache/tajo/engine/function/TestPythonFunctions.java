@@ -31,14 +31,14 @@ public class TestPythonFunctions extends ExprTestBase {
     testSimpleEval("select helloworld()", new String[]{"Hello, World"});
     testSimpleEval("select concat_py('1')", new String[]{"11"});
     testSimpleEval("select comma_format(12345)", new String[]{"12,345"});
-    testSimpleEval("select sum_py(1,2)", new String[]{"3"});
+    testSimpleEval("select add_py(1,2)", new String[]{"3"});
     testSimpleEval("select percent(386, 1000)", new String[]{"38.6"});
     testSimpleEval("select concat4('Tajo', 'is', 'awesome', '!')", new String[]{"Tajo is awesome !"});
   }
 
   @Test
   public void testNestedFunctions() throws IOException {
-    testSimpleEval("select sum_py(3, return_one())", new String[]{"4"});
+    testSimpleEval("select add_py(3, return_one())", new String[]{"4"});
     testSimpleEval("select concat_py(helloworld())", new String[]{"Hello, WorldHello, World"});
   }
 }

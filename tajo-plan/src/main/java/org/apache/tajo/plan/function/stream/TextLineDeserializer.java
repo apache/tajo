@@ -21,6 +21,7 @@ package org.apache.tajo.plan.function.stream;
 import io.netty.buffer.ByteBuf;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -52,6 +53,8 @@ public abstract class TextLineDeserializer {
    * @throws IOException
    */
   public abstract void deserialize(final ByteBuf buf, Tuple output) throws IOException, TextLineParsingError;
+
+  public abstract void deserialize(final ByteBuf buf, FunctionContext context) throws IOException, TextLineParsingError;
 
   /**
    * Release external resources
