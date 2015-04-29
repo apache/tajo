@@ -308,18 +308,21 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   @Test
   public final void testJoinOnMultipleDatabases() throws Exception {
-    executeString("CREATE DATABASE JOINS");
-    assertDatabaseExists("joins");
-    executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
-    assertTableExists("joins.part_");
-    executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
-    assertTableExists("joins.supplier_");
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-    executeString("DROP TABLE JOINS.part_ PURGE");
-    executeString("DROP TABLE JOINS.supplier_ PURGE");
-    executeString("DROP DATABASE JOINS");
+    try {
+      executeString("CREATE DATABASE JOINS");
+      assertDatabaseExists("joins");
+      executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
+      assertTableExists("joins.part_");
+      executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
+      assertTableExists("joins.supplier_");
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE JOINS.part_ PURGE");
+      executeString("DROP TABLE JOINS.supplier_ PURGE");
+      executeString("DROP DATABASE JOINS");
+    }
   }
 
   private MasterPlan getQueryPlan(QueryId queryId) {
@@ -409,38 +412,40 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   @Test
   public final void testBroadcastPartitionTable() throws Exception {
     // If all tables participate in the BROADCAST JOIN, there is some missing data.
-    executeDDL("customer_partition_ddl.sql", null);
-    ResultSet res = executeFile("insert_into_customer_partition.sql");
-    res.close();
+    try {
+      executeDDL("customer_partition_ddl.sql", null);
+      ResultSet res = executeFile("insert_into_customer_partition.sql");
+      res.close();
 
-    createMultiFile("nation", 2, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new TextDatum(columnDatas[1]),
-            new Int4Datum(Integer.parseInt(columnDatas[2])),
-            new TextDatum(columnDatas[3])
-        });
-      }
-    });
+      createMultiFile("nation", 2, new TupleCreator() {
+        public Tuple createTuple(String[] columnDatas) {
+          return new VTuple(new Datum[]{
+              new Int4Datum(Integer.parseInt(columnDatas[0])),
+              new TextDatum(columnDatas[1]),
+              new Int4Datum(Integer.parseInt(columnDatas[2])),
+              new TextDatum(columnDatas[3])
+          });
+        }
+      });
 
-    createMultiFile("orders", 1, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new Int4Datum(Integer.parseInt(columnDatas[1])),
-            new TextDatum(columnDatas[2])
-        });
-      }
-    });
+      createMultiFile("orders", 1, new TupleCreator() {
+        public Tuple createTuple(String[] columnDatas) {
+          return new VTuple(new Datum[]{
+              new Int4Datum(Integer.parseInt(columnDatas[0])),
+              new Int4Datum(Integer.parseInt(columnDatas[1])),
+              new TextDatum(columnDatas[2])
+          });
+        }
+      });
 
-    res = executeQuery();
-    assertResultSet(res);
-    res.close();
-
-    executeString("DROP TABLE customer_broad_parts PURGE");
-    executeString("DROP TABLE nation_multifile PURGE");
-    executeString("DROP TABLE orders_multifile PURGE");
+      res = executeQuery();
+      assertResultSet(res);
+      res.close();
+    } finally {
+      executeString("DROP TABLE customer_broad_parts PURGE");
+      executeString("DROP TABLE nation_multifile PURGE");
+      executeString("DROP TABLE orders_multifile PURGE");
+    }
   }
 
   @Test
@@ -510,32 +515,34 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   @Test
   public final void testInnerAndOuterWithEmpty() throws Exception {
-    executeDDL("customer_partition_ddl.sql", null);
-    executeFile("insert_into_customer_partition.sql").close();
+    try {
+      executeDDL("customer_partition_ddl.sql", null);
+      executeFile("insert_into_customer_partition.sql").close();
 
-    // outer join table is empty
-    ResultSet res = executeString(
-        "select a.l_orderkey, b.o_orderkey, c.c_custkey from lineitem a " +
-            "inner join orders b on a.l_orderkey = b.o_orderkey " +
-            "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0"
-    );
+      // outer join table is empty
+      ResultSet res = executeString(
+          "select a.l_orderkey, b.o_orderkey, c.c_custkey from lineitem a " +
+              "inner join orders b on a.l_orderkey = b.o_orderkey " +
+              "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0"
+      );
 
-    String expected = "l_orderkey,o_orderkey,c_custkey\n" +
-        "-------------------------------\n" +
-        "1,1,null\n" +
-        "1,1,null\n" +
-        "2,2,null\n" +
-        "3,3,null\n" +
-        "3,3,null\n";
+      String expected = "l_orderkey,o_orderkey,c_custkey\n" +
+          "-------------------------------\n" +
+          "1,1,null\n" +
+          "1,1,null\n" +
+          "2,2,null\n" +
+          "3,3,null\n" +
+          "3,3,null\n";
 
-    assertEquals(expected, resultSetToString(res));
-    res.close();
-
-    executeString("DROP TABLE customer_broad_parts PURGE").close();
+      assertEquals(expected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE customer_broad_parts PURGE").close();
+    }
   }
 
-  static interface TupleCreator {
-    public Tuple createTuple(String[] columnDatas);
+  interface TupleCreator {
+    Tuple createTuple(String[] columnDatas);
   }
 
   private void createMultiFile(String tableName, int numRowsEachFile, TupleCreator tupleCreator) throws Exception {
@@ -720,96 +727,104 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   public void testMultipleBroadcastDataFileWithZeroLength() throws Exception {
     // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
     // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
-    createMultiFile("nation", 2, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new TextDatum(columnDatas[1]),
-            new Int4Datum(Integer.parseInt(columnDatas[2])),
-            new TextDatum(columnDatas[3])
-        });
-      }
-    });
-    addEmptyDataFile("nation_multifile", false);
+    try {
+      createMultiFile("nation", 2, new TupleCreator() {
+        public Tuple createTuple(String[] columnDatas) {
+          return new VTuple(new Datum[]{
+              new Int4Datum(Integer.parseInt(columnDatas[0])),
+              new TextDatum(columnDatas[1]),
+              new Int4Datum(Integer.parseInt(columnDatas[2])),
+              new TextDatum(columnDatas[3])
+          });
+        }
+      });
+      addEmptyDataFile("nation_multifile", false);
 
-    ResultSet res = executeQuery();
+      ResultSet res = executeQuery();
 
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE nation_multifile PURGE");
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE nation_multifile PURGE");
+    }
   }
 
   @Test
   public void testMultipleBroadcastDataFileWithZeroLength2() throws Exception {
     // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
     // testMultipleBroadcastDataFileWithZeroLength2 testcase is for the non-leaf node
-    createMultiFile("nation", 2, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new TextDatum(columnDatas[1]),
-            new Int4Datum(Integer.parseInt(columnDatas[2])),
-            new TextDatum(columnDatas[3])
-        });
-      }
-    });
-    addEmptyDataFile("nation_multifile", false);
+    try {
+      createMultiFile("nation", 2, new TupleCreator() {
+        public Tuple createTuple(String[] columnDatas) {
+          return new VTuple(new Datum[]{
+              new Int4Datum(Integer.parseInt(columnDatas[0])),
+              new TextDatum(columnDatas[1]),
+              new Int4Datum(Integer.parseInt(columnDatas[2])),
+              new TextDatum(columnDatas[3])
+          });
+        }
+      });
+      addEmptyDataFile("nation_multifile", false);
 
-    ResultSet res = executeQuery();
+      ResultSet res = executeQuery();
 
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE nation_multifile PURGE");
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE nation_multifile PURGE");
+    }
   }
 
   @Test
   public void testMultiplePartitionedBroadcastDataFileWithZeroLength() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
-    ResultSet res = testBase.execute(
-        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
-    res.close();
-    TajoTestingCluster cluster = testBase.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+    try {
+      String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
+      ResultSet res = testBase.execute(
+          "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+      res.close();
+      TajoTestingCluster cluster = testBase.getTestingCluster();
+      CatalogService catalog = cluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString("insert overwrite into " + tableName
-        + " select n_name, n_nationkey, n_regionkey from nation");
-    res.close();
+      res = executeString("insert overwrite into " + tableName
+          + " select n_name, n_nationkey, n_regionkey from nation");
+      res.close();
 
-    addEmptyDataFile("nation_partitioned", true);
+      addEmptyDataFile("nation_partitioned", true);
 
-    res = executeQuery();
+      res = executeQuery();
 
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE nation_partitioned PURGE");
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE nation_partitioned PURGE");
+    }
   }
 
   @Test
   public void testMultiplePartitionedBroadcastDataFileWithZeroLength2() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
-    ResultSet res = testBase.execute(
-        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
-    res.close();
-    TajoTestingCluster cluster = testBase.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+    try {
+      String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
+      ResultSet res = testBase.execute(
+          "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+      res.close();
+      TajoTestingCluster cluster = testBase.getTestingCluster();
+      CatalogService catalog = cluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString("insert overwrite into " + tableName
-        + " select n_name, n_nationkey, n_regionkey from nation");
-    res.close();
+      res = executeString("insert overwrite into " + tableName
+          + " select n_name, n_nationkey, n_regionkey from nation");
+      res.close();
 
-    addEmptyDataFile("nation_partitioned", true);
+      addEmptyDataFile("nation_partitioned", true);
 
-    res = executeQuery();
+      res = executeQuery();
 
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE nation_partitioned PURGE");
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE nation_partitioned PURGE");
+    }
   }
 
   private void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {

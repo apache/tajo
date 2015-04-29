@@ -125,38 +125,41 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     if (rootOfChild.getType() == NodeType.STORE) {
       rootOfChild = ((StoreTableNode)rootOfChild).getChild();
     }
+    LogicalNode mergedPlan;
     if (rootOfChild.getType() == parentOfScanForChild.getType()) {
       // merge two-phase plan into one-phase plan.
       // remove the second-phase plan.
+      LogicalNode firstPhaseNode = rootOfChild;
+      LogicalNode secondPhaseNode = parentOfScanForChild;
+
       parentFinder.set(parentOfScanForChild);
       parentFinder.find(parent.getPlan());
       parentOfScanForChild = parentFinder.found;
 
       if (parentOfScanForChild == null) {
         // assume that the node which will be merged is the root node of the plan of the parent eb.
+        mergedPlan = firstPhaseNode;
       } else {
-
+        replaceChild(firstPhaseNode, scanForChild, parentOfScanForChild);
+        mergedPlan = parent.getPlan();
       }
 
-      if (rootOfChild.getType() == NodeType.GROUP_BY) {
-        GroupbyNode groupbyNode = (GroupbyNode) rootOfChild;
-        for (AggregationFunctionCallEval aggFunc : groupbyNode.getAggFunctions()) {
-          aggFunc.setFirstPhase();
-          aggFunc.setFinalPhase();
+      if (firstPhaseNode.getType() == NodeType.GROUP_BY) {
+        GroupbyNode firstPhaseGroupby = (GroupbyNode) firstPhaseNode;
+        GroupbyNode secondPhaseGroupby = (GroupbyNode) secondPhaseNode;
+        for (AggregationFunctionCallEval aggFunc : firstPhaseGroupby.getAggFunctions()) {
+          aggFunc.setFirstAndFinalPhase();
         }
+        firstPhaseGroupby.setTargets(secondPhaseGroupby.getTargets());
+        firstPhaseGroupby.setOutSchema(secondPhaseGroupby.getOutSchema());
       }
-    }
-
-    if (parentOfScanForChild == null) {
-      // assume that the node which will be merged is the root node of the plan of the parent eb.
-
     } else {
-      replaceChild(rootOfChild, scanForChild, parentOfScanForChild);
+      mergedPlan = parent.getPlan();
     }
 
     parent = mergeExecutionBlocks(plan, child, parent);
 
-    parent.setPlan(parent.getPlan());
+    parent.setPlan(mergedPlan);
 
     return parent;
   }

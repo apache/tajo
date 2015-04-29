@@ -37,7 +37,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   @Expose boolean finalPhase = true;
   @Expose String alias;
 
-//  protected AggFunction instance;
   @Expose protected FunctionInvokeContext invokeContext;
   protected transient AggFunctionInvoke functionInvoke;
 
@@ -151,10 +150,16 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   public void setFirstPhase() {
     this.firstPhase = true;
+    this.finalPhase = false;
   }
 
   public void setFinalPhase() {
+    this.firstPhase = false;
     this.finalPhase = true;
+  }
+
+  public void setFirstAndFinalPhase() {
+    this.finalPhase = this.firstPhase = true;
   }
 
   public void setIntermediatePhase() {
