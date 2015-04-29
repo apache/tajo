@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 public class TestJoinQuery extends QueryTestCaseBase {
 
   public TestJoinQuery(String joinOption) {
-    super(TajoConstants.DEFAULT_DATABASE_NAME);
+    super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
 
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
         ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
@@ -115,10 +115,17 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest(queries = {
+    @QuerySpec("select n_name, r_name, n_regionkey, r_regionkey from nation, region order by n_name, r_name"),
+    // testCrossJoinWithAsterisk
+    @QuerySpec("select region.*, customer.* from region, customer"),
+    @QuerySpec("select region.*, customer.* from customer, region"),
+    @QuerySpec("select * from customer, region"),
+    @QuerySpec("select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name")
+  })
   public final void testCrossJoin() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -371,38 +378,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
       executeString("DROP TABLE table1");
       executeString("DROP TABLE table2");
     }
-  }
-
-  @Test
-  public void testCrossJoinWithAsterisk1() throws Exception {
-    // select region.*, customer.* from region, customer;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-  }
-
-  @Test
-   public void testCrossJoinWithAsterisk2() throws Exception {
-    // select region.*, customer.* from customer, region;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-  }
-
-  @Test
-  public void testCrossJoinWithAsterisk3() throws Exception {
-    // select * from customer, region
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-  }
-
-  @Test
-  public void testCrossJoinWithAsterisk4() throws Exception {
-    // select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
   }
 
   @Test
@@ -1059,11 +1034,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @SimpleTest
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   public void testComplexJoinCondition1() throws Exception {
     // select n1.n_nationkey, n1.n_name, n2.n_name  from nation n1 join nation n2 on n1.n_name = upper(n2.n_name);
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
