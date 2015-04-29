@@ -402,7 +402,7 @@ public class QueryClientImpl implements QueryClient {
       return true;
     } else {
       if (response.hasErrorMessage()) {
-        System.err.println("ERROR: " + response.getErrorMessage());
+        LOG.error("ERROR: " + response.getErrorMessage());
       }
       return false;
     }
@@ -424,7 +424,7 @@ public class QueryClientImpl implements QueryClient {
       return true;
     } else {
       if (response.hasErrorMessage()) {
-        System.err.println("ERROR: " + response.getErrorMessage());
+        LOG.error("ERROR: " + response.getErrorMessage());
       }
       return false;
     }

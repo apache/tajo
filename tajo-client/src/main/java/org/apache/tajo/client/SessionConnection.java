@@ -107,7 +107,7 @@ public class SessionConnection implements Closeable {
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public synchronized NettyClientBase getTajoMasterConnection() throws ServiceException {
+  public NettyClientBase getTajoMasterConnection() throws ServiceException {
     if (client == null || !client.isConnected()) {
       try {
         RpcClientManager.cleanup(client);
