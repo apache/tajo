@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import com.google.protobuf.ServiceException;
+import org.apache.avro.generic.GenericData;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
@@ -141,7 +142,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return ProtoUtil.convertStrings(response);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<String>();
     }
   }
   
@@ -153,7 +154,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getTablespaceList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<TablespaceProto>();
     }
   }
 
@@ -226,7 +227,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return ProtoUtil.convertStrings(response);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<String>();
     }
   }
   
@@ -238,7 +239,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getDatabaseList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<DatabaseProto>();
     }
   }
 
@@ -271,7 +272,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getTableList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<TableDescriptorProto>();
     }
   }
   
@@ -283,7 +284,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getTableOptionList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<TableOptionProto>();
     }
   }
   
@@ -295,7 +296,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getStatList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<TableStatsProto>();
     }
   }
   
@@ -307,7 +308,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getColumnList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<ColumnProto>();
     }
   }
 
@@ -370,7 +371,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getPartitionList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<PartitionDescProto>();
     }
   }
   @Override
@@ -381,7 +382,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getPartList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<TablePartitionProto>();
     }
   }
 
@@ -393,14 +394,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return ProtoUtil.convertStrings(response);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<String>();
     }
   }
 
   @Override
   public final Collection<FunctionDesc> getFunctions() {
+    List<FunctionDesc> list = new ArrayList<FunctionDesc>();
     try {
-      List<FunctionDesc> list = new ArrayList<FunctionDesc>();
       GetFunctionsResponse response;
       CatalogProtocolService.BlockingInterface stub = getStub();
       response = stub.getFunctions(null, NullProto.newBuilder().build());
@@ -410,13 +411,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           list.add(new FunctionDesc(response.getFunctionDesc(i)));
         } catch (ClassNotFoundException e) {
           LOG.error(e, e);
-          return null;
+          return list;
         }
       }
       return list;
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return list;
     }
   }
 
@@ -572,7 +573,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return response.getIndexList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      return null;
+      return new ArrayList<IndexProto>();
     }
   }
 
