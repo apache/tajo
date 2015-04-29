@@ -246,8 +246,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
 
   private String getErrorMessage(String message) {
     return "Exception [" + getKey().protocolClass.getCanonicalName() +
-        "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
-        getChannel().remoteAddress()) + ")]: " + message;
+        "(" + getKey().addr + ")]: " + message;
   }
 
   @Override
@@ -255,6 +254,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     Channel channel = getChannel();
     if (channel != null && channel.isOpen()) {
       LOG.debug("Proxy will be disconnected from remote " + channel.remoteAddress());
+      /* channelInactive receives event and then client terminates all the requests */
       channel.close().syncUninterruptibly();
     }
   }
