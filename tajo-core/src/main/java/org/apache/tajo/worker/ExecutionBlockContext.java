@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService.Interface;
 
 public class ExecutionBlockContext {
   /** class logger */
@@ -78,6 +79,8 @@ public class ExecutionBlockContext {
   private TajoQueryEngine queryEngine;
   private RpcClientManager connManager;
   private InetSocketAddress qmMasterAddr;
+  private NettyClientBase client;
+  private QueryMasterProtocol.QueryMasterProtocolService.Interface stub;
   private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
   // for the doAs block
@@ -139,9 +142,7 @@ public class ExecutionBlockContext {
       this.resource.initialize(queryContext, plan);
     } catch (Throwable e) {
       try {
-        NettyClientBase client = getQueryMasterConnection();
-        QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-        stub.killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
+        getStub().killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
       } catch (Throwable t) {
         //ignore
       }
@@ -153,9 +154,26 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  public NettyClientBase getQueryMasterConnection()
+  private NettyClientBase getQueryMasterClient()
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    return connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    if (client != null) return client;
+
+    /* A large scale cluster can be connection refused, if it reuse  */
+    boolean reuse = getConf().getBoolVar(TajoConf.ConfVars.QUERY_MASTER_RPC_CLIENT_REUSE);
+    if (reuse) {
+      client = connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    } else {
+      client = connManager.newClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    }
+    return client;
+  }
+
+  public Interface getStub()
+      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
+    if (stub == null) {
+      stub = getQueryMasterClient().getStub();
+    }
+    return stub;
   }
 
   public void stop(){
@@ -184,6 +202,10 @@ public class ExecutionBlockContext {
     tasks.clear();
 
     resource.release();
+    boolean reuse = getConf().getBoolVar(TajoConf.ConfVars.QUERY_MASTER_RPC_CLIENT_REUSE);
+    if (!reuse) {
+      RpcClientManager.cleanup(client);
+    }
   }
 
   public TajoConf getConf() {
@@ -282,8 +304,7 @@ public class ExecutionBlockContext {
     /* This case is that worker did not ran tasks */
     if(completedTasksNum.get() == 0) return;
 
-    NettyClientBase client = getQueryMasterConnection();
-    QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+    Interface stub = getStub();
 
     ExecutionBlockReport.Builder reporterBuilder = ExecutionBlockReport.newBuilder();
     reporterBuilder.setEbId(ebId.getProto());
@@ -379,10 +400,8 @@ public class ExecutionBlockContext {
         public void run() {
           while (!reporterStop.get() && !Thread.interrupted()) {
 
-            NettyClientBase client = null;
             try {
-              client = getQueryMasterConnection();
-              QueryMasterProtocol.QueryMasterProtocolService.Interface masterStub = client.getStub();
+              Interface masterStub = getStub();
 
               if(tasks.size() == 0){
                 masterStub.ping(null, getExecutionBlockId().getProto(), NullCallback.get());

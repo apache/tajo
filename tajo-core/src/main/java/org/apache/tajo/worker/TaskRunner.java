@@ -193,11 +193,11 @@ public class TaskRunner extends AbstractService {
           int receivedNum = 0;
           CallFuture<TaskRequestProto> callFuture = null;
           TaskRequestProto taskRequest = null;
+          QueryMasterProtocolService.Interface qmClientService;
 
           while(!stopped) {
-            NettyClientBase client;
             try {
-              client = executionBlockContext.getQueryMasterConnection();
+              qmClientService = executionBlockContext.getStub();
             } catch (ConnectException ce) {
               // NettyClientBase throws ConnectTimeoutException if connection was failed
               stop();
@@ -211,7 +211,7 @@ public class TaskRunner extends AbstractService {
               break;
             }
 
-            QueryMasterProtocolService.Interface qmClientService = client.getStub();
+
 
             try {
               if (callFuture == null) {
@@ -268,7 +268,7 @@ public class TaskRunner extends AbstractService {
                   }
 
                   LOG.info("Initializing: " + taskAttemptId);
-                  Task task;
+                  Task task = null;
                   try {
                     task = new Task(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
                         new TaskRequestImpl(taskRequest));
@@ -283,6 +283,9 @@ public class TaskRunner extends AbstractService {
                   } catch (Throwable t) {
                     LOG.error(t.getMessage(), t);
                     fatalError(qmClientService, taskAttemptId, t.getMessage());
+                    if(task != null) {
+                      task.cleanupTask();
+                    }
                   } finally {
                     callFuture = null;
                     taskRequest = null;

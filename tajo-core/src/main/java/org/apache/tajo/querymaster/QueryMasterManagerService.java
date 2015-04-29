@@ -136,6 +136,7 @@ public class QueryMasterManagerService extends CompositeService
       }
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
     }
   }
 
@@ -168,6 +169,7 @@ public class QueryMasterManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
@@ -193,6 +195,7 @@ public class QueryMasterManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
@@ -209,6 +212,7 @@ public class QueryMasterManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
@@ -231,11 +235,9 @@ public class QueryMasterManagerService extends CompositeService
     QueryId queryId = new QueryId(request);
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
     if (queryMasterTask != null) {
-      Query query = queryMasterTask.getQuery();
-      if (query != null) {
-        query.handle(new QueryEvent(queryId, QueryEventType.KILL));
-      }
+      queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
     }
+    done.run(TajoWorker.TRUE_PROTO);
   }
 
   @Override
@@ -256,6 +258,7 @@ public class QueryMasterManagerService extends CompositeService
     } catch (Exception e) {
       workerContext.getWorkerSystemMetrics().counter("querymaster", "errorQuery").inc();
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
