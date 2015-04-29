@@ -19,34 +19,62 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.AggFunction;
+import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.plan.function.AggFunctionInvoke;
 import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
+
+import java.io.IOException;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
   @Expose boolean intermediatePhase = false;
   @Expose boolean finalPhase = true;
   @Expose String alias;
 
-  protected AggFunction instance;
+//  protected AggFunction instance;
+  @Expose protected FunctionInvokeContext invokeContext;
+  protected transient AggFunctionInvoke functionInvoke;
 
-  protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
+  protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, EvalNode[] givenArgs) {
     super(type, desc, givenArgs);
-    this.instance = instance;
+    this.invokeContext = new FunctionInvokeContext(null, getParamType());
+    try {
+      this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
+    } catch (InternalException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public AggregationFunctionCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
-    super(EvalType.AGG_FUNCTION, desc, givenArgs);
-    this.instance = instance;
+  public AggregationFunctionCallEval(FunctionDesc desc, EvalNode[] givenArgs) {
+    this(EvalType.AGG_FUNCTION, desc, givenArgs);
   }
 
   public FunctionContext newContext() {
-    return instance.newContext();
+    return functionInvoke.newContext();
+  }
+
+  @Override
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
+
+    try {
+      if (evalContext != null && evalContext.hasScriptEngine(this)) {
+        this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+        this.invokeContext.getScriptEngine().setIntermediatePhase(intermediatePhase);
+        this.invokeContext.getScriptEngine().setFinalPhase(finalPhase);
+      }
+      this.functionInvoke.init(invokeContext);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    return this;
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
@@ -59,9 +87,9 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   protected void mergeParam(FunctionContext context, Tuple params) {
     if (!intermediatePhase && !finalPhase) {
       // firstPhase
-      instance.eval(context, params);
+      functionInvoke.eval(context, params);
     } else {
-      instance.merge(context, params);
+      functionInvoke.merge(context, params);
     }
   }
 
@@ -75,16 +103,16 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       throw new IllegalStateException("bind() must be called before terminate()");
     }
     if (!finalPhase) {
-      return instance.getPartialResult(context);
+      return functionInvoke.getPartialResult(context);
     } else {
-      return instance.terminate(context);
+      return functionInvoke.terminate(context);
     }
   }
 
   @Override
   public DataType getValueType() {
     if (!finalPhase) {
-      return instance.getPartialResultType();
+      return functionInvoke.getPartialResultType();
     } else {
       return funcDesc.getReturnType();
     }
@@ -104,7 +132,10 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     clone.finalPhase = finalPhase;
     clone.intermediatePhase = intermediatePhase;
     clone.alias = alias;
-    clone.instance = (AggFunction)instance.clone();
+    clone.invokeContext = (FunctionInvokeContext) invokeContext.clone();
+    if (functionInvoke != null) {
+      clone.functionInvoke = functionInvoke;
+    }
 
     return clone;
   }
@@ -146,7 +177,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     int result = super.hashCode();
     result = prime * result + ((alias == null) ? 0 : alias.hashCode());
     result = prime * result + (finalPhase ? 1231 : 1237);
-    result = prime * result + ((instance == null) ? 0 : instance.hashCode());
     result = prime * result + (intermediatePhase ? 1231 : 1237);
     return result;
   }
@@ -157,7 +187,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       AggregationFunctionCallEval other = (AggregationFunctionCallEval) obj;
 
       boolean eq = super.equals(other);
-      eq &= instance.equals(other.instance);
       eq &= intermediatePhase == other.intermediatePhase;
       eq &= finalPhase == other.finalPhase;
       eq &= TUtil.checkEquals(alias, other.alias);

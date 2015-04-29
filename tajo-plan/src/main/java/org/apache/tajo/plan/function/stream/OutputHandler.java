@@ -20,8 +20,12 @@ package org.apache.tajo.plan.function.stream;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.FileUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,6 +36,8 @@ import java.io.InputStream;
  * Tajo-Streaming external command.
  */
 public class OutputHandler implements Closeable {
+
+  private static final Log LOG = LogFactory.getLog(OutputHandler.class);
   private static int DEFAULT_BUFFER = 64 * 1024;
   private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
 
@@ -43,18 +49,21 @@ public class OutputHandler implements Closeable {
 
   private InputStream istream;
 
-  private final ByteBuf buf = BufferPool.directBuffer(DEFAULT_BUFFER);
+  private ByteBuf buf;
 
   // Both of these ignore the trailing "\n".  So if the default delimiter is "\n", recordDelimStr is "".
   private String recordDelimStr = null;
   private int recordDelimLength = 0;
-  private final Tuple tuple = new VTuple(1);
+  private final Tuple tuple;
 
   // flag to mark if close() has already been called
   private boolean alreadyClosed = false;
+  private final String FIELD_DELIM;
 
   public OutputHandler(TextLineDeserializer deserializer) {
     this.deserializer = deserializer;
+    FIELD_DELIM = new String(CSVLineSerDe.getFieldDelimiter(deserializer.meta));
+    tuple = new VTuple(deserializer.schema.size());
   }
 
   /**
@@ -68,6 +77,7 @@ public class OutputHandler implements Closeable {
   public void bindTo(InputStream is) throws IOException {
     this.istream  = is;
     this.in = new ByteBufLineReader(new ByteBufInputChannel(istream));
+    this.buf = BufferPool.directBuffer(DEFAULT_BUFFER);
   }
 
   /**
@@ -95,6 +105,38 @@ public class OutputHandler implements Closeable {
     return tuple;
   }
 
+  public String getPartialResultString() throws IOException {
+    if (in == null) {
+      return null;
+    }
+
+    currValue = null;
+    if (!readValue()) {
+      return null;
+    }
+    return currValue;
+  }
+
+  public FunctionContext getNext(FunctionContext context) throws IOException {
+    if (in == null) {
+      return null;
+    }
+
+    currValue = null;
+    if (!readValue()) {
+      return null;
+    }
+    buf.clear();
+    buf.writeBytes(currValue.getBytes());
+    try {
+      deserializer.deserialize(buf, context);
+    } catch (TextLineParsingError textLineParsingError) {
+      throw new IOException(textLineParsingError);
+    }
+
+    return context;
+  }
+
   private boolean readValue() throws IOException {
     currValue = in.readLine();
     if (currValue == null) {
@@ -113,10 +155,25 @@ public class OutputHandler implements Closeable {
       currValue += new String(lineBytes);
     }
 
-    if (currValue.contains("|_")) {
-      int pos = currValue.lastIndexOf("|_");
-      currValue = currValue.substring(0, pos);
+    String line = currValue;
+
+    int candidate = -1;
+    StringBuffer sb = new StringBuffer();
+    while ((candidate=line.indexOf("|")) >= 0) {
+      if (line.substring(candidate, candidate+2).equals("|_")) {
+        // record end
+        sb.append(line.substring(0, candidate));
+        break;
+      } else if (line.substring(candidate, candidate+3).equals("|,_")) {
+        sb.append(line.substring(0, candidate)).append(FIELD_DELIM);
+        line = line.substring(candidate+3, line.length());
+      } else if (line.substring(candidate, candidate+3).equals("|-_")) {
+        // null value
+        sb.append(FIELD_DELIM);
+        line = line.substring(candidate+3, line.length());
+      }
     }
+    currValue = sb.toString();
 
     return true;
   }
@@ -148,9 +205,13 @@ public class OutputHandler implements Closeable {
    */
   public void close() throws IOException {
     if(!alreadyClosed) {
-      istream.close();
+      FileUtil.cleanup(LOG, istream, in);
+      in = null;
       istream = null;
       alreadyClosed = true;
+      if (this.buf.refCnt() > 0) {
+        this.buf.release();
+      }
     }
   }
 }
