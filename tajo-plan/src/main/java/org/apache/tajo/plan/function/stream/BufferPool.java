@@ -19,24 +19,75 @@
 package org.apache.tajo.plan.function.stream;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.CommonTestingUtil;
+
+import java.lang.reflect.Field;
 
 /* this class is PooledBuffer holder */
 public class BufferPool {
 
-  private static final PooledByteBufAllocator allocator;
+  public static final String ALLOW_CACHE = "tajo.storage.buffer.thread-local.cache";
+  private static final ByteBufAllocator ALLOCATOR;
 
   private BufferPool() {
   }
 
   static {
-    //TODO we need determine the default params
-    allocator = new PooledByteBufAllocator(PlatformDependent.directBufferPreferred());
+    /* TODO Enable thread cache
+    *  Create a pooled ByteBuf allocator but disables the thread-local cache.
+    *  Because the TaskRunner thread is newly created
+    * */
 
-    /* if you are finding memory leak, please enable this line */
-    //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+    if (System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+      /* Disable pooling buffers for memory usage  */
+      ALLOCATOR = UnpooledByteBufAllocator.DEFAULT;
+
+      /* if you are finding memory leak, please enable this line */
+      ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+    } else {
+      TajoConf tajoConf = new TajoConf();
+      ALLOCATOR = createPooledByteBufAllocator(true, tajoConf.getBoolean(ALLOW_CACHE, false), 0);
+    }
+  }
+
+  /**
+   * borrowed from Spark
+   */
+  public static PooledByteBufAllocator createPooledByteBufAllocator(
+      boolean allowDirectBufs,
+      boolean allowCache,
+      int numCores) {
+    if (numCores == 0) {
+      numCores = Runtime.getRuntime().availableProcessors();
+    }
+    return new PooledByteBufAllocator(
+        allowDirectBufs && PlatformDependent.directBufferPreferred(),
+        Math.min(getPrivateStaticField("DEFAULT_NUM_HEAP_ARENA"), numCores),
+        Math.min(getPrivateStaticField("DEFAULT_NUM_DIRECT_ARENA"), allowDirectBufs ? numCores : 0),
+        getPrivateStaticField("DEFAULT_PAGE_SIZE"),
+        getPrivateStaticField("DEFAULT_MAX_ORDER"),
+        allowCache ? getPrivateStaticField("DEFAULT_TINY_CACHE_SIZE") : 0,
+        allowCache ? getPrivateStaticField("DEFAULT_SMALL_CACHE_SIZE") : 0,
+        allowCache ? getPrivateStaticField("DEFAULT_NORMAL_CACHE_SIZE") : 0
+    );
+  }
+
+  /** Used to get defaults from Netty's private static fields. */
+  private static int getPrivateStaticField(String name) {
+    try {
+      Field f = PooledByteBufAllocator.DEFAULT.getClass().getDeclaredField(name);
+      f.setAccessible(true);
+      return f.getInt(null);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public static long maxDirectMemory() {
@@ -45,7 +96,7 @@ public class BufferPool {
 
 
   public static ByteBuf directBuffer(int size) {
-    return allocator.directBuffer(size);
+    return ALLOCATOR.directBuffer(size);
   }
 
   /**
@@ -55,7 +106,7 @@ public class BufferPool {
    * @return allocated ByteBuf from pool
    */
   public static ByteBuf directBuffer(int size, int max) {
-    return allocator.directBuffer(size, max);
+    return ALLOCATOR.directBuffer(size, max);
   }
 
   @InterfaceStability.Unstable

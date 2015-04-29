@@ -536,31 +536,31 @@ public class GlobalPlanner {
   private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[]{});
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   /**
@@ -960,8 +960,9 @@ public class GlobalPlanner {
         firstPhaseEvals[i].setFirstPhase();
         firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
         FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+
         secondPhaseEvals[i].setFinalPhase();
-        secondPhaseEvals[i].setArgs(new EvalNode[] {param});
+        secondPhaseEvals[i].setArgs(new EvalNode[]{param});
       }
 
       secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);

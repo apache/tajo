@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -27,48 +28,47 @@ import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-/**
- * An abstract class for actual function invocation.
- * The metadata for function invocation are stored in the {@link org.apache.tajo.function.FunctionInvocation} class.
- */
-public abstract class FunctionInvoke implements Cloneable {
+public abstract class AggFunctionInvoke implements Cloneable {
   @Expose protected FunctionDesc functionDesc;
 
-  public FunctionInvoke() {
-
-  }
-
-  public FunctionInvoke(FunctionDesc functionDesc) {
+  public AggFunctionInvoke(FunctionDesc functionDesc) {
     this.functionDesc = functionDesc;
   }
 
-  public static FunctionInvoke newInstance(FunctionDesc desc) throws InternalException {
+  public static AggFunctionInvoke newInstance(FunctionDesc desc) throws InternalException {
+    // TODO: The below line is due to the bug in the function type. The type of class-based functions is not set properly.
     if (desc.getInvocation().hasLegacy()) {
-      return new ClassBasedScalarFunctionInvoke(desc);
-    } else if (desc.getInvocation().hasPython()) {
-      return new PythonFunctionInvoke(desc);
+      return new ClassBasedAggFunctionInvoke(desc);
+    } else if (desc.getInvocation().hasPythonAggregation()) {
+      return new PythonAggFunctionInvoke(desc);
     } else {
       throw new UnsupportedException(desc.getInvocation() + " is not supported");
     }
   }
 
-  public void setFunctionDesc(FunctionDesc functionDesc) throws InternalException {
+  public void setFunctionDesc(FunctionDesc functionDesc) {
     this.functionDesc = functionDesc;
   }
 
   public abstract void init(FunctionInvokeContext context) throws IOException;
 
-  /**
-   * Evaluate the given tuple with a function
-   * @param tuple a tuple evaluated with parameters
-   * @return a result of a fuction execution
-   */
-  public abstract Datum eval(Tuple tuple);
+  public abstract FunctionContext newContext();
+
+  public abstract void eval(FunctionContext context, Tuple params);
+
+  public abstract void merge(FunctionContext context, Tuple params);
+
+  public abstract Datum getPartialResult(FunctionContext context);
+
+  // TODO: use {@link IntermFunctionSignature} instead of this function.
+  public abstract TajoDataTypes.DataType getPartialResultType();
+
+  public abstract Datum terminate(FunctionContext context);
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof FunctionInvoke) {
-      FunctionInvoke other = (FunctionInvoke) o;
+    if (o instanceof AggFunctionInvoke) {
+      AggFunctionInvoke other = (AggFunctionInvoke) o;
       return this.functionDesc.equals(other.functionDesc);
     }
     return false;
@@ -81,7 +81,7 @@ public abstract class FunctionInvoke implements Cloneable {
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    FunctionInvoke clone = (FunctionInvoke) super.clone();
+    AggFunctionInvoke clone = (AggFunctionInvoke) super.clone();
     clone.functionDesc = (FunctionDesc) this.functionDesc.clone();
     return clone;
   }

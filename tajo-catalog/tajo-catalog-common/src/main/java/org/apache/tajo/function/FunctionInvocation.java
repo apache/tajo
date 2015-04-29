@@ -127,7 +127,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   public boolean hasPython() {
-    return python != null;
+    return python != null && python.isScalarFunction();
   }
 
   public void setPython(PythonInvocationDesc python) {
@@ -136,6 +136,18 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
 
   public PythonInvocationDesc getPython() {
     return python;
+  }
+
+  public boolean hasPythonAggregation() {
+    return python != null && !python.isScalarFunction();
+  }
+
+  public void setPythonAggregation(PythonInvocationDesc pythonAggregation) {
+    this.python = pythonAggregation;
+  }
+
+  public PythonInvocationDesc getPythonAggregation() {
+    return this.python;
   }
 
   @Override
@@ -156,7 +168,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (hasAggregationJIT()) {
       builder.setAggregationJIT(aggregationJIT.getProto());
     }
-    if (hasPython()) {
+    if (hasPython() || hasPythonAggregation()) {
       builder.setPython(python.getProto());
     }
     return builder.build();
@@ -169,6 +181,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
 
   public String toString() {
     return "legacy=" + hasLegacy() + ",scalar=" + hasScalar() + ",agg=" + hasAggregation() +
-        ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT() + ",python=" + hasPython();
+        ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT() + ",python=" + hasPython() +
+        ",aggPython=" + hasPythonAggregation();
   }
 }

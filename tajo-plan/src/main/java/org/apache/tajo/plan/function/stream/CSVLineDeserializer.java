@@ -23,6 +23,8 @@ import io.netty.buffer.ByteBufProcessor;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -51,6 +53,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     fieldSerDer = new TextFieldSerializerDeserializer(meta);
   }
 
+  @Override
   public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException, TextLineParsingError {
     int[] projection = targetColumnIndexes;
     if (lineBuf == null || targetColumnIndexes == null || targetColumnIndexes.length == 0) {
@@ -75,7 +78,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
-        Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
+        Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex).getDataType(), nullChars);
         output.put(currentIndex, datum);
         currentTarget++;
       }
@@ -87,6 +90,18 @@ public class CSVLineDeserializer extends TextLineDeserializer {
       start = end + 1;
       currentIndex++;
     }
+  }
+
+  @Override
+  public void deserialize(final ByteBuf lineBuf, FunctionContext context) throws IOException, TextLineParsingError {
+    PythonAggFunctionContext pythonContext = (PythonAggFunctionContext) context;
+    if (lineBuf == null) {
+      return;
+    }
+
+    byte[] bytes = new byte[lineBuf.readableBytes()];
+    lineBuf.readBytes(bytes);
+    pythonContext.setJsonData(new String(bytes));
   }
 
   @Override

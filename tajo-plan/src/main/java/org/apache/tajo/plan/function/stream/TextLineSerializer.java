@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function.stream;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -29,17 +30,17 @@ import java.io.OutputStream;
  * Write a Tuple into single text formatted line
  */
 public abstract class TextLineSerializer {
-  protected Schema schema;
   protected TableMeta meta;
 
-  public TextLineSerializer(Schema schema, TableMeta meta) {
-    this.schema = schema;
+  public TextLineSerializer(TableMeta meta) {
     this.meta = meta;
   }
 
   public abstract void init();
 
-  public abstract int serialize(OutputStream out, Tuple input) throws IOException;
+  public abstract int serialize(OutputStream out, Tuple input, Schema schema) throws IOException;
+
+  public abstract int serializeContext(OutputStream out, FunctionContext context) throws IOException;
 
   public abstract void release();
 }

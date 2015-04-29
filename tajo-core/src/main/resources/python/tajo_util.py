@@ -18,6 +18,7 @@
 
 import logging
 
+
 class udf_logging(object):
     udf_log_level = logging.INFO
 
@@ -37,12 +38,14 @@ class udf_logging(object):
     def set_log_level_debug(cls):
         cls.udf_log_level = logging.DEBUG
 
-def outputType(type_str):
+
+def output_type(*type_str):
     def wrap(f):
         def wrapped_f(*args):
             return f(*args)
         return wrapped_f
     return wrap
+
 
 def write_user_exception(filename, stream_err_output, num_lines_offset_trace=0):
     import sys
