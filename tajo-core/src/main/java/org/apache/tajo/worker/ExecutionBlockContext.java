@@ -176,6 +176,10 @@ public class ExecutionBlockContext {
     return stub;
   }
 
+  public boolean isStopped() {
+    return stop.get();
+  }
+
   public void stop(){
     if(stop.getAndSet(true)){
       return;

@@ -243,8 +243,14 @@ public class TaskRunner extends AbstractService {
                 }
                 continue;
               } catch (ExecutionException ee) {
-                LOG.error(ee.getMessage(), ee);
-                break;
+                if(!getContext().isStopped()){
+                  LOG.error(ee.getMessage(), ee);
+                } else {
+                  /* EB is stopped */
+                  stop();
+                  getContext().stopTaskRunner(getId());
+                  break;
+                }
               }
 
               if (taskRequest != null) {
