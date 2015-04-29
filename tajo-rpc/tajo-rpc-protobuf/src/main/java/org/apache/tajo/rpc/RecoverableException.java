@@ -16,19 +16,27 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.rpc.test";
-option java_outer_classname = "DummyProtocol";
-option java_generic_services = true;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.rpc;
 
-import "TestProtos.proto";
+/* RecoverableException can be handle a failure request */
+public class RecoverableException extends RemoteException {
+  private int seqId;
 
-service DummyProtocolService {
-  rpc sum (SumRequest) returns (SumResponse);
-  rpc echo (EchoMessage) returns (EchoMessage);
-  rpc getError (EchoMessage) returns (EchoMessage);
-  rpc getNull (EchoMessage) returns (EchoMessage);
-  rpc delay (EchoMessage) returns (EchoMessage);
-  rpc busy (EchoMessage) returns (EchoMessage);
-  rpc throwException (EchoMessage) returns (EchoMessage);
+  public RecoverableException(int seqId, String message) {
+    super(message);
+    this.seqId = seqId;
+  }
+
+  public RecoverableException(int seqId, Throwable t) {
+    this(seqId, t.getMessage(), t);
+  }
+
+  public RecoverableException(int seqId, String message, Throwable t) {
+    super(message, t);
+    this.seqId = seqId;
+  }
+
+  public int getSeqId() {
+    return seqId;
+  }
 }

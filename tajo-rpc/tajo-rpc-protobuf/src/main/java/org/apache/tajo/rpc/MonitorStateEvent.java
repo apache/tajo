@@ -16,19 +16,34 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.rpc.test";
-option java_outer_classname = "DummyProtocol";
-option java_generic_services = true;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.rpc;
 
-import "TestProtos.proto";
+/**
+ * A user event triggered by {@link org.apache.tajo.rpc.MonitorStateEvent} when a ping packet is not receive.
+ */
+public final class MonitorStateEvent {
+  /**
+   * An {@link Enum} that represents the monitor state of a remote peer.
+   */
+  public enum MonitorState {
+    /**
+     * No ping was received.
+     */
+    PING_EXPIRED
+  }
 
-service DummyProtocolService {
-  rpc sum (SumRequest) returns (SumResponse);
-  rpc echo (EchoMessage) returns (EchoMessage);
-  rpc getError (EchoMessage) returns (EchoMessage);
-  rpc getNull (EchoMessage) returns (EchoMessage);
-  rpc delay (EchoMessage) returns (EchoMessage);
-  rpc busy (EchoMessage) returns (EchoMessage);
-  rpc throwException (EchoMessage) returns (EchoMessage);
+  public static final MonitorStateEvent MONITOR_EXPIRED_STATE_EVENT = new MonitorStateEvent(MonitorState.PING_EXPIRED);
+
+  private final MonitorState state;
+
+  private MonitorStateEvent(MonitorState state) {
+    this.state = state;
+  }
+
+  /**
+   * Returns the monitor state.
+   */
+  public MonitorState state() {
+    return state;
+  }
 }

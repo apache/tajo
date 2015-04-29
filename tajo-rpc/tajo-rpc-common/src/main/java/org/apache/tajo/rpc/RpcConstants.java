@@ -18,18 +18,15 @@
 
 package org.apache.tajo.rpc;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
+public class RpcConstants {
 
-public class ConnectionCloseFutureListener implements GenericFutureListener {
-  private RpcClientManager.RpcConnectionKey key;
+  public static final String PING_PACKET = "TAJO";
+  public static final String RPC_CLIENT_RETRY_MAX = "tajo.rpc.client.retry.max";
+  public static final String RPC_CLIENT_TIMEOUT_SECS = "tajo.rpc.client.timeout-secs";
 
-  public ConnectionCloseFutureListener(RpcClientManager.RpcConnectionKey key) {
-    this.key = key;
-  }
-
-  @Override
-  public void operationComplete(Future future) throws Exception {
-    RpcClientManager.remove(key);
-  }
+  public static final int DEFAULT_RPC_RETRIES = 3;
+  public static final int DEFAULT_RPC_TIMEOUT_SECONDS = 180;
+  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;  // 60 sec
+  public static final int DEFAULT_PAUSE = 1000; // 1 sec
+  public static final int DEFAULT_FUTURE_TIMEOUT_SECONDS = 10;
 }

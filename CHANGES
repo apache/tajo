@@ -22,6 +22,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1563: Improve RPC error handling. (jinho)
+
     TAJO-1311: Enable Scattered Hash Shuffle for CTAS statement. (jaehwa)
 
     TAJO-1548: Refactoring condition code for CHAR into CatalogUtil.
@@ -209,6 +211,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1587: Upgrade java version to 1.7 for Travis CI. (jihoon)
 
     TAJO-1559: Fix data model description (tinyint, smallint).
     (Contributed by Dongjoon Hyun, Committed by jihoon)
