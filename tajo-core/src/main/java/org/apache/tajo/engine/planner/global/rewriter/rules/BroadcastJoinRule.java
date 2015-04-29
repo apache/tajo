@@ -127,12 +127,15 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
     if (rootOfChild.getType() == parentOfScanForChild.getType()) {
       // merge two-phase plan into one-phase plan.
-      // remove the second-phase plan
+      // remove the second-phase plan.
       parentFinder.set(parentOfScanForChild);
       parentFinder.find(parent.getPlan());
       parentOfScanForChild = parentFinder.found;
+
       if (parentOfScanForChild == null) {
-        throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
+        // assume that the node which will be merged is the root node of the plan of the parent eb.
+      } else {
+
       }
 
       if (rootOfChild.getType() == NodeType.GROUP_BY) {
@@ -142,6 +145,13 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           aggFunc.setFinalPhase();
         }
       }
+    }
+
+    if (parentOfScanForChild == null) {
+      // assume that the node which will be merged is the root node of the plan of the parent eb.
+
+    } else {
+      replaceChild(rootOfChild, scanForChild, parentOfScanForChild);
     }
 
     parent = mergeExecutionBlocks(plan, child, parent);
