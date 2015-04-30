@@ -191,11 +191,14 @@ public class EvalNodeDeserializer {
                   new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), params);
 
               PlanProto.AggFunctionEvalSpec aggFunctionProto = protoNode.getAggFunction();
-              if (aggFunctionProto.getFirstPhase()) {
+              if (aggFunctionProto.getFirstPhase() && aggFunctionProto.getFinalPhase()) {
+                aggFunc.setFirstAndFinalPhase();
+              } else if (aggFunctionProto.getFirstPhase()) {
                 aggFunc.setFirstPhase();
-              }
-              if (aggFunctionProto.getFinalPhase()) {
+              } else if (aggFunctionProto.getFinalPhase()) {
                 aggFunc.setFinalPhase();
+              } else {
+                aggFunc.setIntermediatePhase();
               }
               if (aggFunctionProto.hasAlias()) {
                 aggFunc.setAlias(aggFunctionProto.getAlias());

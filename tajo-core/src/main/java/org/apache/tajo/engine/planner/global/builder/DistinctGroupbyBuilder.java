@@ -112,7 +112,8 @@ public class DistinctGroupbyBuilder {
       if (!lastGroupbyNode.isDistinct()) {
         int index = 0;
         for (AggregationFunctionCallEval aggrFunction: lastGroupbyNode.getAggFunctions()) {
-          aggrFunction.setFirstPhase();
+//          aggrFunction.setFirstPhase();
+          aggrFunction.setFinalPhase();
           aggrFunction.setArgs(new EvalNode[]{new FieldEval(lastGroupbyNode.getTargets()[index].getNamedColumn())});
           index++;
         }
@@ -250,11 +251,6 @@ public class DistinctGroupbyBuilder {
     for (DistinctGroupbyNodeBuildInfo buildInfo: distinctNodeBuildInfos.values()) {
       GroupbyNode eachGroupbyNode = buildInfo.getGroupbyNode();
       List<AggregationFunctionCallEval> groupbyAggFunctions = buildInfo.getAggFunctions();
-      String [] firstPhaseEvalNames = new String[groupbyAggFunctions.size()];
-      int index = 0;
-      for (AggregationFunctionCallEval eachCallEval: groupbyAggFunctions) {
-        firstPhaseEvalNames[index++] = eachCallEval.getName();
-      }
 
       Target[] targets = new Target[eachGroupbyNode.getGroupingColumns().length + groupbyAggFunctions.size()];
       int targetIdx = 0;

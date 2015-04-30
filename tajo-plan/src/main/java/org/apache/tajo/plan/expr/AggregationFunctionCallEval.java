@@ -19,6 +19,8 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -33,9 +35,12 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
-  @Expose boolean firstPhase = false;
-  @Expose boolean finalPhase = true;
-  @Expose String alias;
+
+  private static final Log LOG = LogFactory.getLog(AggregationFunctionCallEval.class);
+  // Both firstPhase and finalPhase flags should be true before global planning.
+  @Expose private boolean firstPhase = true;
+  @Expose private boolean finalPhase = true;
+  @Expose private String alias;
 
   @Expose protected FunctionInvokeContext invokeContext;
   protected transient AggFunctionInvoke functionInvoke;
@@ -77,6 +82,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
+    LOG.info("at merge, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", finalPhase: " + finalPhase);
     if (!isBinded) {
       throw new IllegalStateException("bind() must be called before merge()");
     }
@@ -99,6 +105,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public Datum terminate(FunctionContext context) {
+    LOG.info("at terminate, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", finalPhase: " + finalPhase);
     if (!isBinded) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
@@ -111,6 +118,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   @Override
   public DataType getValueType() {
+    LOG.info("at getValueType, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", finalPhase: " + finalPhase);
     if (!finalPhase) {
       return functionInvoke.getPartialResultType();
     } else {

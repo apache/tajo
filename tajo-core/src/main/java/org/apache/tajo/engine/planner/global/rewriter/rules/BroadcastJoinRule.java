@@ -24,11 +24,11 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
+import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 
@@ -43,19 +43,19 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
-    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED)) {
-      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
-        if (block.hasNode(NodeType.JOIN)) {
-          broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
-          if (broadcastTableSizeThreshold > 0) {
-            if (parentFinder == null) {
-              parentFinder = new ParentFinder();
-            }
-            return true;
-          }
-        }
-      }
-    }
+//    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED)) {
+//      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
+//        if (block.hasNode(NodeType.JOIN)) {
+//          broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
+//          if (broadcastTableSizeThreshold > 0) {
+//            if (parentFinder == null) {
+//              parentFinder = new ParentFinder();
+//            }
+//            return true;
+//          }
+//        }
+//      }
+//    }
     return false;
   }
 
@@ -100,13 +100,13 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   private ExecutionBlock merge(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
     if (parent.hasJoin()) {
-      return mergeJoinTwoPhase(plan, child, parent);
+      return mergeTwoPhaseJoin(plan, child, parent);
     } else {
-      return mergeNonJoinTwoPhase(plan, child, parent);
+      return mergeTwoPhaseNonJoin(plan, child, parent);
     }
   }
 
-  private ExecutionBlock mergeNonJoinTwoPhase(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
+  private ExecutionBlock mergeTwoPhaseNonJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
       throws PlanningException {
 
     ScanNode scanForChild = findScanForChildEb(child, parent);
@@ -159,6 +159,10 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
     parent = mergeExecutionBlocks(plan, child, parent);
 
+    if (parent.getEnforcer().hasEnforceProperty(EnforceType.SORTED_INPUT)) {
+      parent.getEnforcer().removeSortedInput(scanForChild.getTableName());
+    }
+
     parent.setPlan(mergedPlan);
 
     return parent;
@@ -172,7 +176,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
    * @param parent parent block who has join nodes
    * @return
    */
-  private ExecutionBlock mergeJoinTwoPhase(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
+  private ExecutionBlock mergeTwoPhaseJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
       throws PlanningException {
     ScanNode scanForChild = findScanForChildEb(child, parent);
     if (scanForChild == null) {

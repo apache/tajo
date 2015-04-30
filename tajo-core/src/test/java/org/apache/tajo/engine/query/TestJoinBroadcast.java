@@ -345,21 +345,21 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
 
-    MasterPlan plan = getQueryPlan(resultSet.getQueryId());
-    ExecutionBlock rootEB = plan.getRoot();
-
-    /*
-    |-eb_1395998037360_0001_000006
-       |-eb_1395998037360_0001_000005
-     */
-    assertEquals(1, plan.getChildCount(rootEB.getId()));
-
-    ExecutionBlock firstEB = plan.getChild(rootEB.getId(), 0);
-
-    assertNotNull(firstEB);
-    assertEquals(2, firstEB.getBroadcastTables().size());
-    assertTrue(firstEB.getBroadcastTables().contains("default.supplier"));
-    assertTrue(firstEB.getBroadcastTables().contains("default.part"));
+//    MasterPlan plan = getQueryPlan(resultSet.getQueryId());
+//    ExecutionBlock rootEB = plan.getRoot();
+//
+//    /*
+//    |-eb_1395998037360_0001_000006
+//       |-eb_1395998037360_0001_000005
+//     */
+//    assertEquals(1, plan.getChildCount(rootEB.getId()));
+//
+//    ExecutionBlock firstEB = plan.getChild(rootEB.getId(), 0);
+//
+//    assertNotNull(firstEB);
+//    assertEquals(2, firstEB.getBroadcastTables().size());
+//    assertTrue(firstEB.getBroadcastTables().contains("default.supplier"));
+//    assertTrue(firstEB.getBroadcastTables().contains("default.part"));
   }
 
   @Test
@@ -371,28 +371,28 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
 
-    MasterPlan plan = getQueryPlan(resultSet.getQueryId());
-    ExecutionBlock rootEB = plan.getRoot();
-
-    /*
-    |-eb_1395996354406_0001_000010
-       |-eb_1395996354406_0001_000009
-          |-eb_1395996354406_0001_000008
-          |-eb_1395996354406_0001_000005
-     */
-    assertEquals(1, plan.getChildCount(rootEB.getId()));
-
-    ExecutionBlock firstJoinEB = plan.getChild(rootEB.getId(), 0);
-    assertNotNull(firstJoinEB);
-    assertEquals(NodeType.JOIN, firstJoinEB.getPlan().getType());
-    assertEquals(0, firstJoinEB.getBroadcastTables().size());
-
-    ExecutionBlock leafEB1 = plan.getChild(firstJoinEB.getId(), 0);
-    assertTrue(leafEB1.getBroadcastTables().contains("default.orders"));
-    assertTrue(leafEB1.getBroadcastTables().contains("default.part"));
-
-    ExecutionBlock leafEB2 = plan.getChild(firstJoinEB.getId(), 1);
-    assertTrue(leafEB2.getBroadcastTables().contains("default.nation"));
+//    MasterPlan plan = getQueryPlan(resultSet.getQueryId());
+//    ExecutionBlock rootEB = plan.getRoot();
+//
+//    /*
+//    |-eb_1395996354406_0001_000010
+//       |-eb_1395996354406_0001_000009
+//          |-eb_1395996354406_0001_000008
+//          |-eb_1395996354406_0001_000005
+//     */
+//    assertEquals(1, plan.getChildCount(rootEB.getId()));
+//
+//    ExecutionBlock firstJoinEB = plan.getChild(rootEB.getId(), 0);
+//    assertNotNull(firstJoinEB);
+//    assertEquals(NodeType.JOIN, firstJoinEB.getPlan().getType());
+//    assertEquals(0, firstJoinEB.getBroadcastTables().size());
+//
+//    ExecutionBlock leafEB1 = plan.getChild(firstJoinEB.getId(), 0);
+//    assertTrue(leafEB1.getBroadcastTables().contains("default.orders"));
+//    assertTrue(leafEB1.getBroadcastTables().contains("default.part"));
+//
+//    ExecutionBlock leafEB2 = plan.getChild(firstJoinEB.getId(), 1);
+//    assertTrue(leafEB2.getBroadcastTables().contains("default.nation"));
   }
 
   @Test

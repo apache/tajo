@@ -241,6 +241,13 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     }
   }
 
+  /**
+   * Build a hash table for right input relation.
+   * If the right child is not scan exec,
+   *
+   * @return
+   * @throws IOException
+   */
   private Map<Tuple, List<Tuple>> buildRightToHashTable() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
@@ -254,6 +261,18 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
       List<Tuple> newValue = map.get(keyTuple);
 
+      /*
+       * TODO
+       * Currently, some physical executors can return new instances of tuple, but others not.
+       * This sometimes causes wrong results due to the singleton Tuple instance.
+       * The below line is a temporal solution to fix this problem.
+       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
+       */
+      try {
+        tuple = tuple.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e);
+      }
       if (newValue != null) {
         newValue.add(tuple);
       } else {
