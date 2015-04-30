@@ -77,7 +77,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
     initSystemDirectory();
 
     InetSocketAddress socketAddress = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    this.masterName = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
+    this.masterName = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
 
     monitorInterval = conf.getIntVar(ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
 
@@ -160,16 +160,16 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
     StringBuilder sb = new StringBuilder();
     InetSocketAddress address = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
-    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
-    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.CATALOG_ADDRESS);
-    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
-    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort());
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
 
     FSDataOutputStream out = fs.create(path);
 
