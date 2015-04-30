@@ -20,20 +20,22 @@ package org.apache.tajo.plan.function;
 
 import com.google.common.base.Objects;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
 
 /**
  * This class contains some metadata need to execute functions.
  */
-public class FunctionInvokeContext {
-  private final OverridableConf queryContext;
-  private final FunctionEval.ParamType[] paramTypes;
+public class FunctionInvokeContext implements Cloneable {
+  private OverridableConf queryContext;
+  private FunctionEval.ParamType[] paramTypes;
   private TajoScriptEngine scriptEngine;
 
-  public FunctionInvokeContext(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
+  public FunctionInvokeContext(@Nullable OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
     this.queryContext = queryContext;
     this.paramTypes = paramTypes;
   }
@@ -67,8 +69,20 @@ public class FunctionInvokeContext {
   public boolean equals(Object o) {
     if (o instanceof FunctionInvokeContext) {
       FunctionInvokeContext other = (FunctionInvokeContext) o;
-      return queryContext.equals(other.queryContext) && Arrays.equals(paramTypes, other.paramTypes);
+      return TUtil.checkEquals(queryContext, other.queryContext) &&
+          Arrays.equals(paramTypes, other.paramTypes);
     }
     return false;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    FunctionInvokeContext clone = (FunctionInvokeContext) super.clone();
+    clone.queryContext = queryContext;
+    clone.paramTypes = Arrays.copyOf(paramTypes, paramTypes.length);
+    if (scriptEngine != null) {
+      clone.scriptEngine = scriptEngine;
+    }
+    return clone;
   }
 }

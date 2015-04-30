@@ -31,8 +31,8 @@ public class CSVLineSerDe extends TextLineSerDe {
   }
 
   @Override
-  public TextLineSerializer createSerializer(Schema schema, TableMeta meta) {
-    return new CSVLineSerializer(schema, meta);
+  public TextLineSerializer createSerializer(TableMeta meta) {
+    return new CSVLineSerializer(meta);
   }
 
   public static byte[] getFieldDelimiter(TableMeta meta) {

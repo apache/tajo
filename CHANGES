@@ -4,6 +4,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1562: Python UDAF support. (jihoon)
+
     TAJO-1344: Python UDF support. (jihoon)
 
     TAJO-923: Add VAR_SAMP and VAR_POP window functions. 
@@ -211,6 +213,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1587: Upgrade java version to 1.7 for Travis CI. (jihoon)
 
     TAJO-1559: Fix data model description (tinyint, smallint).
     (Contributed by Dongjoon Hyun, Committed by jihoon)
