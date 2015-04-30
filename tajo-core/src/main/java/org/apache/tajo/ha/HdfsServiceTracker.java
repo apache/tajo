@@ -70,12 +70,45 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   public HdfsServiceTracker(TajoConf conf) throws IOException {
     this.conf = conf;
+  }
+
+  @Override
+  public void register() throws IOException {
     initSystemDirectory();
 
     InetSocketAddress socketAddress = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    this.masterName = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
+    this.masterName = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
     monitorInterval = conf.getIntVar(ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
+
+    FileStatus[] files = fs.listStatus(activePath);
+
+    // Phase 1: If there is not another active master, this try to become active master.
+    if (files.length == 0) {
+      createMasterFile(true);
+      currentActiveMaster = masterName;
+      LOG.info(String.format("This is added to active master (%s)", masterName));
+    } else {
+      // Phase 2: If there is active master information, we need to check its status.
+      Path activePath = files[0].getPath();
+      currentActiveMaster = activePath.getName().replaceAll("_", ":");
+
+      // Phase 3: If current active master is dead, this master should be active master.
+      if (!HAServiceUtil.isMasterAlive(currentActiveMaster, conf)) {
+        fs.delete(activePath, true);
+        createMasterFile(true);
+        currentActiveMaster = masterName;
+        LOG.info(String.format("This is added to active master (%s)", masterName));
+      } else {
+        // Phase 4: If current active master is alive, this master need to be backup master.
+        if (!currentActiveMaster.equals(masterName)) {
+          createMasterFile(false);
+          LOG.info(String.format("This is added to backup masters (%s)", masterName));
+        } else {
+          LOG.info(String.format("This has already been added to active master (%s)", masterName));
+        }
+      }
+    }
   }
 
   private void initSystemDirectory() throws IOException {
@@ -105,42 +138,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
     }
   }
 
-  private void startPingChecker() {
-    if (checkerThread == null) {
-      checkerThread = new Thread(new PingChecker());
-      checkerThread.setName("Ping Checker");
-      checkerThread.start();
-    }
-  }
-
-  @Override
-  public void register() throws IOException {
-    FileStatus[] files = fs.listStatus(activePath);
-
-    // Phase 1: If there is not another active master, this try to become active master.
-    if (files.length == 0) {
-      createMasterFile(true);
-      currentActiveMaster = masterName;
-      LOG.info(String.format("This is added to active master (%s)", masterName));
-    } else {
-      // Phase 2: If there is active master information, we need to check its status.
-      Path activePath = files[0].getPath();
-      currentActiveMaster = activePath.getName().replaceAll("_", ":");
-
-      // Phase 3: If current active master is dead, this master should be active master.
-      if (!HAServiceUtil.isMasterAlive(currentActiveMaster, conf)) {
-        fs.delete(activePath, true);
-        createMasterFile(true);
-        currentActiveMaster = masterName;
-        LOG.info(String.format("This is added to active master (%s)", masterName));
-      } else {
-        // Phase 4: If current active master is alive, this master need to be backup master.
-        createMasterFile(false);
-        LOG.info(String.format("This is added to backup masters (%s)", masterName));
-      }
-    }
-  }
-
   /**
    * It will creates the following form string. It includes
    *
@@ -163,16 +160,16 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
     StringBuilder sb = new StringBuilder();
     InetSocketAddress address = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
-    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
-    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.CATALOG_ADDRESS);
-    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
-    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
+    sb.append(address.getAddress().getHostName()).append(":").append(address.getPort());
 
     FSDataOutputStream out = fs.create(path);
 
@@ -184,15 +181,31 @@ public class HdfsServiceTracker extends HAServiceTracker {
       createMasterFile(false);
     }
 
+    // Set active status and delete existing file.
     if (isActive) {
       isActiveStatus = true;
+      Path backupFile = new Path(backupPath, fileName);
+      if (fs.exists(backupFile)) {
+        fs.delete(backupFile, true);
+      }
     } else {
       isActiveStatus = false;
+      Path activeFile = new Path(activePath, fileName);
+      if (fs.exists(activeFile)) {
+        fs.delete(activeFile, true);
+      }
     }
 
     startPingChecker();
   }
 
+  private void startPingChecker() {
+    if (checkerThread == null) {
+      checkerThread = new Thread(new PingChecker());
+      checkerThread.setName("Ping Checker");
+      checkerThread.start();
+    }
+  }
 
   private InetSocketAddress getHostAddress(int type) {
     InetSocketAddress address = null;
