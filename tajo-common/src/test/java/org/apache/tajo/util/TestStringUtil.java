@@ -103,7 +103,7 @@ public class TestStringUtil {
     char separatorChar = '|';
 
     String[] textArray = org.apache.commons.lang.StringUtils.splitPreserveAllTokens(text, separatorChar);
-    byte[][] bytesArray =  BytesUtils.splitPreserveAllTokens(text.getBytes(), separatorChar);
+    byte[][] bytesArray =  BytesUtils.splitPreserveAllTokens(text.getBytes(), separatorChar, 3);
 
     assertEquals(textArray.length, bytesArray.length);
     for (int i = 0; i < textArray.length; i++){
@@ -118,7 +118,7 @@ public class TestStringUtil {
     char separatorChar = '|';
 
     String[] textArray = org.apache.commons.lang.StringUtils.splitPreserveAllTokens(text, separatorChar);
-    byte[][] bytesArray =  BytesUtils.splitPreserveAllTokens(text.getBytes(), separatorChar, target);
+    byte[][] bytesArray =  BytesUtils.splitPreserveAllTokens(text.getBytes(), separatorChar, target, 3);
 
     assertEquals(textArray.length, bytesArray.length);
 

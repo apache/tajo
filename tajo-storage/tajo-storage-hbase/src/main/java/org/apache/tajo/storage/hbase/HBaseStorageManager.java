@@ -1015,7 +1015,8 @@ public class HBaseStorageManager extends StorageManager {
           Tuple endTuple = new VTuple(sortSpecs.length);
           byte[][] rowKeyFields;
           if (sortSpecs.length > 1) {
-            byte[][] splitValues = BytesUtils.splitPreserveAllTokens(eachEndKey, columnMapping.getRowKeyDelimiter());
+            byte[][] splitValues = BytesUtils.splitPreserveAllTokens(
+                eachEndKey, columnMapping.getRowKeyDelimiter(), columnMapping.getNumColumns());
             if (splitValues.length == sortSpecs.length) {
               rowKeyFields = splitValues;
             } else {

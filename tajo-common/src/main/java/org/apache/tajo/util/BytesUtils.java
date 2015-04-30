@@ -22,6 +22,7 @@ import org.apache.hadoop.io.WritableUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -86,22 +87,23 @@ public class BytesUtils {
     return buffer;
   }
 
-  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar, int[] target) {
-    return splitWorker(str, 0, -1, separatorChar, true, target);
+  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar, int[] target, int numColumns) {
+    return splitWorker(str, 0, -1, separatorChar, target, numColumns);
   }
 
-  public static byte[][] splitPreserveAllTokens(byte[] str, int offset, int length, char separatorChar, int[] target) {
-    return splitWorker(str, offset, length, separatorChar, true, target);
+  public static byte[][] splitPreserveAllTokens(byte[] str, int offset, int length, byte[] separator, int[] target, int numColumns) {
+    return splitWorker(str, offset, length, separator, target, numColumns);
   }
 
-  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar) {
-    return splitWorker(str, 0, -1, separatorChar, true, null);
+  public static byte[][] splitPreserveAllTokens(byte[] str, char separatorChar, int numColumns) {
+    return splitWorker(str, 0, -1, separatorChar, null, numColumns);
   }
 
-  public static byte[][] splitPreserveAllTokens(byte[] str, int length, char separatorChar) {
-    return splitWorker(str, 0, length, separatorChar, true, null);
+  private static byte[][] splitWorker(byte[] str, int offset, int length, char separatorChar,
+                                      int[] target, int numColumns) {
+    return splitWorker(str, offset, length, new byte[] {(byte)separatorChar}, target, numColumns);
   }
-
+  
   /**
    * Performs the logic for the <code>split</code> and
    * <code>splitPreserveAllTokens</code> methods that do not return a
@@ -109,75 +111,96 @@ public class BytesUtils {
    *
    * @param str  the String to parse, may be <code>null</code>
    * @param length amount of bytes to str
-   * @param separatorChar the ascii separate character
-   * @param preserveAllTokens if <code>true</code>, adjacent separators are
-   * treated as empty token separators; if <code>false</code>, adjacent
-   * separators are treated as one separator.
+   * @param separator the ascii separate characters
    * @param target the projection target
+   * @param numColumns number of columns to be retrieved              
    * @return an array of parsed Strings, <code>null</code> if null String input
    */
-  private static byte[][] splitWorker(byte[] str, int offset, int length, char separatorChar,
-                                      boolean preserveAllTokens, int[] target) {
-    // Performance tuned for 2.0 (JDK1.4)
-
+  private static byte[][] splitWorker(byte[] str, int offset, int length, byte[] separator, int[] target, int numColumns) {
     if (str == null) {
       return null;
     }
-    int len = length;
-    if (len == 0) {
-      return new byte[1][0];
-    }else if(len < 0){
-      len = str.length - offset;
+    if (length == 0) {
+      return new byte[numColumns][0];
+    }
+    if (length < 0) {
+      length = str.length - offset;
+    }
+    int indexMax = 0;
+    if (target != null) {
+      for (int index : target) {
+        indexMax = Math.max(indexMax, index + 1);
+      }
+    } else {
+      indexMax = numColumns;
     }
 
-    List list = new ArrayList();
-    int i = 0, start = 0;
-    boolean match = false;
-    boolean lastMatch = false;
-    int currentTarget = 0;
-    int currentIndex = 0;
-    while (i < len) {
-      if (str[i + offset] == separatorChar) {
-        if (match || preserveAllTokens) {
-          if (target == null) {
-            byte[] bytes = new byte[i - start];
-            System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-            list.add(bytes);
-          } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
-            byte[] bytes = new byte[i - start];
-            System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-            list.add(bytes);
-            currentTarget++;
-          } else {
-            list.add(null);
-          }
-          currentIndex++;
-          match = false;
-          lastMatch = true;
+    int[][] indices = split(str, offset, length, separator, new int[indexMax][]);
+    byte[][] result = new byte[numColumns][];
+
+    // not-picked -> null, picked but not-exists -> byte[0]
+    if (target != null) {
+      for (int i : target) {
+        int[] index = indices[i];
+        result[i] = index == null ? new byte[0] : Arrays.copyOfRange(str, index[0], index[1]);
+      }
+    } else {
+      for (int i = 0; i < result.length; i++) {
+        int[] index = indices[i];
+        result[i] = index == null ? new byte[0] : Arrays.copyOfRange(str, index[0], index[1]);
+      }
+    }
+    return result;
+  }
+
+  public static int[][] split(byte[] str, int offset, int length, byte[] separator, int[][] indices) {
+    if (indices.length == 0) {
+      return indices;   // trivial
+    }
+    final int limit = offset + length;
+
+    int start = offset;
+    int colIndex = 0;
+    for (int index = offset; index < limit;) {
+      if (onDelimiter(str, index, limit, separator)) {
+        indices[colIndex++] = new int[] {start, index};
+        if (colIndex >= indices.length) {
+          return indices;
         }
-        start = ++i;
-        continue;
-      }
-      lastMatch = false;
-      match = true;
-      i++;
-    }
-    if (match || (preserveAllTokens && lastMatch)) {
-      if (target == null) {
-        byte[] bytes = new byte[i - start];
-        System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-        list.add(bytes);
-      } else if (target.length > currentTarget && currentIndex == target[currentTarget]) {
-        byte[] bytes = new byte[i - start];
-        System.arraycopy(str, start + offset, bytes, 0, bytes.length);
-        list.add(bytes); //str.substring(start, i));
-        currentTarget++;
+        index += separator.length;
+        start = index;
       } else {
-        list.add(null);
+        index++;
       }
-      currentIndex++;
     }
-    return (byte[][]) list.toArray(new byte[list.size()][]);
+    if (colIndex < indices.length) {
+      indices[colIndex] = new int[]{start, limit};
+    }
+    return indices;
+  }
+  
+  private static boolean onDelimiter(byte[] input, int offset, int limit, byte[] delimiter) {
+    for (int i = 0; i < delimiter.length; i++) {
+      if (offset + i >= limit || input[offset + i] != delimiter[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  public static byte[][] splitTrivial(byte[] value, byte delimiter) {
+    List<byte[]> split = new ArrayList<byte[]>();
+    int prev = 0;
+    for (int i = 0; i < value.length; i++) {
+      if (value[i] == delimiter) {
+        split.add(Arrays.copyOfRange(value, prev, i));
+        prev = i + 1;
+      }
+    }
+    if (prev <= value.length) {
+      split.add(Arrays.copyOfRange(value, prev, value.length));
+    }
+    return split.toArray(new byte[split.size()][]);
   }
 
   /**

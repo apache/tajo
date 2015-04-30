@@ -218,7 +218,8 @@ public class HBaseScanner implements Scanner {
       if (!isBinaryColumns[fieldId] && rowKeyFieldIndexes[fieldId] >= 0) {
         int rowKeyFieldIndex = rowKeyFieldIndexes[fieldId];
 
-        byte[][] rowKeyFields = BytesUtils.splitPreserveAllTokens(value, rowKeyDelimiter);
+        byte[][] rowKeyFields = BytesUtils.splitPreserveAllTokens(
+            value, rowKeyDelimiter, columnMapping.getNumColumns());
 
         if (rowKeyFields.length < rowKeyFieldIndex) {
           return NullDatum.get();
