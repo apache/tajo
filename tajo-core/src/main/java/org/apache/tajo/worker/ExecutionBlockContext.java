@@ -135,8 +135,8 @@ public class ExecutionBlockContext {
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
+    this.stub = getQueryMasterClient().getStub();
     this.reporter.startReporter();
-
     // resource intiailization
     try{
       this.resource.initialize(queryContext, plan);
@@ -168,11 +168,7 @@ public class ExecutionBlockContext {
     return client;
   }
 
-  public Interface getStub()
-      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    if (stub == null) {
-      stub = getQueryMasterClient().getStub();
-    }
+  public Interface getStub() {
     return stub;
   }
 

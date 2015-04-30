@@ -92,7 +92,7 @@ public class QueryInProgress {
     try {
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
       if (queryMasterRpcClient != null) {
-        CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
         queryMasterRpcClient.killQuery(callFuture.getController(), queryId.getProto(), callFuture);
         callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       }
@@ -200,7 +200,7 @@ public class QueryInProgress {
           .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
           .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
 
-      CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
       queryMasterRpcClient.executeQuery(callFuture.getController(), builder.build(), callFuture);
       callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
