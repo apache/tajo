@@ -30,21 +30,14 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InvalidOperationException;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
-import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.Closeable;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * CatalogClient provides a client API to access the catalog server.
@@ -52,49 +45,13 @@ import java.util.concurrent.TimeUnit;
 public abstract class AbstractCatalogClient implements CatalogService, Closeable {
   protected final Log LOG = LogFactory.getLog(AbstractCatalogClient.class);
 
-  protected ServiceTracker serviceTracker;
-  protected RpcClientManager manager;
-  protected InetSocketAddress catalogServerAddr;
   protected TajoConf conf;
-  protected NettyClientBase client;
 
-  abstract CatalogProtocolService.BlockingInterface getStub() throws ServiceException;
-
-  public AbstractCatalogClient(TajoConf conf, InetSocketAddress catalogServerAddr) {
-    this.manager = RpcClientManager.getInstance();
-    this.catalogServerAddr = catalogServerAddr;
-    this.serviceTracker = ServiceTrackerFactory.get(conf);
+  public AbstractCatalogClient(TajoConf conf) {
     this.conf = conf;
   }
 
-  private InetSocketAddress getCatalogServerAddr() {
-    if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      return catalogServerAddr;
-    } else {
-      return serviceTracker.getCatalogAddress();
-    }
-  }
-
-  public synchronized NettyClientBase getCatalogConnection() throws ServiceException {
-    if (client == null || !client.isConnected()) {
-      try {
-        RpcClientManager.cleanup(client);
-
-        int retry = conf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES);
-        int timeout = conf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, 0);
-        this.client = manager.newClient(getCatalogServerAddr(), CatalogProtocol.class, false, retry, timeout,
-            TimeUnit.SECONDS, false);
-      } catch (Exception e) {
-        throw new ServiceException(e);
-      }
-    }
-    return client;
-  }
-
-  @Override
-  public void close() {
-    RpcClientManager.cleanup(client);
-  }
+  abstract CatalogProtocolService.BlockingInterface getStub() throws ServiceException;
 
   @Override
   public final Boolean createTablespace(final String tablespaceName, final String tablespaceUri) {

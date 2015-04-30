@@ -89,16 +89,13 @@ public class SessionConnection implements Closeable {
 
     this.manager = RpcClientManager.getInstance();
     this.manager.setRetries(properties.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
-    this.manager.setTimeoutSeconds(
-        properties.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, 0)); // disable rpc timeout
-
     this.userInfo = UserRoleInfo.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
 
     this.serviceTracker = tracker;
     try {
       this.client = getTajoMasterConnection();
-    } catch (Exception e) {
+    } catch (ServiceException e) {
       throw new IOException(e);
     }
   }
@@ -107,18 +104,19 @@ public class SessionConnection implements Closeable {
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public NettyClientBase getTajoMasterConnection() throws ServiceException {
-    if (client == null || !client.isConnected()) {
+  public synchronized NettyClientBase getTajoMasterConnection() throws ServiceException {
+    if (client != null && client.isConnected()) return client;
+    else {
       try {
         RpcClientManager.cleanup(client);
-
+        // Client do not closed on idle state for support high available
         this.client = manager.newClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, false,
-            manager.getRetries(), manager.getTimeoutSeconds(), TimeUnit.SECONDS, false);
+            manager.getRetries(), 0, TimeUnit.SECONDS, false);
       } catch (Exception e) {
         throw new ServiceException(e);
       }
+      return client;
     }
-    return client;
   }
 
   protected KeyValueSet getProperties() {
