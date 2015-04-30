@@ -20,15 +20,26 @@ package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBufProcessor;
 
-public class FieldSplitProcessor implements ByteBufProcessor {
-  private byte delimiter; //the ascii separate character
+public class MultiBytesFieldSplitProcessor implements ByteBufProcessor {
 
-  public FieldSplitProcessor(byte recordDelimiterByte) {
+  private int index;
+  private final byte[] delimiter;
+
+  public MultiBytesFieldSplitProcessor(byte[] recordDelimiterByte) {
     this.delimiter = recordDelimiterByte;
   }
 
   @Override
   public boolean process(byte value) throws Exception {
-    return delimiter != value;
+    if (delimiter[index] != value) {
+      index = 0;
+      return true;
+    }
+    if (index != delimiter.length - 1) {
+      index++;
+      return true;
+    }
+    index = 0;
+    return false;
   }
 }

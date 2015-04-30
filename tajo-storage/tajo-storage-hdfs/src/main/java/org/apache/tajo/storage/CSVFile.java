@@ -40,6 +40,7 @@ import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
@@ -83,7 +84,8 @@ public class CSVFile {
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(
-          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)).getBytes();
+          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))
+          .getBytes(Bytes.UTF8_CHARSET);
 
       this.columnNum = schema.size();
 
@@ -93,7 +95,7 @@ public class CSVFile {
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
-        nullChars = nullCharacters.getBytes();
+        nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
       }
     }
 
@@ -265,7 +267,8 @@ public class CSVFile {
       //Delimiter
       this.delimiter = StringEscapeUtils.unescapeJava(
           meta.getOption(StorageConstants.TEXT_DELIMITER,
-          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).getBytes();
+          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)))
+          .getBytes(Bytes.UTF8_CHARSET);
 
       String nullCharacters = StringEscapeUtils.unescapeJava(
           meta.getOption(StorageConstants.TEXT_NULL,
@@ -274,7 +277,7 @@ public class CSVFile {
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
-        nullChars = nullCharacters.getBytes();
+        nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
       }
     }
 

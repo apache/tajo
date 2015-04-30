@@ -8,6 +8,9 @@ Release 0.10.1 - unreleased
     (jihun)
 
   IMPROVEMENT
+
+    TAJO-1381: Support multi-bytes delimiter for Text file.
+    (Contributed by navis, Committed by jinho)
   
     TAJO-1374: Support multi-bytes delimiter for CSV file.
     (Contributed by navis, Committed by jinho)

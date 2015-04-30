@@ -391,7 +391,7 @@ public class DelimitedTextFile {
 
           try {
             deserializer.deserialize(buf, tuple);
-            // if a line is read normaly, it exists this loop.
+            // if a line is read normally, it exists this loop.
             break;
 
           } catch (TextLineParsingError tae) {

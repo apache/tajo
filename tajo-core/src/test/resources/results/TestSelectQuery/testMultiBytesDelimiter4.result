@@ -1,0 +1,7 @@
+id,name,score,type
+-------------------------------
+1,ooo,1.1,a
+2,ppp,2.3,
+3,qqq,null,
+4,,4.5,
+null,xxx,5.6,e
