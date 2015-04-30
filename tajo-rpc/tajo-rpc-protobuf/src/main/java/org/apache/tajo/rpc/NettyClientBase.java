@@ -252,11 +252,10 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
 
   @Override
   public void close() {
-    getHandler().sendExceptions(getClass().getSimpleName() + "terminates all the connections");
-
     Channel channel = getChannel();
     if (channel != null && channel.isOpen()) {
       LOG.debug("Proxy will be disconnected from remote " + channel.remoteAddress());
+      /* channelInactive receives event and then client terminates all the requests */
       channel.close().syncUninterruptibly();
     }
   }
