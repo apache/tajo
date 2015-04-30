@@ -113,12 +113,7 @@ public class QueryInProgress {
 
     masterContext.getResourceManager().releaseQueryMaster(queryId);
 
-    if(queryMasterRpc != null) {
-      boolean reuse = masterContext.getConf().getBoolVar(TajoConf.ConfVars.QUERY_MASTER_RPC_CLIENT_REUSE);
-      if (!reuse) {
-        RpcClientManager.cleanup(queryMasterRpc);
-      }
-    }
+    RpcClientManager.cleanup(queryMasterRpc);
 
     try {
       masterContext.getHistoryWriter().appendAndFlush(queryInfo);
@@ -162,14 +157,8 @@ public class QueryInProgress {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
 
-    /* A large scale cluster can be connection refused, if it reuse  */
-    boolean reuse = masterContext.getConf().getBoolVar(TajoConf.ConfVars.QUERY_MASTER_RPC_CLIENT_REUSE);
-    if (reuse) {
-      queryMasterRpc = RpcClientManager.getInstance().getClient(addr, QueryMasterProtocol.class, true);
-    } else {
-      RpcClientManager.cleanup(queryMasterRpc);
-      queryMasterRpc = RpcClientManager.getInstance().newClient(addr, QueryMasterProtocol.class, true);
-    }
+    RpcClientManager.cleanup(queryMasterRpc);
+    queryMasterRpc = RpcClientManager.getInstance().newClient(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 

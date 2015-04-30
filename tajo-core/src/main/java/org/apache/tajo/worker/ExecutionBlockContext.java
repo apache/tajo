@@ -135,7 +135,7 @@ public class ExecutionBlockContext {
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
-    this.stub = getQueryMasterClient().getStub();
+    this.stub = getRpcClient().getStub();
     this.reporter.startReporter();
     // resource intiailization
     try{
@@ -154,17 +154,11 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  private NettyClientBase getQueryMasterClient()
+  private NettyClientBase getRpcClient()
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
     if (client != null) return client;
 
-    /* A large scale cluster can be connection refused, if it reuse  */
-    boolean reuse = getConf().getBoolVar(TajoConf.ConfVars.QUERY_MASTER_RPC_CLIENT_REUSE);
-    if (reuse) {
-      client = connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
-    } else {
-      client = connManager.newClient(qmMasterAddr, QueryMasterProtocol.class, true);
-    }
+    client = connManager.newClient(qmMasterAddr, QueryMasterProtocol.class, true);
     return client;
   }
 
@@ -202,10 +196,7 @@ public class ExecutionBlockContext {
     tasks.clear();
 
     resource.release();
-    boolean reuse = getConf().getBoolVar(TajoConf.ConfVars.QUERY_MASTER_RPC_CLIENT_REUSE);
-    if (!reuse) {
-      RpcClientManager.cleanup(client);
-    }
+    RpcClientManager.cleanup(client);
   }
 
   public TajoConf getConf() {
