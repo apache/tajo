@@ -18,6 +18,8 @@
 
 package org.apache.tajo.plan.function.stream;
 
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.function.PythonAggFunctionInvoke;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.Closeable;
@@ -50,8 +52,21 @@ public class InputHandler implements Closeable {
    * @param t input <code>Tuple</code>
    * @throws IOException
    */
-  public void putNext(Tuple t) throws IOException {
-    serializer.serialize(out, t);
+  public void putNext(Tuple t, Schema schema) throws IOException {
+    serializer.serialize(out, t, schema);
+    out.write(END_OF_RECORD_DELIM);
+  }
+
+  public void putNext(String methodName, Tuple t, Schema schema) throws IOException {
+    String wrappedMethod = "|" + methodName + "_" + CSVLineSerializer.PARAM_DELIM;
+    out.write(wrappedMethod.getBytes());
+    putNext(t, schema);
+  }
+
+  public void putNext(String methodName, PythonAggFunctionInvoke.PythonAggFunctionContext context) throws IOException {
+    String wrappedMethod = "|" + methodName + "_" + CSVLineSerializer.PARAM_DELIM;
+    out.write(wrappedMethod.getBytes());
+    serializer.serializeContext(out, context);
     out.write(END_OF_RECORD_DELIM);
   }
 

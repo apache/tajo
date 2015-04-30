@@ -27,10 +27,8 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.ServerCallable;
 
 import java.io.IOException;
 import java.net.URI;
@@ -48,79 +46,45 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public boolean createDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
-
-      public Boolean call(NettyClientBase client) throws ServiceException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMaster = client.getStub();
-        return tajoMaster.createDatabase(null, connection.convertSessionedString(databaseName)).getValue();
-      }
-
-    }.withRetries();
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMaster = client.getStub();
+    return tajoMaster.createDatabase(null, connection.convertSessionedString(databaseName)).getValue();
   }
 
   @Override
   public boolean existDatabase(final String databaseName) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
-
-      public Boolean call(NettyClientBase client) throws ServiceException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMaster = client.getStub();
-        return tajoMaster.existDatabase(null, connection.convertSessionedString(databaseName)).getValue();
-      }
-
-    }.withRetries();
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMaster = client.getStub();
+    return tajoMaster.existDatabase(null, connection.convertSessionedString(databaseName)).getValue();
   }
 
   @Override
   public boolean dropDatabase(final String databaseName) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
-
-      public Boolean call(NettyClientBase client) throws ServiceException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.dropDatabase(null, connection.convertSessionedString(databaseName)).getValue();
-      }
-
-    }.withRetries();
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
+    return tajoMasterService.dropDatabase(null, connection.convertSessionedString(databaseName)).getValue();
   }
 
   @Override
   public List<String> getAllDatabaseNames() throws ServiceException {
 
-    return new ServerCallable<List<String>>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
-
-      public List<String> call(NettyClientBase client) throws ServiceException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.getAllDatabases(null, connection.sessionId).getValuesList();
-      }
-
-    }.withRetries();
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
+    return tajoMasterService.getAllDatabases(null, connection.sessionId).getValuesList();
   }
 
   public boolean existTable(final String tableName) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
-
-      public Boolean call(NettyClientBase client) throws ServiceException {
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-        return tajoMasterService.existTable(null, connection.convertSessionedString(tableName)).getValue();
-      }
-
-    }.withRetries();
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
+    return tajoMasterService.existTable(null, connection.convertSessionedString(tableName)).getValue();
   }
 
   @Override
@@ -133,32 +97,25 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws SQLException, ServiceException {
 
-    return new ServerCallable<TableDesc>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
 
-      public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-
-        ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
-        builder.setSessionId(connection.sessionId);
-        builder.setName(tableName);
-        builder.setSchema(schema.getProto());
-        builder.setMeta(meta.getProto());
-        builder.setPath(path.toString());
-        if (partitionMethodDesc != null) {
-          builder.setPartition(partitionMethodDesc.getProto());
-        }
-        ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
-        if (res.getResultCode() == ClientProtos.ResultCode.OK) {
-          return CatalogUtil.newTableDesc(res.getTableDesc());
-        } else {
-          throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
-        }
-      }
-
-    }.withRetries();
+    ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
+    builder.setSessionId(connection.sessionId);
+    builder.setName(tableName);
+    builder.setSchema(schema.getProto());
+    builder.setMeta(meta.getProto());
+    builder.setPath(path.toString());
+    if (partitionMethodDesc != null) {
+      builder.setPartition(partitionMethodDesc.getProto());
+    }
+    ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
+    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+      return CatalogUtil.newTableDesc(res.getTableDesc());
+    } else {
+      throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
+    }
   }
 
   @Override
@@ -169,94 +126,67 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
 
-      public Boolean call(NettyClientBase client) throws ServiceException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-
-        ClientProtos.DropTableRequest.Builder builder = ClientProtos.DropTableRequest.newBuilder();
-        builder.setSessionId(connection.sessionId);
-        builder.setName(tableName);
-        builder.setPurge(purge);
-        return tajoMasterService.dropTable(null, builder.build()).getValue();
-      }
-
-    }.withRetries();
+    ClientProtos.DropTableRequest.Builder builder = ClientProtos.DropTableRequest.newBuilder();
+    builder.setSessionId(connection.sessionId);
+    builder.setName(tableName);
+    builder.setPurge(purge);
+    return tajoMasterService.dropTable(null, builder.build()).getValue();
 
   }
 
   @Override
   public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
-    return new ServerCallable<List<String>>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
 
-      public List<String> call(NettyClientBase client) throws ServiceException {
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
 
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-
-        ClientProtos.GetTableListRequest.Builder builder = ClientProtos.GetTableListRequest.newBuilder();
-        builder.setSessionId(connection.sessionId);
-        if (databaseName != null) {
-          builder.setDatabaseName(databaseName);
-        }
-        ClientProtos.GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
-        return res.getTablesList();
-      }
-
-    }.withRetries();
+    ClientProtos.GetTableListRequest.Builder builder = ClientProtos.GetTableListRequest.newBuilder();
+    builder.setSessionId(connection.sessionId);
+    if (databaseName != null) {
+      builder.setDatabaseName(databaseName);
+    }
+    ClientProtos.GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
+    return res.getTablesList();
   }
 
   @Override
   public TableDesc getTableDesc(final String tableName) throws ServiceException {
 
-    return new ServerCallable<TableDesc>(connection.manager, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false) {
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
 
-      public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-
-        ClientProtos.GetTableDescRequest.Builder builder = ClientProtos.GetTableDescRequest.newBuilder();
-        builder.setSessionId(connection.sessionId);
-        builder.setTableName(tableName);
-        ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
-        if (res.getResultCode() == ClientProtos.ResultCode.OK) {
-          return CatalogUtil.newTableDesc(res.getTableDesc());
-        } else {
-          throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
-        }
-      }
-
-    }.withRetries();
+    ClientProtos.GetTableDescRequest.Builder builder = ClientProtos.GetTableDescRequest.newBuilder();
+    builder.setSessionId(connection.sessionId);
+    builder.setTableName(tableName);
+    ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
+    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+      return CatalogUtil.newTableDesc(res.getTableDesc());
+    } else {
+      throw new ServiceException(new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState()));
+    }
   }
 
   @Override
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
 
-    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connection.manager,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
+    NettyClientBase client = connection.getTajoMasterConnection();
+    connection.checkSessionAndGet(client);
+    BlockingInterface tajoMasterService = client.getStub();
 
-      public List<CatalogProtos.FunctionDescProto> call(NettyClientBase client) throws ServiceException, SQLException {
-
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-
-        String paramFunctionName = functionName == null ? "" : functionName;
-        ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
-            connection.convertSessionedString(paramFunctionName));
-        if (res.getResultCode() == ClientProtos.ResultCode.OK) {
-          return res.getFunctionsList();
-        } else {
-          throw new SQLException(res.getErrorMessage());
-        }
-      }
-
-    }.withRetries();
+    String paramFunctionName = functionName == null ? "" : functionName;
+    ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
+        connection.convertSessionedString(paramFunctionName));
+    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+      return res.getFunctionsList();
+    } else {
+      throw new ServiceException(new SQLException(res.getErrorMessage()));
+    }
   }
 
   @Override

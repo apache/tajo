@@ -366,6 +366,46 @@ public class TestTajoCli {
     assertOutputResult(new String(out.toByteArray()));
   }
 
+  @Test
+  public void testTimeZoneSessionVars1() throws Exception {
+    tajoCli.executeMetaCommand("\\set TIMEZONE GMT+1");
+    tajoCli.executeMetaCommand("\\set");
+    String output = new String(out.toByteArray());
+    assertTrue(output.contains("'TIMEZONE'='GMT+1'"));
+  }
+
+  @Test
+  public void testTimeZoneSessionVars2() throws Exception {
+    tajoCli.executeScript("SET TIME ZONE 'GMT+2'");
+    tajoCli.executeMetaCommand("\\set");
+    String output = new String(out.toByteArray());
+    assertTrue(output.contains("'TIMEZONE'='GMT+2'"));
+  }
+
+  @Test
+  public void testTimeZoneTest1() throws Exception {
+    String tableName = "test1";
+    tajoCli.executeMetaCommand("\\set TIMEZONE GMT+0");
+    tajoCli.executeScript("create table " + tableName + " (col1 TIMESTAMP)");
+    tajoCli.executeScript("insert into " + tableName + " select to_timestamp(0)");
+    tajoCli.executeScript("select * from " + tableName);
+    String consoleResult = new String(out.toByteArray());
+    tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
+    assertTrue(consoleResult.contains("1970-01-01 00:00:00"));
+  }
+
+  @Test
+  public void testTimeZoneTest2() throws Exception {
+    String tableName = "test1";
+    tajoCli.executeMetaCommand("\\set TIMEZONE GMT+1");
+    tajoCli.executeScript("create table " + tableName + " (col1 TIMESTAMP)");
+    tajoCli.executeScript("insert into " + tableName + " select to_timestamp(0)");
+    tajoCli.executeScript("select * from " + tableName);
+    String consoleResult = new String(out.toByteArray());
+    tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
+    assertTrue(consoleResult.contains("1970-01-01 01:00:00"));
+  }
+
   @Test(timeout = 3000)
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";

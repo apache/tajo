@@ -32,7 +32,8 @@ public class EvalContext {
   }
 
   public boolean hasScriptEngine(EvalNode evalNode) {
-    return this.scriptEngineMap.containsKey(evalNode);
+    boolean contain = this.scriptEngineMap.containsKey(evalNode);
+    return contain;
   }
 
   public TajoScriptEngine getScriptEngine(EvalNode evalNode) {

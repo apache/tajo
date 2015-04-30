@@ -37,7 +37,7 @@ public abstract class TextLineSerDe {
 
   public abstract TextLineDeserializer createDeserializer(Schema schema, TableMeta meta, int [] targetColumnIndexes);
 
-  public abstract TextLineSerializer createSerializer(Schema schema, TableMeta meta);
+  public abstract TextLineSerializer createSerializer(TableMeta meta);
 
   public static ByteBuf getNullChars(TableMeta meta) {
     byte[] nullCharByteArray = getNullCharsAsBytes(meta);

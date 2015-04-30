@@ -76,7 +76,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   }
 
   @Override
-  public void serviceInit(Configuration conf) {
+  public void serviceInit(Configuration conf) throws Exception {
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("Configuration must be a TajoConf instance");
     }
@@ -98,17 +98,17 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     systemConf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
 
     LOG.info("TajoResourceTracker starts up (" + this.bindAddress + ")");
-    super.start();
+    super.serviceInit(conf);
   }
 
   @Override
-  public void serviceStop() {
+  public void serviceStop() throws Exception {
     // server can be null if some exception occurs before the rpc server starts up.
     if(server != null) {
       server.shutdown();
       server = null;
     }
-    super.stop();
+    super.serviceStop();
   }
 
   /** The response builder */
