@@ -89,20 +89,22 @@
     <script type="text/javascript">
 
     function killQuery(queryId) {
-        $.ajax({
-            type: "POST",
-            url: "query_exec",
-            data: { action: "killQuery", queryId: queryId }
-        })
-        .done(function(msg) {
-            var resultJson = $.parseJSON(msg);
-            if(resultJson.success == "false") {
-                alert(resultJson.errorMessage);
-            } else {
-                alert(resultJson.successMessage);
-                location.reload();
-            }
-        })
+        if (confirm("Are you sure to kill " + queryId + "?")) {
+            $.ajax({
+                type: "POST",
+                url: "query_exec",
+                data: { action: "killQuery", queryId: queryId }
+            })
+            .done(function(msg) {
+                var resultJson = $.parseJSON(msg);
+                if(resultJson.success == "false") {
+                    alert(resultJson.errorMessage);
+                } else {
+                    alert(resultJson.successMessage);
+                    location.reload();
+                }
+            })
+        }
     }
 
 

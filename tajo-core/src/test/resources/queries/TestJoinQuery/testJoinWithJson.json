@@ -63,6 +63,14 @@
                 },
                 "IsAsc": true,
                 "IsNullFirst": false
+            },
+            {
+                "SortKey": {
+                    "ColumnName": "c_custkey",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
             }
         ],
         "Expr": {

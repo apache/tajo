@@ -25,6 +25,8 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -57,7 +59,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.S
 import static org.junit.Assert.*;
 
 public class TestCatalog {
-	static final String FieldName1="f1";
+  static final String FieldName1="f1";
 	static final String FieldName2="f2";
 	static final String FieldName3="f3";	
 
@@ -68,12 +70,12 @@ public class TestCatalog {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-    final String HCATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HCatalogStore";
+    final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
 
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
 
-    // here, we don't choose HCatalogStore due to some dependency problems.
-    if (driverClass == null || driverClass.equals(HCATALOG_CLASS_NAME)) {
+    // here, we don't choose HiveCatalogStore due to some dependency problems.
+    if (driverClass == null || driverClass.equals(HIVE_CATALOG_CLASS_NAME)) {
       driverClass = DerbyStore.class.getCanonicalName();
     }
     String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
@@ -664,7 +666,7 @@ public class TestCatalog {
     FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
 
     assertEquals(retrived.getFunctionName(), "test10");
-    assertEquals(retrived.getFuncClass(), TestFunc2.class);
+    assertEquals(retrived.getLegacyFuncClass(), TestFunc2.class);
     assertEquals(retrived.getFuncType(), FunctionType.GENERAL);
 
     assertFalse(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.BLOB, Type.INT4)));
@@ -683,7 +685,7 @@ public class TestCatalog {
 		FunctionDesc retrived = catalog.getFunction("test2", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
 
 		assertEquals(retrived.getFunctionName(),"test2");
-		assertEquals(retrived.getFuncClass(),TestFunc1.class);
+		assertEquals(retrived.getLegacyFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
 
@@ -886,15 +888,16 @@ public class TestCatalog {
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
+    partSchema.addColumn("name", Type.TEXT);
 
-    PartitionMethodDesc partitionDesc =
+    PartitionMethodDesc partitionMethodDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
-            CatalogProtos.PartitionType.COLUMN, "id", partSchema);
+            CatalogProtos.PartitionType.COLUMN, "id,name", partSchema);
 
     TableDesc desc =
         new TableDesc(tableName, schema, meta,
             new Path(CommonTestingUtil.getTestDir(), "addedtable").toUri());
-    desc.setPartitionMethod(partitionDesc);
+    desc.setPartitionMethod(partitionMethodDesc);
     assertFalse(catalog.existsTable(tableName));
     catalog.createTable(desc);
     assertTrue(catalog.existsTable(tableName));
@@ -905,8 +908,70 @@ public class TestCatalog {
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
+    testAddPartition(tableName, "id=10/name=aaa");
+    testAddPartition(tableName, "id=20/name=bbb");
+
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 2);
+
+    testDropPartition(tableName, "id=10/name=aaa");
+    testDropPartition(tableName, "id=20/name=bbb");
+
+    partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 0);
+
     catalog.dropTable(tableName);
     assertFalse(catalog.existsTable(tableName));
+  }
+
+  private void testAddPartition(String tableName, String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    String[] partitionNames = partitionName.split("/");
+
+    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    for(int i = 0; i < partitionNames.length; i++) {
+      String columnName = partitionNames[i].split("=")[0];
+      partitionKeyList.add(new PartitionKey(partitionNames[i], columnName));
+    }
+
+    partitionDesc.setPartitionKeys(partitionKeyList);
+
+    partitionDesc.setPath("hdfs://xxx.com/warehouse/" + partitionName);
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    catalog.alterTable(alterTableDesc);
+
+    CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(DEFAULT_DATABASE_NAME,
+      "addedtable", partitionName);
+
+    assertNotNull(resultDesc);
+    assertEquals(resultDesc.getPartitionName(), partitionName);
+    assertEquals(resultDesc.getPath(), "hdfs://xxx.com/warehouse/" + partitionName);
+
+    assertEquals(resultDesc.getPartitionKeysCount(), 2);
+  }
+
+
+  private void testDropPartition(String tableName, String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    catalog.alterTable(alterTableDesc);
   }
 
   @Test
@@ -930,6 +995,17 @@ public class TestCatalog {
     TableDesc addColumnDesc = catalog.getTableDesc("default","mynewcooltable");
     assertTrue(addColumnDesc.getSchema().containsByName("mynewcol"));
 
+    //SET_PROPERTY
+    TableDesc setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
+    KeyValueSet options = new KeyValueSet();
+    options.set("timezone", "GMT+9");   // Seoul, Korea
+    setPropertyDesc.setMeta(new TableMeta(StoreType.CSV, options));
+    String prevTimeZone = setPropertyDesc.getMeta().getOption("timezone");
+    String newTimeZone = "GMT-7";       // Silicon Valley, California
+    catalog.alterTable(createMockAlterTableSetProperty(newTimeZone));
+    setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
+    assertNotEquals(prevTimeZone, setPropertyDesc.getMeta().getOption("timezone"));
+    assertEquals(newTimeZone, setPropertyDesc.getMeta().getOption("timezone"));
   }
 
   private AlterTableDesc createMockAlterTableName(){
@@ -954,6 +1030,14 @@ public class TestCatalog {
     alterTableDesc.setTableName("default.mynewcooltable");
     alterTableDesc.setAddColumn(new Column("mynewcol", Type.TEXT));
     alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
+    return alterTableDesc;
+  }
+
+  private AlterTableDesc createMockAlterTableSetProperty(String newTimeZone) {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName("default.mynewcooltable");
+    alterTableDesc.setProperty("timezone", newTimeZone);
+    alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
     return alterTableDesc;
   }
 

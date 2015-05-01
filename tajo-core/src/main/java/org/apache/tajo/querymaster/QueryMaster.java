@@ -38,10 +38,7 @@ import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.master.event.QueryStopEvent;
-import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.NetUtils;
@@ -88,7 +85,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private TajoWorker.WorkerContext workerContext;
 
-  private RpcConnectionPool connPool;
+  private RpcClientManager manager;
 
   private ExecutorService eventExecutor;
 
@@ -104,7 +101,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
     try {
       this.systemConf = (TajoConf)conf;
-      this.connPool = RpcConnectionPool.getPool();
+      this.manager = RpcClientManager.getInstance();
 
       querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
       queryMasterContext = new QueryMasterContext(systemConf);
@@ -167,10 +164,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     super.stop();
 
-    LOG.info("QueryMaster stop");
-    if(queryMasterContext.getWorkerContext().isYarnContainerMode()) {
-      queryMasterContext.getWorkerContext().stopWorker(true);
-    }
+    LOG.info("QueryMaster stopped");
   }
 
   protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
@@ -190,18 +184,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
     for (WorkerResourceProto worker : workers) {
       try {
         TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
-        rpc = connPool.getConnection(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
+        rpc = manager.getClient(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
         tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, NullCallback.get());
-      } catch (RuntimeException e) {
-        LOG.warn("Ignoring RuntimeException. " + e.getMessage(), e);
-        continue;
       } catch (Exception e) {
+        LOG.warn("Ignoring exception. " + e.getMessage(), e);
         continue;
-      } finally {
-        connPool.releaseConnection(rpc);
       }
     }
   }
@@ -214,15 +204,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
     for (WorkerResourceProto worker : workers) {
       try {
         TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
-        rpc = connPool.getConnection(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
+        rpc = manager.getClient(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
         tajoWorkerProtocolService.cleanup(null, queryId.getProto(), NullCallback.get());
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
-      } finally {
-        connPool.releaseConnection(rpc);
       }
     }
   }
@@ -237,7 +225,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       // update master address in worker context.
 
       ServiceTracker serviceTracker = workerContext.getServiceTracker();
-      rpc = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+      rpc = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
       QueryCoordinatorProtocolService masterService = rpc.getStub();
 
       CallFuture<WorkerResourcesRequest> callBack = new CallFuture<WorkerResourcesRequest>();
@@ -248,8 +236,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return workerResourcesRequest.getWorkerResourcesList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-    } finally {
-      connPool.releaseConnection(rpc);
     }
     return new ArrayList<WorkerResourceProto>();
   }
@@ -345,18 +331,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       NettyClientBase tmClient = null;
       try {
-        tmClient = connPool.getConnection(workerContext.getServiceTracker().getUmbilicalAddress(),
+        tmClient = manager.getClient(workerContext.getServiceTracker().getUmbilicalAddress(),
             QueryCoordinatorProtocol.class, true);
 
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
+        future.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       }  catch (Exception e) {
         //this function will be closed in new thread.
         //When tajo do stop cluster, tajo master maybe throw closed connection exception
 
         LOG.error(e.getMessage(), e);
-      } finally {
-        connPool.releaseConnection(tmClient);
       }
 
       try {
@@ -378,9 +363,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
             LOG.warn(e, e);
           }
         }
-      }
-      if(workerContext.isYarnContainerMode()) {
-        stop();
       }
     }
   }
@@ -451,13 +433,12 @@ public class QueryMaster extends CompositeService implements EventHandler {
             try {
 
               ServiceTracker serviceTracker = queryMasterContext.getWorkerContext().getServiceTracker();
-              tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(),
+              tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(),
                   QueryCoordinatorProtocol.class, true);
               QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
-              CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
               TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(eachTask);
-              masterClientService.heartbeat(callBack.getController(), queryHeartbeat, callBack);
+              masterClientService.heartbeat(null, queryHeartbeat, NullCallback.get());
             } catch (Throwable t) {
               t.printStackTrace();
             }

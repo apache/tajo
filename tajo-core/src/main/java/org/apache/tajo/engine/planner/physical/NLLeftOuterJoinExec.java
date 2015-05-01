@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -29,11 +27,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode plan;
-  private EvalNode joinQual;
-
+public class NLLeftOuterJoinExec extends CommonJoinExec {
   // temporal tuples and states for nested loop join
   private boolean needNextRightTuple;
   private FrameTuple frameTuple;
@@ -41,24 +35,12 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
   private Tuple rightTuple = null;
   private Tuple outTuple = null;
 
-  // projection
-  private final Projector projector;
-
   private boolean foundAtLeastOneMatch;
   private int rightNumCols;
 
   public NLLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                              PhysicalExec rightChild) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), leftChild, rightChild);
-    this.plan = plan;
-
-    if (plan.hasJoinQual()) {
-      this.joinQual = plan.getJoinQual();
-    }
-
-    // for projection
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
+    super(context, plan, leftChild, rightChild);
     // for join
     needNextRightTuple = true;
     frameTuple = new FrameTuple();
@@ -66,10 +48,6 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
 
     foundAtLeastOneMatch = false;
     rightNumCols = rightChild.getSchema().size();
-  }
-
-  public JoinNode getPlan() {
-    return this.plan;
   }
 
   public Tuple next() throws IOException {
@@ -106,7 +84,7 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
 
       frameTuple.set(leftTuple, rightTuple);
       ;
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+      if (joinQual.eval(frameTuple).isTrue()) {
         projector.eval(frameTuple, outTuple);
         foundAtLeastOneMatch = true;
         return outTuple;

@@ -317,8 +317,9 @@ public class TestGlobalPlanner {
     plan = buildPlan("select * from customer where c_nationkey = 1");
     assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
 
+    // c_nationkey is partition column
     plan = buildPlan("select * from customer_parts where c_nationkey = 1");
-    assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+    assertTrue(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
 
     // same column order
     plan = buildPlan("select c_custkey, c_name, c_address, c_nationkey, c_phone, c_acctbal, c_mktsegment, c_comment" +

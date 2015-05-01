@@ -74,7 +74,8 @@ public class TestBSTIndex {
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {StoreType.CSV},
-        {StoreType.RAW}
+        {StoreType.RAW},
+        {StoreType.TEXTFILE}
     });
   }
 

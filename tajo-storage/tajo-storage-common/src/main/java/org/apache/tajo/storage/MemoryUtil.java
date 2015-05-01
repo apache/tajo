@@ -141,6 +141,10 @@ public class MemoryUtil {
         total += TEXT_DATUM + datum.size();
         break;
 
+      case BLOB:
+        total += BLOB_DATUM + datum.size();
+        break;
+
       case DATE:
         total += DATE_DATUM;
         break;

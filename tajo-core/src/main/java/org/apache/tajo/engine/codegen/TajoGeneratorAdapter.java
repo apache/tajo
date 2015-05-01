@@ -885,12 +885,6 @@ class TajoGeneratorAdapter {
     return varId;
   }
 
-  private int getCurVarIdAndIncrease(TajoDataTypes.DataType type) {
-    int varId = nextVarId;
-    nextVarId += getWordSize(type);
-    return varId;
-  }
-
   public int store(TajoDataTypes.DataType type) {
     int varId = nextVarId;
     nextVarId += TajoGeneratorAdapter.getWordSize(type);

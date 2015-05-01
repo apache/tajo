@@ -553,10 +553,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     Connection conn = null;
     int result;
 
-    // skip this test if catalog uses HCatalogStore.
-    // It is because HCatalogStore does not support Time data type.
+    // skip this test if catalog uses HiveCatalogStore.
+    // It is because HiveCatalogStore does not support Time data type.
     try {
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         executeDDL("create_table_with_date_ddl.sql", "table1");
 
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
@@ -604,10 +604,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     int result;
     String errorMessage = null;
 
-    // skip this test if catalog uses HCatalogStore.
-    // It is because HCatalogStore does not support Time data type.
+    // skip this test if catalog uses HiveCatalogStore.
+    // It is because HiveCatalogStore does not support Time data type.
     try {
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           DEFAULT_DATABASE_NAME);
         conn = DriverManager.getConnection(connUri);
@@ -631,6 +631,44 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
 
       if(conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testMaxRows() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+      DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+    Statement stmt = null;
+    ResultSet res = null;
+    //Parameter value setting for test.
+    final int maxRowsNum = 3;
+    int resultRowsNum = 0, returnMaxRows = 0;
+    try {
+      stmt = conn.createStatement();
+      //set maxRows(3)
+      stmt.setMaxRows(maxRowsNum);
+      //get MaxRows
+      returnMaxRows = stmt.getMaxRows();
+      res = stmt.executeQuery("select * from lineitem");
+      assertNotNull(res);
+      while (res.next()) {
+        //Actuality result Rows.
+        resultRowsNum++;	
+      }
+      //The test success, if maxRowsNum and resultRowsNum and returnMaxRows is same.
+      assertTrue(maxRowsNum == resultRowsNum && maxRowsNum == returnMaxRows);
+    } finally {
+      if (res != null) {
+        cleanupQuery(res);
+      }
+      if (stmt != null) {
+        stmt.close();
+      }
+      if (conn != null) {
         conn.close();
       }
     }

@@ -208,7 +208,7 @@ public class Int2Datum extends NumericDatum {
       DateDatum dateDatum = (DateDatum)datum;
       TimeMeta tm = dateDatum.toTimeMeta();
       tm.plusDays(asInt2());
-      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+      return new DateDatum(tm);
     case NULL_TYPE:
       return datum;
     default:
@@ -233,7 +233,7 @@ public class Int2Datum extends NumericDatum {
       DateDatum dateDatum = (DateDatum)datum;
       TimeMeta tm = dateDatum.toTimeMeta();
       tm.plusDays(0 - asInt2());
-      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+      return new DateDatum(tm);
     case NULL_TYPE:
       return datum;
     default:

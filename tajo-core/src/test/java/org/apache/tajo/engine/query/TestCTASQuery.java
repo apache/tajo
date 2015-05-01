@@ -78,7 +78,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=38.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
@@ -121,7 +121,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=38.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
-    if (!cluster.isHCatalogStoreRunning()) {
+    if (!cluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
@@ -261,7 +261,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeFile("CtasWithManagedTable.sql");
     res.close();
 
-    if (testingCluster.isHCatalogStoreRunning()) {
+    if (testingCluster.isHiveCatalogStoreRunning()) {
       assertTrue(client.existTable("managed_table1"));
 
       TableDesc desc =  client.getTableDesc("managed_table1");

@@ -353,7 +353,11 @@ public class CatalogUtil {
   }
 
   public static DataType newSimpleDataType(Type type) {
-    return DataType.newBuilder().setType(type).build();
+		if (type != Type.CHAR) {
+			return DataType.newBuilder().setType(type).build();
+		} else {
+			return newDataTypeWithLen(Type.CHAR, 1);
+		}
   }
 
   /**
@@ -372,7 +376,7 @@ public class CatalogUtil {
   public static DataType [] newSimpleDataTypeArray(Type... types) {
     DataType [] dataTypes = new DataType[types.length];
     for (int i = 0; i < types.length; i++) {
-      dataTypes[i] = DataType.newBuilder().setType(types[i]).build();
+      dataTypes[i] = newSimpleDataType(types[i]);
     }
     return dataTypes;
   }
@@ -427,7 +431,7 @@ public class CatalogUtil {
     //     (a)                    ()
     //    (a,b)                   (a)
 
-    int definedSize = definedTypes == null ? 0 : definedTypes.size();
+    int definedSize = definedTypes.size();
     int givenParamSize = givenTypes == null ? 0 : givenTypes.size();
     int paramDiff = givenParamSize - definedSize;
     if (paramDiff < 0) {
@@ -769,6 +773,14 @@ public class CatalogUtil {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setAddColumn(column);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  public static AlterTableDesc setProperty(String tableName, KeyValueSet params, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setProperties(params);
     alterTableDesc.setAlterTableType(alterTableType);
     return alterTableDesc;
   }

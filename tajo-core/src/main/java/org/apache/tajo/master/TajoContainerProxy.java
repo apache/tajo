@@ -23,9 +23,7 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -34,15 +32,17 @@ import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.TaskFatalErrorEvent;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TajoContainerProxy extends ContainerProxy {
@@ -61,14 +61,14 @@ public class TajoContainerProxy extends ContainerProxy {
 
   @Override
   public synchronized void launch(ContainerLaunchContext containerLaunchContext) {
-    context.getResourceAllocator().addContainer(containerID, this);
+    context.getResourceAllocator().addContainer(containerId, this);
 
     this.hostName = container.getNodeId().getHost();
     this.port = ((TajoWorkerContainer)container).getWorkerResource().getConnectionInfo().getPullServerPort();
     this.state = ContainerState.RUNNING;
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
+      LOG.debug("Launch Container:" + executionBlockId + "," + containerId.getId() + "," +
           container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
     }
 
@@ -84,26 +84,25 @@ public class TajoContainerProxy extends ContainerProxy {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
     } catch (Throwable e) {
       /* Worker RPC failure */
       context.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
-    } finally {
-      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, TajoContainer container) {
-    NettyClientBase tajoWorkerRpc = null;
+    NettyClientBase tajoWorkerRpc;
     try {
-      InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
-          .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+
+      PlanProto.ShuffleType shuffleType =
+          context.getQuery().getStage(executionBlockId).getDataChannel().getShuffleType();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
@@ -114,52 +113,40 @@ public class TajoContainerProxy extends ContainerProxy {
               .setQueryOutputPath(context.getStagingDir().toString())
               .setQueryContext(queryContext.getProto())
               .setPlanJson(planJson)
+              .setShuffleType(shuffleType)
               .build();
 
       tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
-    } finally {
-      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
   @Override
   public synchronized void stopContainer() {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Release TajoWorker Resource: " + executionBlockId + "," + containerID + ", state:" + this.state);
+      LOG.debug("Release TajoWorker Resource: " + executionBlockId + "," + containerId + ", state:" + this.state);
     }
     if(isCompletelyDone()) {
-      LOG.info("Container already stopped:" + containerID);
+      LOG.info("Container already stopped:" + containerId);
       return;
     }
     if(this.state == ContainerState.PREP) {
       this.state = ContainerState.KILLED_BEFORE_LAUNCH;
     } else {
       try {
-        TajoWorkerContainer tajoWorkerContainer = ((TajoWorkerContainer)container);
-        releaseWorkerResource(context, executionBlockId, tajoWorkerContainer.getId());
-        context.getResourceAllocator().removeContainer(containerID);
-        this.state = ContainerState.DONE;
+        releaseWorkerResource(context, executionBlockId, Arrays.asList(containerId));
+        context.getResourceAllocator().removeContainer(containerId);
       } catch (Throwable t) {
         // ignore the cleanup failure
         String message = "cleanup failed for container "
-            + this.containerID + " : "
+            + this.containerId + " : "
             + StringUtils.stringifyException(t);
         LOG.warn(message);
+      } finally {
         this.state = ContainerState.DONE;
-        return;
       }
     }
-  }
-
-  public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
-                                           ExecutionBlockId executionBlockId,
-                                           TajoContainerId containerId) throws Exception {
-    List<TajoContainerId> containerIds = new ArrayList<TajoContainerId>();
-    containerIds.add(containerId);
-
-    releaseWorkerResource(context, executionBlockId, containerIds);
   }
 
   public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
@@ -172,23 +159,19 @@ public class TajoContainerProxy extends ContainerProxy {
       containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
     }
 
-    RpcConnectionPool connPool = RpcConnectionPool.getPool();
+    RpcClientManager manager = RpcClientManager.getInstance();
     NettyClientBase tmClient = null;
-    try {
-      ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
-      tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
 
-      QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-        masterClientService.releaseWorkerResource(null,
-            QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
-              .setExecutionBlockId(executionBlockId.getProto())
-              .addAllContainerIds(containerIdProtos)
-              .build(),
-          NullCallback.get());
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
-    } finally {
-      connPool.releaseConnection(tmClient);
-    }
+    ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
+    tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+
+    QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+    masterClientService.releaseWorkerResource(null,
+        QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
+            .setExecutionBlockId(executionBlockId.getProto())
+            .addAllContainerIds(containerIdProtos)
+            .build(),
+        NullCallback.get());
+
   }
 }

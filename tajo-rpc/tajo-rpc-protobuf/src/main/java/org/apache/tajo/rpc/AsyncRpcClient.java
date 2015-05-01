@@ -20,116 +20,97 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
-
-import io.netty.channel.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
-import org.apache.tajo.rpc.RpcProtos.RpcRequest;
+import io.netty.channel.ChannelHandler;
+import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
-import io.netty.util.ReferenceCountUtil;
-import io.netty.util.concurrent.GenericFutureListener;
-
 import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class AsyncRpcClient extends NettyClientBase {
-  private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
-
-  private final ConcurrentMap<Integer, ResponseCallback> requests =
-      new ConcurrentHashMap<Integer, ResponseCallback>();
+public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallback> {
 
   private final Method stubMethod;
   private final ProxyRpcChannel rpcChannel;
-  private final ClientChannelInboundHandler inboundHandler;
+  private final NettyChannelInboundHandler handler;
+
+  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+      throws ClassNotFoundException, NoSuchMethodException {
+    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false);
+  }
 
   /**
    * Intentionally make this method package-private, avoiding user directly
    * new an instance through this constructor.
+   *
+   * @param rpcConnectionKey
+   * @param retries          retry operation number of times
+   * @param timeout          disable ping, it trigger timeout event on idle-state.
+   *                         otherwise it is request timeout on active-state
+   * @param timeUnit         TimeUnit
+   * @param enablePing       enable to detect remote peer hangs
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
    */
-  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing)
       throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
-    stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
-    rpcChannel = new ProxyRpcChannel();
-    inboundHandler = new ClientChannelInboundHandler();
-    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance()));
+
+    this.stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
+    this.rpcChannel = new ProxyRpcChannel();
+    this.handler = new ClientChannelInboundHandler();
+    init(new ProtoClientChannelInitializer(handler,
+        RpcResponse.getDefaultInstance(),
+        timeUnit.toNanos(timeout),
+        enablePing));
   }
 
   @Override
-  public <T> T getStub() {
+  public <I> I getStub() {
     return getStub(stubMethod, rpcChannel);
   }
 
-  protected void sendExceptions(String message) {
-    for(Map.Entry<Integer, ResponseCallback> callbackEntry: requests.entrySet()) {
-      ResponseCallback callback = callbackEntry.getValue();
-      Integer id = callbackEntry.getKey();
-
-      RpcResponse.Builder responseBuilder = RpcResponse.newBuilder()
-          .setErrorMessage(message)
-          .setId(id);
-
-      callback.run(responseBuilder.build());
-    }
-  }
-
   @Override
-  public void close() {
-    sendExceptions("AsyncRpcClient terminates all the connections");
-
-    super.close();
+  protected NettyChannelInboundHandler getHandler() {
+    return handler;
   }
 
   private class ProxyRpcChannel implements RpcChannel {
+
+    private final AtomicInteger sequence = new AtomicInteger(0);
 
     public void callMethod(final MethodDescriptor method,
                            final RpcController controller,
                            final Message param,
                            final Message responseType,
-                           RpcCallback<Message> done) {
+                           final RpcCallback<Message> done) {
 
       int nextSeqId = sequence.getAndIncrement();
+      RpcProtos.RpcRequest rpcRequest = buildRequest(nextSeqId, method, param);
 
-      Message rpcRequest = buildRequest(nextSeqId, method, param);
-
-      inboundHandler.registerCallback(nextSeqId,
-          new ResponseCallback(controller, responseType, done));
-
-      ChannelPromise channelPromise = getChannel().newPromise();
-      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
-
-        @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
-          if (!future.isSuccess()) {
-            inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
-          }
-        }
-      });
-      getChannel().writeAndFlush(rpcRequest, channelPromise);
-    }
-
-    private Message buildRequest(int seqId,
-                                 MethodDescriptor method,
-                                 Message param) {
-
-      RpcRequest.Builder requestBuilder = RpcRequest.newBuilder()
-          .setId(seqId)
-          .setMethodName(method.getName());
-
-      if (param != null) {
-          requestBuilder.setRequestMessage(param.toByteString());
-      }
-
-      return requestBuilder.build();
+      invoke(rpcRequest, new ResponseCallback(controller, responseType, done), 0);
     }
   }
 
-  private class ResponseCallback implements RpcCallback<RpcResponse> {
+  @ChannelHandler.Sharable
+  private class ClientChannelInboundHandler extends NettyChannelInboundHandler {
+
+    @Override
+    protected void run(RpcResponse response, ResponseCallback callback) throws Exception {
+      callback.run(response);
+    }
+
+    @Override
+    protected void handleException(int requestId, ResponseCallback callback, String message) {
+      RpcResponse.Builder responseBuilder = RpcResponse.newBuilder()
+          .setErrorMessage(message + "")
+          .setId(requestId);
+
+      callback.run(responseBuilder.build());
+    }
+  }
+
+  static class ResponseCallback implements RpcCallback<RpcResponse> {
     private final RpcController controller;
     private final Message responsePrototype;
     private final RpcCallback<Message> callback;
@@ -145,82 +126,27 @@ public class AsyncRpcClient extends NettyClientBase {
     @Override
     public void run(RpcResponse rpcResponse) {
       // if hasErrorMessage is true, it means rpc-level errors.
-      // it does not call the callback function\
+      // it can be called the callback function with null response.
       if (rpcResponse.hasErrorMessage()) {
         if (controller != null) {
           this.controller.setFailed(rpcResponse.getErrorMessage());
         }
         callback.run(null);
       } else { // if rpc call succeed
-        try {
-          Message responseMessage;
-          if (!rpcResponse.hasResponseMessage()) {
-            responseMessage = null;
-          } else {
+
+        Message responseMessage = null;
+        if (rpcResponse.hasResponseMessage()) {
+
+          try {
             responseMessage = responsePrototype.newBuilderForType().mergeFrom(
                 rpcResponse.getResponseMessage()).build();
+          } catch (InvalidProtocolBufferException e) {
+            if (controller != null) {
+              this.controller.setFailed(e.getMessage());
+            }
           }
-
-          callback.run(responseMessage);
-
-        } catch (InvalidProtocolBufferException e) {
-          throw new RemoteException(getErrorMessage(""), e);
         }
-      }
-    }
-  }
-
-  private String getErrorMessage(String message) {
-    return "Exception [" + protocol.getCanonicalName() +
-        "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
-        getChannel().remoteAddress()) + ")]: " + message;
-  }
-
-  @ChannelHandler.Sharable
-  private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
-
-    void registerCallback(int seqId, ResponseCallback callback) {
-
-      if (requests.putIfAbsent(seqId, callback) != null) {
-        throw new RemoteException(
-            getErrorMessage("Duplicate Sequence Id "+ seqId));
-      }
-    }
-
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
-        throws Exception {
-      if (msg instanceof RpcResponse) {
-        try {
-          RpcResponse response = (RpcResponse) msg;
-          ResponseCallback callback = requests.remove(response.getId());
-
-          if (callback == null) {
-            LOG.warn("Dangling rpc call");
-          } else {
-            callback.run(response);
-          }
-        } finally {
-          ReferenceCountUtil.release(msg);
-        }
-      }
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-        throws Exception {
-      LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage(), cause);
-
-      sendExceptions(cause.getMessage());
-      
-      if(LOG.isDebugEnabled()) {
-        LOG.error(cause.getMessage(), cause);
-      } else {
-        LOG.error("RPC Exception:" + cause.getMessage());
-      }
-      
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
+        callback.run(responseMessage);
       }
     }
   }

@@ -24,6 +24,9 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class AlterTable extends Expr {
 
   @Expose @SerializedName("OldTableName")
@@ -38,6 +41,8 @@ public class AlterTable extends Expr {
   private ColumnDefinition addNewColumn;
   @Expose @SerializedName("AlterTableType")
   private AlterTableOpType alterTableOpType;
+  @Expose @SerializedName("TableProperties")
+  private Map<String, String> params;
 
   @Expose @SerializedName("Columns")
   ColumnReferenceExpr [] columns;
@@ -112,6 +117,18 @@ public class AlterTable extends Expr {
 
   public void setLocation(String location) { this.location = location; }
 
+  public boolean hasParams() {
+    return params != null;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
+  }
+
+  public void setParams(Map<String, String> params) {
+    this.params = params;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName,
@@ -122,7 +139,8 @@ public class AlterTable extends Expr {
         null != alterTableOpType ? Objects.hashCode(alterTableOpType) : alterTableOpType,
         null != columns ? Objects.hashCode(columns) : columns,
         null != values ? Objects.hashCode(values) : values,
-        null != location ? Objects.hashCode(location) : location
+        null != location ? Objects.hashCode(location) : location,
+        null != params ? Objects.hashCode(params) : params
     );
 
   }
@@ -138,7 +156,8 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(alterTableOpType, another.alterTableOpType) &&
         TUtil.checkEquals(columns, another.columns) &&
         TUtil.checkEquals(values, another.values) &&
-        TUtil.checkEquals(location, another.location)
+        TUtil.checkEquals(location, another.location) &&
+        TUtil.checkEquals(params, another.params)
     ;
   }
 
@@ -149,11 +168,16 @@ public class AlterTable extends Expr {
     alter.newTableName = newTableName;
     alter.columnName = columnName;
     alter.newColumnName = newColumnName;
-    alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
+    if (addNewColumn != null) {
+      alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
+    }
     alter.alterTableOpType = alterTableOpType;
     alter.columns = columns;
     alter.values = values;
     alter.location = location;
+    if (params != null) {
+      alter.params = new HashMap<String, String>(params);
+    }
     return alter;
   }
 }

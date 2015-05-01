@@ -19,6 +19,8 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.yarn.event.AsyncDispatcher;
+import org.apache.hadoop.yarn.event.Event;
 import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
@@ -32,10 +34,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.master.event.QueryEvent;
-import org.apache.tajo.master.event.QueryEventType;
-import org.apache.tajo.master.event.StageEvent;
-import org.apache.tajo.master.event.StageEventType;
+import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -52,6 +51,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -106,32 +107,28 @@ public class TestKillQuery {
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
     globalPlanner.build(masterPlan);
 
+    CountDownLatch barrier  = new CountDownLatch(1);
+    MockAsyncDispatch dispatch = new MockAsyncDispatch(barrier, StageEventType.SQ_INIT);
+
     QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
     QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
-        queryId, session, defaultContext, expr.toJson());
+        queryId, session, defaultContext, expr.toJson(), dispatch);
 
     queryMasterTask.init(conf);
     queryMasterTask.getQueryTaskContext().getDispatcher().start();
     queryMasterTask.startQuery();
 
     try{
-      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_RUNNING, 2);
-    } finally {
-      assertEquals(TajoProtos.QueryState.QUERY_RUNNING, queryMasterTask.getQuery().getSynchronizedState());
+      barrier.await(5000, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      fail("Query state : " + queryMasterTask.getQuery().getSynchronizedState());
     }
 
     Stage stage = queryMasterTask.getQuery().getStages().iterator().next();
     assertNotNull(stage);
 
-    try{
-      cluster.waitForStageState(stage, StageState.INITED, 2);
-    } finally {
-      assertEquals(StageState.INITED, stage.getSynchronizedState());
-    }
-
     // fire kill event
-    Query q = queryMasterTask.getQuery();
-    q.handle(new QueryEvent(queryId, QueryEventType.KILL));
+    queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
 
     try {
       cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
@@ -156,24 +153,55 @@ public class TestKillQuery {
   @Test
   public final void testIgnoreStageStateFromKilled() throws Exception {
 
-    ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
-    QueryId queryId = new QueryId(res.getQueryId());
-    cluster.waitForQuerySubmitted(queryId);
+    SQLAnalyzer analyzer = new SQLAnalyzer();
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
+    Session session = LocalTajoTestingUtility.createDummySession();
+    CatalogService catalog = cluster.getMaster().getCatalog();
 
-    QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
-    Query query = qmt.getQuery();
+    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    Expr expr =  analyzer.parse(queryStr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
-    // wait for a stage created
-    cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_RUNNING, 10);
-    query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+    optimizer.optimize(plan);
+
+    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
+    QueryContext queryContext = new QueryContext(conf);
+    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
+    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
+    globalPlanner.build(masterPlan);
+
+    CountDownLatch barrier  = new CountDownLatch(1);
+    MockAsyncDispatch dispatch = new MockAsyncDispatch(barrier, TajoProtos.QueryState.QUERY_RUNNING);
+
+    QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
+    QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
+        queryId, session, defaultContext, expr.toJson(), dispatch);
+
+    queryMasterTask.init(conf);
+    queryMasterTask.getQueryTaskContext().getDispatcher().start();
+    queryMasterTask.startQuery();
 
     try{
-      cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_KILLED, 50);
-    } finally {
-      assertEquals(TajoProtos.QueryState.QUERY_KILLED, query.getSynchronizedState());
+      barrier.await(5000, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      fail("Query state : " + queryMasterTask.getQuery().getSynchronizedState());
     }
 
-    List<Stage> stages = Lists.newArrayList(query.getStages());
+    Stage stage = queryMasterTask.getQuery().getStages().iterator().next();
+    assertNotNull(stage);
+
+    // fire kill event
+    queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
+
+    try {
+      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
+      assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
+    }   finally {
+      queryMasterTask.stop();
+    }
+
+    List<Stage> stages = Lists.newArrayList(queryMasterTask.getQuery().getStages());
     Stage lastStage = stages.get(stages.size() - 1);
 
     assertEquals(StageState.KILLED, lastStage.getSynchronizedState());
@@ -210,7 +238,8 @@ public class TestKillQuery {
     taskRequest.setInterQuery();
     TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
 
-    ExecutionBlockContext context = new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null);
+    ExecutionBlockContext context =
+        new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null, null);
 
     org.apache.tajo.worker.Task task = new Task("test", CommonTestingUtil.getTestDir(), attemptId,
         conf, context, taskRequest);
@@ -221,6 +250,25 @@ public class TestKillQuery {
       assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
     } catch (Exception e) {
       assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+    }
+  }
+
+  static class MockAsyncDispatch extends AsyncDispatcher {
+    private CountDownLatch latch;
+    private Enum eventType;
+
+    MockAsyncDispatch(CountDownLatch latch, Enum eventType) {
+      super();
+      this.latch = latch;
+      this.eventType = eventType;
+    }
+
+    @Override
+    protected void dispatch(Event event) {
+      if (event.getType() == eventType) {
+        latch.countDown();
+      }
+      super.dispatch(event);
     }
   }
 }

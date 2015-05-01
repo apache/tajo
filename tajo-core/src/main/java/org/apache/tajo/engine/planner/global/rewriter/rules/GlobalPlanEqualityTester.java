@@ -51,7 +51,7 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
         LogicalNode node = eb.getPlan();
         if (node != null) {
           PlanProto.LogicalNodeTree tree = LogicalNodeSerializer.serialize(node);
-          LogicalNode deserialize = LogicalNodeDeserializer.deserialize(plan.getContext(), tree);
+          LogicalNode deserialize = LogicalNodeDeserializer.deserialize(plan.getContext(), null, tree);
           assert node.deepEquals(deserialize);
         }
       }

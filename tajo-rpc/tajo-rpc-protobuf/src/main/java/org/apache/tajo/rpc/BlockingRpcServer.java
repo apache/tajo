@@ -22,14 +22,11 @@ import com.google.protobuf.BlockingService;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
-
 import io.netty.channel.*;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
-import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-
-import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -56,13 +53,13 @@ public class BlockingRpcServer extends NettyServerBase {
         "newReflectiveBlockingService", interfaceClass);
 
     this.service = (BlockingService) method.invoke(null, instance);
-    this.initializer = new ProtoChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
+    this.initializer = new ProtoServerChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
 
     super.init(this.initializer, workerNum);
   }
 
   @ChannelHandler.Sharable
-  private class ServerHandler extends ChannelInboundHandlerAdapter {
+  private class ServerHandler extends SimpleChannelInboundHandler<RpcRequest> {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -83,51 +80,39 @@ public class BlockingRpcServer extends NettyServerBase {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
-        throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx, final RpcRequest request) throws Exception {
 
-      if (msg instanceof RpcRequest) {
-        try {
-          final RpcRequest request = (RpcRequest) msg;
+      String methodName = request.getMethodName();
+      final MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
+      if (methodDescriptor == null) {
+        exceptionCaught(ctx, new RemoteCallException(request.getId(), new NoSuchMethodException(methodName)));
+        return;
+      }
 
-          String methodName = request.getMethodName();
-          MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
-
-          if (methodDescriptor == null) {
-            throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
-          }
-          Message paramProto = null;
-          if (request.hasRequestMessage()) {
-            try {
-              paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
-                  .mergeFrom(request.getRequestMessage()).build();
-
-            } catch (Throwable t) {
-              throw new RemoteCallException(request.getId(), methodDescriptor, t);
-            }
-          }
-          Message returnValue;
-          RpcController controller = new NettyRpcController();
-
-          try {
-            returnValue = service.callBlockingMethod(methodDescriptor, controller, paramProto);
-          } catch (Throwable t) {
-            throw new RemoteCallException(request.getId(), methodDescriptor, t);
-          }
-
-          RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
-
-          if (returnValue != null) {
-            builder.setResponseMessage(returnValue.toByteString());
-          }
-
-          if (controller.failed()) {
-            builder.setErrorMessage(controller.errorText());
-          }
-          ctx.writeAndFlush(builder.build());
-        } finally {
-          ReferenceCountUtil.release(msg);
+      try {
+        Message paramProto = null;
+        if (request.hasRequestMessage()) {
+          paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
+              .mergeFrom(request.getRequestMessage()).build();
         }
+
+        RpcController controller = new NettyRpcController();
+        Message returnValue = service.callBlockingMethod(methodDescriptor, controller, paramProto);
+
+        RpcProtos.RpcResponse.Builder builder = RpcProtos.RpcResponse.newBuilder().setId(request.getId());
+
+        if (returnValue != null) {
+          builder.setResponseMessage(returnValue.toByteString());
+        }
+
+        if (controller.failed()) {
+          builder.setErrorMessage(controller.errorText());
+        }
+        ctx.writeAndFlush(builder.build());
+      } catch (RemoteCallException e) {
+        exceptionCaught(ctx, e);
+      } catch (Throwable throwable) {
+        exceptionCaught(ctx, new RemoteCallException(request.getId(), methodDescriptor, throwable));
       }
     }
 
@@ -136,12 +121,20 @@ public class BlockingRpcServer extends NettyServerBase {
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());
-      }
-      
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
+
+        if(LOG.isDebugEnabled()) {
+          Throwable rootCause = ExceptionUtils.getRootCause(cause);
+          LOG.debug(ExceptionUtils.getMessage(rootCause), rootCause);
+        }
+      } else {
+        /* unhandled exception. */
+        if (ctx.channel().isOpen()) {
+          /* client can be triggered channelInactiveEvent */
+          ctx.close();
+        }
+        Throwable rootCause = ExceptionUtils.getRootCause(cause);
+        LOG.fatal(ExceptionUtils.getMessage(rootCause), rootCause);
       }
     }
-    
   }
 }

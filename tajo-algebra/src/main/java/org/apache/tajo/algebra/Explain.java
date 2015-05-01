@@ -22,9 +22,16 @@ import com.google.common.base.Objects;
 
 public class Explain extends UnaryOperator {
 
-  public Explain(Expr operand) {
+  private boolean isGlobal;
+
+  public Explain(Expr operand, boolean isGlobal) {
     super(OpType.Explain);
+    this.isGlobal = isGlobal;
     setChild(operand);
+  }
+
+  public boolean isGlobal() {
+    return isGlobal;
   }
 
   public int hashCode() {

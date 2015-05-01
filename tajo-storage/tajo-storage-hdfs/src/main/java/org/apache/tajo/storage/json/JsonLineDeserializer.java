@@ -20,11 +20,14 @@ package org.apache.tajo.storage.json;
 
 
 import io.netty.buffer.ByteBuf;
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.tajo.catalog.*;
+import org.apache.commons.net.util.Base64;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.DatumFactory;
@@ -202,32 +205,15 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     case BINARY:
     case VARBINARY:
     case BLOB: {
-      Object jsonObject = object.get(fieldName);
+      Object jsonObject = object.getAsString(fieldName);
 
       if (jsonObject == null) {
         output.put(fieldIndex, NullDatum.get());
         break;
       }
-      if (jsonObject instanceof String) {
-        output.put(fieldIndex, DatumFactory.createBlob((String) jsonObject));
-      } else if (jsonObject instanceof JSONArray) {
-        JSONArray jsonArray = (JSONArray) jsonObject;
-        byte[] bytes = new byte[jsonArray.size()];
-        Iterator<Object> it = jsonArray.iterator();
-        int arrayIdx = 0;
-        while (it.hasNext()) {
-          bytes[arrayIdx++] = ((Long) it.next()).byteValue();
-        }
-        if (bytes.length > 0) {
-          output.put(fieldIndex, DatumFactory.createBlob(bytes));
-        } else {
-          output.put(fieldIndex, NullDatum.get());
-        }
-        break;
-      } else {
-        throw new IOException("Unknown json object: " + object.getClass().getSimpleName());
-      }
-      break;
+
+      output.put(fieldIndex, DatumFactory.createBlob(Base64.decodeBase64((String) jsonObject)));
+      break;    
     }
     case INET4:
       String inetStr = object.getAsString(fieldName);

@@ -60,7 +60,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -69,7 +68,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
  */
 @ThreadSafe
 public class CatalogServer extends AbstractService {
-
   private final static String DEFAULT_NAMESPACE = "public";
 
   private final static Log LOG = LogFactory.getLog(CatalogServer.class);
@@ -821,34 +819,90 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public BoolProto addPartitions(RpcController controller, PartitionsProto request) throws ServiceException {
-      return ProtoUtil.TRUE;
-    }
-
-    @Override
-    public BoolProto addPartition(RpcController controller, PartitionDescProto request) throws ServiceException {
-      return ProtoUtil.TRUE;
-    }
-
-    @Override
-    public PartitionDescProto getPartitionByPartitionName(RpcController controller, StringProto request)
+    public PartitionDescProto getPartitionByPartitionName(RpcController controller, PartitionIdentifierProto request)
         throws ServiceException {
-      return null;
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
+      String partitionName = request.getPartitionName();
+
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+      }
+
+      rlock.lock();
+      try {
+        boolean contain;
+
+        contain = store.existDatabase(databaseName);
+        if (contain) {
+          contain = store.existTable(databaseName, tableName);
+          if (contain) {
+            if (store.existPartitionMethod(databaseName, tableName)) {
+              PartitionDescProto partitionDesc = store.getPartition(databaseName, tableName, partitionName);
+              if (partitionDesc != null) {
+                return partitionDesc;
+              } else {
+                throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+              }
+            } else {
+              throw new NoPartitionedTableException(databaseName, tableName);
+            }
+          } else {
+            throw new NoSuchTableException(tableName);
+          }
+        } else {
+          throw new NoSuchDatabaseException(databaseName);
+        }
+      } catch (Exception e) {
+        LOG.error(e);
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
     }
 
     @Override
-    public PartitionsProto getPartitionsByTableName(RpcController controller,
-                                                    StringProto request)
-        throws ServiceException {
-      return null;
+    public PartitionsProto getPartitionsByTableName(RpcController controller, PartitionIdentifierProto request)
+      throws ServiceException {
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
+
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+      }
+
+      rlock.lock();
+      try {
+        boolean contain;
+
+        contain = store.existDatabase(databaseName);
+        if (contain) {
+          contain = store.existTable(databaseName, tableName);
+          if (contain) {
+            if (store.existPartitionMethod(databaseName, tableName)) {
+              List<PartitionDescProto> partitions = store.getPartitions(databaseName, tableName);
+              PartitionsProto.Builder builder = PartitionsProto.newBuilder();
+              for(PartitionDescProto partition : partitions) {
+                builder.addPartition(partition);
+              }
+              return builder.build();
+            } else {
+              throw new NoPartitionedTableException(databaseName, tableName);
+            }
+          } else {
+            throw new NoSuchTableException(tableName);
+          }
+        } else {
+          throw new NoSuchDatabaseException(databaseName);
+        }
+      } catch (Exception e) {
+        LOG.error(e);
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
     }
 
-    @Override
-    public PartitionsProto delAllPartitions(RpcController controller, StringProto request)
-        throws ServiceException {
-      return null;
-    }
-    
     @Override
     public GetTablePartitionsProto getAllPartitions(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
@@ -1136,7 +1190,7 @@ public class CatalogServer extends AbstractService {
       if (functions.containsKey(funcDesc.getSignature())) {
         FunctionDescProto found = findFunctionStrictType(funcDesc, true);
         if (found != null) {
-          throw new AlreadyExistsFunctionException(signature.toString());
+          throw new ServiceException(new AlreadyExistsFunctionException(signature.toString()));
         }
       }
 
@@ -1153,7 +1207,7 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
 
       if (!containFunction(request.getSignature())) {
-        throw new NoSuchFunctionException(request.getSignature(), new DataType[] {});
+        throw new ServiceException(new NoSuchFunctionException(request.getSignature(), new DataType[]{}));
       }
 
       functions.remove(request.getSignature());
@@ -1175,7 +1229,7 @@ public class CatalogServer extends AbstractService {
       }
 
       if (function == null) {
-        throw new NoSuchFunctionException(request.getSignature(), request.getParameterTypesList());
+        throw new ServiceException(new NoSuchFunctionException(request.getSignature(), request.getParameterTypesList()));
       } else {
         return function;
       }

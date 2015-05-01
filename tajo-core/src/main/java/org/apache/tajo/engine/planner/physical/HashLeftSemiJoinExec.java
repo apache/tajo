@@ -19,10 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 import java.util.List;
@@ -33,20 +31,10 @@ import java.util.List;
  * If found, it returns the tuple of the FROM side table.
  */
 public class HashLeftSemiJoinExec extends HashJoinExec {
-  private Tuple rightNullTuple;
 
   public HashLeftSemiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec fromSideChild,
                               PhysicalExec inSideChild) {
     super(context, plan, fromSideChild, inSideChild);
-    // NUll Tuple
-    rightNullTuple = new VTuple(leftChild.outColumnNum);
-    for (int i = 0; i < leftChild.outColumnNum; i++) {
-      rightNullTuple.put(i, NullDatum.get());
-    }
-  }
-
-  protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   /**
@@ -95,7 +83,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       while (notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
         frameTuple.set(leftTuple, rightTuple);
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
+        if (joinQual.eval(frameTuple).isTrue()) { // if the matched one is found
           notFound = false;
           projector.eval(frameTuple, outTuple);
         }

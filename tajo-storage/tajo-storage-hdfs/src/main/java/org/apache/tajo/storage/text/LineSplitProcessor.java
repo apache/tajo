@@ -42,4 +42,8 @@ public class LineSplitProcessor implements ByteBufProcessor {
   public boolean isPrevCharCR() {
     return prevCharCR;
   }
+
+  public void reset() {
+    prevCharCR = false;
+  }
 }

@@ -71,7 +71,7 @@ public enum SessionVars implements ConfigKey {
   ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", CLI_SIDE_VAR),
 
   // Timezone & Date ----------------------------------------------------------
-  TIMEZONE(ConfVars.$TIMEZONE, "Sets timezone", CLI_SIDE_VAR),
+  TIMEZONE(ConfVars.$TIMEZONE, "Sets timezone", DEFAULT),
   DATE_ORDER(ConfVars.$DATE_ORDER, "date order (default is YMD)", CLI_SIDE_VAR),
 
   // Locales and Character set ------------------------------------------------
@@ -139,6 +139,7 @@ public enum SessionVars implements ConfigKey {
   TEST_JOIN_OPT_ENABLED(ConfVars.$TEST_JOIN_OPT_ENABLED, "(test only) join optimization enabled", TEST_VAR),
   TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, "filter push down enabled", TEST_VAR),
   TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
+  TEST_PLAN_SHAPE_FIX_ENABLED(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED, "(test only) plan shape fix enabled", TEST_VAR),
   ;
 
   public static final Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();

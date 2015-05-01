@@ -86,12 +86,12 @@
  -->
 
 
-<!-- HCatalog Store Driver -->
-<!-- Please remove comment if you want to use HCatalog. -->
+<!-- HiveCatalog Store Driver -->
+<!-- Please remove comment if you want to use HiveCatalog. -->
 <!--
 <property>
   <name>tajo.catalog.store.class</name>
-  <value>org.apache.tajo.catalog.store.HCatalogStore</value>
+  <value>org.apache.tajo.catalog.store.HiveCatalogStore</value>
 </property>
 -->
 

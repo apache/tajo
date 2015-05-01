@@ -483,7 +483,7 @@ public class QueryExecutorServlet extends HttpServlet {
     private void MakeResultText(ResultSet res, TableDesc desc) throws SQLException {
       ResultSetMetaData rsmd = res.getMetaData();
       resultRows = desc.getStats() == null ? 0 : desc.getStats().getNumRows();
-      if (resultRows == 0) {
+      if (resultRows <= 0) {
         resultRows = 1000;
       }
       LOG.info("Tajo Query Result: " + desc.getPath() + "\n");

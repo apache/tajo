@@ -24,10 +24,9 @@ class PartitionsTableDescriptor extends AbstractTableDescriptor {
   
   private static final String TABLENAME = "partitions";
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-      new ColumnDescriptor("pid", Type.INT4, 0),
+      new ColumnDescriptor("partition_id", Type.INT4, 0),
       new ColumnDescriptor("tid", Type.INT4, 0),
       new ColumnDescriptor("partition_name", Type.TEXT, 0),
-      new ColumnDescriptor("ordinal_position", Type.INT4, 0),
       new ColumnDescriptor("path", Type.TEXT, 0)
   };
 

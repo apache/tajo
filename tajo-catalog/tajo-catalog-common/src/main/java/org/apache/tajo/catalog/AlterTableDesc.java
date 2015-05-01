@@ -21,9 +21,11 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.KeyValueSet;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTableDescProto;
 
@@ -40,11 +42,19 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   @Expose
   protected String newColumnName; //optional
   @Expose
-  protected Column addColumn = null; //optiona
+  protected Column addColumn = null; //optional
+  @Expose
+  protected PartitionDesc partitionDesc; //optional
+  @Expose
+  protected KeyValueSet properties;
 
   public AlterTableDesc() {
+    init();
   }
 
+  private void init() {
+    this.properties = new KeyValueSet();
+  }
 
   public String getTableName() {
     return tableName;
@@ -94,6 +104,26 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     this.alterTableType = alterTableType;
   }
 
+  public PartitionDesc getPartitionDesc() { return partitionDesc; }
+
+  public void setPartitionDesc(PartitionDesc partitionDesc) { this.partitionDesc = partitionDesc; }
+
+  public void setProperties(KeyValueSet properties) {
+    this.properties = properties;
+  }
+
+  public KeyValueSet getProperties() {
+    return properties;
+  }
+
+  public void setProperty(String key, String value) {
+    this.properties.set(key, value);
+  }
+
+  public String getProperty(String key) {
+    return this.properties.get(key);
+  }
+
   @Override
   public String toString() {
     Gson gson = new GsonBuilder().setPrettyPrinting().
@@ -109,6 +139,8 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.newTableName = newTableName;
     newAlter.columnName = newColumnName;
     newAlter.addColumn = addColumn;
+    newAlter.partitionDesc = partitionDesc;
+    newAlter.properties = (KeyValueSet)properties.clone();
     return newAlter;
   }
 
@@ -136,6 +168,9 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     if (null != this.addColumn) {
       builder.setAddColumn(addColumn.getProto());
     }
+    if (null != this.properties) {
+      builder.setParams(properties.getProto());
+    }
 
     switch (alterTableType) {
       case RENAME_TABLE:
@@ -147,8 +182,22 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
       case ADD_COLUMN:
         builder.setAlterTableType(CatalogProtos.AlterTableType.ADD_COLUMN);
         break;
+      case SET_PROPERTY:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.SET_PROPERTY);
+        break;
+      case ADD_PARTITION:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.ADD_PARTITION);
+        break;
+      case DROP_PARTITION:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.DROP_PARTITION);
+        break;
       default:
     }
+
+    if (null != this.partitionDesc) {
+      builder.setPartitionDesc(partitionDesc.getProto());
+    }
+
     return builder.build();
   }
 

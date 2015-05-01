@@ -18,31 +18,26 @@
 
 package org.apache.tajo.plan.expr;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+
+import java.util.Arrays;
 
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
   @Expose private SortSpec [] sortSpecs;
   @Expose WindowSpec.WindowFrame windowFrame;
-  private Tuple params;
 
-  public WindowFunctionEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs,
+  public WindowFunctionEval(FunctionDesc desc, EvalNode[] givenArgs,
                             WindowSpec.WindowFrame windowFrame) {
-    super(EvalType.WINDOW_FUNCTION, desc, instance, givenArgs);
+    super(EvalType.WINDOW_FUNCTION, desc, givenArgs);
     this.windowFrame = windowFrame;
   }
 
@@ -63,26 +58,16 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    throw new UnsupportedOperationException("Cannot execute eval() of aggregation function");
+  protected void mergeParam(FunctionContext context, Tuple params) {
+    functionInvoke.eval(context, params);
   }
 
-  public void merge(FunctionContext context, Schema schema, Tuple tuple) {
-    if (params == null) {
-      this.params = new VTuple(argEvals.length);
-    }
-
-    if (argEvals != null) {
-      for (int i = 0; i < argEvals.length; i++) {
-        params.put(i, argEvals[i].eval(schema, tuple));
-      }
-    }
-
-    instance.eval(context, params);
-  }
-
+  @Override
   public Datum terminate(FunctionContext context) {
-    return instance.terminate(context);
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before terminate()");
+    }
+    return functionInvoke.terminate(context);
   }
 
   @Override
@@ -94,7 +79,6 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((params == null) ? 0 : params.hashCode());
     result = prime * result + Arrays.hashCode(sortSpecs);
     result = prime * result + ((windowFrame == null) ? 0 : windowFrame.hashCode());
     return result;

@@ -7,21 +7,21 @@ If you want to customize the catalog service, copy ``$TAJO_HOME/conf/catalog-sit
 * tajo.catalog.master.addr - If you want to launch a Tajo cluster in distributed mode, you must specify this address. For more detail information, see [Default Ports](#DefaultPorts).
 * tajo.catalog.store.class - If you want to change the persistent storage of the catalog server, specify the class name. Its default value is tajo.catalog.store.DerbyStore. In the current version, Tajo provides three persistent storage classes as follows:
 
-+-----------------------------------+------------------------------------------------+
-| Driver Class                      | Descriptions                                   |
-+===================================+================================================+
-| tajo.catalog.store.DerbyStore     | this storage class uses Apache Derby.          |
-+-----------------------------------+------------------------------------------------+
-| tajo.catalog.store.MySQLStore     | this storage class uses MySQL.                 |
-+-----------------------------------+------------------------------------------------+
-| tajo.catalog.store.MariaDBStore   | this storage class uses MariaDB.               |
-+-----------------------------------+------------------------------------------------+
-| tajo.catalog.store.MemStore       | this is the in-memory storage. It is only used |
-|                                   | in unit tests to shorten the duration of unit  |
-|                                   | tests.                                         |
-+-----------------------------------+------------------------------------------------+
-| tajo.catalog.store.HCatalogStore  | this storage class uses HiveMetaStore.         |
-+-----------------------------------+------------------------------------------------+
++--------------------------------------+------------------------------------------------+
+| Driver Class                         | Descriptions                                   |
++======================================+================================================+
+| tajo.catalog.store.DerbyStore        | this storage class uses Apache Derby.          |
++--------------------------------------+------------------------------------------------+
+| tajo.catalog.store.MySQLStore        | this storage class uses MySQL.                 |
++--------------------------------------+------------------------------------------------+
+| tajo.catalog.store.MariaDBStore      | this storage class uses MariaDB.               |
++--------------------------------------+------------------------------------------------+
+| tajo.catalog.store.MemStore          | this is the in-memory storage. It is only used |
+|                                      | in unit tests to shorten the duration of unit  |
+|                                      | tests.                                         |
++--------------------------------------+------------------------------------------------+
+| tajo.catalog.store.HiveCatalogStore  | this storage class uses HiveMetaStore.         |
++--------------------------------------+------------------------------------------------+
 
 =========================
 Derby Configuration
@@ -148,20 +148,18 @@ Finally, you must add the following configurations to `conf/catalog-site.xml` :
   </property>
 
 ==================================
-HCatalogStore Configuration
+HiveCatalogStore Configuration
 ==================================
 
-Tajo support HCatalogStore to integrate with hive. If you want to use HCatalogStore, you just do as follows.
+Tajo support HiveCatalogStore to integrate with hive. If you want to use HiveCatalogStore, you just do as follows.
 
 First, you must compile source code and get a binary archive as follows:
 
 .. code-block:: sh
 
   $ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
-  $ mvn clean install -DskipTests -Pdist -Dtar -Phcatalog-0.1x.0
+  $ mvn clean install -DskipTests -Pdist -Dtar
   $ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
-
-Currently Tajo supports hive 0.12.0, hive 0.13.0, hive 0.13.1. If you enables HCatalogStore, you set the maven profile as ``-Phcatalog-0.12.0``.
 
 Second, you must set your hive home directory to HIVE_HOME variable in ``conf/tajo-env.sh`` with it as follows:
 
@@ -182,5 +180,5 @@ Lastly, you should add the following config to ``conf/catalog-site.xml`` :
 
   <property>
     <name>tajo.catalog.store.class</name>
-    <value>org.apache.tajo.catalog.store.HCatalogStore</value>
+    <value>org.apache.tajo.catalog.store.HiveCatalogStore</value>
   </property>

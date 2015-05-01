@@ -36,6 +36,8 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
@@ -45,6 +47,11 @@ import org.apache.tajo.master.*;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
+import org.apache.tajo.plan.expr.EvalContext;
+import org.apache.tajo.plan.expr.GeneralFunctionEval;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.querymaster.*;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.LogicalPlan;
@@ -101,7 +108,7 @@ public class QueryExecutor {
 
 
     } else if (plan.isExplain()) { // explain query
-      execExplain(plan, response);
+      execExplain(plan, queryContext, plan.isExplainGlobal(), response);
 
     } else if (PlannerUtil.checkIfQueryTargetIsVirtualTable(plan)) {
       execQueryOnVirtualTable(queryContext, session, sql, plan, response);
@@ -110,11 +117,9 @@ public class QueryExecutor {
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
       execSimpleQuery(queryContext, session, sql, plan, response);
 
-
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
-      execNonFromQuery(queryContext, session, sql, plan, response);
-
+      execNonFromQuery(queryContext, plan, response);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -157,9 +162,28 @@ public class QueryExecutor {
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
-  public void execExplain(LogicalPlan plan, SubmitQueryResponse.Builder response) throws IOException {
+  public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
+                          SubmitQueryResponse.Builder response)
+      throws Exception {
+    String explainStr;
+    boolean isTest = queryContext.getBool(SessionVars.TEST_PLAN_SHAPE_FIX_ENABLED);
+    if (isTest) {
+      ExplainPlanPreprocessorForTest preprocessorForTest = new ExplainPlanPreprocessorForTest();
+      preprocessorForTest.prepareTest(plan);
+    }
 
-    String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
+    if (isGlobal) {
+      GlobalPlanner planner = new GlobalPlanner(context.getConf(), context.getCatalog());
+      MasterPlan masterPlan = compileMasterPlan(plan, queryContext, planner);
+      if (isTest) {
+        ExplainGlobalPlanPreprocessorForTest globalPlanPreprocessorForTest = new ExplainGlobalPlanPreprocessorForTest();
+        globalPlanPreprocessorForTest.prepareTest(masterPlan);
+      }
+      explainStr = masterPlan.toString();
+    } else {
+      explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
+    }
+
     Schema schema = new Schema();
     schema.addColumn("explain", TajoDataTypes.Type.TEXT);
     RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
@@ -212,6 +236,11 @@ public class QueryExecutor {
       scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
     }
     TableDesc desc = scanNode.getTableDesc();
+    // Keep info for partition-column-only queries
+    SelectionNode selectionNode = plan.getRootBlock().getNode(NodeType.SELECTION);
+    if (desc.isExternal() && desc.hasPartition() && selectionNode != null) {
+      scanNode.setQual(selectionNode.getQual());
+    }
     int maxRow = Integer.MAX_VALUE;
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
@@ -236,36 +265,66 @@ public class QueryExecutor {
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
-  public void execNonFromQuery(QueryContext queryContext, Session session, String query,
-                               LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder) throws Exception {
+  public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
+      throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
+    EvalContext evalContext = new EvalContext();
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new PlanningException("No targets");
     }
-    final Tuple outTuple = new VTuple(targets.length);
+    try {
+      // start script executor
+      startScriptExecutors(queryContext, evalContext, targets);
+      final Tuple outTuple = new VTuple(targets.length);
+      for (int i = 0; i < targets.length; i++) {
+        EvalNode eval = targets[i].getEvalTree();
+        eval.bind(evalContext, null);
+        outTuple.put(i, eval.eval(null));
+      }
+      boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
+      if (isInsert) {
+        InsertNode insertNode = rootNode.getChild();
+        insertNonFromQuery(queryContext, insertNode, responseBuilder);
+      } else {
+        Schema schema = PlannerUtil.targetToSchema(targets);
+        RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
+        byte[] serializedBytes = encoder.toBytes(outTuple);
+        ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
+        serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
+        serializedResBuilder.setSchema(schema.getProto());
+        serializedResBuilder.setBytesNum(serializedBytes.length);
+
+        responseBuilder.setResultSet(serializedResBuilder);
+        responseBuilder.setMaxRowNum(1);
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      }
+    } finally {
+      // stop script executor
+      stopScriptExecutors(evalContext);
+    }
+  }
+
+  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
+      throws IOException {
     for (int i = 0; i < targets.length; i++) {
       EvalNode eval = targets[i].getEvalTree();
-      outTuple.put(i, eval.eval(null, null));
+      if (eval instanceof GeneralFunctionEval) {
+        GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
+        if (functionEval.getFuncDesc().getInvocation().hasPython()) {
+          TajoScriptEngine scriptExecutor = new PythonScriptEngine(functionEval.getFuncDesc());
+          evalContext.addScriptEngine(eval, scriptExecutor);
+          scriptExecutor.start(queryContext.getConf());
+        }
+      }
     }
-    boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
-    if (isInsert) {
-      InsertNode insertNode = rootNode.getChild();
-      insertNonFromQuery(queryContext, insertNode, responseBuilder);
-    } else {
-      Schema schema = PlannerUtil.targetToSchema(targets);
-      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
-      byte[] serializedBytes = encoder.toBytes(outTuple);
-      ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
-      serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
-      serializedResBuilder.setSchema(schema.getProto());
-      serializedResBuilder.setBytesNum(serializedBytes.length);
+  }
 
-      responseBuilder.setResultSet(serializedResBuilder);
-      responseBuilder.setMaxRowNum(1);
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+  public static void stopScriptExecutors(EvalContext evalContext) {
+    for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
+      executor.shutdown();
     }
   }
 
@@ -410,5 +469,35 @@ public class QueryExecutor {
       LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
           " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
     }
+  }
+
+  public static MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
+      throws Exception {
+
+    CatalogProtos.StoreType storeType = PlannerUtil.getStoreType(plan);
+    if (storeType != null) {
+      StorageManager sm = StorageManager.getStorageManager(planner.getConf(), storeType);
+      StorageProperty storageProperty = sm.getStorageProperty();
+      if (storageProperty.isSortedInsert()) {
+        String tableName = PlannerUtil.getStoreTableName(plan);
+        LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+        TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
+        if (tableDesc == null) {
+          throw new VerifyException("Can't get table meta data from catalog: " + tableName);
+        }
+        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
+            context, tableDesc);
+        if (storageSpecifiedRewriteRules != null) {
+          for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
+            eachRule.rewrite(context, plan);
+          }
+        }
+      }
+    }
+
+    MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
+    planner.build(masterPlan);
+
+    return masterPlan;
   }
 }

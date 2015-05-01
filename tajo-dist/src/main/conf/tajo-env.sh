@@ -24,9 +24,6 @@
 # Hadoop home. Required
 # export HADOOP_HOME=
 
-# HBase home. optional
-# export HBASE_HOME=
-
 # The java implementation to use.  Required.
 # export JAVA_HOME=/usr/java/default
 
@@ -72,15 +69,12 @@
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export TAJO_NICENESS=10
 
-# Tajo cluster mode. the default mode is standby mode.
-export TAJO_WORKER_STANDBY_MODE=true
-
-# It must be required to use HCatalogStore
+# It must be required to use HiveCatalogStore
 # export HIVE_HOME=
 # export HIVE_JDBC_DRIVER_DIR=
 
 # Tajo PullServer mode. the default is embedded mode (in worker)
 # export TAJO_PULLSERVER_STANDALONE=false
 
-# It must be required to use HBase
+# HBase home directory. It is opitional, but is required mandatorily to use HBase.
 # export HBASE_HOME=

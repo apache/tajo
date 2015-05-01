@@ -8,7 +8,7 @@ In this section, we explain setup of a standalone Tajo instance. It will run aga
 Prerequisites
 ======================
 
- * Hadoop 2.3.0 or higher (up to 2.5.1)
+ * Hadoop 2.3.0 or higher (up to 2.6.0)
  * Java 1.6 or 1.7
  * Protocol buffer 2.5.0
 
@@ -135,7 +135,7 @@ Here, we assume the schema as (int, text, float, text). ::
         name text, 
         score float, 
         type text) 
-        using csv with ('text.delimiter'='|') location 'file:/home/x/table1';
+        using text with ('text.delimiter'='|') location 'file:/home/x/table1';
 
 To load an external table, you need to use ‘create external table’ statement. 
 In the location clause, you should use the absolute directory path with an appropriate scheme. 

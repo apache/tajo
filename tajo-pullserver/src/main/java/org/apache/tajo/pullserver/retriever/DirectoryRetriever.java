@@ -40,7 +40,7 @@ public class DirectoryRetriever implements DataRetriever {
       throws IOException {
     final String path = HttpDataServerHandler.sanitizeUri(request.getUri());
     if (path == null) {
-      throw new IllegalArgumentException("Wrong path: " +path);
+      throw new IllegalArgumentException("Wrong uri: " +request.getUri());
     }
 
     File file = new File(baseDir, path);

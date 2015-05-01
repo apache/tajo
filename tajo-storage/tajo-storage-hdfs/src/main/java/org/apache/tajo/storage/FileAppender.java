@@ -53,6 +53,10 @@ public abstract class FileAppender implements Appender {
 
     try {
       if (taskAttemptId != null) {
+        if (!(conf instanceof TajoConf)) {
+          throw new IllegalArgumentException("Configuration must be an instance of TajoConf");
+        }
+
         this.path = ((FileStorageManager)StorageManager.getFileStorageManager((TajoConf) conf))
             .getAppenderFilePath(taskAttemptId, workDir);
       } else {

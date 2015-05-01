@@ -196,8 +196,12 @@ public class CreateTable extends Expr {
     createTable.storageType = storageType;
     createTable.location = location;
     createTable.subquery = subquery;
-    createTable.params = new HashMap<String, String>(params);
-    createTable.partition = (PartitionMethodDescExpr) partition.clone();
+    if (params != null) {
+      createTable.params = new HashMap<String, String>(params);
+    }
+    if (partition != null) {
+      createTable.partition = (PartitionMethodDescExpr) partition.clone();
+    }
     createTable.ifNotExists = ifNotExists;
     return createTable;
   }
@@ -305,11 +309,13 @@ public class CreateTable extends Expr {
     @Override
     public Object clone() throws CloneNotSupportedException {
       RangePartition range = (RangePartition) super.clone();
-      range.columns = new ColumnReferenceExpr[columns.length];
-      for (int i = 0; i < columns.length; i++) {
-        range.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+      if (columns != null) {
+        range.columns = new ColumnReferenceExpr[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+          range.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+        }
       }
-      if (range.specifiers != null) {
+      if (specifiers != null) {
         range.specifiers = new ArrayList<RangePartitionSpecifier>();
         for (int i = 0; i < specifiers.size(); i++) {
           range.specifiers.add(specifiers.get(i));
@@ -376,9 +382,11 @@ public class CreateTable extends Expr {
     @Override
     public Object clone() throws CloneNotSupportedException {
       HashPartition hash = (HashPartition) super.clone();
-      hash.columns = new ColumnReferenceExpr[columns.length];
-      for (int i = 0; i < columns.length; i++) {
-        hash.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+      if (columns != null) {
+        hash.columns = new ColumnReferenceExpr[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+          hash.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+        }
       }
       hash.quantity = quantity;
       if (specifiers != null) {
@@ -428,9 +436,11 @@ public class CreateTable extends Expr {
     @Override
     public Object clone() throws CloneNotSupportedException {
       ListPartition listPartition = (ListPartition) super.clone();
-      listPartition.columns = new ColumnReferenceExpr[columns.length];
-      for (int i = 0; i < columns.length; i++) {
-        listPartition.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+      if (columns != null) {
+        listPartition.columns = new ColumnReferenceExpr[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+          listPartition.columns[i] = (ColumnReferenceExpr) columns[i].clone();
+        }
       }
       if (specifiers != null) {
         listPartition.specifiers = new ArrayList<ListPartitionSpecifier>();
@@ -472,9 +482,11 @@ public class CreateTable extends Expr {
     @Override
     public Object clone() throws CloneNotSupportedException {
       ColumnPartition columnPartition = (ColumnPartition) super.clone();
-      columnPartition.columns = new ColumnDefinition[columns.length];
-      for (int i = 0; i < columns.length; i++) {
-        columnPartition.columns[i] = (ColumnDefinition) columns[i].clone();
+      if (columns != null) {
+        columnPartition.columns = new ColumnDefinition[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+          columnPartition.columns[i] = (ColumnDefinition) columns[i].clone();
+        }
       }
       return columnPartition;
     }
@@ -524,7 +536,9 @@ public class CreateTable extends Expr {
     @Override
     public Object clone() throws CloneNotSupportedException {
       RangePartitionSpecifier specifier = (RangePartitionSpecifier) super.clone();
-      specifier.end = (Expr) end.clone();
+      if (end != null) {
+        specifier.end = (Expr) end.clone();
+      }
       specifier.maxValue = maxValue;
       return specifier;
     }

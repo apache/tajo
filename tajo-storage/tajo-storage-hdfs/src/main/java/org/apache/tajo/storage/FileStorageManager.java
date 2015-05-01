@@ -149,6 +149,21 @@ public class FileStorageManager extends StorageManager {
     return new Path(tableBaseDir, tableName);
   }
 
+  private String partitionPath = "";
+  private int currentDepth = 0;
+
+  /**
+   * Set a specific partition path for partition-column only queries
+   * @param path The partition prefix path
+   */
+  public void setPartitionPath(String path) { partitionPath = path; }
+
+  /**
+   * Set a depth of partition path for partition-column only queries
+   * @param depth Depth of partitions
+   */
+  public void setCurrentDepth(int depth) { currentDepth = depth; }
+
   @VisibleForTesting
   public Appender getAppender(TableMeta meta, Schema schema, Path filePath)
       throws IOException {
@@ -722,8 +737,16 @@ public class FileStorageManager extends StorageManager {
 
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
     if (fs.exists(tablePath)) {
-      getNonZeroLengthDataFiles(fs, tablePath, nonZeroLengthFiles, currentPage, numResultFragments,
-          new AtomicInteger(0), tableDesc.hasPartition(), 0, partitionDepth);
+      if (!partitionPath.isEmpty()) {
+        Path partPath = new Path(tableDesc.getPath() + partitionPath);
+        if (fs.exists(partPath)) {
+          getNonZeroLengthDataFiles(fs, partPath, nonZeroLengthFiles, currentPage, numResultFragments,
+                  new AtomicInteger(0), tableDesc.hasPartition(), this.currentDepth, partitionDepth);
+        }
+      } else {
+        getNonZeroLengthDataFiles(fs, tablePath, nonZeroLengthFiles, currentPage, numResultFragments,
+                new AtomicInteger(0), tableDesc.hasPartition(), 0, partitionDepth);
+      }
     }
 
     List<Fragment> fragments = new ArrayList<Fragment>();

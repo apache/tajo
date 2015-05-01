@@ -18,68 +18,56 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.function.FunctionInvoke;
+import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.TUtil;
 
-import javax.annotation.Nullable;
+import java.io.IOException;
 
 public class GeneralFunctionEval extends FunctionEval {
-  @Expose protected GeneralFunction instance;
-  private Tuple params = null;
+  protected FunctionInvoke funcInvoke;
+  @Expose protected FunctionInvokeContext invokeContext;
 
-	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, GeneralFunction instance,
-                             EvalNode[] givenArgs) {
+	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
+      throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
-		this.instance = instance;
-    this.instance.init(queryContext, getParamType());
+    this.invokeContext = new FunctionInvokeContext(queryContext, getParamType());
   }
 
-  /* (non-Javadoc)
-    * @see nta.query.executor.eval.Expr#evalVal(Tuple)
-    */
-	@Override
-	public Datum eval(Schema schema, Tuple tuple) {
-    if (this.params == null) {
-      params = new VTuple(argEvals.length);
-    }
-    if(argEvals != null) {
-      params.clear();
-      for(int i=0;i < argEvals.length; i++) {
-        params.put(i, argEvals[i].eval(schema, tuple));
+  @Override
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
+    try {
+      this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
+      if (evalContext != null && evalContext.hasScriptEngine(this)) {
+        this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
       }
+      this.funcInvoke.init(invokeContext);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+    return this;
+  }
 
-    return instance.eval(params);
-	}
-	
-	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof GeneralFunctionEval) {
-      GeneralFunctionEval other = (GeneralFunctionEval) obj;
-      return super.equals(other) &&
-          TUtil.checkEquals(instance, other.instance);
-	  }
-	  
-	  return false;
-	}
-	
-	@Override
-	public int hashCode() {
-	  return Objects.hashCode(funcDesc, instance);
-	}
-	
+  @Override
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    super.eval(tuple);
+    Datum res = funcInvoke.eval(evalParams(tuple));
+    return res;
+  }
+
 	@Override
   public Object clone() throws CloneNotSupportedException {
     GeneralFunctionEval eval = (GeneralFunctionEval) super.clone();
-    eval.instance = (GeneralFunction) instance.clone();
+    if (funcInvoke != null) {
+      eval.funcInvoke = (FunctionInvoke) funcInvoke.clone();
+    }
     return eval;
   }
 }

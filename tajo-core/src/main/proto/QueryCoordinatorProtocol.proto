@@ -58,8 +58,6 @@ message ServerStatusProto {
     repeated Disk disk = 4;
     required int32 runningTaskNum = 5;
     required JvmHeap jvmHeap = 6;
-    required BoolProto queryMasterMode = 7;
-    required BoolProto taskRunnerMode = 8;
 }
 
 message TajoHeartbeat {

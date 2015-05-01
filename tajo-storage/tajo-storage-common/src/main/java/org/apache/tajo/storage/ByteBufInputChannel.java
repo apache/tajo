@@ -18,8 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.hadoop.fs.ByteBufferReadable;
-import org.apache.hadoop.hdfs.DFSInputStream;
 import org.apache.hadoop.io.IOUtils;
 
 import java.io.IOException;
@@ -27,42 +25,22 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.ScatteringByteChannel;
-import java.nio.channels.spi.AbstractInterruptibleChannel;
 
-public class ByteBufInputChannel extends AbstractInterruptibleChannel implements ScatteringByteChannel {
-
-  ByteBufferReadable byteBufferReadable;
-  ReadableByteChannel channel;
-  InputStream inputStream;
+/**
+ * ByteBufInputChannel is a NIO channel wrapper from input stream
+ */
+public class ByteBufInputChannel extends InputChannel {
+  private ReadableByteChannel channel;
+  private InputStream inputStream;
 
   public ByteBufInputChannel(InputStream inputStream) {
-    if (inputStream instanceof DFSInputStream && inputStream instanceof ByteBufferReadable) {
-      this.byteBufferReadable = (ByteBufferReadable) inputStream;
-    } else {
-      this.channel = Channels.newChannel(inputStream);
-    }
-
+    this.channel = Channels.newChannel(inputStream);
     this.inputStream = inputStream;
   }
 
   @Override
-  public long read(ByteBuffer[] dsts, int offset, int length) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public long read(ByteBuffer[] dsts) {
-    return read(dsts, 0, dsts.length);
-  }
-
-  @Override
   public int read(ByteBuffer dst) throws IOException {
-    if (byteBufferReadable != null) {
-      return byteBufferReadable.read(dst);
-    } else {
-      return channel.read(dst);
-    }
+    return channel.read(dst);
   }
 
   @Override

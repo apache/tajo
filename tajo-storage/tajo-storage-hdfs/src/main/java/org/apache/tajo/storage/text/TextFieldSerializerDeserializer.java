@@ -26,11 +26,11 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
@@ -39,8 +39,8 @@ import java.nio.charset.CharsetDecoder;
 import java.util.TimeZone;
 
 public class TextFieldSerializerDeserializer implements FieldSerializerDeserializer {
-  public static final byte[] trueBytes = "true".getBytes();
-  public static final byte[] falseBytes = "false".getBytes();
+  private static final byte[] trueBytes = "true".getBytes(Bytes.UTF8_CHARSET);
+  private static final byte[] falseBytes = "false".getBytes(Bytes.UTF8_CHARSET);
   private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
   private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
 
@@ -108,7 +108,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIME:
         if (hasTimezone) {
-          bytes = ((TimeDatum) datum).asChars(timezone, true).getBytes();
+          bytes = ((TimeDatum) datum).asChars(timezone, true).getBytes(Bytes.UTF8_CHARSET);
         } else {
           bytes = datum.asTextBytes();
         }
@@ -117,7 +117,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIMESTAMP:
         if (hasTimezone) {
-          bytes = ((TimestampDatum) datum).asChars(timezone, true).getBytes();
+          bytes = ((TimestampDatum) datum).asChars(timezone, true).getBytes(Bytes.UTF8_CHARSET);
         } else {
           bytes = datum.asTextBytes();
         }
@@ -132,7 +132,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case PROTOBUF:
         ProtobufDatum protobuf = (ProtobufDatum) datum;
-        byte[] protoBytes = protobufJsonFormat.printToString(protobuf.get()).getBytes();
+        byte[] protoBytes = protobufJsonFormat.printToString(protobuf.get()).getBytes(Bytes.UTF8_CHARSET);
         length = protoBytes.length;
         out.write(protoBytes, 0, protoBytes.length);
         break;

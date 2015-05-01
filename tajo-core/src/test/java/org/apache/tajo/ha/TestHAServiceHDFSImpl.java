@@ -108,6 +108,8 @@ public class TestHAServiceHDFSImpl  {
       masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
       masterAddress + ":" + NetUtils.getFreeSocketPort());
+    conf.setIntVar(TajoConf.ConfVars.REST_SERVICE_PORT,
+        NetUtils.getFreeSocketPort());
 
     conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
 

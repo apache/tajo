@@ -57,10 +57,6 @@ public class WorkerResource {
   private final Lock rlock = lock.readLock();
   private final Lock wlock = lock.writeLock();
 
-  private boolean queryMasterMode;
-
-  private boolean taskRunnerMode;
-
   private AtomicInteger numQueryMasterTasks = new AtomicInteger(0);
 
   public float getDiskSlots() {
@@ -143,22 +139,6 @@ public class WorkerResource {
 
   public float getUsedDiskSlots() {
     return usedDiskSlots;
-  }
-
-  public boolean isQueryMasterMode() {
-    return queryMasterMode;
-  }
-
-  public void setQueryMasterMode(boolean queryMasterMode) {
-    this.queryMasterMode = queryMasterMode;
-  }
-
-  public boolean isTaskRunnerMode() {
-    return taskRunnerMode;
-  }
-
-  public void setTaskRunnerMode(boolean taskRunnerMode) {
-    this.taskRunnerMode = taskRunnerMode;
   }
 
   public void releaseResource(float diskSlots, int memoryMB) {

@@ -105,5 +105,11 @@ public interface WorkerResourceManager extends Service {
    *
    * @return WorkerIds on which QueryMasters are running
    */
-  Collection<Integer> getQueryMasters();
+  public Collection<Integer> getQueryMasters();
+
+  /**
+   *
+   * @return RMContext
+   */
+  public TajoRMContext getRMContext();
 }
