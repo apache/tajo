@@ -88,7 +88,6 @@ public class TestDefaultCliOutputFormatter {
     String multiLineMessage =
         "ERROR: java.sql.SQLException: ERROR: no such a table: table1\n" +
         "com.google.protobuf.ServiceException: java.sql.SQLException: ERROR: no such a table: table1\n" +
-        "\tat org.apache.tajo.rpc.ServerCallable.withRetries(ServerCallable.java:107)\n" +
         "\tat org.apache.tajo.client.TajoClient.getTableDesc(TajoClient.java:777)\n" +
         "\tat org.apache.tajo.cli.tsql.commands.DescTableCommand.invoke(DescTableCommand.java:43)\n" +
         "\tat org.apache.tajo.cli.tsql.TajoCli.executeMetaCommand(TajoCli.java:300)\n" +
@@ -96,9 +95,6 @@ public class TestDefaultCliOutputFormatter {
         "\tat org.apache.tajo.cli.tsql.TajoCli.runShell(TajoCli.java:271)\n" +
         "\tat org.apache.tajo.cli.tsql.TajoCli.main(TajoCli.java:420)\n" +
         "Caused by: java.sql.SQLException: ERROR: no such a table: table1\n" +
-        "\tat org.apache.tajo.client.TajoClient$22.call(TajoClient.java:791)\n" +
-        "\tat org.apache.tajo.client.TajoClient$22.call(TajoClient.java:778)\n" +
-        "\tat org.apache.tajo.rpc.ServerCallable.withRetries(ServerCallable.java:97)\n" +
         "\t... 6 more";
 
     assertEquals("ERROR: no such a table: table1", DefaultTajoCliOutputFormatter.parseErrorMessage(multiLineMessage));
