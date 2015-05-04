@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
@@ -32,6 +33,8 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
   protected final int groupingKeyIds[];
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
+
+  protected final ComparableTuple groupingKey;
 
   public AggregationExec(final TaskAttemptContext context, GroupbyNode plan,
                          PhysicalExec child) throws IOException {
@@ -57,6 +60,7 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
       aggFunctions = new AggregationFunctionCallEval[0];
       aggFunctionsNum = 0;
     }
+    groupingKey = new ComparableTuple(inSchema, groupingKeyIds);
   }
 
   @Override
