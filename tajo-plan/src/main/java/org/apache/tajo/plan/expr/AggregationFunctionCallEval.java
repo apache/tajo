@@ -36,7 +36,7 @@ import java.io.IOException;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
 
-  private static final Log LOG = LogFactory.getLog(AggregationFunctionCallEval.class);
+//  private static final Log LOG = LogFactory.getLog(AggregationFunctionCallEval.class);
   // Both firstPhase and lastPhase flags should be true before global planning.
   @Expose private boolean firstPhase = true;
   @Expose private boolean lastPhase = true;
@@ -82,7 +82,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
-    LOG.info("at merge, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
+//    LOG.info("at merge, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
     if (!isBinded) {
       throw new IllegalStateException("bind() must be called before merge()");
     }
@@ -105,7 +105,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public Datum terminate(FunctionContext context) {
-    LOG.info("at terminate, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
+//    LOG.info("at terminate, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
     if (!isBinded) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
@@ -118,7 +118,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   @Override
   public DataType getValueType() {
-    LOG.info("at getValueType, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
+//    LOG.info("at getValueType, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
     if (!lastPhase) {
       return functionInvoke.getPartialResultType();
     } else {

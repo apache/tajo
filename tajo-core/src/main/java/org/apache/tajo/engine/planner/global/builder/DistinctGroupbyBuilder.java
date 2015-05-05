@@ -557,6 +557,7 @@ public class DistinctGroupbyBuilder {
         }
 
         for (int aggFuncIdx = 0; aggFuncIdx < secondStageGroupbyNode.getAggFunctions().length; aggFuncIdx++) {
+          secondStageGroupbyNode.getAggFunctions()[aggFuncIdx].setLastPhase();
           int targetIdx = originGroupColumns.size() + uniqueDistinctColumn.size() + aggFuncIdx;
           Target aggFuncTarget = oldTargets[targetIdx];
           secondGroupbyTargets.add(aggFuncTarget);
@@ -586,6 +587,7 @@ public class DistinctGroupbyBuilder {
 
           AggregationFunctionCallEval secondStageAggFunction = secondStageGroupbyNode.getAggFunctions()[aggFuncIdx];
           secondStageAggFunction.setArgs(new EvalNode[] {firstEval});
+          secondStageAggFunction.setLastPhase();
 
           Target secondTarget = secondStageGroupbyNode.getTargets()[secondStageGroupbyNode.getGroupingColumns().length + aggFuncIdx];
           Column column = secondTarget.getNamedColumn();

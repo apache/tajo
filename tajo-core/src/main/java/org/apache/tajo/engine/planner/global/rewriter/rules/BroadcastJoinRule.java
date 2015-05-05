@@ -19,11 +19,13 @@
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
@@ -41,19 +43,19 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
-//    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED)) {
-//      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
-//        if (block.hasNode(NodeType.JOIN)) {
-//          broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
-//          if (broadcastTableSizeThreshold > 0) {
-//            if (parentFinder == null) {
-//              parentFinder = new ParentFinder();
-//            }
-//            return true;
-//          }
-//        }
-//      }
-//    }
+    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED)) {
+      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
+        if (block.hasNode(NodeType.JOIN)) {
+          broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
+          if (broadcastTableSizeThreshold > 0) {
+            if (parentFinder == null) {
+              parentFinder = new ParentFinder();
+            }
+            return true;
+          }
+        }
+      }
+    }
     return false;
   }
 
