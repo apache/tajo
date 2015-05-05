@@ -112,8 +112,7 @@ public class DistinctGroupbyBuilder {
       if (!lastGroupbyNode.isDistinct()) {
         int index = 0;
         for (AggregationFunctionCallEval aggrFunction: lastGroupbyNode.getAggFunctions()) {
-//          aggrFunction.setFirstPhase();
-          aggrFunction.setFinalPhase();
+          aggrFunction.setFirstPhase();
           aggrFunction.setArgs(new EvalNode[]{new FieldEval(lastGroupbyNode.getTargets()[index].getNamedColumn())});
           index++;
         }
@@ -407,7 +406,7 @@ public class DistinctGroupbyBuilder {
         buildInfo.addAggFunction(aggFunction);
         buildInfo.addAggFunctionTarget(aggFunctionTarget);
       } else {
-        aggFunction.setFinalPhase();
+        aggFunction.setLastPhase();
         otherAggregationFunctionCallEvals.add(aggFunction);
         otherAggregationFunctionTargets.add(aggFunctionTarget);
       }

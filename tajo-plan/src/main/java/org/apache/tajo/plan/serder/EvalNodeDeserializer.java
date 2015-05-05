@@ -34,7 +34,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
@@ -191,12 +190,12 @@ public class EvalNodeDeserializer {
                   new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), params);
 
               PlanProto.AggFunctionEvalSpec aggFunctionProto = protoNode.getAggFunction();
-              if (aggFunctionProto.getFirstPhase() && aggFunctionProto.getFinalPhase()) {
-                aggFunc.setFirstAndFinalPhase();
+              if (aggFunctionProto.getFirstPhase() && aggFunctionProto.getLastPhase()) {
+                aggFunc.setFirstAndLastPhase();
               } else if (aggFunctionProto.getFirstPhase()) {
                 aggFunc.setFirstPhase();
-              } else if (aggFunctionProto.getFinalPhase()) {
-                aggFunc.setFinalPhase();
+              } else if (aggFunctionProto.getLastPhase()) {
+                aggFunc.setLastPhase();
               } else {
                 aggFunc.setIntermediatePhase();
               }
@@ -207,7 +206,7 @@ public class EvalNodeDeserializer {
 
               if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
                 evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc,
-                    aggFunc.isFirstPhase()  , aggFunc.isFinalPhase()));
+                    aggFunc.isFirstPhase()  , aggFunc.isLastPhase()));
               }
 
             } else {

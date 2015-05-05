@@ -19,13 +19,11 @@
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
-import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
@@ -148,7 +146,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         GroupbyNode firstPhaseGroupby = (GroupbyNode) firstPhaseNode;
         GroupbyNode secondPhaseGroupby = (GroupbyNode) secondPhaseNode;
         for (AggregationFunctionCallEval aggFunc : firstPhaseGroupby.getAggFunctions()) {
-          aggFunc.setFirstAndFinalPhase();
+          aggFunc.setFirstAndLastPhase();
         }
         firstPhaseGroupby.setTargets(secondPhaseGroupby.getTargets());
         firstPhaseGroupby.setOutSchema(secondPhaseGroupby.getOutSchema());

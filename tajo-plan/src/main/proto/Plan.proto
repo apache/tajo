@@ -425,7 +425,7 @@ message FunctionEval {
 
 message AggFunctionEvalSpec { // requires FunctionEval
   required bool firstPhase = 1;
-  required bool finalPhase = 2;
+  required bool lastPhase = 2;
   optional string alias = 3;
 }
 
