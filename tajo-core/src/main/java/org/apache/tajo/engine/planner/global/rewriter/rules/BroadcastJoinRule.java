@@ -43,19 +43,19 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
-//    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED)) {
-//      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
-//        if (block.hasNode(NodeType.JOIN)) {
-//          broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
-//          if (broadcastTableSizeThreshold > 0) {
-//            if (parentFinder == null) {
-//              parentFinder = new ParentFinder();
-//            }
-//            return true;
-//          }
-//        }
-//      }
-//    }
+    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED)) {
+      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
+        if (block.hasNode(NodeType.JOIN)) {
+          broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
+          if (broadcastTableSizeThreshold > 0) {
+            if (parentFinder == null) {
+              parentFinder = new ParentFinder();
+            }
+            return true;
+          }
+        }
+      }
+    }
     return false;
   }
 
@@ -148,7 +148,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         GroupbyNode firstPhaseGroupby = (GroupbyNode) firstPhaseNode;
         GroupbyNode secondPhaseGroupby = (GroupbyNode) secondPhaseNode;
         for (AggregationFunctionCallEval aggFunc : firstPhaseGroupby.getAggFunctions()) {
-          aggFunc.setFirstAndFinalPhase();
+          aggFunc.setFirstAndLastPhase();
         }
         firstPhaseGroupby.setTargets(secondPhaseGroupby.getTargets());
         firstPhaseGroupby.setOutSchema(secondPhaseGroupby.getOutSchema());

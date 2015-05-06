@@ -286,14 +286,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
     setSchema();
   }
 
-  public PythonScriptEngine(FunctionDesc functionDesc, boolean firstPhase, boolean finalPhase) {
+  public PythonScriptEngine(FunctionDesc functionDesc, boolean firstPhase, boolean lastPhase) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
     this.firstPhase = firstPhase;
-    this.finalPhase = finalPhase;
+    this.lastPhase = lastPhase;
     setSchema();
   }
 
@@ -389,7 +389,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
           inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
         }
         outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
-      } else if (finalPhase) {
+      } else if (lastPhase) {
         inSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
         outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
       } else {
