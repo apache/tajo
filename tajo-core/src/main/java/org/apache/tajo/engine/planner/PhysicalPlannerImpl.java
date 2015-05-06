@@ -281,9 +281,24 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return inMemoryInnerJoinFlag;
   }
 
-  public PhysicalExec createJoinPlan(TaskAttemptContext context, JoinNode joinNode, PhysicalExec leftExec,
-                                     PhysicalExec rightExec) throws IOException {
+  public CommonJoinExec createJoinPlan(TaskAttemptContext context, JoinNode joinNode, PhysicalExec leftExec,
+                                       PhysicalExec rightExec) throws IOException {
+    CommonJoinExec joinExec;
+    try {
+      joinExec = createJoinExec(context, joinNode, leftExec, rightExec);
+    } catch (Exception e) {
+      LOG.warn("Failed to make join exec, failing back to CROSS join", e);
+      return createCrossJoinPlan(context, joinNode, leftExec, rightExec);
+    }
+    if (joinExec.isThetaJoin() && !joinExec.isHashJoin()) {
+      LOG.warn("Generic theta join is not supported, yet");
+      return createCrossJoinPlan(context, joinNode, leftExec, rightExec);
+    }
+    return joinExec;
+  }
 
+  private CommonJoinExec createJoinExec(TaskAttemptContext context, JoinNode joinNode, PhysicalExec leftExec,
+                                        PhysicalExec rightExec) throws IOException {
     switch (joinNode.getJoinType()) {
       case CROSS:
         return createCrossJoinPlan(context, joinNode, leftExec, rightExec);
@@ -317,7 +332,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private PhysicalExec createCrossJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createCrossJoinPlan(TaskAttemptContext context, JoinNode plan,
                                            PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -343,7 +358,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private PhysicalExec createInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
                                            PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -416,7 +431,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new PhysicalExec [] {smaller, larger};
   }
 
-  private PhysicalExec createBestInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createBestInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     boolean inMemoryHashJoin = false;
     if (checkIfInMemoryInnerJoinIsPossible(context, plan.getLeftChild(), true)
@@ -434,7 +449,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private MergeJoinExec createMergeInnerJoin(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createMergeInnerJoin(TaskAttemptContext context, JoinNode plan,
                                              PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
         plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
@@ -455,7 +470,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new MergeJoinExec(context, plan, outerSort, innerSort, sortSpecs[0], sortSpecs[1]);
   }
 
-  private PhysicalExec createLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -465,21 +480,21 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         case IN_MEMORY_HASH_JOIN:
           LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
           return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
-        case NESTED_LOOP_JOIN:
-          //the right operand is too large, so we opt for NL implementation of left outer join
-          LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Nested Loop Join].");
-          return new NLLeftOuterJoinExec(context, plan, leftExec, rightExec);
+        case MERGE_JOIN:
+          //the right operand is too large, so we opt for merge join implementation
+          LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Merge Join].");
+          return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
         default:
           LOG.error("Invalid Left Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
-          return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
+          return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
       }
     } else {
       return createBestLeftOuterJoinPlan(context, plan, leftExec, rightExec);
     }
   }
 
-  private PhysicalExec createBestLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createBestLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                    PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
     long rightTableVolume = estimateSizeRecursive(context, rightLineage);
@@ -499,13 +514,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
     }
     else {
-      //the right operand is too large, so we opt for NL implementation of left outer join
-      LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Nested Loop Join].");
-      return new NLLeftOuterJoinExec(context, plan, leftExec, rightExec);
+      //the right operand is too large, so we opt for merge join implementation
+      LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Merge Join].");
+      return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
     }
   }
 
-  private PhysicalExec createBestRightJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createBestRightJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     //if the left operand is small enough => implement it as a left outer hash join with exchanged operators (note:
     // blocking, but merge join is blocking as well)
@@ -529,7 +544,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private PhysicalExec createRightOuterMergeJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createRightOuterMergeJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                      PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     //the left operand is too large, so opt for merge join implementation
     LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Merge Join].");
@@ -551,7 +566,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new RightOuterMergeJoinExec(context, plan, outerSort2, innerSort2, sortSpecs2[0], sortSpecs2[1]);
   }
 
-  private PhysicalExec createRightOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createRightOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                 PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -565,7 +580,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return createRightOuterMergeJoinPlan(context, plan, leftExec, rightExec);
         default:
           LOG.error("Invalid Right Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback merge join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
           return createRightOuterMergeJoinPlan(context, plan, leftExec, rightExec);
       }
     } else {
@@ -573,7 +588,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private PhysicalExec createFullOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createFullOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -588,7 +603,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
         default:
           LOG.error("Invalid Full Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback merge join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
           return createFullOuterMergeJoinPlan(context, plan, leftExec, rightExec);
       }
     } else {
@@ -596,7 +611,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private HashFullOuterJoinExec createFullOuterHashJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createFullOuterHashJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                             PhysicalExec leftExec, PhysicalExec rightExec)
       throws IOException {
     String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
@@ -642,7 +657,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return new MergeFullOuterJoinExec(context, plan, outerSort3, innerSort3, sortSpecs3[0], sortSpecs3[1]);
   }
 
-  private PhysicalExec createBestFullOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createBestFullOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                    PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
@@ -659,7 +674,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   /**
    *  Left semi join means that the left side is the IN side table, and the right side is the FROM side table.
    */
-  private PhysicalExec createLeftSemiJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createLeftSemiJoinPlan(TaskAttemptContext context, JoinNode plan,
                                               PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -684,7 +699,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   /**
    *  Left semi join means that the left side is the FROM side table, and the right side is the IN side table.
    */
-  private PhysicalExec createRightSemiJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createRightSemiJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -709,7 +724,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   /**
    *  Left semi join means that the left side is the FROM side table, and the right side is the IN side table.
    */
-  private PhysicalExec createLeftAntiJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createLeftAntiJoinPlan(TaskAttemptContext context, JoinNode plan,
                                               PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);
@@ -734,7 +749,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   /**
    *  Left semi join means that the left side is the FROM side table, and the right side is the IN side table.
    */
-  private PhysicalExec createRightAntiJoinPlan(TaskAttemptContext context, JoinNode plan,
+  private CommonJoinExec createRightAntiJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, plan);

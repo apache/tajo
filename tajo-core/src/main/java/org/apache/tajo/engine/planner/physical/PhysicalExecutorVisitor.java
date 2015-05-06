@@ -79,9 +79,6 @@ public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
   RESULT visitNLJoin(CONTEXT context, NLJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 
-  RESULT visitNLLeftOuterJoin(CONTEXT context, NLLeftOuterJoinExec exec, Stack<PhysicalExec> stack)
-      throws PhysicalPlanningException;
-
   RESULT visitProjection(CONTEXT context, ProjectionExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 

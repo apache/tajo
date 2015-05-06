@@ -28,7 +28,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import java.net.InetAddress;
 import java.util.Arrays;
 
-public class VTuple implements Tuple, Cloneable {
+public class VTuple implements Tuple, Cloneable, Comparable<Tuple> {
 	@Expose public Datum [] values;
 	@Expose private long offset;
 	
@@ -201,6 +201,7 @@ public class VTuple implements Tuple, Cloneable {
     return tuple;
   }
 
+  @Override
   public String toString() {
 		return toDisplayString(getValues());
 	}
@@ -225,22 +226,32 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   public static String toDisplayString(Datum [] values) {
-    boolean first = true;
     StringBuilder str = new StringBuilder();
-    str.append("(");
-    for(int i=0; i < values.length; i++) {
-      if(values[i] != null) {
-        if(first) {
-          first = false;
-        } else {
-          str.append(", ");
-        }
-        str.append(i)
-            .append("=>")
-            .append(values[i]);
+    str.append('(');
+    for (Datum datum : values) {
+      if (str.length() > 1) {
+        str.append(',');
+      }
+      str.append(datum);
+    }
+    str.append(')');
+    return str.toString();
+  }
+
+  @Override
+  public int compareTo(Tuple other) {
+    for (int i = 0; i < size(); i++) {
+      if (isNull(i) && other.isNull(i)) {
+        continue;
+      }
+      if (isNull(i) || other.isNull(i)) {
+        return isNull(i) ? 1 : -1;
+      }
+      int compare = get(i).compareTo(other.get(i));
+      if (compare != 0) {
+        return compare;
       }
     }
-    str.append(")");
-    return str.toString();
+    return 0;
   }
 }

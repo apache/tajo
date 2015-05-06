@@ -18,11 +18,11 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -32,163 +32,125 @@ import java.util.List;
 
 public class BNLJoinExec extends CommonJoinExec {
 
-  private List<Tuple> leftTupleSlots;
-  private List<Tuple> rightTupleSlots;
-  private Iterator<Tuple> leftIterator;
-  private Iterator<Tuple> rightIterator;
-
-  private boolean leftEnd;
-  private boolean rightEnd;
-
-  // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
-  private Tuple leftTuple = null;
-  private Tuple outputTuple = null;
-  private Tuple rightNext = null;
+  private final BufferedTuples leftTuples;
+  private final BufferedTuples rightTuples;
 
   private final static int TUPLE_SLOT_SIZE = 10000;
+
+  private Predicate<Tuple> predicate;
 
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
     super(context, plan, leftExec, rightExec);
-    this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
-    this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
-    this.leftIterator = leftTupleSlots.iterator();
-    this.rightIterator = rightTupleSlots.iterator();
-    this.rightEnd = false;
-    this.leftEnd = false;
+    this.leftTuples = new BufferedTuples(leftExec, leftPredicate, TUPLE_SLOT_SIZE);
+    this.rightTuples = new BufferedTuples(rightExec, rightPredicate, TUPLE_SLOT_SIZE);
 
     // for projection
     if (!plan.hasTargets()) {
       plan.setTargets(PlannerUtil.schemaToTargets(outSchema));
     }
+  }
 
-    // for join
-    frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.size());
+  @SuppressWarnings("unchecked")
+  public void init() throws IOException {
+    super.init();
+    predicate = mergePredicates(toPredicate(equiQual), toPredicate(joinQual));
   }
 
   public Tuple next() throws IOException {
-
-    if (leftTupleSlots.isEmpty()) {
-      for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-        Tuple t = leftChild.next();
-        if (t == null) {
-          leftEnd = true;
-          break;
-        }
-        leftTupleSlots.add(t);
-      }
-      leftIterator = leftTupleSlots.iterator();
-      leftTuple = leftIterator.next();
-    }
-
-    if (rightTupleSlots.isEmpty()) {
-      for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-        Tuple t = rightChild.next();
-        if (t == null) {
-          rightEnd = true;
-          break;
-        }
-        rightTupleSlots.add(t);
-      }
-      rightIterator = rightTupleSlots.iterator();
-    }
-
-    if((rightNext = rightChild.next()) == null){
-      rightEnd = true;
-    }
-
     while (!context.isStopped()) {
-      if (!rightIterator.hasNext()) { // if leftIterator ended
-        if (leftIterator.hasNext()) { // if rightTupleslot remains
-          leftTuple = leftIterator.next();
-          rightIterator = rightTupleSlots.iterator();
-        } else {
-          if (rightEnd) {
-            rightChild.rescan();
-            rightEnd = false;
-            
-            if (leftEnd) {
-              return null;
-            }
-            leftTupleSlots.clear();
-            for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
-              Tuple t = leftChild.next();
-              if (t == null) {
-                leftEnd = true;
-                break;
-              }
-              leftTupleSlots.add(t);
-            }
-            if (leftTupleSlots.isEmpty()) {
-              return null;
-            }
-            leftIterator = leftTupleSlots.iterator();
-            leftTuple = leftIterator.next();
-            
-          } else {
-            leftIterator = leftTupleSlots.iterator();
-            leftTuple = leftIterator.next();
-          }
-          
-          rightTupleSlots.clear();
-          if (rightNext != null) {
-            rightTupleSlots.add(rightNext);
-            for (int k = 1; k < TUPLE_SLOT_SIZE; k++) { // fill right
-              Tuple t = rightChild.next();
-              if (t == null) {
-                rightEnd = true;
-                break;
-              }
-              rightTupleSlots.add(t);
-            }
-          } else {
-            for (int k = 0; k < TUPLE_SLOT_SIZE; k++) { // fill right
-              Tuple t = rightChild.next();
-              if (t == null) {
-                rightEnd = true;
-                break;
-              }
-              rightTupleSlots.add(t);
-            }
-          }
-          
-          if ((rightNext = rightChild.next()) == null) {
-            rightEnd = true;
-          }
-          rightIterator = rightTupleSlots.iterator();
+      if (!frameTuple.isSetLeft()) {
+        if (!leftTuples.hasNext()) {
+          return null;
+        }
+        frameTuple.setLeft(leftTuples.next());
+      }
+      while (rightTuples.hasNext()) {
+        frameTuple.setRight(rightTuples.next());
+        if (predicate == null || predicate.apply(frameTuple)) {
+          projector.eval(frameTuple, outTuple);
+          return outTuple;
         }
       }
-
-      frameTuple.set(leftTuple, rightIterator.next());
-      if (!hasJoinQual || joinQual.eval(frameTuple).isTrue()) {
-        projector.eval(frameTuple, outputTuple);
-        return outputTuple;
-      }
+      rightTuples.rescan();
+      frameTuple.clear();
     }
     return null;
+  }
+
+  private static class BufferedTuples implements Iterator<Tuple> {
+
+    private final List<Tuple> buffer;
+    private final PhysicalExec source;
+    private final Predicate<Tuple> predicate;
+
+    private transient boolean eof;
+    private transient Iterator<Tuple> buffered = Iterators.emptyIterator();
+
+    private BufferedTuples(PhysicalExec source, Predicate<Tuple> predicate, int max) {
+      this.buffer = new ArrayList<Tuple>(max);
+      this.source = source;
+      this.predicate = predicate;
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (buffered.hasNext()) {
+        return true;
+      }
+      try {
+        buffered = fillBuffer();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      return buffered.hasNext();
+    }
+    @Override
+    public Tuple next() { return buffered.next(); }
+    @Override
+    public void remove() { throw new UnsupportedOperationException("remove"); }
+
+    private Iterator<Tuple> fillBuffer() throws IOException {
+      buffer.clear();
+      while (!eof && buffer.size() < TUPLE_SLOT_SIZE) {
+        Tuple t = source.next();
+        if (isValid(t)) {
+          buffer.add(t);
+        }
+        eof = t == null;
+      }
+      return buffer.iterator();
+    }
+
+    private boolean isValid(Tuple t) {
+      return t != null && (predicate == null || predicate.apply(t));
+    }
+
+    public void rescan() throws IOException {
+      eof = false;
+      buffer.clear();
+      buffered = Iterators.emptyIterator();
+      source.rescan();
+    }
+
+    public void close() throws IOException {
+      eof = true;
+      buffer.clear();
+      buffered = Iterators.emptyIterator();
+    }
   }
 
   @Override
   public void rescan() throws IOException {
     super.rescan();
-    rightEnd = false;
-    rightTupleSlots.clear();
-    leftTupleSlots.clear();
-    rightIterator = rightTupleSlots.iterator();
-    leftIterator = leftTupleSlots.iterator();
+    leftTuples.rescan();
+    rightTuples.rescan();
   }
 
   @Override
   public void close() throws IOException {
     super.close();
-
-    rightTupleSlots.clear();
-    leftTupleSlots.clear();
-    rightTupleSlots = null;
-    leftTupleSlots = null;
-    rightIterator = null;
-    leftIterator = null;
+    leftTuples.close();
+    rightTuples.close();
   }
 }

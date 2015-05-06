@@ -346,6 +346,7 @@ public class QueryTestCaseBase {
   protected static @interface SimpleTest {
     String[] queries();
     String[] cleanupTables() default {};
+    boolean withExplain() default false;
   }
 
   protected void runSimpleTests() throws Exception {
@@ -358,15 +359,20 @@ public class QueryTestCaseBase {
     String[] queries = annotation.queries();
     try {
       for (int i = 0; i < queries.length; i++) {
+        String prefix = "";
+        if (annotation.withExplain()) {
+          ResultSet result = client.executeQueryAndGetResult("explain " + queries[i]);
+          prefix = resultSetToString(result);
+        }
         ResultSet result = client.executeQueryAndGetResult(queries[i]);
         Path resultPath = StorageUtil.concatPath(
             currentResultPath, methodName + "." + String.valueOf(i + 1) + ".result");
         if (currentResultFS.exists(resultPath)) {
           assertEquals("Result Verification for: " + (i+1) + "th test",
-              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), resultSetToString(result).trim());
+              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), prefix + resultSetToString(result));
         } else if (!isNull(result)) {
           // If there is no result file expected, create gold files for new tests.
-          FileUtil.writeTextToStream(resultSetToString(result).trim(), currentResultFS.create(resultPath));
+          FileUtil.writeTextToStream( prefix + resultSetToString(result), currentResultFS.create(resultPath));
           LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
           // should be copied to src directory
         }

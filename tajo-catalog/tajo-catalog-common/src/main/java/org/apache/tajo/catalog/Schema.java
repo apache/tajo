@@ -317,6 +317,15 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return fields.containsAll(columns);
   }
 
+  public boolean containsAny(Collection<Column> columns) {
+    for (Column column : columns) {
+      if (contains(column)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public synchronized Schema addColumn(String name, TypeDesc typeDesc) {
     String normalized = name;
     if(fieldsByQualifiedName.containsKey(normalized)) {
@@ -388,6 +397,17 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     SchemaUtil.visitSchema(this, recursiveBuilder);
     return builder.build();
 	}
+
+  public Set<String> getAliases() {
+    Set<String> aliases = new HashSet<String>();
+    for (Column column : fields) {
+      if (column.hasQualifier()) {
+        String qualifier = column.getQualifier();
+        aliases.add(qualifier.startsWith("default.") ? qualifier.substring(8) : qualifier);
+      }
+    }
+    return aliases;
+  }
 
   private static class SchemaProtoBuilder implements ColumnVisitor {
     private SchemaProto.Builder builder;

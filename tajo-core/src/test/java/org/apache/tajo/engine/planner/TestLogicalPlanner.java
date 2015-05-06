@@ -647,7 +647,7 @@ public class TestLogicalPlanner {
 
     /* following code is commented because theta join is not supported yet
      * TODO It SHOULD be restored after TAJO-742 is resolved. */
-    //joinQualMap.put(joinQual, Boolean.FALSE);
+    //joinQualMap.put(equiQual, Boolean.FALSE);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
     for(LogicalNode eachNode : nodes) {
