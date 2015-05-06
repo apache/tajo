@@ -24,6 +24,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1584: Remove QueryMaster client sharing in TajoMaster and TajoWorker.
+    (jinho)
+
     TAJO-1563: Improve RPC error handling. (jinho)
 
     TAJO-1311: Enable Scattered Hash Shuffle for CTAS statement. (jaehwa)
