@@ -33,6 +33,8 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1534: DelimitedTextFile return null instead of a NullDatum. (jinho)
+
     TAJO-1574: Fix NPE on natural join. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
