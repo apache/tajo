@@ -34,7 +34,7 @@ import java.util.List;
 
 public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private long broadcastTableSizeThreshold;
-  private ParentFinder parentFinder;
+  private GlobalPlanRewriteUtil.ParentFinder parentFinder;
 
   @Override
   public String getName() {
@@ -49,7 +49,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
           if (broadcastTableSizeThreshold > 0) {
             if (parentFinder == null) {
-              parentFinder = new ParentFinder();
+              parentFinder = new GlobalPlanRewriteUtil.ParentFinder();
             }
             return true;
           }
@@ -69,7 +69,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     if (plan.isLeaf(current)) {
       // in leaf execution blocks, find input tables which size is less than the predefined threshold.
       for (ScanNode scanNode : current.getScanNodes()) {
-        if (getTableVolume(scanNode) <= broadcastTableSizeThreshold) {
+        if (GlobalPlanRewriteUtil.getTableVolume(scanNode) <= broadcastTableSizeThreshold) {
           current.addBroadcastRelation(scanNode.getCanonicalName());
         }
       }
@@ -109,14 +109,14 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private ExecutionBlock mergeTwoPhaseNonJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
       throws PlanningException {
 
-    ScanNode scanForChild = findScanForChildEb(child, parent);
+    ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(child, parent);
     if (scanForChild == null) {
       throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
 
     parentFinder.set(scanForChild);
     parentFinder.find(parent.getPlan());
-    LogicalNode parentOfScanForChild = parentFinder.found;
+    LogicalNode parentOfScanForChild = parentFinder.getFound();
     if (parentOfScanForChild == null) {
       throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
     }
@@ -134,13 +134,13 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
       parentFinder.set(parentOfScanForChild);
       parentFinder.find(parent.getPlan());
-      parentOfScanForChild = parentFinder.found;
+      parentOfScanForChild = parentFinder.getFound();
 
       if (parentOfScanForChild == null) {
         // assume that the node which will be merged is the root node of the plan of the parent eb.
         mergedPlan = firstPhaseNode;
       } else {
-        replaceChild(firstPhaseNode, scanForChild, parentOfScanForChild);
+        GlobalPlanRewriteUtil.replaceChild(firstPhaseNode, scanForChild, parentOfScanForChild);
         mergedPlan = parent.getPlan();
       }
 
@@ -157,7 +157,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       mergedPlan = parent.getPlan();
     }
 
-    parent = mergeExecutionBlocks(plan, child, parent);
+    parent = GlobalPlanRewriteUtil.mergeExecutionBlocks(plan, child, parent);
 
     if (parent.getEnforcer().hasEnforceProperty(EnforceType.SORTED_INPUT)) {
       parent.getEnforcer().removeSortedInput(scanForChild.getTableName());
@@ -178,14 +178,14 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
    */
   private ExecutionBlock mergeTwoPhaseJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
       throws PlanningException {
-    ScanNode scanForChild = findScanForChildEb(child, parent);
+    ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(child, parent);
     if (scanForChild == null) {
       throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
 
     parentFinder.set(scanForChild);
     parentFinder.find(parent.getPlan());
-    LogicalNode parentOfScanForChild = parentFinder.found;
+    LogicalNode parentOfScanForChild = parentFinder.getFound();
     if (parentOfScanForChild == null) {
       throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
     }
@@ -209,7 +209,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 //    } else {
 //      throw new PlanningException(parentOfScanForChild + " seems to not have any children");
 //    }
-    replaceChild(rootOfChild, scanForChild, parentOfScanForChild);
+    GlobalPlanRewriteUtil.replaceChild(rootOfChild, scanForChild, parentOfScanForChild);
 
 //    for (String broadcastable : child.getBroadcastTables()) {
 //      parent.addBroadcastRelation(broadcastable);
@@ -230,107 +230,12 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 //        plan.removeExecBlock(child.getId());
 //      }
 //    }
-    parent = mergeExecutionBlocks(plan, child, parent);
+    parent = GlobalPlanRewriteUtil.mergeExecutionBlocks(plan, child, parent);
 
     parent.setPlan(parent.getPlan());
 
     return parent;
   }
 
-  private static ExecutionBlock mergeExecutionBlocks(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
-    for (String broadcastable : child.getBroadcastTables()) {
-      parent.addBroadcastRelation(broadcastable);
-    }
 
-    // connect parent and grand children
-    List<ExecutionBlock> grandChilds = plan.getChilds(child);
-    for (ExecutionBlock eachGrandChild : grandChilds) {
-      plan.addConnect(eachGrandChild, parent, plan.getChannel(eachGrandChild, child).getShuffleType());
-      plan.disconnect(eachGrandChild, child);
-    }
-
-    plan.disconnect(child, parent);
-    List<DataChannel> channels = plan.getIncomingChannels(child.getId());
-    if (channels == null || channels.size() == 0) {
-      channels = plan.getOutgoingChannels(child.getId());
-      if (channels == null || channels.size() == 0) {
-        plan.removeExecBlock(child.getId());
-      }
-    }
-    return parent;
-  }
-
-  private static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent)
-      throws PlanningException {
-    if (parent instanceof UnaryNode) {
-      ((UnaryNode) parent).setChild(newChild);
-    } else if (parent instanceof BinaryNode) {
-      BinaryNode binary = (BinaryNode) parent;
-      if (binary.getLeftChild().equals(originalChild)) {
-        binary.setLeftChild(newChild);
-      } else if (binary.getRightChild().equals(originalChild)) {
-        binary.setRightChild(newChild);
-      } else {
-        throw new PlanningException(originalChild.getPID() + " is not a child of " + parent.getPID());
-      }
-    } else {
-      throw new PlanningException(parent.getPID() + " seems to not have any children");
-    }
-  }
-
-  private static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
-    ScanNode scanForChild = null;
-    for (ScanNode scanNode : parent.getScanNodes()) {
-      if (scanNode.getTableName().equals(child.getId().toString())) {
-        scanForChild = scanNode;
-        break;
-      }
-    }
-    return scanForChild;
-  }
-
-  /**
-   * Get a volume of a table of a partitioned table
-   * @param scanNode ScanNode corresponding to a table
-   * @return table volume (bytes)
-   */
-  private static long getTableVolume(ScanNode scanNode) {
-    long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-    if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-      PartitionedTableScanNode pScanNode = (PartitionedTableScanNode)scanNode;
-      if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-        scanBytes = 0L;
-      }
-    }
-
-    return scanBytes;
-  }
-
-  private static class ParentFinder implements LogicalNodeVisitor {
-    private LogicalNode target;
-    private LogicalNode found;
-
-    public void set(LogicalNode child) {
-      this.target = child;
-      this.found = null;
-    }
-
-    public void find(LogicalNode root) {
-      this.visit(root);
-    }
-
-    @Override
-    public void visit(LogicalNode node) {
-      for (int i = 0; i < node.childNum(); i++) {
-        if (node.getChild(i).equals(target)) {
-          found = node;
-          break;
-        } else {
-          if (found == null) {
-            visit(node.getChild(i));
-          }
-        }
-      }
-    }
-  }
 }
