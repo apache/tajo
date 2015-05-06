@@ -18,10 +18,10 @@
 
 package org.apache.tajo.util;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent;
 import org.apache.tajo.querymaster.Task;
 import org.junit.Test;
@@ -37,16 +37,16 @@ public class TestJSPUtil {
   public void testSortTask() throws Exception {
     List<Task> tasks = new ArrayList<Task>();
 
-    Configuration conf = new TajoConf();
+    TajoConf conf = new TajoConf();
 
     TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext scheduleContext =
         new TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext();
 
     ExecutionBlockId ebId = TajoIdUtils.createExecutionBlockId("eb_000001_00001_00001");
-
+    QueryContext context = new QueryContext(conf);
     for (int i = 0; i < 10; i++) {
       TaskId id = new TaskId(ebId, i);
-      Task task = new Task(conf, scheduleContext, id, true, null);
+      Task task = new Task(conf, context, scheduleContext, id, true, null);
       tasks.add(task);
 
       int launchTime = i + 1;
