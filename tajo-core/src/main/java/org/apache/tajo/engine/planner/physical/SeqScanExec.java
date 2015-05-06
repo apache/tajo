@@ -168,7 +168,11 @@ public class SeqScanExec extends ScanExec {
     super.init();
 
     if (plan.hasQual()) {
-      qual.bind(context.getEvalContext(), projected);
+      if (scanner.isProjectable()) {
+        qual.bind(context.getEvalContext(), projected);
+      } else {
+        qual.bind(context.getEvalContext(), inSchema);
+      }
     }
   }
 

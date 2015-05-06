@@ -962,7 +962,7 @@ public class TestStorages {
   @Test
   public void testLessThanSchemaSize() throws IOException {
     /* RAW is internal storage. It must be same with schema size */
-    if (storeType == StoreType.RAW || storeType == StoreType.AVRO){
+    if (storeType == StoreType.RAW || storeType == StoreType.AVRO || storeType == StoreType.PARQUET) {
       return;
     }
 
@@ -1014,7 +1014,12 @@ public class TestStorages {
     Tuple tuple = scanner.next();
     scanner.close();
 
-    assertEquals(expect.get(1), tuple.get(1));
-    assertEquals(NullDatum.get(), tuple.get(4));
+    if (scanner.isProjectable()) {
+      assertEquals(expect.get(1), tuple.get(0));
+      assertEquals(NullDatum.get(), tuple.get(1));
+    } else {
+      assertEquals(expect.get(1), tuple.get(1));
+      assertEquals(NullDatum.get(), tuple.get(4));
+    }
   }
 }
