@@ -1,0 +1,1 @@
+insert overwrite into nation_diff (n_comment, n_name) select n_comment, n_name from default.nation;

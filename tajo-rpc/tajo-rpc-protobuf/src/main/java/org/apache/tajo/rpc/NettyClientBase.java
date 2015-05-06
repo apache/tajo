@@ -195,7 +195,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
       if (maxRetries > retries) {
         retries++;
 
-        LOG.warn(future.cause() + " Try to reconnect : " + getKey().addr);
+        LOG.warn(getErrorMessage(ExceptionUtils.getMessage(future.cause())) + " Try to reconnect : " + getKey().addr);
         try {
           Thread.sleep(RpcConstants.DEFAULT_PAUSE);
         } catch (InterruptedException e) {
@@ -246,8 +246,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
 
   private String getErrorMessage(String message) {
     return "Exception [" + getKey().protocolClass.getCanonicalName() +
-        "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
-        getChannel().remoteAddress()) + ")]: " + message;
+        "(" + getKey().addr + ")]: " + message;
   }
 
   @Override
@@ -332,7 +331,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         throws Exception {
 
       Throwable rootCause = ExceptionUtils.getRootCause(cause);
-      LOG.error(getKey().addr + "," + getKey().protocolClass + "," + ExceptionUtils.getMessage(rootCause), rootCause);
+      LOG.error(getErrorMessage(ExceptionUtils.getMessage(rootCause)), rootCause);
 
       if (cause instanceof RecoverableException) {
         sendException((RecoverableException) cause);

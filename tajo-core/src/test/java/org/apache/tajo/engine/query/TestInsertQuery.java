@@ -817,4 +817,23 @@ public class TestInsertQuery extends QueryTestCaseBase {
     assertNotNull(resultDatas);
     assertEquals(expected, resultDatas);
   }
+
+  @Test
+  public final void testInsertWithDifferentColumnOrder() throws Exception {
+    ResultSet res = executeFile("nation_diff_col_order.ddl");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "nation_diff"));
+
+    try {
+      res = executeFile("testInsertWithDifferentColumnOrder.sql");
+      res.close();
+
+      res = executeString("select * from nation_diff");
+      assertResultSet(res);
+    } finally {
+      executeString("drop table nation_diff purge;");
+    }
+  }
 }

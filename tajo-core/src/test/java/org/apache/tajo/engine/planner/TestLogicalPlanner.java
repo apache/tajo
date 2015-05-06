@@ -1106,7 +1106,7 @@ public class TestLogicalPlanner {
   // Table descriptions
   //
   // employee (name text, empid int4, deptname text)
-  // dept (deptname text, nameger text)
+  // dept (deptname text, manager text)
   // score (deptname text, score inet4)
 
   static final String [] insertStatements = {
@@ -1115,7 +1115,8 @@ public class TestLogicalPlanner {
       "insert into employee (name, deptname) select * from dept",           // 2
       "insert into location '/tmp/data' select name, empid from employee",  // 3
       "insert overwrite into employee (name, deptname) select * from dept", // 4
-      "insert overwrite into LOCATION '/tmp/data' select * from dept"       // 5
+      "insert overwrite into LOCATION '/tmp/data' select * from dept",      // 5
+      "insert into employee (deptname, name) select deptname, manager from dept"  // 6
   };
 
   @Test
@@ -1196,6 +1197,24 @@ public class TestLogicalPlanner {
     InsertNode insertNode = getInsertNode(plan);
     assertTrue(insertNode.isOverwrite());
     assertTrue(insertNode.hasPath());
+  }
+
+  @Test
+  public final void testInsertInto6() throws PlanningException {
+    QueryContext qc = new QueryContext(util.getConfiguration(), session);
+
+    Expr expr = sqlAnalyzer.parse(insertStatements[6]);
+    LogicalPlan plan = planner.createPlan(qc, expr);
+    assertEquals(1, plan.getQueryBlocks().size());
+    InsertNode insertNode = getInsertNode(plan);
+
+    ProjectionNode subquery = insertNode.getChild();
+    Target[] targets = subquery.getTargets();
+    // targets MUST be manager, NULL as empid, deptname
+    assertEquals(targets[0].getNamedColumn().getQualifiedName(), "default.dept.manager");
+    assertEquals(targets[1].getAlias(), "empid");
+    assertEquals(targets[1].getEvalTree().getType(), EvalType.CONST);
+    assertEquals(targets[2].getNamedColumn().getQualifiedName(), "default.dept.deptname");
   }
 
   private static InsertNode getInsertNode(LogicalPlan plan) {
