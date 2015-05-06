@@ -736,7 +736,7 @@ public class HBaseStorageManager extends StorageManager {
           String thisValue = this.properties.get(property);
           String thatValue = that.properties.get(property);
           //noinspection StringEquality
-          if (thisValue == thatValue) {
+          if (thisValue.equals(thatValue)) {
             continue;
           }
           if (thisValue == null || !thisValue.equals(thatValue)) {
@@ -1121,7 +1121,7 @@ public class HBaseStorageManager extends StorageManager {
 
       try {
         HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
-        LOG.info("Delete table cause query failed:" + hTableDesc.getName());
+        LOG.info("Delete table cause query failed:" + new String(hTableDesc.getName()));
         hAdmin.disableTable(hTableDesc.getName());
         hAdmin.deleteTable(hTableDesc.getName());
       } finally {

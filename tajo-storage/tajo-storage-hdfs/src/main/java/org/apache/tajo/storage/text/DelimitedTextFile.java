@@ -275,7 +275,6 @@ public class DelimitedTextFile {
     private final long endOffset;
     /** The number of actual read records */
     private int recordCount = 0;
-    private int[] targetColumnIndexes;
 
     private DelimitedLineReader reader;
     private TextLineDeserializer deserializer;
