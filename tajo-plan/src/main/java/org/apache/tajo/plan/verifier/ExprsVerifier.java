@@ -48,7 +48,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     instance.visitChild(state, expression, new Stack<EvalNode>());
     Set<Column> referredColumns = EvalTreeUtil.findUniqueColumns(expression);
     for (Column referredColumn : referredColumns) {
-      if (!currentNode.getInSchema().contains(referredColumn)) {
+      if (!currentNode.getInSchema().containsByQualifiedName(referredColumn.getQualifiedName())) {
         throw new PlanningException("Invalid State: " + referredColumn + " cannot be accessible at Node ("
             + currentNode.getPID() + ")");
       }
