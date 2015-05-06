@@ -36,6 +36,11 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     super(pid, NodeType.CREATE_TABLE);
   }
 
+  @Override
+  public int childNum() {
+    return child == null ? 0 : 1;
+  }
+
   public void setTableSchema(Schema schema) {
     this.schema = schema;
   }
