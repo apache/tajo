@@ -112,7 +112,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
       currentIndex++;
     }
 
-//    /* If a text row is less than table schema size, tuple should set to NullDatum */
+    /* If a text row is less than table schema size, tuple should set to NullDatum */
     if (projection.length > currentTarget) {
       for (; currentTarget < projection.length; currentTarget++) {
         output.put(currentTarget, NullDatum.get());
