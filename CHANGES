@@ -24,6 +24,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1584: Remove QueryMaster client sharing in TajoMaster and TajoWorker.
+    (jinho)
+
     TAJO-1563: Improve RPC error handling. (jinho)
 
     TAJO-1311: Enable Scattered Hash Shuffle for CTAS statement. (jaehwa)
@@ -107,6 +110,11 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1556: "insert into select" with reordered column list does not work.
+    (Contributed by Yongjin Choi, Committed by jihoon)
+
+    TAJO-1534: DelimitedTextFile return null instead of a NullDatum. (jinho)
 
     TAJO-1574: Fix NPE on natural join.
     (Contributed by Dongjoon Hyun, Committed by jihoon)
@@ -213,6 +221,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1583: Remove ServerCallable in RPC client. (jinho)
 
     TAJO-1587: Upgrade java version to 1.7 for Travis CI. (jihoon)
 

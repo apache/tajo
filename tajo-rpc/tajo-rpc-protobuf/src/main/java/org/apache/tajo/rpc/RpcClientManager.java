@@ -130,6 +130,15 @@ public class RpcClientManager {
     return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), retries, timeout, timeUnit, enablePing);
   }
 
+  public synchronized <T extends NettyClientBase> T newClient(InetSocketAddress addr,
+                                                              Class<?> protocolClass,
+                                                              boolean asyncMode)
+      throws NoSuchMethodException, ClassNotFoundException, ConnectException {
+
+    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode),
+        retries, getTimeoutSeconds(), TimeUnit.SECONDS, true);
+  }
+
   public synchronized <T extends NettyClientBase> T newClient(RpcConnectionKey key,
                                                               int retries,
                                                               long timeout,

@@ -454,9 +454,7 @@ public class Task {
       executionBlockContext.completedTasksNum.incrementAndGet();
       context.getHashShuffleAppenderManager().finalizeTask(taskId);
 
-      NettyClientBase client = executionBlockContext.getQueryMasterConnection();
-
-      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = client.getStub();
+      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = executionBlockContext.getStub();
       if (context.isStopped()) {
         context.setExecutorProgress(0.0f);
 

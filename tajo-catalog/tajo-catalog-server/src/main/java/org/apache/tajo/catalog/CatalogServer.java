@@ -33,7 +33,6 @@ import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -61,7 +60,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -1235,7 +1233,7 @@ public class CatalogServer extends AbstractService {
       if (functions.containsKey(funcDesc.getSignature())) {
         FunctionDescProto found = findFunctionStrictType(funcDesc, true);
         if (found != null) {
-          throw new AlreadyExistsFunctionException(signature.toString());
+          throw new ServiceException(new AlreadyExistsFunctionException(signature.toString()));
         }
       }
 
@@ -1252,7 +1250,7 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
 
       if (!containFunction(request.getSignature())) {
-        throw new NoSuchFunctionException(request.getSignature(), new DataType[] {});
+        throw new ServiceException(new NoSuchFunctionException(request.getSignature(), new DataType[]{}));
       }
 
       functions.remove(request.getSignature());
@@ -1274,7 +1272,7 @@ public class CatalogServer extends AbstractService {
       }
 
       if (function == null) {
-        throw new NoSuchFunctionException(request.getSignature(), request.getParameterTypesList());
+        throw new ServiceException(new NoSuchFunctionException(request.getSignature(), request.getParameterTypesList()));
       } else {
         return function;
       }
