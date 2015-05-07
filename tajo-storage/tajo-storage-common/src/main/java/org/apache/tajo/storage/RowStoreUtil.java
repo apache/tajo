@@ -110,6 +110,7 @@ public class RowStoreUtil {
 
           case INT4:
           case DATE:
+          case INET4:
             int i_ = bb.getInt();
             tuple.put(i, DatumFactory.createFromInt4(type, i_));
             break;
@@ -149,11 +150,6 @@ public class RowStoreUtil {
             tuple.put(i, DatumFactory.createBlob(_bytes));
             break;
 
-          case INET4:
-            byte [] _ipv4 = new byte[4];
-            bb.get(_ipv4);
-            tuple.put(i, DatumFactory.createInet4(_ipv4));
-            break;
           case INET6:
             // TODO - to be implemented
             throw new UnsupportedException(type.getType().name());
@@ -198,40 +194,40 @@ public class RowStoreUtil {
           nullFlags.set(i);
           break;
         case BOOLEAN:
-          bb.put(tuple.get(i).asByte());
+          bb.put(tuple.getBool(i) ? (byte)0 : (byte)1);
           break;
         case BIT:
-          bb.put(tuple.get(i).asByte());
+          bb.put(tuple.getByte(i));
           break;
         case CHAR:
-          bb.put(tuple.get(i).asByte());
+          bb.put(tuple.getByte(i));
           break;
         case INT2:
-          bb.putShort(tuple.get(i).asInt2());
+          bb.putShort(tuple.getInt2(i));
           break;
         case INT4:
-          bb.putInt(tuple.get(i).asInt4());
+          bb.putInt(tuple.getInt4(i));
           break;
         case INT8:
-          bb.putLong(tuple.get(i).asInt8());
+          bb.putLong(tuple.getInt8(i));
           break;
         case FLOAT4:
-          bb.putFloat(tuple.get(i).asFloat4());
+          bb.putFloat(tuple.getFloat4(i));
           break;
         case FLOAT8:
-          bb.putDouble(tuple.get(i).asFloat8());
+          bb.putDouble(tuple.getFloat8(i));
           break;
         case TEXT:
-          byte[] _string = tuple.get(i).asByteArray();
+          byte[] _string = tuple.getBytes(i);
           bb.putInt(_string.length);
           bb.put(_string);
           break;
         case DATE:
-          bb.putInt(tuple.get(i).asInt4());
+          bb.putInt(tuple.getInt4(i));
           break;
         case TIME:
         case TIMESTAMP:
-          bb.putLong(tuple.get(i).asInt8());
+          bb.putLong(tuple.getInt8(i));
           break;
         case INTERVAL:
           IntervalDatum interval = (IntervalDatum) tuple.get(i);
@@ -239,16 +235,15 @@ public class RowStoreUtil {
           bb.putLong(interval.getMilliSeconds());
           break;
         case BLOB:
-          byte[] bytes = tuple.get(i).asByteArray();
+          byte[] bytes = tuple.getBytes(i);
           bb.putInt(bytes.length);
           bb.put(bytes);
           break;
         case INET4:
-          byte[] ipBytes = tuple.get(i).asByteArray();
-          bb.put(ipBytes);
+          bb.putInt(tuple.getInt4(i));
           break;
-        case INET6:
-          bb.put(tuple.get(i).asByteArray());
+          case INET6:
+          bb.put(tuple.getBytes(i));
           break;
         default:
           throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
@@ -268,7 +263,7 @@ public class RowStoreUtil {
     }
 
     // Note that, NULL values are treated separately
-    private int estimateTupleDataSize(Tuple tuple) {
+    private int estimateTupleDataSize(ReadableTuple tuple) {
       int size = 0;
       Column col;
 
@@ -289,6 +284,7 @@ public class RowStoreUtil {
           break;
         case DATE:
         case INT4:
+        case INET4:
         case FLOAT4:
           size += 4;
           break;
@@ -303,11 +299,10 @@ public class RowStoreUtil {
           break;
         case TEXT:
         case BLOB:
-          size += (4 + tuple.get(i).asByteArray().length);
+          size += (4 + tuple.getBytes(i).length);
           break;
-        case INET4:
         case INET6:
-          size += tuple.get(i).asByteArray().length;
+          size += tuple.getBytes(i).length;
           break;
         default:
           throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));

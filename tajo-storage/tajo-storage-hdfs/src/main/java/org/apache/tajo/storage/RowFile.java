@@ -368,6 +368,9 @@ public class RowFile {
 
     @Override
     public void addTuple(Tuple t) throws IOException {
+      if (enabledStats) {
+        stats.analyzeField(t);
+      }
       checkAndWriteSync();
       Column col;
 
@@ -375,9 +378,6 @@ public class RowFile {
       nullFlags.clear();
 
       for (int i = 0; i < schema.size(); i++) {
-        if (enabledStats) {
-          stats.analyzeField(i, t.get(i));
-        }
 
         if (t.isNull(i)) {
           nullFlags.set(i);

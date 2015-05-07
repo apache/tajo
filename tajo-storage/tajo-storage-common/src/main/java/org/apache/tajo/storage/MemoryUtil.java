@@ -65,6 +65,12 @@ public class MemoryUtil {
   /** Overhead for an TimestampDatum */
   public static final long TIMESTAMP_DATUM;
 
+  /** Overhead for an IntervalDatum */
+  public static final long INTERVAL_DATUM;
+
+  /** Overhead for an ProtobufDatum */
+  public static final long PROTOBUF_DATUM;
+
   static {
     NULL_DATUM = ClassSize.estimateBase(NullDatum.class, false);
 
@@ -93,6 +99,30 @@ public class MemoryUtil {
     TIME_DATUM = ClassSize.estimateBase(TimeDatum.class, false);
 
     TIMESTAMP_DATUM = ClassSize.estimateBase(TimestampDatum.class, false);
+
+    INTERVAL_DATUM = ClassSize.estimateBase(IntervalDatum.class, false);
+
+    PROTOBUF_DATUM = ClassSize.estimateBase(ProtobufDatum.class, false);
+  }
+
+  public static long calculateVectorMemorySize(Tuple tuple) {
+    long total = 0;
+    for (int i = 0; i < tuple.size(); i++) {
+      switch (tuple.type(i)) {
+        case TEXT:
+        case BLOB:
+        case CHAR:
+          total += ClassSize.ARRAY + tuple.get(i).size();
+          continue;
+        case INTERVAL:
+          total += INTERVAL_DATUM;
+          continue;
+        case PROTOBUF:
+          total += PROTOBUF_DATUM + tuple.get(i).size();
+          continue;
+      }
+    }
+    return total;
   }
 
   public static long calculateMemorySize(Tuple tuple) {
@@ -155,6 +185,14 @@ public class MemoryUtil {
 
       case TIMESTAMP:
         total += TIMESTAMP_DATUM;
+        break;
+
+      case INTERVAL:
+        total += INTERVAL_DATUM;
+        break;
+
+      case PROTOBUF:
+        total += PROTOBUF_DATUM + datum.size();
         break;
 
       default:

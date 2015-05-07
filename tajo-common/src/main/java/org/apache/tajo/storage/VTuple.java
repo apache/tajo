@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.IntervalDatum;
@@ -53,6 +54,11 @@ public class VTuple implements Tuple, Cloneable {
 	public boolean contains(int fieldId) {
 		return values[fieldId] != null;
 	}
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+    return values[fieldId] == null ? TajoDataTypes.Type.NULL_TYPE : values[fieldId].type();
+  }
 
   @Override
   public boolean isNull(int fieldid) {

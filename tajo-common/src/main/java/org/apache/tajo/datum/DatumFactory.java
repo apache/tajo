@@ -163,6 +163,8 @@ public class DatumFactory {
       return new Int4Datum(val);
     case DATE:
       return new DateDatum(val);
+    case INET4:
+      return new Inet4Datum(val);
     default:
       throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT4");
     }

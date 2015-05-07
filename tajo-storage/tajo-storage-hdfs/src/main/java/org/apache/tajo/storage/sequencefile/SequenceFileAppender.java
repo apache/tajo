@@ -159,6 +159,11 @@ public class SequenceFileAppender extends FileAppender {
 
   @Override
   public void addTuple(Tuple tuple) throws IOException {
+    if (isShuffle) {
+      // it is to calculate min/max values, and it is only used for the intermediate file.
+      stats.analyzeField(tuple);
+    }
+
     Datum datum;
 
     if (serde instanceof BinarySerializerDeserializer) {
@@ -198,11 +203,6 @@ public class SequenceFileAppender extends FileAppender {
             }
 
             serde.serialize(schema.getColumn(j), datum, os, nullChars);
-
-            if (isShuffle) {
-              // it is to calculate min/max values, and it is only used for the intermediate file.
-              stats.analyzeField(j, datum);
-            }
           }
           lasti = i + 1;
           nullByte = 0;
@@ -221,12 +221,6 @@ public class SequenceFileAppender extends FileAppender {
         if (columnNum -1 > i) {
           os.write((byte) delimiter);
         }
-
-        if (isShuffle) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, datum);
-        }
-
       }
       writer.append(EMPTY_KEY, new Text(os.toByteArray()));
     }

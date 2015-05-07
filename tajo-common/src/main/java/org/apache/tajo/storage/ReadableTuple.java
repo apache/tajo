@@ -18,32 +18,40 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 
-public interface Tuple extends Cloneable, ReadableTuple {
-  
-	int size();
-	
-	boolean contains(int fieldid);
+public interface ReadableTuple {
 
-  @SuppressWarnings("unused")
-  boolean isNotNull(int fieldid);
-	
-	void clear();
-	
-	void put(int fieldId, Datum value);
+  TajoDataTypes.Type type(int fieldId);
 
-  void put(int fieldId, Datum[] values);
+  boolean isNull(int fieldId);
 
-  void put(int fieldId, Tuple tuple);
-	
-	void put(Datum[] values);
-	
-	void setOffset(long offset);
+  boolean getBool(int fieldId);
 
-	long getOffset();
+  byte getByte(int fieldId);
 
-  Tuple clone() throws CloneNotSupportedException;
+  char getChar(int fieldId);
 
-  Datum[] getValues();
+  byte[] getBytes(int fieldId);
+
+  short getInt2(int fieldId);
+
+  int getInt4(int fieldId);
+
+  long getInt8(int fieldId);
+
+  float getFloat4(int fieldId);
+
+  double getFloat8(int fieldId);
+
+  String getText(int fieldId);
+
+  Datum getProtobufDatum(int fieldId);
+
+  Datum getInterval(int fieldId);
+
+  char[] getUnicodeChars(int fieldId);
+
+  Datum get(int fieldId);
 }

@@ -889,24 +889,24 @@ public class RCFile {
      * @throws java.io.IOException
      */
     public void append(Tuple tuple) throws IOException {
+      if (isShuffle) {
+        // it is to calculate min/max values, and it is only used for the intermediate file.
+        stats.analyzeField(tuple);
+      }
       int size = schema.size();
 
       for (int i = 0; i < size; i++) {
         Datum datum = tuple.get(i);
         int length = columnBuffers[i].append(schema.getColumn(i), datum);
         columnBufferSize += length;
-        if (isShuffle) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, datum);
-        }
       }
 
       if (size < columnNumber) {
+        if (isShuffle) {
+          stats.analyzeNullField();
+        }
         for (int i = size; i < columnNumber; i++) {
           columnBuffers[i].append(schema.getColumn(i), NullDatum.get());
-          if (isShuffle) {
-            stats.analyzeField(i, NullDatum.get());
-          }
         }
       }
 
@@ -1238,7 +1238,7 @@ public class RCFile {
             try {
               in.close();
             } catch (IOException e) {
-              if (LOG != null && LOG.isDebugEnabled()) {
+              if (LOG.isDebugEnabled()) {
                 LOG.debug("Exception in closing " + in, e);
               }
             }
