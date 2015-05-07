@@ -735,8 +735,8 @@ public class HBaseStorageManager extends StorageManager {
         for (String property : CONNECTION_PROPERTIES) {
           String thisValue = this.properties.get(property);
           String thatValue = that.properties.get(property);
-          //noinspection StringEquality
-          if (thisValue.equals(thatValue)) {
+          // noinspection StringEquality
+          if (thisValue == thatValue) {
             continue;
           }
           if (thisValue == null || !thisValue.equals(thatValue)) {
