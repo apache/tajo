@@ -273,31 +273,31 @@ public class Repartitioner {
         }
 
         //select intermediate scan and stats
-        ScanNode[] intermediateScans = new ScanNode[largeScanIndexList.size()];
         long[] intermediateScanStats = new long[largeScanIndexList.size()];
         Fragment[] intermediateFragments = new Fragment[largeScanIndexList.size()];
         int index = 0;
         for (Integer eachIdx : largeScanIndexList) {
-          intermediateScans[index] = scans[eachIdx];
           intermediateScanStats[index] = stats[eachIdx];
           intermediateFragments[index++] = fragments[eachIdx];
         }
         Fragment[] broadcastFragments = new Fragment[broadcastIndexList.size()];
         ScanNode[] broadcastScans = new ScanNode[broadcastIndexList.size()];
+        long[] broadcastStats = new long[broadcastIndexList.size()];
         index = 0;
         for (Integer eachIdx : broadcastIndexList) {
           scans[eachIdx].setBroadcastTable(true);
           broadcastScans[index] = scans[eachIdx];
+          broadcastStats[index] = stats[eachIdx];
           broadcastFragments[index] = fragments[eachIdx];
           index++;
         }
         LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, join_node=%s", nonLeafScanNames));
         scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, stage,
-            intermediateScans, intermediateScanStats, intermediateFragments, broadcastScans, broadcastFragments);
+            intermediateScanStats, intermediateFragments, broadcastScans, broadcastStats, broadcastFragments);
       }
     } else {
       LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
-      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, stage, scans, stats, fragments, null, null);
+      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, stage, stats, fragments, null, null, null);
     }
   }
 
@@ -306,7 +306,6 @@ public class Repartitioner {
    * @param masterContext
    * @param schedulerContext
    * @param stage
-   * @param scans
    * @param stats
    * @param fragments
    * @throws IOException
@@ -314,10 +313,10 @@ public class Repartitioner {
   private static void scheduleSymmetricRepartitionJoin(QueryMasterTask.QueryMasterTaskContext masterContext,
                                                        TaskSchedulerContext schedulerContext,
                                                        Stage stage,
-                                                       ScanNode[] scans,
                                                        long[] stats,
                                                        Fragment[] fragments,
                                                        ScanNode[] broadcastScans,
+                                                       long[] broadcastStats,
                                                        Fragment[] broadcastFragments) throws IOException {
     MasterPlan masterPlan = stage.getMasterPlan();
     ExecutionBlock execBlock = stage.getBlock();
@@ -379,18 +378,21 @@ public class Repartitioner {
     // hashEntries can be zero if there are no input data.
     // In the case, it will cause the zero divided exception.
     // it avoids this problem.
+    long leftStats = stats[0];
+    long rightStats = stats.length == 2 ? stats[1] : broadcastStats[0];
     int[] avgSize = new int[2];
-    avgSize[0] = hashEntries.size() == 0 ? 0 : (int) (stats[0] / hashEntries.size());
-    avgSize[1] = hashEntries.size() == 0 ? 0 : (int) (stats[1] / hashEntries.size());
+    avgSize[0] = hashEntries.size() == 0 ? 0 : (int) (leftStats / hashEntries.size());
+    avgSize[1] = hashEntries.size() == 0 ? 0 : (int) (stats.length == 2 ? (rightStats / hashEntries.size()) : rightStats);
     int bothFetchSize = avgSize[0] + avgSize[1];
 
     // Getting the desire number of join tasks according to the volumn
     // of a larger table
-    int largerIdx = stats[0] >= stats[1] ? 0 : 1;
+//    int largerIdx = leftStats >= rightStats ? 0 : 1;
+    long largerStat = leftStats >= rightStats ? leftStats : rightStats;
     int desireJoinTaskVolumn = stage.getMasterPlan().getContext().getInt(SessionVars.JOIN_TASK_INPUT_SIZE);
 
     // calculate the number of tasks according to the data size
-    int mb = (int) Math.ceil((double) stats[largerIdx] / 1048576);
+    int mb = (int) Math.ceil((double) largerStat / 1048576);
     LOG.info("Larger intermediate data is approximately " + mb + " MB");
     // determine the number of task per 64MB
     int maxTaskNum = (int) Math.ceil((double) mb / desireJoinTaskVolumn);
@@ -402,7 +404,9 @@ public class Repartitioner {
     LOG.info("The determined number of join tasks is " + joinTaskNum);
 
     List<Fragment> rightFragments = new ArrayList<Fragment>();
-    rightFragments.add(fragments[1]);
+    if (fragments.length == 2) {
+      rightFragments.add(fragments[1]);
+    }
 
     if (broadcastFragments != null) {
       //In this phase a ScanNode has a single fragment.

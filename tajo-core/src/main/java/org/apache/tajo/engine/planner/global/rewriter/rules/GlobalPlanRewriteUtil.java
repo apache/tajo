@@ -78,6 +78,14 @@ public class GlobalPlanRewriteUtil {
     return scanBytes;
   }
 
+  public static long getInputVolume(ExecutionBlock block) {
+    long volume = 0;
+    for (ScanNode scanNode : block.getScanNodes()) {
+      volume += getTableVolume(scanNode);
+    }
+    return volume;
+  }
+
   public static class ParentFinder implements LogicalNodeVisitor {
     private LogicalNode target;
     private LogicalNode found;

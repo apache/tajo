@@ -29,7 +29,9 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.util.TUtil;
 
+import java.util.Collection;
 import java.util.List;
 
 public class BroadcastJoinRule implements GlobalPlanRewriteRule {
@@ -78,94 +80,36 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       for (ExecutionBlock child : plan.getChilds(current)) {
         rewrite(plan, child);
       }
-//      if (current.hasJoin()) {
-      if (!plan.isTerminal(current)) {
-        boolean needMerge = false;
+      if (!plan.isTerminal(current) && current.hasJoin()) {
+        ExecutionBlock enforceNonBroadcast = null;
+        ExecutionBlock broadcastCandidate = null;
+        long smallestChildVolume = Long.MAX_VALUE;
         List<ExecutionBlock> childs = plan.getChilds(current);
         for (ExecutionBlock child : childs) {
           if (child.isBroadcastable(broadcastTableSizeThreshold)) {
-            needMerge = true;
-            break;
+            long inputVolume = GlobalPlanRewriteUtil.getInputVolume(child);
+            if (smallestChildVolume > inputVolume) {
+              smallestChildVolume = inputVolume;
+              if (broadcastCandidate != null) {
+                enforceNonBroadcast = broadcastCandidate;
+              }
+              broadcastCandidate = child;
+            }
           }
         }
-        if (needMerge) {
+        if (broadcastCandidate != null) {
+          if (enforceNonBroadcast != null) {
+            List<String> tables = TUtil.newList(enforceNonBroadcast.getBroadcastTables());
+            for (String broadcastTable : tables) {
+//              enforceNonBroadcast.removeBroadcastRelation(broadcastTable);
+            }
+          }
           for (ExecutionBlock child : childs) {
-            merge(plan, child, current);
+            mergeTwoPhaseJoin(plan, child, current);
           }
         }
-//      }
       }
     }
-  }
-
-  private ExecutionBlock merge(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
-    if (parent.hasJoin()) {
-      return mergeTwoPhaseJoin(plan, child, parent);
-    } else {
-      return mergeTwoPhaseNonJoin(plan, child, parent);
-    }
-  }
-
-  private ExecutionBlock mergeTwoPhaseNonJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
-      throws PlanningException {
-
-    ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(child, parent);
-    if (scanForChild == null) {
-      throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
-    }
-
-    parentFinder.set(scanForChild);
-    parentFinder.find(parent.getPlan());
-    LogicalNode parentOfScanForChild = parentFinder.getFound();
-    if (parentOfScanForChild == null) {
-      throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
-    }
-
-    LogicalNode rootOfChild = child.getPlan();
-    if (rootOfChild.getType() == NodeType.STORE) {
-      rootOfChild = ((StoreTableNode)rootOfChild).getChild();
-    }
-    LogicalNode mergedPlan;
-    if (rootOfChild.getType() == parentOfScanForChild.getType()) {
-      // merge two-phase plan into one-phase plan.
-      // remove the second-phase plan.
-      LogicalNode firstPhaseNode = rootOfChild;
-      LogicalNode secondPhaseNode = parentOfScanForChild;
-
-      parentFinder.set(parentOfScanForChild);
-      parentFinder.find(parent.getPlan());
-      parentOfScanForChild = parentFinder.getFound();
-
-      if (parentOfScanForChild == null) {
-        // assume that the node which will be merged is the root node of the plan of the parent eb.
-        mergedPlan = firstPhaseNode;
-      } else {
-        GlobalPlanRewriteUtil.replaceChild(firstPhaseNode, scanForChild, parentOfScanForChild);
-        mergedPlan = parent.getPlan();
-      }
-
-      if (firstPhaseNode.getType() == NodeType.GROUP_BY) {
-        GroupbyNode firstPhaseGroupby = (GroupbyNode) firstPhaseNode;
-        GroupbyNode secondPhaseGroupby = (GroupbyNode) secondPhaseNode;
-        for (AggregationFunctionCallEval aggFunc : firstPhaseGroupby.getAggFunctions()) {
-          aggFunc.setFirstAndLastPhase();
-        }
-        firstPhaseGroupby.setTargets(secondPhaseGroupby.getTargets());
-        firstPhaseGroupby.setOutSchema(secondPhaseGroupby.getOutSchema());
-      }
-    } else {
-      mergedPlan = parent.getPlan();
-    }
-
-    parent = GlobalPlanRewriteUtil.mergeExecutionBlocks(plan, child, parent);
-
-    if (parent.getEnforcer().hasEnforceProperty(EnforceType.SORTED_INPUT)) {
-      parent.getEnforcer().removeSortedInput(scanForChild.getTableName());
-    }
-
-    parent.setPlan(mergedPlan);
-
-    return parent;
   }
 
   /**
