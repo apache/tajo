@@ -528,10 +528,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     } else if (projectable instanceof RelationNode) {
       RelationNode relationNode = (RelationNode) projectable;
+      prohibitNestedRecordProjection((Projectable) relationNode);
       verifyIfTargetsCanBeEvaluated(relationNode.getLogicalSchema(), (Projectable) relationNode);
 
     } else {
+      prohibitNestedRecordProjection(projectable);
       verifyIfTargetsCanBeEvaluated(projectable.getInSchema(), projectable);
+    }
+  }
+
+  public static void prohibitNestedRecordProjection(Projectable projectable)
+      throws PlanningException {
+    for (Target t : projectable.getTargets()) {
+      if (t.getEvalTree().getValueType().getType() == TajoDataTypes.Type.RECORD) {
+        throw new PlanningException("Projecting RECORD fields is not supported yet: " + t);
+      }
     }
   }
 

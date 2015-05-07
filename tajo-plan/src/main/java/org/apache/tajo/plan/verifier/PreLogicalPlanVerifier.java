@@ -83,7 +83,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     super.visitProjection(context, stack, expr);
 
     Set<String> names = TUtil.newHashSet();
-    
+
     for (NamedExpr namedExpr : expr.getNamedExprs()) {
 
       if (namedExpr.hasAlias()) {
