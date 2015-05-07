@@ -195,7 +195,7 @@ public class SeqScanExec extends ScanExec {
     // set system default properties
     PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
 
-    // TODO - If fragments is null, we don't need to make any task. We should investigate it later
+    // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,

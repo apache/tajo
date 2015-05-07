@@ -101,7 +101,6 @@ public abstract class NameResolver {
       // if a table name is not qualified
       } else if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
           CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
-        // obtain the a qualified table name
         found.add(relation);
       }
     }

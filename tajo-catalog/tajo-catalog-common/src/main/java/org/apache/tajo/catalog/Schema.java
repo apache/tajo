@@ -201,7 +201,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       Column actualColumn = NestedPathUtil.lookupPath(column, paths);
 
       Column columnPath = new Column(
-          column.getQualifiedName() + NestedPathUtil.make(paths, 1),
+          column.getQualifiedName() + NestedPathUtil.makePath(paths, 1),
           actualColumn.typeDesc);
 
       return columnPath;

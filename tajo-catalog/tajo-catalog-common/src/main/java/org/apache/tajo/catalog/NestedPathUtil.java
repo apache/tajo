@@ -37,12 +37,12 @@ public class NestedPathUtil {
     return name.indexOf(PATH_DELIMITER.charAt(0)) >= 0;
   }
 
-  public static String make(String [] parts) {
-    return make(parts, 0);
+  public static String makePath(String[] parts) {
+    return makePath(parts, 0);
   }
 
-  public static String make(String [] parts, int startIndex) {
-    return make(parts, startIndex, parts.length);
+  public static String makePath(String[] parts, int startIndex) {
+    return makePath(parts, startIndex, parts.length);
   }
 
   /**
@@ -53,7 +53,7 @@ public class NestedPathUtil {
    * @param depth Depth
    * @return Path
    */
-  public static String make(String [] parts, int startIndex, int depth) {
+  public static String makePath(String[] parts, int startIndex, int depth) {
     Preconditions.checkArgument(startIndex <= (parts.length - 1));
 
     StringBuilder sb = new StringBuilder();
@@ -103,7 +103,7 @@ public class NestedPathUtil {
         return found;
       }
     } else {
-      throw new NoSuchFieldError(make(paths));
+      throw new NoSuchFieldError(makePath(paths));
     }
   }
 }
