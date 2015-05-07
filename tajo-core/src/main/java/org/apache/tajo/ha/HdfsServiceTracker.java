@@ -182,18 +182,16 @@ public class HdfsServiceTracker extends HAServiceTracker {
     }
 
     // Set active status and delete existing file.
+    Path file = null;
     if (isActive) {
       isActiveStatus = true;
-      Path backupFile = new Path(backupPath, fileName);
-      if (fs.exists(backupFile)) {
-        fs.delete(backupFile, true);
-      }
+      file = new Path(backupPath, fileName);
     } else {
       isActiveStatus = false;
-      Path activeFile = new Path(activePath, fileName);
-      if (fs.exists(activeFile)) {
-        fs.delete(activeFile, true);
-      }
+      file = new Path(activePath, fileName);
+    }
+    if (fs.exists(file)) {
+      fs.delete(file, true);
     }
 
     startPingChecker();
