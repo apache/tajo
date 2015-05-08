@@ -29,6 +29,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
@@ -81,6 +82,20 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         rewrite(plan, child);
       }
       if (!plan.isTerminal(current) && current.hasJoin()) {
+        // unioned scans should be handled as a single relation scan
+
+        // check outer join
+        if (hasOuterJoin(current)) {
+          // find and enforce shuffle for row-preserved tables
+          
+        }
+
+        // check the total input size
+
+        // check all inputs are marked as broadcast
+
+
+
         ExecutionBlock enforceNonBroadcast = null;
         ExecutionBlock broadcastCandidate = null;
         long smallestChildVolume = Long.MAX_VALUE;
@@ -111,6 +126,15 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         }
       }
     }
+  }
+
+  private static boolean hasOuterJoin(ExecutionBlock block) {
+    LogicalNode found = PlannerUtil.findMostBottomNode(block.getPlan(), NodeType.JOIN);
+    if (found != null) {
+      JoinNode joinNode = (JoinNode) found;
+      return PlannerUtil.isOuterJoin(joinNode.getJoinType());
+    }
+    return false;
   }
 
   /**
