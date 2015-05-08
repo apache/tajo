@@ -114,6 +114,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
     TAJO-1556: "insert into select" with reordered column list does not work.
     (Contributed by Yongjin Choi, Committed by jihoon)
 
