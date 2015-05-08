@@ -276,6 +276,7 @@ public class TaskRunner extends AbstractService {
                     taskRequest = null;
                   }
                 }
+                break;
               }
             } catch (Throwable t) {
               LOG.fatal(t.getMessage(), t);
