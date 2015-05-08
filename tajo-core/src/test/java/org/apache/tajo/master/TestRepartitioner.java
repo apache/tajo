@@ -28,6 +28,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Repartitioner;
+import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
@@ -176,20 +177,7 @@ public class TestRepartitioner {
     List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
 
     int[] pageLengths = {10 * 1024 * 1024, 10 * 1024 * 1024, 10 * 1024 * 1024, 5 * 1024 * 1024};   //35 MB
-    long expectedTotalLength = 0;
-    for (int i = 0; i < 20; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
-      long offset = 0;
-      for (int j = 0; j < pageLengths.length; j++) {
-        pages.add(new Pair(offset, pageLengths[j]));
-        offset += pageLengths[j];
-        expectedTotalLength += pageLengths[j];
-      }
-      IntermediateEntry interm = new IntermediateEntry(i, -1, -1, new Task.PullHost("" + i, i));
-      interm.setPages(pages);
-      interm.setVolume(offset);
-      intermediateEntries.add(interm);
-    }
+    long expectedTotalLength = makeIntermediates(pageLengths, true, intermediateEntries);
 
     long splitVolume = 128 * 1024 * 1024;
     List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
@@ -221,6 +209,27 @@ public class TestRepartitioner {
     assertEquals(expectedTotalLength, totalLength);
   }
 
+  private long makeIntermediates(int[] pageLengths, boolean uniqueHosts,
+                                 List<IntermediateEntry> intermediateEntries) {
+    long expectedTotalLength = 0;
+    for (int i = 0; i < 20; i++) {
+      NumberUtil.PrimitiveLongs pages = new NumberUtil.PrimitiveLongs(10);
+      long offset = 0;
+      for (int pageLength : pageLengths) {
+        pages.add(offset);
+        pages.add(pageLength);
+        offset += pageLength;
+        expectedTotalLength += pageLength;
+      }
+      IntermediateEntry interm = new IntermediateEntry(i, -1, -1,
+          new Task.PullHost(uniqueHosts ? "" + i : "", uniqueHosts ? i : 0));
+      interm.setPages(pages.toArray());
+      interm.setVolume(offset);
+      intermediateEntries.add(interm);
+    }
+    return expectedTotalLength;
+  }
+
   @Test
   public void testSplitIntermediates() {
     List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
@@ -234,20 +243,7 @@ public class TestRepartitioner {
       }
     }
 
-    long expectedTotalLength = 0;
-    for (int i = 0; i < 20; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
-      long offset = 0;
-      for (int j = 0; j < pageLengths.length; j++) {
-        pages.add(new Pair(offset, pageLengths[j]));
-        offset += pageLengths[j];
-        expectedTotalLength += pageLengths[j];
-      }
-      IntermediateEntry interm = new IntermediateEntry(i, -1, 0, new Task.PullHost("" + i, i));
-      interm.setPages(pages);
-      interm.setVolume(offset);
-      intermediateEntries.add(interm);
-    }
+    long expectedTotalLength = makeIntermediates(pageLengths, true, intermediateEntries);
 
     long splitVolume = 128 * 1024 * 1024;
     List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
@@ -368,12 +364,12 @@ public class TestRepartitioner {
 
     List<IntermediateEntry> entries = new ArrayList<IntermediateEntry>();
     for (int i = 0; i < 2; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
-      for (int j = 0; j < pageDatas.length; j++) {
-        pages.add(new Pair(pageDatas[j][0], (int) (pageDatas[j][1])));
+      NumberUtil.PrimitiveLongs pages = new NumberUtil.PrimitiveLongs(10);
+      for (long[] pageData : pageDatas) {
+        pages.add(pageData);
       }
       IntermediateEntry entry = new IntermediateEntry(-1, -1, 1, new Task.PullHost("host" + i , 9000));
-      entry.setPages(pages);
+      entry.setPages(pages.toArray());
 
       entries.add(entry);
     }
@@ -421,22 +417,7 @@ public class TestRepartitioner {
       }
     }
 
-    long expectedTotalLength = 0;
-    Task.PullHost pullHost = new Task.PullHost("host", 0);
-
-    for (int i = 0; i < 20; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
-      long offset = 0;
-      for (int j = 0; j < pageLengths.length; j++) {
-        pages.add(new Pair(offset, pageLengths[j]));
-        offset += pageLengths[j];
-        expectedTotalLength += pageLengths[j];
-      }
-      IntermediateEntry interm = new IntermediateEntry(i, -1, 0, pullHost);
-      interm.setPages(pages);
-      interm.setVolume(offset);
-      intermediateEntries.add(interm);
-    }
+    long expectedTotalLength = makeIntermediates(pageLengths, false, intermediateEntries);
 
     long splitVolume = 128 * 1024 * 1024;
     List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,

@@ -97,13 +97,19 @@ public class TestDefaultCliOutputFormatter {
         "Caused by: java.sql.SQLException: ERROR: no such a table: table1\n" +
         "\t... 6 more";
 
-    assertEquals("ERROR: no such a table: table1", DefaultTajoCliOutputFormatter.parseErrorMessage(multiLineMessage));
+    assertEquals(multiLineMessage, DefaultTajoCliOutputFormatter.parseErrorMessage(multiLineMessage));
+
+    String noPrefixMessage = "RTFM please";
+    assertEquals("ERROR: "+noPrefixMessage, DefaultTajoCliOutputFormatter.parseErrorMessage(noPrefixMessage));
+
+    String errorMessageWithLine = "ERROR: syntax error at or near '('\n" +
+        "LINE 1:7 select (*) from tc\n" +
+        "                ^";
+    assertEquals(errorMessageWithLine, DefaultTajoCliOutputFormatter.parseErrorMessage(errorMessageWithLine));
   }
 
   @Test
   public void testPrintResultInsertStatement() throws Exception {
-
-
     DefaultTajoCliOutputFormatter outputFormatter = new DefaultTajoCliOutputFormatter();
     outputFormatter.init(cliContext);
 
@@ -172,5 +178,4 @@ public class TestDefaultCliOutputFormatter {
 
     assertEquals(expectedOutput, stringWriter.toString());
   }
-
 }
