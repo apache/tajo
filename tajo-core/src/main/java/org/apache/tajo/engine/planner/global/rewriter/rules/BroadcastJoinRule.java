@@ -102,6 +102,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             List<String> tables = TUtil.newList(enforceNonBroadcast.getBroadcastTables());
             for (String broadcastTable : tables) {
 //              enforceNonBroadcast.removeBroadcastRelation(broadcastTable);
+              // TODO: remove the largest rel from broadcast when all inputs are broadcast
             }
           }
           for (ExecutionBlock child : childs) {
