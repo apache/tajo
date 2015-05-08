@@ -97,7 +97,10 @@ public class TestDefaultCliOutputFormatter {
         "Caused by: java.sql.SQLException: ERROR: no such a table: table1\n" +
         "\t... 6 more";
 
-    assertEquals("ERROR: no such a table: table1", DefaultTajoCliOutputFormatter.parseErrorMessage(multiLineMessage));
+    assertEquals(multiLineMessage, DefaultTajoCliOutputFormatter.parseErrorMessage(multiLineMessage));
+
+    String noPrefixMessage = "RTFM please";
+    assertEquals("ERROR: "+noPrefixMessage, DefaultTajoCliOutputFormatter.parseErrorMessage(noPrefixMessage));
   }
 
   @Test
