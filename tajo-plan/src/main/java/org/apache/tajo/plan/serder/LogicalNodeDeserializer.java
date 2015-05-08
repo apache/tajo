@@ -43,11 +43,6 @@ import java.util.*;
  * It deserializes a list of serialized logical nodes into a logical node tree.
  */
 public class LogicalNodeDeserializer {
-  private static final LogicalNodeDeserializer instance;
-
-  static {
-    instance = new LogicalNodeDeserializer();
-  }
 
   /**
    * Deserialize a list of nodes into a logical node tree.
