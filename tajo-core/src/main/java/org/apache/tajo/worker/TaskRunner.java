@@ -241,6 +241,7 @@ public class TaskRunner extends AbstractService {
                 // immediately.
                 if (taskRequest.getShouldDie()) {
                   LOG.info("Received ShouldDie flag:" + getId());
+                  break;
                 } else {
                   getContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
                   LOG.info("Accumulated Received Task: " + (++receivedNum));
@@ -276,7 +277,6 @@ public class TaskRunner extends AbstractService {
                     taskRequest = null;
                   }
                 }
-                break;
               }
             } catch (Throwable t) {
               LOG.fatal(t.getMessage(), t);
