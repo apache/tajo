@@ -33,6 +33,7 @@ import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
 import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
@@ -472,7 +473,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         table.setPartitionKeys(partitionKeys);
       }
 
-      if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.RCFILE)) {
+      if (tableDesc.getMeta().getStoreType().equalsIgnoreCase(BuiltinStorages.RCFILE)) {
         String serde = tableDesc.getMeta().getOption(StorageConstants.RCFILE_SERDE);
         sd.setInputFormat(org.apache.hadoop.hive.ql.io.RCFileInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.RCFileOutputFormat.class.getName());
@@ -487,7 +488,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
         }
-      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)
+      } else if (tableDesc.getMeta().getStoreType().equalsIgnoreCase(BuiltinStorages.CSV)
           || tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.TEXTFILE)) {
         sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
         sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
@@ -512,7 +513,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.TEXT_NULL)));
           table.getParameters().remove(StorageConstants.TEXT_NULL);
         }
-      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.SEQUENCEFILE)) {
+      } else if (tableDesc.getMeta().getStoreType().equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
         String serde = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE);
         sd.setInputFormat(org.apache.hadoop.mapred.SequenceFileInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat.class.getName());
@@ -543,7 +544,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           table.getParameters().remove(StorageConstants.SEQUENCEFILE_NULL);
         }
       } else {
-        if (tableDesc.getMeta().getStoreType().equals("PARQUET")) {
+        if (tableDesc.getMeta().getStoreType().equalsIgnoreCase(BuiltinStorages.PARQUET)) {
           sd.setInputFormat(parquet.hive.DeprecatedParquetInputFormat.class.getName());
           sd.setOutputFormat(parquet.hive.DeprecatedParquetOutputFormat.class.getName());
           sd.getSerdeInfo().setSerializationLib(parquet.hive.serde.ParquetHiveSerDe.class.getName());
