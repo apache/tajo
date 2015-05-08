@@ -62,6 +62,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     return false;
   }
 
+  // TODO: use MasterPlan.execBlockGraph.accept()
   @Override
   public MasterPlan rewrite(MasterPlan plan) throws PlanningException{
     rewrite(plan, plan.getTerminalBlock());

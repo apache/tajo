@@ -389,73 +389,73 @@ public class GlobalPlanner {
 //      }
 //    }
 
-    LogicalNode leftNode = joinNode.getLeftChild();
-    LogicalNode rightNode = joinNode.getRightChild();
+//    LogicalNode leftNode = joinNode.getLeftChild();
+//    LogicalNode rightNode = joinNode.getRightChild();
 
     // symmetric repartition join
-    boolean leftUnion = leftNode.getType() == NodeType.TABLE_SUBQUERY &&
-        ((TableSubQueryNode)leftNode).getSubQuery().getType() == NodeType.UNION;
-    boolean rightUnion = rightNode.getType() == NodeType.TABLE_SUBQUERY &&
-        ((TableSubQueryNode)rightNode).getSubQuery().getType() == NodeType.UNION;
-
-    if (leftUnion || rightUnion) { // if one of child execution block is union
-      /*
-       Join with tableC and result of union tableA, tableB is expected the following physical plan.
-       But Union execution block is not necessary.
-       |-eb_0001_000006 (Terminal)
-          |-eb_0001_000005 (Join eb_0001_000003, eb_0001_000004)
-             |-eb_0001_000004 (Scan TableC)
-             |-eb_0001_000003 (Union TableA, TableB)
-               |-eb_0001_000002 (Scan TableB)
-               |-eb_0001_000001 (Scan TableA)
-
-       The above plan can be changed to the following plan.
-       |-eb_0001_000005 (Terminal)
-          |-eb_0001_000003    (Join [eb_0001_000001, eb_0001_000002], eb_0001_000004)
-             |-eb_0001_000004 (Scan TableC)
-             |-eb_0001_000002 (Scan TableB)
-             |-eb_0001_000001 (Scan TableA)
-
-       eb_0001_000003's left child should be eb_0001_000001 + eb_0001_000001 and right child should be eb_0001_000004.
-       For this eb_0001_000001 is representative of eb_0001_000001, eb_0001_000002.
-       So eb_0001_000003's left child is eb_0001_000001
-       */
-      Column[][] joinColumns = null;
-      if (joinNode.getJoinType() != JoinType.CROSS) {
-        // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
-        joinColumns = PlannerUtil.joinJoinKeyForEachTable(joinNode.getJoinQual(),
-            leftNode.getOutSchema(), rightNode.getOutSchema(), false);
-      }
-
-      if (leftUnion && !rightUnion) { // if only left is union
-        currentBlock = leftBlock;
-        context.execBlockMap.remove(leftNode.getPID());
-        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
-        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
-        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, rightBlock, leftNode,
-            shuffleKeys, otherSideShuffleKeys, true);
-        currentBlock.setPlan(joinNode);
-      } else if (!leftUnion && rightUnion) { // if only right is union
-        currentBlock = rightBlock;
-        context.execBlockMap.remove(rightNode.getPID());
-        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
-        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
-        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, leftBlock, rightNode,
-            shuffleKeys, otherSideShuffleKeys, false);
-        currentBlock.setPlan(joinNode);
-      } else { // if both are unions
-        currentBlock = leftBlock;
-        context.execBlockMap.remove(leftNode.getPID());
-        context.execBlockMap.remove(rightNode.getPID());
-        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, null, leftNode,
-            (joinColumns != null ? joinColumns[0] : null), null, true);
-        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, null, rightNode,
-            (joinColumns != null ? joinColumns[1] : null), null, false);
-        currentBlock.setPlan(joinNode);
-      }
-
-      return currentBlock;
-    } else {
+//    boolean leftUnion = leftNode.getType() == NodeType.TABLE_SUBQUERY &&
+//        ((TableSubQueryNode)leftNode).getSubQuery().getType() == NodeType.UNION;
+//    boolean rightUnion = rightNode.getType() == NodeType.TABLE_SUBQUERY &&
+//        ((TableSubQueryNode)rightNode).getSubQuery().getType() == NodeType.UNION;
+//
+//    if (leftUnion || rightUnion) { // if one of child execution block is union
+//      /*
+//       Join with tableC and result of union tableA, tableB is expected the following physical plan.
+//       But Union execution block is not necessary.
+//       |-eb_0001_000006 (Terminal)
+//          |-eb_0001_000005 (Join eb_0001_000003, eb_0001_000004)
+//             |-eb_0001_000004 (Scan TableC)
+//             |-eb_0001_000003 (Union TableA, TableB)
+//               |-eb_0001_000002 (Scan TableB)
+//               |-eb_0001_000001 (Scan TableA)
+//
+//       The above plan can be changed to the following plan.
+//       |-eb_0001_000005 (Terminal)
+//          |-eb_0001_000003    (Join [eb_0001_000001, eb_0001_000002], eb_0001_000004)
+//             |-eb_0001_000004 (Scan TableC)
+//             |-eb_0001_000002 (Scan TableB)
+//             |-eb_0001_000001 (Scan TableA)
+//
+//       eb_0001_000003's left child should be eb_0001_000001 + eb_0001_000001 and right child should be eb_0001_000004.
+//       For this eb_0001_000001 is representative of eb_0001_000001, eb_0001_000002.
+//       So eb_0001_000003's left child is eb_0001_000001
+//       */
+//      Column[][] joinColumns = null;
+//      if (joinNode.getJoinType() != JoinType.CROSS) {
+//        // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
+//        joinColumns = PlannerUtil.joinJoinKeyForEachTable(joinNode.getJoinQual(),
+//            leftNode.getOutSchema(), rightNode.getOutSchema(), false);
+//      }
+//
+//      if (leftUnion && !rightUnion) { // if only left is union
+//        currentBlock = leftBlock;
+//        context.execBlockMap.remove(leftNode.getPID());
+//        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
+//        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
+//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, rightBlock, leftNode,
+//            shuffleKeys, otherSideShuffleKeys, true);
+//        currentBlock.setPlan(joinNode);
+//      } else if (!leftUnion && rightUnion) { // if only right is union
+//        currentBlock = rightBlock;
+//        context.execBlockMap.remove(rightNode.getPID());
+//        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
+//        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
+//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, leftBlock, rightNode,
+//            shuffleKeys, otherSideShuffleKeys, false);
+//        currentBlock.setPlan(joinNode);
+//      } else { // if both are unions
+//        currentBlock = leftBlock;
+//        context.execBlockMap.remove(leftNode.getPID());
+//        context.execBlockMap.remove(rightNode.getPID());
+//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, null, leftNode,
+//            (joinColumns != null ? joinColumns[0] : null), null, true);
+//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, null, rightNode,
+//            (joinColumns != null ? joinColumns[1] : null), null, false);
+//        currentBlock.setPlan(joinNode);
+//      }
+//
+//      return currentBlock;
+//    } else {
       // !leftUnion && !rightUnion
       currentBlock = masterPlan.newExecutionBlock();
       DataChannel leftChannel = createDataChannelFromJoin(leftBlock, rightBlock, currentBlock, joinNode, true);
@@ -472,7 +472,7 @@ public class GlobalPlanner {
       masterPlan.addConnect(rightChannel);
 
       return currentBlock;
-    }
+//    }
   }
 
   private void buildJoinPlanWithUnionChannel(GlobalPlanContext context, JoinNode joinNode,
