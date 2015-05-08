@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerAllocatedResource;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -31,14 +32,13 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.plan.logical.LogicalRootNode;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -92,7 +92,9 @@ public class QueryInProgress {
     try {
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
       if (queryMasterRpcClient != null) {
-        queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
+        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+        queryMasterRpcClient.killQuery(callFuture.getController(), queryId.getProto(), callFuture);
+        callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       }
     } catch (Throwable e) {
       catchException("Failed to kill query " + queryId + " by exception " + e, e);
@@ -111,9 +113,7 @@ public class QueryInProgress {
 
     masterContext.getResourceManager().releaseQueryMaster(queryId);
 
-    if(queryMasterRpc != null) {
-      RpcClientManager.cleanup(queryMasterRpc);
-    }
+    RpcClientManager.cleanup(queryMasterRpc);
 
     try {
       masterContext.getHistoryWriter().appendAndFlush(queryInfo);
@@ -156,8 +156,9 @@ public class QueryInProgress {
   private void connectQueryMaster() throws Exception {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
-    queryMasterRpc =
-        RpcClientManager.getInstance().getClient(addr, QueryMasterProtocol.class, true);
+
+    RpcClientManager.cleanup(queryMasterRpc);
+    queryMasterRpc = RpcClientManager.getInstance().newClient(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
@@ -177,11 +178,7 @@ public class QueryInProgress {
       if(queryMasterRpcClient == null) {
         connectQueryMaster();
       }
-      if(queryMasterRpcClient == null) {
-        LOG.info("No QueryMaster connection info.");
-        //TODO wait
-        return;
-      }
+
       LOG.info("Call executeQuery to :" +
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort() + "," + queryId);
 
@@ -192,11 +189,15 @@ public class QueryInProgress {
           .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
           .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
 
-      queryMasterRpcClient.executeQuery(null, builder.build(), NullCallback.get());
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+      queryMasterRpcClient.executeQuery(callFuture.getController(), builder.build(), callFuture);
+      callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
       querySubmitted.set(true);
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_MASTER_LAUNCHED);
     } catch (Exception e) {
       LOG.error("Failed to submit query " + queryId + " to master by exception " + e, e);
+      catchException(e.getMessage(), e);
     } finally {
       writeLock.unlock();
     }

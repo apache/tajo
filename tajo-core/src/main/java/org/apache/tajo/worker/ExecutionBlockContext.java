@@ -41,12 +41,12 @@ import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService.Interface;
 
 public class ExecutionBlockContext {
   /** class logger */
@@ -78,6 +79,8 @@ public class ExecutionBlockContext {
   private TajoQueryEngine queryEngine;
   private RpcClientManager connManager;
   private InetSocketAddress qmMasterAddr;
+  private NettyClientBase client;
+  private QueryMasterProtocol.QueryMasterProtocolService.Interface stub;
   private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
   // for the doAs block
@@ -132,16 +135,14 @@ public class ExecutionBlockContext {
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
+    this.stub = getRpcClient().getStub();
     this.reporter.startReporter();
-
     // resource intiailization
     try{
       this.resource.initialize(queryContext, plan);
     } catch (Throwable e) {
       try {
-        NettyClientBase client = getQueryMasterConnection();
-        QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-        stub.killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
+        getStub().killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
       } catch (Throwable t) {
         //ignore
       }
@@ -153,9 +154,20 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  public NettyClientBase getQueryMasterConnection()
+  private NettyClientBase getRpcClient()
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    return connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    if (client != null) return client;
+
+    client = connManager.newClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    return client;
+  }
+
+  public Interface getStub() {
+    return stub;
+  }
+
+  public boolean isStopped() {
+    return stop.get();
   }
 
   public void stop(){
@@ -184,6 +196,7 @@ public class ExecutionBlockContext {
     tasks.clear();
 
     resource.release();
+    RpcClientManager.cleanup(client);
   }
 
   public TajoConf getConf() {
@@ -282,8 +295,7 @@ public class ExecutionBlockContext {
     /* This case is that worker did not ran tasks */
     if(completedTasksNum.get() == 0) return;
 
-    NettyClientBase client = getQueryMasterConnection();
-    QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+    Interface stub = getStub();
 
     ExecutionBlockReport.Builder reporterBuilder = ExecutionBlockReport.newBuilder();
     reporterBuilder.setEbId(ebId.getProto());
@@ -300,38 +312,18 @@ public class ExecutionBlockContext {
       }
 
       IntermediateEntryProto.Builder intermediateBuilder = IntermediateEntryProto.newBuilder();
-      IntermediateEntryProto.PageProto.Builder pageBuilder = IntermediateEntryProto.PageProto.newBuilder();
-      FailureIntermediateProto.Builder failureBuilder = FailureIntermediateProto.newBuilder();
 
+      WorkerConnectionInfo connectionInfo = getWorkerContext().getConnectionInfo();
+      String address = connectionInfo.getHost() + ":" + connectionInfo.getPullServerPort();
       for (HashShuffleAppenderManager.HashShuffleIntermediate eachShuffle: shuffles) {
-        List<IntermediateEntryProto.PageProto> pages = Lists.newArrayList();
-        List<FailureIntermediateProto> failureIntermediateItems = Lists.newArrayList();
-
-        for (Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
-          pageBuilder.clear();
-          pageBuilder.setPos(eachPage.getFirst());
-          pageBuilder.setLength(eachPage.getSecond());
-          pages.add(pageBuilder.build());
-        }
-
-        for(Pair<Long, Pair<Integer, Integer>> eachFailure: eachShuffle.getFailureTskTupleIndexes()) {
-          failureBuilder.clear();
-          failureBuilder.setPagePos(eachFailure.getFirst());
-          failureBuilder.setStartRowNum(eachFailure.getSecond().getFirst());
-          failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
-          failureIntermediateItems.add(failureBuilder.build());
-        }
-        intermediateBuilder.clear();
-
         intermediateBuilder.setEbId(ebId.getProto())
-            .setHost(getWorkerContext().getConnectionInfo().getHost() + ":" +
-                getWorkerContext().getConnectionInfo().getPullServerPort())
+            .setAddress(address)
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())
             .setVolume(eachShuffle.getVolume())
-            .addAllPages(pages)
-            .addAllFailures(failureIntermediateItems);
+            .addAllPages(eachShuffle.getPages())
+            .addAllFailures(eachShuffle.getFailureTskTupleIndexes());
         intermediateEntries.add(intermediateBuilder.build());
       }
 
@@ -379,10 +371,8 @@ public class ExecutionBlockContext {
         public void run() {
           while (!reporterStop.get() && !Thread.interrupted()) {
 
-            NettyClientBase client = null;
             try {
-              client = getQueryMasterConnection();
-              QueryMasterProtocol.QueryMasterProtocolService.Interface masterStub = client.getStub();
+              Interface masterStub = getStub();
 
               if(tasks.size() == 0){
                 masterStub.ping(null, getExecutionBlockId().getProto(), NullCallback.get());
