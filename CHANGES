@@ -24,6 +24,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1408: Make IntermediateEntryProto more compact. 
+    (Contributed by navis, Committed by hyunsik)
+
     TAJO-1584: Remove QueryMaster client sharing in TajoMaster and TajoWorker.
     (jinho)
 

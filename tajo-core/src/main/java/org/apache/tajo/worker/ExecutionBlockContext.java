@@ -41,12 +41,12 @@ import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
@@ -312,38 +312,18 @@ public class ExecutionBlockContext {
       }
 
       IntermediateEntryProto.Builder intermediateBuilder = IntermediateEntryProto.newBuilder();
-      IntermediateEntryProto.PageProto.Builder pageBuilder = IntermediateEntryProto.PageProto.newBuilder();
-      FailureIntermediateProto.Builder failureBuilder = FailureIntermediateProto.newBuilder();
 
+      WorkerConnectionInfo connectionInfo = getWorkerContext().getConnectionInfo();
+      String address = connectionInfo.getHost() + ":" + connectionInfo.getPullServerPort();
       for (HashShuffleAppenderManager.HashShuffleIntermediate eachShuffle: shuffles) {
-        List<IntermediateEntryProto.PageProto> pages = Lists.newArrayList();
-        List<FailureIntermediateProto> failureIntermediateItems = Lists.newArrayList();
-
-        for (Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
-          pageBuilder.clear();
-          pageBuilder.setPos(eachPage.getFirst());
-          pageBuilder.setLength(eachPage.getSecond());
-          pages.add(pageBuilder.build());
-        }
-
-        for(Pair<Long, Pair<Integer, Integer>> eachFailure: eachShuffle.getFailureTskTupleIndexes()) {
-          failureBuilder.clear();
-          failureBuilder.setPagePos(eachFailure.getFirst());
-          failureBuilder.setStartRowNum(eachFailure.getSecond().getFirst());
-          failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
-          failureIntermediateItems.add(failureBuilder.build());
-        }
-        intermediateBuilder.clear();
-
         intermediateBuilder.setEbId(ebId.getProto())
-            .setHost(getWorkerContext().getConnectionInfo().getHost() + ":" +
-                getWorkerContext().getConnectionInfo().getPullServerPort())
+            .setAddress(address)
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())
             .setVolume(eachShuffle.getVolume())
-            .addAllPages(pages)
-            .addAllFailures(failureIntermediateItems);
+            .addAllPages(eachShuffle.getPages())
+            .addAllFailures(eachShuffle.getFailureTskTupleIndexes());
         intermediateEntries.add(intermediateBuilder.build());
       }
 
