@@ -9,9 +9,11 @@ Release 0.10.1 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() eliminates
-    an important kind of information.
-    (Contributed by Jongyoung Park, Committed by jihoon)
+    TAJO-1452: Improve function listing order (Contributed Dongjoon Hyun, 
+    Committed by hyunsik)
+
+    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() eliminates 
+    an important kind of information. (Contributed by Jongyoung Park, Committed by jihoon)
 
     TAJO-1381: Support multi-bytes delimiter for Text file.
     (Contributed by navis, Committed by jinho)

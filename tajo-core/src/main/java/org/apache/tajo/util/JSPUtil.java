@@ -311,20 +311,6 @@ public class JSPUtil {
     }
   }
 
-  public static void sortFunctionDesc(List<FunctionDesc> functions) {
-    Collections.sort(functions, new java.util.Comparator<FunctionDesc>() {
-      @Override
-      public int compare(FunctionDesc f1, FunctionDesc f2) {
-        int nameCompared = f1.getFunctionName().compareTo(f2.getFunctionName());
-        if(nameCompared != 0) {
-          return nameCompared;
-        } else {
-          return f1.getReturnType().getType().compareTo(f2.getReturnType().getType());
-        }
-      }
-    });
-  }
-
   static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.#");
   public static String percentFormat(float value) {
     return PERCENT_FORMAT.format(value * 100.0f);
