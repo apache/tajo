@@ -28,10 +28,9 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -86,7 +85,7 @@ public class FileStorageManager extends StorageManager {
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileStorageManager(StoreType storeType) {
+  public FileStorageManager(String storeType) {
     super(storeType);
   }
 
@@ -855,7 +854,7 @@ public class FileStorageManager extends StorageManager {
   public StorageProperty getStorageProperty() {
     StorageProperty storageProperty = new StorageProperty();
     storageProperty.setSortedInsert(false);
-    if (storeType == StoreType.RAW) {
+    if (storeType.equalsIgnoreCase("RAW")) {
       storageProperty.setSupportsInsertInto(false);
     } else {
       storageProperty.setSupportsInsertInto(true);

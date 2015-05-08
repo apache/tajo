@@ -120,7 +120,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       .createPlan(taskContext, leafBlock.getPlan());
     
     tableDesc = new TableDesc("table_"+System.currentTimeMillis(), physicalExec.getSchema(), 
-        new TableMeta(StoreType.SYSTEM, new KeyValueSet()), null);
+        new TableMeta("SYSTEM", new KeyValueSet()), null);
     outSchema = physicalExec.getSchema();
     encoder = RowStoreUtil.createEncoder(getLogicalSchema());
     

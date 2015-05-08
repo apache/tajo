@@ -272,7 +272,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
-  private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
+  private final TableMeta pipeMeta = CatalogUtil.newTableMeta("TEXT");
 
   private final Tuple EMPTY_INPUT = new VTuple(0);
   private final Schema EMPTY_SCHEMA = new Schema();

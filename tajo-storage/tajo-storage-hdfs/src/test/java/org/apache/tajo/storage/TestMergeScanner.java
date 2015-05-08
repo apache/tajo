@@ -67,22 +67,22 @@ public class TestMergeScanner {
       "}\n";
 
   private Path testDir;
-  private StoreType storeType;
+  private String storeType;
   private FileSystem fs;
 
-  public TestMergeScanner(StoreType storeType) {
+  public TestMergeScanner(String storeType) {
     this.storeType = storeType;
   }
 
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
-        {StoreType.CSV},
-        {StoreType.RAW},
-        {StoreType.RCFILE},
-        {StoreType.PARQUET},
-        {StoreType.SEQUENCEFILE},
-        {StoreType.AVRO},
+        {"CSV"},
+        {"RAW"},
+        {"RCFILE"},
+        {"PARQUET"},
+        {"SEQUENCEFILE"},
+        {"AVRO"},
         // RowFile requires Byte-buffer read support, so we omitted RowFile.
         //{StoreType.ROWFILE},
     });
@@ -109,7 +109,7 @@ public class TestMergeScanner {
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
-    if (storeType == StoreType.AVRO) {
+    if (storeType.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_MULTIPLE_FILES_AVRO_SCHEMA);
     }
@@ -187,16 +187,15 @@ public class TestMergeScanner {
     assertEquals(tupleNum * 2, totalCounts);
 	}
 
-  private static boolean isProjectableStorage(StoreType type) {
-    switch (type) {
-      case RCFILE:
-      case PARQUET:
-      case SEQUENCEFILE:
-      case CSV:
-      case AVRO:
-        return true;
-      default:
-        return false;
+  private static boolean isProjectableStorage(String type) {
+    if (type.equalsIgnoreCase("RCFILE") ||
+        type.equalsIgnoreCase("PARQUET") ||
+        type.equalsIgnoreCase("SEQUENCEFILE") ||
+        type.equalsIgnoreCase("CSV") ||
+        type.equalsIgnoreCase("AVRO")) {
+      return true;
+    } else {
+      return false;
     }
   }
 }

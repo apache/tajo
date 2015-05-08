@@ -21,7 +21,6 @@ package org.apache.tajo.catalog;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -45,7 +44,7 @@ public class TestTableDesc {
 	  schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    info = CatalogUtil.newTableMeta(StoreType.CSV);
+    info = CatalogUtil.newTableMeta("CSV");
     path = new Path(CommonTestingUtil.getTestDir(), "table1");
     desc = new TableDesc("table1", schema, info, path.toUri());
     stats = new TableStats();
@@ -71,7 +70,7 @@ public class TestTableDesc {
     Schema schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    TableMeta info = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta info = CatalogUtil.newTableMeta("CSV");
     testClone(info);
 
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");

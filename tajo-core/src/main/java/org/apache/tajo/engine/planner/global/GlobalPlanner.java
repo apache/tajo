@@ -69,7 +69,7 @@ public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
   private final TajoConf conf;
-  private final CatalogProtos.StoreType storeType;
+  private final String storeType;
   private final CatalogService catalog;
   private final GlobalPlanRewriteEngine rewriteEngine;
 
@@ -77,7 +77,7 @@ public class GlobalPlanner {
   public GlobalPlanner(final TajoConf conf, final CatalogService catalog) throws IOException {
     this.conf = conf;
     this.catalog = catalog;
-    this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
+    this.storeType = conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase();
     Preconditions.checkArgument(storeType != null);
 
     Class<? extends GlobalPlanRewriteRuleProvider> clazz =
@@ -99,7 +99,7 @@ public class GlobalPlanner {
     return catalog;
   }
 
-  public CatalogProtos.StoreType getStoreType() {
+  public String getStoreType() {
     return storeType;
   }
 
@@ -175,7 +175,7 @@ public class GlobalPlanner {
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType(CatalogProtos.StoreType.CSV);
+    outputChannel.setStoreType("CSV");
     outputChannel.setSchema(outputSchema);
   }
 
@@ -1184,7 +1184,7 @@ public class GlobalPlanner {
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
           // This data channel will be stored in staging directory, but RawFile, default file type, does not support
           // distributed file system. It needs to change the file format for distributed file system.
-          dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
+          dataChannel.setStoreType("CSV");
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);

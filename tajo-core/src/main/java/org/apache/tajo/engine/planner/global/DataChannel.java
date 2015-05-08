@@ -40,7 +40,7 @@ public class DataChannel {
 
   private Schema schema;
 
-  private StoreType storeType = StoreType.RAW;
+  private String storeType = "RAW";
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
     this.srcId = srcId;
@@ -144,11 +144,11 @@ public class DataChannel {
     return this.storeType != null;
   }
 
-  public void setStoreType(StoreType storeType) {
+  public void setStoreType(String storeType) {
     this.storeType = storeType;
   }
 
-  public StoreType getStoreType() {
+  public String getStoreType() {
     return storeType;
   }
 

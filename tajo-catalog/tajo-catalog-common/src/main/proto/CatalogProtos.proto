@@ -80,7 +80,7 @@ message FragmentProto {
 }
 
 message TableProto {
-  required StoreType storeType = 1;
+  required string storeType = 1;
   optional KeyValueSetProto params = 2;
 }
 

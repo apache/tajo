@@ -181,8 +181,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   private boolean assertSupportedStoreType(VerificationState state, String name) {
     Preconditions.checkNotNull(name);
 
-    CatalogProtos.StoreType storeType = CatalogUtil.getStoreType(name);
-    if (storeType == null || storeType == CatalogProtos.StoreType.RAW) {
+    if (name.equalsIgnoreCase("RAW")) {
       state.addVerification(String.format("Store format %s is not supported.", name));
       return false;
     }

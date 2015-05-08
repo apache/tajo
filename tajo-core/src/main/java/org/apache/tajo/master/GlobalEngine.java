@@ -293,7 +293,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   private void verifyInsertTableSchema(QueryContext queryContext, VerificationState state, LogicalPlan plan) {
-    StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
       if (rootNode.getChild().getType() == NodeType.INSERT) {

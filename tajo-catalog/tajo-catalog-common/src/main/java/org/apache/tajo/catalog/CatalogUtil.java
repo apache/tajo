@@ -295,13 +295,13 @@ public class CatalogUtil {
     }
   }
 
-  public static TableMeta newTableMeta(StoreType type) {
-    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(type);
-    return new TableMeta(type, defaultProperties);
+  public static TableMeta newTableMeta(String storeType) {
+    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(storeType);
+    return new TableMeta(storeType, defaultProperties);
   }
 
-  public static TableMeta newTableMeta(StoreType type, KeyValueSet options) {
-    return new TableMeta(type, options);
+  public static TableMeta newTableMeta(String storeType, KeyValueSet options) {
+    return new TableMeta(storeType, options);
   }
 
   public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
@@ -851,21 +851,21 @@ public class CatalogUtil {
   /**
    * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
    *
-   * @param type StoreType
+   * @param storeType StoreType
    * @return Table properties
    */
-  public static KeyValueSet newPhysicalProperties(StoreType type) {
+  public static KeyValueSet newPhysicalProperties(String storeType) {
     KeyValueSet options = new KeyValueSet();
-    if (StoreType.CSV == type || StoreType.TEXTFILE == type) {
+    if (storeType.equalsIgnoreCase("CSV") ||  storeType.equalsIgnoreCase("TEXT")) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (StoreType.JSON == type) {
+    } else if (storeType.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
-    } else if (StoreType.RCFILE == type) {
+    } else if (storeType.equalsIgnoreCase("RCFILE")) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    } else if (StoreType.SEQUENCEFILE == type) {
+    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
       options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
       options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (type == StoreType.PARQUET) {
+    } else if (storeType.equalsIgnoreCase("PARQUET")) {
       options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
       options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
       options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);

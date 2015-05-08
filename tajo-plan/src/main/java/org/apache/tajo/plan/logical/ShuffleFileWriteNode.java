@@ -103,7 +103,7 @@ public class ShuffleFileWriteNode extends PersistentStoreNode implements Cloneab
   public String toString() {
     StringBuilder sb = new StringBuilder("Shuffle Write (type=" + shuffleType.name().toLowerCase());
     if (storageType != null) {
-      sb.append(", storage="+ storageType.name());
+      sb.append(", storage="+ storageType);
     }
     sb.append(", part number=").append(numOutputs);
     if (shuffleKeys != null) {

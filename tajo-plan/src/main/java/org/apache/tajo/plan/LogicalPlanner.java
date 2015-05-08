@@ -1325,7 +1325,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private void updatePhysicalInfo(TableDesc desc) {
-    if (desc.getPath() != null && desc.getMeta().getStoreType() != StoreType.SYSTEM) {
+    if (desc.getPath() != null && desc.getMeta().getStoreType() != "SYSTEM") {
       try {
         Path path = new Path(desc.getPath());
         FileSystem fs = path.getFileSystem(new Configuration());
@@ -1666,7 +1666,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setTargetLocation(new Path(expr.getLocation()));
 
     if (expr.hasStorageType()) {
-      insertNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+      insertNode.setStorageType(expr.getStorageType());
     }
     if (expr.hasParams()) {
       KeyValueSet options = new KeyValueSet();
@@ -1740,9 +1740,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return handleCreateTableLike(context, expr, createTableNode);
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
-      createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+      createTableNode.setStorageType(expr.getStorageType());
     } else { // otherwise, default type
-      createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
+      createTableNode.setStorageType("CSV");
     }
 
 

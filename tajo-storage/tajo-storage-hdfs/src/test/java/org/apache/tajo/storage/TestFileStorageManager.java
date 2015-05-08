@@ -68,7 +68,7 @@ public class TestFileStorageManager {
 		schema.addColumn("age",Type.INT4);
 		schema.addColumn("name",Type.TEXT);
 
-		TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+		TableMeta meta = CatalogUtil.newTableMeta("CSV");
 		
 		Tuple[] tuples = new Tuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -135,7 +135,7 @@ public class TestFileStorageManager {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age",Type.INT4);
       schema.addColumn("name",Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+      TableMeta meta = CatalogUtil.newTableMeta("CSV");
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
@@ -189,7 +189,7 @@ public class TestFileStorageManager {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT4);
       schema.addColumn("name", Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+      TableMeta meta = CatalogUtil.newTableMeta("CSV");
 
       List<Fragment> splits = Lists.newArrayList();
       splits.addAll(sm.getSplits("data", meta, schema, tablePath));
@@ -221,11 +221,11 @@ public class TestFileStorageManager {
 
     try {
       /* Local FileSystem */
-      FileStorageManager sm = (FileStorageManager)StorageManager.getStorageManager(conf, StoreType.CSV);
+      FileStorageManager sm = (FileStorageManager)StorageManager.getStorageManager(conf, "CSV");
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       /* Distributed FileSystem */
-      sm = (FileStorageManager)StorageManager.getStorageManager(tajoConf, StoreType.CSV);
+      sm = (FileStorageManager)StorageManager.getStorageManager(tajoConf, "CSV");
       assertNotEquals(fs.getUri(), sm.getFileSystem().getUri());
       assertEquals(cluster.getFileSystem().getUri(), sm.getFileSystem().getUri());
     } finally {
