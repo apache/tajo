@@ -142,7 +142,11 @@ public class AsyncRpcServer extends NettyServerBase {
           ctx.close();
         }
         Throwable rootCause = ExceptionUtils.getRootCause(cause);
-        LOG.fatal(ExceptionUtils.getMessage(rootCause), rootCause);
+        if(rootCause == null) {
+          LOG.fatal(ExceptionUtils.getMessage(cause), cause);
+        } else {
+          LOG.fatal(ExceptionUtils.getMessage(rootCause), rootCause);
+        }
       }
     }
   }
