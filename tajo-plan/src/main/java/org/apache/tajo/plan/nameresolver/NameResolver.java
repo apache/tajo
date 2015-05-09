@@ -384,7 +384,7 @@ public abstract class NameResolver {
   static Column ensureUniqueColumn(List<Column> candidates) throws VerifyException {
     if (candidates.size() == 1) {
       return candidates.get(0);
-    } else if (candidates.size() >= 2) {
+    } else if (candidates.size() > 1) {
       StringBuilder sb = new StringBuilder();
       boolean first = true;
       for (Column column : candidates) {
