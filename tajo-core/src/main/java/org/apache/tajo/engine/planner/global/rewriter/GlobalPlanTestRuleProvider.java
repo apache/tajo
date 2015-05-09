@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.global.rewriter;
 
 import com.google.common.collect.Lists;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.global.rewriter.rules.BroadcastJoinRule;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanEqualityTester;
 
 import java.util.Collection;
@@ -39,7 +38,6 @@ public class GlobalPlanTestRuleProvider extends BaseGlobalPlanRewriteRuleProvide
   @Override
   public Collection<Class<? extends GlobalPlanRewriteRule>> getRules() {
     List<Class<? extends GlobalPlanRewriteRule>> injectedRules = Lists.newArrayList(super.getRules());
-    injectedRules.add(BroadcastJoinRule.class);
     injectedRules.add(GlobalPlanEqualityTester.class);
     return injectedRules;
   }

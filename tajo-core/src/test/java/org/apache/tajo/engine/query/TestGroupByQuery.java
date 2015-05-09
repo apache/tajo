@@ -865,4 +865,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void test() throws Exception {
+    executeString("select count(*) from (select * from nation union select * from nation) t");
+  }
 }
