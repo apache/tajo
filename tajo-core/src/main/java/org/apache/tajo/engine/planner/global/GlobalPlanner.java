@@ -389,73 +389,73 @@ public class GlobalPlanner {
 //      }
 //    }
 
-//    LogicalNode leftNode = joinNode.getLeftChild();
-//    LogicalNode rightNode = joinNode.getRightChild();
+    LogicalNode leftNode = joinNode.getLeftChild();
+    LogicalNode rightNode = joinNode.getRightChild();
 
     // symmetric repartition join
-//    boolean leftUnion = leftNode.getType() == NodeType.TABLE_SUBQUERY &&
-//        ((TableSubQueryNode)leftNode).getSubQuery().getType() == NodeType.UNION;
-//    boolean rightUnion = rightNode.getType() == NodeType.TABLE_SUBQUERY &&
-//        ((TableSubQueryNode)rightNode).getSubQuery().getType() == NodeType.UNION;
-//
-//    if (leftUnion || rightUnion) { // if one of child execution block is union
-//      /*
-//       Join with tableC and result of union tableA, tableB is expected the following physical plan.
-//       But Union execution block is not necessary.
-//       |-eb_0001_000006 (Terminal)
-//          |-eb_0001_000005 (Join eb_0001_000003, eb_0001_000004)
-//             |-eb_0001_000004 (Scan TableC)
-//             |-eb_0001_000003 (Union TableA, TableB)
-//               |-eb_0001_000002 (Scan TableB)
-//               |-eb_0001_000001 (Scan TableA)
-//
-//       The above plan can be changed to the following plan.
-//       |-eb_0001_000005 (Terminal)
-//          |-eb_0001_000003    (Join [eb_0001_000001, eb_0001_000002], eb_0001_000004)
-//             |-eb_0001_000004 (Scan TableC)
-//             |-eb_0001_000002 (Scan TableB)
-//             |-eb_0001_000001 (Scan TableA)
-//
-//       eb_0001_000003's left child should be eb_0001_000001 + eb_0001_000001 and right child should be eb_0001_000004.
-//       For this eb_0001_000001 is representative of eb_0001_000001, eb_0001_000002.
-//       So eb_0001_000003's left child is eb_0001_000001
-//       */
-//      Column[][] joinColumns = null;
-//      if (joinNode.getJoinType() != JoinType.CROSS) {
-//        // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
-//        joinColumns = PlannerUtil.joinJoinKeyForEachTable(joinNode.getJoinQual(),
-//            leftNode.getOutSchema(), rightNode.getOutSchema(), false);
-//      }
-//
-//      if (leftUnion && !rightUnion) { // if only left is union
-//        currentBlock = leftBlock;
-//        context.execBlockMap.remove(leftNode.getPID());
-//        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
-//        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
-//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, rightBlock, leftNode,
-//            shuffleKeys, otherSideShuffleKeys, true);
-//        currentBlock.setPlan(joinNode);
-//      } else if (!leftUnion && rightUnion) { // if only right is union
-//        currentBlock = rightBlock;
-//        context.execBlockMap.remove(rightNode.getPID());
-//        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
-//        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
-//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, leftBlock, rightNode,
-//            shuffleKeys, otherSideShuffleKeys, false);
-//        currentBlock.setPlan(joinNode);
-//      } else { // if both are unions
-//        currentBlock = leftBlock;
-//        context.execBlockMap.remove(leftNode.getPID());
-//        context.execBlockMap.remove(rightNode.getPID());
-//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, null, leftNode,
-//            (joinColumns != null ? joinColumns[0] : null), null, true);
-//        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, null, rightNode,
-//            (joinColumns != null ? joinColumns[1] : null), null, false);
-//        currentBlock.setPlan(joinNode);
-//      }
-//
-//      return currentBlock;
-//    } else {
+    boolean leftUnion = leftNode.getType() == NodeType.TABLE_SUBQUERY &&
+        ((TableSubQueryNode)leftNode).getSubQuery().getType() == NodeType.UNION;
+    boolean rightUnion = rightNode.getType() == NodeType.TABLE_SUBQUERY &&
+        ((TableSubQueryNode)rightNode).getSubQuery().getType() == NodeType.UNION;
+
+    if (leftUnion || rightUnion) { // if one of child execution block is union
+      /*
+       Join with tableC and result of union tableA, tableB is expected the following physical plan.
+       But Union execution block is not necessary.
+       |-eb_0001_000006 (Terminal)
+          |-eb_0001_000005 (Join eb_0001_000003, eb_0001_000004)
+             |-eb_0001_000004 (Scan TableC)
+             |-eb_0001_000003 (Union TableA, TableB)
+               |-eb_0001_000002 (Scan TableB)
+               |-eb_0001_000001 (Scan TableA)
+
+       The above plan can be changed to the following plan.
+       |-eb_0001_000005 (Terminal)
+          |-eb_0001_000003    (Join [eb_0001_000001, eb_0001_000002], eb_0001_000004)
+             |-eb_0001_000004 (Scan TableC)
+             |-eb_0001_000002 (Scan TableB)
+             |-eb_0001_000001 (Scan TableA)
+
+       eb_0001_000003's left child should be eb_0001_000001 + eb_0001_000001 and right child should be eb_0001_000004.
+       For this eb_0001_000001 is representative of eb_0001_000001, eb_0001_000002.
+       So eb_0001_000003's left child is eb_0001_000001
+       */
+      Column[][] joinColumns = null;
+      if (joinNode.getJoinType() != JoinType.CROSS) {
+        // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
+        joinColumns = PlannerUtil.joinJoinKeyForEachTable(joinNode.getJoinQual(),
+            leftNode.getOutSchema(), rightNode.getOutSchema(), false);
+      }
+
+      if (leftUnion && !rightUnion) { // if only left is union
+        currentBlock = leftBlock;
+        context.execBlockMap.remove(leftNode.getPID());
+        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
+        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
+        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, rightBlock, leftNode,
+            shuffleKeys, otherSideShuffleKeys, true);
+        currentBlock.setPlan(joinNode);
+      } else if (!leftUnion && rightUnion) { // if only right is union
+        currentBlock = rightBlock;
+        context.execBlockMap.remove(rightNode.getPID());
+        Column[] shuffleKeys = (joinColumns != null) ? joinColumns[1] : null;
+        Column[] otherSideShuffleKeys = (joinColumns != null) ? joinColumns[0] : null;
+        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, leftBlock, rightNode,
+            shuffleKeys, otherSideShuffleKeys, false);
+        currentBlock.setPlan(joinNode);
+      } else { // if both are unions
+        currentBlock = leftBlock;
+        context.execBlockMap.remove(leftNode.getPID());
+        context.execBlockMap.remove(rightNode.getPID());
+        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, leftBlock, null, leftNode,
+            (joinColumns != null ? joinColumns[0] : null), null, true);
+        buildJoinPlanWithUnionChannel(context, joinNode, currentBlock, rightBlock, null, rightNode,
+            (joinColumns != null ? joinColumns[1] : null), null, false);
+        currentBlock.setPlan(joinNode);
+      }
+
+      return currentBlock;
+    } else {
       // !leftUnion && !rightUnion
       currentBlock = masterPlan.newExecutionBlock();
       DataChannel leftChannel = createDataChannelFromJoin(leftBlock, rightBlock, currentBlock, joinNode, true);
@@ -472,7 +472,7 @@ public class GlobalPlanner {
       masterPlan.addConnect(rightChannel);
 
       return currentBlock;
-//    }
+    }
   }
 
   private void buildJoinPlanWithUnionChannel(GlobalPlanContext context, JoinNode joinNode,
@@ -798,13 +798,13 @@ public class GlobalPlanner {
       boolean multiLevelEnabled = context.getPlan().getContext().getBool(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED);
 
       if (multiLevelEnabled) {
-//        if (PlannerUtil.findTopNode(groupbyNode, NodeType.UNION) == null) {
-//          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
-//          return builder.buildMultiLevelPlan(context, lastBlock, groupbyNode);
-//        } else {
+        if (PlannerUtil.findTopNode(groupbyNode, NodeType.UNION) == null) {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildMultiLevelPlan(context, lastBlock, groupbyNode);
+        } else {
           DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
           return builder.buildPlan(context, lastBlock, groupbyNode);
-//        }
+        }
       } else {
         DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
         return builder.buildPlan(context, lastBlock, groupbyNode);
@@ -812,12 +812,12 @@ public class GlobalPlanner {
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 
-//      if (hasUnionChild(firstPhaseGroupby)) {
-//        currentBlock = buildGroupbyAndUnionPlan(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
-//      } else {
-        // general hash-shuffled aggregation
+      if (hasUnionChild(firstPhaseGroupby)) {
+        currentBlock = buildGroupbyAndUnionPlan(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
+      } else {
+//         general hash-shuffled aggregation
         currentBlock = buildTwoPhaseGroupby(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
-//      }
+      }
     }
 
     return currentBlock;
@@ -980,26 +980,26 @@ public class GlobalPlanner {
 
     SortNode firstSortNode = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
 
-//    if (firstSortNode.getChild().getType() == NodeType.TABLE_SUBQUERY &&
-//        ((TableSubQueryNode)firstSortNode.getChild()).getSubQuery().getType() == NodeType.UNION) {
-//
-//      currentBlock = childBlock;
-//      for (DataChannel channel : masterPlan.getIncomingChannels(childBlock.getId())) {
-//        channel.setShuffle(RANGE_SHUFFLE, PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray(), 32);
-//        channel.setSchema(firstSortNode.getOutSchema());
-//
-//        ExecutionBlock subBlock = masterPlan.getExecBlock(channel.getSrcId());
-//        SortNode s1 = PlannerUtil.clone(context.plan.getLogicalPlan(), firstSortNode);
-//        s1.setChild(subBlock.getPlan());
-//        subBlock.setPlan(s1);
-//
-//        ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
-//        currentNode.setChild(secondScan);
-//        currentNode.setInSchema(secondScan.getOutSchema());
-//        currentBlock.setPlan(currentNode);
-//        currentBlock.getEnforcer().addSortedInput(secondScan.getTableName(), currentNode.getSortKeys());
-//      }
-//    } else {
+    if (firstSortNode.getChild().getType() == NodeType.TABLE_SUBQUERY &&
+        ((TableSubQueryNode)firstSortNode.getChild()).getSubQuery().getType() == NodeType.UNION) {
+
+      currentBlock = childBlock;
+      for (DataChannel channel : masterPlan.getIncomingChannels(childBlock.getId())) {
+        channel.setShuffle(RANGE_SHUFFLE, PlannerUtil.sortSpecsToSchema(currentNode.getSortKeys()).toArray(), 32);
+        channel.setSchema(firstSortNode.getOutSchema());
+
+        ExecutionBlock subBlock = masterPlan.getExecBlock(channel.getSrcId());
+        SortNode s1 = PlannerUtil.clone(context.plan.getLogicalPlan(), firstSortNode);
+        s1.setChild(subBlock.getPlan());
+        subBlock.setPlan(s1);
+
+        ScanNode secondScan = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
+        currentNode.setChild(secondScan);
+        currentNode.setInSchema(secondScan.getOutSchema());
+        currentBlock.setPlan(currentNode);
+        currentBlock.getEnforcer().addSortedInput(secondScan.getTableName(), currentNode.getSortKeys());
+      }
+    } else {
       LogicalNode childBlockPlan = childBlock.getPlan();
       firstSortNode.setChild(childBlockPlan);
       // sort is a non-projectable operator. So, in/out schemas are the same to its child operator.
@@ -1018,7 +1018,7 @@ public class GlobalPlanner {
       currentBlock.setPlan(currentNode);
       currentBlock.getEnforcer().addSortedInput(secondScan.getTableName(), currentNode.getSortKeys());
       masterPlan.addConnect(channel);
-//    }
+    }
 
     return currentBlock;
   }
@@ -1040,11 +1040,11 @@ public class GlobalPlanner {
             partitionMethod.getPartitionType()));
       }
 
-//      if (hasUnionChild(currentNode)) { // if it has union children
-//        return buildShuffleAndStorePlanToPartitionedTableWithUnion(context, currentNode, lastBlock);
-//      } else { // otherwise
+      if (hasUnionChild(currentNode)) { // if it has union children
+        return buildShuffleAndStorePlanToPartitionedTableWithUnion(context, currentNode, lastBlock);
+      } else { // otherwise
         return buildShuffleAndStorePlanToPartitionedTable(context, currentNode, lastBlock);
-//      }
+      }
     } else { // if result table is not a partitioned table, directly store it
       return buildNoPartitionedStorePlan(context, currentNode, lastBlock);
     }
@@ -1118,14 +1118,14 @@ public class GlobalPlanner {
   private ExecutionBlock buildNoPartitionedStorePlan(GlobalPlanContext context,
                                                      StoreTableNode currentNode,
                                                      ExecutionBlock childBlock) {
-//    if (hasUnionChild(currentNode)) { // when the below is union
-//      return buildShuffleAndStorePlanNoPartitionedTableWithUnion(context, currentNode, childBlock);
-//    } else {
+    if (hasUnionChild(currentNode)) { // when the below is union
+      return buildShuffleAndStorePlanNoPartitionedTableWithUnion(context, currentNode, childBlock);
+    } else {
       currentNode.setChild(childBlock.getPlan());
       currentNode.setInSchema(childBlock.getPlan().getOutSchema());
       childBlock.setPlan(currentNode);
       return childBlock;
-//    }
+    }
   }
 
   private void setShuffleKeysFromPartitionedTableStore(StoreTableNode node, DataChannel channel) {
@@ -1177,25 +1177,25 @@ public class GlobalPlanner {
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
 
-//      if (child.getType() == NodeType.TABLE_SUBQUERY &&
-//          ((TableSubQueryNode)child).getSubQuery().getType() == NodeType.UNION) {
-//        MasterPlan masterPlan = context.plan;
-//        for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
-//          // This data channel will be stored in staging directory, but RawFile, default file type, does not support
-//          // distributed file system. It needs to change the file format for distributed file system.
-//          dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
-//          ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
-//
-//          ProjectionNode copy = PlannerUtil.clone(plan, node);
-//          copy.setChild(subBlock.getPlan());
-//          subBlock.setPlan(copy);
-//        }
-//        execBlock.setPlan(null);
-//      } else {
+      if (child.getType() == NodeType.TABLE_SUBQUERY &&
+          ((TableSubQueryNode)child).getSubQuery().getType() == NodeType.UNION) {
+        MasterPlan masterPlan = context.plan;
+        for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
+          // This data channel will be stored in staging directory, but RawFile, default file type, does not support
+          // distributed file system. It needs to change the file format for distributed file system.
+          dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
+          ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
+
+          ProjectionNode copy = PlannerUtil.clone(plan, node);
+          copy.setChild(subBlock.getPlan());
+          subBlock.setPlan(copy);
+        }
+        execBlock.setPlan(null);
+      } else {
         node.setChild(execBlock.getPlan());
         node.setInSchema(execBlock.getPlan().getOutSchema());
         execBlock.setPlan(node);
-//      }
+      }
 
       context.execBlockMap.put(node.getPID(), execBlock);
       return node;
@@ -1371,16 +1371,29 @@ public class GlobalPlanner {
       LogicalNode rightChild = visit(context, plan, block, node.getRightChild(), stack);
       ExecutionBlock rightChildBlock = context.execBlockMap.get(rightChild.getPID());
 
-      // In the case of broadcast join leftChildBlock can be replaced with upper join node.
-      // So if the current join node is a child node of leftChildBlock's plan(join node)
-      // the current join node already participates in broadcast join.
-      LogicalNode leftChildBlockNode = leftChildBlock.getPlan();
-      // If child block is union, child block has not plan
-      if (leftChildBlockNode != null && leftChildBlockNode.getType() == NodeType.JOIN) {
-        if (leftChildBlockNode.getPID() > node.getPID()) {
-          context.execBlockMap.put(node.getPID(), leftChildBlock);
-          return node;
-        }
+//      // In the case of broadcast join leftChildBlock can be replaced with upper join node.
+//      // So if the current join node is a child node of leftChildBlock's plan(join node)
+//      // the current join node already participates in broadcast join.
+//      LogicalNode leftChildBlockNode = leftChildBlock.getPlan();
+//      // If child block is union, child block has not plan
+//      if (leftChildBlockNode != null && leftChildBlockNode.getType() == NodeType.JOIN) {
+//        if (leftChildBlockNode.getPID() > node.getPID()) {
+//          context.execBlockMap.put(node.getPID(), leftChildBlock);
+//          return node;
+//        }
+//      }
+
+      if (node.getJoinType() == JoinType.LEFT_OUTER) {
+        leftChildBlock.setPreservedRow();
+        rightChildBlock.setNullSuppllying();
+      } else if (node.getJoinType() == JoinType.RIGHT_OUTER) {
+        leftChildBlock.setNullSuppllying();
+        rightChildBlock.setPreservedRow();
+      } else if (node.getJoinType() == JoinType.FULL_OUTER) {
+        leftChildBlock.setPreservedRow();
+        leftChildBlock.setNullSuppllying();
+        rightChildBlock.setPreservedRow();
+        rightChildBlock.setNullSuppllying();
       }
 
       ExecutionBlock newExecBlock = buildJoinPlan(context, node, leftChildBlock, rightChildBlock);
@@ -1392,61 +1405,60 @@ public class GlobalPlanner {
     @Override
     public LogicalNode visitUnion(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
                                   UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
-      super.visitUnion(context, plan, queryBlock, node, stack);
-//      stack.push(node);
-//      LogicalPlan.QueryBlock leftQueryBlock = plan.getBlock(node.getLeftChild());
-//      LogicalNode leftChild = visit(context, plan, leftQueryBlock, leftQueryBlock.getRoot(), stack);
-//
-//      LogicalPlan.QueryBlock rightQueryBlock = plan.getBlock(node.getRightChild());
-//      LogicalNode rightChild = visit(context, plan, rightQueryBlock, rightQueryBlock.getRoot(), stack);
-//      stack.pop();
-//
-//      MasterPlan masterPlan = context.getPlan();
-//
-//      List<ExecutionBlock> unionBlocks = Lists.newArrayList();
-//      List<ExecutionBlock> queryBlockBlocks = Lists.newArrayList();
-//
-//      ExecutionBlock leftBlock = context.execBlockMap.remove(leftChild.getPID());
-//      ExecutionBlock rightBlock = context.execBlockMap.remove(rightChild.getPID());
-//
-//      // These union types need to eliminate unnecessary nodes between parent and child node of query tree.
-//      boolean leftUnion = (leftChild.getType() == NodeType.UNION) ||
-//          ((leftChild.getType() == NodeType.TABLE_SUBQUERY) &&
-//          (((TableSubQueryNode)leftChild).getSubQuery().getType() == NodeType.UNION));
-//      boolean rightUnion = (rightChild.getType() == NodeType.UNION) ||
-//          (rightChild.getType() == NodeType.TABLE_SUBQUERY) &&
-//          (((TableSubQueryNode)rightChild).getSubQuery().getType() == NodeType.UNION);
-//      if (leftUnion) {
-//        unionBlocks.add(leftBlock);
-//      } else {
-//        queryBlockBlocks.add(leftBlock);
-//      }
-//      if (rightUnion) {
-//        unionBlocks.add(rightBlock);
-//      } else {
-//        queryBlockBlocks.add(rightBlock);
-//      }
-//
+      stack.push(node);
+      LogicalPlan.QueryBlock leftQueryBlock = plan.getBlock(node.getLeftChild());
+      LogicalNode leftChild = visit(context, plan, leftQueryBlock, leftQueryBlock.getRoot(), stack);
+
+      LogicalPlan.QueryBlock rightQueryBlock = plan.getBlock(node.getRightChild());
+      LogicalNode rightChild = visit(context, plan, rightQueryBlock, rightQueryBlock.getRoot(), stack);
+      stack.pop();
+
+      MasterPlan masterPlan = context.getPlan();
+
+      List<ExecutionBlock> unionBlocks = Lists.newArrayList();
+      List<ExecutionBlock> queryBlockBlocks = Lists.newArrayList();
+
+      ExecutionBlock leftBlock = context.execBlockMap.remove(leftChild.getPID());
+      ExecutionBlock rightBlock = context.execBlockMap.remove(rightChild.getPID());
+
+      // These union types need to eliminate unnecessary nodes between parent and child node of query tree.
+      boolean leftUnion = (leftChild.getType() == NodeType.UNION) ||
+          ((leftChild.getType() == NodeType.TABLE_SUBQUERY) &&
+          (((TableSubQueryNode)leftChild).getSubQuery().getType() == NodeType.UNION));
+      boolean rightUnion = (rightChild.getType() == NodeType.UNION) ||
+          (rightChild.getType() == NodeType.TABLE_SUBQUERY) &&
+          (((TableSubQueryNode)rightChild).getSubQuery().getType() == NodeType.UNION);
+      if (leftUnion) {
+        unionBlocks.add(leftBlock);
+      } else {
+        queryBlockBlocks.add(leftBlock);
+      }
+      if (rightUnion) {
+        unionBlocks.add(rightBlock);
+      } else {
+        queryBlockBlocks.add(rightBlock);
+      }
+
       ExecutionBlock execBlock;
-//      if (unionBlocks.size() == 0) {
+      if (unionBlocks.size() == 0) {
         execBlock = context.plan.newExecutionBlock();
-//      } else {
-//        execBlock = unionBlocks.get(0);
-//      }
-//
-//      for (ExecutionBlock childBlocks : unionBlocks) {
-//        for (ExecutionBlock grandChildBlock : masterPlan.getChilds(childBlocks)) {
-//          masterPlan.disconnect(grandChildBlock, childBlocks);
-//          queryBlockBlocks.add(grandChildBlock);
-//        }
-//      }
-//
-//      for (ExecutionBlock childBlocks : queryBlockBlocks) {
-//        DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_SHUFFLE, 1);
-//        channel.setStoreType(storeType);
-//        masterPlan.addConnect(channel);
-//      }
-//
+      } else {
+        execBlock = unionBlocks.get(0);
+      }
+
+      for (ExecutionBlock childBlocks : unionBlocks) {
+        for (ExecutionBlock grandChildBlock : masterPlan.getChilds(childBlocks)) {
+          masterPlan.disconnect(grandChildBlock, childBlocks);
+          queryBlockBlocks.add(grandChildBlock);
+        }
+      }
+
+      for (ExecutionBlock childBlocks : queryBlockBlocks) {
+        DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_SHUFFLE, 1);
+        channel.setStoreType(storeType);
+        masterPlan.addConnect(channel);
+      }
+
       context.execBlockMap.put(node.getPID(), execBlock);
 
       return node;
@@ -1483,74 +1495,74 @@ public class GlobalPlanner {
 
       ExecutionBlock currentBlock = context.execBlockMap.remove(child.getPID());
 
-//      if (child.getType() == NodeType.UNION) {
-//        List<TableSubQueryNode> addedTableSubQueries = new ArrayList<TableSubQueryNode>();
-//        TableSubQueryNode leftMostSubQueryNode = null;
-//        for (ExecutionBlock childBlock : context.plan.getChilds(currentBlock.getId())) {
-//          TableSubQueryNode copy = PlannerUtil.clone(plan, node);
-//          copy.setSubQuery(childBlock.getPlan());
-//          childBlock.setPlan(copy);
-//          addedTableSubQueries.add(copy);
-//
-//          //Find a SubQueryNode which contains all columns in InputSchema matched with Target and OutputSchema's column
-//          if (copy.getInSchema().containsAll(copy.getOutSchema().getColumns())) {
-//            for (Target eachTarget : copy.getTargets()) {
-//              Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
-//              if (copy.getInSchema().containsAll(columns)) {
-//                leftMostSubQueryNode = copy;
-//                break;
-//              }
-//            }
-//          }
-//        }
-//        if (leftMostSubQueryNode != null) {
-//          // replace target column name
-//          Target[] targets = leftMostSubQueryNode.getTargets();
-//          int[] targetMappings = new int[targets.length];
-//          for (int i = 0; i < targets.length; i++) {
-//            if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
-//              throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
-//            }
-//            int index = leftMostSubQueryNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
-//            if (index < 0) {
-//              // If a target has alias, getNamedColumn() only returns alias
-//              Set<Column> columns = EvalTreeUtil.findUniqueColumns(targets[i].getEvalTree());
-//              Column column = columns.iterator().next();
-//              index = leftMostSubQueryNode.getInSchema().getColumnId(column.getQualifiedName());
-//            }
-//            if (index < 0) {
-//              throw new PlanningException("Can't find matched Target in UnionNode's input schema: " + targets[i]
-//                  + "->" + leftMostSubQueryNode.getInSchema());
-//            }
-//            targetMappings[i] = index;
-//          }
-//
-//          for (TableSubQueryNode eachNode: addedTableSubQueries) {
-//            if (eachNode.getPID() == leftMostSubQueryNode.getPID()) {
-//              continue;
-//            }
-//            Target[] eachNodeTargets = eachNode.getTargets();
-//            if (eachNodeTargets.length != targetMappings.length) {
-//              throw new PlanningException("Union query can't have different number of target columns.");
-//            }
-//            for (int i = 0; i < eachNodeTargets.length; i++) {
-//              Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
-//              eachNodeTargets[i].setAlias(eachNodeTargets[i].getNamedColumn().getQualifiedName());
-//              EvalNode evalNode = eachNodeTargets[i].getEvalTree();
-//              if (evalNode.getType() != EvalType.FIELD) {
-//                throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
-//              }
-//              FieldEval fieldEval = (FieldEval) evalNode;
-//              EvalTreeUtil.changeColumnRef(fieldEval,
-//                  fieldEval.getColumnRef().getQualifiedName(), inColumn.getQualifiedName());
-//            }
-//          }
-//        } else {
-//          LOG.warn("Can't find left most SubQuery in the UnionNode.");
-//        }
-//      } else {
+      if (child.getType() == NodeType.UNION) {
+        List<TableSubQueryNode> addedTableSubQueries = new ArrayList<TableSubQueryNode>();
+        TableSubQueryNode leftMostSubQueryNode = null;
+        for (ExecutionBlock childBlock : context.plan.getChilds(currentBlock.getId())) {
+          TableSubQueryNode copy = PlannerUtil.clone(plan, node);
+          copy.setSubQuery(childBlock.getPlan());
+          childBlock.setPlan(copy);
+          addedTableSubQueries.add(copy);
+
+          //Find a SubQueryNode which contains all columns in InputSchema matched with Target and OutputSchema's column
+          if (copy.getInSchema().containsAll(copy.getOutSchema().getColumns())) {
+            for (Target eachTarget : copy.getTargets()) {
+              Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
+              if (copy.getInSchema().containsAll(columns)) {
+                leftMostSubQueryNode = copy;
+                break;
+              }
+            }
+          }
+        }
+        if (leftMostSubQueryNode != null) {
+          // replace target column name
+          Target[] targets = leftMostSubQueryNode.getTargets();
+          int[] targetMappings = new int[targets.length];
+          for (int i = 0; i < targets.length; i++) {
+            if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
+              throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
+            }
+            int index = leftMostSubQueryNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
+            if (index < 0) {
+              // If a target has alias, getNamedColumn() only returns alias
+              Set<Column> columns = EvalTreeUtil.findUniqueColumns(targets[i].getEvalTree());
+              Column column = columns.iterator().next();
+              index = leftMostSubQueryNode.getInSchema().getColumnId(column.getQualifiedName());
+            }
+            if (index < 0) {
+              throw new PlanningException("Can't find matched Target in UnionNode's input schema: " + targets[i]
+                  + "->" + leftMostSubQueryNode.getInSchema());
+            }
+            targetMappings[i] = index;
+          }
+
+          for (TableSubQueryNode eachNode: addedTableSubQueries) {
+            if (eachNode.getPID() == leftMostSubQueryNode.getPID()) {
+              continue;
+            }
+            Target[] eachNodeTargets = eachNode.getTargets();
+            if (eachNodeTargets.length != targetMappings.length) {
+              throw new PlanningException("Union query can't have different number of target columns.");
+            }
+            for (int i = 0; i < eachNodeTargets.length; i++) {
+              Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
+              eachNodeTargets[i].setAlias(eachNodeTargets[i].getNamedColumn().getQualifiedName());
+              EvalNode evalNode = eachNodeTargets[i].getEvalTree();
+              if (evalNode.getType() != EvalType.FIELD) {
+                throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
+              }
+              FieldEval fieldEval = (FieldEval) evalNode;
+              EvalTreeUtil.changeColumnRef(fieldEval,
+                  fieldEval.getColumnRef().getQualifiedName(), inColumn.getQualifiedName());
+            }
+          }
+        } else {
+          LOG.warn("Can't find left most SubQuery in the UnionNode.");
+        }
+      } else {
         currentBlock.setPlan(node);
-//      }
+      }
       context.execBlockMap.put(node.getPID(), currentBlock);
       return node;
     }

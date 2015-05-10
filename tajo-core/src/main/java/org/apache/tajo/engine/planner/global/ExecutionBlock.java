@@ -42,6 +42,12 @@ public class ExecutionBlock {
 
   private Set<String> broadcasted = new HashSet<String>();
 
+  /*
+   * The nullSupplying and preservedRow flags are used for finding which relations will be broadcasted.
+   */
+  protected transient boolean nullSuppllying = false;
+  protected transient boolean preservedRow = false;
+
   public ExecutionBlock(ExecutionBlockId executionBlockId) {
     this.executionBlockId = executionBlockId;
   }
@@ -195,5 +201,21 @@ public class ExecutionBlock {
 
   public String toString() {
     return executionBlockId.toString();
+  }
+
+  public void setNullSuppllying() {
+    nullSuppllying = true;
+  }
+
+  public void setPreservedRow() {
+    preservedRow = true;
+  }
+
+  public boolean isNullSuppllying() {
+    return nullSuppllying;
+  }
+
+  public boolean isPreservedRow() {
+    return preservedRow;
   }
 }

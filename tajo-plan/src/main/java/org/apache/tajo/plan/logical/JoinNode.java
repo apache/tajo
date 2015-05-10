@@ -41,8 +41,8 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private Target[] targets;
 
   // transition states
-  private boolean candidateBroadcast = false;
-  private List<LogicalNode> broadcastCandidateTargets = new ArrayList<LogicalNode>();
+//  private boolean candidateBroadcast = false;
+//  private List<LogicalNode> broadcastCandidateTargets = new ArrayList<LogicalNode>();
 
   public JoinNode(int pid) {
     super(pid, NodeType.JOIN);
@@ -54,17 +54,17 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     setRightChild(right);
   }
 
-  public boolean isCandidateBroadcast() {
-    return candidateBroadcast;
-  }
+//  public boolean isCandidateBroadcast() {
+//    return candidateBroadcast;
+//  }
 
-  public void setCandidateBroadcast(boolean candidateBroadcast) {
-    this.candidateBroadcast = candidateBroadcast;
-  }
+//  public void setCandidateBroadcast(boolean candidateBroadcast) {
+//    this.candidateBroadcast = candidateBroadcast;
+//  }
 
-  public List<LogicalNode> getBroadcastCandidateTargets() {
-    return broadcastCandidateTargets;
-  }
+//  public List<LogicalNode> getBroadcastCandidateTargets() {
+//    return broadcastCandidateTargets;
+//  }
 
   public JoinType getJoinType() {
     return this.joinType;
@@ -131,7 +131,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (candidateBroadcast ? 1231 : 1237);
+//    result = prime * result + (candidateBroadcast ? 1231 : 1237);
     result = prime * result + ((joinQual == null) ? 0 : joinQual.hashCode());
     result = prime * result + ((joinType == null) ? 0 : joinType.hashCode());
     result = prime * result + Arrays.hashCode(targets);

@@ -24,6 +24,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 
+import java.util.Collection;
 import java.util.List;
 
 public class GlobalPlanRewriteUtil {
@@ -94,6 +95,17 @@ public class GlobalPlanRewriteUtil {
     }
 
     return scanBytes;
+  }
+
+  public static long getBroadcastInputVolume(ExecutionBlock block) {
+    Collection<String> broadcastRelations = block.getBroadcastTables();
+    long volume = 0;
+    for (ScanNode scanNode : block.getScanNodes()) {
+      if (broadcastRelations.contains(scanNode.getCanonicalName())) {
+        volume += getTableVolume(scanNode);
+      }
+    }
+    return volume;
   }
 
   public static long getInputVolume(ExecutionBlock block) {

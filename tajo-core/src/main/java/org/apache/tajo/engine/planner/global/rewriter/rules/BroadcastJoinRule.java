@@ -18,26 +18,24 @@
 
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
-import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private long broadcastTableSizeThreshold;
   private GlobalPlanRewriteUtil.ParentFinder parentFinder;
+  private RelationSizeComparator relSizeComparator;
 
   @Override
   public String getName() {
@@ -53,6 +51,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           if (broadcastTableSizeThreshold > 0) {
             if (parentFinder == null) {
               parentFinder = new GlobalPlanRewriteUtil.ParentFinder();
+              relSizeComparator = new RelationSizeComparator();
             }
             return true;
           }
@@ -69,8 +68,16 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     return plan;
   }
 
+  private static class RelationSizeComparator implements Comparator<ScanNode> {
+
+    @Override
+    public int compare(ScanNode o1, ScanNode o2) {
+      return (int) (GlobalPlanRewriteUtil.getTableVolume(o1) - GlobalPlanRewriteUtil.getTableVolume(o2));
+    }
+  }
+
   private void rewrite(MasterPlan plan, ExecutionBlock current) throws PlanningException {
-    if (plan.isLeaf(current)) {
+    if (plan.isLeaf(current) && !current.isPreservedRow()) {
       // in leaf execution blocks, find input tables which size is less than the predefined threshold.
       for (ScanNode scanNode : current.getScanNodes()) {
         if (GlobalPlanRewriteUtil.getTableVolume(scanNode) <= broadcastTableSizeThreshold) {
@@ -83,48 +90,97 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         rewrite(plan, child);
       }
       if (!plan.isTerminal(current) && current.hasJoin()) {
-        // unioned scans should be handled as a single relation scan
+        // TODO: handle unioned scans as a single scan
+        List<ScanNode> broadcastCandidates = TUtil.newList();
+        List<ExecutionBlock> childs = plan.getChilds(current);
+        Map<ScanNode, ExecutionBlock> relationBlockMap = TUtil.newHashMap();
 
-        // check outer join
-        if (hasOuterJoin(current)) {
-          // find and enforce shuffle for row-preserved tables
-          
+        // find all broadcast candidates from every child
+        for (ExecutionBlock child : childs) {
+          Map<String, ScanNode> scanNodeMap = TUtil.newHashMap();
+          for (ScanNode scanNode : child.getScanNodes()) {
+            scanNodeMap.put(scanNode.getCanonicalName(), scanNode);
+          }
+          for (String relName : child.getBroadcastTables()) {
+            broadcastCandidates.add(scanNodeMap.get(relName));
+            relationBlockMap.put(scanNodeMap.get(relName), child);
+          }
+        }
+        Collections.sort(broadcastCandidates, relSizeComparator);
+
+        // Enforce broadcast for candidates in ascending order of relation size
+        long totalBroadcastVolume = 0;
+        int i, broadcastEnd = -1;
+        for (i = 0; i < broadcastCandidates.size(); i++) {
+          long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
+          if (totalBroadcastVolume + volumeOfCandidate > broadcastTableSizeThreshold) {
+            broadcastEnd = i;
+            break;
+          }
+          totalBroadcastVolume += volumeOfCandidate;
+        }
+        if (i == broadcastCandidates.size()) {
+          broadcastEnd = i-1;
         }
 
-        // check the total input size
+        for (; i < broadcastCandidates.size(); i++) {
+          ScanNode nonBroadcast = broadcastCandidates.get(i);
+          ExecutionBlock enforceShuffleBlock = relationBlockMap.get(nonBroadcast);
+          enforceShuffleBlock.removeBroadcastRelation(nonBroadcast.getTableName());
+        }
 
         // check all inputs are marked as broadcast
 
 
+        if (current.getUnionScanMap() != null && !current.getUnionScanMap().isEmpty()) {
 
-        ExecutionBlock enforceNonBroadcast = null;
-        ExecutionBlock broadcastCandidate = null;
-        long smallestChildVolume = Long.MAX_VALUE;
-        List<ExecutionBlock> childs = plan.getChilds(current);
-        for (ExecutionBlock child : childs) {
-          if (child.isBroadcastable(broadcastTableSizeThreshold)) {
-            long inputVolume = GlobalPlanRewriteUtil.getInputVolume(child);
-            if (smallestChildVolume > inputVolume) {
-              smallestChildVolume = inputVolume;
-              if (broadcastCandidate != null) {
-                enforceNonBroadcast = broadcastCandidate;
-              }
-              broadcastCandidate = child;
-            }
-          }
         }
-        if (broadcastCandidate != null) {
-          if (enforceNonBroadcast != null) {
-            List<String> tables = TUtil.newList(enforceNonBroadcast.getBroadcastTables());
-            for (String broadcastTable : tables) {
-//              enforceNonBroadcast.removeBroadcastRelation(broadcastTable);
-              // TODO: remove the largest rel from broadcast when all inputs are broadcast
-            }
-          }
-          for (ExecutionBlock child : childs) {
+
+        Map<ExecutionBlockId, ExecutionBlockId> unionScanMap;
+        if (current.getUnionScanMap() == null) {
+          unionScanMap = TUtil.newHashMap();
+        } else {
+          unionScanMap = current.getUnionScanMap();
+        }
+
+        for (ExecutionBlock child : childs) {
+          if (child.hasBroadcastRelation()) {
             mergeTwoPhaseJoin(plan, child, current);
           }
         }
+
+//        for (i = 0; i <= broadcastEnd; i++) {
+//          ExecutionBlock willBeMergedChild = relationBlockMap.get(broadcastCandidates.get(i));
+//          mergeTwoPhaseJoin(plan, willBeMergedChild, current);
+//        }
+
+
+//        ExecutionBlock enforceNonBroadcast = null;
+//        ExecutionBlock broadcastCandidate = null;
+//        long smallestChildVolume = Long.MAX_VALUE;
+//
+//        for (ExecutionBlock child : childs) {
+//          if (child.isBroadcastable(broadcastTableSizeThreshold)) {
+//            long inputVolume = GlobalPlanRewriteUtil.getInputVolume(child);
+//            if (smallestChildVolume > inputVolume) {
+//              smallestChildVolume = inputVolume;
+//              if (broadcastCandidate != null) {
+//                enforceNonBroadcast = broadcastCandidate;
+//              }
+//              broadcastCandidate = child;
+//            }
+//          }
+//        }
+//        if (broadcastCandidate != null) {
+//          if (enforceNonBroadcast != null) {
+//            List<String> tables = TUtil.newList(enforceNonBroadcast.getBroadcastTables());
+//            for (String broadcastTable : tables) {
+////              enforceNonBroadcast.removeBroadcastRelation(broadcastTable);
+//              // TODO: remove the largest rel from broadcast when all inputs are broadcast
+//            }
+//          }
+//
+//        }
       }
     }
   }
@@ -136,6 +192,20 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       return PlannerUtil.isOuterJoin(joinNode.getJoinType());
     }
     return false;
+  }
+
+  private ExecutionBlock mergeTwoPhaseJoinWithUnionChild(MasterPlan plan, Collection<ExecutionBlock> childs,
+                                                         ExecutionBlock parent) {
+
+//      ExecutionBlockId scanEbId = parent.getUnionScanMap().get(child.getId());
+//      if (scanEbId != null) {
+//        scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(plan.getExecBlock(scanEbId), parent);
+//      }
+//    }
+//    if (scanForChild == null) {
+//    }
+
+
   }
 
   /**
