@@ -354,7 +354,7 @@ public class HBaseStorageManager extends StorageManager {
     Collection<String> columnFamilies = columnMapping.getColumnFamilyNames();
     //If 'columns' attribute is empty, Tajo table columns are mapped to all HBase table column.
     if (columnFamilies.isEmpty()) {
-      for (Column eachColumn: schema.getColumns()) {
+      for (Column eachColumn: schema.getRootColumns()) {
         columnFamilies.add(eachColumn.getSimpleName());
       }
     }
@@ -734,7 +734,7 @@ public class HBaseStorageManager extends StorageManager {
         for (String property : CONNECTION_PROPERTIES) {
           String thisValue = this.properties.get(property);
           String thatValue = that.properties.get(property);
-          //noinspection StringEquality
+          // noinspection StringEquality
           if (thisValue == thatValue) {
             continue;
           }
@@ -1120,7 +1120,7 @@ public class HBaseStorageManager extends StorageManager {
 
       try {
         HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
-        LOG.info("Delete table cause query failed:" + hTableDesc.getName());
+        LOG.info("Delete table cause query failed:" + new String(hTableDesc.getName()));
         hAdmin.disableTable(hTableDesc.getName());
         hAdmin.deleteTable(hTableDesc.getName());
       } finally {

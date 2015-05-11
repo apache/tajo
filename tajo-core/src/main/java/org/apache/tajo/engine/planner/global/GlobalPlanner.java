@@ -1146,11 +1146,11 @@ public class GlobalPlanner {
 
       Column[] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
       int i = 0, id = 0;
-      for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
+      for (Column column : partitionMethod.getExpressionSchema().getRootColumns()) {
         if (node.getType() == NodeType.INSERT) {
           id = tableSchema.getColumnId(column.getQualifiedName());
         } else {
-          id = tableSchema.getColumns().size() + i;
+          id = tableSchema.getRootColumns().size() + i;
         }
         shuffleKeys[i++] = projectedSchema.getColumn(id);
       }
@@ -1493,7 +1493,7 @@ public class GlobalPlanner {
           addedTableSubQueries.add(copy);
 
           //Find a SubQueryNode which contains all columns in InputSchema matched with Target and OutputSchema's column
-          if (copy.getInSchema().containsAll(copy.getOutSchema().getColumns())) {
+          if (copy.getInSchema().containsAll(copy.getOutSchema().getRootColumns())) {
             for (Target eachTarget : copy.getTargets()) {
               Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
               if (copy.getInSchema().containsAll(columns)) {

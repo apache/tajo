@@ -297,20 +297,26 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
-      if (storeType.equalsIgnoreCase("RCFILE")
-          || storeType.equalsIgnoreCase("CSV")
-          || storeType.equalsIgnoreCase("PARQUET")
-          || storeType.equalsIgnoreCase("SEQUENCEFILE")
-          || storeType.equalsIgnoreCase("AVRO")) {
-        assertTrue(tuple.get(0) == null);
-      }
-      assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
-      assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
+      verifyProjectedFields(scanner.isProjectable(), tuple, tupleCnt);
       tupleCnt++;
     }
     scanner.close();
 
     assertEquals(tupleNum, tupleCnt);
+  }
+
+  private void verifyProjectedFields(boolean projectable, Tuple tuple, int tupleCnt) {
+    if (projectable) {
+      assertTrue(tupleCnt + 2 == tuple.get(0).asInt8());
+      assertTrue(tupleCnt + 3 == tuple.get(1).asFloat4());
+    } else {
+      // RAW and ROW always project all fields.
+      if (!storeType.equalsIgnoreCase("RAW") && !storeType.equalsIgnoreCase("ROWFILE")) {
+        assertTrue(tuple.get(0) == null);
+      }
+      assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
+      assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
+    }
   }
 
   @Test
@@ -956,7 +962,8 @@ public class TestStorages {
   @Test
   public void testLessThanSchemaSize() throws IOException {
     /* RAW is internal storage. It must be same with schema size */
-    if (storeType.equalsIgnoreCase("RAW") || storeType.equalsIgnoreCase("AVRO")){
+    if (storeType.equalsIgnoreCase("RAW") || storeType.equalsIgnoreCase("AVRO")
+        || storeType.equalsIgnoreCase("PARQUET")){
       return;
     }
 
@@ -1008,7 +1015,12 @@ public class TestStorages {
     Tuple tuple = scanner.next();
     scanner.close();
 
-    assertEquals(expect.get(1), tuple.get(1));
-    assertEquals(NullDatum.get(), tuple.get(4));
+    if (scanner.isProjectable()) {
+      assertEquals(expect.get(1), tuple.get(0));
+      assertEquals(NullDatum.get(), tuple.get(1));
+    } else {
+      assertEquals(expect.get(1), tuple.get(1));
+      assertEquals(NullDatum.get(), tuple.get(4));
+    }
   }
 }

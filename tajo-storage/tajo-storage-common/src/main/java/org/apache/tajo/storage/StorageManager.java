@@ -390,9 +390,7 @@ public abstract class StorageManager {
 
     Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
     scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
-    if (scanner.isProjectable()) {
-      scanner.setTarget(target.toArray());
-    }
+    scanner.setTarget(target.toArray());
 
     return scanner;
   }

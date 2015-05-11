@@ -175,7 +175,19 @@ public class TestMergeScanner {
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
       totalCounts++;
-      if (isProjectableStorage(meta.getStoreType())) {
+
+      if (storeType.equalsIgnoreCase("RAW")) {
+        assertEquals(4, tuple.size());
+        assertNotNull(tuple.get(0));
+        assertNotNull(tuple.get(1));
+        assertNotNull(tuple.get(2));
+        assertNotNull(tuple.get(3));
+      } else if (scanner.isProjectable()) {
+        assertEquals(2, tuple.size());
+        assertNotNull(tuple.get(0));
+        assertNotNull(tuple.get(1));
+      } else {
+        assertEquals(4, tuple.size());
         assertNotNull(tuple.get(0));
         assertNull(tuple.get(1));
         assertNotNull(tuple.get(2));
@@ -190,8 +202,6 @@ public class TestMergeScanner {
   private static boolean isProjectableStorage(String type) {
     if (type.equalsIgnoreCase("RCFILE") ||
         type.equalsIgnoreCase("PARQUET") ||
-        type.equalsIgnoreCase("SEQUENCEFILE") ||
-        type.equalsIgnoreCase("CSV") ||
         type.equalsIgnoreCase("AVRO")) {
       return true;
     } else {

@@ -24,11 +24,13 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1591: Change StoreType represented as Enum to String type. (hyunsik)
+
     TAJO-1452: Improve function listing order (Contributed Dongjoon Hyun, 
     Committed by hyunsik)
 
-    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() eliminates 
-    an important kind of information. 
+    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() 
+    eliminates an important kind of information. 
     (Contributed by Jongyoung Park, Committed by jihoon)
 
     TAJO-1408: Make IntermediateEntryProto more compact. 
@@ -120,6 +122,8 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1593: Add missing stop condition to Taskrunner. (jinho)
 
     TAJO-1556: "insert into select" with reordered column list does not work.
     (Contributed by Yongjin Choi, Committed by jihoon)
@@ -274,6 +278,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1359: Add nested field projector and language extension to project 
+    nested record. (hyunsik)
 
     TAJO-1529: Implement json_extract_path_text(string, string) function.
     (jinho)

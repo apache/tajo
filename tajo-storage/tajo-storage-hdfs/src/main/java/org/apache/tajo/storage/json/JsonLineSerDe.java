@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.json;
 
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.text.TextLineDeserializer;
@@ -26,8 +27,8 @@ import org.apache.tajo.storage.text.TextLineSerializer;
 
 public class JsonLineSerDe extends TextLineSerDe {
   @Override
-  public TextLineDeserializer createDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
-    return new JsonLineDeserializer(schema, meta, targetColumnIndexes);
+  public TextLineDeserializer createDeserializer(Schema schema, TableMeta meta, Column [] projected) {
+    return new JsonLineDeserializer(schema, meta, projected);
   }
 
   @Override

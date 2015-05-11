@@ -19,12 +19,12 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
@@ -150,7 +150,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   public String toString() {
     StringBuilder sb = new StringBuilder("Distinct GroupBy (");
     if (groupingColumns != null && groupingColumns.length > 0) {
-      sb.append("grouping set=").append(TUtil.arrayToString(groupingColumns));
+      sb.append("grouping set=").append(StringUtils.join(groupingColumns));
       sb.append(", ");
     }
     for (GroupbyNode eachNode: subGroupbyPlan) {

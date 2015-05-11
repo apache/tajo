@@ -23,7 +23,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -193,7 +193,7 @@ public class DataChannel {
     sb.append(" (type=").append(shuffleType);
     if (hasShuffleKeys()) {
       sb.append(", key=");
-      sb.append(TUtil.arrayToString(shuffleKeys));
+      sb.append(StringUtils.join(shuffleKeys));
       sb.append(", num=").append(numOutputs);
     }
     sb.append(")");

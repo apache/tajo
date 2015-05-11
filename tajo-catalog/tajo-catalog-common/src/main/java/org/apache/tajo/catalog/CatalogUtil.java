@@ -171,6 +171,16 @@ public class CatalogUtil {
     return openQuote && closeQuote;
   }
 
+  /**
+   * True if a given name is a simple identifier, meaning is not a dot-chained name.
+   *
+   * @param columnOrTableName Column or Table name to be checked
+   * @return True if a given name is a simple identifier. Otherwise, it will return False.
+   */
+  public static boolean isSimpleIdentifier(String columnOrTableName) {
+    return columnOrTableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 1;
+  }
+
   public static boolean isFQColumnName(String tableName) {
     return tableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 3;
   }
@@ -662,7 +672,7 @@ public class CatalogUtil {
       if (types[i].getType() != Type.NULL_TYPE) {
         Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
         if (candidate == null) {
-          throw new InvalidOperationException("No matched operation for those types: " + TUtil.arrayToString
+          throw new InvalidOperationException("No matched operation for those types: " + StringUtils.join
               (types));
         }
         widest = newSimpleDataType(candidate);

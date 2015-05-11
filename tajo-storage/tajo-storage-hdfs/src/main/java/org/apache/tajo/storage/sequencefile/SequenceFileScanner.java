@@ -108,9 +108,9 @@ public class SequenceFileScanner extends FileScanner {
     }
 
 
-    fieldIsNull = new boolean[schema.getColumns().size()];
-    fieldStart = new int[schema.getColumns().size()];
-    fieldLength = new int[schema.getColumns().size()];
+    fieldIsNull = new boolean[schema.getRootColumns().size()];
+    fieldStart = new int[schema.getRootColumns().size()];
+    fieldLength = new int[schema.getRootColumns().size()];
 
     prepareProjection(targets);
 
@@ -172,7 +172,7 @@ public class SequenceFileScanner extends FileScanner {
         Text text = new Text();
         reader.getCurrentValue(text);
         cells = BytesUtils.splitPreserveAllTokens(text.getBytes(), 
-            delimiter, projectionMap, schema.getColumns().size());
+            delimiter, projectionMap, schema.getRootColumns().size());
         totalBytes += (long)text.getBytes().length;
         tuple = new LazyTuple(schema, cells, 0, nullChars, serde);
       }
@@ -197,7 +197,7 @@ public class SequenceFileScanner extends FileScanner {
    * So, tajo must make a tuple after parsing hive style BinarySerDe.
    */
   private Tuple makeTuple(BytesWritable value) throws IOException{
-    Tuple tuple = new VTuple(schema.getColumns().size());
+    Tuple tuple = new VTuple(schema.getRootColumns().size());
 
     int start = 0;
     int length = value.getLength();
@@ -213,7 +213,7 @@ public class SequenceFileScanner extends FileScanner {
     int lastFieldByteEnd = start + 1;
 
     // Go through all bytes in the byte[]
-    for (int i = 0; i < schema.getColumns().size(); i++) {
+    for (int i = 0; i < schema.getRootColumns().size(); i++) {
       fieldIsNull[i] = true;
       if ((nullByte & (1 << (i % 8))) != 0) {
         fieldIsNull[i] = false;
@@ -322,12 +322,12 @@ public class SequenceFileScanner extends FileScanner {
 
   @Override
   public boolean isProjectable() {
-    return true;
+    return false;
   }
 
   @Override
   public boolean isSelectable() {
-    return true;
+    return false;
   }
 
   @Override

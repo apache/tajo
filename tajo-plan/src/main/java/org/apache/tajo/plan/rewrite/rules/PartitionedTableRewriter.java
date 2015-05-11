@@ -224,7 +224,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
     Schema paritionValuesSchema = new Schema();
-    for (Column column : partitionDesc.getExpressionSchema().getColumns()) {
+    for (Column column : partitionDesc.getExpressionSchema().getRootColumns()) {
       paritionValuesSchema.addColumn(column);
     }
 
@@ -237,7 +237,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
       // add qualifier to schema for qual
       paritionValuesSchema.setQualifier(scanNode.getCanonicalName());
-      for (Column column : paritionValuesSchema.getColumns()) {
+      for (Column column : paritionValuesSchema.getRootColumns()) {
         for (EvalNode simpleExpr : conjunctiveForms) {
           if (checkIfIndexablePredicateOnTargetColumn(simpleExpr, column)) {
             indexablePredicateSet.add(simpleExpr);
