@@ -22,6 +22,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.LogicalPlan;
@@ -94,6 +95,10 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         List<ScanNode> broadcastCandidates = TUtil.newList();
         List<ExecutionBlock> childs = plan.getChilds(current);
         Map<ScanNode, ExecutionBlock> relationBlockMap = TUtil.newHashMap();
+        Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = current.getUnionScanMap();
+        if (unionScanMap == null) {
+          unionScanMap = TUtil.newHashMap();
+        }
 
         // find all broadcast candidates from every child
         for (ExecutionBlock child : childs) {
@@ -132,6 +137,37 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         // TODO: check all inputs are marked as broadcast
         for (ExecutionBlock child : childs) {
           if (child.hasBroadcastRelation()) {
+            List<ExecutionBlockId> unionScans = TUtil.newList();
+            ExecutionBlockId representativeId = null;
+            if (unionScanMap.containsKey(child.getId())) {
+              representativeId = unionScanMap.get(child.getId());
+            } else if (unionScanMap.containsValue(child.getId())) {
+              representativeId = child.getId();
+            }
+
+            if (representativeId != null) {
+              for (Map.Entry<ExecutionBlockId, ExecutionBlockId> entry : unionScanMap.entrySet()) {
+                if (entry.getValue().equals(representativeId.getId())) {
+                  unionScans.add(entry.getKey());
+                }
+              }
+
+              // add unions
+              LogicalNode left, topUnion = null;
+              left = GlobalPlanner.buildInputExecutor(plan.getLogicalPlan(), plan.getChannel(unionScans.get(0), current.getId()));
+              for (i = 1; i < unionScans.size(); i++) {
+                // left must not be null
+                UnionNode unionNode = plan.getLogicalPlan().createNode(UnionNode.class);
+                unionNode.setLeftChild(left);
+                unionNode.setRightChild(GlobalPlanner.buildInputExecutor(plan.getLogicalPlan(), plan.getChannel(unionScans.get(i), current.getId())));
+                topUnion = unionNode;
+                left = unionNode;
+              }
+
+              ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(plan.getExecBlock(representativeId), current);
+              PlannerUtil.replaceNode(plan.getLogicalPlan(), current.getPlan(), scanForChild, topUnion);
+            }
+
             mergeTwoPhaseJoin(plan, child, current);
           }
         }
@@ -192,17 +228,17 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private ExecutionBlock mergeTwoPhaseJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
       throws PlanningException {
     ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(child, parent);
-    if (scanForChild == null) {
-      if (parent.getUnionScanMap() != null && !parent.getUnionScanMap().isEmpty()) {
-        ExecutionBlockId scanEbId = parent.getUnionScanMap().get(child.getId());
-        if (scanEbId != null) {
-          ExecutionBlock scanEb = plan.getExecBlock(scanEbId);
-          if (scanEb != null) {
-            scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(scanEb, parent);
-          }
-        }
-      }
-    }
+//    if (scanForChild == null) {
+//      if (parent.getUnionScanMap() != null && !parent.getUnionScanMap().isEmpty()) {
+//        ExecutionBlockId scanEbId = parent.getUnionScanMap().get(child.getId());
+//        if (scanEbId != null) {
+//          ExecutionBlock scanEb = plan.getExecBlock(scanEbId);
+//          if (scanEb != null) {
+//            scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(scanEb, parent);
+//          }
+//        }
+//      }
+//    }
     if (scanForChild == null) {
       throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
