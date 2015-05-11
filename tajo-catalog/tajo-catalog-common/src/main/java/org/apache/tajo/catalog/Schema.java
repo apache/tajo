@@ -157,13 +157,19 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public Column getColumn(Column column) {
+    int idx = getIndex(column);
+    return idx >= 0 ? fields.get(idx) : null;
+  }
+
+  public int getIndex(Column column) {
     if (!contains(column)) {
-      return null;
+      return -1;
     }
+
     if (column.hasQualifier()) {
-      return fields.get(fieldsByQualifiedName.get(column.getQualifiedName()));
+      return fieldsByQualifiedName.get(column.getQualifiedName());
     } else {
-      return fields.get(fieldsByName.get(column.getSimpleName()).get(0));
+      return fieldsByName.get(column.getSimpleName()).get(0);
     }
   }
 

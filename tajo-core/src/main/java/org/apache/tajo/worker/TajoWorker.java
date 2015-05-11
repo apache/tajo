@@ -37,6 +37,8 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
@@ -75,6 +77,7 @@ import static org.apache.tajo.conf.TajoConf.ConfVars;
 public class TajoWorker extends CompositeService {
   public static final PrimitiveProtos.BoolProto TRUE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
   public static final PrimitiveProtos.BoolProto FALSE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
+  public static final PrimitiveProtos.NullProto NULL_PROTO = PrimitiveProtos.NullProto.newBuilder().build();
 
   private static final Log LOG = LogFactory.getLog(TajoWorker.class);
 
@@ -151,6 +154,11 @@ public class TajoWorker extends CompositeService {
 
     this.systemConf = (TajoConf)conf;
     RackResolver.init(systemConf);
+
+    RpcClientManager rpcManager = RpcClientManager.getInstance();
+    rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
+    rpcManager.setTimeoutSeconds(
+        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
     serviceTracker = ServiceTrackerFactory.get(systemConf);
 

@@ -24,9 +24,6 @@
 # Hadoop home. Required
 # export HADOOP_HOME=
 
-# HBase home. optional
-# export HBASE_HOME=
-
 # The java implementation to use.  Required.
 # export JAVA_HOME=/usr/java/default
 
@@ -79,5 +76,5 @@
 # Tajo PullServer mode. the default is embedded mode (in worker)
 # export TAJO_PULLSERVER_STANDALONE=false
 
-# It must be required to use HBase
+# HBase home directory. It is opitional, but is required mandatorily to use HBase.
 # export HBASE_HOME=
