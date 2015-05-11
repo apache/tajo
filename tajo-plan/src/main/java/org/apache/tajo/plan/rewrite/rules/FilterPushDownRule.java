@@ -245,6 +245,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
     // TODO: non-equi theta join quals must not be pushed until TAJO-742 is resolved.
     nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(wherePredicates, block, joinNode));
+    nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(onPredicates, block, joinNode));
 
     // for outer joins
     if (PlannerUtil.isOuterJoin(joinNode.getJoinType())) {

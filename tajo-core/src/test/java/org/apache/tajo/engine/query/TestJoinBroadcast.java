@@ -67,6 +67,8 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+
+
   @Test
   public final void testWhereClauseJoin1() throws Exception {
     ResultSet res = executeQuery();
