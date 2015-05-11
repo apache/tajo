@@ -215,7 +215,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public final void testJoinWithMultipleJoinQual3() throws Exception {
     ResultSet res = executeQuery();
-    assertResultSet(res, true);
+    assertResultSet(res);
     cleanupQuery(res);
   }
 
@@ -596,10 +596,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
     ) t
     join supplier s on (s.s_nationkey = t.n_nationkey)
     join partsupp ps on (s.s_suppkey = ps.ps_suppkey)
-    where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO');
+    where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO')
+    order by t.n_nationkey;
      */
     ResultSet res = executeJsonQuery();
-    assertResultSet(res, true);
+    assertResultSet(res);
     cleanupQuery(res);
   }
 
