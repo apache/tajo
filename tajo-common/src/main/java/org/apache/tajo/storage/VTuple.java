@@ -201,6 +201,7 @@ public class VTuple implements Tuple, Cloneable {
     return tuple;
   }
 
+  @Override
   public String toString() {
 		return toDisplayString(getValues());
 	}
@@ -225,22 +226,15 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   public static String toDisplayString(Datum [] values) {
-    boolean first = true;
     StringBuilder str = new StringBuilder();
-    str.append("(");
-    for(int i=0; i < values.length; i++) {
-      if(values[i] != null) {
-        if(first) {
-          first = false;
-        } else {
-          str.append(", ");
-        }
-        str.append(i)
-            .append("=>")
-            .append(values[i]);
+    str.append('(');
+    for (Datum datum : values) {
+      if (str.length() > 1) {
+        str.append(',');
       }
+      str.append(datum);
     }
-    str.append(")");
+    str.append(')');
     return str.toString();
   }
 }

@@ -82,7 +82,7 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
 
   @Override
   public Datum eval(Tuple tuple) {
-    if (!isBinded) {
+    if (!isBound) {
       throw new IllegalStateException("bind() must be called before eval()");
     }
     Datum predicand = leftExpr.eval(tuple);
