@@ -73,9 +73,9 @@ public class ExecutionBlock {
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);
-      if (isUnionOnly && node.getType() != NodeType.ROOT &&
+      if (isUnionOnly && node.getType() != NodeType.ROOT && node.getType() != NodeType.TABLE_SUBQUERY &&
           node.getType() != NodeType.SCAN && node.getType() != NodeType.PARTITIONS_SCAN &&
-          node.getType() != NodeType.UNION) {
+          node.getType() != NodeType.UNION && node.getType() != NodeType.PROJECTION) {
         isUnionOnly = false;
       }
       if (node instanceof UnaryNode) {
