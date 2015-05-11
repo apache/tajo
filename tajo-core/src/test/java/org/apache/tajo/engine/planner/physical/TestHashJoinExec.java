@@ -52,6 +52,8 @@ import org.junit.Test;
 import java.io.IOException;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
+import static org.apache.tajo.engine.planner.PhysicalPlanner.INPUT.LEFT;
+import static org.apache.tajo.engine.planner.PhysicalPlanner.INPUT.RIGHT;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.*;
 
@@ -269,11 +271,11 @@ public class TestHashJoinExec {
     }
 
     if (leftSmaller) {
-      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getLeftChild(), true));
-      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getRightChild(), false));
+      assertTrue(phyPlanner.isInnerJoinHashApplicable(ctx, joinNode.getLeftChild(), LEFT));
+      assertFalse(phyPlanner.isInnerJoinHashApplicable(ctx, joinNode.getRightChild(), RIGHT));
     } else {
-      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getLeftChild(), true));
-      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getRightChild(), false));
+      assertFalse(phyPlanner.isInnerJoinHashApplicable(ctx, joinNode.getLeftChild(), LEFT));
+      assertTrue(phyPlanner.isInnerJoinHashApplicable(ctx, joinNode.getRightChild(), RIGHT));
     }
 
     return leftSmaller;

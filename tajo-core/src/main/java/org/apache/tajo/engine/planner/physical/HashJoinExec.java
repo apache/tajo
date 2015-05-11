@@ -59,24 +59,26 @@ public class HashJoinExec extends CommonJoinExec {
     super(context, plan, leftExec, rightExec);
 
     // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
-        rightExec.getSchema(), false);
+    if (hasJoinQual) {
+      this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
+          rightExec.getSchema(), false);
 
-    leftKeyList = new int[joinKeyPairs.size()];
-    rightKeyList = new int[joinKeyPairs.size()];
+      leftKeyList = new int[joinKeyPairs.size()];
+      rightKeyList = new int[joinKeyPairs.size()];
 
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      leftKeyList[i] = leftExec.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
-    }
+      for (int i = 0; i < joinKeyPairs.size(); i++) {
+        leftKeyList[i] = leftExec.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
+      }
 
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      rightKeyList[i] = rightExec.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
+      for (int i = 0; i < joinKeyPairs.size(); i++) {
+        rightKeyList[i] = rightExec.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
+      }
+      leftKeyTuple = new VTuple(leftKeyList.length);
     }
 
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
-    leftKeyTuple = new VTuple(leftKeyList.length);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
