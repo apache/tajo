@@ -147,7 +147,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
             if (representativeId != null) {
               for (Map.Entry<ExecutionBlockId, ExecutionBlockId> entry : unionScanMap.entrySet()) {
-                if (entry.getValue().equals(representativeId.getId())) {
+                if (entry.getValue().equals(representativeId)) {
                   unionScans.add(entry.getKey());
                 }
               }
@@ -160,12 +160,17 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
                 UnionNode unionNode = plan.getLogicalPlan().createNode(UnionNode.class);
                 unionNode.setLeftChild(left);
                 unionNode.setRightChild(GlobalPlanner.buildInputExecutor(plan.getLogicalPlan(), plan.getChannel(unionScans.get(i), current.getId())));
+                unionNode.setInSchema(left.getOutSchema());
+                unionNode.setOutSchema(left.getOutSchema());
                 topUnion = unionNode;
                 left = unionNode;
               }
 
               ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(plan.getExecBlock(representativeId), current);
               PlannerUtil.replaceNode(plan.getLogicalPlan(), current.getPlan(), scanForChild, topUnion);
+
+              current.getUnionScanMap().clear();
+              current.setPlan(current.getPlan());
             }
 
             mergeTwoPhaseJoin(plan, child, current);

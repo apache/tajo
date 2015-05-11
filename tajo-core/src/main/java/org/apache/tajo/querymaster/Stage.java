@@ -712,7 +712,7 @@ public class Stage implements EventHandler<StageEvent> {
    */
   private void finalizeStats() {
     TableStats[] statsArray;
-    if (block.hasUnion()) {
+    if (block.isUnionOnly()) {
       statsArray = computeStatFromUnionBlock(this);
     } else {
       statsArray = computeStatFromTasks();
@@ -784,7 +784,7 @@ public class Stage implements EventHandler<StageEvent> {
 
       try {
         // Union operator does not require actual query processing. It is performed logically.
-        if (execBlock.hasUnion()) {
+        if (execBlock.isUnionOnly()) {
           // Though union operator does not be processed at all, but it should handle the completion event.
           stage.complete();
           state = StageState.SUCCEEDED;

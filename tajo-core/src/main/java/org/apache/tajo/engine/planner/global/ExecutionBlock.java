@@ -39,6 +39,7 @@ public class ExecutionBlock {
 
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
+  private boolean isUnionOnly;
 
   private Set<String> broadcasted = new HashSet<String>();
 
@@ -59,6 +60,7 @@ public class ExecutionBlock {
   public void setPlan(LogicalNode plan) {
     hasJoinPlan = false;
     hasUnionPlan = false;
+    isUnionOnly = true;
     this.scanlist.clear();
     this.plan = plan;
 
@@ -71,6 +73,11 @@ public class ExecutionBlock {
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);
+      if (isUnionOnly && node.getType() != NodeType.ROOT &&
+          node.getType() != NodeType.SCAN && node.getType() != NodeType.PARTITIONS_SCAN &&
+          node.getType() != NodeType.UNION) {
+        isUnionOnly = false;
+      }
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
         s.add(s.size(), unary.getChild());
@@ -91,6 +98,9 @@ public class ExecutionBlock {
       } else if (node instanceof StoreTableNode) {
         store = (StoreTableNode)node;
       }
+    }
+    if (!hasUnionPlan) {
+      isUnionOnly = false;
     }
   }
 
@@ -134,6 +144,10 @@ public class ExecutionBlock {
 
   public boolean hasUnion() {
     return hasUnionPlan;
+  }
+
+  public boolean isUnionOnly() {
+    return isUnionOnly;
   }
 
   public void addBroadcastRelation(String tableName) {
