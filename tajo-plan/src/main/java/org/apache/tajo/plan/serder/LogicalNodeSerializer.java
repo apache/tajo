@@ -729,7 +729,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     for (int i = 0; i < node.childNum(); i++) {
 //      if (context.idMap.containsKey(node.getChild(i))) {
 //        childIds[i] = context.idMap.get(node.getChild(i));
-      if (context.idMap.containsKey(node.getChild(i).getPID())) {
+      if (node.getChild(i) != null && context.idMap.containsKey(node.getChild(i).getPID())) {
         childIds[i] = context.idMap.get(node.getChild(i).getPID());
       } else {
         childIds[i] = context.seqId++;
