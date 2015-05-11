@@ -60,7 +60,6 @@ public abstract class AbstractHBaseAppender implements Appender {
   protected boolean[] isRowKeyMappings;
   protected boolean[] isColumnKeys;
   protected boolean[] isColumnValues;
-  protected int[] rowKeyFieldIndexes;
   protected int[] rowkeyColumnIndexes;
   protected char rowKeyDelimiter;
 
@@ -107,7 +106,6 @@ public abstract class AbstractHBaseAppender implements Appender {
     isColumnKeys = columnMapping.getIsColumnKeys();
     isColumnValues = columnMapping.getIsColumnValues();
     rowKeyDelimiter = columnMapping.getRowKeyDelimiter();
-    rowKeyFieldIndexes = columnMapping.getRowKeyFieldIndexes();
 
     this.columnNum = schema.size();
 

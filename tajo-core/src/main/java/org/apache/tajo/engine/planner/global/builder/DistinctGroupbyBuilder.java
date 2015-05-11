@@ -81,13 +81,13 @@ public class DistinctGroupbyBuilder {
         // If there is not grouping column, we can't find column alias.
         // Thus we should find the alias at Groupbynode output schema.
         if (groupbyNode.getGroupingColumns().length == 0
-            && aggFunctions.length == groupbyNode.getOutSchema().getColumns().size()) {
+            && aggFunctions.length == groupbyNode.getOutSchema().getRootColumns().size()) {
           aggFunctions[i].setAlias(groupbyNode.getOutSchema().getColumn(i).getQualifiedName());
         }
       }
 
       if (groupbyNode.getGroupingColumns().length == 0
-          && aggFunctions.length == groupbyNode.getOutSchema().getColumns().size()) {
+          && aggFunctions.length == groupbyNode.getOutSchema().getRootColumns().size()) {
         groupbyNode.setAggFunctions(aggFunctions);
       }
 
@@ -672,7 +672,7 @@ public class DistinctGroupbyBuilder {
     int index = 0;
     for(GroupbyNode eachNode: secondStageDistinctNode.getSubPlans()) {
       eachNode.setInSchema(firstStageDistinctNode.getOutSchema());
-      for (Column column: eachNode.getOutSchema().getColumns()) {
+      for (Column column: eachNode.getOutSchema().getRootColumns()) {
         if (secondStageInSchema.getColumn(column) == null) {
           secondStageInSchema.addColumn(column);
         }

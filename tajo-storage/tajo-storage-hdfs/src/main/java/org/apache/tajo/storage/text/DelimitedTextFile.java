@@ -275,7 +275,6 @@ public class DelimitedTextFile {
     private final long endOffset;
     /** The number of actual read records */
     private int recordCount = 0;
-    private int[] targetColumnIndexes;
 
     private DelimitedLineReader reader;
     private TextLineDeserializer deserializer;
@@ -321,13 +320,7 @@ public class DelimitedTextFile {
         targets = schema.toArray();
       }
 
-      targetColumnIndexes = new int[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
-      }
-
       super.init();
-      Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
@@ -336,7 +329,7 @@ public class DelimitedTextFile {
         reader.readLine();  // skip first line;
       }
 
-      deserializer = getLineSerde().createDeserializer(schema, meta, targetColumnIndexes);
+      deserializer = getLineSerde().createDeserializer(schema, meta, targets);
       deserializer.init();
     }
 
@@ -391,7 +384,7 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          tuple = new VTuple(schema.size());
+          tuple = new VTuple(targets.length);
           tuple.setOffset(offset);
 
           try {

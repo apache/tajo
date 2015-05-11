@@ -146,7 +146,7 @@ public class PlannerUtil {
         if (EvalTreeUtil.checkIfPartitionSelection(node, partSchema)) {
           prefixPartitionWhere = true;
           boolean isPrefix = true;
-          for (Column c : partSchema.getColumns()) {
+          for (Column c : partSchema.getRootColumns()) {
             String value = EvalTreeUtil.getPartitionValue(node, c.getSimpleName());
             if (isPrefix && value == null)
               isPrefix = false;

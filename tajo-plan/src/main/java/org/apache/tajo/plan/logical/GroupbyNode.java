@@ -18,17 +18,17 @@
 
 package org.apache.tajo.plan.logical;
 
-import java.util.Arrays;
-
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+
+import java.util.Arrays;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   /** Grouping key sets */
@@ -110,11 +110,11 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("GroupBy (");
     if (groupingKeys != null && groupingKeys.length > 0) {
-      sb.append("grouping set=").append(TUtil.arrayToString(groupingKeys));
+      sb.append("grouping set=").append(StringUtils.join(groupingKeys));
       sb.append(", ");
     }
     if (hasAggFunctions()) {
-      sb.append("funcs=").append(TUtil.arrayToString(aggrFunctions));
+      sb.append("funcs=").append(StringUtils.join(aggrFunctions));
     }
     sb.append(")");
     return sb.toString();

@@ -25,6 +25,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 public class ProjectionNode extends UnaryNode implements Projectable {
@@ -70,7 +71,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	public String toString() {
 	  StringBuilder sb = new StringBuilder("Projection (distinct=").append(distinct);
     if (targets != null) {
-      sb.append(", exprs=").append(TUtil.arrayToString(targets)).append(")");
+      sb.append(", exprs=").append(StringUtils.join(targets)).append(")");
     }
 	  return sb.toString();
 	}

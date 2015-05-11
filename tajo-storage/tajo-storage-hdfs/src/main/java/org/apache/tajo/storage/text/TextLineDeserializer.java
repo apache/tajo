@@ -31,12 +31,10 @@ import java.io.IOException;
 public abstract class TextLineDeserializer {
   protected final Schema schema;
   protected final TableMeta meta;
-  protected final int[] targetColumnIndexes;
 
-  public TextLineDeserializer(Schema schema, TableMeta meta, int [] targetColumnIndexes) {
+  public TextLineDeserializer(Schema schema, TableMeta meta) {
     this.schema = schema;
     this.meta = meta;
-    this.targetColumnIndexes = targetColumnIndexes;
   }
 
   /**

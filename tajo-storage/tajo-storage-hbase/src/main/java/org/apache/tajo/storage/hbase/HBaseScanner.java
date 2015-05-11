@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -87,7 +88,13 @@ public class HBaseScanner implements Scanner {
   private char rowKeyDelimiter;
 
   public HBaseScanner (Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
-    this.conf = (TajoConf)conf;
+    Preconditions.checkNotNull(conf);
+    Preconditions.checkNotNull(schema);
+    Preconditions.checkNotNull(meta);
+    Preconditions.checkNotNull(fragment);
+    Preconditions.checkArgument(conf instanceof TajoConf);
+
+    this.conf = (TajoConf) conf;
     this.schema = schema;
     this.meta = meta;
     this.fragment = (HBaseFragment)fragment;
@@ -102,11 +109,10 @@ public class HBaseScanner implements Scanner {
       tableStats.setNumBytes(0);
       tableStats.setNumBlocks(1);
     }
-    if (schema != null) {
-      for(Column eachColumn: schema.getColumns()) {
-        ColumnStats columnStats = new ColumnStats(eachColumn);
-        tableStats.addColumnStat(columnStats);
-      }
+
+    for (Column eachColumn : schema.getRootColumns()) {
+      ColumnStats columnStats = new ColumnStats(eachColumn);
+      tableStats.addColumnStat(columnStats);
     }
 
     scanFetchSize = Integer.parseInt(
@@ -203,9 +209,9 @@ public class HBaseScanner implements Scanner {
     }
 
     Result result = scanResults[scanResultIndex++];
-    Tuple resultTuple = new VTuple(schema.size());
+    Tuple resultTuple = new VTuple(targetIndexes.length);
     for (int i = 0; i < targetIndexes.length; i++) {
-      resultTuple.put(targetIndexes[i], getDatum(result, targetIndexes[i]));
+      resultTuple.put(i, getDatum(result, targetIndexes[i]));
     }
     numRows++;
     return resultTuple;
