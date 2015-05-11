@@ -24,4 +24,5 @@ public class HAConstants {
   public final static int RESOURCE_TRACKER_RPC_ADDRESS = 3;
   public final static int CATALOG_ADDRESS = 4;
   public final static int MASTER_INFO_ADDRESS = 5;
+  public final static String ACTIVE_MASTER_FILE_NAME = "active_master";
 }
