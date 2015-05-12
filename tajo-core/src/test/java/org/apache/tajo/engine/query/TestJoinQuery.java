@@ -129,10 +129,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+//    ResultSet res = executeQuery();
+//    assertResultSet(res);
+//    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test

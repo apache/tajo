@@ -5,12 +5,12 @@ JOIN(5)(CROSS)
   => out schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
   => in schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
    SCAN(1) on default.customer
-     => target list: default.customer.c_custkey (INT4), default.customer.c_name (TEXT), default.customer.c_address (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.customer.c_acctbal (FLOAT8), default.customer.c_mktsegment (TEXT), default.customer.c_comment (TEXT)
-     => out schema: {(8) default.customer.c_custkey (INT4), default.customer.c_name (TEXT), default.customer.c_address (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.customer.c_acctbal (FLOAT8), default.customer.c_mktsegment (TEXT), default.customer.c_comment (TEXT)}
+     => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)
+     => out schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
      => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
    SCAN(0) on default.region
-     => target list: default.region.r_regionkey (INT4), default.region.r_name (TEXT), default.region.r_comment (TEXT)
-     => out schema: {(3) default.region.r_regionkey (INT4), default.region.r_name (TEXT), default.region.r_comment (TEXT)}
+     => target list: default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)
+     => out schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
      => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
 explain
 -------------------------------
@@ -39,12 +39,12 @@ JOIN(5)(CROSS)
   => out schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
   => in schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
    SCAN(1) on default.customer
-     => target list: default.customer.c_custkey (INT4), default.customer.c_name (TEXT), default.customer.c_address (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.customer.c_acctbal (FLOAT8), default.customer.c_mktsegment (TEXT), default.customer.c_comment (TEXT)
-     => out schema: {(8) default.customer.c_custkey (INT4), default.customer.c_name (TEXT), default.customer.c_address (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.customer.c_acctbal (FLOAT8), default.customer.c_mktsegment (TEXT), default.customer.c_comment (TEXT)}
+     => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)
+     => out schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
      => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
    SCAN(0) on default.region
-     => target list: default.region.r_regionkey (INT4), default.region.r_name (TEXT), default.region.r_comment (TEXT)
-     => out schema: {(3) default.region.r_regionkey (INT4), default.region.r_name (TEXT), default.region.r_comment (TEXT)}
+     => target list: default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)
+     => out schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
      => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
 
 =======================================================
