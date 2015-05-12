@@ -18,6 +18,8 @@
 
 package org.apache.tajo.ha;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
@@ -34,6 +36,8 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
 public class TestHAServiceHDFSImpl  {
+  private static Log LOG = LogFactory.getLog(TestHAServiceHDFSImpl.class);
+
   private TajoTestingCluster cluster;
   private TajoMaster backupMaster;
 
@@ -55,14 +59,18 @@ public class TestHAServiceHDFSImpl  {
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
 
+      LOG.info("### 1000 ###");
+
       ServiceTracker serviceTracker = ServiceTrackerFactory.get(conf);
       masterAddress = serviceTracker.getUmbilicalAddress().getHostName();
 
       setConfiguration();
+      LOG.info("### 1100 ###");
 
       backupMaster = new TajoMaster();
       backupMaster.init(conf);
       backupMaster.start();
+      LOG.info("### 1200 ###");
 
       assertNotEquals(cluster.getMaster().getMasterName(), backupMaster.getMasterName());
 
@@ -74,20 +82,25 @@ public class TestHAServiceHDFSImpl  {
 
       assertTrue(cluster.getMaster().isActiveMaster());
       assertFalse(backupMaster.isActiveMaster());
+      LOG.info("### 1300 ###");
 
       createDatabaseAndTable();
       verifyDataBaseAndTable();
       client.close();
+      LOG.info("### 1400 ###");
 
       cluster.getMaster().stop();
 
       Thread.sleep(7000);
+      LOG.info("### 1500 ###");
 
       assertFalse(cluster.getMaster().isActiveMaster());
       assertTrue(backupMaster.isActiveMaster());
 
       client = cluster.newTajoClient();
       verifyDataBaseAndTable();
+      LOG.info("### 1600 ###");
+
     } finally {
       client.close();
       backupMaster.stop();
@@ -135,7 +148,7 @@ public class TestHAServiceHDFSImpl  {
     backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
     assertTrue(fs.exists(backupPath));
 
-    assertEquals(1, fs.listStatus(activePath).length);
+    assertEquals(2, fs.listStatus(activePath).length);
     assertEquals(1, fs.listStatus(backupPath).length);
   }
 

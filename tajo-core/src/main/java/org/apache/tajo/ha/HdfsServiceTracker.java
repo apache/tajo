@@ -31,7 +31,8 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.HAServiceTracker;
 import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.TajoMasterInfo;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.*;
+import org.apache.tajo.util.FileUtil;
 
 import javax.net.SocketFactory;
 import java.io.IOException;
@@ -124,68 +125,106 @@ public class HdfsServiceTracker extends HAServiceTracker {
    */
   @Override
   public void register() throws IOException {
-    Path path = new Path(activePath, HAConstants.ACTIVE_MASTER_FILE_NAME);
+    // Check lock file
+    boolean lockResult = createLockFile();
+    LOG.info("### 100 ### masterName:" + masterName + ", lockResult:" + lockResult);
 
-    TajoMasterInfo masterInfo = new TajoMasterInfo();
+    String fileName = masterName.replaceAll(":", "_");
+    Path path = new Path(activePath, fileName);
+    LOG.info("### 110 ### masterName:" + masterName + ", path:" + path.toString() );
 
+    // Set TajoMasterInfo object which has several rpc server addresses.
     StringBuilder sb = new StringBuilder();
     InetSocketAddress address = getHostAddress(HAConstants.MASTER_UMBILICAL_RPC_ADDRESS);
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
-    masterInfo.setTajoMasterAddress(address);
 
     address = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
-    masterInfo.setTajoClientAddress(address);
 
     address = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
-    masterInfo.setWorkerResourceTrackerAddr(address);
 
     address = getHostAddress(HAConstants.CATALOG_ADDRESS);
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
-    masterInfo.setCatalogAddress(address);
 
     address = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
-    masterInfo.setWebServerAddress(address);
-
-    FSDataOutputStream out = null;
-    TajoMasterInfo existingMasterInfo = null;
+    LOG.info("### 120 ### masterName:" + masterName);
 
     // Phase 1: If there is not another active master, this try to become active master.
-    try {
-      if (!fs.exists(path)) {
+    if (lockResult) {
+      LOG.info("### 130 ### masterName:" + masterName );
+      createMasterFile(fs.create(path), sb);
+      setActiveStatus(true);
+      LOG.info(String.format("This is added to active master (%s)", masterName));
+
+      FileStatus[] files = fs.listStatus(activePath);
+      for(FileStatus eachFile : files) {
+        LOG.info("### 131 ### eachFile:" + eachFile.getPath().toString() );
+      }
+    } else {
+      LOG.info("### 140 ### masterName:" + masterName + ", currentActiveMaster:" + currentActiveMaster);
+
+      FileStatus[] files = fs.listStatus(activePath);
+      String[] hostAddress = null;
+      for(FileStatus eachFile : files) {
+        LOG.info("### 141 ### eachFile:" + eachFile.getPath().toString());
+        if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE)) {
+          hostAddress = eachFile.getPath().getName().split("_");
+          currentActiveMaster = hostAddress[0] + ":" + hostAddress[1];
+        }
+      }
+
+      // Phase 2: If there is active master information, we need to check its status.
+      LOG.info("### 142 ### masterName:" + masterName + ", currentActiveMaster:" + currentActiveMaster);
+
+      // Phase 3: If current active master is dead, this master should be active master.
+      if (!checkConnection(new InetSocketAddress(hostAddress[0], Integer.parseInt(hostAddress[1])))) {
+        LOG.info("### 150 ### masterName:" + masterName );
+        fs.delete(path, true);
         createMasterFile(fs.create(path), sb);
         setActiveStatus(true);
         LOG.info(String.format("This is added to active master (%s)", masterName));
       } else {
-        // Phase 2: If there is active master information, we need to check its status.
-        existingMasterInfo = getTajoMasterInfo(path, true);
-        currentActiveMaster = existingMasterInfo.getTajoMasterAddress().getAddress().getHostAddress()
-          + ":" + existingMasterInfo.getTajoMasterAddress().getPort();
-
-        // Phase 3: If current active master is dead, this master should be active master.
-        if (!checkConnection(existingMasterInfo.getTajoMasterAddress())) {
-          fs.delete(path, true);
-          createMasterFile(fs.create(path), sb);
+        LOG.info("### 160 ### masterName:" + masterName );
+        // Phase 4: If current active master is alive, this master need to be backup master.
+        if (masterName.equals(currentActiveMaster)) {
           setActiveStatus(true);
-          LOG.info(String.format("This is added to active master (%s)", masterName));
+          LOG.info(String.format("This has already been added to active master (%s)", masterName));
         } else {
-          // Phase 4: If current active master is alive, this master need to be backup master.
-          if (masterInfo.getTajoMasterAddress().equals(existingMasterInfo.getTajoMasterAddress())) {
-            setActiveStatus(true);
-            LOG.info(String.format("This has already been added to active master (%s)", masterName));
-          } else {
-            String fileName = masterName.replaceAll(":", "_");
-            path = new Path(backupPath, fileName);
-            createMasterFile(fs.create(path), sb);
-            setActiveStatus(false);
-          }
+          path = new Path(backupPath, fileName);
+          createMasterFile(fs.create(path), sb);
+          setActiveStatus(false);
+          LOG.info(String.format("This is added to backup master (%s)", masterName));
         }
       }
-    } catch (FileAlreadyExistsException e) {
     }
+    LOG.info("### 170 ### masterName:" + masterName );
     startPingChecker();
+  }
+
+  private boolean createLockFile() throws IOException {
+    boolean result = false;
+    Path lockFile = null;
+    FSDataOutputStream lockOutput = null;
+
+    try {
+      lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
+      lockOutput = fs.create(lockFile, false);
+      lockOutput.hsync();
+      lockOutput.close();
+      fs.deleteOnExit(lockFile);
+      result = true;
+    } catch (FileAlreadyExistsException e) {
+      LOG.info(String.format("Lock file already exists at (%s)", lockFile.toString()));
+      result = false;
+    } catch (Exception e) {
+      throw new IOException("Lock file creation is failed - " + e.getMessage());
+    } finally {
+      FileUtil.cleanup(LOG, lockOutput);
+    }
+
+    return result;
   }
 
   private void setActiveStatus(boolean isActive) {
@@ -198,9 +237,15 @@ public class HdfsServiceTracker extends HAServiceTracker {
   }
 
   private void createMasterFile(FSDataOutputStream out, StringBuilder sb) throws IOException {
-    out.writeUTF(sb.toString());
-    out.hsync();
-    out.close();
+    try {
+      out.writeUTF(sb.toString());
+      out.hsync();
+      out.close();
+    } catch (Exception e) {
+      throw new IOException("File creation is failed - " + e.getMessage());
+    } finally {
+      FileUtil.cleanup(LOG, out);
+    }
   }
 
   private InetSocketAddress getHostAddress(int type) {
@@ -235,17 +280,26 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   @Override
   public void delete() throws IOException {
+    LOG.info("### 400 ###");
     String fileName = masterName.replaceAll(":", "_");
 
     if (masterName.equals(currentActiveMaster)) {
-      Path activeFile = new Path(activePath, HAConstants.ACTIVE_MASTER_FILE_NAME);
+      Path activeFile = new Path(activePath, fileName);
       if (fs.exists(activeFile)) {
+        LOG.info("### 410 ### activeFile:" + activeFile.toString());
         fs.delete(activeFile, true);
+      }
+
+      Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
+      if (fs.exists(lockFile)) {
+        LOG.info("### 420 ### lockFile:" + lockFile.toString());
+        fs.delete(lockFile, true);
       }
     }
 
     Path backupFile = new Path(backupPath, fileName);
     if (fs.exists(backupFile)) {
+      LOG.info("### 430 ### backupFile:" + backupFile.toString());
       fs.delete(backupFile, true);
     }
     if (isActiveStatus) {
@@ -418,8 +472,8 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
       if (files.length < 1) {
         throw new ServiceTrackerException("No active master entry");
-      } else if (files.length > 1) {
-        throw new ServiceTrackerException("Two or more than active master entries.");
+      } else if (files.length > 2) {
+        throw new ServiceTrackerException("Three or more than active master entries.");
       }
 
       // We can ensure that there is only one file due to the above assertion.
@@ -434,8 +488,14 @@ public class HdfsServiceTracker extends HAServiceTracker {
       FSDataInputStream stream = fs.open(activeMasterEntry);
       String data = stream.readUTF();
       stream.close();
-
+      LOG.info("### 300 ### data:" + data);
       addressElements.addAll(TUtil.newList(data.split("_"))); // Add remains entries to elements
+
+      LOG.info("### 310 ### addressElementsSize:" + addressElements.size());
+
+      for(String eachAddress : addressElements) {
+        LOG.info("### 320 ### eachAddress:" + eachAddress);
+      }
 
       // ensure the number of entries
       Preconditions.checkState(addressElements.size() == 5, "Fewer service addresses than necessary.");
