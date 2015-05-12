@@ -149,6 +149,10 @@ public class ExplainPlanPreprocessorForTest {
         node.setTargets(sortTargets(node.getTargets()));
       }
 
+      if (node.hasJoinQual()) {
+        node.setJoinQual(sortQual(node.getJoinQual()));
+      }
+
       context.childNumbers.push(rightChildNum + leftChildNum);
 
       return null;
