@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import junit.framework.Assert;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
@@ -50,10 +49,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public TestJoinQuery(String joinOption) {
     super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
-        ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
-        ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
 
     testingCluster.setAllTajoDaemonConfValue(
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
@@ -63,11 +60,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
         ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
-
-    if (joinOption.indexOf("NoBroadcast") >= 0) {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
-    }
 
     if (joinOption.indexOf("Hash") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
@@ -90,8 +82,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"Hash_NoBroadcast"},
-        {"Sort_NoBroadcast"},
         {"Hash"},
         {"Sort"},
     });
@@ -132,159 +122,158 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest()
   public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
-//    ResultSet res = executeQuery();
-//    assertResultSet(res);
-//    cleanupQuery(res);
     runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testInnerJoinWithThetaJoinConditionInWhere() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithThetaJoinConditionInWhere() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testRightOuterJoinWithThetaJoinConditionInWhere() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testWhereClauseJoin1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testWhereClauseJoin2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testWhereClauseJoin3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testWhereClauseJoin4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testWhereClauseJoin5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testWhereClauseJoin6() throws Exception {
-    ResultSet res = executeQuery();
-    System.out.println(resultSetToString(res));
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testTPCHQ2Join() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithMultipleJoinQual1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithMultipleJoinQual2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithMultipleJoinQual3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithMultipleJoinQual4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithMultipleJoinTypes() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoin1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr1() throws Exception {
     // outer join with constant projections
     //
     // select c_custkey, orders.o_orderkey, 'val' as val from customer
     // left outer join orders on c_custkey = o_orderkey;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr2() throws Exception {
     // outer join with constant projections
     //
     // select c_custkey, o.o_orderkey, 'val' as val from customer left outer join
     // (select * from orders) o on c_custkey = o.o_orderkey
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr3() throws Exception {
     // outer join with constant projections
     //
     // select a.c_custkey, 123::INT8 as const_val, b.min_name from customer a
     // left outer join ( select c_custkey, min(c_name) as min_name from customer group by c_custkey) b
     // on a.c_custkey = b.c_custkey;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr4() throws Exception {
     // outer join with constant projections
     //
@@ -293,12 +282,12 @@ public class TestJoinQuery extends QueryTestCaseBase {
     //   orders.o_orderkey,
     //   1 as key1
     // from customer left outer join orders on c_custkey = o_orderkey and key1 = 1;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr5() throws Exception {
     // outer join with constant projections
     //
@@ -307,66 +296,64 @@ public class TestJoinQuery extends QueryTestCaseBase {
     //   orders.o_orderkey,
     //   1 as key1
     // from customer left outer join orders on c_custkey = o_orderkey and key1 = 1;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testRightOuterJoin1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testFullOuterJoin1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testJoinCoReferredEvals1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testJoinCoReferredEvalsWithSameExprs1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testJoinCoReferredEvalsWithSameExprs2() throws Exception {
     // including grouping operator
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testInnerJoinAndCaseWhen() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinsWithCaseWhen() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinsWithCaseWhen2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -384,13 +371,15 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testInnerJoinWithEmptyTable() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithEmptyTable1() throws Exception {
     /*
     select
@@ -404,44 +393,42 @@ public class TestJoinQuery extends QueryTestCaseBase {
       c_custkey, o_orderkey;
      */
 
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithEmptyTable2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithEmptyTable3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithEmptyTable4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithEmptyTable5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testRightOuterJoinWithEmptyTable1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -525,17 +512,17 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
   
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testFullOuterJoinWithEmptyTable1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testCrossJoinWithEmptyTable1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -556,6 +543,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithJson() throws Exception {
     // select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name
     ResultSet res = executeJsonQuery();
@@ -564,6 +553,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithJson2() throws Exception {
     /*
     select t.n_nationkey, t.n_name, t.n_regionkey, t.n_comment, ps.ps_availqty, s.s_suppkey
@@ -599,31 +590,31 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinAsterisk() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithNull1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithNull2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testLeftOuterJoinWithNull3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -1045,49 +1036,49 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinCondition2() throws Exception {
     // select n1.n_nationkey, n1.n_name, upper(n2.n_name) name from nation n1 join nation n2
     // on n1.n_name = upper(n2.n_name);
 
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinCondition3() throws Exception {
     // select n1.n_nationkey, n1.n_name, n2.n_name from nation n1 join nation n2 on lower(n1.n_name) = lower(n2.n_name);
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinCondition4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinCondition5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinCondition6() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testComplexJoinCondition7() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -1157,29 +1148,24 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinFilterOfRowPreservedTable1() throws Exception {
     // this test is for join filter of a row preserved table.
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testJoinWithOrPredicates() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public final void testNaturalJoin() throws Exception {
-    ResultSet res = null;
-    try {
-      res = executeQuery();
-    } catch (Exception e) {
-      Assert.fail();
-    }
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 }

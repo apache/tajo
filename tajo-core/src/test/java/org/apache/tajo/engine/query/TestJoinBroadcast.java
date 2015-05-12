@@ -37,29 +37,86 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.TajoWorker;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.OutputStream;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 public class TestJoinBroadcast extends QueryTestCaseBase {
-  public TestJoinBroadcast() throws Exception {
+  public TestJoinBroadcast(String joinOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "true");
     testingCluster.setAllTajoDaemonConfValue(
         TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "" + (5 * 1024));
 
-    executeDDL("create_lineitem_large_ddl.sql", "lineitem_large");
-    executeDDL("create_customer_large_ddl.sql", "customer_large");
-    executeDDL("create_orders_large_ddl.sql", "orders_large");
+//    executeDDL("create_lineitem_large_ddl.sql", "lineitem_large");
+//    executeDDL("create_customer_large_ddl.sql", "customer_large");
+//    executeDDL("create_orders_large_ddl.sql", "orders_large");
+
+    testingCluster.setAllTajoDaemonConfValue(
+        TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+        TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+
+    if (joinOption.indexOf("Hash") >= 0) {
+      testingCluster.setAllTajoDaemonConfValue(
+          TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(256 * 1048576));
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+          String.valueOf(256 * 1048576));
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(256 * 1048576));
+    }
+    if (joinOption.indexOf("Sort") >= 0) {
+      testingCluster.setAllTajoDaemonConfValue(
+          TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(1));
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+          String.valueOf(1));
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+          String.valueOf(1));
+    }
+  }
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> generateParameters() {
+    return Arrays.asList(new Object[][]{
+        {"Hash"},
+        {"Sort"},
+    });
+  }
+
+  @AfterClass
+  public static void classTearDown() {
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+        TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
+        TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
+
+    testingCluster.setAllTajoDaemonConfValue(
+        TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+        TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
   }
 
   @Test
