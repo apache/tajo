@@ -89,7 +89,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       StringBuffer path = new StringBuffer();
       int depth = 0;
       if (tableDesc.hasPartition()) {
-        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           String partitionValue = EvalTreeUtil.getPartitionValue(scanNode.getQual(), c.getSimpleName());
           if (partitionValue == null)
             break;

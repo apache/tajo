@@ -90,7 +90,7 @@
 //    tpch.loadSchemas();
 //    tpch.loadOutSchema();
 //    for (int i = 0; i < tables.length; i++) {
-//      TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
+//      TableMeta m = CatalogUtil.newTableMeta("CSV");
 //      TableStats stats = new TableStats();
 //      stats.setNumBytes(volumes[i]);
 //      TableDesc d = CatalogUtil.newTableDesc(

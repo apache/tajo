@@ -179,7 +179,7 @@ message DataChannelProto {
   repeated ColumnProto shuffleKeys = 7;
   optional int32 numOutputs = 9 [default = 1];
 
-  optional StoreType storeType = 10 [default = CSV];
+  optional string storeType = 10;
 }
 
 message RunExecutionBlockRequestProto {

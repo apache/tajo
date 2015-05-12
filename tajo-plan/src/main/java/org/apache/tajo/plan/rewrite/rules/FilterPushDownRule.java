@@ -727,7 +727,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     // find aggregation column
     Set<Column> groupingColumns = TUtil.newHashSet(groupByNode.getGroupingColumns());
     Set<String> aggrFunctionOutColumns = TUtil.newHashSet();
-    for (Column column : groupByNode.getOutSchema().getColumns()) {
+    for (Column column : groupByNode.getOutSchema().getRootColumns()) {
       if (!groupingColumns.contains(column)) {
         aggrFunctionOutColumns.add(column.getQualifiedName());
       }
@@ -843,7 +843,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     TableDesc table = scanNode.getTableDesc();
     boolean hasQualifiedName = false;
     if (table.hasPartition()) {
-      for (Column c: table.getPartitionMethod().getExpressionSchema().getColumns()) {
+      for (Column c: table.getPartitionMethod().getExpressionSchema().getRootColumns()) {
         partitionColumns.add(c.getQualifiedName());
         hasQualifiedName = c.hasQualifier();
       }

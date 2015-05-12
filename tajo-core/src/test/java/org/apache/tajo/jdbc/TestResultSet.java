@@ -32,7 +32,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -72,7 +71,7 @@ public class TestResultSet {
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
-    scoreMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    scoreMeta = CatalogUtil.newTableMeta("CSV");
     TableStats stats = new TableStats();
 
     Path p = sm.getTablePath("score");

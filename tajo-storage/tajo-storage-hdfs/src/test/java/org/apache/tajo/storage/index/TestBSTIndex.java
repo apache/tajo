@@ -55,9 +55,9 @@ public class TestBSTIndex {
   private static final String TEST_PATH = "target/test-data/TestIndex";
   private Path testDir;
   private FileSystem fs;
-  private StoreType storeType;
+  private String storeType;
 
-  public TestBSTIndex(StoreType type) {
+  public TestBSTIndex(String type) {
     this.storeType = type;
     conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.ROOT_DIR, TEST_PATH);
@@ -73,9 +73,9 @@ public class TestBSTIndex {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {StoreType.CSV},
-        {StoreType.RAW},
-        {StoreType.TEXTFILE}
+        {"CSV"},
+        {"RAW"},
+        {"TEXT"}
     });
   }
 

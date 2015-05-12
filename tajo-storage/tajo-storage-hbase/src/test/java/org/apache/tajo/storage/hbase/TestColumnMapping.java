@@ -20,7 +20,6 @@ package org.apache.tajo.storage.hbase;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
@@ -42,7 +41,7 @@ public class TestColumnMapping {
     schema.addColumn("c3", Type.TEXT);
     schema.addColumn("c4", Type.TEXT);
 
-    TableMeta tableMeta = new TableMeta(StoreType.HBASE, keyValueSet);
+    TableMeta tableMeta = new TableMeta("HBASE", keyValueSet);
 
     ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
 

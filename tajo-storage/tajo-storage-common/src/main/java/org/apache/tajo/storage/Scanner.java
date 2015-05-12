@@ -61,6 +61,15 @@ public interface Scanner extends SchemaObject, Closeable {
   /**
    * It returns if the projection is executed in the underlying scanner layer.
    *
+   * If TRUE, the upper layers (i.e., SeqScanExec) assume that next()
+   * will return a tuple which contains only projected fields. In other words,
+   * the field number of a retrieved tuple is equivalent tothe number of targets.
+   *
+   * If FALSE, the upper layers assume that next() will return a tuple which
+   * contains projected fields and non-projected fields, padded by NullDatum.
+   * In other words, the width of tuple is equivalent to the field number
+   * of the table schema.
+   *
    * @return true if this scanner can project the given columns.
    */
   boolean isProjectable();

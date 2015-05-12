@@ -217,7 +217,7 @@ message PartitionTableScanSpec {
 
 message PersistentStoreNode {
   optional int32 childSeq = 1; // CreateTableNode may not have any children. This should be improved at TAJO-1589.
-  required StoreType storageType = 2;
+  required string storageType = 2;
   required KeyValueSetProto tableProperties = 3;
 }
 

@@ -64,7 +64,7 @@ public class TestLineReader {
     schema.addColumn("comment", Type.TEXT);
     schema.addColumn("comment2", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     Path tablePath = new Path(testDir, "line.data");
     FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(conf).getAppender(
         null, null, meta, schema, tablePath);
@@ -115,7 +115,7 @@ public class TestLineReader {
     schema.addColumn("comment", Type.TEXT);
     schema.addColumn("comment2", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     meta.putOption("compression.codec", DeflateCodec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "testLineDelimitedReaderWithCompression." + DeflateCodec.class.getSimpleName());
@@ -174,7 +174,7 @@ public class TestLineReader {
     schema.addColumn("comment", Type.TEXT);
     schema.addColumn("comment2", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
 
     Path tablePath = new Path(testDir, "testLineDelimitedReader");
     FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(conf).getAppender(
@@ -278,7 +278,7 @@ public class TestLineReader {
     schema.addColumn("comment", Type.TEXT);
     schema.addColumn("comment2", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     Path tablePath = new Path(testDir, "testSeekableByteBufLineReader.data");
     FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(conf).getAppender(
         null, null, meta, schema, tablePath);

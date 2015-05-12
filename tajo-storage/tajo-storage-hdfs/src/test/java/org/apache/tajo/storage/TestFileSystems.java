@@ -103,7 +103,7 @@ public class TestFileSystems {
     schema.addColumn("age", Type.INT4);
     schema.addColumn("name", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV");
 
     Tuple[] tuples = new Tuple[4];
     for (int i = 0; i < tuples.length; i++) {

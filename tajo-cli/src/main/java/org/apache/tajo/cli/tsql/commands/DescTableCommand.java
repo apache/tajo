@@ -21,13 +21,12 @@ package org.apache.tajo.cli.tsql.commands;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -80,7 +79,7 @@ public class DescTableCommand extends TajoShellCommand {
     StringBuilder sb = new StringBuilder();
     sb.append("\ntable name: ").append(desc.getName()).append("\n");
     sb.append("table path: ").append(desc.getPath()).append("\n");
-    sb.append("store type: ").append(CatalogUtil.getStoreTypeString(desc.getMeta().getStoreType())).append("\n");
+    sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     if (desc.getStats() != null) {
 
       long row = desc.getStats().getNumRows();
@@ -126,7 +125,7 @@ public class DescTableCommand extends TajoShellCommand {
       sb.append("type:").append(partition.getPartitionType().name()).append("\n");
 
       sb.append("columns:").append(":");
-      sb.append(TUtil.arrayToString(partition.getExpressionSchema().toArray()));
+      sb.append(StringUtils.join(partition.getExpressionSchema().toArray()));
     }
 
     return sb.toString();

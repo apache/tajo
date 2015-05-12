@@ -68,7 +68,7 @@ public class TestJsonSerDe {
   public void testVarioutType() throws IOException {
     TajoConf conf = new TajoConf();
 
-    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.JSON);
+    TableMeta meta = CatalogUtil.newTableMeta("JSON");
     Path tablePath = new Path(getResourcePath("dataset", "TestJsonSerDe"), "testVariousType.json");
     FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(tablePath);

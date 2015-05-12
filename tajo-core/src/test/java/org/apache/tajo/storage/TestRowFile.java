@@ -66,7 +66,7 @@ public class TestRowFile {
     schema.addColumn("age", Type.INT8);
     schema.addColumn("description", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
+    TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
 
     FileStorageManager sm =
         (FileStorageManager)StorageManager.getFileStorageManager(conf);

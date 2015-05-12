@@ -17,24 +17,9 @@
  */
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.List;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
+import com.google.gson.internal.StringMap;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageConstants;
@@ -46,7 +31,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.internal.StringMap;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -84,7 +77,7 @@ public class TestTablesResource extends QueryTestCaseBase {
     Schema tableSchema = new Schema(new Column[] {new Column("column1", TajoDataTypes.Type.TEXT)});
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    TableMeta tableMeta = new TableMeta(StoreType.CSV, tableOptions);
+    TableMeta tableMeta = new TableMeta("CSV", tableOptions);
     return new TableDesc(tableName, tableSchema, tableMeta, null);
   }
   
