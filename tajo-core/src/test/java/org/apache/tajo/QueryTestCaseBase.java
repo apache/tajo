@@ -256,9 +256,10 @@ public class QueryTestCaseBase {
 
   private void init() {
     String className = getClass().getSimpleName();
-    currentQueryPath = new Path(queryBasePath, className);
+    NamedTest namedTest = getClass().getAnnotation(NamedTest.class);
+    currentQueryPath = new Path(queryBasePath, namedTest == null ? className : namedTest.value());
     currentResultPath = new Path(resultBasePath, className);
-    currentDatasetPath = new Path(datasetBasePath, className);
+    currentDatasetPath = new Path(datasetBasePath, namedTest == null ? className : namedTest.value());
 
     try {
       // if the current database is "default", we don't need create it because it is already prepated at startup time.
