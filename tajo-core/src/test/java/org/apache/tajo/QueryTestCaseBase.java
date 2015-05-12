@@ -57,6 +57,7 @@ import org.junit.runner.Description;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -67,6 +68,8 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -191,6 +194,8 @@ public class QueryTestCaseBase {
 
   protected FileSystem currentResultFS;
 
+  protected final String testParameter;
+
   // for getting a method name
   @Rule public TestName name = new TestName();
 
@@ -235,11 +240,17 @@ public class QueryTestCaseBase {
     } else {
       this.currentDatabase = getClass().getSimpleName();
     }
+    testParameter = null;
     init();
   }
 
   public QueryTestCaseBase(String currentDatabase) {
+    this(currentDatabase, null);
+  }
+
+  public QueryTestCaseBase(String currentDatabase, String testParameter) {
     this.currentDatabase = currentDatabase;
+    this.testParameter = testParameter;
     init();
   }
 
@@ -344,8 +355,57 @@ public class QueryTestCaseBase {
   @Target({ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
   protected static @interface SimpleTest {
-    String[] queries();
-    String[] cleanupTables() default {};
+    String[] prepare() default {};
+    QuerySpec[] queries() default {};
+    String[] cleanup() default {};
+  }
+
+  @Target({ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  protected static @interface QuerySpec {
+    String value();
+    boolean override() default false;
+    Option option() default @Option;
+  }
+
+  @Target({ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  protected static @interface Option {
+    boolean withExplain() default false;
+    boolean withExplainGlobal() default false;
+    boolean parameterized() default false;
+    boolean sort() default false;
+  }
+
+  private static class DummyQuerySpec implements QuerySpec {
+    private final String value;
+    private final Option option;
+    public DummyQuerySpec(String value, Option option) {
+      this.value = value;
+      this.option = option;
+    }
+    public Class<? extends Annotation> annotationType() { return QuerySpec.class; }
+    public String value() { return value; }
+    public boolean override() { return option != null; }
+    public Option option() { return option; }
+  }
+
+  private static class DummyOption implements Option {
+    private final boolean explain;
+    private final boolean withExplainGlobal;
+    private final boolean parameterized;
+    private final boolean sort;
+    public DummyOption(boolean explain, boolean withExplainGlobal, boolean parameterized, boolean sort) {
+      this.explain = explain;
+      this.withExplainGlobal = withExplainGlobal;
+      this.parameterized = parameterized;
+      this.sort = sort;
+    }
+    public Class<? extends Annotation> annotationType() { return Option.class; }
+    public boolean withExplain() { return explain;}
+    public boolean withExplainGlobal() { return withExplainGlobal;}
+    public boolean parameterized() { return parameterized;}
+    public boolean sort() { return sort;}
   }
 
   protected void runSimpleTests() throws Exception {
@@ -355,26 +415,64 @@ public class QueryTestCaseBase {
     if (annotation == null) {
       throw new IllegalStateException("Cannot find test annotation");
     }
-    String[] queries = annotation.queries();
+
+    List<String> prepares = new ArrayList<String>(Arrays.asList(annotation.prepare()));
+    QuerySpec[] queries = annotation.queries();
+    Option defaultOption = method.getAnnotation(Option.class);
+    if (defaultOption == null) {
+      defaultOption = new DummyOption(false, false, false, false);
+    }
+
+    boolean fromFile = false;
+    if (queries.length == 0) {
+      Path queryFilePath = getQueryFilePath(getMethodName() + ".sql");
+      List<ParsedResult> parsedResults = SimpleParser.parseScript(FileUtil.readTextFile(new File(queryFilePath.toUri())));
+      int i = 0;
+      for (; i < parsedResults.size() - 1; i++) {
+        prepares.add(parsedResults.get(i).getStatement());
+      }
+      queries = new QuerySpec[] {new DummyQuerySpec(parsedResults.get(i).getHistoryStatement(), null)};
+      fromFile = true;  // do not append query index to result file
+    }
+
+    // Enable this option to fix the shape of the generated plans.
+    testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
+    
     try {
+      for (String prepare : prepares) {
+        client.executeQueryAndGetResult(prepare).close();
+      }
       for (int i = 0; i < queries.length; i++) {
-        ResultSet result = client.executeQueryAndGetResult(queries[i]);
-        Path resultPath = StorageUtil.concatPath(
-            currentResultPath, methodName + "." + String.valueOf(i + 1) + ".result");
+        QuerySpec spec = queries[i];
+        Option option = spec.override() ? spec.option() : defaultOption;
+        String prefix = "";
+        if (option.withExplain()) {
+          prefix += resultSetToString(executeString("explain " + spec.value()));
+        }
+        if (option.withExplainGlobal()) {
+          prefix += resultSetToString(executeString("explain global " + spec.value()));
+        }
+        ResultSet result = client.executeQueryAndGetResult(spec.value());
+
+        String fileName = methodName + (fromFile ? "" : "." + (i + 1)) +
+            ((option.parameterized() && testParameter != null) ? "." + testParameter : "") + ".result";
+        Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
         if (currentResultFS.exists(resultPath)) {
-          assertEquals("Result Verification for: " + (i+1) + "th test",
-              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), resultSetToString(result).trim());
-        } else if (!isNull(result)) {
+          assertEquals("Result Verification for: " + (i + 1) + " th test",
+              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), prefix + resultSetToString(result, option.sort()));
+        } else if (prefix.length() > 0 || !isNull(result)) {
           // If there is no result file expected, create gold files for new tests.
-          FileUtil.writeTextToStream(resultSetToString(result).trim(), currentResultFS.create(resultPath));
+          FileUtil.writeTextToStream(prefix + resultSetToString(result, option.sort()), currentResultFS.create(resultPath));
           LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
           // should be copied to src directory
         }
+        result.close();
       }
     } finally {
-      for (String tableName : annotation.cleanupTables()) {
+      testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
+      for (String cleanup : annotation.cleanup()) {
         try {
-          client.dropTable(tableName);
+          client.executeQueryAndGetResult(cleanup).close();
         } catch (ServiceException e) {
           // ignore
         }
@@ -549,6 +647,10 @@ public class QueryTestCaseBase {
     assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
   }
 
+  public String resultSetToString(ResultSet resultSet) throws SQLException {
+    return resultSetToString(resultSet, false);
+  }
+
   /**
    * It transforms a ResultSet instance to rows represented as strings.
    *
@@ -556,7 +658,7 @@ public class QueryTestCaseBase {
    * @return String
    * @throws SQLException
    */
-  public String resultSetToString(ResultSet resultSet) throws SQLException {
+  public String resultSetToString(ResultSet resultSet, boolean sort) throws SQLException {
     StringBuilder sb = new StringBuilder();
     ResultSetMetaData rsmd = resultSet.getMetaData();
     int numOfColumns = rsmd.getColumnCount();
@@ -568,16 +670,24 @@ public class QueryTestCaseBase {
     }
     sb.append("\n-------------------------------\n");
 
+    List<String> results = new ArrayList<String>();
     while (resultSet.next()) {
+      StringBuilder line = new StringBuilder();
       for (int i = 1; i <= numOfColumns; i++) {
-        if (i > 1) sb.append(",");
+        if (i > 1) line.append(",");
         String columnValue = resultSet.getString(i);
         if (resultSet.wasNull()) {
           columnValue = "null";
         }
-        sb.append(columnValue);
+        line.append(columnValue);
       }
-      sb.append("\n");
+      results.add(line.toString());
+    }
+    if (sort) {
+      Collections.sort(results);
+    }
+    for (String line : results) {
+      sb.append(line).append('\n');
     }
     return sb.toString();
   }
