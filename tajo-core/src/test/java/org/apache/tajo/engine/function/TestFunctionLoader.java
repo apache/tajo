@@ -20,8 +20,7 @@ package org.apache.tajo.engine.function;
 
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -38,7 +37,7 @@ public class TestFunctionLoader {
   public void testFindScalarFunctions() throws IOException {
     List<FunctionDesc> collections = Lists.newArrayList(FunctionLoader.findScalarFunctions());
     Collections.sort(collections);
-    String functionList = TUtil.collectionToString(collections, "\n");
+    String functionList = StringUtils.join(collections, "\n");
 
     String result = getResultText(TestFunctionLoader.class, "testFindScalarFunctions.result");
     assertEquals(result.trim(), functionList.trim());

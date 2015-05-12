@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -55,7 +54,7 @@ public class AddSortForInsertRewriter implements LogicalPlanRewriteRule {
 
   @Override
   public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     return storeType != null;
   }
 

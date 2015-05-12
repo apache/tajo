@@ -513,7 +513,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
                 CatalogUtil.buildFQName(databaseName, table));
             int pos = 0;
 
-            for (Column column: tableDesc.getLogicalSchema().getColumns()) {
+            for (Column column: tableDesc.getLogicalSchema().getRootColumns()) {
               if (column.getSimpleName().matches(regcolumnNamePattern)) {
                 MetaDataTuple tuple = new MetaDataTuple(22);
 

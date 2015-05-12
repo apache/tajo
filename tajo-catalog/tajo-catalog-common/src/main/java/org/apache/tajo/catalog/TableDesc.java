@@ -27,7 +27,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.ProtoObject;
@@ -68,8 +67,8 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 		this(tableName, schema, meta, path, true);
 	}
 	
-	public TableDesc(String tableName, Schema schema, StoreType type, KeyValueSet options, URI path) {
-	  this(tableName, schema, new TableMeta(type, options), path);
+	public TableDesc(String tableName, Schema schema, String storeType, KeyValueSet options, URI path) {
+	  this(tableName, schema, new TableMeta(storeType, options), path);
 	}
 	
 	public TableDesc(TableDescProto proto) {

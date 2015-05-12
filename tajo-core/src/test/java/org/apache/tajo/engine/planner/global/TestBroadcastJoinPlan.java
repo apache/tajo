@@ -129,7 +129,7 @@ public class TestBroadcastJoinPlan {
   }
 
   private TableDesc makeTestData(String tableName, Schema schema, int dataSize) throws Exception {
-    TableMeta tableMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
+    TableMeta tableMeta = CatalogUtil.newTableMeta("CSV");
     Path dataPath = new Path(testDir, tableName + ".csv");
 
     String contentsData = "";

@@ -146,7 +146,7 @@ public class PlannerUtil {
         if (EvalTreeUtil.checkIfPartitionSelection(node, partSchema)) {
           prefixPartitionWhere = true;
           boolean isPrefix = true;
-          for (Column c : partSchema.getColumns()) {
+          for (Column c : partSchema.getRootColumns()) {
             String value = EvalTreeUtil.getPartitionValue(node, c.getSimpleName());
             if (isPrefix && value == null)
               isPrefix = false;
@@ -179,7 +179,7 @@ public class PlannerUtil {
     
     for (LogicalNode node: scanNodes) {
       scanNode = (ScanNode) node;
-      isVirtualTable &= (scanNode.getTableDesc().getMeta().getStoreType() == StoreType.SYSTEM);
+      isVirtualTable &= (scanNode.getTableDesc().getMeta().getStoreType().equalsIgnoreCase("SYSTEM"));
     }
     
     return !checkIfDDLPlan(rootNode) && hasScanNode && isVirtualTable;
@@ -855,9 +855,9 @@ public class PlannerUtil {
   }
 
   public static void applySessionToTableProperties(OverridableConf sessionVars,
-                                                   StoreType storeType,
+                                                   String storeType,
                                                    KeyValueSet tableProperties) {
-    if (storeType == CSV || storeType == TEXTFILE) {
+    if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("TEXT")) {
       if (sessionVars.containsKey(SessionVars.NULL_CHAR)) {
         tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
       }
@@ -890,15 +890,7 @@ public class PlannerUtil {
     }
   }
 
-  public static boolean isFileStorageType(StoreType storageType) {
-    if (storageType== StoreType.HBASE) {
-      return false;
-    } else {
-      return true;
-    }
-  }
-
-  public static StoreType getStoreType(LogicalPlan plan) {
+  public static String getStoreType(LogicalPlan plan) {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     NodeType nodeType = rootNode.getChild().getType();
     if (nodeType == NodeType.CREATE_TABLE) {

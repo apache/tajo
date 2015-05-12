@@ -23,7 +23,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinSpec;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Set;
 
@@ -70,7 +70,7 @@ public class JoinEdge {
 
   public String toString() {
     return leftVertex + " " + joinSpec.getType() + " " + rightVertex + " ON " +
-        TUtil.collectionToString(joinSpec.getPredicates(), ", ");
+        StringUtils.join(joinSpec.getPredicates(), ", ");
   }
 
   public JoinVertex getLeftVertex() {

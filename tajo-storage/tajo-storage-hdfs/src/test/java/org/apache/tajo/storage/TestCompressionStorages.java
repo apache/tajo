@@ -54,11 +54,11 @@ public class TestCompressionStorages {
   private TajoConf conf;
   private static String TEST_PATH = "target/test-data/TestCompressionStorages";
 
-  private StoreType storeType;
+  private String storeType;
   private Path testDir;
   private FileSystem fs;
 
-  public TestCompressionStorages(StoreType type) throws IOException {
+  public TestCompressionStorages(String type) throws IOException {
     this.storeType = type;
     conf = new TajoConf();
 
@@ -69,10 +69,10 @@ public class TestCompressionStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {StoreType.CSV},
-        {StoreType.RCFILE},
-        {StoreType.SEQUENCEFILE},
-        {StoreType.TEXTFILE}
+        {"CSV"},
+        {"RCFILE"},
+        {"SEQUENCEFILE"},
+        {"TEXT"}
     });
   }
 
@@ -83,11 +83,11 @@ public class TestCompressionStorages {
 
   @Test
   public void testGzipCodecCompressionData() throws IOException {
-    if (storeType == StoreType.RCFILE) {
+    if (storeType.equalsIgnoreCase("RCFILE")) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
         storageCompressionTest(storeType, GzipCodec.class);
       }
-    } else if (storeType == StoreType.SEQUENCEFILE) {
+    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
         storageCompressionTest(storeType, GzipCodec.class);
       }
@@ -109,7 +109,7 @@ public class TestCompressionStorages {
     storageCompressionTest(storeType, Lz4Codec.class);
   }
 
-  private void storageCompressionTest(StoreType storeType, Class<? extends CompressionCodec> codec) throws IOException {
+  private void storageCompressionTest(String storeType, Class<? extends CompressionCodec> codec) throws IOException {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.FLOAT4);
@@ -157,7 +157,7 @@ public class TestCompressionStorages {
 
     Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
 
-    if (StoreType.CSV == storeType) {
+    if (storeType.equalsIgnoreCase("CSV")) {
       if (SplittableCompressionCodec.class.isAssignableFrom(codec)) {
         assertTrue(scanner.isSplittable());
       } else {
@@ -166,7 +166,7 @@ public class TestCompressionStorages {
     }
     scanner.init();
 
-    if (storeType == StoreType.SEQUENCEFILE) {
+    if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
       assertTrue(scanner instanceof SequenceFileScanner);
       Writable key = ((SequenceFileScanner) scanner).getKey();
       assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());

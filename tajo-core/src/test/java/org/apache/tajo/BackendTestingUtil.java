@@ -42,7 +42,7 @@ public class BackendTestingUtil {
     mockupSchema = new Schema();
     mockupSchema.addColumn("deptname", Type.TEXT);
     mockupSchema.addColumn("score", Type.INT4);
-    mockupMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    mockupMeta = CatalogUtil.newTableMeta("CSV");
 	}
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)

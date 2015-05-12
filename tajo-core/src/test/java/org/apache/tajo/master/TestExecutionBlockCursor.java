@@ -69,7 +69,7 @@ public class TestExecutionBlockCursor {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpch.getTableNames()) {
-      TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
+      TableMeta m = CatalogUtil.newTableMeta("CSV");
       TableDesc d = CatalogUtil.newTableDesc(
           CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
       TableStats stats = new TableStats();

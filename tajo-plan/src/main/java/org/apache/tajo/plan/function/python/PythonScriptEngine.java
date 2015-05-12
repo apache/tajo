@@ -272,7 +272,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
-  private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
+  private final TableMeta pipeMeta = CatalogUtil.newTableMeta("TEXT");
 
   private final Tuple EMPTY_INPUT = new VTuple(0);
   private final Schema EMPTY_SCHEMA = new Schema();
@@ -478,7 +478,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       result = outputHandler.getNext().get(0);
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
+      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
 
     return result;
@@ -512,7 +512,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       outputHandler.getNext();
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
+      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
   }
 
@@ -532,7 +532,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       outputHandler.getNext();
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
+      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
   }
 
@@ -552,7 +552,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       outputHandler.getNext(functionContext);
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
+      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
   }
 
@@ -573,7 +573,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       return outputHandler.getPartialResultString();
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
+      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
   }
 
@@ -595,7 +595,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       result = outputHandler.getNext().get(0);
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
+      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
 
     return result;

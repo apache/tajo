@@ -29,7 +29,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -208,7 +207,7 @@ public class DDLExecutor {
         createTable.getPartitionMethod(), ifNotExists);
   }
 
-  public TableDesc createTable(QueryContext queryContext, String tableName, CatalogProtos.StoreType storeType,
+  public TableDesc createTable(QueryContext queryContext, String tableName, String storeType,
                                Schema schema, TableMeta meta, Path path, boolean isExternal,
                                PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
     String databaseName;

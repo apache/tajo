@@ -60,7 +60,7 @@ abstract class AbstractTableDescriptor implements TableDescriptor {
   
   protected TableProto getTableProto() {
     TableProto.Builder metaBuilder = TableProto.newBuilder();
-    metaBuilder.setStoreType(StoreType.SYSTEM);
+    metaBuilder.setStoreType("SYSTEM");
     metaBuilder.setParams(KeyValueSetProto.newBuilder().build());
     return metaBuilder.build();
   }
