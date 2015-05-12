@@ -136,8 +136,10 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	public boolean equals(Object object) {
 		if(object instanceof TableMeta) {
 			TableMeta other = (TableMeta) object;
-			
-			return this.getProto().equals(other.getProto());
+
+			boolean eq = this.getStoreType().equals(other.getStoreType());
+			eq = eq && this.getOptions().equals(other.getOptions());
+			return eq;
 		}
 		
 		return false;		

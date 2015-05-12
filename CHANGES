@@ -39,6 +39,9 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1598: TableMeta should change equals mechanism.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
     TAJO-1556: "insert into select" with reordered column list does not work.
     (Contributed by Yongjin Choi, Committed by jihoon)
 
