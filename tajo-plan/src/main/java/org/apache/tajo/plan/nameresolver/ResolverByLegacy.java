@@ -48,12 +48,10 @@ public class ResolverByLegacy extends NameResolver {
   private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                    ColumnReferenceExpr columnRef) throws PlanningException {
     final String qualifier;
-    String canonicalName;
     final String qualifiedName;
 
-    Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
+    Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
     qualifier = normalized.getFirst();
-    canonicalName = normalized.getSecond();
     qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
 
     Column found = resolveFromRelsWithinBlock(plan, block, columnRef);
@@ -84,7 +82,7 @@ public class ResolverByLegacy extends NameResolver {
         && currentNode.getType() != NodeType.TABLE_SUBQUERY) {
       List<Column> candidates = TUtil.newList();
       if (block.getNamedExprsManager().isAliased(qualifiedName)) {
-        String alias = block.getNamedExprsManager().getAlias(canonicalName);
+        String alias = block.getNamedExprsManager().getAlias(qualifiedName);
         found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolvingMode.LEGACY);
         if (found != null) {
           candidates.add(found);
@@ -101,7 +99,7 @@ public class ResolverByLegacy extends NameResolver {
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                      ColumnReferenceExpr columnRef)throws PlanningException {
 
-    Column found = resolveFromAllRelsInBlock(block, columnRef);
+    Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     if (found != null) {
       return found;
     }

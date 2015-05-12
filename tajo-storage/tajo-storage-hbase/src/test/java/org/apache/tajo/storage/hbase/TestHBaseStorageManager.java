@@ -48,7 +48,7 @@ public class TestHBaseStorageManager {
     scanNode.setQual(evalNodeA);
 
     HBaseStorageManager storageManager =
-        (HBaseStorageManager) StorageManager.getStorageManager(new TajoConf(), StoreType.HBASE);
+        (HBaseStorageManager) StorageManager.getStorageManager(new TajoConf(), "HBASE");
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());

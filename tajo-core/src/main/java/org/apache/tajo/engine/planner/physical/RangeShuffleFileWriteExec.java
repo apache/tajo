@@ -75,7 +75,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
     this.meta = CatalogUtil.newTableMeta(context.getDataChannel() != null ?
-        context.getDataChannel().getStoreType() : CatalogProtos.StoreType.RAW);
+        context.getDataChannel().getStoreType() : "RAW");
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
     this.appender = (FileAppender) ((FileStorageManager)StorageManager.getFileStorageManager(context.getConf()))

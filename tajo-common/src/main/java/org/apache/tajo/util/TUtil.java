@@ -240,38 +240,6 @@ public class TUtil {
     }
   }
 
-  public static String collectionToString(Collection objects, String delimiter) {
-    boolean first = true;
-    StringBuilder sb = new StringBuilder();
-    for(Object object : objects) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(delimiter);
-      }
-
-      sb.append(object.toString());
-    }
-
-    return sb.toString();
-  }
-
-  public static String arrayToString(Object [] objects) {
-    boolean first = true;
-    StringBuilder sb = new StringBuilder();
-    for(Object object : objects) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(", ");
-      }
-
-      sb.append(object.toString());
-    }
-
-    return sb.toString();
-  }
-
   public static <T> T [] toArray(Collection<T> collection, Class<T> type) {
     T array = (T) Array.newInstance(type, collection.size());
     return collection.toArray((T[]) array);

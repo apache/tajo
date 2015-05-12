@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Collections;
 import java.util.Set;
@@ -70,6 +70,6 @@ public class JoinEdge {
   }
 
   public String toString() {
-    return leftRelation + " " + joinType + " " + rightRelation + " ON " + TUtil.collectionToString(joinQual, ", ");
+    return leftRelation + " " + joinType + " " + rightRelation + " ON " + StringUtils.join(joinQual, ", ");
   }
 }

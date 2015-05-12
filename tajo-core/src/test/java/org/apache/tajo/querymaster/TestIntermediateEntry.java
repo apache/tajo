@@ -18,11 +18,8 @@
 
 package org.apache.tajo.querymaster;
 
-import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.NumberUtil;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -31,23 +28,22 @@ public class TestIntermediateEntry {
   public void testPage() {
     Task.IntermediateEntry interm = new Task.IntermediateEntry(-1, -1, 1, null);
 
-    List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
-    pages.add(new Pair(0L, 1441275));
-    pages.add(new Pair(1441275L, 1447446));
-    pages.add(new Pair(2888721L, 1442507));
+    NumberUtil.PrimitiveLongs pages = new NumberUtil.PrimitiveLongs(10);
+    pages.add(new long[]{0L, 1441275});
+    pages.add(new long[]{1441275L, 1447446});
+    pages.add(new long[]{2888721L, 1442507});
 
-    interm.setPages(pages);
+    interm.setPages(pages.toArray());
 
     long splitBytes = 3 * 1024 * 1024;
 
-    List<Pair<Long, Long>> splits = interm.split(splitBytes, splitBytes);
-    assertEquals(2, splits.size());
+    long[] splits = interm.split(splitBytes, splitBytes);
+    assertEquals(2 << 1, splits.length);
 
     long[][] expected = { {0, 1441275 + 1447446}, {1441275 + 1447446, 1442507} };
     for (int i = 0; i < 2; i++) {
-      Pair<Long, Long> eachSplit = splits.get(i);
-      assertEquals(expected[i][0], eachSplit.getFirst().longValue());
-      assertEquals(expected[i][1], eachSplit.getSecond().longValue());
+      assertEquals(expected[i][0], splits[i << 1]);
+      assertEquals(expected[i][1], splits[(i << 1) + 1]);
     }
   }
 }

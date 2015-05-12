@@ -1054,14 +1054,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public ColumnReferenceExpr visitColumn_reference(SQLParser.Column_referenceContext ctx) {
-    ColumnReferenceExpr column = new ColumnReferenceExpr(ctx.name.getText());
-    if (checkIfExist(ctx.db_name)) {
-      column.setQualifier(CatalogUtil.buildFQName(ctx.db_name.getText(), ctx.tb_name.getText()));
-    } else if (ctx.tb_name != null) {
-      column.setQualifier(ctx.tb_name.getText());
-    }
+    String columnReferenceName = ctx.getText();
+    // find the last dot (.) position to separate a name into both a qualifier and name
+    int lastDotIdx = columnReferenceName.lastIndexOf(".");
 
-    return column;
+    if (lastDotIdx > 0) { // if any qualifier is given
+      String qualifier = columnReferenceName.substring(0, lastDotIdx);
+      String name = columnReferenceName.substring(lastDotIdx + 1, columnReferenceName.length());
+      return new ColumnReferenceExpr(qualifier, name);
+    } else {
+      return new ColumnReferenceExpr(ctx.getText());
+    }
   }
 
   @Override

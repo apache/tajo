@@ -177,7 +177,7 @@ public class TajoDump {
       try {
         TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
         
-        if (table.getMeta().getStoreType() == StoreType.SYSTEM) {
+        if (table.getMeta().getStoreType().equalsIgnoreCase("SYSTEM")) {
           continue;
         }
         
