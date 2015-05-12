@@ -707,7 +707,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
         "select a.o_orderdate, a.o_orderstatus, a.o_orderkey_mod, a.o_totalprice " +
             "from " + tableName +
             " a join "+ tableName + " b on a.o_orderkey = b.o_orderkey " +
-            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and o_orderkey_mod = 1 " +
+            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey_mod = 1 " +
             " order by a.o_orderkey"
     );
     String resultSetData = resultSetToString(res);

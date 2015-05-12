@@ -118,7 +118,7 @@ public class TestPhysicalPlanner {
     scoreSchema.addColumn("score", Type.INT4);
     scoreSchema.addColumn("nullable", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
 
 
     Path employeePath = new Path(testDir, "employee.csv");
@@ -139,7 +139,7 @@ public class TestPhysicalPlanner {
     catalog.createTable(employee);
 
     Path scorePath = new Path(testDir, "score");
-    TableMeta scoreMeta = CatalogUtil.newTableMeta(StoreType.CSV, new KeyValueSet());
+    TableMeta scoreMeta = CatalogUtil.newTableMeta("CSV", new KeyValueSet());
     appender = sm.getAppender(scoreMeta, scoreSchema, scorePath);
     appender.init();
     score = new TableDesc(
@@ -181,7 +181,7 @@ public class TestPhysicalPlanner {
     CommonTestingUtil.cleanupTestDir(scoreLargePath.toString());
 
     Schema scoreSchmea = score.getSchema();
-    TableMeta scoreLargeMeta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
+    TableMeta scoreLargeMeta = CatalogUtil.newTableMeta("RAW", new KeyValueSet());
     Appender appender =  ((FileStorageManager)StorageManager.getFileStorageManager(conf))
         .getAppender(scoreLargeMeta, scoreSchmea, scoreLargePath);
     appender.enableStats();
@@ -436,7 +436,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta outputMeta = CatalogUtil.newTableMeta("CSV");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -505,7 +505,7 @@ public class TestPhysicalPlanner {
     long totalNum = 0;
     for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
       Scanner scanner =  ((FileStorageManager)StorageManager.getFileStorageManager(conf)).getFileScanner(
-          CatalogUtil.newTableMeta(StoreType.CSV),
+          CatalogUtil.newTableMeta("CSV"),
           rootNode.getOutSchema(),
           status.getPath());
 
@@ -533,7 +533,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RCFILE);
+    TableMeta outputMeta = CatalogUtil.newTableMeta("RCFILE");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -743,7 +743,7 @@ public class TestPhysicalPlanner {
       long expectedFileNum = (long) Math.ceil(fileVolumSum / (float)StorageUnit.MB);
       assertEquals(expectedFileNum, fileStatuses.length);
     }
-    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta outputMeta = CatalogUtil.newTableMeta("CSV");
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
 

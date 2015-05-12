@@ -41,8 +41,8 @@ public interface Tuple extends Cloneable {
 	
 	void put(Datum[] values);
 	
+
 	Datum get(int fieldId);
-	
 	void setOffset(long offset);
 	
 	long getOffset();

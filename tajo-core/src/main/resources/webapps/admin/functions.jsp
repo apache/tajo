@@ -24,13 +24,12 @@
 <%@ page import="org.apache.tajo.master.*" %>
 <%@ page import="org.apache.tajo.catalog.*" %>
 <%@ page import="org.apache.hadoop.http.HtmlQuoting" %>
-<%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%
     TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
     CatalogService catalog = master.getCatalog();
 
     List<FunctionDesc> functions = new ArrayList<FunctionDesc>(catalog.getFunctions());
-    JSPUtil.sortFunctionDesc(functions);
+    Collections.sort(functions);
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">

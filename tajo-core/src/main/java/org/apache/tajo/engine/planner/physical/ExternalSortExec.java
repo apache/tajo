@@ -110,7 +110,7 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
+    this.meta = CatalogUtil.newTableMeta("ROWFILE");
 
     this.defaultFanout = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT);
     if (defaultFanout < 2) {
@@ -163,7 +163,7 @@ public class ExternalSortExec extends SortExec {
    */
   private Path sortAndStoreChunk(int chunkId, List<Tuple> tupleBlock)
       throws IOException {
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW);
+    TableMeta meta = CatalogUtil.newTableMeta("RAW");
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();

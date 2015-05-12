@@ -18,11 +18,14 @@
 
 package org.apache.tajo.plan.nameresolver;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.Relation;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchColumnException;
 import org.apache.tajo.plan.algebra.AmbiguousFieldException;
@@ -31,14 +34,30 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * NameResolver utility
+ * Column name resolution utility. A SQL statement can include many kinds of column names,
+ * defined in different ways. Some column name indicates just a column in a relation.
+ * Another column name includes alias table name or alias column name, derived from some expression.
+ *
+ * This utility ensures that each column name is derived from valid and accessible column, and
+ * it also finds the exact data type of the column.
+ *
+ * Terminology:
+ * <ul>
+ *   <li>Qualifier:  database name, table name, or both included in a column name</li>
+ *   <li>Simple name: just column name without any qualifier</li>
+ *   <li>Alias name: another name to shortly specify a certain column</li>
+ *   <li>Fully qualified name: a column name with database name and table name</li>
+ *   <li>Canonical name: a fully qualified name, but its simple name is aliased name.</li>
+ * </ul>
  */
 public abstract class NameResolver {
 
@@ -51,30 +70,44 @@ public abstract class NameResolver {
     resolverMap.put(NameResolvingMode.LEGACY, new ResolverByLegacy());
   }
 
+  public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
+                               NameResolvingMode mode) throws PlanningException {
+    if (!resolverMap.containsKey(mode)) {
+      throw new PlanningException("Unsupported name resolving level: " + mode.name());
+    }
+    return resolverMap.get(mode).resolve(plan, block, column);
+  }
+
   abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
   throws PlanningException;
 
   /**
-   * Try to find the database name
+   * Guess a relation from a table name regardless of whether the given name is qualified or not.
    *
    * @param block the current block
-   * @param tableName The table name
-   * @return The found database name
+   * @param tableName The table name which can be either qualified or not.
+   * @return A corresponding relation
    * @throws PlanningException
    */
-  public static String resolveDatabase(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
-    List<String> found = new ArrayList<String>();
+  public static RelationNode lookupTable(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
+    List<RelationNode> found = TUtil.newList();
+
     for (RelationNode relation : block.getRelations()) {
-      // check alias name or table name
-      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
+
+      // if a table name is qualified
+      if (relation.getCanonicalName().equals(tableName) || relation.getTableName().equals(tableName)) {
+        found.add(relation);
+
+      // if a table name is not qualified
+      } else if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
           CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
-        // obtain the database name
-        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
+        found.add(relation);
       }
     }
 
     if (found.size() == 0) {
       return null;
+
     } else if (found.size() > 1) {
       throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
     }
@@ -82,12 +115,26 @@ public abstract class NameResolver {
     return found.get(0);
   }
 
-  public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
-                        NameResolvingMode mode) throws PlanningException {
-    if (!resolverMap.containsKey(mode)) {
-      throw new PlanningException("Unsupported name resolving level: " + mode.name());
+  /**
+   * Find relations such that its schema contains a given column
+   *
+   * @param block the current block
+   * @param columnName The column name to find relation
+   * @return relations including a given column
+   * @throws PlanningException
+   */
+  public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName)
+      throws PlanningException {
+
+    Set<RelationNode> found = TUtil.newHashSet();
+
+    for (RelationNode rel : block.getRelations()) {
+      if (rel.getLogicalSchema().contains(columnName)) {
+        found.add(rel);
+      }
     }
-    return resolverMap.get(mode).resolve(plan, block, column);
+
+    return found;
   }
 
   /**
@@ -107,7 +154,7 @@ public abstract class NameResolver {
     String canonicalName;
 
     if (columnRef.hasQualifier()) {
-      Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
+      Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
 
@@ -121,8 +168,8 @@ public abstract class NameResolver {
       // Please consider a query case:
       // select lineitem.l_orderkey from lineitem a order by lineitem.l_orderkey;
       //
-      // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still can be used.
-      // The below code makes it available. Otherwise, it cannot find any match in the relation schema.
+      // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
+      // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
       if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
         canonicalName =
             CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
@@ -133,7 +180,7 @@ public abstract class NameResolver {
 
       return column;
     } else {
-      return resolveFromAllRelsInBlock(block, columnRef);
+      return lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     }
   }
 
@@ -162,18 +209,22 @@ public abstract class NameResolver {
   }
 
   /**
-   * It tries to find a full qualified column name from all relations in the current block.
+   * Lookup a column among all relations in the current block from a column name.
+   *
+   * It assumes that <code>columnName</code> is not any qualified name.
    *
    * @param block The current query block
-   * @param columnRef The column reference to be found
+   * @param columnName The column reference to be found
    * @return The found column
    */
-  static Column resolveFromAllRelsInBlock(LogicalPlan.QueryBlock block,
-                                          ColumnReferenceExpr columnRef) throws VerifyException {
+  static Column lookupColumnFromAllRelsInBlock(LogicalPlan.QueryBlock block,
+                                               String columnName) throws VerifyException {
+    Preconditions.checkArgument(CatalogUtil.isSimpleIdentifier(columnName));
+
     List<Column> candidates = TUtil.newList();
 
     for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getLogicalSchema().getColumn(columnRef.getName());
+      Column found = rel.getLogicalSchema().getColumn(columnName);
       if (found != null) {
         candidates.add(found);
       }
@@ -240,39 +291,100 @@ public abstract class NameResolver {
   }
 
   /**
-   * It returns a pair of names, which the first value is ${database}.${table} and the second value
-   * is a simple column name.
+   * Lookup a qualifier and a canonical name of column.
+   *
+   * It returns a pair of names, which the first value is the qualifier ${database}.${table} and
+   * the second value is column's simple name.
    *
    * @param block The current block
    * @param columnRef The column name
    * @return A pair of normalized qualifier and column name
    * @throws PlanningException
    */
-  static Pair<String, String> normalizeQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
-                                                                 ColumnReferenceExpr columnRef)
+  static Pair<String, String> lookupQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
+                                                              ColumnReferenceExpr columnRef)
       throws PlanningException {
-    String qualifier;
-    String canonicalName;
+    Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
 
-    if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
-      qualifier = columnRef.getQualifier();
-      canonicalName = columnRef.getCanonicalName();
-    } else {
-      String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
-      if (resolvedDatabaseName == null) {
-        throw new NoSuchColumnException(columnRef.getQualifier());
+    String [] qualifierParts = columnRef.getQualifier().split("\\.");
+
+    // This method assumes that column name consists of two or more dot chained names.
+    // In this case, there must be three cases as follows:
+    //
+    // - dbname.tbname.column_name.nested_field...
+    // - tbname.column_name.nested_field...
+    // - column.nested_fieldX...
+
+    Set<RelationNode> guessedRelations = TUtil.newHashSet();
+
+    // this position indicates the index of column name in qualifierParts;
+    // It must be 0 or more because a qualified column is always passed to lookupQualifierAndCanonicalName().
+    int columnNamePosition = -1;
+
+    // check for dbname.tbname.column_name.nested_field
+    if (qualifierParts.length >= 2) {
+      RelationNode rel = lookupTable(block, CatalogUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
+      if (rel != null) {
+        guessedRelations.add(rel);
+        columnNamePosition = 2;
       }
-      qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
-      canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
     }
 
-    return new Pair<String, String>(qualifier, canonicalName);
+    // check for tbname.column_name.nested_field
+    if (qualifierParts.length >= 1) {
+      RelationNode rel = lookupTable(block, qualifierParts[0]);
+      if (rel != null) {
+        guessedRelations.add(rel);
+        columnNamePosition = 1;
+      }
+    }
+
+    // column.nested_fieldX...
+    if (guessedRelations.size() == 0 && qualifierParts.length == 1) {
+      Collection<RelationNode> rels = lookupTableByColumns(block, qualifierParts[0]);
+
+      if (rels.size() > 1) {
+        throw new AmbiguousFieldException(columnRef.getCanonicalName());
+      }
+
+      if (rels.size() == 1) {
+        guessedRelations.addAll(rels);
+        columnNamePosition = 0;
+      }
+    }
+
+    // throw exception if no column cannot be founded or two or more than columns are founded
+    if (guessedRelations.size() == 0) {
+      throw new NoSuchColumnException(columnRef.getQualifier());
+    } else if (guessedRelations.size() > 1) {
+      throw new AmbiguousFieldException(columnRef.getCanonicalName());
+    }
+
+    String qualifier = guessedRelations.iterator().next().getCanonicalName();
+    String columnName = "";
+
+    if (columnNamePosition >= qualifierParts.length) { // if there is no column in qualifierParts
+      columnName = columnRef.getName();
+    } else {
+      // join a column name and its nested field names
+      columnName = qualifierParts[columnNamePosition];
+
+      // if qualifierParts include nested field names
+      if (qualifierParts.length > columnNamePosition) {
+        columnName += StringUtils.join(qualifierParts, "/", columnNamePosition + 1, qualifierParts.length);
+      }
+
+      // columnRef always has a leaf field name.
+      columnName += "/" + columnRef.getName();
+    }
+
+    return new Pair<String, String>(qualifier, columnName);
   }
 
   static Column ensureUniqueColumn(List<Column> candidates) throws VerifyException {
     if (candidates.size() == 1) {
       return candidates.get(0);
-    } else if (candidates.size() > 2) {
+    } else if (candidates.size() > 1) {
       StringBuilder sb = new StringBuilder();
       boolean first = true;
       for (Column column : candidates) {

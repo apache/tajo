@@ -26,7 +26,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.*;
 
@@ -59,7 +59,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       for (LogicalNode relation : remainRelations) {
         Collection <String> relationStrings = PlannerUtil.getRelationLineageWithinQueryBlock(plan, relation);
         List<JoinEdge> joinEdges = new ArrayList<JoinEdge>();
-        String relationCollection = TUtil.collectionToString(relationStrings, ",");
+        String relationCollection = StringUtils.join(relationStrings, ",");
         List<JoinEdge> joinEdgesForGiven = joinGraph.getIncomingEdges(relationCollection);
         if (joinEdgesForGiven != null) {
           joinEdges.addAll(joinEdgesForGiven);
@@ -236,7 +236,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     // If outer is outer join, make edge key using all relation names in outer.
     SortedSet<String> relationNames =
         new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer));
-    String outerEdgeKey = TUtil.collectionToString(relationNames, ", ");
+    String outerEdgeKey = StringUtils.join(relationNames, ", ");
     for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
       if (graph.hasEdge(outerEdgeKey, innerName)) {
         JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
@@ -257,7 +257,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     relationNames =
         new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner));
-    outerEdgeKey = TUtil.collectionToString(relationNames, ", ");
+    outerEdgeKey = StringUtils.join(relationNames, ", ");
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
       if (graph.hasEdge(outerEdgeKey, outerName)) {
         JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, outerName);

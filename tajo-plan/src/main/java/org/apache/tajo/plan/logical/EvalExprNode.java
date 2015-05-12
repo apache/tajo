@@ -28,6 +28,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 public class EvalExprNode extends LogicalNode implements Projectable {
@@ -69,7 +70,7 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   
   @Override
   public String toString() {
-    return "EvalExprNode (" + TUtil.arrayToString(exprs) + ")";
+    return "EvalExprNode (" + StringUtils.join(exprs) + ")";
   }
 
   @Override

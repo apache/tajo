@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
+import org.apache.tajo.catalog.Column;
 import io.netty.buffer.ByteBufProcessor;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -28,6 +29,7 @@ import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class CSVLineDeserializer extends TextLineDeserializer {
   private ByteBufProcessor processor;
@@ -35,8 +37,18 @@ public class CSVLineDeserializer extends TextLineDeserializer {
   private ByteBuf nullChars;
   private int delimiterCompensation;
 
-  public CSVLineDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
-    super(schema, meta, targetColumnIndexes);
+  private int [] targetColumnIndexes;
+  private Column [] projected;
+
+  public CSVLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
+    super(schema, meta);
+
+    this.projected = projected;
+    targetColumnIndexes = new int[projected.length];
+    for (int i = 0; i < projected.length; i++) {
+      targetColumnIndexes[i] = schema.getColumnId(projected[i].getQualifiedName());
+    }
+    Arrays.sort(targetColumnIndexes);
   }
 
   @Override
@@ -66,7 +78,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     final int rowLength = lineBuf.readableBytes();
     int start = 0, fieldLength = 0, end = 0;
 
-    //Projection
+    // Projection
     int currentTarget = 0;
     int currentIndex = 0;
 
@@ -83,10 +95,10 @@ public class CSVLineDeserializer extends TextLineDeserializer {
         lineBuf.setIndex(start, start + fieldLength);
 
         try {
-          Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
-          output.put(currentIndex, datum);
+          Datum datum = fieldSerDer.deserialize(lineBuf, projected[currentTarget], currentIndex, nullChars);
+          output.put(currentTarget, datum);
         } catch (Exception e) {
-          output.put(currentIndex, NullDatum.get());
+          output.put(currentTarget, NullDatum.get());
         }
 
         currentTarget++;
@@ -103,7 +115,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     /* If a text row is less than table schema size, tuple should set to NullDatum */
     if (projection.length > currentTarget) {
       for (; currentTarget < projection.length; currentTarget++) {
-        output.put(projection[currentTarget], NullDatum.get());
+        output.put(currentTarget, NullDatum.get());
       }
     }
   }

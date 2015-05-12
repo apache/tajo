@@ -28,7 +28,6 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.LogicalPlan;
@@ -79,7 +78,7 @@ public abstract class StorageManager {
   };
 
   protected TajoConf conf;
-  protected StoreType storeType;
+  protected String storeType;
 
   /**
    * Cache of StorageManager.
@@ -106,7 +105,7 @@ public abstract class StorageManager {
   private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
       new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
-  public StorageManager(StoreType storeType) {
+  public StorageManager(String storeType) {
     this.storeType = storeType;
   }
 
@@ -222,7 +221,7 @@ public abstract class StorageManager {
    * Returns the current storage type.
    * @return
    */
-  public StoreType getStoreType() {
+  public String getStoreType() {
     return storeType;
   }
 
@@ -271,7 +270,7 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
-    return getStorageManager(tajoConf, StoreType.CSV);
+    return getStorageManager(tajoConf, "CSV");
   }
 
   /**
@@ -283,22 +282,6 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
-    if ("HBASE".equalsIgnoreCase(storeType)) {
-      return getStorageManager(tajoConf, StoreType.HBASE);
-    } else {
-      return getStorageManager(tajoConf, StoreType.CSV);
-    }
-  }
-
-  /**
-   * Returns the proper StorageManager instance according to the storeType.
-   *
-   * @param tajoConf Tajo system property.
-   * @param storeType Storage type
-   * @return
-   * @throws java.io.IOException
-   */
-  public static StorageManager getStorageManager(TajoConf tajoConf, StoreType storeType) throws IOException {
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
       return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
@@ -317,15 +300,13 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   private static synchronized StorageManager getStorageManager (
-      TajoConf tajoConf, StoreType storeType, String managerKey) throws IOException {
+      TajoConf tajoConf, String storeType, String managerKey) throws IOException {
 
     String typeName;
-    switch (storeType) {
-      case HBASE:
-        typeName = "hbase";
-        break;
-      default:
-        typeName = "hdfs";
+    if (storeType.equalsIgnoreCase("HBASE")) {
+      typeName = "hbase";
+    } else {
+      typeName = "hdfs";
     }
 
     synchronized (storageManagers) {
@@ -344,7 +325,7 @@ public abstract class StorageManager {
           Constructor<? extends StorageManager> constructor =
               (Constructor<? extends StorageManager>) CONSTRUCTOR_CACHE.get(storageManagerClass);
           if (constructor == null) {
-            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{StoreType.class});
+            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{String.class});
             constructor.setAccessible(true);
             CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
           }
@@ -409,9 +390,7 @@ public abstract class StorageManager {
 
     Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
     scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
-    if (scanner.isProjectable()) {
-      scanner.setTarget(target.toArray());
-    }
+    scanner.setTarget(target.toArray());
 
     return scanner;
   }
@@ -449,7 +428,7 @@ public abstract class StorageManager {
 
     Class<? extends Appender> appenderClass;
 
-    String handlerName = CatalogUtil.getStoreTypeString(meta.getStoreType()).toLowerCase();
+    String handlerName = meta.getStoreType().toLowerCase();
     appenderClass = APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
@@ -532,8 +511,8 @@ public abstract class StorageManager {
    * @return The Scanner class
    * @throws java.io.IOException
    */
-  public Class<? extends Scanner> getScannerClass(CatalogProtos.StoreType storeType) throws IOException {
-    String handlerName = CatalogUtil.getStoreTypeString(storeType).toLowerCase();
+  public Class<? extends Scanner> getScannerClass(String storeType) throws IOException {
+    String handlerName = storeType.toLowerCase();
     Class<? extends Scanner> scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
@@ -542,7 +521,7 @@ public abstract class StorageManager {
     }
 
     if (scannerClass == null) {
-      throw new IOException("Unknown Storage Type: " + storeType.name());
+      throw new IOException("Unknown Storage Type: " + storeType);
     }
 
     return scannerClass;

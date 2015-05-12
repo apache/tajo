@@ -323,7 +323,7 @@ public class QueryMasterTask extends CompositeService {
       jsonExpr = null; // remove the possible OOM
       plan = planner.createPlan(queryContext, expr);
 
-      StoreType storeType = PlannerUtil.getStoreType(plan);
+      String storeType = PlannerUtil.getStoreType(plan);
       if (storeType != null) {
         sm = StorageManager.getStorageManager(systemConf, storeType);
         StorageProperty storageProperty = sm.getStorageProperty();

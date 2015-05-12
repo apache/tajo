@@ -140,7 +140,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertNotNull(response.getResultCode());
     assertEquals(ResultCode.OK, response.getResultCode());
     assertNotNull(response.getSchema());
-    assertEquals(16, response.getSchema().getColumns().size());
+    assertEquals(16, response.getSchema().getRootColumns().size());
     assertNotNull(response.getResultset());
     assertTrue(response.getResultset().getId() != 0);
     assertNotNull(response.getResultset().getLink());
@@ -174,7 +174,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertNotNull(response.getResultCode());
     assertEquals(ResultCode.OK, response.getResultCode());
     assertNotNull(response.getSchema());
-    assertEquals(16, response.getSchema().getColumns().size());
+    assertEquals(16, response.getSchema().getRootColumns().size());
     assertNotNull(response.getResultset());
     assertTrue(response.getResultset().getId() != 0);
     assertNotNull(response.getResultset().getLink());
@@ -236,7 +236,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertNotNull(response.getResultCode());
     assertEquals(ResultCode.OK, response.getResultCode());
     assertNotNull(response.getSchema());
-    assertEquals(16, response.getSchema().getColumns().size());
+    assertEquals(16, response.getSchema().getRootColumns().size());
     assertNotNull(response.getResultset());
     assertTrue(response.getResultset().getId() != 0);
     assertNotNull(response.getResultset().getLink());

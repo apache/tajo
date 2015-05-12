@@ -234,7 +234,7 @@ message PartitionTableScanSpec {
 
 message PersistentStoreNode {
   required int32 childSeq = 1;
-  required StoreType storageType = 2;
+  required string storageType = 2;
   required KeyValueSetProto tableProperties = 3;
 }
 

@@ -111,7 +111,7 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("Store Table (table=").append(tableName);
     if (storageType != null) {
-      sb.append(", storage="+ storageType.name());
+      sb.append(", storage="+ storageType);
     }
     sb.append(")");
     return sb.toString();

@@ -78,7 +78,7 @@ public class TestSortExec {
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    employeeMeta = CatalogUtil.newTableMeta("CSV");
 
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());

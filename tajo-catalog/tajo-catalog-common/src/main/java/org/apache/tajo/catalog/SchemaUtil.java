@@ -18,6 +18,10 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.util.TUtil;
+
+import java.util.List;
+
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -34,12 +38,12 @@ public class SchemaUtil {
   static int tmpColumnSeq = 0;
   public static Schema merge(Schema left, Schema right) {
     Schema merged = new Schema();
-    for(Column col : left.getColumns()) {
+    for(Column col : left.getRootColumns()) {
       if (!merged.containsByQualifiedName(col.getQualifiedName())) {
         merged.addColumn(col);
       }
     }
-    for(Column col : right.getColumns()) {
+    for(Column col : right.getRootColumns()) {
       if (merged.containsByQualifiedName(col.getQualifiedName())) {
         merged.addColumn("?fake" + (tmpColumnSeq++), col.getDataType());
       } else {
@@ -59,7 +63,7 @@ public class SchemaUtil {
    */
   public static Schema getNaturalJoinColumns(Schema left, Schema right) {
     Schema common = new Schema();
-    for (Column outer : left.getColumns()) {
+    for (Column outer : left.getRootColumns()) {
       if (!common.containsByName(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
         common.addColumn(new Column(outer.getSimpleName(), outer.getDataType()));
       }
@@ -113,7 +117,7 @@ public class SchemaUtil {
    * Column visitor interface
    */
   public static interface ColumnVisitor {
-    public void visit(int depth, Column column);
+    public void visit(int depth, List<String> path, Column column);
   }
 
   /**
@@ -122,8 +126,8 @@ public class SchemaUtil {
    * @param function
    */
   public static void visitSchema(Schema schema, ColumnVisitor function) {
-      for(Column col : schema.getColumns()) {
-        visitInDepthFirstOrder(0, function, col);
+      for(Column col : schema.getRootColumns()) {
+        visitInDepthFirstOrder(0, NestedPathUtil.ROOT_PATH, function, col);
       }
   }
 
@@ -134,14 +138,21 @@ public class SchemaUtil {
    * @param function Visitor
    * @param column Current visiting column
    */
-  private static void visitInDepthFirstOrder(int depth, ColumnVisitor function, Column column) {
+  private static void visitInDepthFirstOrder(int depth,
+                                             final List<String> path,
+                                             ColumnVisitor function,
+                                             Column column) {
+
     if (column.getDataType().getType() == Type.RECORD) {
-      for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getColumns()) {
-        visitInDepthFirstOrder(depth + 1, function, nestedColumn);
+      for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getRootColumns()) {
+        List<String> newPath = TUtil.newList(path);
+        newPath.add(column.getQualifiedName());
+
+        visitInDepthFirstOrder(depth + 1, newPath, function, nestedColumn);
       }
-      function.visit(depth, column);
+      function.visit(depth, path, column);
     } else {
-      function.visit(depth, column);
+      function.visit(depth, path, column);
     }
   }
 

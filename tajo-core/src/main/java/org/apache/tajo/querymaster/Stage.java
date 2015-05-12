@@ -721,10 +721,10 @@ public class Stage implements EventHandler<StageEvent> {
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
 
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
-    StoreType storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+    String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
     if (storeType == null) {
       // get default or store type
-      storeType = StoreType.CSV;
+      storeType = "CSV";
     }
 
     schema = channel.getSchema();

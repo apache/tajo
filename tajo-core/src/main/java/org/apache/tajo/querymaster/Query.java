@@ -422,7 +422,7 @@ public class Query implements EventHandler<QueryEvent> {
       if (finalState != QueryState.QUERY_SUCCEEDED) {
         Stage lastStage = query.getStage(stageEvent.getExecutionBlockId());
         if (lastStage != null && lastStage.getTableMeta() != null) {
-          StoreType storeType = lastStage.getTableMeta().getStoreType();
+          String storeType = lastStage.getTableMeta().getStoreType();
           if (storeType != null) {
             LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
             try {
@@ -441,7 +441,7 @@ public class Query implements EventHandler<QueryEvent> {
 
     private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
       Stage lastStage = query.getStage(event.getExecutionBlockId());
-      StoreType storeType = lastStage.getTableMeta().getStoreType();
+      String storeType = lastStage.getTableMeta().getStoreType();
       try {
         LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
         CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();

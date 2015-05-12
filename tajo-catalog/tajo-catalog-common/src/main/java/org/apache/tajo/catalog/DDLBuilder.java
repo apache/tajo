@@ -31,7 +31,7 @@ public class DDLBuilder {
 
     sb.append("--\n")
       .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
-      .append(" Storage: ").append(CatalogUtil.getStoreTypeString(desc.getMeta().getStoreType()));
+      .append(" Storage: ").append(desc.getMeta().getStoreType());
     sb.append("\n-- Path: ").append(desc.getPath());
     sb.append("\n--\n");
     sb.append("CREATE EXTERNAL TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
@@ -54,7 +54,7 @@ public class DDLBuilder {
 
     sb.append("--\n")
         .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
-        .append(" Storage: ").append(CatalogUtil.getStoreTypeString(desc.getMeta().getStoreType()));
+        .append(" Storage: ").append(desc.getMeta().getStoreType());
     sb.append("\n--\n");
     sb.append("CREATE TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
@@ -88,7 +88,7 @@ public class DDLBuilder {
   }
 
   private static void buildUsingClause(StringBuilder sb, TableMeta meta) {
-    sb.append(" USING " + CatalogUtil.getStoreTypeString(meta.getStoreType()));
+    sb.append(" USING " + meta.getStoreType());
   }
 
   private static void buildWithClause(StringBuilder sb, TableMeta meta) {
