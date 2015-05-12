@@ -1,0 +1,146 @@
+explain
+-------------------------------
+JOIN(10)(INNER)
+  => Join Cond: default.r.r_regionkey (INT4) = default.c.c_custkey (INT4)
+  => target list: default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4), default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)
+  => out schema: {(12) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4), default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+  => in schema: {(12) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4), default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+   SCAN(5) on default.region as r
+     => target list: default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)
+     => out schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+     => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+   JOIN(9)(RIGHT_OUTER)
+     => Join Cond: default.n.n_nationkey (INT4) = default.c.c_custkey (INT4)
+     => target list: default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)
+     => out schema: {(9) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)}
+     => in schema: {(9) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)}
+      TABLE_SUBQUERY(3) as default.n
+        => Targets: default.n.n_nationkey (INT4)
+        => out schema: {(1) default.n.n_nationkey (INT4)}
+        => in  schema: {(1) default.n.n_nationkey (INT4)}
+         SCAN(1) on default.nation
+           => target list: default.nation.n_nationkey (INT4)
+           => out schema: {(1) default.nation.n_nationkey (INT4)}
+           => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+      SCAN(0) on default.customer as c
+        => target list: default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)
+        => out schema: {(8) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
+        => in schema: {(8) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000006
+   |-eb_0000000000000_0000_000005
+      |-eb_0000000000000_0000_000004
+      |-eb_0000000000000_0000_000003
+         |-eb_0000000000000_0000_000002
+         |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+5: eb_0000000000000_0000_000005
+6: eb_0000000000000_0000_000006
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.c.c_custkey (INT4), num=32)
+
+SCAN(0) on default.customer as c
+  => target list: default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)
+  => out schema: {(8) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
+  => in schema: {(8) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.n.n_nationkey (INT4), num=32)
+
+TABLE_SUBQUERY(3) as default.n
+  => Targets: default.n.n_nationkey (INT4)
+  => out schema: {(1) default.n.n_nationkey (INT4)}
+  => in  schema: {(1) default.n.n_nationkey (INT4)}
+   PROJECTION(2)
+     => Targets: default.nation.n_nationkey (INT4)
+     => out schema: {(1) default.nation.n_nationkey (INT4)}
+     => in  schema: {(1) default.nation.n_nationkey (INT4)}
+      SCAN(1) on default.nation
+        => target list: default.nation.n_nationkey (INT4)
+        => out schema: {(1) default.nation.n_nationkey (INT4)}
+        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.c.c_custkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.n.n_nationkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.c.c_custkey (INT4), num=32)
+
+JOIN(9)(RIGHT_OUTER)
+  => Join Cond: default.n.n_nationkey (INT4) = default.c.c_custkey (INT4)
+  => target list: default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)
+  => out schema: {(9) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)}
+  => in schema: {(9) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)}
+   SCAN(13) on eb_0000000000000_0000_000002
+     => out schema: {(1) default.n.n_nationkey (INT4)}
+     => in schema: {(1) default.n.n_nationkey (INT4)}
+   SCAN(12) on eb_0000000000000_0000_000001
+     => out schema: {(8) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
+     => in schema: {(8) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
+
+SCAN(5) on default.region as r
+  => target list: default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)
+  => out schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+  => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.c.c_custkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
+
+JOIN(10)(INNER)
+  => Join Cond: default.r.r_regionkey (INT4) = default.c.c_custkey (INT4)
+  => target list: default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4), default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)
+  => out schema: {(12) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4), default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+  => in schema: {(12) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4), default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+   SCAN(15) on eb_0000000000000_0000_000004
+     => out schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+     => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+   SCAN(14) on eb_0000000000000_0000_000003
+     => out schema: {(9) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)}
+     => in schema: {(9) default.c.c_acctbal (FLOAT8), default.c.c_address (TEXT), default.c.c_comment (TEXT), default.c.c_custkey (INT4), default.c.c_mktsegment (TEXT), default.c.c_name (TEXT), default.c.c_nationkey (INT4), default.c.c_phone (TEXT), default.n.n_nationkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [TERMINAL]
+=======================================================
+c_custkey,c_name,c_address,c_nationkey,c_phone,c_acctbal,c_mktsegment,c_comment,n_nationkey,r_regionkey,r_name,r_comment
+-------------------------------
+1,Customer#000000001,IVhzIApeRb ot,c,E,15,25-989-741-2988,711.56,BUILDING,to the even, regular platelets. regular, ironic epitaphs nag e,1,1,AMERICA,hs use ironic, even requests. s
+2,Customer#000000002,XSTf4,NCwDVaWNe6tEgvwfmRchLXak,13,23-768-687-3665,121.65,AUTOMOBILE,l accounts. blithely ironic theodolites integrate boldly: caref,2,2,ASIA,ges. thinly even pinto beans ca
+3,Customer#000000003,MG9kdTD2WBHm,1,11-719-748-3364,7498.12,AUTOMOBILE, deposits eat slyly ironic, even instructions. express foxes detect slyly. blithely even accounts abov,3,3,EUROPE,ly final courts cajole furiously final excuse
+4,Customer#000000004,XxVSJsLAGtn,4,14-128-190-5944,2866.83,MACHINERY, requests. final, regular ideas sleep final accou,4,4,MIDDLE EAST,uickly special accounts cajole carefully blithely close requests. carefully final asymptotes haggle furiousl

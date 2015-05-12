@@ -1,0 +1,132 @@
+explain
+-------------------------------
+SORT(3)
+  => Sort Keys: default.nation.n_name (TEXT) (asc)
+   JOIN(7)(INNER)
+     => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+     => target list: default.nation.n_name (TEXT), default.region.r_name (TEXT), default.nation.n_nationkey (INT4) + default.region.r_regionkey (INT4) as ?plus
+     => out schema: {(3) ?plus (INT4), default.nation.n_name (TEXT), default.region.r_name (TEXT)}
+     => in schema: {(5) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(1) on default.region
+        => target list: default.region.r_name (TEXT), default.region.r_regionkey (INT4)
+        => out schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+        => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(0) on default.nation
+        => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+        => out schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000005)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000005
+   |-eb_0000000000000_0000_000004
+      |-eb_0000000000000_0000_000003
+         |-eb_0000000000000_0000_000002
+         |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+5: eb_0000000000000_0000_000005
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.nation.n_regionkey (INT4), num=32)
+
+SCAN(0) on default.nation
+  => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+  => out schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+  => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+SCAN(1) on default.region
+  => target list: default.region.r_name (TEXT), default.region.r_regionkey (INT4)
+  => out schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+  => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.nation.n_regionkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.nation.n_name (TEXT), num=32)
+
+SORT(11)
+  => Sort Keys: default.nation.n_name (TEXT) (asc)
+   JOIN(7)(INNER)
+     => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+     => target list: default.nation.n_name (TEXT), default.region.r_name (TEXT), default.nation.n_nationkey (INT4) + default.region.r_regionkey (INT4) as ?plus
+     => out schema: {(3) ?plus (INT4), default.nation.n_name (TEXT), default.region.r_name (TEXT)}
+     => in schema: {(5) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(10) on eb_0000000000000_0000_000002
+        => out schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+        => in schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(9) on eb_0000000000000_0000_000001
+        => out schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+        => in schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.nation.n_name (TEXT), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000003
+
+SORT(3)
+  => Sort Keys: default.nation.n_name (TEXT) (asc)
+   SCAN(12) on eb_0000000000000_0000_000003
+     => out schema: {(3) ?plus (INT4), default.nation.n_name (TEXT), default.region.r_name (TEXT)}
+     => in schema: {(3) ?plus (INT4), default.nation.n_name (TEXT), default.region.r_name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [TERMINAL]
+=======================================================
+n_name,r_name,?plus
+-------------------------------
+ALGERIA,AFRICA,0
+ARGENTINA,AMERICA,2
+BRAZIL,AMERICA,3
+CANADA,AMERICA,4
+CHINA,ASIA,20
+EGYPT,MIDDLE EAST,8
+ETHIOPIA,AFRICA,5
+FRANCE,EUROPE,9
+GERMANY,EUROPE,10
+INDIA,ASIA,10
+INDONESIA,ASIA,11
+IRAN,MIDDLE EAST,14
+IRAQ,MIDDLE EAST,15
+JAPAN,ASIA,14
+JORDAN,MIDDLE EAST,17
+KENYA,AFRICA,14
+MOROCCO,AFRICA,15
+MOZAMBIQUE,AFRICA,16
+PERU,AMERICA,18
+ROMANIA,EUROPE,22
+RUSSIA,EUROPE,25
+SAUDI ARABIA,MIDDLE EAST,24
+UNITED KINGDOM,EUROPE,26
+UNITED STATES,AMERICA,25
+VIETNAM,ASIA,23
