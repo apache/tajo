@@ -30,7 +30,7 @@ import org.apache.tajo.exception.UnsupportedException;
 /**
  * An instance of FrameTuple is an immutable tuple.
  * It contains two tuples and pretends to be one instance of Tuple for
- * join qual evaluatations.
+ * join qual evaluations.
  */
 public class FrameTuple implements Tuple, Cloneable {
   private int size;
@@ -50,6 +50,18 @@ public class FrameTuple implements Tuple, Cloneable {
     this.left = left;
     this.leftSize = left.size();
     this.right = right;
+  }
+
+  public FrameTuple setLeft(Tuple left) {
+    this.left = left;
+    this.leftSize = left.size();
+    return this;
+  }
+
+  public FrameTuple setRight(Tuple right) {
+    this.right = right;
+    this.size = leftSize + right.size();
+    return this;
   }
 
   @Override
