@@ -40,84 +40,85 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
   public TestJoinOnPartitionedTables(String joinOption) throws Exception {
     super(joinOption);
+
+    executeDDL("partitioned_customer_ddl.sql", null);
+    executeFile("insert_into_customer.sql");
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testPartitionTableJoinSmallTable() throws Exception {
-    executeDDL("partitioned_customer_ddl.sql", null);
-    try {
-      ResultSet res = executeFile("insert_into_customer.sql");
-      res.close();
-
-      res = executeQuery();
-      assertResultSet(res);
-      res.close();
-
-      res = executeFile("selfJoinOfPartitionedTable.sql");
-      assertResultSet(res, "selfJoinOfPartitionedTable.result");
-      res.close();
-
-      res = executeFile("testNoProjectionJoinQual.sql");
-      assertResultSet(res, "testNoProjectionJoinQual.result");
-      res.close();
-
-      res = executeFile("testPartialFilterPushDown.sql");
-      assertResultSet(res, "testPartialFilterPushDown.result");
-      res.close();
-
-      res = executeFile("testPartialFilterPushDownOuterJoin.sql");
-      assertResultSet(res, "testPartialFilterPushDownOuterJoin.result");
-      res.close();
-
-      res = executeFile("testPartialFilterPushDownOuterJoin2.sql");
-      assertResultSet(res, "testPartialFilterPushDownOuterJoin2.result");
-      res.close();
-    } finally {
-      executeString("DROP TABLE customer_parts PURGE").close();
-    }
+   runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
+  public void testNoProjectionJoinQual() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
+  public void testPartialFilterPushDown() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
+  public void testPartialFilterPushDownOuterJoin() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
+  public void testPartialFilterPushDownOuterJoin2() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
+  public void selfJoinOfPartitionedTable() throws Exception {
+    runSimpleTests();
+  }
+//
+//    try {
+//
+//      res = executeFile("selfJoinOfPartitionedTable.sql");
+//      assertResultSet(res, "selfJoinOfPartitionedTable.result");
+//      res.close();
+//
+//    } finally {
+//      executeString("DROP TABLE customer_parts PURGE").close();
+//    }
+//  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest(queries = {
+      @QuerySpec("select a.c_custkey, b.c_custkey from " +
+          "  (select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
+          "   union all " +
+          "   select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
+          ") a " +
+          "left outer join customer_parts b " +
+          "on a.c_custkey = b.c_custkey " +
+          "and a.c_nationkey > 0")
+  })
   public void testPartitionMultiplePartitionFilter() throws Exception {
-    executeDDL("partitioned_customer_ddl.sql", null);
-    try {
-      ResultSet res = executeFile("insert_into_customer.sql");
-      res.close();
-
-      res = executeString(
-          "select a.c_custkey, b.c_custkey from " +
-              "  (select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
-              "   union all " +
-              "   select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
-              ") a " +
-              "left outer join customer_parts b " +
-              "on a.c_custkey = b.c_custkey " +
-              "and a.c_nationkey > 0"
-      );
-
-      String expected =
-          "c_custkey,c_custkey\n" +
-              "-------------------------------\n";
-      assertEquals(expected, resultSetToString(res));
-      res.close();
-    } finally {
-      executeString("DROP TABLE customer_parts PURGE").close();
-    }
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testFilterPushDownPartitionColumnCaseWhen() throws Exception {
-    executeDDL("partitioned_customer_ddl.sql", null);
-    try {
-      ResultSet res = executeFile("insert_into_customer.sql");
-      res.close();
-
-      res = executeQuery();
-      assertResultSet(res);
-      res.close();
-    } finally {
-      executeString("DROP TABLE customer_parts PURGE").close();
-    }
+    runSimpleTests();
   }
 
   @Test
@@ -213,7 +214,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     }
   }
 
-  // This test should be reverted after resolving TAJO-1600
+  // TODO: This test should be reverted after resolving TAJO-1600
 //  @Test
   public final void testBroadcastMultiColumnPartitionTable() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");

@@ -175,8 +175,6 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
   public final void testJoinWithJson() throws Exception {
     // select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name
     ResultSet res = executeJsonQuery();

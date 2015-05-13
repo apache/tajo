@@ -52,8 +52,6 @@ public class TestInnerJoinWithSubQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
   public final void testJoinWithJson2() throws Exception {
     /*
     select t.n_nationkey, t.n_name, t.n_regionkey, t.n_comment, ps.ps_availqty, s.s_suppkey

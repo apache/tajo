@@ -361,7 +361,7 @@ public class QueryTestCaseBase {
 
   @Target({ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
-  protected static @interface SimpleTest {
+  protected @interface SimpleTest {
     String[] prepare() default {};
     QuerySpec[] queries() default {};
     String[] cleanup() default {};
@@ -369,7 +369,7 @@ public class QueryTestCaseBase {
 
   @Target({ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
-  protected static @interface QuerySpec {
+  protected @interface QuerySpec {
     String value();
     boolean override() default false;
     Option option() default @Option;
@@ -377,7 +377,7 @@ public class QueryTestCaseBase {
 
   @Target({ElementType.METHOD})
   @Retention(RetentionPolicy.RUNTIME)
-  protected static @interface Option {
+  protected @interface Option {
     boolean withExplain() default false;
     boolean withExplainGlobal() default false;
     boolean parameterized() default false;
