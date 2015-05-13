@@ -26,7 +26,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -52,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * For supporting such as HDFS, HBASE, a specific StorageManager should be implemented by inheriting this class.
  *
  */
-public abstract class StorageManager {
+public abstract class StorageManager implements TableSpace {
   private final Log LOG = LogFactory.getLog(StorageManager.class);
 
   private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
@@ -123,6 +122,7 @@ public abstract class StorageManager {
    * @param ifNotExists Creates the table only when the table does not exist.
    * @throws java.io.IOException
    */
+  @Override
   public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
 
   /**
@@ -132,6 +132,7 @@ public abstract class StorageManager {
    * @param tableDesc
    * @throws java.io.IOException
    */
+  @Override
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
 
   /**
@@ -143,6 +144,7 @@ public abstract class StorageManager {
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
+  @Override
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
                                            ScanNode scanNode) throws IOException;
 
@@ -167,7 +169,8 @@ public abstract class StorageManager {
   /**
    * Release storage manager resource
    */
-  public abstract void closeStorageManager();
+  @Override
+  public abstract void close();
 
 
   /**
@@ -240,10 +243,10 @@ public abstract class StorageManager {
    * Close StorageManager
    * @throws java.io.IOException
    */
-  public static void close() throws IOException {
+  public static void shutdown() throws IOException {
     synchronized(storageManagers) {
       for (StorageManager eachStorageManager: storageManagers.values()) {
-        eachStorageManager.closeStorageManager();
+        eachStorageManager.close();
       }
     }
     clearCache();
@@ -351,6 +354,7 @@ public abstract class StorageManager {
    * @return Scanner instance
    * @throws java.io.IOException
    */
+  @Override
   public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
     return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
   }
@@ -364,6 +368,7 @@ public abstract class StorageManager {
    * @return Scanner instance
    * @throws java.io.IOException
    */
+  @Override
   public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {
     return getScanner(meta, schema, fragment, schema);
   }
@@ -378,6 +383,7 @@ public abstract class StorageManager {
    * @return Scanner instance
    * @throws java.io.IOException
    */
+  @Override
   public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
     if (fragment.isEmpty()) {
       Scanner scanner = new NullScanner(conf, schema, meta, fragment);
@@ -550,6 +556,7 @@ public abstract class StorageManager {
    * @param outSchema  The output schema of select query for inserting.
    * @throws java.io.IOException
    */
+  @Override
   public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
     // nothing to do
   }
@@ -563,6 +570,7 @@ public abstract class StorageManager {
    * @return The list of storage specified rewrite rules
    * @throws java.io.IOException
    */
+  @Override
   public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
     return null;
   }
@@ -580,6 +588,7 @@ public abstract class StorageManager {
    * @return Saved path
    * @throws java.io.IOException
    */
+  @Override
   public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
                                LogicalPlan plan, Schema schema,
                                TableDesc tableDesc) throws IOException {

@@ -864,7 +864,7 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public void closeStorageManager() {
+  public void close() {
   }
 
   @Override

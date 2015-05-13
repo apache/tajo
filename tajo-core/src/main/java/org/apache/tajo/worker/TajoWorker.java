@@ -368,7 +368,7 @@ public class TajoWorker extends CompositeService {
     }
 
     try {
-      StorageManager.close();
+      StorageManager.shutdown();
     } catch (IOException ie) {
       LOG.error(ie.getMessage(), ie);
     }

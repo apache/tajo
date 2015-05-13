@@ -78,7 +78,7 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
-  public void closeStorageManager() {
+  public void close() {
     synchronized (connMap) {
       for (HConnection eachConn: connMap.values()) {
         try {
