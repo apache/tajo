@@ -18,19 +18,15 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.NamedTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
 
-@Category(IntegrationTest.class)
-@RunWith(Parameterized.class)
+@NamedTest("TestJoinQuery")
 public class TestMultipleJoinTypes extends TestJoinQuery {
 
   public TestMultipleJoinTypes(String joinOption) throws Exception {

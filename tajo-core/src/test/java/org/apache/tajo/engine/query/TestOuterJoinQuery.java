@@ -18,7 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.NamedTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -30,16 +30,12 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
 
-@Category(IntegrationTest.class)
-@RunWith(Parameterized.class)
+@NamedTest("TestJoinQuery")
 public class TestOuterJoinQuery extends TestJoinQuery {
 
   public TestOuterJoinQuery(String joinOption) throws Exception {
