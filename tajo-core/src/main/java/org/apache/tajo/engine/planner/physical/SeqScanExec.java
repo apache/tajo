@@ -269,9 +269,6 @@ public class SeqScanExec extends ScanExec {
       }
     }
     scanner = null;
-    plan = null;
-    qual = null;
-    projector = null;
   }
 
   @Override

@@ -189,8 +189,10 @@ public class QueryTestCaseBase {
   private static Set<String> createdTableGlobalSet = new HashSet<String>();
   // queries and results directory corresponding to subclass class.
   protected Path currentQueryPath;
+  protected Path namedQueryPath;
   protected Path currentResultPath;
   protected Path currentDatasetPath;
+  protected Path namedDatasetPath;
 
   protected FileSystem currentResultFS;
 
@@ -228,7 +230,7 @@ public class QueryTestCaseBase {
   public void printTestName() {
     /* protect a travis stalled build */
     System.out.println("Run: " + name.getMethodName() +
-         " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
+        " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
         / (1024 * 1024)) + "MBytes");
   }
 
@@ -256,10 +258,14 @@ public class QueryTestCaseBase {
 
   private void init() {
     String className = getClass().getSimpleName();
-    NamedTest namedTest = getClass().getAnnotation(NamedTest.class);
-    currentQueryPath = new Path(queryBasePath, namedTest == null ? className : namedTest.value());
+    currentQueryPath = new Path(queryBasePath, className);
     currentResultPath = new Path(resultBasePath, className);
-    currentDatasetPath = new Path(datasetBasePath, namedTest == null ? className : namedTest.value());
+    currentDatasetPath = new Path(datasetBasePath, className);
+    NamedTest namedTest = getClass().getAnnotation(NamedTest.class);
+    if (namedTest != null) {
+      namedQueryPath = new Path(queryBasePath, namedTest.value());
+      namedDatasetPath = new Path(datasetBasePath, namedTest.value());
+    }
 
     try {
       // if the current database is "default", we don't need create it because it is already prepated at startup time.
@@ -702,7 +708,17 @@ public class QueryTestCaseBase {
   private Path getQueryFilePath(String fileName) throws IOException {
     Path queryFilePath = StorageUtil.concatPath(currentQueryPath, fileName);
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
-    assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
+    if (!fs.exists(queryFilePath)) {
+      if (namedQueryPath != null) {
+        queryFilePath = StorageUtil.concatPath(namedQueryPath, fileName);
+        fs = namedQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+        if (!fs.exists(queryFilePath)) {
+          throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+        }
+      } else {
+        throw new IOException("Cannot find " + fileName + " at " + currentQueryPath);
+      }
+    }
     return queryFilePath;
   }
 
@@ -716,7 +732,17 @@ public class QueryTestCaseBase {
   private Path getDataSetFile(String fileName) throws IOException {
     Path dataFilePath = StorageUtil.concatPath(currentDatasetPath, fileName);
     FileSystem fs = currentDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
-    assertTrue(dataFilePath.toString() + " existence check", fs.exists(dataFilePath));
+    if (!fs.exists(dataFilePath)) {
+      if (namedDatasetPath != null) {
+        dataFilePath = StorageUtil.concatPath(namedDatasetPath, fileName);
+        fs = namedDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+        if (!fs.exists(dataFilePath)) {
+          throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+        }
+      } else {
+        throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+      }
+    }
     return dataFilePath;
   }
 
@@ -760,9 +786,10 @@ public class QueryTestCaseBase {
   private List<String> executeDDL(String ddlFileName, @Nullable String dataFileName, boolean isLocalTable,
                                   @Nullable String[] args) throws Exception {
 
-    Path ddlFilePath = new Path(currentQueryPath, ddlFileName);
-    FileSystem fs = ddlFilePath.getFileSystem(conf);
-    assertTrue(ddlFilePath + " existence check", fs.exists(ddlFilePath));
+//    Path ddlFilePath = new Path(currentQueryPath, ddlFileName);
+//    FileSystem fs = ddlFilePath.getFileSystem(conf);
+//    assertTrue(ddlFilePath + " existence check", fs.exists(ddlFilePath));
+    Path ddlFilePath = getQueryFilePath(ddlFileName);
 
     String template = FileUtil.readTextFile(new File(ddlFilePath.toUri()));
     String dataFilePath = null;

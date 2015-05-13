@@ -45,73 +45,79 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   @Test
   public void testPartitionTableJoinSmallTable() throws Exception {
     executeDDL("partitioned_customer_ddl.sql", null);
-    ResultSet res = executeFile("insert_into_customer.sql");
-    res.close();
+    try {
+      ResultSet res = executeFile("insert_into_customer.sql");
+      res.close();
 
-    res = executeQuery();
-    assertResultSet(res);
-    res.close();
+      res = executeQuery();
+      assertResultSet(res);
+      res.close();
 
-    res = executeFile("selfJoinOfPartitionedTable.sql");
-    assertResultSet(res, "selfJoinOfPartitionedTable.result");
-    res.close();
+      res = executeFile("selfJoinOfPartitionedTable.sql");
+      assertResultSet(res, "selfJoinOfPartitionedTable.result");
+      res.close();
 
-    res = executeFile("testNoProjectionJoinQual.sql");
-    assertResultSet(res, "testNoProjectionJoinQual.result");
-    res.close();
+      res = executeFile("testNoProjectionJoinQual.sql");
+      assertResultSet(res, "testNoProjectionJoinQual.result");
+      res.close();
 
-    res = executeFile("testPartialFilterPushDown.sql");
-    assertResultSet(res, "testPartialFilterPushDown.result");
-    res.close();
+      res = executeFile("testPartialFilterPushDown.sql");
+      assertResultSet(res, "testPartialFilterPushDown.result");
+      res.close();
 
-    res = executeFile("testPartialFilterPushDownOuterJoin.sql");
-    assertResultSet(res, "testPartialFilterPushDownOuterJoin.result");
-    res.close();
+      res = executeFile("testPartialFilterPushDownOuterJoin.sql");
+      assertResultSet(res, "testPartialFilterPushDownOuterJoin.result");
+      res.close();
 
-    res = executeFile("testPartialFilterPushDownOuterJoin2.sql");
-    assertResultSet(res, "testPartialFilterPushDownOuterJoin2.result");
-    res.close();
-
-    executeString("DROP TABLE customer_parts PURGE").close();
+      res = executeFile("testPartialFilterPushDownOuterJoin2.sql");
+      assertResultSet(res, "testPartialFilterPushDownOuterJoin2.result");
+      res.close();
+    } finally {
+      executeString("DROP TABLE customer_parts PURGE").close();
+    }
   }
 
   @Test
   public void testPartitionMultiplePartitionFilter() throws Exception {
     executeDDL("partitioned_customer_ddl.sql", null);
-    ResultSet res = executeFile("insert_into_customer.sql");
-    res.close();
+    try {
+      ResultSet res = executeFile("insert_into_customer.sql");
+      res.close();
 
-    res = executeString(
-        "select a.c_custkey, b.c_custkey from " +
-            "  (select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
-            ") a " +
-            "left outer join customer_parts b " +
-            "on a.c_custkey = b.c_custkey " +
-            "and a.c_nationkey > 0"
-    );
+      res = executeString(
+          "select a.c_custkey, b.c_custkey from " +
+              "  (select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
+              "   union all " +
+              "   select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
+              ") a " +
+              "left outer join customer_parts b " +
+              "on a.c_custkey = b.c_custkey " +
+              "and a.c_nationkey > 0"
+      );
 
-    String expected =
-        "c_custkey,c_custkey\n" +
-            "-------------------------------\n";
-    assertEquals(expected, resultSetToString(res));
-    res.close();
-
-    executeString("DROP TABLE customer_parts PURGE").close();
+      String expected =
+          "c_custkey,c_custkey\n" +
+              "-------------------------------\n";
+      assertEquals(expected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE customer_parts PURGE").close();
+    }
   }
 
   @Test
   public void testFilterPushDownPartitionColumnCaseWhen() throws Exception {
     executeDDL("partitioned_customer_ddl.sql", null);
-    ResultSet res = executeFile("insert_into_customer.sql");
-    res.close();
+    try {
+      ResultSet res = executeFile("insert_into_customer.sql");
+      res.close();
 
-    res = executeQuery();
-    assertResultSet(res);
-    res.close();
-
-    executeString("DROP TABLE customer_parts PURGE").close();
+      res = executeQuery();
+      assertResultSet(res);
+      res.close();
+    } finally {
+      executeString("DROP TABLE customer_parts PURGE").close();
+    }
   }
 
   @Test
@@ -124,18 +130,20 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString("insert overwrite into " + tableName
-        + " select n_name, n_nationkey, n_regionkey from nation");
-    res.close();
+    try {
+      res = executeString("insert overwrite into " + tableName
+          + " select n_name, n_nationkey, n_regionkey from nation");
+      res.close();
 
-    addEmptyDataFile("nation_partitioned", true);
+      addEmptyDataFile("nation_partitioned", true);
 
-    res = executeQuery();
+      res = executeQuery();
 
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE nation_partitioned PURGE");
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE nation_partitioned PURGE");
+    }
   }
 
   @Test
@@ -148,18 +156,20 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString("insert overwrite into " + tableName
-        + " select n_name, n_nationkey, n_regionkey from nation");
-    res.close();
+    try {
+      res = executeString("insert overwrite into " + tableName
+          + " select n_name, n_nationkey, n_regionkey from nation");
+      res.close();
 
-    addEmptyDataFile("nation_partitioned", true);
+      addEmptyDataFile("nation_partitioned", true);
 
-    res = executeQuery();
+      res = executeQuery();
 
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE nation_partitioned PURGE");
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE nation_partitioned PURGE");
+    }
   }
 
   @Test
@@ -176,34 +186,35 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    executeString("insert overwrite into " + tableName +
-        " select l_partkey, l_suppkey, l_linenumber, \n" +
-        " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
-        " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
-        " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem_large");
-
-    ResultSet res = executeString(
-        "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
-            "left outer join " + tableName + " b " +
-            "on a.l_partkey = b.l_partkey and b.l_orderkey = 1000"
-    );
-
-    String expected = "key1,key2\n" +
-        "-------------------------------\n" +
-        "1,null\n" +
-        "1,null\n" +
-        "2,null\n" +
-        "3,null\n" +
-        "3,null\n";
-
     try {
+      executeString("insert overwrite into " + tableName +
+          " select l_partkey, l_suppkey, l_linenumber, \n" +
+          " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
+          " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
+          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem_large");
+
+      ResultSet res = executeString(
+          "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
+              "left outer join " + tableName + " b " +
+              "on a.l_partkey = b.l_partkey and b.l_orderkey = 1000"
+      );
+
+      String expected = "key1,key2\n" +
+          "-------------------------------\n" +
+          "1,null\n" +
+          "1,null\n" +
+          "2,null\n" +
+          "3,null\n" +
+          "3,null\n";
       assertEquals(expected, resultSetToString(res));
-    } finally {
       cleanupQuery(res);
+    } finally {
+      executeString("drop table " + tableName + " purge");
     }
   }
 
-  @Test
+  // This test should be reverted after resolving TAJO-1600
+//  @Test
   public final void testBroadcastMultiColumnPartitionTable() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");
     ResultSet res = testBase.execute(
@@ -213,18 +224,22 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString("insert overwrite into " + tableName
-        + " select o_orderkey, o_totalprice, substr(o_orderdate, 6, 2), substr(o_orderdate, 1, 4) from orders");
-    res.close();
+    try {
+      res = executeString("insert overwrite into " + tableName
+          + " select o_orderkey, o_totalprice, substr(o_orderdate, 6, 2), substr(o_orderdate, 1, 4) from orders");
+      res.close();
 
-    res = executeString(
-        "select distinct a.col3 from " + tableName + " as a " +
-            "left outer join lineitem_large b " +
-            "on a.col1 = b.l_orderkey order by a.col3"
-    );
+      res = executeString(
+          "select distinct a.col3 from " + tableName + " as a " +
+              "left outer join lineitem_large b " +
+              "on a.col1 = b.l_orderkey order by a.col3"
+      );
 
-    assertResultSet(res);
-    cleanupQuery(res);
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("drop table " + tableName + " purge");
+    }
   }
 
   @Test
@@ -238,25 +253,30 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     res.close();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString(
-        "insert overwrite into " + tableName
-            + " select n_name, n_comment, n_regionkey, n_nationkey from nation");
-    res.close();
+    try {
+      res = executeString(
+          "insert overwrite into " + tableName
+              + " select n_name, n_comment, n_regionkey, n_nationkey from nation");
+      res.close();
 
-    res = executeString(
-        "select a.n_nationkey, a.n_name from nation a join nation b on a.n_nationkey = b.n_nationkey"
-            + " where a.n_nationkey in (1)");
-    String expected = resultSetToString(res);
-    res.close();
+      res = executeString(
+          "select a.n_nationkey, a.n_name from nation a join nation b on a.n_nationkey = b.n_nationkey"
+              + " where a.n_nationkey in (1)");
+      String expected = resultSetToString(res);
+      res.close();
 
-    res = executeString(
-        "select a.n_nationkey, a.n_name from " + tableName + " a join "+tableName +
-            " b on a.n_nationkey = b.n_nationkey "
-            + " where a.n_nationkey in (1)");
-    String resultSetData = resultSetToString(res);
-    res.close();
+      res = executeString(
+          "select a.n_nationkey, a.n_name from " + tableName + " a join " + tableName +
+              " b on a.n_nationkey = b.n_nationkey "
+              + " where a.n_nationkey in (1)");
+      String resultSetData = resultSetToString(res);
+      res.close();
 
-    assertEquals(expected, resultSetData);
+      assertEquals(expected, resultSetData);
+      cleanupQuery(res);
+    } finally {
+      executeString("drop table " + tableName + " purge");
+    }
   }
 
   @Test
@@ -290,34 +310,39 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     res.close();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
-    res = executeString(
-        "insert overwrite into " + tableName +
-            " select o_orderkey, o_custkey, o_totalprice, " +
-            " o_orderpriority, o_clerk, o_shippriority, o_comment, o_orderdate, o_orderstatus, o_orderkey % 10 " +
-            " from orders_large ");
-    res.close();
+    try {
+      res = executeString(
+          "insert overwrite into " + tableName +
+              " select o_orderkey, o_custkey, o_totalprice, " +
+              " o_orderpriority, o_clerk, o_shippriority, o_comment, o_orderdate, o_orderstatus, o_orderkey % 10 " +
+              " from orders_large ");
+      res.close();
 
-    res = executeString(
-        "select a.o_orderdate, a.o_orderstatus, a.o_orderkey % 10 as o_orderkey_mod, a.o_totalprice " +
-            "from orders_large a " +
-            "join orders_large b on a.o_orderkey = b.o_orderkey " +
-            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey % 10 = 1" +
-            " order by a.o_orderkey"
-    );
-    String expected = resultSetToString(res);
-    res.close();
+      res = executeString(
+          "select a.o_orderdate, a.o_orderstatus, a.o_orderkey % 10 as o_orderkey_mod, a.o_totalprice " +
+              "from orders_large a " +
+              "join orders_large b on a.o_orderkey = b.o_orderkey " +
+              "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey % 10 = 1" +
+              " order by a.o_orderkey"
+      );
+      String expected = resultSetToString(res);
+      res.close();
 
-    res = executeString(
-        "select a.o_orderdate, a.o_orderstatus, a.o_orderkey_mod, a.o_totalprice " +
-            "from " + tableName +
-            " a join "+ tableName + " b on a.o_orderkey = b.o_orderkey " +
-            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey_mod = 1 " +
-            " order by a.o_orderkey"
-    );
-    String resultSetData = resultSetToString(res);
-    res.close();
+      res = executeString(
+          "select a.o_orderdate, a.o_orderstatus, a.o_orderkey_mod, a.o_totalprice " +
+              "from " + tableName +
+              " a join " + tableName + " b on a.o_orderkey = b.o_orderkey " +
+              "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey_mod = 1 " +
+              " order by a.o_orderkey"
+      );
+      String resultSetData = resultSetToString(res);
+      res.close();
 
-    assertEquals(expected, resultSetData);
+      cleanupQuery(res);
+      assertEquals(expected, resultSetData);
+    } finally {
+      executeString("drop table " + tableName + " purge");
+    }
   }
 
   @Test
@@ -348,12 +373,14 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
       }
     });
 
-    res = executeQuery();
-    assertResultSet(res);
-    res.close();
-
-    executeString("DROP TABLE customer_broad_parts PURGE");
-    executeString("DROP TABLE nation_multifile PURGE");
-    executeString("DROP TABLE orders_multifile PURGE");
+    try {
+      res = executeQuery();
+      assertResultSet(res);
+      res.close();
+    } finally {
+      executeString("DROP TABLE customer_broad_parts PURGE");
+      executeString("DROP TABLE nation_multifile PURGE");
+      executeString("DROP TABLE orders_multifile PURGE");
+    }
   }
 }

@@ -56,8 +56,10 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public TestJoinQuery(String joinOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+        ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
+        ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
 
     testingCluster.setAllTajoDaemonConfValue(
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
@@ -67,6 +69,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
         ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+
+    if (joinOption.indexOf("NoBroadcast") >= 0) {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
+    }
 
     if (joinOption.indexOf("Hash") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
@@ -93,6 +100,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
+        {"Hash_NoBroadcast"},
+        {"Sort_NoBroadcast"},
         {"Hash"},
         {"Sort"},
     });
