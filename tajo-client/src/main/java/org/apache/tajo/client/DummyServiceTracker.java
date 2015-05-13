@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client;
 
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerException;
@@ -65,6 +66,21 @@ public class DummyServiceTracker implements ServiceTracker {
   }
 
   @Override
+  public int getState(String masterName, TajoConf conf) throws ServiceTrackerException {
+    return 0;
+  }
+
+  @Override
+  public int formatHA(TajoConf conf) throws ServiceTrackerException {
+    return 0;
+  }
+
+  @Override
+  public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
+    return null;
+  }
+
+  @Override
   public void register() throws IOException {
   }
 
@@ -73,7 +89,7 @@ public class DummyServiceTracker implements ServiceTracker {
   }
 
   @Override
-  public boolean isActiveStatus() {
+  public boolean isActiveMaster() {
     return true;
   }
 

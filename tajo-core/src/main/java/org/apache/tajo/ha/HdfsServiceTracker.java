@@ -59,7 +59,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
   private Path activePath;
   private Path backupPath;
 
-  private boolean isActiveStatus = false;
+  private boolean isActiveMaster = false;
 
   //thread which runs periodically to see the last time since a heartbeat is received.
   private Thread checkerThread;
@@ -127,11 +127,10 @@ public class HdfsServiceTracker extends HAServiceTracker {
   public void register() throws IOException {
     // Check lock file
     boolean lockResult = createLockFile();
-    LOG.info("### 100 ### masterName:" + masterName + ", lockResult:" + lockResult);
 
     String fileName = masterName.replaceAll(":", "_");
-    Path path = new Path(activePath, fileName);
-    LOG.info("### 110 ### masterName:" + masterName + ", path:" + path.toString() );
+    Path activeFile = new Path(activePath, fileName);
+    Path backupFile = new Path(backupPath, fileName);
 
     // Set TajoMasterInfo object which has several rpc server addresses.
     StringBuilder sb = new StringBuilder();
@@ -149,58 +148,68 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
     address = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
-    LOG.info("### 120 ### masterName:" + masterName);
 
     // Phase 1: If there is not another active master, this try to become active master.
     if (lockResult) {
-      LOG.info("### 130 ### masterName:" + masterName );
-      createMasterFile(fs.create(path), sb);
-      setActiveStatus(true);
+      fs.delete(backupFile, false);
+      createMasterFile(activeFile, sb);
+      currentActiveMaster = masterName;
+      writeSystemConf();
       LOG.info(String.format("This is added to active master (%s)", masterName));
-
-      FileStatus[] files = fs.listStatus(activePath);
-      for(FileStatus eachFile : files) {
-        LOG.info("### 131 ### eachFile:" + eachFile.getPath().toString() );
-      }
     } else {
-      LOG.info("### 140 ### masterName:" + masterName + ", currentActiveMaster:" + currentActiveMaster);
-
+      // Phase 2: If there is active master information, we need to check its status.
       FileStatus[] files = fs.listStatus(activePath);
-      String[] hostAddress = null;
+      Path existingActiveFile = null;
+      if (files.length > 2) {
+        throw new ServiceTrackerException("Three or more than active master entries.");
+      }
       for(FileStatus eachFile : files) {
-        LOG.info("### 141 ### eachFile:" + eachFile.getPath().toString());
         if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE)) {
-          hostAddress = eachFile.getPath().getName().split("_");
-          currentActiveMaster = hostAddress[0] + ":" + hostAddress[1];
+          existingActiveFile = eachFile.getPath();
         }
       }
-
-      // Phase 2: If there is active master information, we need to check its status.
-      LOG.info("### 142 ### masterName:" + masterName + ", currentActiveMaster:" + currentActiveMaster);
+      currentActiveMaster = existingActiveFile.getName().replaceAll("_", ":");
 
       // Phase 3: If current active master is dead, this master should be active master.
-      if (!checkConnection(new InetSocketAddress(hostAddress[0], Integer.parseInt(hostAddress[1])))) {
-        LOG.info("### 150 ### masterName:" + masterName );
-        fs.delete(path, true);
-        createMasterFile(fs.create(path), sb);
-        setActiveStatus(true);
+      if (!checkConnection(currentActiveMaster)) {
+        fs.delete(existingActiveFile, false);
+        fs.delete(backupFile, false);
+        createMasterFile(activeFile, sb);
+        currentActiveMaster = masterName;
         LOG.info(String.format("This is added to active master (%s)", masterName));
       } else {
-        LOG.info("### 160 ### masterName:" + masterName );
         // Phase 4: If current active master is alive, this master need to be backup master.
         if (masterName.equals(currentActiveMaster)) {
-          setActiveStatus(true);
           LOG.info(String.format("This has already been added to active master (%s)", masterName));
         } else {
-          path = new Path(backupPath, fileName);
-          createMasterFile(fs.create(path), sb);
-          setActiveStatus(false);
-          LOG.info(String.format("This is added to backup master (%s)", masterName));
+          if (fs.exists(backupFile)) {
+            LOG.info(String.format("This has already been added to backup masters (%s)", masterName));
+          } else {
+            createMasterFile(backupFile, sb);
+            LOG.info(String.format("This is added to backup master (%s)", masterName));
+          }
         }
       }
     }
-    LOG.info("### 170 ### masterName:" + masterName );
     startPingChecker();
+  }
+
+  /**
+   * Storing the system configs
+   *
+   * @throws IOException
+   */
+  private void writeSystemConf() throws IOException {
+    Path systemConfPath = TajoConf.getSystemConfPath(conf);
+
+    FSDataOutputStream out = FileSystem.create(fs, systemConfPath,
+      new FsPermission(TajoMaster.SYSTEM_CONF_FILE_PERMISSION));
+    try {
+      conf.writeXml(out);
+    } finally {
+      out.close();
+    }
+    fs.setReplication(systemConfPath, (short) conf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
   }
 
   private boolean createLockFile() throws IOException {
@@ -227,20 +236,16 @@ public class HdfsServiceTracker extends HAServiceTracker {
     return result;
   }
 
-  private void setActiveStatus(boolean isActive) {
-    if(isActive) {
-      currentActiveMaster = masterName;
-      isActiveStatus = true;
-    } else {
-      isActiveStatus = false;
-    }
-  }
-
-  private void createMasterFile(FSDataOutputStream out, StringBuilder sb) throws IOException {
+  private void createMasterFile(Path path, StringBuilder sb) throws IOException {
+    FSDataOutputStream out = null;
     try {
+      out = fs.create(path, false);
+
       out.writeUTF(sb.toString());
       out.hsync();
       out.close();
+
+      fs.deleteOnExit(path);
     } catch (Exception e) {
       throw new IOException("File creation is failed - " + e.getMessage());
     } finally {
@@ -280,54 +285,48 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   @Override
   public void delete() throws IOException {
-    LOG.info("### 400 ###");
     String fileName = masterName.replaceAll(":", "_");
 
-    if (masterName.equals(currentActiveMaster)) {
-      Path activeFile = new Path(activePath, fileName);
-      if (fs.exists(activeFile)) {
-        LOG.info("### 410 ### activeFile:" + activeFile.toString());
-        fs.delete(activeFile, true);
-      }
+    Path activeFile = new Path(activePath, fileName);
+    if (fs.exists(activeFile)) {
+      fs.delete(activeFile, false);
+    }
 
-      Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
-      if (fs.exists(lockFile)) {
-        LOG.info("### 420 ### lockFile:" + lockFile.toString());
-        fs.delete(lockFile, true);
-      }
+    Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
+    if (fs.exists(lockFile)) {
+      fs.delete(lockFile, false);
     }
 
     Path backupFile = new Path(backupPath, fileName);
     if (fs.exists(backupFile)) {
-      LOG.info("### 430 ### backupFile:" + backupFile.toString());
-      fs.delete(backupFile, true);
-    }
-    if (isActiveStatus) {
-      isActiveStatus = false;
+      fs.delete(backupFile, false);
     }
     stopped = true;
   }
 
   @Override
-  public boolean isActiveStatus() {
-    return isActiveStatus;
+  public boolean isActiveMaster() {
+    if (currentActiveMaster.equals(masterName)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Override
   public List<TajoMasterInfo> getMasters() throws IOException {
     List<TajoMasterInfo> list = TUtil.newList();
-    Path path = null;
 
     FileStatus[] files = fs.listStatus(activePath);
-    if (files.length == 1) {
-      path = files[0].getPath();
-      list.add(getTajoMasterInfo(path, true));
+    for(FileStatus status : files) {
+      if (!status.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE)) {
+        list.add(getTajoMasterInfo(status.getPath(), true));
+      }
     }
 
     files = fs.listStatus(backupPath);
     for (FileStatus status : files) {
-      path = status.getPath();
-      list.add(getTajoMasterInfo(path, false));
+      list.add(getTajoMasterInfo(status.getPath(), false));
     }
 
     return list;
@@ -335,7 +334,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   private TajoMasterInfo getTajoMasterInfo(Path path, boolean isActive) throws IOException {
     String masterAddress = path.getName().replaceAll("_", ":");
-    boolean isAlive = HAServiceUtil.isMasterAlive(masterAddress, conf);
+    boolean isAlive = checkConnection(masterAddress);
 
     FSDataInputStream stream = fs.open(path);
     String data = stream.readUTF();
@@ -363,17 +362,17 @@ public class HdfsServiceTracker extends HAServiceTracker {
         synchronized (HdfsServiceTracker.this) {
           try {
             if (!currentActiveMaster.equals(masterName)) {
-              boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
               if (LOG.isDebugEnabled()) {
-                LOG.debug("currentActiveMaster:" + currentActiveMaster + ", thisMasterName:" + masterName
-                  + ", isAlive:" + isAlive);
+                LOG.debug("currentActiveMaster:" + currentActiveMaster + ", thisMasterName:" + masterName);
               }
 
               // If active master is dead, this master should be active master instead of
               // previous active master.
-              if (!isAlive) {
-                FileStatus[] files = fs.listStatus(activePath);
-                delete();
+              if (!checkConnection(currentActiveMaster)) {
+                Path activeFile = new Path(activePath, currentActiveMaster.replaceAll(":", "_"));
+                fs.delete(activeFile, false);
+                Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
+                fs.delete(lockFile, false);
                 register();
               }
             }
@@ -488,14 +487,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
       FSDataInputStream stream = fs.open(activeMasterEntry);
       String data = stream.readUTF();
       stream.close();
-      LOG.info("### 300 ### data:" + data);
       addressElements.addAll(TUtil.newList(data.split("_"))); // Add remains entries to elements
-
-      LOG.info("### 310 ### addressElementsSize:" + addressElements.size());
-
-      for(String eachAddress : addressElements) {
-        LOG.info("### 320 ### eachAddress:" + eachAddress);
-      }
 
       // ensure the number of entries
       Preconditions.checkState(addressElements.size() == 5, "Fewer service addresses than necessary.");
@@ -507,33 +499,8 @@ public class HdfsServiceTracker extends HAServiceTracker {
     }
   }
 
-
-  public static boolean isMasterAlive(InetSocketAddress masterAddress, TajoConf conf) {
-    return isMasterAlive(org.apache.tajo.util.NetUtils.normalizeInetSocketAddress(masterAddress), conf);
-  }
-
-  public static boolean isMasterAlive(String masterName, TajoConf conf) {
-    boolean isAlive = true;
-
-    try {
-      // how to create sockets
-      SocketFactory socketFactory = org.apache.hadoop.net.NetUtils.getDefaultSocketFactory(conf);
-
-      int connectionTimeout = conf.getInt(CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_KEY,
-        CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_DEFAULT);
-
-      InetSocketAddress server = org.apache.hadoop.net.NetUtils.createSocketAddr(masterName);
-
-      // connected socket
-      Socket socket = socketFactory.createSocket();
-      org.apache.hadoop.net.NetUtils.connect(socket, server, connectionTimeout);
-    } catch (Exception e) {
-      isAlive = false;
-    }
-    return isAlive;
-  }
-
-  public static int getState(String masterName, TajoConf conf) {
+  @Override
+  public int getState(String masterName, TajoConf conf) throws ServiceTrackerException {
     String targetMaster = masterName.replaceAll(":", "_");
     int retValue = -1;
 
@@ -563,12 +530,13 @@ public class HdfsServiceTracker extends HAServiceTracker {
       }
       retValue = -2;
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new ServiceTrackerException("Cannot get HA state - ERROR:" + e.getMessage());
     }
     return retValue;
   }
 
-  public static int formatHA(TajoConf conf) {
+  @Override
+  public int formatHA(TajoConf conf) throws ServiceTrackerException{
     int retValue = -1;
     try {
       FileSystem fs = getFileSystem(conf);
@@ -577,20 +545,20 @@ public class HdfsServiceTracker extends HAServiceTracker {
       Path temPath = null;
 
       int aliveMasterCount = 0;
+
       // Check backup masters
       FileStatus[] files = fs.listStatus(backupPath);
-      for (FileStatus status : files) {
-        temPath = status.getPath();
-        if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
+      for (FileStatus eachFile : files) {
+        if (checkConnection(eachFile.getPath().getName(), "_")) {
           aliveMasterCount++;
         }
       }
 
       // Check active master
       files = fs.listStatus(activePath);
-      if (files.length == 1) {
-        temPath = files[0].getPath();
-        if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
+      for (FileStatus eachFile : files) {
+        if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE) &&
+            checkConnection(eachFile.getPath().getName(), "_")) {
           aliveMasterCount++;
         }
       }
@@ -604,13 +572,13 @@ public class HdfsServiceTracker extends HAServiceTracker {
       fs.delete(TajoConf.getSystemHADir(conf), true);
       retValue = 1;
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new ServiceTrackerException("Cannot format HA directories - ERROR:" + e.getMessage());
     }
     return retValue;
   }
 
-
-  public static List<String> getMasters(TajoConf conf) {
+  @Override
+  public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
     List<String> list = new ArrayList<String>();
 
     try {
@@ -634,7 +602,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
       }
 
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new ServiceTrackerException("Cannot get master lists - ERROR:" + e.getMessage());
     }
     return list;
   }

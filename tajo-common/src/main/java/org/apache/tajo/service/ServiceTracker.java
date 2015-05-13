@@ -18,6 +18,8 @@
 
 package org.apache.tajo.service;
 
+import org.apache.tajo.conf.TajoConf;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -36,9 +38,15 @@ public interface ServiceTracker {
 
   public abstract InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException;
 
+  public abstract int getState(String masterName, TajoConf conf) throws ServiceTrackerException;
+
+  public abstract int formatHA(TajoConf conf) throws ServiceTrackerException;
+
+  public abstract List<String> getMasters(TajoConf conf) throws ServiceTrackerException;
+
   /**
-   * Add master name to shared storage.
-   */
+     * Add master name to shared storage.
+     */
   public void register() throws IOException;
 
 
@@ -52,7 +60,7 @@ public interface ServiceTracker {
    *
    * @return True if current master is an active master.
    */
-  public boolean isActiveStatus();
+  public boolean isActiveMaster();
 
   /**
    *

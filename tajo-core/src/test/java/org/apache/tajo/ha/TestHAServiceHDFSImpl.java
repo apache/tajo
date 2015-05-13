@@ -18,8 +18,6 @@
 
 package org.apache.tajo.ha;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.net.NetUtils;
@@ -32,12 +30,11 @@ import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.junit.Test;
 
+import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
 public class TestHAServiceHDFSImpl  {
-  private static Log LOG = LogFactory.getLog(TestHAServiceHDFSImpl.class);
-
   private TajoTestingCluster cluster;
   private TajoMaster backupMaster;
 
@@ -59,48 +56,42 @@ public class TestHAServiceHDFSImpl  {
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
 
-      LOG.info("### 1000 ###");
-
       ServiceTracker serviceTracker = ServiceTrackerFactory.get(conf);
       masterAddress = serviceTracker.getUmbilicalAddress().getHostName();
 
       setConfiguration();
-      LOG.info("### 1100 ###");
 
       backupMaster = new TajoMaster();
       backupMaster.init(conf);
       backupMaster.start();
-      LOG.info("### 1200 ###");
 
       assertNotEquals(cluster.getMaster().getMasterName(), backupMaster.getMasterName());
 
       verifySystemDirectories(fs);
 
-      Path backupMasterFile = new Path(backupPath, backupMaster.getMasterName()
-        .replaceAll(":", "_"));
-      assertTrue(fs.exists(backupMasterFile));
+      assertEquals(2, fs.listStatus(activePath).length);
+      assertEquals(1, fs.listStatus(backupPath).length);
 
-      assertTrue(cluster.getMaster().isActiveMaster());
-      assertFalse(backupMaster.isActiveMaster());
-      LOG.info("### 1300 ###");
+      assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
+      assertTrue(fs.exists(new Path(activePath, cluster.getMaster().getMasterName().replaceAll(":", "_"))));
+      assertTrue(fs.exists(new Path(backupPath, backupMaster.getMasterName().replaceAll(":", "_"))));
 
       createDatabaseAndTable();
       verifyDataBaseAndTable();
       client.close();
-      LOG.info("### 1400 ###");
 
       cluster.getMaster().stop();
 
       Thread.sleep(7000);
-      LOG.info("### 1500 ###");
 
-      assertFalse(cluster.getMaster().isActiveMaster());
-      assertTrue(backupMaster.isActiveMaster());
+      assertEquals(2, fs.listStatus(activePath).length);
+      assertEquals(0, fs.listStatus(backupPath).length);
+
+      assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
+      assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
 
       client = cluster.newTajoClient();
       verifyDataBaseAndTable();
-      LOG.info("### 1600 ###");
-
     } finally {
       client.close();
       backupMaster.stop();
@@ -147,9 +138,6 @@ public class TestHAServiceHDFSImpl  {
 
     backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
     assertTrue(fs.exists(backupPath));
-
-    assertEquals(2, fs.listStatus(activePath).length);
-    assertEquals(1, fs.listStatus(backupPath).length);
   }
 
   private void createDatabaseAndTable() throws Exception {

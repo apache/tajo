@@ -36,6 +36,16 @@ public abstract class HAServiceTracker implements ServiceTracker {
     return true;
   }
 
+  public static boolean checkConnection(String address) {
+    return checkConnection(address, ":");
+  }
+
+  public static boolean checkConnection(String address, String delimiter) {
+    String[] hostAddress = address.split(delimiter);
+    InetSocketAddress socketAddress = new InetSocketAddress(hostAddress[0], Integer.parseInt(hostAddress[1]));
+    return checkConnection(socketAddress);
+  }
+
   public static boolean checkConnection(InetSocketAddress address) {
     boolean isAlive = true;
     Socket socket = null;
