@@ -27,6 +27,7 @@ import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.junit.After;
 import org.junit.Test;
 
 import java.sql.ResultSet;
@@ -43,50 +44,60 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
     executeDDL("partitioned_customer_ddl.sql", null);
     executeFile("insert_into_customer.sql");
+
+    executeString("create table nation_partitioned (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+    executeString("insert overwrite into nation_partitioned select n_name, n_nationkey, n_regionkey from nation");
+    addEmptyDataFile("nation_partitioned", true);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    executeString("DROP TABLE customer_parts PURGE");
+    executeString("DROP TABLE nation_partitioned PURGE");
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void testPartitionTableJoinSmallTable() throws Exception {
-   runSimpleTests();
+    runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void testNoProjectionJoinQual() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void testPartialFilterPushDown() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void testPartialFilterPushDownOuterJoin() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void testPartialFilterPushDownOuterJoin2() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void selfJoinOfPartitionedTable() throws Exception {
     runSimpleTests();
   }
-//
+
 //    try {
 //
 //      res = executeFile("selfJoinOfPartitionedTable.sql");
@@ -99,7 +110,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
 //  }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select a.c_custkey, b.c_custkey from " +
           "  (select c_custkey, c_nationkey from customer_parts where c_nationkey < 0 " +
@@ -115,7 +126,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest()
   public void testFilterPushDownPartitionColumnCaseWhen() throws Exception {
     runSimpleTests();
@@ -123,54 +134,16 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
   @Test
   public void testMultiplePartitionedBroadcastDataFileWithZeroLength() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
-    ResultSet res = testBase.execute(
-        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
-    res.close();
-    TajoTestingCluster cluster = testBase.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-
-    try {
-      res = executeString("insert overwrite into " + tableName
-          + " select n_name, n_nationkey, n_regionkey from nation");
-      res.close();
-
-      addEmptyDataFile("nation_partitioned", true);
-
-      res = executeQuery();
-
-      assertResultSet(res);
-      cleanupQuery(res);
-    } finally {
-      executeString("DROP TABLE nation_partitioned PURGE");
-    }
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 
   @Test
   public void testMultiplePartitionedBroadcastDataFileWithZeroLength2() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
-    ResultSet res = testBase.execute(
-        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
-    res.close();
-    TajoTestingCluster cluster = testBase.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-
-    try {
-      res = executeString("insert overwrite into " + tableName
-          + " select n_name, n_nationkey, n_regionkey from nation");
-      res.close();
-
-      addEmptyDataFile("nation_partitioned", true);
-
-      res = executeQuery();
-
-      assertResultSet(res);
-      cleanupQuery(res);
-    } finally {
-      executeString("DROP TABLE nation_partitioned PURGE");
-    }
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 
   @Test
