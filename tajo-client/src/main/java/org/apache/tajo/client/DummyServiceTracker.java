@@ -26,6 +26,7 @@ import org.apache.tajo.service.TajoMasterInfo;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DummyServiceTracker implements ServiceTracker {
@@ -77,7 +78,7 @@ public class DummyServiceTracker implements ServiceTracker {
 
   @Override
   public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
-    return null;
+    return new ArrayList<String>();
   }
 
   @Override

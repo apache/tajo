@@ -324,32 +324,9 @@ public class TajoWorker extends CompositeService {
 
     tajoMasterInfo = new TajoMasterInfo();
 
-    // Most of the time, TajoWorker will start before TajoMaster. After TajoMaster non-HA, it doesn't matter.
-    // But in HA, TajoWorker will fail to start because TajoWorker couldn't find TajoMaster address on shared storage.
-    // Thus, TajoWorker need to try to find the address for a certain period of time.
     if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      long retryWaitTime = systemConf.getLongVar(TajoConf.ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_WAIT_TIME);
-      int retryMaxNum = systemConf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM);
-      int retryNum = 1;
-
-      boolean done = false;
-
-      while (!done && retryNum < retryMaxNum) {
-        try {
-          tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
-          tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
-          done = true;
-          LOG.info("Find a new TajoMaster (" + tajoMasterInfo.getTajoMasterAddress() + ")");
-        } catch (ServiceTrackerException e) {
-          LOG.warn("Retry TajoMaster address (" + retryNum + ")");
-          Thread.sleep(retryWaitTime);
-        }
-        retryNum++;
-        if (retryNum == retryMaxNum) {
-          LOG.error("ERROR: the maximum retry (" + retryNum + ") to read TajoMaster address");
-          break;
-        }
-      }
+      tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
+      tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
     } else {
       tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
           .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));

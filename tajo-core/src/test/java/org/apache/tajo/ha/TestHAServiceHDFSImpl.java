@@ -82,16 +82,14 @@ public class TestHAServiceHDFSImpl  {
 
       cluster.getMaster().stop();
 
-      Thread.sleep(7000);
+      client = cluster.newTajoClient();
+      verifyDataBaseAndTable();
 
       assertEquals(2, fs.listStatus(activePath).length);
       assertEquals(0, fs.listStatus(backupPath).length);
 
       assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
       assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
-
-      client = cluster.newTajoClient();
-      verifyDataBaseAndTable();
     } finally {
       client.close();
       backupMaster.stop();
@@ -111,11 +109,12 @@ public class TestHAServiceHDFSImpl  {
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
       masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
-      masterAddress + ":" + NetUtils.getFreeSocketPort());
+        masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setIntVar(TajoConf.ConfVars.REST_SERVICE_PORT,
         NetUtils.getFreeSocketPort());
 
     conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
+    conf.setIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL, 1000);
 
     //Client API service RPC Server
     conf.setIntVar(TajoConf.ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM, 2);

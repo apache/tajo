@@ -21,6 +21,7 @@ package org.apache.tajo.service;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.FileUtil;
 
 import javax.net.SocketFactory;

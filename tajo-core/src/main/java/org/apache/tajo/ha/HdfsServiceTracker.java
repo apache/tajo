@@ -75,8 +75,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
     InetSocketAddress socketAddress = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     this.masterName = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
-
-    monitorInterval = conf.getIntVar(ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
+    this.monitorInterval = conf.getIntVar(ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
   }
 
   private void initSystemDirectory() throws IOException {
@@ -214,11 +213,10 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   private boolean createLockFile() throws IOException {
     boolean result = false;
-    Path lockFile = null;
     FSDataOutputStream lockOutput = null;
 
+    Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
     try {
-      lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
       lockOutput = fs.create(lockFile, false);
       lockOutput.hsync();
       lockOutput.close();
@@ -405,7 +403,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
   @Override
   public InetSocketAddress getUmbilicalAddress() {
     if (!checkConnection(umbilicalRpcAddr)) {
-      umbilicalRpcAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_UMBILICAL_RPC_ADDRESS));
+      umbilicalRpcAddr = NetUtils.createSocketAddr(getAddressElements().get(MASTER_UMBILICAL_RPC_ADDRESS));
     }
 
     return umbilicalRpcAddr;
@@ -414,7 +412,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
   @Override
   public InetSocketAddress getClientServiceAddress() {
     if (!checkConnection(clientRpcAddr)) {
-      clientRpcAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_CLIENT_RPC_ADDRESS));
+      clientRpcAddr = NetUtils.createSocketAddr(getAddressElements().get(MASTER_CLIENT_RPC_ADDRESS));
     }
 
     return clientRpcAddr;
@@ -423,7 +421,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
   @Override
   public InetSocketAddress getResourceTrackerAddress() {
     if (!checkConnection(resourceTrackerRpcAddr)) {
-      resourceTrackerRpcAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(RESOURCE_TRACKER_RPC_ADDRESS));
+      resourceTrackerRpcAddr = NetUtils.createSocketAddr(getAddressElements().get(RESOURCE_TRACKER_RPC_ADDRESS));
     }
 
     return resourceTrackerRpcAddr;
@@ -432,7 +430,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
   @Override
   public InetSocketAddress getCatalogAddress() {
     if (!checkConnection(catalogAddr)) {
-      catalogAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(CATALOG_ADDRESS));
+      catalogAddr = NetUtils.createSocketAddr(getAddressElements().get(CATALOG_ADDRESS));
     }
 
     return catalogAddr;
@@ -441,7 +439,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
   @Override
   public InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException {
     if (!checkConnection(masterHttpInfoAddr)) {
-      masterHttpInfoAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_HTTP_INFO));
+      masterHttpInfoAddr = NetUtils.createSocketAddr(getAddressElements().get(MASTER_HTTP_INFO));
     }
 
     return masterHttpInfoAddr;
@@ -450,11 +448,10 @@ public class HdfsServiceTracker extends HAServiceTracker {
   /**
    * Reads a text file stored in HDFS file, and then return all service addresses read from a HDFS file.   *
    *
-   * @param conf
    * @return all service addresses
    * @throws ServiceTrackerException
    */
-  private static List<String> getAddressElements(TajoConf conf) throws ServiceTrackerException {
+  private synchronized List<String> getAddressElements() throws ServiceTrackerException {
 
     try {
       FileSystem fs = getFileSystem(conf);
@@ -468,8 +465,22 @@ public class HdfsServiceTracker extends HAServiceTracker {
       }
 
       FileStatus[] files = fs.listStatus(activeMasterBaseDir);
+      /* wait for active master from HDFS */
+      int pause = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_PAUSE_TIME);
+      int maxRetry = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM);
+      int retry = 0;
+
+      while (files.length == 0 && retry < maxRetry) {
+        try {
+          this.wait(pause);
+        } catch (InterruptedException e) {
+          throw new ServiceTrackerException(e);
+        }
+        files = fs.listStatus(activeMasterBaseDir);
+      }
 
       if (files.length < 1) {
+        LOG.error("Exceeded the maximum retry (" + maxRetry + ") to read TajoMaster address from HDFS");
         throw new ServiceTrackerException("No active master entry");
       } else if (files.length > 2) {
         throw new ServiceTrackerException("Three or more than active master entries.");
