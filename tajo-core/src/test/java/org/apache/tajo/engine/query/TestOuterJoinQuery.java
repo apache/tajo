@@ -18,25 +18,21 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Int4Datum;
-import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
 
+@Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 @NamedTest("TestJoinQuery")
 public class TestOuterJoinQuery extends TestJoinQuery {
 
@@ -46,12 +42,12 @@ public class TestOuterJoinQuery extends TestJoinQuery {
 
   @Before
   public void setup() throws Exception {
-    createOuterJoinTestTable();
+    createAdditionalTables();
   }
 
   @After
   public void teardown() throws Exception {
-    dropOuterJoinTestTable();
+    dropAdditionalTables();
   }
 
   @Test
@@ -130,8 +126,8 @@ public class TestOuterJoinQuery extends TestJoinQuery {
 
   @Test
   public void testOuterJoinAndCaseWhen1() throws Exception {
-    executeDDL("oj_table1_ddl.sql", "testOuterJoinAndCaseWhen1");
-    executeDDL("oj_table2_ddl.sql", "testOuterJoinAndCaseWhen2");
+    executeDDL("oj_table1_ddl.sql", "table1", "testOuterJoinAndCaseWhen1");
+    executeDDL("oj_table2_ddl.sql", "table2", "testOuterJoinAndCaseWhen2");
     try {
       ResultSet res = executeQuery();
       assertResultSet(res);

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
@@ -29,6 +30,9 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.junit.After;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
 
@@ -42,6 +46,8 @@ import static org.junit.Assert.assertTrue;
  * An example form of path to an input partition is hdfs://localhost:60305/tajo/warehouse/default/customer_parts/c_nationkey=1.
  * Here, the different HDFS port is used for each test run, it is difficult to test query plans that read partitioned table.
  */
+@Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 @NamedTest("TestJoinQuery")
 public class TestJoinOnPartitionedTables extends TestJoinQuery {
 

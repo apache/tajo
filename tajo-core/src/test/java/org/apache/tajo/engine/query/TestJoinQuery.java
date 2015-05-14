@@ -21,7 +21,6 @@ package org.apache.tajo.engine.query;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -37,9 +36,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
@@ -52,8 +48,6 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@Category(IntegrationTest.class)
-@RunWith(Parameterized.class)
 public class TestJoinQuery extends QueryTestCaseBase {
 
   public TestJoinQuery(String joinOption) throws Exception {
@@ -127,7 +121,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
   }
 
-  protected void createOuterJoinTestTable() throws Exception {
+  protected void createAdditionalTables() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -135,14 +129,14 @@ public class TestJoinQuery extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
-    String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3" };
-    TajoTestingCluster.createTable("table11", schema, tableOptions, data);
+    String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
-    data = new String[]{ "1|table12-1" };
-    TajoTestingCluster.createTable("table12", schema, tableOptions, data);
+    data = new String[]{ "1|table12-1", "2|table12-2" };
+    TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
@@ -189,7 +183,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     addEmptyDataFile("nation_multifile", false);
   }
 
-  protected void dropOuterJoinTestTable() throws Exception {
+  protected void dropAdditionalTables() throws Exception {
     executeString("DROP TABLE table11 PURGE;");
     executeString("DROP TABLE table12 PURGE;");
     executeString("DROP TABLE table13 PURGE;");
