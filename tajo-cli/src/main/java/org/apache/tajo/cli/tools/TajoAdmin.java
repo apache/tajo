@@ -28,9 +28,9 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TajoIdUtils;
@@ -74,6 +74,7 @@ public class TajoAdmin {
   private TajoConf tajoConf;
   private TajoClient tajoClient;
   private Writer writer;
+  private ServiceTracker serviceTracker;
 
   public TajoAdmin(TajoConf tajoConf, Writer writer) {
     this(tajoConf, writer, null);
@@ -83,6 +84,7 @@ public class TajoAdmin {
     this.tajoConf = tajoConf;
     this.writer = writer;
     this.tajoClient = tajoClient;
+    serviceTracker = ServiceTrackerFactory.get(this.tajoConf);
   }
 
   private void printUsage() {
@@ -419,7 +421,7 @@ public class TajoAdmin {
 
     if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
 
-      List<String> list = HAServiceUtil.getMasters(tajoConf);
+      List<String> list = serviceTracker.getMasters(tajoConf);
       int i = 0;
       for (String master : list) {
         if (i > 0) {
