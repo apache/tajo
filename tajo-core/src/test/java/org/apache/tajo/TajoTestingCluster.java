@@ -93,7 +93,7 @@ public class TajoTestingCluster {
   /**
    * True If HCatalogStore is used. Otherwise, it is FALSE.
    */
-  public Boolean isHCatalogStoreUse = false;
+  public Boolean isHiveCatalogStoreUse = false;
 
   private static final String LOG_LEVEL;
 
@@ -328,8 +328,8 @@ public class TajoTestingCluster {
     return this.catalogServer;
   }
 
-  public boolean isHCatalogStoreRunning() {
-    return isHCatalogStoreUse;
+  public boolean isHiveCatalogStoreRunning() {
+    return isHiveCatalogStoreUse;
   }
 
   ////////////////////////////////////////////////////////
@@ -411,7 +411,7 @@ public class TajoTestingCluster {
         if (!fs.exists(defaultDatabasePath)) {
           fs.mkdirs(defaultDatabasePath);
         }
-        isHCatalogStoreUse = true;
+        isHiveCatalogStoreUse = true;
       } catch (ClassNotFoundException cnfe) {
         throw new IOException(cnfe);
       }

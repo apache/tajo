@@ -68,12 +68,12 @@ public class TestCatalog {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-    final String HCATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HCatalogStore";
+    final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
 
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
 
     // here, we don't choose HCatalogStore due to some dependency problems.
-    if (driverClass == null || driverClass.equals(HCATALOG_CLASS_NAME)) {
+    if (driverClass == null || driverClass.equals(HIVE_CATALOG_CLASS_NAME)) {
       driverClass = DerbyStore.class.getCanonicalName();
     }
     String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
