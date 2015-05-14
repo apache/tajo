@@ -197,7 +197,7 @@ public class JSPUtil {
     ServiceTracker haService = context.getHAService();
     String activeLabel = "";
     if (haService != null) {
-      if (haService.isActiveStatus()) {
+      if (haService.isActiveMaster()) {
         activeLabel = "<font color='#1e90ff'>(active)</font>";
       } else {
         activeLabel = "<font color='#1e90ff'>(backup)</font>";
