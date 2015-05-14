@@ -369,7 +369,7 @@ public abstract class StorageManager implements TableSpace {
   public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
                                LogicalPlan plan, Schema schema,
                                TableDesc tableDesc) throws IOException {
-    return commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, true);
+    return commitOutputData(queryContext, true);
   }
 
   /**
@@ -378,17 +378,11 @@ public abstract class StorageManager implements TableSpace {
    * Otherwise the query is successful, move to the final directory from the staging directory.
    *
    * @param queryContext The query property
-   * @param finalEbId The final execution block id
-   * @param plan The query plan
-   * @param schema The final output schema
-   * @param tableDesc The description of the target table
    * @param changeFileSeq If true change result file name with max sequence.
    * @return Saved path
    * @throws java.io.IOException
    */
-  protected Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
-                               LogicalPlan plan, Schema schema,
-                               TableDesc tableDesc, boolean changeFileSeq) throws IOException {
+  protected Path commitOutputData(OverridableConf queryContext, boolean changeFileSeq) throws IOException {
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
     Path finalOutputDir;

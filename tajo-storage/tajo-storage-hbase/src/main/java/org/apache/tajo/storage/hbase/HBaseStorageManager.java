@@ -963,7 +963,7 @@ public class HBaseStorageManager extends StorageManager {
     if (tableDesc.getName() == null && tableDesc.getPath() != null) {
 
       // insert into location
-      return super.commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, false);
+      return super.commitOutputData(queryContext, false);
     } else {
       // insert into table
       String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
