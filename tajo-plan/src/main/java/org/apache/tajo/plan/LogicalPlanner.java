@@ -1913,6 +1913,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     if (dataType.hasLengthOrPrecision()) {
       builder.setLength(dataType.getLengthOrPrecision());
+    } else {
+      if (type == TajoDataTypes.Type.CHAR) {
+        builder.setLength(1);
+      }
     }
 
     TypeDesc typeDesc;
