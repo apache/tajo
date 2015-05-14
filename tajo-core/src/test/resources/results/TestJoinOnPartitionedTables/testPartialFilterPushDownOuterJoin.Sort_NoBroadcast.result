@@ -1,0 +1,27 @@
+n_nationkey,n_name,c_custkey,c_nationkey,c_name
+-------------------------------
+0,ALGERIA,null,null,null
+1,ARGENTINA,null,null,null
+2,BRAZIL,null,null,null
+3,CANADA,3,1,Customer#000000003
+4,EGYPT,null,null,null
+5,ETHIOPIA,null,null,null
+6,FRANCE,null,null,null
+7,GERMANY,null,null,null
+8,INDIA,null,null,null
+9,INDONESIA,null,null,null
+10,IRAN,null,null,null
+11,IRAQ,null,null,null
+12,JAPAN,null,null,null
+13,JORDAN,null,null,null
+14,KENYA,null,null,null
+15,MOROCCO,null,null,null
+16,MOZAMBIQUE,null,null,null
+17,PERU,null,null,null
+18,CHINA,null,null,null
+19,ROMANIA,null,null,null
+20,SAUDI ARABIA,null,null,null
+21,VIETNAM,null,null,null
+22,RUSSIA,null,null,null
+23,UNITED KINGDOM,null,null,null
+24,UNITED STATES,null,null,null
