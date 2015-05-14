@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -283,22 +284,14 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   @Override
   public void delete() throws IOException {
+    if (ShutdownHookManager.get().isShutdownInProgress()) return;
+
     String fileName = masterName.replaceAll(":", "_");
 
-    Path activeFile = new Path(activePath, fileName);
-    if (fs.exists(activeFile)) {
-      fs.delete(activeFile, false);
-    }
+    fs.delete(new Path(activePath, fileName), false);
+    fs.delete(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE), false);
+    fs.delete(new Path(backupPath, fileName), false);
 
-    Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
-    if (fs.exists(lockFile)) {
-      fs.delete(lockFile, false);
-    }
-
-    Path backupFile = new Path(backupPath, fileName);
-    if (fs.exists(backupFile)) {
-      fs.delete(backupFile, false);
-    }
     stopped = true;
   }
 
@@ -469,14 +462,22 @@ public class HdfsServiceTracker extends HAServiceTracker {
       int pause = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_PAUSE_TIME);
       int maxRetry = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM);
       int retry = 0;
+      int[] fileSize = new int[2];
+      fileSize[0] = 0;
+      fileSize[1] = 0;
 
-      while (files.length == 0 && retry < maxRetry) {
+      while (files.length == 0 && fileSize[0] == 0 && fileSize[1] == 0 && retry < maxRetry) {
         try {
           this.wait(pause);
         } catch (InterruptedException e) {
           throw new ServiceTrackerException(e);
         }
         files = fs.listStatus(activeMasterBaseDir);
+
+        if (files.length == 2) {
+          fileSize[0] = fs.open(files[0].getPath()).available();
+          fileSize[1] = fs.open(files[0].getPath()).available();
+        }
       }
 
       if (files.length < 1) {
@@ -486,8 +487,13 @@ public class HdfsServiceTracker extends HAServiceTracker {
         throw new ServiceTrackerException("Three or more than active master entries.");
       }
 
-      // We can ensure that there is only one file due to the above assertion.
-      Path activeMasterEntry = files[0].getPath();
+      Path activeMasterEntry = null;
+
+      for (FileStatus eachFile : files) {
+        if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE)) {
+          activeMasterEntry = eachFile.getPath();
+        }
+      }
 
       if (!fs.isFile(activeMasterEntry)) {
         throw new ServiceTrackerException("Active master entry must be a file, but it is a directory.");
