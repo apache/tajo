@@ -231,29 +231,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
           "on t1.id = t3.id and t2.id = t3.id")
   })
   public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "left outer join table13 t3\n" +
-//              "on t1.id = t3.id and t2.id = t3.id");
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "1,table11-1,1,null\n" +
-//              "2,table11-2,null,null\n" +
-//              "3,table11-3,null,null\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -271,30 +248,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   })
   public final void testLeftOuterJoinPredicationCaseByCase2() throws Exception {
     // outer -> outer -> inner
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "left outer join table13 t3\n" +
-//              "on t2.id = t3.id\n" +
-//              "inner join table14 t4\n" +
-//              "on t2.id = t4.id"
-//      );
-//
-//      String expected =
-//          "id,name,id,id,id\n" +
-//              "-------------------------------\n" +
-//              "1,table11-1,1,null,1\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -313,32 +266,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   })
   public final void testLeftOuterJoinPredicationCaseByCase2_1() throws Exception {
     // inner(on predication) -> outer(on predication) -> outer -> where
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
-//              "from table11 t1\n" +
-//              "inner join table14 t4\n" +
-//              "on t1.id = t4.id and t4.id > 1\n" +
-//              "left outer join table13 t3\n" +
-//              "on t4.id = t3.id and t3.id = 2\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id \n" +
-//              "where t1.id > 1"
-//      );
-//
-//      String expected =
-//          "id,name,id,id,id\n" +
-//              "-------------------------------\n" +
-//              "2,table11-2,null,2,2\n" +
-//              "3,table11-3,null,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -355,30 +282,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   public final void testLeftOuterJoinPredicationCaseByCase3() throws Exception {
     // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
     // Case J1: Join Predicate on Preserved Row Table
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2 \n" +
-//              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
-//              "left outer join table13 t3\n" +
-//              "on t1.id = t3.id "
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "1,table11-1,1,null\n" +
-//              "2,table11-2,null,2\n" +
-//              "3,table11-3,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -395,30 +298,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   public final void testLeftOuterJoinPredicationCaseByCase4() throws Exception {
     // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
     // Case J2: Join Predicate on Null Supplying Table
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id and t2.id > 1 \n" +
-//              "left outer join table13 t3\n" +
-//              "on t1.id = t3.id"
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "1,table11-1,null,null\n" +
-//              "2,table11-2,null,2\n" +
-//              "3,table11-3,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -436,30 +315,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   public final void testLeftOuterJoinPredicationCaseByCase5() throws Exception {
     // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
     // Case W1: Where Predicate on Preserved Row Table
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "left outer join table13 t3\n" +
-//              "on t1.id = t3.id\n" +
-//              "where t1.name > 'table11-1'"
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "2,table11-2,null,2\n" +
-//              "3,table11-3,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -477,29 +332,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   public final void testLeftOuterJoinPredicationCaseByCase6() throws Exception {
     // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
     // Case W2: Where Predicate on Null Supplying Table
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "left outer join table13 t3\n" +
-//              "on t1.id = t3.id\n" +
-//              "where t3.id > 2"
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "3,table11-3,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
@@ -514,32 +346,11 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   public final void testLeftOuterWithEmptyTable() throws Exception {
     // https://cwiki.apache.org/confluence/display/Hive/OuterJoinBehavior
     // Case W2: Where Predicate on Null Supplying Table
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table15 t2\n" +
-//              "on t1.id = t2.id"
-//      );
-//
-//      String expected =
-//          "id,name,id\n" +
-//              "-------------------------------\n" +
-//              "1,table11-1,null\n" +
-//              "2,table11-2,null\n" +
-//              "3,table11-3,null\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
-  @Test
+  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
+//  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
@@ -550,33 +361,11 @@ public class TestOuterJoinQuery extends TestJoinQuery {
           "on t1.id = t3.id and t2.id = t3.id")
   })
   public final void testRightOuterJoinPredicationCaseByCase1() throws Exception {
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "right outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "right outer join table13 t3\n" +
-//              "on t1.id = t3.id and t2.id = t3.id"
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "null,null,null,2\n" +
-//              "null,null,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
-  @Test
+  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
+//  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
@@ -591,34 +380,11 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     // inner -> right
     // Notice: Join order should be preserved with origin order.
     // JoinEdge: t1 -> t4, t3 -> t1,t4
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t3.id, t4.id\n" +
-//              "from table11 t1\n" +
-//              "inner join table14 t4\n" +
-//              "on t1.id = t4.id and t4.id > 1\n" +
-//              "right outer join table13 t3\n" +
-//              "on t4.id = t3.id and t3.id = 2\n" +
-//              "where t3.id > 1"
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "2,table11-2,2,2\n" +
-//              "null,null,3,null\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
-  @Test
+  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
+//  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
@@ -629,33 +395,11 @@ public class TestOuterJoinQuery extends TestJoinQuery {
           "on t1.id = t3.id ")
   })
   public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
-//    createOuterJoinTestTable();
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "right outer join table12 t2 \n" +
-//              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
-//              "right outer join table13 t3\n" +
-//              "on t1.id = t3.id "
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "null,null,null,2\n" +
-//              "null,null,null,3\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
-  @Test
+  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
+//  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
@@ -667,34 +411,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
           "order by t4.id")
   })
   public final void testFullOuterJoinPredicationCaseByCase1() throws Exception {
-//    createOuterJoinTestTable();
-//
-//    try {
-//      ResultSet res = executeString(
-//          "select t1.id, t1.name, t3.id, t4.id\n" +
-//              "from table11 t1\n" +
-//              "full outer join table13 t3\n" +
-//              "on t1.id = t3.id\n" +
-//              "full outer join table14 t4\n" +
-//              "on t3.id = t4.id \n" +
-//              "order by t4.id"
-//      );
-//
-//      String expected =
-//          "id,name,id,id\n" +
-//              "-------------------------------\n" +
-//              "null,null,null,1\n" +
-//              "2,table11-2,2,2\n" +
-//              "3,table11-3,3,3\n" +
-//              "null,null,null,4\n" +
-//              "1,table11-1,null,null\n";
-//
-//      String result = resultSetToString(res);
-//
-//      assertEquals(expected, result);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
     runSimpleTests();
   }
 
