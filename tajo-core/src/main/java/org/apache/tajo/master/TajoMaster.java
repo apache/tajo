@@ -54,7 +54,6 @@ import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -183,7 +182,7 @@ public class TajoMaster extends CompositeService {
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
       diagnoseTajoMaster();
-      this.storeManager = TableSpaceManager.getFileStorageManager(systemConf);
+      this.storeManager = StorageManager.getFileStorageManager(systemConf);
 
       catalogServer = new CatalogServer(loadFunctions());
       addIfService(catalogServer);

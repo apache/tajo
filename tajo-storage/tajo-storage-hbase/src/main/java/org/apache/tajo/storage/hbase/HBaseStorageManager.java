@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.hbase;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -43,7 +42,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
@@ -944,10 +942,6 @@ public class HBaseStorageManager extends StorageManager {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
-    // INSERT INTO LOCATION Case
-    // TODO - To ensure in higher layer, probably in logical planner.
-    Preconditions.checkArgument(tableDesc.getName() == null && tableDesc.getPath() != null);
-
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
@@ -966,23 +960,29 @@ public class HBaseStorageManager extends StorageManager {
     }
     committer.commitJob(jobContext);
 
-    // insert into table
-    String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
+    if (tableDesc.getName() == null && tableDesc.getPath() != null) {
 
-    HTable htable = new HTable(hbaseConf, tableName);
-    try {
-      LoadIncrementalHFiles loadIncrementalHFiles = null;
+      // insert into location
+      return super.commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, false);
+    } else {
+      // insert into table
+      String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
+
+      HTable htable = new HTable(hbaseConf, tableName);
       try {
-        loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e.getMessage(), e);
-      }
-      loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
+        LoadIncrementalHFiles loadIncrementalHFiles = null;
+        try {
+          loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+          throw new IOException(e.getMessage(), e);
+        }
+        loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
 
-      return stagingResultDir;
-    } finally {
-      htable.close();
+        return stagingResultDir;
+      } finally {
+        htable.close();
+      }
     }
   }
 

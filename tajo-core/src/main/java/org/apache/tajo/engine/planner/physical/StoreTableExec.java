@@ -30,7 +30,10 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileStorageManager;
+import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -90,7 +93,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(context.getConf()))
+      appender = ((FileStorageManager)StorageManager.getFileStorageManager(context.getConf()))
           .getAppender(meta, appenderSchema, lastFileName);
 
       if (suffixId > 0) {
@@ -98,7 +101,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
             "The remain output will be written into " + lastFileName.toString());
       }
     } else {
-      appender = TableSpaceManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
+      appender = StorageManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
           context.getQueryContext(),
           context.getTaskId(), meta, appenderSchema, context.getQueryContext().getStagingDir());
     }

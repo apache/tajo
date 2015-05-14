@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -61,7 +62,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
@@ -1090,11 +1090,11 @@ public class Stage implements EventHandler<StageEvent> {
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
         FileStorageManager storageManager =
-            (FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+            (FileStorageManager)StorageManager.getFileStorageManager(stage.getContext().getConf());
         fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
         StorageManager storageManager =
-            TableSpaceManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
+            StorageManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
         fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
       }
 
