@@ -55,28 +55,58 @@ public class TestMultipleJoinTypes extends TestJoinQuery {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest(prepare = {
+      "CREATE TABLE customer_broad_parts (" +
+          "  c_nationkey INT4," +
+          "  c_name    TEXT," +
+          "  c_address    TEXT," +
+          "  c_phone    TEXT," +
+          "  c_acctbal    FLOAT8," +
+          "  c_mktsegment    TEXT," +
+          "  c_comment    TEXT" +
+          ") PARTITION BY COLUMN (c_custkey INT4)",
+      "INSERT OVERWRITE INTO customer_broad_parts" +
+          "  SELECT" +
+          "    c_nationkey," +
+          "    c_name," +
+          "    c_address," +
+          "    c_phone," +
+          "    c_acctbal," +
+          "    c_mktsegment," +
+          "    c_comment," +
+          "    c_custkey" +
+          "  FROM customer"
+  }, cleanup = {
+      "DROP TABLE customer_broad_parts PURGE"
+  }, queries = {
+      @QuerySpec("select a.l_orderkey, b.o_orderkey, c.c_custkey from lineitem a " +
+          "inner join orders b on a.l_orderkey = b.o_orderkey " +
+          "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0")
+  })
   public final void testInnerAndOuterWithEmpty() throws Exception {
-    executeDDL("customer_partition_ddl.sql", null);
-    executeFile("insert_into_customer_partition.sql").close();
-
-    // outer join table is empty
-    ResultSet res = executeString(
-        "select a.l_orderkey, b.o_orderkey, c.c_custkey from lineitem a " +
-            "inner join orders b on a.l_orderkey = b.o_orderkey " +
-            "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0"
-    );
-
-    String expected = "l_orderkey,o_orderkey,c_custkey\n" +
-        "-------------------------------\n" +
-        "1,1,null\n" +
-        "1,1,null\n" +
-        "2,2,null\n" +
-        "3,3,null\n" +
-        "3,3,null\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
-
-    executeString("DROP TABLE customer_broad_parts PURGE").close();
+    runSimpleTests();
+//    executeDDL("customer_partition_ddl.sql", null);
+//    executeFile("insert_into_customer_partition.sql").close();
+//
+//    // outer join table is empty
+//    ResultSet res = executeString(
+//        "select a.l_orderkey, b.o_orderkey, c.c_custkey from lineitem a " +
+//            "inner join orders b on a.l_orderkey = b.o_orderkey " +
+//            "left outer join customer_broad_parts c on a.l_orderkey = c.c_custkey and c.c_custkey < 0"
+//    );
+//
+//    String expected = "l_orderkey,o_orderkey,c_custkey\n" +
+//        "-------------------------------\n" +
+//        "1,1,null\n" +
+//        "1,1,null\n" +
+//        "2,2,null\n" +
+//        "3,3,null\n" +
+//        "3,3,null\n";
+//
+//    assertEquals(expected, resultSetToString(res));
+//    res.close();
+//
+//    executeString("DROP TABLE customer_broad_parts PURGE").close();
   }
 }

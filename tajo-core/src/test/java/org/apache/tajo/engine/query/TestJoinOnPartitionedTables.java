@@ -36,6 +36,12 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+/*
+ * NOTE: Plan tests are disabled in TestJoinOnPartitionedTables.
+ * A plan reading partitioned table currently contains HDFS paths to input partitions.
+ * An example form of path to an input partition is hdfs://localhost:60305/tajo/warehouse/default/customer_parts/c_nationkey=1.
+ * Here, the different HDFS port is used for each test run, it is difficult to test query plans that read partitioned table.
+ */
 @NamedTest("TestJoinQuery")
 public class TestJoinOnPartitionedTables extends TestJoinQuery {
 

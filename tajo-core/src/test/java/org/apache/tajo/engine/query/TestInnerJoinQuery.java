@@ -158,20 +158,31 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest(prepare = {
+      "CREATE DATABASE JOINS",
+      "CREATE TABLE JOINS.part_ as SELECT * FROM part",
+      "CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier"
+  }, cleanup = {
+      "DROP TABLE JOINS.part_ PURGE",
+      "DROP TABLE JOINS.supplier_ PURGE",
+      "DROP DATABASE JOINS"
+  })
   public final void testJoinOnMultipleDatabases() throws Exception {
-    executeString("CREATE DATABASE JOINS");
-    assertDatabaseExists("joins");
-    executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
-    assertTableExists("joins.part_");
-    executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
-    assertTableExists("joins.supplier_");
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
-
-    executeString("DROP TABLE JOINS.part_ PURGE");
-    executeString("DROP TABLE JOINS.supplier_ PURGE");
-    executeString("DROP DATABASE JOINS");
+//    executeString("CREATE DATABASE JOINS");
+//    assertDatabaseExists("joins");
+//    executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
+//    assertTableExists("joins.part_");
+//    executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
+//    assertTableExists("joins.supplier_");
+//    ResultSet res = executeQuery();
+//    assertResultSet(res);
+//    cleanupQuery(res);
+//
+//    executeString("DROP TABLE JOINS.part_ PURGE");
+//    executeString("DROP TABLE JOINS.supplier_ PURGE");
+//    executeString("DROP DATABASE JOINS");
+    runSimpleTests();
   }
 
   @Test
@@ -235,7 +246,6 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   public void testComplexJoinCondition2() throws Exception {
     // select n1.n_nationkey, n1.n_name, upper(n2.n_name) name from nation n1 join nation n2
     // on n1.n_name = upper(n2.n_name);
-
     runSimpleTests();
   }
 

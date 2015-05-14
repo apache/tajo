@@ -30,6 +30,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.Int4Datum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -158,6 +161,32 @@ public class TestJoinQuery extends QueryTestCaseBase {
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     data = new String[]{};
     TajoTestingCluster.createTable("table15", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    data = new String[]{ "1000000|a", "1000001|b", "2|c", "3|d", "4|e" };
+    TajoTestingCluster.createTable("table1", schema, tableOptions, data, 1);
+
+    data = new String[10000];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = i + "|" + "this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable" + i;
+    }
+    TajoTestingCluster.createTable("table_large", schema, tableOptions, data, 2);
+
+    // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
+    // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+    addEmptyDataFile("nation_multifile", false);
   }
 
   protected void dropOuterJoinTestTable() throws Exception {
@@ -166,6 +195,9 @@ public class TestJoinQuery extends QueryTestCaseBase {
     executeString("DROP TABLE table13 PURGE;");
     executeString("DROP TABLE table14 PURGE;");
     executeString("DROP TABLE table15 PURGE;");
+    executeString("DROP TABLE table1 PURGE");
+    executeString("DROP TABLE table_large PURGE");
+    executeString("DROP TABLE nation_multifile PURGE");
   }
 
   interface TupleCreator {
