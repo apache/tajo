@@ -462,22 +462,14 @@ public class HdfsServiceTracker extends HAServiceTracker {
       int pause = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_PAUSE_TIME);
       int maxRetry = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM);
       int retry = 0;
-      int[] fileSize = new int[2];
-      fileSize[0] = 0;
-      fileSize[1] = 0;
 
-      while (files.length == 0 && fileSize[0] == 0 && fileSize[1] == 0 && retry < maxRetry) {
+      while (files.length < 2 && retry < maxRetry) {
         try {
           this.wait(pause);
         } catch (InterruptedException e) {
           throw new ServiceTrackerException(e);
         }
         files = fs.listStatus(activeMasterBaseDir);
-
-        if (files.length == 2) {
-          fileSize[0] = fs.open(files[0].getPath()).available();
-          fileSize[1] = fs.open(files[0].getPath()).available();
-        }
       }
 
       if (files.length < 1) {
