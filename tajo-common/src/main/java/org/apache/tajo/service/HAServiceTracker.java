@@ -18,13 +18,18 @@
 
 package org.apache.tajo.service;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.net.NetUtils;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.FileUtil;
 
 import javax.net.SocketFactory;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public abstract class HAServiceTracker implements ServiceTracker {
+  private static final Log LOG = LogFactory.getLog(HAServiceTracker.class);
 
   static SocketFactory socketFactory = SocketFactory.getDefault();
 
@@ -32,16 +37,29 @@ public abstract class HAServiceTracker implements ServiceTracker {
     return true;
   }
 
+  public static boolean checkConnection(String address) {
+    return checkConnection(address, ":");
+  }
+
+  public static boolean checkConnection(String address, String delimiter) {
+    String[] hostAddress = address.split(delimiter);
+    InetSocketAddress socketAddress = new InetSocketAddress(hostAddress[0], Integer.parseInt(hostAddress[1]));
+    return checkConnection(socketAddress);
+  }
+
   public static boolean checkConnection(InetSocketAddress address) {
     boolean isAlive = true;
+    Socket socket = null;
 
     try {
       int connectionTimeout = 10;
 
-      Socket socket = socketFactory.createSocket();
+      socket = socketFactory.createSocket();
       NetUtils.connect(socket, address, connectionTimeout);
     } catch (Exception e) {
       isAlive = false;
+    } finally {
+      FileUtil.cleanup(LOG, socket);
     }
     return isAlive;
   }

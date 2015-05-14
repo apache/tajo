@@ -30,9 +30,13 @@
 <%@ page import="java.util.Collection" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+
+  String[] masterName = master.getMasterName().split(":");
+  InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
+  String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
+
   CatalogService catalog = master.getCatalog();
 
   String catalogType = request.getParameter("type");
@@ -63,7 +67,7 @@
   ServiceTracker haService = master.getContext().getHAService();
   String activeLabel = "";
   if (haService != null) {
-    if (haService.isActiveStatus()) {
+    if (haService.isActiveMaster()) {
       activeLabel = "<font color='#1e90ff'>(active)</font>";
     } else {
       activeLabel = "<font color='#1e90ff'>(backup)</font>";
@@ -81,7 +85,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=activeLabel%></h2>
   <hr/>
   <h3>Catalog</h3>
   <div>

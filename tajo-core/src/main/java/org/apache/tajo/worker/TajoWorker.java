@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
@@ -358,6 +359,7 @@ public class TajoWorker extends CompositeService {
     startJvmPauseMonitor();
 
     tajoMasterInfo = new TajoMasterInfo();
+
     if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
       tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());

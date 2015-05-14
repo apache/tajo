@@ -21,9 +21,8 @@ package org.apache.tajo.cli.tools;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ha.HAServiceUtil;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 
 import java.io.IOException;
@@ -44,8 +43,8 @@ public class TajoHAAdmin {
   }
 
   private TajoConf tajoConf;
-  private TajoClient tajoClient;
   private Writer writer;
+  private ServiceTracker serviceTracker;
 
   public TajoHAAdmin(TajoConf tajoConf, Writer writer) {
     this(tajoConf, writer, null);
@@ -54,7 +53,6 @@ public class TajoHAAdmin {
   public TajoHAAdmin(TajoConf tajoConf, Writer writer, TajoClient tajoClient) {
     this.tajoConf = tajoConf;
     this.writer = writer;
-    this.tajoClient = tajoClient;
   }
 
   private void printUsage() {
@@ -127,9 +125,6 @@ public class TajoHAAdmin {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
-    } else if (hostName == null && port == null) {
-      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     }
 
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
@@ -160,7 +155,7 @@ public class TajoHAAdmin {
   private void getState(Writer writer, String param) throws ParseException, IOException,
       ServiceException {
 
-    int retValue = HAServiceUtil.getState(param, tajoConf);
+    int retValue = serviceTracker.getState(param, tajoConf);
 
     switch (retValue) {
       case 1:
@@ -180,7 +175,7 @@ public class TajoHAAdmin {
 
   private void formatHA(Writer writer) throws ParseException, IOException,
       ServiceException {
-    int retValue = HAServiceUtil.formatHA(tajoConf);
+    int retValue = serviceTracker.formatHA(tajoConf);
 
     switch (retValue) {
       case 1:
