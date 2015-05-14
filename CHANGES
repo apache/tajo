@@ -123,6 +123,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1485: Datum 'Char' returned only 1byte.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
     TAJO-1586: TajoMaster HA startup failure on Yarn. (jaehwa)
 
     TAJO-1598: TableMeta should change equals mechanism.

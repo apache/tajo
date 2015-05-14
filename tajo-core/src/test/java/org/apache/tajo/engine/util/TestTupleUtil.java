@@ -37,6 +37,24 @@ import static org.junit.Assert.*;
 
 public class TestTupleUtil {
   @Test
+  public final void testFixedSizeChar() {
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.CHAR, 5);
+
+    Tuple tuple = new VTuple(1);
+    tuple.put(new Datum[] {
+      DatumFactory.createChar("abc\0\0")
+    });
+
+    RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
+    RowStoreDecoder decoder = RowStoreUtil.createDecoder(schema);
+    byte [] bytes = encoder.toBytes(tuple);
+    Tuple tuple2 = decoder.toTuple(bytes);
+
+    assertEquals(tuple, tuple2);
+  }
+
+  @Test
   public final void testToBytesAndToTuple() {
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
