@@ -400,6 +400,13 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return containFlag;
   }
 
+  /**
+   * Return TRUE if any column in <code>columns</code> is included in this schema.
+   *
+   * @param columns Columns to be checked
+   * @return true if any column in <code>columns</code> is included in this schema.
+   *         Otherwise, false.
+   */
   public boolean containsAny(Collection<Column> columns) {
     for (Column column : columns) {
       if (contains(column)) {
