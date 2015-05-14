@@ -899,6 +899,6 @@ public class FileStorageManager extends StorageManager {
     FileStatus status = fs.getFileStatus(path);
     FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
 
-    return getSeekableScanner(conf, meta, schema, fragment, schema);
+    return TableSpaceManager.getSeekableScanner(conf, meta, schema, fragment, schema);
   }
 }

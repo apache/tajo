@@ -18,11 +18,8 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
@@ -39,11 +36,9 @@ import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * StorageManager manages the functions of storing and reading data.
@@ -54,21 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class StorageManager implements TableSpace {
   private final Log LOG = LogFactory.getLog(StorageManager.class);
 
-  private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
-      Configuration.class,
-      Schema.class,
-      TableMeta.class,
-      Fragment.class
-  };
-
-  private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
-      Configuration.class,
-      TaskAttemptId.class,
-      Schema.class,
-      TableMeta.class,
-      Path.class
-  };
-
   public static final PathFilter hiddenFileFilter = new PathFilter() {
     public boolean accept(Path p) {
       String name = p.getName();
@@ -78,31 +58,6 @@ public abstract class StorageManager implements TableSpace {
 
   protected TajoConf conf;
   protected String storeType;
-
-  /**
-   * Cache of StorageManager.
-   * Key is manager key(warehouse path) + store type
-   */
-  private static final Map<String, StorageManager> storageManagers = Maps.newHashMap();
-
-  /**
-   * Cache of scanner handlers for each storage type.
-   */
-  protected static final Map<String, Class<? extends Scanner>> SCANNER_HANDLER_CACHE
-      = new ConcurrentHashMap<String, Class<? extends Scanner>>();
-
-  /**
-   * Cache of appender handlers for each storage type.
-   */
-  protected static final Map<String, Class<? extends Appender>> APPENDER_HANDLER_CACHE
-      = new ConcurrentHashMap<String, Class<? extends Appender>>();
-
-  /**
-   * Cache of constructors for each class. Pins the classes so they
-   * can't be garbage collected until ReflectionUtils can be collected.
-   */
-  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
-      new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
   public StorageManager(String storeType) {
     this.storeType = storeType;
@@ -174,17 +129,6 @@ public abstract class StorageManager implements TableSpace {
 
 
   /**
-   * Clear all class cache
-   */
-  @VisibleForTesting
-  protected synchronized static void clearCache() {
-    CONSTRUCTOR_CACHE.clear();
-    SCANNER_HANDLER_CACHE.clear();
-    APPENDER_HANDLER_CACHE.clear();
-    storageManagers.clear();
-  }
-
-  /**
    * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is USING_STORAGE_MANAGER.
    * In general Repartitioner determines the partition range using previous output statistics data.
    * In the special cases, such as HBase Repartitioner uses the result of this method.
@@ -240,19 +184,6 @@ public abstract class StorageManager implements TableSpace {
   }
 
   /**
-   * Close StorageManager
-   * @throws java.io.IOException
-   */
-  public static void shutdown() throws IOException {
-    synchronized(storageManagers) {
-      for (StorageManager eachStorageManager: storageManagers.values()) {
-        eachStorageManager.close();
-      }
-    }
-    clearCache();
-  }
-
-  /**
    * Returns the splits that will serve as input for the scan tasks. The
    * number of splits matches the number of regions in a table.
    *
@@ -263,85 +194,6 @@ public abstract class StorageManager implements TableSpace {
    */
   public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException {
     return getSplits(fragmentId, tableDesc, null);
-  }
-
-  /**
-   * Returns FileStorageManager instance.
-   *
-   * @param tajoConf Tajo system property.
-   * @return
-   * @throws java.io.IOException
-   */
-  public static StorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
-    return getStorageManager(tajoConf, "CSV");
-  }
-
-  /**
-   * Returns the proper StorageManager instance according to the storeType.
-   *
-   * @param tajoConf Tajo system property.
-   * @param storeType Storage type
-   * @return
-   * @throws java.io.IOException
-   */
-  public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
-    FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
-    if (fileSystem != null) {
-      return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
-    } else {
-      return getStorageManager(tajoConf, storeType, null);
-    }
-  }
-
-  /**
-   * Returns the proper StorageManager instance according to the storeType
-   *
-   * @param tajoConf Tajo system property.
-   * @param storeType Storage type
-   * @param managerKey Key that can identify each storage manager(may be a path)
-   * @return
-   * @throws java.io.IOException
-   */
-  private static synchronized StorageManager getStorageManager (
-      TajoConf tajoConf, String storeType, String managerKey) throws IOException {
-
-    String typeName;
-    if (storeType.equalsIgnoreCase("HBASE")) {
-      typeName = "hbase";
-    } else {
-      typeName = "hdfs";
-    }
-
-    synchronized (storageManagers) {
-      String storeKey = typeName + "_" + managerKey;
-      StorageManager manager = storageManagers.get(storeKey);
-
-      if (manager == null) {
-        Class<? extends StorageManager> storageManagerClass =
-            tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, StorageManager.class);
-
-        if (storageManagerClass == null) {
-          throw new IOException("Unknown Storage Type: " + typeName);
-        }
-
-        try {
-          Constructor<? extends StorageManager> constructor =
-              (Constructor<? extends StorageManager>) CONSTRUCTOR_CACHE.get(storageManagerClass);
-          if (constructor == null) {
-            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{String.class});
-            constructor.setAccessible(true);
-            CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
-          }
-          manager = constructor.newInstance(new Object[]{storeType});
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-        manager.init(tajoConf);
-        storageManagers.put(storeKey, manager);
-      }
-
-      return manager;
-    }
   }
 
   /**
@@ -395,26 +247,10 @@ public abstract class StorageManager implements TableSpace {
     Scanner scanner;
 
     Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
-    scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
+    scanner = TableSpaceManager.newScannerInstance(scannerClass, conf, schema, meta, fragment);
     scanner.setTarget(target.toArray());
 
     return scanner;
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param conf The system property
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
-   * @param target The output schema
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
-    return (SeekableScanner)getStorageManager(conf, meta.getStoreType()).getScanner(meta, schema, fragment, target);
   }
 
   /**
@@ -435,79 +271,20 @@ public abstract class StorageManager implements TableSpace {
     Class<? extends Appender> appenderClass;
 
     String handlerName = meta.getStoreType().toLowerCase();
-    appenderClass = APPENDER_HANDLER_CACHE.get(handlerName);
+    appenderClass = TableSpaceManager.APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
           String.format("tajo.storage.appender-handler.%s.class", handlerName), null, Appender.class);
-      APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
+      TableSpaceManager.APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
     }
 
     if (appenderClass == null) {
       throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
 
-    appender = newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
+    appender = TableSpaceManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
 
     return appender;
-  }
-
-  /**
-   * Creates a scanner instance.
-   *
-   * @param theClass Concrete class of scanner
-   * @param conf System property
-   * @param schema Input schema
-   * @param meta Table meta data
-   * @param fragment The fragment for scanning
-   * @param <T>
-   * @return The scanner instance
-   */
-  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, Schema schema, TableMeta meta,
-                                         Fragment fragment) {
-    T result;
-    try {
-      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
-      if (meth == null) {
-        meth = theClass.getDeclaredConstructor(DEFAULT_SCANNER_PARAMS);
-        meth.setAccessible(true);
-        CONSTRUCTOR_CACHE.put(theClass, meth);
-      }
-      result = meth.newInstance(new Object[]{conf, schema, meta, fragment});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    return result;
-  }
-
-  /**
-   * Creates a scanner instance.
-   *
-   * @param theClass Concrete class of scanner
-   * @param conf System property
-   * @param taskAttemptId Task id
-   * @param meta Table meta data
-   * @param schema Input schema
-   * @param workDir Working directory
-   * @param <T>
-   * @return The scanner instance
-   */
-  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TaskAttemptId taskAttemptId,
-                                          TableMeta meta, Schema schema, Path workDir) {
-    T result;
-    try {
-      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
-      if (meth == null) {
-        meth = theClass.getDeclaredConstructor(DEFAULT_APPENDER_PARAMS);
-        meth.setAccessible(true);
-        CONSTRUCTOR_CACHE.put(theClass, meth);
-      }
-      result = meth.newInstance(new Object[]{conf, taskAttemptId, schema, meta, workDir});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    return result;
   }
 
   /**
@@ -519,11 +296,11 @@ public abstract class StorageManager implements TableSpace {
    */
   public Class<? extends Scanner> getScannerClass(String storeType) throws IOException {
     String handlerName = storeType.toLowerCase();
-    Class<? extends Scanner> scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
+    Class<? extends Scanner> scannerClass = TableSpaceManager.SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
           String.format("tajo.storage.scanner-handler.%s.class", handlerName), null, Scanner.class);
-      SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
+      TableSpaceManager.SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
     }
 
     if (scannerClass == null) {

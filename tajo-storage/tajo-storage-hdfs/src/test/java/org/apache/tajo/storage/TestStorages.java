@@ -30,7 +30,6 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -155,7 +154,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -210,7 +209,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -271,7 +270,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
     int tupleNum = 10000;
@@ -347,7 +346,7 @@ public class TestStorages {
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
@@ -425,7 +424,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
 
@@ -469,7 +468,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -513,7 +512,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -545,7 +544,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -583,7 +582,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -615,7 +614,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -653,7 +652,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -685,7 +684,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -727,7 +726,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -759,7 +758,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -789,7 +788,7 @@ public class TestStorages {
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.init();
 
@@ -805,7 +804,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+      Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
       scanner.init();
 
       Tuple retrieved;
@@ -831,7 +830,7 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -873,7 +872,7 @@ public class TestStorages {
     long readBytes = 0;
     long readRows = 0;
     for (long offset : offsets) {
-      scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema,
+      scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema,
 	        new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
       scanner.init();
 
@@ -913,7 +912,7 @@ public class TestStorages {
     }
 
     if (storeType.equalsIgnoreCase("RAW")) {
-      StorageManager.clearCache();
+      TableSpaceManager.clearCache();
       /* TAJO-1250 reproduce BufferOverflow of RAWFile */
       int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
       /* max varint32: 5 bytes, max varint64: 10 bytes */
@@ -921,7 +920,7 @@ public class TestStorages {
       conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
     }
 
-    FileStorageManager sm = (FileStorageManager) StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testMaxValue.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
 
@@ -955,7 +954,7 @@ public class TestStorages {
 
 
     if (storeType.equalsIgnoreCase("RAW")){
-      StorageManager.clearCache();
+      TableSpaceManager.clearCache();
     }
   }
 
@@ -977,7 +976,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
-    FileStorageManager sm = (FileStorageManager) StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 
@@ -1003,7 +1002,7 @@ public class TestStorages {
     inSchema.addColumn("col5", Type.INT8);
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, inSchema, fragment);
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, inSchema, fragment);
 
     Schema target = new Schema();
 
