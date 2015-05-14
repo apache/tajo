@@ -55,7 +55,7 @@ public class TestReadWrite {
     List<Column> columns = new ArrayList<Column>();
     columns.add(new Column("myboolean", Type.BOOLEAN));
     columns.add(new Column("mybit", Type.BIT));
-    columns.add(new Column("mychar", Type.CHAR));
+    columns.add(new Column("mychar", Type.CHAR, 1));
     columns.add(new Column("myint2", Type.INT2));
     columns.add(new Column("myint4", Type.INT4));
     columns.add(new Column("myint8", Type.INT8));

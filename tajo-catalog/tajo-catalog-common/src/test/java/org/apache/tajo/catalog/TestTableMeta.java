@@ -96,7 +96,7 @@ public class TestTableMeta {
 
 		int MAX_COUNT = 17;
 
-		TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV.toString());
+		TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV);
 		for (int i = 0; i < MAX_COUNT; i++) {
 			meta1.putOption("key"+i, "value"+i);
 		}
@@ -108,7 +108,7 @@ public class TestTableMeta {
 			optionBuilder.addKeyval(keyValueBuilder);
 		}
 		TableProto.Builder builder = TableProto.newBuilder();
-		builder.setStoreType(StoreType.CSV.toString());
+		builder.setStoreType(StoreType.CSV);
 		builder.setParams(optionBuilder);
 		TableMeta meta2 = new TableMeta(builder.build());
 		assertTrue(meta1.equals(meta2));

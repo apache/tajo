@@ -30,6 +30,7 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -1014,10 +1015,10 @@ public class TestStorages {
 
   @Test
   public final void testInsertFixedCharTypeWithOverSize() throws Exception {
-    if (storeType.equalsIgnoreCase("CSV") == false &&
-        storeType.equalsIgnoreCase("SEQUENCEFILE") == false &&
-        storeType.equalsIgnoreCase("RCFILE") == false &&
-        storeType.equalsIgnoreCase("PARQUET") == false) {
+    if (!storeType.equals(StoreType.CSV) &&
+        !storeType.equals(StoreType.SEQUENCEFILE) &&
+        !storeType.equals(StoreType.RCFILE) &&
+        !storeType.equals(StoreType.PARQUET)) {
       return;
     }
 
