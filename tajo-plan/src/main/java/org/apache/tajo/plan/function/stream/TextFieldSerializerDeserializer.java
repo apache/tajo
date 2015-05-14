@@ -29,6 +29,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.NumberUtil;
 
@@ -84,7 +85,12 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         length = trueBytes.length;
         break;
       case CHAR:
-        byte[] pad = new byte[dataType.getLength() - datum.size()];
+        int size = dataType.getLength() - datum.size();
+        if (size < 0){
+          throw new ValueTooLongForTypeCharactersException(dataType.getLength());
+        }
+
+        byte[] pad = new byte[size];
         bytes = datum.asTextBytes();
         out.write(bytes);
         out.write(pad);
