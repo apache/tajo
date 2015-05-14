@@ -187,19 +187,6 @@ public class TestInnerJoinQuery extends TestJoinQuery {
       "DROP DATABASE JOINS"
   })
   public final void testJoinOnMultipleDatabases() throws Exception {
-//    executeString("CREATE DATABASE JOINS");
-//    assertDatabaseExists("joins");
-//    executeString("CREATE TABLE JOINS.part_ as SELECT * FROM part");
-//    assertTableExists("joins.part_");
-//    executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
-//    assertTableExists("joins.supplier_");
-//    ResultSet res = executeQuery();
-//    assertResultSet(res);
-//    cleanupQuery(res);
-//
-//    executeString("DROP TABLE JOINS.part_ PURGE");
-//    executeString("DROP TABLE JOINS.supplier_ PURGE");
-//    executeString("DROP DATABASE JOINS");
     runSimpleTests();
   }
 

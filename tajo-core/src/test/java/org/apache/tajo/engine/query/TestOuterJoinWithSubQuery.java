@@ -131,27 +131,6 @@ public class TestOuterJoinWithSubQuery extends TestJoinQuery {
           "on a.id = b.id")
   })
   public void testJoinWithDifferentShuffleKey() throws Exception {
-//    KeyValueSet tableOptions = new KeyValueSet();
-//    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-//    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-//
-//    Schema schema = new Schema();
-//    schema.addColumn("id", TajoDataTypes.Type.INT4);
-//    schema.addColumn("name", TajoDataTypes.Type.TEXT);
-//
-//    List<String> data = new ArrayList<String>();
-//
-//    int bytes = 0;
-//    for (int i = 0; i < 1000000; i++) {
-//      String row = i + "|" + i + "name012345678901234567890123456789012345678901234567890";
-//      bytes += row.getBytes().length;
-//      data.add(row);
-//      if (bytes > 2 * 1024 * 1024) {
-//        break;
-//      }
-//    }
-//    TajoTestingCluster.createTable("large_table", schema, tableOptions, data.toArray(new String[]{}));
-
     int originConfValue = conf.getIntVar(TajoConf.ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME);
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "1");
     try {
@@ -160,25 +139,5 @@ public class TestOuterJoinWithSubQuery extends TestJoinQuery {
       testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME.varname,
           "" + originConfValue);
     }
-
-//    ResultSet res = executeString(
-//        "select count(b.id) " +
-//            "from (select id, count(*) as cnt from large_table group by id) a " +
-//            "left outer join (select id, count(*) as cnt from large_table where id < 200 group by id) b " +
-//            "on a.id = b.id"
-//    );
-//
-//    try {
-//      String expected =
-//          "?count\n" +
-//              "-------------------------------\n" +
-//              "200\n";
-//
-//      assertEquals(expected, resultSetToString(res));
-//    } finally {
-//      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME.varname, "" + originConfValue);
-//      cleanupQuery(res);
-//      executeString("DROP TABLE large_table PURGE").close();
-//    }
   }
 }

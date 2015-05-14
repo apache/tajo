@@ -110,17 +110,6 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     runSimpleTests();
   }
 
-//    try {
-//
-//      res = executeFile("selfJoinOfPartitionedTable.sql");
-//      assertResultSet(res, "selfJoinOfPartitionedTable.result");
-//      res.close();
-//
-//    } finally {
-//      executeString("DROP TABLE customer_parts PURGE").close();
-//    }
-//  }
-
   @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
   @SimpleTest(queries = {

@@ -786,9 +786,6 @@ public class QueryTestCaseBase {
   private List<String> executeDDL(String ddlFileName, @Nullable String dataFileName, boolean isLocalTable,
                                   @Nullable String[] args) throws Exception {
 
-//    Path ddlFilePath = new Path(currentQueryPath, ddlFileName);
-//    FileSystem fs = ddlFilePath.getFileSystem(conf);
-//    assertTrue(ddlFilePath + " existence check", fs.exists(ddlFilePath));
     Path ddlFilePath = getQueryFilePath(ddlFileName);
 
     String template = FileUtil.readTextFile(new File(ddlFilePath.toUri()));
