@@ -13,3 +13,7 @@ where
     and l_partkey = p_partkey
     and o_custkey = c_custkey
     and c_nationkey = n_nationkey
+order by
+    l_orderkey,
+    p_name,
+    n_name
