@@ -24,6 +24,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1603: Refactor StorageManager. (hyunsik)
+
     TAJO-1542: Refactoring of HashJoinExecs. (Contributed Navis, Committed by 
     hyunsik)
 
