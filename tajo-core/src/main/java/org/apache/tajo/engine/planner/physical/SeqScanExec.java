@@ -202,7 +202,7 @@ public class SeqScanExec extends ScanExec {
             FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        StorageManager storageManager = StorageManager.getStorageManager(
+        StorageManager storageManager = TableSpaceManager.getStorageManager(
             context.getConf(), plan.getTableDesc().getMeta().getStoreType());
         this.scanner = storageManager.getScanner(meta,
             plan.getPhysicalSchema(), fragments[0], projected);

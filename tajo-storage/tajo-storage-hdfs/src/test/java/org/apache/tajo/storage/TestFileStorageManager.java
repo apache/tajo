@@ -26,7 +26,6 @@ import org.apache.hadoop.hdfs.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -81,7 +80,7 @@ public class TestFileStorageManager {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-    FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager fileStorageManager = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     assertEquals(fs.getUri(), fileStorageManager.getFileSystem().getUri());
 
 		Appender appender = fileStorageManager.getAppender(meta, schema, path);
@@ -128,7 +127,7 @@ public class TestFileStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(tajoConf);
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
@@ -182,7 +181,7 @@ public class TestFileStorageManager {
         DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
       }
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(tajoConf);
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
@@ -221,11 +220,11 @@ public class TestFileStorageManager {
 
     try {
       /* Local FileSystem */
-      FileStorageManager sm = (FileStorageManager)StorageManager.getStorageManager(conf, "CSV");
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getStorageManager(conf, "CSV");
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       /* Distributed FileSystem */
-      sm = (FileStorageManager)StorageManager.getStorageManager(tajoConf, "CSV");
+      sm = (FileStorageManager) TableSpaceManager.getStorageManager(tajoConf, "CSV");
       assertNotEquals(fs.getUri(), sm.getFileSystem().getUri());
       assertEquals(cluster.getFileSystem().getUri(), sm.getFileSystem().getUri());
     } finally {

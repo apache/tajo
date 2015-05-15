@@ -21,10 +21,9 @@ package org.apache.tajo.service;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.FileUtil;
 
 import javax.net.SocketFactory;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
@@ -59,7 +58,13 @@ public abstract class HAServiceTracker implements ServiceTracker {
     } catch (Exception e) {
       isAlive = false;
     } finally {
-      FileUtil.cleanup(LOG, socket);
+      if (socket != null) {
+        try {
+          socket.close();
+        } catch (IOException e) {
+          LOG.debug(e.getMessage(), e);
+        }
+      }
     }
     return isAlive;
   }

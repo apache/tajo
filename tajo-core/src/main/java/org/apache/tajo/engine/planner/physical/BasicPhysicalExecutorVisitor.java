@@ -65,8 +65,6 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
       return visitMergeJoin(context, (MergeJoinExec) exec, stack);
     } else if (exec instanceof NLJoinExec) {
       return visitNLJoin(context, (NLJoinExec) exec, stack);
-    } else if (exec instanceof NLLeftOuterJoinExec) {
-      return visitNLLeftOuterJoin(context, (NLLeftOuterJoinExec) exec, stack);
     } else if (exec instanceof ProjectionExec) {
       return visitProjection(context, (ProjectionExec) exec, stack);
     } else if (exec instanceof RangeShuffleFileWriteExec) {
@@ -210,12 +208,6 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   @Override
   public RESULT visitNLJoin(CONTEXT context, NLJoinExec exec, Stack<PhysicalExec> stack) throws
       PhysicalPlanningException {
-    return visitBinaryExecutor(context, exec, stack);
-  }
-
-  @Override
-  public RESULT visitNLLeftOuterJoin(CONTEXT context, NLLeftOuterJoinExec exec, Stack<PhysicalExec> stack)
-      throws PhysicalPlanningException {
     return visitBinaryExecutor(context, exec, stack);
   }
 
