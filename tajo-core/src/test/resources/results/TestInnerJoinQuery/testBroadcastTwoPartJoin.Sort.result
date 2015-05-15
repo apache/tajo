@@ -1,54 +1,57 @@
 explain
 -------------------------------
-JOIN(15)(INNER)
-  => Join Cond: default.orders.o_custkey (INT4) = default.customer_large.c_custkey (INT4)
-  => target list: default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)
-  => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)}
-  => in schema: {(5) default.customer_large.c_custkey (INT4), default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
-   JOIN(14)(INNER)
-     => Join Cond: default.customer_large.c_nationkey (INT4) = default.nation.n_nationkey (INT4)
-     => target list: default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)
-     => out schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
-     => in schema: {(4) default.customer_large.c_custkey (INT4), default.customer_large.c_nationkey (INT4), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
-      SCAN(3) on default.customer_large
-        => target list: default.customer_large.c_custkey (INT4), default.customer_large.c_nationkey (INT4)
-        => out schema: {(2) default.customer_large.c_custkey (INT4), default.customer_large.c_nationkey (INT4)}
-        => in schema: {(8) default.customer_large.c_acctbal (FLOAT8), default.customer_large.c_address (TEXT), default.customer_large.c_comment (TEXT), default.customer_large.c_custkey (INT4), default.customer_large.c_mktsegment (TEXT), default.customer_large.c_name (TEXT), default.customer_large.c_nationkey (INT4), default.customer_large.c_phone (TEXT)}
-      SCAN(4) on default.nation
-        => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
-        => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
-        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
-   JOIN(13)(INNER)
-     => Join Cond: default.lineitem_large.l_partkey (INT4) = default.part.p_partkey (INT4)
-     => target list: default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)
-     => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
-     => in schema: {(5) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT), default.part.p_partkey (INT4)}
-      SCAN(2) on default.part
-        => target list: default.part.p_name (TEXT), default.part.p_partkey (INT4)
-        => out schema: {(2) default.part.p_name (TEXT), default.part.p_partkey (INT4)}
-        => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-      JOIN(12)(INNER)
-        => Join Cond: default.lineitem_large.l_orderkey (INT4) = default.orders.o_orderkey (INT4)
-        => target list: default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4)
-        => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4)}
-        => in schema: {(4) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
-         SCAN(0) on default.lineitem_large
-           => target list: default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4)
-           => out schema: {(2) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4)}
-           => in schema: {(16) default.lineitem_large.l_comment (TEXT), default.lineitem_large.l_commitdate (TEXT), default.lineitem_large.l_discount (FLOAT8), default.lineitem_large.l_extendedprice (FLOAT8), default.lineitem_large.l_linenumber (INT4), default.lineitem_large.l_linestatus (TEXT), default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.lineitem_large.l_quantity (FLOAT8), default.lineitem_large.l_receiptdate (TEXT), default.lineitem_large.l_returnflag (TEXT), default.lineitem_large.l_shipdate (TEXT), default.lineitem_large.l_shipinstruct (TEXT), default.lineitem_large.l_shipmode (TEXT), default.lineitem_large.l_suppkey (INT4), default.lineitem_large.l_tax (FLOAT8)}
-         SCAN(1) on default.orders
-           => target list: default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)
-           => out schema: {(2) default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
-           => in schema: {(9) default.orders.o_clerk (TEXT), default.orders.o_comment (TEXT), default.orders.o_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), default.orders.o_orderpriority (TEXT), default.orders.o_orderstatus (TEXT), default.orders.o_shippriority (INT4), default.orders.o_totalprice (FLOAT8)}
+SORT(6)
+  => Sort Keys: default.lineitem_large.l_orderkey (INT4) (asc),default.part.p_name (TEXT) (asc),default.nation.n_name (TEXT) (asc)
+   JOIN(16)(INNER)
+     => Join Cond: default.orders.o_custkey (INT4) = default.customer_large.c_custkey (INT4)
+     => target list: default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)
+     => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)}
+     => in schema: {(5) default.customer_large.c_custkey (INT4), default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
+      JOIN(15)(INNER)
+        => Join Cond: default.customer_large.c_nationkey (INT4) = default.nation.n_nationkey (INT4)
+        => target list: default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)
+        => out schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
+        => in schema: {(4) default.customer_large.c_custkey (INT4), default.customer_large.c_nationkey (INT4), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
+         SCAN(3) on default.customer_large
+           => target list: default.customer_large.c_custkey (INT4), default.customer_large.c_nationkey (INT4)
+           => out schema: {(2) default.customer_large.c_custkey (INT4), default.customer_large.c_nationkey (INT4)}
+           => in schema: {(8) default.customer_large.c_acctbal (FLOAT8), default.customer_large.c_address (TEXT), default.customer_large.c_comment (TEXT), default.customer_large.c_custkey (INT4), default.customer_large.c_mktsegment (TEXT), default.customer_large.c_name (TEXT), default.customer_large.c_nationkey (INT4), default.customer_large.c_phone (TEXT)}
+         SCAN(4) on default.nation
+           => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
+           => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
+           => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+      JOIN(14)(INNER)
+        => Join Cond: default.lineitem_large.l_partkey (INT4) = default.part.p_partkey (INT4)
+        => target list: default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)
+        => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
+        => in schema: {(5) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT), default.part.p_partkey (INT4)}
+         SCAN(2) on default.part
+           => target list: default.part.p_name (TEXT), default.part.p_partkey (INT4)
+           => out schema: {(2) default.part.p_name (TEXT), default.part.p_partkey (INT4)}
+           => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+         JOIN(13)(INNER)
+           => Join Cond: default.lineitem_large.l_orderkey (INT4) = default.orders.o_orderkey (INT4)
+           => target list: default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4)
+           => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4)}
+           => in schema: {(4) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
+            SCAN(0) on default.lineitem_large
+              => target list: default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4)
+              => out schema: {(2) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4)}
+              => in schema: {(16) default.lineitem_large.l_comment (TEXT), default.lineitem_large.l_commitdate (TEXT), default.lineitem_large.l_discount (FLOAT8), default.lineitem_large.l_extendedprice (FLOAT8), default.lineitem_large.l_linenumber (INT4), default.lineitem_large.l_linestatus (TEXT), default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.lineitem_large.l_quantity (FLOAT8), default.lineitem_large.l_receiptdate (TEXT), default.lineitem_large.l_returnflag (TEXT), default.lineitem_large.l_shipdate (TEXT), default.lineitem_large.l_shipinstruct (TEXT), default.lineitem_large.l_shipmode (TEXT), default.lineitem_large.l_suppkey (INT4), default.lineitem_large.l_tax (FLOAT8)}
+            SCAN(1) on default.orders
+              => target list: default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)
+              => out schema: {(2) default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
+              => in schema: {(9) default.orders.o_clerk (TEXT), default.orders.o_comment (TEXT), default.orders.o_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), default.orders.o_orderpriority (TEXT), default.orders.o_orderstatus (TEXT), default.orders.o_shippriority (INT4), default.orders.o_totalprice (FLOAT8)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000008)
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000009)
 -------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000008
-   |-eb_0000000000000_0000_000007
-      |-eb_0000000000000_0000_000006
-      |-eb_0000000000000_0000_000003
+|-eb_0000000000000_0000_000009
+   |-eb_0000000000000_0000_000008
+      |-eb_0000000000000_0000_000007
+         |-eb_0000000000000_0000_000006
+         |-eb_0000000000000_0000_000003
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
@@ -56,6 +59,7 @@ Order of Execution
 2: eb_0000000000000_0000_000006
 3: eb_0000000000000_0000_000007
 4: eb_0000000000000_0000_000008
+5: eb_0000000000000_0000_000009
 -------------------------------------------------------------------------------
 
 =======================================================
@@ -67,10 +71,9 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.orders
- 1: type=Broadcast, tables=default.lineitem_large
- 2: type=Broadcast, tables=default.part
+ 1: type=Broadcast, tables=default.part
 
-JOIN(13)(INNER)
+JOIN(14)(INNER)
   => Join Cond: default.lineitem_large.l_partkey (INT4) = default.part.p_partkey (INT4)
   => target list: default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)
   => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
@@ -79,7 +82,7 @@ JOIN(13)(INNER)
      => target list: default.part.p_name (TEXT), default.part.p_partkey (INT4)
      => out schema: {(2) default.part.p_name (TEXT), default.part.p_partkey (INT4)}
      => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-   JOIN(12)(INNER)
+   JOIN(13)(INNER)
      => Join Cond: default.lineitem_large.l_orderkey (INT4) = default.orders.o_orderkey (INT4)
      => target list: default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4)
      => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.lineitem_large.l_partkey (INT4), default.orders.o_custkey (INT4)}
@@ -102,9 +105,8 @@ Block Id: eb_0000000000000_0000_000006 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.nation
- 1: type=Broadcast, tables=default.customer_large
 
-JOIN(14)(INNER)
+JOIN(15)(INNER)
   => Join Cond: default.customer_large.c_nationkey (INT4) = default.nation.n_nationkey (INT4)
   => target list: default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)
   => out schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
@@ -119,40 +121,61 @@ JOIN(14)(INNER)
      => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000007 [ROOT]
+Block Id: eb_0000000000000_0000_000007 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
 [q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.orders.o_custkey (INT4), num=32)
 [q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.customer_large.c_custkey (INT4), num=32)
 
-JOIN(15)(INNER)
-  => Join Cond: default.orders.o_custkey (INT4) = default.customer_large.c_custkey (INT4)
-  => target list: default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)
-  => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)}
-  => in schema: {(5) default.customer_large.c_custkey (INT4), default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
-   SCAN(18) on eb_0000000000000_0000_000006
-     => out schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
-     => in schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
-   SCAN(17) on eb_0000000000000_0000_000003
-     => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
-     => in schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
+[Outgoing]
+[q_0000000000000_0000] 7 => 8 (type=RANGE_SHUFFLE, key=default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT), num=32)
+
+SORT(20)
+  => Sort Keys: default.lineitem_large.l_orderkey (INT4) (asc),default.part.p_name (TEXT) (asc),default.nation.n_name (TEXT) (asc)
+   JOIN(16)(INNER)
+     => Join Cond: default.orders.o_custkey (INT4) = default.customer_large.c_custkey (INT4)
+     => target list: default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)
+     => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)}
+     => in schema: {(5) default.customer_large.c_custkey (INT4), default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
+      SCAN(19) on eb_0000000000000_0000_000006
+        => out schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
+        => in schema: {(2) default.customer_large.c_custkey (INT4), default.nation.n_name (TEXT)}
+      SCAN(18) on eb_0000000000000_0000_000003
+        => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
+        => in schema: {(3) default.lineitem_large.l_orderkey (INT4), default.orders.o_custkey (INT4), default.part.p_name (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000008 [TERMINAL]
+Block Id: eb_0000000000000_0000_000008 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 7 => 8 (type=RANGE_SHUFFLE, key=default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000007
+
+SORT(6)
+  => Sort Keys: default.lineitem_large.l_orderkey (INT4) (asc),default.part.p_name (TEXT) (asc),default.nation.n_name (TEXT) (asc)
+   SCAN(21) on eb_0000000000000_0000_000007
+     => out schema: {(3) default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)}
+     => in schema: {(3) default.lineitem_large.l_orderkey (INT4), default.nation.n_name (TEXT), default.part.p_name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000009 [TERMINAL]
 =======================================================
 l_orderkey,p_name,n_name
 -------------------------------
-3,spring green yellow purple cornsilk,GERMANY
-3,goldenrod lavender spring chocolate lace,GERMANY
-3,blush thistle blue yellow saddle,GERMANY
-3,goldenrod lavender spring chocolate lace,GERMANY
-3,spring green yellow purple cornsilk,GERMANY
-3,spring green yellow purple cornsilk,GERMANY
 1,blush thistle blue yellow saddle,GERMANY
+1,goldenrod lavender spring chocolate lace,GERMANY
+1,goldenrod lavender spring chocolate lace,GERMANY
+1,goldenrod lavender spring chocolate lace,GERMANY
 1,spring green yellow purple cornsilk,GERMANY
-1,goldenrod lavender spring chocolate lace,GERMANY
-1,goldenrod lavender spring chocolate lace,GERMANY
-1,goldenrod lavender spring chocolate lace,GERMANY
 1,spring green yellow purple cornsilk,GERMANY
 2,blush thistle blue yellow saddle,IRAN
+3,blush thistle blue yellow saddle,GERMANY
+3,goldenrod lavender spring chocolate lace,GERMANY
+3,goldenrod lavender spring chocolate lace,GERMANY
+3,spring green yellow purple cornsilk,GERMANY
+3,spring green yellow purple cornsilk,GERMANY
+3,spring green yellow purple cornsilk,GERMANY

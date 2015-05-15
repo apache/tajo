@@ -29,6 +29,7 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -51,15 +52,20 @@ import static org.junit.Assert.assertTrue;
 @NamedTest("TestJoinQuery")
 public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
+  private static boolean flag = false;
+
   public TestJoinOnPartitionedTables(String joinOption) throws Exception {
     super(joinOption);
 
-    executeDDL("partitioned_customer_ddl.sql", null);
-    executeFile("insert_into_customer.sql");
+    if (!flag) {
+      executeDDL("partitioned_customer_ddl.sql", null);
+      executeFile("insert_into_customer.sql");
 
-    executeString("create table nation_partitioned (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
-    executeString("insert overwrite into nation_partitioned select n_name, n_nationkey, n_regionkey from nation");
-    addEmptyDataFile("nation_partitioned", true);
+      executeString("create table nation_partitioned (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+      executeString("insert overwrite into nation_partitioned select n_name, n_nationkey, n_regionkey from nation");
+      addEmptyDataFile("nation_partitioned", true);
+//      flag = true;
+    }
   }
 
   @After
@@ -327,16 +333,16 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     ResultSet res = executeFile("insert_into_customer_partition.sql");
     res.close();
 
-    createMultiFile("nation", 2, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new TextDatum(columnDatas[1]),
-            new Int4Datum(Integer.parseInt(columnDatas[2])),
-            new TextDatum(columnDatas[3])
-        });
-      }
-    });
+//    createMultiFile("nation", 2, new TupleCreator() {
+//      public Tuple createTuple(String[] columnDatas) {
+//        return new VTuple(new Datum[]{
+//            new Int4Datum(Integer.parseInt(columnDatas[0])),
+//            new TextDatum(columnDatas[1]),
+//            new Int4Datum(Integer.parseInt(columnDatas[2])),
+//            new TextDatum(columnDatas[3])
+//        });
+//      }
+//    });
 
     createMultiFile("orders", 1, new TupleCreator() {
       public Tuple createTuple(String[] columnDatas) {
@@ -354,7 +360,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
       res.close();
     } finally {
       executeString("DROP TABLE customer_broad_parts PURGE");
-      executeString("DROP TABLE nation_multifile PURGE");
+//      executeString("DROP TABLE nation_multifile PURGE");
       executeString("DROP TABLE orders_multifile PURGE");
     }
   }

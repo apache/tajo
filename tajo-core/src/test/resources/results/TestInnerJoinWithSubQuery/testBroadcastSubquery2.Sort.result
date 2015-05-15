@@ -99,8 +99,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.e.l_orderkey (INT4), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.a
- 1: type=Broadcast, tables=default.part
+ 0: type=Broadcast, tables=default.part
 
 GROUP_BY(25)(l_orderkey)
   => exprs: (avg(default.e.l_quantity (FLOAT8)))
@@ -164,8 +163,7 @@ Block Id: eb_0000000000000_0000_000007 [LEAF]
 [q_0000000000000_0000] 7 => 9 (type=HASH_SHUFFLE, key=default.b.l_orderkey (INT4), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.d
- 1: type=Broadcast, tables=default.part
+ 0: type=Broadcast, tables=default.part
 
 TABLE_SUBQUERY(4) as default.b
   => Targets: default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)
