@@ -18,27 +18,28 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.*;
-import org.apache.tajo.*;
-import org.apache.tajo.catalog.*;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.List;
-import java.util.Map;
 
 /**
  * StorageManager manages the functions of storing and reading data.
@@ -47,7 +48,6 @@ import java.util.Map;
  *
  */
 public abstract class StorageManager implements TableSpace {
-  private final Log LOG = LogFactory.getLog(StorageManager.class);
 
   public static final PathFilter hiddenFileFilter = new PathFilter() {
     public boolean accept(Path p) {
@@ -348,7 +348,8 @@ public abstract class StorageManager implements TableSpace {
    * @throws java.io.IOException
    */
   @Override
-  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
+  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
+      throws IOException {
     return null;
   }
 
