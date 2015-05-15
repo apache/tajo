@@ -488,17 +488,6 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return builder.build();
 	}
 
-  public Set<String> getAliases() {
-    Set<String> aliases = new HashSet<String>();
-    for (Column column : fields) {
-      if (column.hasQualifier()) {
-        String qualifier = column.getQualifier();
-        aliases.add(qualifier.startsWith("default.") ? qualifier.substring(8) : qualifier);
-      }
-    }
-    return aliases;
-  }
-
   private static class SchemaProtoBuilder implements ColumnVisitor {
     private SchemaProto.Builder builder;
     public SchemaProtoBuilder(SchemaProto.Builder builder) {

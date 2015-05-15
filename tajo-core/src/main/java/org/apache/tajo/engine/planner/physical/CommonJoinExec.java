@@ -226,7 +226,6 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() +
-        " [" + leftSchema.getAliases() + " : " + rightSchema.getAliases() + "]";
+    return getClass().getSimpleName() + " [" + leftSchema + " : " + rightSchema + "]";
   }
 }
