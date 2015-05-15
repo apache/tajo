@@ -47,7 +47,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -124,7 +123,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
         ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
-    
+
     if (--reference == 0) {
       dropCommonTables();
     }
@@ -265,7 +264,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
         }
         Path dataPath = new Path(table.getPath().toString(), fileIndex + ".csv");
         fileIndex++;
-        appender = ((FileStorageManager) StorageManager.getFileStorageManager(conf))
+        appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
             .getAppender(tableMeta, schema, dataPath);
         appender.init();
       }
