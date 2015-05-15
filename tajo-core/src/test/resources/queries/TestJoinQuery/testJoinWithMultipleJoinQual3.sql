@@ -6,4 +6,5 @@ from (
 ) t
 join supplier s on (s.s_nationkey = t.n_nationkey)
 join partsupp ps on (s.s_suppkey = ps.ps_suppkey)
-where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO');
+where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO')
+order by t.n_nationkey;
