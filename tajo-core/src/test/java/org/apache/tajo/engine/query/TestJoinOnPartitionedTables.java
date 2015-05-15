@@ -167,7 +167,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           " select l_partkey, l_suppkey, l_linenumber, \n" +
           " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
           " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
-          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem_large");
+          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem");
 
       ResultSet res = executeString(
           "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
@@ -207,7 +207,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
       res = executeString(
           "select distinct a.col3 from " + tableName + " as a " +
-              "left outer join lineitem_large b " +
+              "left outer join lineitem b " +
               "on a.col1 = b.l_orderkey order by a.col3"
       );
 
@@ -278,7 +278,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
       Because of the where condition[where a.o_orderdate='1995-02-21 and a.o_orderstatus in ('F')],
         orders_partition table aliased a is small and broadcast target.
     */
-    String tableName = CatalogUtil.normalizeIdentifier("partitioned_orders_large");
+    String tableName = CatalogUtil.normalizeIdentifier("partitioned_orders");
     ResultSet res = executeString(
         "create table " + tableName + " (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,\n" +
             "o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')\n" +
@@ -291,13 +291,13 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           "insert overwrite into " + tableName +
               " select o_orderkey, o_custkey, o_totalprice, " +
               " o_orderpriority, o_clerk, o_shippriority, o_comment, o_orderdate, o_orderstatus, o_orderkey % 10 " +
-              " from orders_large ");
+              " from orders ");
       res.close();
 
       res = executeString(
           "select a.o_orderdate, a.o_orderstatus, a.o_orderkey % 10 as o_orderkey_mod, a.o_totalprice " +
-              "from orders_large a " +
-              "join orders_large b on a.o_orderkey = b.o_orderkey " +
+              "from orders a " +
+              "join orders b on a.o_orderkey = b.o_orderkey " +
               "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey % 10 = 1" +
               " order by a.o_orderkey"
       );

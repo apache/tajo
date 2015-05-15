@@ -3,10 +3,10 @@ select
     p_name,
     n_name
 from
-    lineitem_large,
+    lineitem,
     orders,
     part,
-    customer_large,
+    customer,
     nation
 where
     l_orderkey = o_orderkey

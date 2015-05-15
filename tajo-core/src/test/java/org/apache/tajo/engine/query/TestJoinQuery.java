@@ -93,10 +93,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
           String.valueOf(1));
     }
-
-    executeDDL("create_lineitem_large_ddl.sql", "lineitem_large");
-    executeDDL("create_customer_large_ddl.sql", "customer_large");
-    executeDDL("create_orders_large_ddl.sql", "orders_large");
   }
 
   @Parameters

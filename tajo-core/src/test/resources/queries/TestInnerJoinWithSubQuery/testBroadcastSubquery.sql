@@ -3,7 +3,7 @@ select
     a.o_custkey,
     p_name
 from
-    lineitem_large,
+    lineitem,
     part,
     (select o_orderkey, o_custkey from orders) a
 where

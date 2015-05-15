@@ -1,14 +1,14 @@
 select sum(b.l_quantity)
 from (
       select a.l_orderkey, a.l_quantity
-        from lineitem_large a
+        from lineitem a
         join part on a.l_partkey = p_partkey) b
 join orders c on c.o_orderkey = b.l_orderkey
 join (
       select e.l_orderkey, avg(e.l_quantity) avg_quantity
       from (
           select d.l_orderkey, d.l_quantity
-            from lineitem_large d
+            from lineitem d
             join part on d.l_partkey = p_partkey
       ) e
       group by e.l_orderkey

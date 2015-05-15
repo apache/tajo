@@ -35,7 +35,7 @@ GROUP_BY(18)()
                     => target list: default.part.p_partkey (INT4)
                     => out schema: {(1) default.part.p_partkey (INT4)}
                     => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-                  SCAN(0) on default.lineitem_large as a
+                  SCAN(0) on default.lineitem as a
                     => target list: default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)
                     => out schema: {(3) default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
                     => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
@@ -61,7 +61,7 @@ GROUP_BY(18)()
                        => target list: default.part.p_partkey (INT4)
                        => out schema: {(1) default.part.p_partkey (INT4)}
                        => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-                     SCAN(7) on default.lineitem_large as d
+                     SCAN(7) on default.lineitem as d
                        => target list: default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)
                        => out schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
                        => in schema: {(16) default.d.l_comment (TEXT), default.d.l_commitdate (TEXT), default.d.l_discount (FLOAT8), default.d.l_extendedprice (FLOAT8), default.d.l_linenumber (INT4), default.d.l_linestatus (TEXT), default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.d.l_receiptdate (TEXT), default.d.l_returnflag (TEXT), default.d.l_shipdate (TEXT), default.d.l_shipinstruct (TEXT), default.d.l_shipmode (TEXT), default.d.l_suppkey (INT4), default.d.l_tax (FLOAT8)}
@@ -106,7 +106,7 @@ Block Id: eb_0000000000000_0000_000001 [LEAF]
 [Outgoing]
 [q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.a.l_partkey (INT4), num=32)
 
-SCAN(0) on default.lineitem_large as a
+SCAN(0) on default.lineitem as a
   => target list: default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)
   => out schema: {(3) default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
   => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
@@ -193,7 +193,7 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
 [Outgoing]
 [q_0000000000000_0000] 5 => 7 (type=HASH_SHUFFLE, key=default.d.l_partkey (INT4), num=32)
 
-SCAN(7) on default.lineitem_large as d
+SCAN(7) on default.lineitem as d
   => target list: default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)
   => out schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
   => in schema: {(16) default.d.l_comment (TEXT), default.d.l_commitdate (TEXT), default.d.l_discount (FLOAT8), default.d.l_extendedprice (FLOAT8), default.d.l_linenumber (INT4), default.d.l_linestatus (TEXT), default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.d.l_receiptdate (TEXT), default.d.l_returnflag (TEXT), default.d.l_shipdate (TEXT), default.d.l_shipinstruct (TEXT), default.d.l_shipmode (TEXT), default.d.l_suppkey (INT4), default.d.l_tax (FLOAT8)}
@@ -328,4 +328,4 @@ Block Id: eb_0000000000000_0000_000012 [TERMINAL]
 =======================================================
 ?sum
 -------------------------------
-190.0
+85.0
