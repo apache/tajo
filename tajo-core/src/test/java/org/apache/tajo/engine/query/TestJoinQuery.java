@@ -22,7 +22,6 @@ import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -38,11 +37,6 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
@@ -145,43 +139,43 @@ public class TestJoinQuery extends QueryTestCaseBase {
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     String[] data = new String[]{"1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5"};
-    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable("jointable11", schema, tableOptions, data, 2);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     data = new String[]{"1|table12-1", "2|table12-2"};
-    TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable("jointable12", schema, tableOptions, data, 2);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     data = new String[]{"2|table13-2", "3|table13-3"};
-    TajoTestingCluster.createTable("table13", schema, tableOptions, data);
+    TajoTestingCluster.createTable("jointable13", schema, tableOptions, data);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     data = new String[]{"1|table14-1", "2|table14-2", "3|table14-3", "4|table14-4"};
-    TajoTestingCluster.createTable("table14", schema, tableOptions, data);
+    TajoTestingCluster.createTable("jointable14", schema, tableOptions, data);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     data = new String[]{};
-    TajoTestingCluster.createTable("table15", schema, tableOptions, data);
+    TajoTestingCluster.createTable("jointable15", schema, tableOptions, data);
 
     schema = new Schema();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     data = new String[]{"1000000|a", "1000001|b", "2|c", "3|d", "4|e"};
-    TajoTestingCluster.createTable("table1", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable("jointable1", schema, tableOptions, data, 1);
 
     data = new String[10000];
     for (int i = 0; i < data.length; i++) {
       data[i] = i + "|" + "this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable" + i;
     }
-    TajoTestingCluster.createTable("table_large", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable("jointable_large", schema, tableOptions, data, 2);
 
     // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
     // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
@@ -199,13 +193,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   protected static void dropCommonTables() throws ServiceException {
-    client.executeQuery("DROP TABLE IF EXISTS table11 PURGE;");
-    client.executeQuery("DROP TABLE IF EXISTS table12 PURGE;");
-    client.executeQuery("DROP TABLE IF EXISTS table13 PURGE;");
-    client.executeQuery("DROP TABLE IF EXISTS table14 PURGE;");
-    client.executeQuery("DROP TABLE IF EXISTS table15 PURGE;");
-    client.executeQuery("DROP TABLE IF EXISTS table1 PURGE");
-    client.executeQuery("DROP TABLE IF EXISTS table_large PURGE");
+    client.executeQuery("DROP TABLE IF EXISTS jointable11 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS jointable12 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS jointable13 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS jointable14 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS jointable15 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS jointable1 PURGE");
+    client.executeQuery("DROP TABLE IF EXISTS jointable_large PURGE");
     client.executeQuery("DROP TABLE IF EXISTS nation_multifile PURGE");
   }
 

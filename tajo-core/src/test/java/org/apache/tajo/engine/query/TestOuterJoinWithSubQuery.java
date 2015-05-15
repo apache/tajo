@@ -74,10 +74,10 @@ public class TestOuterJoinWithSubQuery extends TestJoinQuery {
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
-      @QuerySpec("select a.id, b.id from table11 a " +
+      @QuerySpec("select a.id, b.id from jointable11 a " +
           "left outer join (" +
-          "select table12.id from table12 inner join lineitem " +
-          "on table12.id = lineitem.l_orderkey and table12.id > 10) b " +
+          "select jointable12.id from jointable12 inner join lineitem " +
+          "on jointable12.id = lineitem.l_orderkey and jointable12.id > 10) b " +
           "on a.id = b.id order by a.id")
   })
   public final void testLeftOuterJoinWithEmptySubquery1() throws Exception {
@@ -94,9 +94,9 @@ public class TestOuterJoinWithSubQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select a.id, b.id from " +
-          "(select table12.id, table12.name, lineitem.l_shipdate " +
-          "from table12 inner join lineitem on table12.id = lineitem.l_orderkey and table12.id > 10) a " +
-          "left outer join table11 b on a.id = b.id")
+          "(select jointable12.id, jointable12.name, lineitem.l_shipdate " +
+          "from jointable12 inner join lineitem on jointable12.id = lineitem.l_orderkey and jointable12.id > 10) a " +
+          "left outer join jointable11 b on a.id = b.id")
   })
   public final void testLeftOuterJoinWithEmptySubquery2() throws Exception {
     //Empty Preserved Row table
@@ -125,8 +125,8 @@ public class TestOuterJoinWithSubQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select count(b.id) " +
-          "from (select id, count(*) as cnt from table_large group by id) a " +
-          "left outer join (select id, count(*) as cnt from table_large where id < 200 group by id) b " +
+          "from (select id, count(*) as cnt from jointable_large group by id) a " +
+          "left outer join (select id, count(*) as cnt from jointable_large where id < 200 group by id) b " +
           "on a.id = b.id")
   })
   public void testJoinWithDifferentShuffleKey() throws Exception {

@@ -16,27 +16,27 @@ GROUP_BY(11)()
         => in  schema: {(2) default.b.cnt (INT8), default.b.id (INT4)}
          GROUP_BY(6)(id)
            => exprs: (count())
-           => target list: default.table_large.id (INT4), cnt (INT8)
-           => out schema:{(2) cnt (INT8), default.table_large.id (INT4)}
-           => in schema:{(1) default.table_large.id (INT4)}
-            SCAN(4) on default.table_large
-              => filter: default.table_large.id (INT4) < 200
-              => target list: default.table_large.id (INT4)
-              => out schema: {(1) default.table_large.id (INT4)}
-              => in schema: {(2) default.table_large.id (INT4), default.table_large.name (TEXT)}
+           => target list: default.jointable_large.id (INT4), cnt (INT8)
+           => out schema:{(2) cnt (INT8), default.jointable_large.id (INT4)}
+           => in schema:{(1) default.jointable_large.id (INT4)}
+            SCAN(4) on default.jointable_large
+              => filter: default.jointable_large.id (INT4) < 200
+              => target list: default.jointable_large.id (INT4)
+              => out schema: {(1) default.jointable_large.id (INT4)}
+              => in schema: {(2) default.jointable_large.id (INT4), default.jointable_large.name (TEXT)}
       TABLE_SUBQUERY(3) as default.a
         => Targets: default.a.id (INT4)
         => out schema: {(1) default.a.id (INT4)}
         => in  schema: {(2) default.a.cnt (INT8), default.a.id (INT4)}
          GROUP_BY(1)(id)
            => exprs: (count())
-           => target list: default.table_large.id (INT4), cnt (INT8)
-           => out schema:{(2) cnt (INT8), default.table_large.id (INT4)}
-           => in schema:{(1) default.table_large.id (INT4)}
-            SCAN(0) on default.table_large
-              => target list: default.table_large.id (INT4)
-              => out schema: {(1) default.table_large.id (INT4)}
-              => in schema: {(2) default.table_large.id (INT4), default.table_large.name (TEXT)}
+           => target list: default.jointable_large.id (INT4), cnt (INT8)
+           => out schema:{(2) cnt (INT8), default.jointable_large.id (INT4)}
+           => in schema:{(1) default.jointable_large.id (INT4)}
+            SCAN(0) on default.jointable_large
+              => target list: default.jointable_large.id (INT4)
+              => out schema: {(1) default.jointable_large.id (INT4)}
+              => in schema: {(2) default.jointable_large.id (INT4), default.jointable_large.name (TEXT)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -66,24 +66,24 @@ Block Id: eb_0000000000000_0000_000001 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 1 => 2 (type=HASH_SHUFFLE, key=default.table_large.id (INT4), num=32)
+[q_0000000000000_0000] 1 => 2 (type=HASH_SHUFFLE, key=default.jointable_large.id (INT4), num=32)
 
 GROUP_BY(15)(id)
   => exprs: (count())
-  => target list: default.table_large.id (INT4), ?count_4 (INT8)
-  => out schema:{(2) default.table_large.id (INT4), ?count_4 (INT8)}
-  => in schema:{(1) default.table_large.id (INT4)}
-   SCAN(0) on default.table_large
-     => target list: default.table_large.id (INT4)
-     => out schema: {(1) default.table_large.id (INT4)}
-     => in schema: {(2) default.table_large.id (INT4), default.table_large.name (TEXT)}
+  => target list: default.jointable_large.id (INT4), ?count_4 (INT8)
+  => out schema:{(2) default.jointable_large.id (INT4), ?count_4 (INT8)}
+  => in schema:{(1) default.jointable_large.id (INT4)}
+   SCAN(0) on default.jointable_large
+     => target list: default.jointable_large.id (INT4)
+     => out schema: {(1) default.jointable_large.id (INT4)}
+     => in schema: {(2) default.jointable_large.id (INT4), default.jointable_large.name (TEXT)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000002 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 1 => 2 (type=HASH_SHUFFLE, key=default.table_large.id (INT4), num=32)
+[q_0000000000000_0000] 1 => 2 (type=HASH_SHUFFLE, key=default.jointable_large.id (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 2 => 5 (type=HASH_SHUFFLE, key=default.a.id (INT4), num=32)
@@ -93,42 +93,42 @@ TABLE_SUBQUERY(3) as default.a
   => out schema: {(1) default.a.id (INT4)}
   => in  schema: {(2) default.a.cnt (INT8), default.a.id (INT4)}
    PROJECTION(2)
-     => Targets: default.table_large.id (INT4), cnt (INT8)
-     => out schema: {(2) cnt (INT8), default.table_large.id (INT4)}
-     => in  schema: {(2) cnt (INT8), default.table_large.id (INT4)}
+     => Targets: default.jointable_large.id (INT4), cnt (INT8)
+     => out schema: {(2) cnt (INT8), default.jointable_large.id (INT4)}
+     => in  schema: {(2) cnt (INT8), default.jointable_large.id (INT4)}
       GROUP_BY(1)(id)
         => exprs: (count(?count_4 (INT8)))
-        => target list: default.table_large.id (INT4), cnt (INT8)
-        => out schema:{(2) cnt (INT8), default.table_large.id (INT4)}
-        => in schema:{(2) default.table_large.id (INT4), ?count_4 (INT8)}
+        => target list: default.jointable_large.id (INT4), cnt (INT8)
+        => out schema:{(2) cnt (INT8), default.jointable_large.id (INT4)}
+        => in schema:{(2) default.jointable_large.id (INT4), ?count_4 (INT8)}
          SCAN(16) on eb_0000000000000_0000_000001
-           => out schema: {(2) default.table_large.id (INT4), ?count_4 (INT8)}
-           => in schema: {(2) default.table_large.id (INT4), ?count_4 (INT8)}
+           => out schema: {(2) default.jointable_large.id (INT4), ?count_4 (INT8)}
+           => in schema: {(2) default.jointable_large.id (INT4), ?count_4 (INT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000003 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.table_large.id (INT4), num=32)
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.jointable_large.id (INT4), num=32)
 
 GROUP_BY(17)(id)
   => exprs: (count())
-  => target list: default.table_large.id (INT4), ?count_5 (INT8)
-  => out schema:{(2) default.table_large.id (INT4), ?count_5 (INT8)}
-  => in schema:{(1) default.table_large.id (INT4)}
-   SCAN(4) on default.table_large
-     => filter: default.table_large.id (INT4) < 200
-     => target list: default.table_large.id (INT4)
-     => out schema: {(1) default.table_large.id (INT4)}
-     => in schema: {(2) default.table_large.id (INT4), default.table_large.name (TEXT)}
+  => target list: default.jointable_large.id (INT4), ?count_5 (INT8)
+  => out schema:{(2) default.jointable_large.id (INT4), ?count_5 (INT8)}
+  => in schema:{(1) default.jointable_large.id (INT4)}
+   SCAN(4) on default.jointable_large
+     => filter: default.jointable_large.id (INT4) < 200
+     => target list: default.jointable_large.id (INT4)
+     => out schema: {(1) default.jointable_large.id (INT4)}
+     => in schema: {(2) default.jointable_large.id (INT4), default.jointable_large.name (TEXT)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.table_large.id (INT4), num=32)
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.jointable_large.id (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.b.id (INT4), num=32)
@@ -138,17 +138,17 @@ TABLE_SUBQUERY(8) as default.b
   => out schema: {(1) default.b.id (INT4)}
   => in  schema: {(2) default.b.cnt (INT8), default.b.id (INT4)}
    PROJECTION(7)
-     => Targets: default.table_large.id (INT4), cnt (INT8)
-     => out schema: {(2) cnt (INT8), default.table_large.id (INT4)}
-     => in  schema: {(2) cnt (INT8), default.table_large.id (INT4)}
+     => Targets: default.jointable_large.id (INT4), cnt (INT8)
+     => out schema: {(2) cnt (INT8), default.jointable_large.id (INT4)}
+     => in  schema: {(2) cnt (INT8), default.jointable_large.id (INT4)}
       GROUP_BY(6)(id)
         => exprs: (count(?count_5 (INT8)))
-        => target list: default.table_large.id (INT4), cnt (INT8)
-        => out schema:{(2) cnt (INT8), default.table_large.id (INT4)}
-        => in schema:{(2) default.table_large.id (INT4), ?count_5 (INT8)}
+        => target list: default.jointable_large.id (INT4), cnt (INT8)
+        => out schema:{(2) cnt (INT8), default.jointable_large.id (INT4)}
+        => in schema:{(2) default.jointable_large.id (INT4), ?count_5 (INT8)}
          SCAN(18) on eb_0000000000000_0000_000003
-           => out schema: {(2) default.table_large.id (INT4), ?count_5 (INT8)}
-           => in schema: {(2) default.table_large.id (INT4), ?count_5 (INT8)}
+           => out schema: {(2) default.jointable_large.id (INT4), ?count_5 (INT8)}
+           => in schema: {(2) default.jointable_large.id (INT4), ?count_5 (INT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]

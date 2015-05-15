@@ -1,1 +1,1 @@
-select count(distinct age) as unique_key, max(point) as maximum from table1;
+select count(distinct age) as unique_key, max(point) as maximum from testGroupByWithNullData6;

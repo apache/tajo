@@ -223,10 +223,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2\n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable12 t2\n" +
           "on t1.id = t2.id\n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t1.id = t3.id and t2.id = t3.id")
   })
   public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
@@ -237,12 +237,12 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2\n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable12 t2\n" +
           "on t1.id = t2.id\n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t2.id = t3.id\n" +
-          "inner join table14 t4\n" +
+          "inner join jointable14 t4\n" +
           "on t2.id = t4.id")
   })
   public final void testLeftOuterJoinPredicationCaseByCase2() throws Exception {
@@ -254,12 +254,12 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
-          "from table11 t1\n" +
-          "inner join table14 t4\n" +
+          "from jointable11 t1\n" +
+          "inner join jointable14 t4\n" +
           "on t1.id = t4.id and t4.id > 1\n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t4.id = t3.id and t3.id = 2\n" +
-          "left outer join table12 t2\n" +
+          "left outer join jointable12 t2\n" +
           "on t1.id = t2.id \n" +
           "where t1.id > 1")
   })
@@ -272,10 +272,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2 \n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable12 t2 \n" +
           "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t1.id = t3.id ")
   })
   public final void testLeftOuterJoinPredicationCaseByCase3() throws Exception {
@@ -288,10 +288,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2\n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable12 t2\n" +
           "on t1.id = t2.id and t2.id > 1 \n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t1.id = t3.id")
   })
   public final void testLeftOuterJoinPredicationCaseByCase4() throws Exception {
@@ -304,10 +304,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2\n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable12 t2\n" +
           "on t1.id = t2.id\n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t1.id = t3.id\n" +
           "where t1.name > 'table11-1'")
   })
@@ -321,10 +321,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "left outer join table12 t2\n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable12 t2\n" +
           "on t1.id = t2.id\n" +
-          "left outer join table13 t3\n" +
+          "left outer join jointable13 t3\n" +
           "on t1.id = t3.id\n" +
           "where t3.id > 2")
   })
@@ -338,8 +338,8 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id\n" +
-          "from table11 t1\n" +
-          "left outer join table15 t2\n" +
+          "from jointable11 t1\n" +
+          "left outer join jointable15 t2\n" +
           "on t1.id = t2.id")
   })
   public final void testLeftOuterWithEmptyTable() throws Exception {
@@ -353,10 +353,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "right outer join table12 t2\n" +
+          "from jointable11 t1\n" +
+          "right outer join jointable12 t2\n" +
           "on t1.id = t2.id\n" +
-          "right outer join table13 t3\n" +
+          "right outer join jointable13 t3\n" +
           "on t1.id = t3.id and t2.id = t3.id")
   })
   public final void testRightOuterJoinPredicationCaseByCase1() throws Exception {
@@ -368,10 +368,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
-          "from table11 t1\n" +
-          "inner join table14 t4\n" +
+          "from jointable11 t1\n" +
+          "inner join jointable14 t4\n" +
           "on t1.id = t4.id and t4.id > 1\n" +
-          "right outer join table13 t3\n" +
+          "right outer join jointable13 t3\n" +
           "on t4.id = t3.id and t3.id = 2\n" +
           "where t3.id > 1")
   })
@@ -387,10 +387,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
-          "from table11 t1\n" +
-          "right outer join table12 t2 \n" +
+          "from jointable11 t1\n" +
+          "right outer join jointable12 t2 \n" +
           "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
-          "right outer join table13 t3\n" +
+          "right outer join jointable13 t3\n" +
           "on t1.id = t3.id ")
   })
   public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
@@ -402,10 +402,10 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
-          "from table11 t1\n" +
-          "full outer join table13 t3\n" +
+          "from jointable11 t1\n" +
+          "full outer join jointable13 t3\n" +
           "on t1.id = t3.id\n" +
-          "full outer join table14 t4\n" +
+          "full outer join jointable14 t4\n" +
           "on t3.id = t4.id \n" +
           "order by t4.id")
   })
@@ -440,7 +440,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
-      @QuerySpec("select a.id, b.name from table1 a left outer join table_large b on a.id = b.id order by a.id")
+      @QuerySpec("select a.id, b.name from jointable1 a left outer join jointable_large b on a.id = b.id order by a.id")
   })
   public final void testLeftOuterJoinLeftSideSmallTable() throws Exception {
    runSimpleTests();

@@ -497,12 +497,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
     String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5" };
-    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable("testNowInMultipleTasks".toLowerCase(), schema, tableOptions, data, 2);
 
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
 
-      ResultSet res = executeString("select concat(substr(to_char(now(),'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
+      ResultSet res = executeString("select concat(substr(to_char(now(),'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) " +
+          "from testNowInMultipleTasks");
 
       String nowValue = null;
       int numRecords = 0;
@@ -518,7 +519,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
       res.close();
 
-      res = executeString("select concat(substr(to_char(current_timestamp,'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) from table11");
+      res = executeString("select concat(substr(to_char(current_timestamp,'yyyymmddhh24miss'), 1, 14), 'aaa'), sleep(1) " +
+          "from testNowInMultipleTasks");
 
       nowValue = null;
       numRecords = 0;
@@ -534,7 +536,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname,
           ConfVars.$TEST_MIN_TASK_NUM.defaultVal);
-      executeString("DROP TABLE table11 PURGE");
+      executeString("DROP TABLE testNowInMultipleTasks PURGE");
     }
   }
 
