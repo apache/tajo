@@ -123,6 +123,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1605: Fix master build failure on jdk 1.6. (jinho)
+
     TAJO-1485: Datum 'Char' returned only 1byte.
     (Contributed by DaeMyung Kang, Committed by jihoon)
 
