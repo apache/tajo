@@ -39,6 +39,8 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1605: Fix master build failure on jdk 1.6. (jinho)
+
     TAJO-1586: TajoMaster HA startup failure on Yarn. (jaehwa)
 
     TAJO-1485: Datum 'Char' returned only 1byte.

@@ -76,12 +76,12 @@ public class WorkerHeartbeatService extends AbstractService {
     this.systemConf = (TajoConf) conf;
 
     this.connectionManager = RpcClientManager.getInstance();
+    thread = new WorkerHeartbeatThread();
     super.serviceInit(conf);
   }
 
   @Override
   public void serviceStart() throws Exception {
-    thread = new WorkerHeartbeatThread();
     thread.start();
     super.serviceStart();
   }
