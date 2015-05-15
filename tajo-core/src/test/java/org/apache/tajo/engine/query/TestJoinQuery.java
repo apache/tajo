@@ -53,7 +53,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestJoinQuery extends QueryTestCaseBase {
-//  private static AtomicInteger reference = new AtomicInteger(0);
   private static final Log LOG = LogFactory.getLog(TestJoinQuery.class);
   private static int reference = 0;
 
@@ -106,7 +105,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   public static void setup() throws Exception {
-//    if (reference.incrementAndGet() == 1) {
     if (reference++ == 0) {
       createCommonTables();
     }
@@ -126,8 +124,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
         ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
-
-//    if (reference.decrementAndGet() == 0) {
+    
     if (--reference == 0) {
       dropCommonTables();
     }
