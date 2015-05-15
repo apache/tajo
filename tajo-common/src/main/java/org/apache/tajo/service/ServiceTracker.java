@@ -18,46 +18,54 @@
 
 package org.apache.tajo.service;
 
+import org.apache.tajo.conf.TajoConf;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 
 public interface ServiceTracker {
 
-  public abstract boolean isHighAvailable();
+  boolean isHighAvailable();
 
-  public abstract InetSocketAddress getUmbilicalAddress() throws ServiceTrackerException;
+  InetSocketAddress getUmbilicalAddress() throws ServiceTrackerException;
 
-  public abstract InetSocketAddress getClientServiceAddress() throws ServiceTrackerException;
+  InetSocketAddress getClientServiceAddress() throws ServiceTrackerException;
 
-  public abstract InetSocketAddress getResourceTrackerAddress() throws ServiceTrackerException;
+  InetSocketAddress getResourceTrackerAddress() throws ServiceTrackerException;
 
-  public abstract InetSocketAddress getCatalogAddress() throws ServiceTrackerException;
+  InetSocketAddress getCatalogAddress() throws ServiceTrackerException;
 
-  public abstract InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException;
+  InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException;
+
+  int getState(String masterName, TajoConf conf) throws ServiceTrackerException;
+
+  int formatHA(TajoConf conf) throws ServiceTrackerException;
+
+  List<String> getMasters(TajoConf conf) throws ServiceTrackerException;
 
   /**
    * Add master name to shared storage.
    */
-  public void register() throws IOException;
+  void register() throws IOException;
 
 
   /**
    * Delete master name to shared storage.
    *
    */
-  public void delete() throws IOException;
+  void delete() throws IOException;
 
   /**
    *
    * @return True if current master is an active master.
    */
-  public boolean isActiveStatus();
+  boolean isActiveMaster();
 
   /**
    *
    * @return return all master list
    * @throws IOException
    */
-  public List<TajoMasterInfo> getMasters() throws IOException;
+  List<TajoMasterInfo> getMasters() throws IOException;
 }

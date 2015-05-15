@@ -318,24 +318,17 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
-       //for this small data set this is not likely to happen
-      
-      assertEquals(1, 0);
+    Tuple tuple;
+    int count = 0;
+    int i = 1;
+    exec.init();
+
+    while ((tuple = exec.next()) != null) {
+      //TODO check contents
+      count = count + 1;
     }
-    else{
-       Tuple tuple;
-       int count = 0;
-       int i = 1;
-       exec.init();
-  
-       while ((tuple = exec.next()) != null) {
-         //TODO check contents
-         count = count + 1;
-       }
-       exec.close();
-       assertEquals(5, count);
-    }
+    exec.close();
+    assertEquals(5, count);
   }
 
     @Test
@@ -360,24 +353,17 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
-      //for this small data set this is not likely to happen
-      
-      assertEquals(1, 0);
+    Tuple tuple;
+    int count = 0;
+    int i = 1;
+    exec.init();
+
+    while ((tuple = exec.next()) != null) {
+      //TODO check contents
+      count = count + 1;
     }
-    else{
-       Tuple tuple;
-       int count = 0;
-       int i = 1;
-       exec.init();
-  
-       while ((tuple = exec.next()) != null) {
-         //TODO check contents
-         count = count + 1;
-       }
-       exec.close();
-       assertEquals(7, count);
-    }
+    exec.close();
+    assertEquals(7, count);
   }
 
 
@@ -402,24 +388,17 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
-      //for this small data set this is not likely to happen
-      
-      assertEquals(1, 0);
+    Tuple tuple;
+    int count = 0;
+    int i = 1;
+    exec.init();
+
+    while ((tuple = exec.next()) != null) {
+      //TODO check contents
+      count = count + 1;
     }
-    else{
-       Tuple tuple;
-       int count = 0;
-       int i = 1;
-       exec.init();
-  
-       while ((tuple = exec.next()) != null) {
-         //TODO check contents
-         count = count + 1;
-       }
-       exec.close();
-       assertEquals(7, count);
-    }
+    exec.close();
+    assertEquals(7, count);
   }
 
   
@@ -444,22 +423,15 @@ public class TestLeftOuterHashJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
-    if (proj.getChild() instanceof NLLeftOuterJoinExec) {
-      //for this small data set this is not likely to happen
-      
-      assertEquals(1, 0);
+    int count = 0;
+    exec.init();
+
+    while (exec.next() != null) {
+      //TODO check contents
+      count = count + 1;
     }
-    else{
-       int count = 0;
-       exec.init();
-  
-       while (exec.next() != null) {
-         //TODO check contents
-         count = count + 1;
-       }
-       exec.close();
-       assertEquals(0, count);
-    }
+    exec.close();
+    assertEquals(0, count);
   }
   
 

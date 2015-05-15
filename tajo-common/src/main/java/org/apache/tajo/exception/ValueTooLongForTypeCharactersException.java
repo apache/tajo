@@ -16,13 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ha;
+package org.apache.tajo.exception;
 
-public class HAConstants {
-  public final static int MASTER_UMBILICAL_RPC_ADDRESS = 1;
-  public final static int MASTER_CLIENT_RPC_ADDRESS = 2;
-  public final static int RESOURCE_TRACKER_RPC_ADDRESS = 3;
-  public final static int CATALOG_ADDRESS = 4;
-  public final static int MASTER_INFO_ADDRESS = 5;
-  public final static String ACTIVE_LOCK_FILE = "active.lock";
+public class ValueTooLongForTypeCharactersException extends RuntimeException {
+  private static final long serialVersionUID = -7689027447969916150L;
+
+  public ValueTooLongForTypeCharactersException(int size) {
+    super("value too long for type character(" + size + ")");
+  }
 }

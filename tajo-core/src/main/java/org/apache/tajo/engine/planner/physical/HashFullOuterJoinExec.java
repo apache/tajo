@@ -18,101 +18,59 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
+import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
 
+public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List<Tuple>>> {
 
-public class HashFullOuterJoinExec extends CommonJoinExec {
-
-  protected List<Column[]> joinKeyPairs;
-
-  // temporal tuples and states for nested loop join
-  protected boolean first = true;
-  protected FrameTuple frameTuple;
-  protected Tuple outTuple = null;
-  protected Map<Tuple, List<Tuple>> tupleSlots;
-  protected Iterator<Tuple> iterator = null;
-  protected Tuple leftTuple;
-  protected Tuple leftKeyTuple;
-
-  protected int [] leftKeyList;
-  protected int [] rightKeyList;
-
-  protected boolean finished = false;
-  protected boolean shouldGetLeftTuple = true;
-
-  private int rightNumCols;
-  private int leftNumCols;
-  private Map<Tuple, Boolean> matched;
+  private boolean finalLoop; // final loop for right unmatched
 
   public HashFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                PhysicalExec inner) {
     super(context, plan, outer, inner);
-    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
-
-    // this hashmap mirrors the evolution of the tupleSlots, with the same keys. For each join key,
-    // we have a boolean flag, initially false (whether this join key had at least one match on the left operand)
-    this.matched = new HashMap<Tuple, Boolean>(10000);
-
-    // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(), inner.getSchema(),
-        false);
-
-    leftKeyList = new int[joinKeyPairs.size()];
-    rightKeyList = new int[joinKeyPairs.size()];
-
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      leftKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
-    }
-
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
-    }
-
-    // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
-    leftKeyTuple = new VTuple(leftKeyList.length);
-
-    leftNumCols = outer.getSchema().size();
-    rightNumCols = inner.getSchema().size();
   }
 
-  protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
-    for (int i = 0; i < leftKeyList.length; i++) {
-      keyTuple.put(i, outerTuple.get(leftKeyList[i]));
-    }
-  }
+  public Iterator<Tuple> getUnmatchedRight() {
 
-  public Tuple getNextUnmatchedRight() {
+    return new Iterator<Tuple>() {
 
-    List<Tuple> newValue;
-    Tuple returnedTuple;
-    // get a keyTUple from the matched hashmap with a boolean false value
-    for(Tuple aKeyTuple : matched.keySet()) {
-      if(matched.get(aKeyTuple) == false) {
-        newValue = tupleSlots.get(aKeyTuple);
-        returnedTuple = newValue.remove(0);
-        tupleSlots.put(aKeyTuple, newValue);
+      private Iterator<Pair<Boolean, List<Tuple>>> iterator1 = tupleSlots.values().iterator();
+      private Iterator<Tuple> iterator2;
 
-        // after taking the last element from the list in tupleSlots, set flag true in matched as well
-        if(newValue.isEmpty()){
-          matched.put(aKeyTuple, true);
+      @Override
+      public boolean hasNext() {
+        if (hasMore()) {
+          return true;
         }
-
-        return returnedTuple;
+        for (iterator2 = null; !hasMore() && iterator1.hasNext();) {
+          Pair<Boolean, List<Tuple>> next = iterator1.next();
+          if (!next.getFirst()) {
+            iterator2 = next.getSecond().iterator();
+          }
+        }
+        return hasMore();
       }
-    }
-    return null;
+
+      private boolean hasMore() {
+        return iterator2 != null && iterator2.hasNext();
+      }
+
+      @Override
+      public Tuple next() {
+        return iterator2.next();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
+    };
   }
 
   public Tuple next() throws IOException {
@@ -120,112 +78,67 @@ public class HashFullOuterJoinExec extends CommonJoinExec {
       loadRightToHashTable();
     }
 
-    Tuple rightTuple;
-    boolean found = false;
-
-    while(!context.isStopped() && !finished) {
-      if (shouldGetLeftTuple) { // initially, it is true.
-        // getting new outer
-        leftTuple = leftChild.next(); // it comes from a disk
-        if (leftTuple == null) { // if no more tuples in left tuples on disk, a join is completed.
-          // in this stage we can begin outputing tuples from the right operand (which were before in tupleSlots) null padded on the left side
-          Tuple unmatchedRightTuple = getNextUnmatchedRight();
-          if( unmatchedRightTuple == null) {
-            finished = true;
-            outTuple = null;
-            return null;
-          } else {
-            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-            frameTuple.set(nullPaddedTuple, unmatchedRightTuple);
-            projector.eval(frameTuple, outTuple);
-
-            return outTuple;
-          }
-        }
-
-        // getting corresponding right
-        getKeyLeftTuple(leftTuple, leftKeyTuple); // get a left key tuple
-        List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
-        if (rightTuples != null) { // found right tuples on in-memory hash table.
-          iterator = rightTuples.iterator();
-          shouldGetLeftTuple = false;
-        } else {
-          //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway
-          //output a tuple with the nulls padded rightTuple
-          Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-          frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(frameTuple, outTuple);
-          // we simulate we found a match, which is exactly the null padded one
-          shouldGetLeftTuple = true;
-          return outTuple;
-        }
-      }
-
-      // getting a next right tuple on in-memory hash table.
-      rightTuple = iterator.next();
-      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-
-      if (joinQual.eval(frameTuple).isTrue()) { // if both tuples are joinable
+    while (!context.isStopped() && !finished) {
+      if (iterator != null && iterator.hasNext()) {
+        frameTuple.setRight(iterator.next());
         projector.eval(frameTuple, outTuple);
-        found = true;
-        getKeyLeftTuple(leftTuple, leftKeyTuple);
-        matched.put(leftKeyTuple, true);
+        return outTuple;
       }
+      if (finalLoop) {
+        finished = true;
+        return null;
+      }
+      Tuple leftTuple = leftChild.next();
+      if (leftTuple == null) {
+      // if no more tuples in left tuples, a join is completed.
+        // in this stage we can begin outputing tuples from the right operand (which were before in tupleSlots) null padded on the left side
+        frameTuple.setLeft(NullTuple.create(leftNumCols));
+        iterator = getUnmatchedRight();
+        finalLoop = true;
+        continue;
+      }
+      frameTuple.setLeft(leftTuple);
 
-      if (!iterator.hasNext()) { // no more right tuples for this hash key
-        shouldGetLeftTuple = true;
+      if (leftFiltered(leftTuple)) {
+        iterator = nullIterator(rightNumCols);
+        continue;
       }
-
-      if (found) {
-        break;
+      // getting corresponding right
+      Pair<Boolean, List<Tuple>> hashed = tupleSlots.get(toKey(leftTuple));
+      if (hashed == null) {
+        iterator = nullIterator(rightNumCols);
+        continue;
       }
+      Iterator<Tuple> rightTuples = rightFiltered(hashed.getSecond());
+      if (!rightTuples.hasNext()) {
+        iterator = nullIterator(rightNumCols);
+        continue;
+      }
+      iterator = rightTuples;
+      hashed.setFirst(true);   // match found
     }
-    return outTuple;
+
+    return null;
   }
 
-  protected void loadRightToHashTable() throws IOException {
-    Tuple tuple;
-    Tuple keyTuple;
-
-    while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-      keyTuple = new VTuple(joinKeyPairs.size());
-      for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(rightKeyList[i]));
-      }
-
-      List<Tuple> newValue = tupleSlots.get(keyTuple);
-      if (newValue != null) {
-        newValue.add(tuple);
-      } else {
-        newValue = new ArrayList<Tuple>();
-        newValue.add(tuple);
-        tupleSlots.put(keyTuple, newValue);
-        matched.put(keyTuple,false);
-      }
+  @Override
+  protected Map<Tuple, Pair<Boolean, List<Tuple>>> convert(Map<Tuple, List<Tuple>> hashed,
+                                                           boolean fromCache) throws IOException {
+    Map<Tuple, Pair<Boolean, List<Tuple>>> tuples = new HashMap<Tuple, Pair<Boolean, List<Tuple>>>(hashed.size());
+    for (Map.Entry<Tuple, List<Tuple>> entry : hashed.entrySet()) {
+      // flag: initially false (whether this join key had at least one match on the counter part)
+      tuples.put(entry.getKey(), new Pair<Boolean, List<Tuple>>(false, entry.getValue()));
     }
-    first = false;
+    return tuples;
   }
 
   @Override
   public void rescan() throws IOException {
     super.rescan();
-
-    tupleSlots.clear();
-    first = true;
-
-    finished = false;
-    iterator = null;
-    shouldGetLeftTuple = true;
-  }
-
-  @Override
-  public void close() throws IOException {
-    super.close();
-    tupleSlots.clear();
-    matched.clear();
-    tupleSlots = null;
-    matched = null;
-    iterator = null;
+    for (Pair<Boolean, List<Tuple>> value : tupleSlots.values()) {
+      value.setFirst(false);
+    }
+    finalLoop = false;
   }
 }
 
