@@ -18,17 +18,13 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Int4Datum;
-import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -52,26 +48,28 @@ import static org.junit.Assert.assertTrue;
 @NamedTest("TestJoinQuery")
 public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
-  private static boolean flag = false;
-
   public TestJoinOnPartitionedTables(String joinOption) throws Exception {
     super(joinOption);
-
-    if (!flag) {
-      executeDDL("partitioned_customer_ddl.sql", null);
-      executeFile("insert_into_customer.sql");
-
-      executeString("create table nation_partitioned (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
-      executeString("insert overwrite into nation_partitioned select n_name, n_nationkey, n_regionkey from nation");
-      addEmptyDataFile("nation_partitioned", true);
-//      flag = true;
-    }
   }
 
-  @After
-  public void tearDown() throws Exception {
-    executeString("DROP TABLE customer_parts PURGE");
-    executeString("DROP TABLE nation_partitioned PURGE");
+  @BeforeClass
+  public static void setup() throws Exception {
+    TestJoinQuery.setup();
+    client.executeQuery("CREATE TABLE if not exists customer_parts " +
+        "(c_custkey INT4, c_name TEXT, c_address TEXT, c_phone TEXT, c_acctbal FLOAT8, c_mktsegment TEXT, c_comment TEXT) " +
+        "PARTITION BY COLUMN (c_nationkey INT4) as " +
+        "SELECT c_custkey, c_name, c_address, c_phone, c_acctbal, c_mktsegment, c_comment, c_nationkey FROM customer;");
+    client.executeQueryAndGetResult("create table if not exists nation_partitioned (n_name text) " +
+        "partition by column(n_nationkey int4, n_regionkey int4) " +
+        "as select n_name, n_nationkey, n_regionkey from nation");
+    addEmptyDataFile("nation_partitioned", true);
+  }
+
+  @AfterClass
+  public static void classTearDown() throws ServiceException {
+    TestJoinQuery.classTearDown();
+    client.executeQuery("DROP TABLE IF EXISTS customer_parts PURGE");
+    client.executeQuery("DROP TABLE IF EXISTS nation_partitioned PURGE");
   }
 
   @Test
@@ -157,15 +155,12 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   public final void testCasebyCase1() throws Exception {
     // Left outer join with a small table and a large partition table which not matched any partition path.
     String tableName = CatalogUtil.normalizeIdentifier("largePartitionedTable");
-    testBase.execute(
+    executeString(
         "create table " + tableName + " (l_partkey int4, l_suppkey int4, l_linenumber int4, \n" +
             "l_quantity float8, l_extendedprice float8, l_discount float8, l_tax float8, \n" +
             "l_returnflag text, l_linestatus text, l_shipdate text, l_commitdate text, \n" +
             "l_receiptdate text, l_shipinstruct text, l_shipmode text, l_comment text) \n" +
             "partition by column(l_orderkey int4) ").close();
-    TajoTestingCluster cluster = testBase.getTestingCluster();
-    CatalogService catalog = cluster.getMaster().getCatalog();
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
     try {
       executeString("insert overwrite into " + tableName +
@@ -333,35 +328,12 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     ResultSet res = executeFile("insert_into_customer_partition.sql");
     res.close();
 
-//    createMultiFile("nation", 2, new TupleCreator() {
-//      public Tuple createTuple(String[] columnDatas) {
-//        return new VTuple(new Datum[]{
-//            new Int4Datum(Integer.parseInt(columnDatas[0])),
-//            new TextDatum(columnDatas[1]),
-//            new Int4Datum(Integer.parseInt(columnDatas[2])),
-//            new TextDatum(columnDatas[3])
-//        });
-//      }
-//    });
-
-    createMultiFile("orders", 1, new TupleCreator() {
-      public Tuple createTuple(String[] columnDatas) {
-        return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new Int4Datum(Integer.parseInt(columnDatas[1])),
-            new TextDatum(columnDatas[2])
-        });
-      }
-    });
-
     try {
       res = executeQuery();
       assertResultSet(res);
       res.close();
     } finally {
       executeString("DROP TABLE customer_broad_parts PURGE");
-//      executeString("DROP TABLE nation_multifile PURGE");
-      executeString("DROP TABLE orders_multifile PURGE");
     }
   }
 }

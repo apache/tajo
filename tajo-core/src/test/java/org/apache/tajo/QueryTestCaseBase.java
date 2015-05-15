@@ -441,9 +441,6 @@ public class QueryTestCaseBase {
       queries = new QuerySpec[] {new DummyQuerySpec(parsedResults.get(i).getHistoryStatement(), null)};
       fromFile = true;  // do not append query index to result file
     }
-
-    // Enable this option to fix the shape of the generated plans.
-    testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
     
     try {
       for (String prepare : prepares) {
@@ -453,12 +450,15 @@ public class QueryTestCaseBase {
         QuerySpec spec = queries[i];
         Option option = spec.override() ? spec.option() : defaultOption;
         String prefix = "";
-        if (option.withExplain()) {
+        testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
+        if (option.withExplain()) {// Enable this option to fix the shape of the generated plans.
           prefix += resultSetToString(executeString("explain " + spec.value()));
         }
         if (option.withExplainGlobal()) {
+          // Enable this option to fix the shape of the generated plans.
           prefix += resultSetToString(executeString("explain global " + spec.value()));
         }
+        testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
         ResultSet result = client.executeQueryAndGetResult(spec.value());
 
         String fileName = methodName + (fromFile ? "" : "." + (i + 1)) +
@@ -476,7 +476,6 @@ public class QueryTestCaseBase {
         result.close();
       }
     } finally {
-      testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
       for (String cleanup : annotation.cleanup()) {
         try {
           client.executeQueryAndGetResult(cleanup).close();

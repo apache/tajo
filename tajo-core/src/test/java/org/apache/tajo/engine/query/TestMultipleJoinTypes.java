@@ -18,17 +18,16 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import java.sql.ResultSet;
-
-import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
@@ -37,6 +36,16 @@ public class TestMultipleJoinTypes extends TestJoinQuery {
 
   public TestMultipleJoinTypes(String joinOption) throws Exception {
     super(joinOption);
+  }
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    TestJoinQuery.setup();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws ServiceException {
+    TestJoinQuery.tearDownClass();
   }
 
   @Test

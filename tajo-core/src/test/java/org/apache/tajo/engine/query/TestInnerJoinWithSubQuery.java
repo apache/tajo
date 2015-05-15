@@ -18,8 +18,11 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -34,6 +37,16 @@ public class TestInnerJoinWithSubQuery extends TestJoinQuery {
 
   public TestInnerJoinWithSubQuery(String joinOption) throws Exception {
     super(joinOption);
+  }
+
+  @BeforeClass
+  public static void setup() throws Exception {
+    TestJoinQuery.setup();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws ServiceException {
+    TestJoinQuery.tearDownClass();
   }
 
   @Test

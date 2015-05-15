@@ -7,7 +7,7 @@ select
 from
   customer_broad_parts,
   nation_multifile,
-  orders_multifile
+  orders
 where
   c_nationkey = n_nationkey
 and

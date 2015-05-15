@@ -18,12 +18,15 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -36,6 +39,10 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
@@ -44,13 +51,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestJoinQuery extends QueryTestCaseBase {
-
-  protected static boolean flag = false;
+  private static AtomicInteger reference = new AtomicInteger(0);
 
   public TestJoinQuery(String joinOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
@@ -104,109 +111,135 @@ public class TestJoinQuery extends QueryTestCaseBase {
     });
   }
 
-  @AfterClass
-  public static void classTearDown() {
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
-        ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
-        ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
-
-    testingCluster.setAllTajoDaemonConfValue(
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
-
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
-  }
-
-  protected void createAdditionalTables() throws Exception {
-    if (!flag) {
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-      Schema schema = new Schema();
-      schema.addColumn("id", TajoDataTypes.Type.INT4);
-      schema.addColumn("name", TajoDataTypes.Type.TEXT);
-      String[] data = new String[]{"1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5"};
-      TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
-
-      schema = new Schema();
-      schema.addColumn("id", TajoDataTypes.Type.INT4);
-      schema.addColumn("name", TajoDataTypes.Type.TEXT);
-      data = new String[]{"1|table12-1", "2|table12-2"};
-      TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
-
-      schema = new Schema();
-      schema.addColumn("id", TajoDataTypes.Type.INT4);
-      schema.addColumn("name", TajoDataTypes.Type.TEXT);
-      data = new String[]{"2|table13-2", "3|table13-3"};
-      TajoTestingCluster.createTable("table13", schema, tableOptions, data);
-
-      schema = new Schema();
-      schema.addColumn("id", TajoDataTypes.Type.INT4);
-      schema.addColumn("name", TajoDataTypes.Type.TEXT);
-      data = new String[]{"1|table14-1", "2|table14-2", "3|table14-3", "4|table14-4"};
-      TajoTestingCluster.createTable("table14", schema, tableOptions, data);
-
-      schema = new Schema();
-      schema.addColumn("id", TajoDataTypes.Type.INT4);
-      schema.addColumn("name", TajoDataTypes.Type.TEXT);
-      data = new String[]{};
-      TajoTestingCluster.createTable("table15", schema, tableOptions, data);
-
-      schema = new Schema();
-      schema.addColumn("id", TajoDataTypes.Type.INT4);
-      schema.addColumn("name", TajoDataTypes.Type.TEXT);
-      data = new String[]{"1000000|a", "1000001|b", "2|c", "3|d", "4|e"};
-      TajoTestingCluster.createTable("table1", schema, tableOptions, data, 1);
-
-      data = new String[10000];
-      for (int i = 0; i < data.length; i++) {
-        data[i] = i + "|" + "this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable" + i;
-      }
-      TajoTestingCluster.createTable("table_large", schema, tableOptions, data, 2);
-
-      // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
-      // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
-      createMultiFile("nation", 2, new TupleCreator() {
-        public Tuple createTuple(String[] columnDatas) {
-          return new VTuple(new Datum[]{
-              new Int4Datum(Integer.parseInt(columnDatas[0])),
-              new TextDatum(columnDatas[1]),
-              new Int4Datum(Integer.parseInt(columnDatas[2])),
-              new TextDatum(columnDatas[3])
-          });
-        }
-      });
-      addEmptyDataFile("nation_multifile", false);
-      flag = true;
+  public static void setup() throws Exception {
+    if (reference.incrementAndGet() == 1) {
+      createCommonTables();
     }
   }
 
-  protected void dropAdditionalTables() throws Exception {
-//    if (flag) {
-//      executeString("DROP TABLE table11 PURGE;");
-//      executeString("DROP TABLE table12 PURGE;");
-//      executeString("DROP TABLE table13 PURGE;");
-//      executeString("DROP TABLE table14 PURGE;");
-//      executeString("DROP TABLE table15 PURGE;");
-//      executeString("DROP TABLE table1 PURGE");
-//      executeString("DROP TABLE table_large PURGE");
-//      executeString("DROP TABLE nation_multifile PURGE");
-//    }
+  public static void classTearDown() throws ServiceException {
+    if (reference.decrementAndGet() == 0) {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+          ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
+          ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
+
+      testingCluster.setAllTajoDaemonConfValue(
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+      dropCommonTables();
+    }
+  }
+
+  protected static void createCommonTables() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    String[] data = new String[]{"1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5"};
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 2);
+
+    schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    data = new String[]{"1|table12-1", "2|table12-2"};
+    TajoTestingCluster.createTable("table12", schema, tableOptions, data, 2);
+
+    schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    data = new String[]{"2|table13-2", "3|table13-3"};
+    TajoTestingCluster.createTable("table13", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    data = new String[]{"1|table14-1", "2|table14-2", "3|table14-3", "4|table14-4"};
+    TajoTestingCluster.createTable("table14", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    data = new String[]{};
+    TajoTestingCluster.createTable("table15", schema, tableOptions, data);
+
+    schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    data = new String[]{"1000000|a", "1000001|b", "2|c", "3|d", "4|e"};
+    TajoTestingCluster.createTable("table1", schema, tableOptions, data, 1);
+
+    data = new String[10000];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = i + "|" + "this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable" + i;
+    }
+    TajoTestingCluster.createTable("table_large", schema, tableOptions, data, 2);
+
+    // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
+    // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+    addEmptyDataFile("nation_multifile", false);
+  }
+
+  protected static void dropCommonTables() throws ServiceException {
+    client.executeQuery("DROP TABLE IF EXISTS table11 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS table12 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS table13 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS table14 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS table15 PURGE;");
+    client.executeQuery("DROP TABLE IF EXISTS table1 PURGE");
+    client.executeQuery("DROP TABLE IF EXISTS table_large PURGE");
+    client.executeQuery("DROP TABLE IF EXISTS nation_multifile PURGE");
   }
 
   interface TupleCreator {
     Tuple createTuple(String[] columnDatas);
   }
 
-  protected void createMultiFile(String tableName, int numRowsEachFile, TupleCreator tupleCreator) throws Exception {
+  private static String buildSchemaString(String tableName) throws ServiceException {
+    TableDesc desc = client.getTableDesc(tableName);
+    StringBuffer sb = new StringBuffer();
+    for (Column column : desc.getSchema().getRootColumns()) {
+      sb.append(column.getSimpleName()).append(" ").append(column.getDataType().getType());
+      TajoDataTypes.DataType dataType = column.getDataType();
+      if (dataType.getLength() > 0) {
+        sb.append("(").append(dataType.getLength()).append(")");
+      }
+      sb.append(",");
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
+  }
+
+  private static String buildMultifileDDlString(String tableName) throws ServiceException {
+    String multiTableName = tableName + "_multifile";
+    StringBuilder sb = new StringBuilder("create table ").append(multiTableName).append(" (");
+    sb.append(buildSchemaString(tableName)).append(" )");
+    return sb.toString();
+  }
+
+  protected static void createMultiFile(String tableName, int numRowsEachFile, TupleCreator tupleCreator) throws Exception {
     // make multiple small file
     String multiTableName = tableName + "_multifile";
-    executeDDL(multiTableName + "_ddl.sql", null);
+    String sql = buildMultifileDDlString(tableName);
+    client.executeQueryAndGetResult(sql);
 
     TableDesc table = client.getTableDesc(multiTableName);
     assertNotNull(table);
@@ -246,7 +279,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     appender.close();
   }
 
-  protected void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {
+  protected static void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {
     TableDesc table = client.getTableDesc(tableName);
 
     Path path = new Path(table.getPath());
@@ -265,7 +298,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
   }
 
-  protected List<Path> getPartitionPathList(FileSystem fs, Path path) throws Exception {
+  protected static List<Path> getPartitionPathList(FileSystem fs, Path path) throws Exception {
     FileStatus[] files = fs.listStatus(path);
     List<Path> paths = new ArrayList<Path>();
     if (files != null) {
