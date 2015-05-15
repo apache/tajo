@@ -55,7 +55,7 @@ public abstract class HAServiceTracker implements ServiceTracker {
 
       socket = socketFactory.createSocket();
       NetUtils.connect(socket, address, connectionTimeout);
-    } catch (IOException e) {
+    } catch (Exception e) {
       isAlive = false;
     } finally {
       if (socket != null) {
