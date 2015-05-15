@@ -45,8 +45,8 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @AfterClass
-  public static void tearDownClass() throws ServiceException {
-    TestJoinQuery.tearDownClass();
+  public static void classTearDown() throws ServiceException {
+    TestJoinQuery.classTearDown();
   }
 
   @Test

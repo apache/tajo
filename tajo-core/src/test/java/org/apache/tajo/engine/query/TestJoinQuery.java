@@ -19,6 +19,8 @@
 package org.apache.tajo.engine.query;
 
 import com.google.protobuf.ServiceException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -51,7 +53,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestJoinQuery extends QueryTestCaseBase {
-  private static AtomicInteger reference = new AtomicInteger(0);
+//  private static AtomicInteger reference = new AtomicInteger(0);
+  private static final Log LOG = LogFactory.getLog(TestJoinQuery.class);
+  private static int reference = 0;
 
   public TestJoinQuery(String joinOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
@@ -106,31 +110,36 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   public static void setup() throws Exception {
-    if (reference.incrementAndGet() == 1) {
+//    if (reference.incrementAndGet() == 1) {
+    if (reference++ == 0) {
       createCommonTables();
     }
   }
 
   public static void classTearDown() throws ServiceException {
-    if (reference.decrementAndGet() == 0) {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
-          ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
-          ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+        ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
+        ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
 
-      testingCluster.setAllTajoDaemonConfValue(
-          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
 
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-          ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+
+//    if (reference.decrementAndGet() == 0) {
+    if (--reference == 0) {
       dropCommonTables();
     }
   }
 
   protected static void createCommonTables() throws Exception {
+    LOG.info("Create common tables for join tests");
+
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -193,6 +202,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   protected static void dropCommonTables() throws ServiceException {
+    LOG.info("Clear common tables for join tests");
+
     client.executeQuery("DROP TABLE IF EXISTS jointable11 PURGE;");
     client.executeQuery("DROP TABLE IF EXISTS jointable12 PURGE;");
     client.executeQuery("DROP TABLE IF EXISTS jointable13 PURGE;");
