@@ -24,9 +24,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1607: Tajo Rest Cache-Id should be bigger than zero. (Contributed by 
+    DaeMyoung Kang, Committed by hyunsik)
+
     TAJO-1603: Refactor StorageManager. (hyunsik)
 
-    TAJO-1542: Refactoring of HashJoinExecs. (Contributed Navis, Committed by 
+    TAJO-1542: Refactoring of HashJoinExecs. (Contributed by Navis, Committed by 
     hyunsik)
 
     TAJO-1591: Change StoreType represented as Enum to String type. (hyunsik)
