@@ -458,18 +458,35 @@ public class QueryTestCaseBase {
           // Enable this option to fix the shape of the generated plans.
           prefix += resultSetToString(executeString("explain global " + spec.value()));
         }
+
+        // plan test
+        if (prefix.length() > 0) {
+          String planResultName = methodName + (fromFile ? "" : "." + (i + 1)) +
+              ((option.parameterized() && testParameter != null) ? "." + testParameter : "") + ".plan";
+          Path resultPath = StorageUtil.concatPath(currentResultPath, planResultName);
+          if (currentResultFS.exists(resultPath)) {
+            assertEquals("Plan Verification for: " + (i + 1) + " th test",
+                FileUtil.readTextFromStream(currentResultFS.open(resultPath)), prefix);
+          } else if (prefix.length() > 0) {
+            // If there is no result file expected, create gold files for new tests.
+            FileUtil.writeTextToStream(prefix, currentResultFS.create(resultPath));
+            LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
+            // should be copied to src directory
+          }
+        }
+
         testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
         ResultSet result = client.executeQueryAndGetResult(spec.value());
 
-        String fileName = methodName + (fromFile ? "" : "." + (i + 1)) +
-            ((option.parameterized() && testParameter != null) ? "." + testParameter : "") + ".result";
+        // result test
+        String fileName = methodName + (fromFile ? "" : "." + (i + 1)) + ".result";
         Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
         if (currentResultFS.exists(resultPath)) {
           assertEquals("Result Verification for: " + (i + 1) + " th test",
-              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), prefix + resultSetToString(result, option.sort()));
-        } else if (prefix.length() > 0 || !isNull(result)) {
+              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), resultSetToString(result, option.sort()));
+        } else if (!isNull(result)) {
           // If there is no result file expected, create gold files for new tests.
-          FileUtil.writeTextToStream(prefix + resultSetToString(result, option.sort()), currentResultFS.create(resultPath));
+          FileUtil.writeTextToStream(resultSetToString(result, option.sort()), currentResultFS.create(resultPath));
           LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
           // should be copied to src directory
         }

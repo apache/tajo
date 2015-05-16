@@ -138,17 +138,17 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   }
 
   @Test
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
+  @SimpleTest()
   public void testMultiplePartitionedBroadcastDataFileWithZeroLength() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
+  @SimpleTest()
   public void testMultiplePartitionedBroadcastDataFileWithZeroLength2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
