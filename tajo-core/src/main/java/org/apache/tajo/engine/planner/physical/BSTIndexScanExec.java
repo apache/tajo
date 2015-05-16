@@ -81,7 +81,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
     Schema fileScanOutSchema = mergeSubSchemas(inSchema, keySchema, scanNode.getTargets(), qual);
 
-    this.fileScanner = StorageManager.getSeekableScanner(context.getConf(),
+    this.fileScanner = TableSpaceManager.getSeekableScanner(context.getConf(),
         scanNode.getTableDesc().getMeta(), inSchema, fragment, fileScanOutSchema);
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
@@ -99,7 +99,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     for (Target target : targets) {
       qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
     }
-    for (Column column : originalSchema.getColumns()) {
+    for (Column column : originalSchema.getRootColumns()) {
       if (subSchema.contains(column)
           || qualAndTargets.contains(column)
           || qualAndTargets.contains(column)) {

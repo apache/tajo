@@ -24,6 +24,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -328,6 +329,10 @@ public class AlgebraicUtil {
         expr.getType() == EvalType.BETWEEN ||
         expr.getType() == EvalType.IN ||
         (expr.getType() == EvalType.LIKE && !((LikePredicateEval)expr).isLeadingWildCard());
+  }
+
+  public static EvalNode createSingletonExprFromCNF(Collection<EvalNode> cnfExprs) {
+    return createSingletonExprFromCNF(cnfExprs.toArray(new EvalNode[cnfExprs.size()]));
   }
 
   /**

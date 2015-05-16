@@ -102,7 +102,6 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
    * @throws IOException
    */
   public Tuple next() throws IOException {
-    Tuple previous;
 
     while (!context.isStopped()) {
       boolean newRound = false;
@@ -121,7 +120,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
 
         // The finalizing stage, where remaining tuples on the only right are transformed into left-padded results
         if (end) {
-          if (initRightDone == false) {
+          if (!initRightDone) {
             // maybe the left operand was empty => the right one didn't have the chance to initialize
             rightTuple = rightChild.next();
             initRightDone = true;
@@ -160,18 +159,24 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
           }
         }
 
-        if(rightTuple == null){
+        if(rightTuple == null) {
           rightTuple = rightChild.next();
-
-          if(rightTuple != null){
-            initRightDone = true;
-          }
-          else {
+          if (rightTuple == null) {
             initRightDone = true;
             end = true;
             continue;
           }
         }
+        if (rightFiltered(rightTuple)) {
+          Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
+          frameTuple.set(nullPaddedTuple, rightTuple);
+          projector.eval(frameTuple, outTuple);
+
+          rightTuple = null;
+          return outTuple;
+        }
+        initRightDone = true;
+
         //////////////////////////////////////////////////////////////////////
         // END INITIALIZATION STAGE
         //////////////////////////////////////////////////////////////////////
@@ -203,10 +208,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
 
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
-            rightTuple = rightChild.next();
-            if(rightTuple == null) {
-              end = true;
-            }
+            rightTuple = null;
             return outTuple;
 
           } else if (cmp < 0) {
@@ -223,6 +225,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         // END MOVE FORWARDING STAGE
         //////////////////////////////////////////////////////////////////////
 
+        Tuple previous = null;
         // once a match is found, retain all tuples with this key in tuple slots on each side
         if(!end) {
           endInPopulationStage = false;
@@ -257,6 +260,19 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
             endInPopulationStage = true;
           }
         } // if end false
+        if (previous != null && rightFiltered(previous)) {
+          Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
+          frameTuple.set(nullPaddedTuple, previous);
+          projector.eval(frameTuple, outTuple);
+
+          // reset tuple slots for a new round
+          leftTupleSlots.clear();
+          innerTupleSlots.clear();
+          posRightTupleSlots = -1;
+          posLeftTupleSlots = -1;
+
+          return outTuple;
+        }
       } // if newRound
 
 

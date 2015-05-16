@@ -38,7 +38,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -48,8 +47,8 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
@@ -426,7 +425,7 @@ public class Query implements EventHandler<QueryEvent> {
           if (storeType != null) {
             LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
             try {
-              StorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
+              TableSpaceManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
             } catch (IOException e) {
               LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
             }
@@ -447,7 +446,7 @@ public class Query implements EventHandler<QueryEvent> {
         CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
         TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
 
-        Path finalOutputDir = StorageManager.getStorageManager(query.systemConf, storeType)
+        Path finalOutputDir = TableSpaceManager.getStorageManager(query.systemConf, storeType)
             .commitOutputData(query.context.getQueryContext(),
                 lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
 

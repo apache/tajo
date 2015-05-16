@@ -23,7 +23,6 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -86,7 +85,7 @@ public class TestHashSemiJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     Tuple tuple = new VTuple(employeeSchema.size());
@@ -112,7 +111,7 @@ public class TestHashSemiJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -208,10 +207,10 @@ public class TestHashSemiJoinExec {
     // expect result without duplicated tuples.
     while ((tuple = exec.next()) != null) {
       count++;
-      assertTrue(i == tuple.get(0).asInt4());
-      assertTrue(i == tuple.get(1).asInt4());
-      assertTrue(("dept_" + i).equals(tuple.get(2).asChars()));
-      assertTrue(10 + i == tuple.get(3).asInt4());
+      assertEquals(i, tuple.get(0).asInt4());
+      assertEquals(i, tuple.get(1).asInt4());
+      assertEquals("dept_" + i, tuple.get(2).asChars());
+      assertEquals(10 + i, tuple.get(3).asInt4());
 
       i += 2;
     }

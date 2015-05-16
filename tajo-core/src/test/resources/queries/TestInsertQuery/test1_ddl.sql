@@ -1,0 +1,1 @@
+create table test1 (col1 char(5));

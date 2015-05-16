@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.utils;
 
-import com.google.common.collect.Maps;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.storage.Tuple;
@@ -66,7 +65,7 @@ public interface CacheHolder<T> {
 
     @Override
     public Map<Tuple, List<Tuple>> getData() {
-      return Maps.newHashMap(data);
+      return data;
     }
 
     @Override
