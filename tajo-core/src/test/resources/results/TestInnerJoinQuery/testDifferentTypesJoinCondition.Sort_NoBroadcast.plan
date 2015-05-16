@@ -1,0 +1,80 @@
+explain
+-------------------------------
+JOIN(5)(INNER)
+  => Join Cond: default.t3.id (INT8) = ?int8_1 (INT8)
+  => target list: default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)
+  => out schema: {(8) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+  => in schema: {(9) ?int8_1 (INT8), default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+   SCAN(0) on default.table20 as t3
+     => target list: default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)
+     => out schema: {(4) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)}
+     => in schema: {(4) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)}
+   SCAN(1) on default.table21 as t4
+     => target list: CAST (default.t4.id (INT4) AS INT8) as ?int8_1, default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)
+     => out schema: {(5) ?int8_1 (INT8), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+     => in schema: {(4) default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+      |-eb_0000000000000_0000_000002
+      |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=?int8_1 (INT8), num=32)
+
+SCAN(1) on default.table21 as t4
+  => target list: CAST (default.t4.id (INT4) AS INT8) as ?int8_1, default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)
+  => out schema: {(5) ?int8_1 (INT8), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+  => in schema: {(4) default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.t3.id (INT8), num=32)
+
+SCAN(0) on default.table20 as t3
+  => target list: default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)
+  => out schema: {(4) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)}
+  => in schema: {(4) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=?int8_1 (INT8), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.t3.id (INT8), num=32)
+
+JOIN(5)(INNER)
+  => Join Cond: default.t3.id (INT8) = ?int8_1 (INT8)
+  => target list: default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)
+  => out schema: {(8) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+  => in schema: {(9) ?int8_1 (INT8), default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+   SCAN(8) on eb_0000000000000_0000_000002
+     => out schema: {(4) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)}
+     => in schema: {(4) default.t3.id (INT8), default.t3.name (TEXT), default.t3.score (FLOAT4), default.t3.type (TEXT)}
+   SCAN(7) on eb_0000000000000_0000_000001
+     => out schema: {(5) ?int8_1 (INT8), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+     => in schema: {(5) ?int8_1 (INT8), default.t4.id (INT4), default.t4.name (TEXT), default.t4.score (FLOAT4), default.t4.type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================

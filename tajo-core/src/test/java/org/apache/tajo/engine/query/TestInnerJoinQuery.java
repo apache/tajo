@@ -207,13 +207,16 @@ public class TestInnerJoinQuery extends TestJoinQuery {
     assertTableExists("joins.part_");
     executeString("CREATE TABLE JOINS.supplier_ as SELECT * FROM supplier");
     assertTableExists("joins.supplier_");
-    ResultSet res = executeJsonQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
 
-    executeString("DROP TABLE JOINS.part_ PURGE");
-    executeString("DROP TABLE JOINS.supplier_ PURGE");
-    executeString("DROP DATABASE JOINS");
+    try {
+      ResultSet res = executeJsonQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE JOINS.part_ PURGE");
+      executeString("DROP TABLE JOINS.supplier_ PURGE");
+      executeString("DROP DATABASE JOINS");
+    }
   }
 
   @Test
@@ -224,14 +227,14 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testDifferentTypesJoinCondition() throws Exception {
     // select * from table20 t3 join table21 t4 on t3.id = t4.id;
     executeDDL("table1_int8_ddl.sql", "table1", "table20");
     executeDDL("table1_int4_ddl.sql", "table1", "table21");
     try {
-      ResultSet res = executeQuery();
-      assertResultSet(res);
-      cleanupQuery(res);
+      runSimpleTests();
     } finally {
       executeString("DROP TABLE table20");
       executeString("DROP TABLE table21");

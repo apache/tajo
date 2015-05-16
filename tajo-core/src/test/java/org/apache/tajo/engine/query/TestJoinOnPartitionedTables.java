@@ -322,6 +322,8 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   }
 
   @Test
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
+  @SimpleTest()
   public final void testBroadcastPartitionTable() throws Exception {
     // If all tables participate in the BROADCAST JOIN, there is some missing data.
     executeDDL("customer_partition_ddl.sql", null);
@@ -329,9 +331,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     res.close();
 
     try {
-      res = executeQuery();
-      assertResultSet(res);
-      res.close();
+      runSimpleTests();
     } finally {
       executeString("DROP TABLE customer_broad_parts PURGE");
     }

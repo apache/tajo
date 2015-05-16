@@ -1,7 +1,0 @@
-c_custkey,c_name,c_nationkey,n_nationkey
--------------------------------
-1,Customer#000000001,15,15
-2,Customer#000000002,13,13
-3,Customer#000000003,1,1
-4,Customer#000000004,4,4
-5,Customer#000000005,3,3

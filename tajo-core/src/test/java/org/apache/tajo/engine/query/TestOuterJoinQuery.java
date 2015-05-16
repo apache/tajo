@@ -124,13 +124,13 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
   public void testOuterJoinAndCaseWhen1() throws Exception {
     executeDDL("oj_table1_ddl.sql", "table1", "testOuterJoinAndCaseWhen1");
     executeDDL("oj_table2_ddl.sql", "table2", "testOuterJoinAndCaseWhen2");
     try {
-      ResultSet res = executeQuery();
-      assertResultSet(res);
-      cleanupQuery(res);
+      runSimpleTests();
     } finally {
       executeString("DROP TABLE testOuterJoinAndCaseWhen1");
       executeString("DROP TABLE testOuterJoinAndCaseWhen2");
@@ -454,7 +454,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest
   public void testMultipleBroadcastDataFileWithZeroLength2() throws Exception {
     runSimpleTests();
