@@ -576,7 +576,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
         }
         Path dataPath = new Path(table.getPath().toString(), fileIndex + ".csv");
         fileIndex++;
-        appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+        appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
             .getAppender(tableMeta, schema, dataPath);
         appender.init();
       }

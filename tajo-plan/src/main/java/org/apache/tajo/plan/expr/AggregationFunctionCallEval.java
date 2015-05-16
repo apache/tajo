@@ -19,8 +19,6 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -82,8 +80,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
-//    LOG.info("at merge, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
-    if (!isBinded) {
+    if (!isBound) {
       throw new IllegalStateException("bind() must be called before merge()");
     }
     mergeParam(context, evalParams(tuple));
@@ -105,8 +102,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public Datum terminate(FunctionContext context) {
-//    LOG.info("at terminate, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
-    if (!isBinded) {
+    if (!isBound) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
     if (!lastPhase) {
