@@ -20,6 +20,7 @@ package org.apache.tajo.storage.json;
 
 
 import net.minidev.json.JSONObject;
+import org.apache.commons.net.util.Base64;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
@@ -34,8 +35,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class JsonLineSerializer extends TextLineSerializer {
-  private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
-
   private Type [] types;
   private String [] simpleNames;
   private int columnNum;
@@ -106,7 +105,7 @@ public class JsonLineSerializer extends TextLineSerializer {
       case BINARY:
       case BLOB:
       case VARBINARY:
-        jsonObject.put(fieldName, input.getBytes(i));
+        jsonObject.put(fieldName,  Base64.encodeBase64String(input.getBytes(i)));
         break;
 
       case NULL_TYPE:

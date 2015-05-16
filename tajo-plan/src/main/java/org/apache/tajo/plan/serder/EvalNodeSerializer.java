@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.plan.expr.*;
@@ -181,6 +182,7 @@ public class EvalNodeSerializer
     return rowConst;
   }
 
+  @Override
   public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval field) {
     PlanProto.EvalNode.Builder builder = createEvalBuilder(context, field);
     builder.setField(field.getColumnRef().getProto());
@@ -188,6 +190,7 @@ public class EvalNodeSerializer
     return field;
   }
 
+  @Override
   public EvalNode visitBetween(EvalTreeProtoBuilderContext context, BetweenPredicateEval between,
                                Stack<EvalNode> stack) {
     // visiting and registering childs
@@ -211,6 +214,7 @@ public class EvalNodeSerializer
     return between;
   }
 
+  @Override
   public EvalNode visitCaseWhen(EvalTreeProtoBuilderContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
     // visiting and registering childs
     super.visitCaseWhen(context, caseWhen, stack);
@@ -235,6 +239,7 @@ public class EvalNodeSerializer
     return caseWhen;
   }
 
+  @Override
   public EvalNode visitIfThen(EvalTreeProtoBuilderContext context, CaseWhenEval.IfThenEval ifCond,
                               Stack<EvalNode> stack) {
     // visiting and registering childs
@@ -254,6 +259,7 @@ public class EvalNodeSerializer
     return ifCond;
   }
 
+  @Override
   public EvalNode visitFuncCall(EvalTreeProtoBuilderContext context, FunctionEval function, Stack<EvalNode> stack) {
     // visiting and registering childs
     super.visitFuncCall(context, function, stack);
@@ -296,7 +302,6 @@ public class EvalNodeSerializer
       windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getWindowFrame()));
       builder.setWinFunction(windowFuncBuilder);
     }
-
 
     context.treeBuilder.addNodes(builder);
     return function;
@@ -387,6 +392,9 @@ public class EvalNodeSerializer
       intervalBuilder.setMonth(interval.getMonths());
       intervalBuilder.setMsec(interval.getMilliSeconds());
       builder.setInterval(intervalBuilder);
+      break;
+    case ANY:
+      builder.setActual(serialize(((AnyDatum)datum).getActual()));
       break;
     default:
       throw new RuntimeException("Unknown data type: " + datum.type().name());

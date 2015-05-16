@@ -24,6 +24,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -152,7 +153,7 @@ public class AlgebraicUtil {
       }
 
       if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
-        return new ConstEval(binaryEval.eval(null, null));
+        return new ConstEval(binaryEval.bind(null, null).eval(null));
       }
 
       return binaryEval;
@@ -165,7 +166,7 @@ public class AlgebraicUtil {
       stack.pop();
 
       if (child.getType() == EvalType.CONST) {
-        return new ConstEval(unaryEval.eval(null, null));
+        return new ConstEval(unaryEval.bind(null, null).eval(null));
       }
 
       return unaryEval;
@@ -187,7 +188,7 @@ public class AlgebraicUtil {
       }
 
       if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-        return new ConstEval(evalNode.eval(null, null));
+        return new ConstEval(evalNode.bind(null, null).eval(null));
       } else {
         return evalNode;
       }
@@ -328,6 +329,10 @@ public class AlgebraicUtil {
         expr.getType() == EvalType.BETWEEN ||
         expr.getType() == EvalType.IN ||
         (expr.getType() == EvalType.LIKE && !((LikePredicateEval)expr).isLeadingWildCard());
+  }
+
+  public static EvalNode createSingletonExprFromCNF(Collection<EvalNode> cnfExprs) {
+    return createSingletonExprFromCNF(cnfExprs.toArray(new EvalNode[cnfExprs.size()]));
   }
 
   /**

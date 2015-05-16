@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,12 +38,12 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.task.JobContextImpl;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
@@ -70,7 +71,7 @@ public class HBaseStorageManager extends StorageManager {
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
-  public HBaseStorageManager (StoreType storeType) {
+  public HBaseStorageManager (String storeType) {
     super(storeType);
   }
 
@@ -79,7 +80,7 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
-  public void closeStorageManager() {
+  public void close() {
     synchronized (connMap) {
       for (HConnection eachConn: connMap.values()) {
         try {
@@ -355,7 +356,7 @@ public class HBaseStorageManager extends StorageManager {
     Collection<String> columnFamilies = columnMapping.getColumnFamilyNames();
     //If 'columns' attribute is empty, Tajo table columns are mapped to all HBase table column.
     if (columnFamilies.isEmpty()) {
-      for (Column eachColumn: schema.getColumns()) {
+      for (Column eachColumn: schema.getRootColumns()) {
         columnFamilies.add(eachColumn.getSimpleName());
       }
     }
@@ -735,7 +736,7 @@ public class HBaseStorageManager extends StorageManager {
         for (String property : CONNECTION_PROPERTIES) {
           String thisValue = this.properties.get(property);
           String thatValue = that.properties.get(property);
-          //noinspection StringEquality
+          // noinspection StringEquality
           if (thisValue == thatValue) {
             continue;
           }
@@ -943,6 +944,8 @@ public class HBaseStorageManager extends StorageManager {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
+    Preconditions.checkArgument(tableDesc.getName() != null && tableDesc.getPath() == null);
+
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
@@ -961,29 +964,23 @@ public class HBaseStorageManager extends StorageManager {
     }
     committer.commitJob(jobContext);
 
-    if (tableDesc.getName() == null && tableDesc.getPath() != null) {
+    // insert into table
+    String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
 
-      // insert into location
-      return super.commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, false);
-    } else {
-      // insert into table
-      String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
-
-      HTable htable = new HTable(hbaseConf, tableName);
+    HTable htable = new HTable(hbaseConf, tableName);
+    try {
+      LoadIncrementalHFiles loadIncrementalHFiles = null;
       try {
-        LoadIncrementalHFiles loadIncrementalHFiles = null;
-        try {
-          loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
-        } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
-          throw new IOException(e.getMessage(), e);
-        }
-        loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
-
-        return stagingResultDir;
-      } finally {
-        htable.close();
+        loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        throw new IOException(e.getMessage(), e);
       }
+      loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
+
+      return stagingResultDir;
+    } finally {
+      htable.close();
     }
   }
 
@@ -1121,7 +1118,7 @@ public class HBaseStorageManager extends StorageManager {
 
       try {
         HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
-        LOG.info("Delete table cause query failed:" + hTableDesc.getName());
+        LOG.info("Delete table cause query failed:" + new String(hTableDesc.getName()));
         hAdmin.disableTable(hTableDesc.getName());
         hAdmin.deleteTable(hTableDesc.getName());
       } finally {

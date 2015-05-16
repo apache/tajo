@@ -115,10 +115,6 @@ public class QueryMasterManagerService extends CompositeService
     return bindAddr;
   }
 
-  public String getHostAndPort() {
-    return bindAddr.getHostName() + ":" + bindAddr.getPort();
-  }
-
   @Override
   public void getTask(RpcController controller, TajoWorkerProtocol.GetTaskRequestProto request,
                       RpcCallback<TajoWorkerProtocol.TaskRequestProto> done) {
@@ -136,127 +132,106 @@ public class QueryMasterManagerService extends CompositeService
       }
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
     }
   }
 
   @Override
   public void statusUpdate(RpcController controller, TajoWorkerProtocol.TaskStatusProto request,
-                           RpcCallback<PrimitiveProtos.BoolProto> done) {
-    try {
-      QueryId queryId = new QueryId(request.getId().getTaskId().getExecutionBlockId().getQueryId());
-      TaskAttemptId attemptId = new TaskAttemptId(request.getId());
-      QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
-      if (queryMasterTask == null) {
-        queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
-      }
-      Stage sq = queryMasterTask.getQuery().getStage(attemptId.getTaskId().getExecutionBlockId());
-      Task task = sq.getTask(attemptId.getTaskId());
-      TaskAttempt attempt = task.getAttempt(attemptId.getId());
-
-      if(LOG.isDebugEnabled()){
-        LOG.debug(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
-      }
-
-      if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
-        LOG.warn(attemptId + " Killed");
-        attempt.handle(
-            new TaskAttemptEvent(new TaskAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
-      } else {
-        queryMasterTask.getEventHandler().handle(
-            new TaskAttemptStatusUpdateEvent(new TaskAttemptId(request.getId()), request));
-      }
-      done.run(TajoWorker.TRUE_PROTO);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+                           RpcCallback<PrimitiveProtos.NullProto> done) {
+    QueryId queryId = new QueryId(request.getId().getTaskId().getExecutionBlockId().getQueryId());
+    TaskAttemptId attemptId = new TaskAttemptId(request.getId());
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
+    if (queryMasterTask == null) {
+      queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
     }
+    Stage sq = queryMasterTask.getQuery().getStage(attemptId.getTaskId().getExecutionBlockId());
+    Task task = sq.getTask(attemptId.getTaskId());
+    TaskAttempt attempt = task.getAttempt(attemptId.getId());
+
+    if(LOG.isDebugEnabled()){
+      LOG.debug(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
+    }
+
+    if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
+      LOG.warn(attemptId + " Killed");
+      attempt.handle(
+          new TaskAttemptEvent(new TaskAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
+    } else {
+      queryMasterTask.getEventHandler().handle(
+          new TaskAttemptStatusUpdateEvent(new TaskAttemptId(request.getId()), request));
+    }
+
+    done.run(TajoWorker.NULL_PROTO);
   }
 
   @Override
   public void ping(RpcController controller,
                    TajoIdProtos.ExecutionBlockIdProto requestProto,
-                   RpcCallback<PrimitiveProtos.BoolProto> done) {
-    done.run(TajoWorker.TRUE_PROTO);
+                   RpcCallback<PrimitiveProtos.NullProto> done) {
+    done.run(TajoWorker.NULL_PROTO);
   }
 
   @Override
   public void fatalError(RpcController controller, TajoWorkerProtocol.TaskFatalErrorReport report,
-                         RpcCallback<PrimitiveProtos.BoolProto> done) {
-    try {
-      QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
-          new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
-      if (queryMasterTask != null) {
-        queryMasterTask.handleTaskFailed(report);
-      } else {
-        LOG.warn("No QueryMasterTask: " + new TaskAttemptId(report.getId()));
-      }
-      done.run(TajoWorker.TRUE_PROTO);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+                         RpcCallback<PrimitiveProtos.NullProto> done) {
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
+        new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
+    if (queryMasterTask != null) {
+      queryMasterTask.handleTaskFailed(report);
+    } else {
+      LOG.warn("No QueryMasterTask: " + new TaskAttemptId(report.getId()));
     }
+    done.run(TajoWorker.NULL_PROTO);
   }
 
   @Override
   public void done(RpcController controller, TajoWorkerProtocol.TaskCompletionReport report,
-                   RpcCallback<PrimitiveProtos.BoolProto> done) {
-    try {
-      QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
-          new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
-      if (queryMasterTask != null) {
-        queryMasterTask.getEventHandler().handle(new TaskCompletionEvent(report));
-      }
-      done.run(TajoWorker.TRUE_PROTO);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+                   RpcCallback<PrimitiveProtos.NullProto> done) {
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
+        new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
+    if (queryMasterTask != null) {
+      queryMasterTask.getEventHandler().handle(new TaskCompletionEvent(report));
     }
+    done.run(TajoWorker.NULL_PROTO);
   }
 
   @Override
   public void doneExecutionBlock(
       RpcController controller, TajoWorkerProtocol.ExecutionBlockReport request,
-      RpcCallback<PrimitiveProtos.BoolProto> done) {
+      RpcCallback<PrimitiveProtos.NullProto> done) {
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
     if (queryMasterTask != null) {
       ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
       queryMasterTask.getEventHandler().handle(new StageShuffleReportEvent(ebId, request));
     }
-    done.run(TajoWorker.TRUE_PROTO);
+    done.run(TajoWorker.NULL_PROTO);
   }
 
   @Override
   public void killQuery(RpcController controller, TajoIdProtos.QueryIdProto request,
-                        RpcCallback<PrimitiveProtos.BoolProto> done) {
+                        RpcCallback<PrimitiveProtos.NullProto> done) {
     QueryId queryId = new QueryId(request);
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
     if (queryMasterTask != null) {
-      Query query = queryMasterTask.getQuery();
-      if (query != null) {
-        query.handle(new QueryEvent(queryId, QueryEventType.KILL));
-      }
+      queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
     }
+    done.run(TajoWorker.NULL_PROTO);
   }
 
   @Override
   public void executeQuery(RpcController controller,
                            TajoWorkerProtocol.QueryExecutionRequestProto request,
-                           RpcCallback<PrimitiveProtos.BoolProto> done) {
-    try {
-      workerContext.getWorkerSystemMetrics().counter("querymaster", "numQuery").inc();
+                           RpcCallback<PrimitiveProtos.NullProto> done) {
+    workerContext.getWorkerSystemMetrics().counter("querymaster", "numQuery").inc();
 
-      QueryId queryId = new QueryId(request.getQueryId());
-      LOG.info("Receive executeQuery request:" + queryId);
-      queryMaster.handle(new QueryStartEvent(queryId,
-          new Session(request.getSession()),
-          new QueryContext(workerContext.getQueryMaster().getContext().getConf(),
-              request.getQueryContext()), request.getExprInJson().getValue(),
-          request.getLogicalPlanJson().getValue()));
-      done.run(TajoWorker.TRUE_PROTO);
-    } catch (Exception e) {
-      workerContext.getWorkerSystemMetrics().counter("querymaster", "errorQuery").inc();
-      LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
-    }
+    QueryId queryId = new QueryId(request.getQueryId());
+    LOG.info("Receive executeQuery request:" + queryId);
+    queryMaster.handle(new QueryStartEvent(queryId,
+        new Session(request.getSession()),
+        new QueryContext(workerContext.getQueryMaster().getContext().getConf(),
+            request.getQueryContext()), request.getExprInJson().getValue(),
+        request.getLogicalPlanJson().getValue()));
+    done.run(TajoWorker.NULL_PROTO);
   }
 }

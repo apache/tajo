@@ -23,6 +23,8 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -55,7 +57,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   /**
    * It checks if an output schema of a projectable node and target's output data types are equivalent to each other.
    */
-  private static void verifyProjectableOutputSchema(Projectable node) throws PlanningException {
+  private static void verifyProjectableOutputSchema(Context context, Projectable node) throws PlanningException {
 
     Schema outputSchema = node.getOutSchema();
     Schema targetSchema = PlannerUtil.targetToSchema(node.getTargets());
@@ -66,9 +68,15 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
     }
 
     for (int i = 0; i < outputSchema.size(); i++) {
-      if (!outputSchema.getColumn(i).getDataType().equals(targetSchema.getColumn(i).getDataType())) {
+      Column outputColumn = outputSchema.getColumn(i);
+
+      if (outputColumn.getDataType().getType() == Type.RECORD) {
+        context.state.addVerification("Projecting RECORD fields is not supported yet.");
+      }
+
+      if (!outputColumn.getDataType().equals(targetSchema.getColumn(i).getDataType())) {
         Column targetColumn = targetSchema.getColumn(i);
-        Column insertColumn = outputSchema.getColumn(i);
+        Column insertColumn = outputColumn;
         throw new PlanningException("ERROR: " +
             insertColumn.getSimpleName() + " is of type " + insertColumn.getDataType().getType().name() +
             ", but target column '" + targetColumn.getSimpleName() + "' is of type " +
@@ -86,7 +94,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       ExprsVerifier.verify(state.state, node, target.getEvalTree());
     }
 
-    verifyProjectableOutputSchema(node);
+    verifyProjectableOutputSchema(state, node);
 
     return node;
   }
@@ -108,7 +116,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
                                   GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitGroupBy(context, plan, block, node, stack);
 
-    verifyProjectableOutputSchema(node);
+    verifyProjectableOutputSchema(context, node);
     return node;
   }
 
@@ -130,7 +138,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       ExprsVerifier.verify(context.state, node, node.getJoinQual());
     }
 
-    verifyProjectableOutputSchema(node);
+    verifyProjectableOutputSchema(context, node);
 
     return node;
   }
@@ -192,7 +200,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       }
     }
 
-    verifyProjectableOutputSchema(node);
+    verifyProjectableOutputSchema(context, node);
     return node;
   }
 
@@ -209,7 +217,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       ExprsVerifier.verify(context.state, node, node.getQual());
     }
 
-    verifyProjectableOutputSchema(node);
+    verifyProjectableOutputSchema(context, node);
 
     return node;
   }

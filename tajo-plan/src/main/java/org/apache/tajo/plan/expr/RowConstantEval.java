@@ -23,10 +23,10 @@ import java.util.Arrays;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
@@ -60,7 +60,9 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     return NullDatum.get();
   }
 
@@ -87,7 +89,7 @@ public class RowConstantEval extends EvalNode {
   }
 
   public String toString() {
-    return TUtil.arrayToString(values);
+    return StringUtils.join(values);
   }
 
   public void preOrder(EvalNodeVisitor visitor) {

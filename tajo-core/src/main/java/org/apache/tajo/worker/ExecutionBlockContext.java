@@ -34,27 +34,27 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.Pair;
-
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.EventLoopGroup;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService.Interface;
 
 public class ExecutionBlockContext {
   /** class logger */
@@ -66,8 +66,6 @@ public class ExecutionBlockContext {
   public AtomicInteger killedTasksNum = new AtomicInteger();
   public AtomicInteger failedTasksNum = new AtomicInteger();
 
-  private EventLoopGroup loopGroup;
-  // for temporal or intermediate files
   private FileSystem localFS;
   // for input files
   private FileSystem defaultFS;
@@ -79,8 +77,10 @@ public class ExecutionBlockContext {
   private ExecutionBlockSharedResource resource;
 
   private TajoQueryEngine queryEngine;
-  private RpcConnectionPool connPool;
+  private RpcClientManager connManager;
   private InetSocketAddress qmMasterAddr;
+  private NettyClientBase client;
+  private QueryMasterProtocol.QueryMasterProtocolService.Interface stub;
   private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
   // for the doAs block
@@ -90,6 +90,8 @@ public class ExecutionBlockContext {
 
   private AtomicBoolean stop = new AtomicBoolean();
 
+  private PlanProto.ShuffleType shuffleType;
+
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final ConcurrentMap<TaskAttemptId, Task> tasks = Maps.newConcurrentMap();
 
@@ -97,10 +99,11 @@ public class ExecutionBlockContext {
 
   public ExecutionBlockContext(TajoConf conf, TajoWorker.WorkerContext workerContext,
                                TaskRunnerManager manager, QueryContext queryContext, String plan,
-                               ExecutionBlockId executionBlockId, WorkerConnectionInfo queryMaster) throws Throwable {
+                               ExecutionBlockId executionBlockId, WorkerConnectionInfo queryMaster,
+                               PlanProto.ShuffleType shuffleType) throws Throwable {
     this.manager = manager;
     this.executionBlockId = executionBlockId;
-    this.connPool = RpcConnectionPool.getPool();
+    this.connManager = RpcClientManager.getInstance();
     this.queryMaster = queryMaster;
     this.systemConf = conf;
     this.reporter = new Reporter();
@@ -114,6 +117,7 @@ public class ExecutionBlockContext {
     this.plan = plan;
     this.resource = new ExecutionBlockSharedResource();
     this.workerContext = workerContext;
+    this.shuffleType = shuffleType;
   }
 
   public void init() throws Throwable {
@@ -131,20 +135,14 @@ public class ExecutionBlockContext {
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
+    this.stub = getRpcClient().getStub();
     this.reporter.startReporter();
-
     // resource intiailization
     try{
       this.resource.initialize(queryContext, plan);
     } catch (Throwable e) {
       try {
-        NettyClientBase client = getQueryMasterConnection();
-        try {
-          QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-          stub.killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
-        } finally {
-          connPool.releaseConnection(client);
-        }
+        getStub().killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
       } catch (Throwable t) {
         //ignore
       }
@@ -156,13 +154,20 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  public NettyClientBase getQueryMasterConnection()
-      throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    return connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
+  private NettyClientBase getRpcClient()
+      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
+    if (client != null) return client;
+
+    client = connManager.newClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    return client;
   }
 
-  public void releaseConnection(NettyClientBase connection) {
-    connPool.releaseConnection(connection);
+  public Interface getStub() {
+    return stub;
+  }
+
+  public boolean isStopped() {
+    return stop.get();
   }
 
   public void stop(){
@@ -191,6 +196,7 @@ public class ExecutionBlockContext {
     tasks.clear();
 
     resource.release();
+    RpcClientManager.cleanup(client);
   }
 
   public TajoConf getConf() {
@@ -199,10 +205,6 @@ public class ExecutionBlockContext {
 
   public FileSystem getLocalFS() {
     return localFS;
-  }
-
-  public FileSystem getDefaultFS() {
-    return defaultFS;
   }
 
   public LocalDirAllocator getLocalDirAllocator() {
@@ -272,17 +274,29 @@ public class ExecutionBlockContext {
     return workerContext;
   }
 
-  private void sendExecutionBlockReport(ExecutionBlockReport reporter) throws Exception {
-    NettyClientBase client = getQueryMasterConnection();
-    try {
-      QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-      stub.doneExecutionBlock(null, reporter, NullCallback.get());
-    } finally {
-      connPool.releaseConnection(client);
+  /**
+   * HASH_SHUFFLE, SCATTERED_HASH_SHUFFLE should send report when this executionBlock stopping.
+   */
+  protected void sendShuffleReport() throws Exception {
+
+    switch (shuffleType) {
+      case HASH_SHUFFLE:
+      case SCATTERED_HASH_SHUFFLE:
+        sendHashShuffleReport(executionBlockId);
+        break;
+      case NONE_SHUFFLE:
+      case RANGE_SHUFFLE:
+      default:
+        break;
     }
   }
 
-  protected void reportExecutionBlock(ExecutionBlockId ebId) {
+  private void sendHashShuffleReport(ExecutionBlockId ebId) throws Exception {
+    /* This case is that worker did not ran tasks */
+    if(completedTasksNum.get() == 0) return;
+
+    Interface stub = getStub();
+
     ExecutionBlockReport.Builder reporterBuilder = ExecutionBlockReport.newBuilder();
     reporterBuilder.setEbId(ebId.getProto());
     reporterBuilder.setReportSuccess(true);
@@ -293,43 +307,26 @@ public class ExecutionBlockContext {
           getWorkerContext().getHashShuffleAppenderManager().close(ebId);
       if (shuffles == null) {
         reporterBuilder.addAllIntermediateEntries(intermediateEntries);
-        sendExecutionBlockReport(reporterBuilder.build());
+
+        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+        stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
+        callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         return;
       }
 
       IntermediateEntryProto.Builder intermediateBuilder = IntermediateEntryProto.newBuilder();
-      IntermediateEntryProto.PageProto.Builder pageBuilder = IntermediateEntryProto.PageProto.newBuilder();
-      FailureIntermediateProto.Builder failureBuilder = FailureIntermediateProto.newBuilder();
 
+      WorkerConnectionInfo connectionInfo = getWorkerContext().getConnectionInfo();
+      String address = connectionInfo.getHost() + ":" + connectionInfo.getPullServerPort();
       for (HashShuffleAppenderManager.HashShuffleIntermediate eachShuffle: shuffles) {
-        List<IntermediateEntryProto.PageProto> pages = Lists.newArrayList();
-        List<FailureIntermediateProto> failureIntermediateItems = Lists.newArrayList();
-
-        for (Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
-          pageBuilder.clear();
-          pageBuilder.setPos(eachPage.getFirst());
-          pageBuilder.setLength(eachPage.getSecond());
-          pages.add(pageBuilder.build());
-        }
-
-        for(Pair<Long, Pair<Integer, Integer>> eachFailure: eachShuffle.getFailureTskTupleIndexes()) {
-          failureBuilder.clear();
-          failureBuilder.setPagePos(eachFailure.getFirst());
-          failureBuilder.setStartRowNum(eachFailure.getSecond().getFirst());
-          failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
-          failureIntermediateItems.add(failureBuilder.build());
-        }
-        intermediateBuilder.clear();
-
         intermediateBuilder.setEbId(ebId.getProto())
-            .setHost(getWorkerContext().getConnectionInfo().getHost() + ":" +
-                getWorkerContext().getConnectionInfo().getPullServerPort())
+            .setAddress(address)
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())
             .setVolume(eachShuffle.getVolume())
-            .addAllPages(pages)
-            .addAllFailures(failureIntermediateItems);
+            .addAllPages(eachShuffle.getPages())
+            .addAllFailures(eachShuffle.getFailureTskTupleIndexes());
         intermediateEntries.add(intermediateBuilder.build());
       }
 
@@ -346,7 +343,9 @@ public class ExecutionBlockContext {
       }
     }
     try {
-      sendExecutionBlockReport(reporterBuilder.build());
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+      stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
+      callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (Throwable e) {
       // can't send report to query master
       LOG.fatal(e.getMessage(), e);
@@ -377,10 +376,8 @@ public class ExecutionBlockContext {
         public void run() {
           while (!reporterStop.get() && !Thread.interrupted()) {
 
-            NettyClientBase client = null;
             try {
-              client = getQueryMasterConnection();
-              QueryMasterProtocol.QueryMasterProtocolService.Interface masterStub = client.getStub();
+              Interface masterStub = getStub();
 
               if(tasks.size() == 0){
                 masterStub.ping(null, getExecutionBlockId().getProto(), NullCallback.get());
@@ -405,7 +402,6 @@ public class ExecutionBlockContext {
                 throw new RuntimeException(t);
               }
             } finally {
-              releaseConnection(client);
               if (remainingRetries > 0 && !reporterStop.get()) {
                 synchronized (reporterThread) {
                   try {

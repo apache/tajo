@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -35,6 +34,7 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -69,7 +69,7 @@ public class TestExecutionBlockCursor {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpch.getTableNames()) {
-      TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
+      TableMeta m = CatalogUtil.newTableMeta("CSV");
       TableDesc d = CatalogUtil.newTableDesc(
           CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
       TableStats stats = new TableStats();
@@ -82,7 +82,7 @@ public class TestExecutionBlockCursor {
     logicalPlanner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer(conf, catalog);
 
-    StorageManager sm  = StorageManager.getFileStorageManager(conf);
+    StorageManager sm  = TableSpaceManager.getFileStorageManager(conf);
     dispatcher = new AsyncDispatcher();
     dispatcher.init(conf);
     dispatcher.start();

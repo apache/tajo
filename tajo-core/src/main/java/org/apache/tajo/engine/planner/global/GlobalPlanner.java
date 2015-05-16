@@ -69,7 +69,7 @@ public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
   private final TajoConf conf;
-  private final CatalogProtos.StoreType storeType;
+  private final String storeType;
   private final CatalogService catalog;
   private final GlobalPlanRewriteEngine rewriteEngine;
 
@@ -77,7 +77,7 @@ public class GlobalPlanner {
   public GlobalPlanner(final TajoConf conf, final CatalogService catalog) throws IOException {
     this.conf = conf;
     this.catalog = catalog;
-    this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
+    this.storeType = conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase();
     Preconditions.checkArgument(storeType != null);
 
     Class<? extends GlobalPlanRewriteRuleProvider> clazz =
@@ -99,7 +99,7 @@ public class GlobalPlanner {
     return catalog;
   }
 
-  public CatalogProtos.StoreType getStoreType() {
+  public String getStoreType() {
     return storeType;
   }
 
@@ -175,7 +175,7 @@ public class GlobalPlanner {
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType(CatalogProtos.StoreType.CSV);
+    outputChannel.setStoreType("CSV");
     outputChannel.setSchema(outputSchema);
   }
 
@@ -536,31 +536,31 @@ public class GlobalPlanner {
   private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[]{});
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
-    return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
+    return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   /**
@@ -960,8 +960,9 @@ public class GlobalPlanner {
         firstPhaseEvals[i].setFirstPhase();
         firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
         FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+
         secondPhaseEvals[i].setFinalPhase();
-        secondPhaseEvals[i].setArgs(new EvalNode[] {param});
+        secondPhaseEvals[i].setArgs(new EvalNode[]{param});
       }
 
       secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);
@@ -1132,14 +1133,26 @@ public class GlobalPlanner {
     Preconditions.checkState(node.hasTargetTable(), "A target table must be a partitioned table.");
     PartitionMethodDesc partitionMethod = node.getPartitionMethod();
 
-    if (node.getType() == NodeType.INSERT) {
-      InsertNode insertNode = (InsertNode) node;
-      channel.setSchema(((InsertNode)node).getProjectedSchema());
-      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
-      int i = 0;
-      for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
-        int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
-        shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
+    if (node.getType() == NodeType.INSERT || node.getType() == NodeType.CREATE_TABLE) {
+      Schema tableSchema = null, projectedSchema = null;
+      if (node.getType() == NodeType.INSERT) {
+        tableSchema = ((InsertNode) node).getTableSchema();
+        projectedSchema = ((InsertNode) node).getProjectedSchema();
+      } else {
+        tableSchema = node.getOutSchema();
+        projectedSchema = node.getInSchema();
+      }
+      channel.setSchema(projectedSchema);
+
+      Column[] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
+      int i = 0, id = 0;
+      for (Column column : partitionMethod.getExpressionSchema().getRootColumns()) {
+        if (node.getType() == NodeType.INSERT) {
+          id = tableSchema.getColumnId(column.getQualifiedName());
+        } else {
+          id = tableSchema.getRootColumns().size() + i;
+        }
+        shuffleKeys[i++] = projectedSchema.getColumn(id);
       }
       channel.setShuffleKeys(shuffleKeys);
       channel.setShuffleType(SCATTERED_HASH_SHUFFLE);
@@ -1171,7 +1184,7 @@ public class GlobalPlanner {
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
           // This data channel will be stored in staging directory, but RawFile, default file type, does not support
           // distributed file system. It needs to change the file format for distributed file system.
-          dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
+          dataChannel.setStoreType("CSV");
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);
@@ -1480,7 +1493,7 @@ public class GlobalPlanner {
           addedTableSubQueries.add(copy);
 
           //Find a SubQueryNode which contains all columns in InputSchema matched with Target and OutputSchema's column
-          if (copy.getInSchema().containsAll(copy.getOutSchema().getColumns())) {
+          if (copy.getInSchema().containsAll(copy.getOutSchema().getRootColumns())) {
             for (Target eachTarget : copy.getTargets()) {
               Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
               if (copy.getInSchema().containsAll(columns)) {

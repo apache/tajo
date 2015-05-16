@@ -206,6 +206,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
+  public Expr visitNon_join_query_primary(Non_join_query_primaryContext ctx) {
+    if (ctx.simple_table() != null) {
+      return visitSimple_table(ctx.simple_table());
+    } else if (ctx.non_join_query_expression() != null) {
+      return visitNon_join_query_expression(ctx.non_join_query_expression());
+    }
+    return visitChildren(ctx);
+  }
+
+  @Override
   public Expr visitQuery_specification(SQLParser.Query_specificationContext ctx) {
     Expr current = null;
     if (ctx.table_expression() != null) {
@@ -1046,14 +1056,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public ColumnReferenceExpr visitColumn_reference(SQLParser.Column_referenceContext ctx) {
-    ColumnReferenceExpr column = new ColumnReferenceExpr(ctx.name.getText());
-    if (checkIfExist(ctx.db_name)) {
-      column.setQualifier(CatalogUtil.buildFQName(ctx.db_name.getText(), ctx.tb_name.getText()));
-    } else if (ctx.tb_name != null) {
-      column.setQualifier(ctx.tb_name.getText());
-    }
+    String columnReferenceName = ctx.getText();
+    // find the last dot (.) position to separate a name into both a qualifier and name
+    int lastDotIdx = columnReferenceName.lastIndexOf(".");
 
-    return column;
+    if (lastDotIdx > 0) { // if any qualifier is given
+      String qualifier = columnReferenceName.substring(0, lastDotIdx);
+      String name = columnReferenceName.substring(lastDotIdx + 1, columnReferenceName.length());
+      return new ColumnReferenceExpr(qualifier, name);
+    } else {
+      return new ColumnReferenceExpr(ctx.getText());
+    }
   }
 
   @Override
@@ -1878,9 +1891,22 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
 
+    if (checkIfExist(ctx.property_list())) {
+      alterTable.setParams(getProperties(ctx.property_list()));
+    }
+
     alterTable.setAlterTableOpType(determineAlterTableType(ctx));
 
     return alterTable;
+  }
+
+  private Map<String, String> getProperties(SQLParser.Property_listContext ctx) {
+    Map<String, String> params = new HashMap<String, String>();
+    for (int i = 0; i < ctx.property().size(); i++) {
+      params.put(stripQuote(ctx.property(i).key.getText()), stripQuote(ctx.property(i).value.getText()));
+    }
+
+    return params;
   }
 
   private AlterTableOpType determineAlterTableType(SQLParser.Alter_table_statementContext ctx) {
@@ -1891,6 +1917,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     final int ADD_MASK = 00001000;
     final int DROP_MASK = 00001001;
     final int PARTITION_MASK = 00000020;
+    final int SET_MASK = 00000002;
+    final int PROPERTY_MASK = 00010000;
 
     int val = 00000000;
 
@@ -1916,6 +1944,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           case PARTITION:
             val = val | PARTITION_MASK;
             break;
+          case SET:
+            val = val | SET_MASK;
+            break;
+          case PROPERTY:
+            val = val | PROPERTY_MASK;
+            break;
           default:
             break;
         }
@@ -1937,6 +1971,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return AlterTableOpType.ADD_PARTITION;
       case 529:
         return AlterTableOpType.DROP_PARTITION;
+      case 4098:
+        return AlterTableOpType.SET_PROPERTY;
       default:
         return null;
     }

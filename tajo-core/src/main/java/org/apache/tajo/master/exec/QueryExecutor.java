@@ -51,6 +51,10 @@ import org.apache.tajo.master.exec.prehook.CreateIndexHook;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
+import org.apache.tajo.plan.expr.EvalContext;
+import org.apache.tajo.plan.expr.GeneralFunctionEval;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.querymaster.*;
@@ -128,11 +132,9 @@ public class QueryExecutor {
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
       execSimpleQuery(queryContext, session, sql, plan, response);
 
-
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
-      execNonFromQuery(queryContext, session, sql, plan, response);
-
+      execNonFromQuery(queryContext, plan, response);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -278,36 +280,85 @@ public class QueryExecutor {
     response.setResult(IPCUtil.buildOkRequestResult());
   }
 
-  public void execNonFromQuery(QueryContext queryContext, Session session, String query,
-                               LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder) throws Exception {
+  public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
+      throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
+    EvalContext evalContext = new EvalContext();
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new PlanningException("No targets");
     }
-    final Tuple outTuple = new VTuple(targets.length);
+    try {
+      // start script executor
+      startScriptExecutors(queryContext, evalContext, targets);
+      final Tuple outTuple = new VTuple(targets.length);
+      for (int i = 0; i < targets.length; i++) {
+        EvalNode eval = targets[i].getEvalTree();
+        eval.bind(evalContext, null);
+        outTuple.put(i, eval.eval(null));
+      }
+      boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
+      if (isInsert) {
+        InsertNode insertNode = rootNode.getChild();
+        insertNonFromQuery(queryContext, insertNode, responseBuilder);
+      } else {
+        Schema schema = PlannerUtil.targetToSchema(targets);
+        RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
+        byte[] serializedBytes = encoder.toBytes(outTuple);
+        ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
+        serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
+        serializedResBuilder.setSchema(schema.getProto());
+        serializedResBuilder.setBytesNum(serializedBytes.length);
+
+        responseBuilder.setResultSet(serializedResBuilder);
+        responseBuilder.setMaxRowNum(1);
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setResult(IPCUtil.buildOkRequestResult());
+      }
+    } finally {
+      // stop script executor
+      stopScriptExecutors(evalContext);
+    }
+  }
+
+  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
+      throws IOException {
     for (int i = 0; i < targets.length; i++) {
       EvalNode eval = targets[i].getEvalTree();
-      outTuple.put(i, eval.eval(null, null));
+      if (eval instanceof GeneralFunctionEval) {
+        GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
+        if (functionEval.getFuncDesc().getInvocation().hasPython()) {
+          TajoScriptEngine scriptExecutor = new PythonScriptEngine(functionEval.getFuncDesc());
+          evalContext.addScriptEngine(eval, scriptExecutor);
+          scriptExecutor.start(queryContext.getConf());
+        }
+      }
     }
-    boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
-    if (isInsert) {
-      InsertNode insertNode = rootNode.getChild();
-      insertNonFromQuery(queryContext, insertNode, responseBuilder);
-    } else {
-      Schema schema = PlannerUtil.targetToSchema(targets);
-      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
-      byte[] serializedBytes = encoder.toBytes(outTuple);
-      ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
-      serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
-      serializedResBuilder.setSchema(schema.getProto());
-      serializedResBuilder.setBytesNum(serializedBytes.length);
+//<<<<<<< HEAD
+//    boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
+//    if (isInsert) {
+//      InsertNode insertNode = rootNode.getChild();
+//      insertNonFromQuery(queryContext, insertNode, responseBuilder);
+//    } else {
+//      Schema schema = PlannerUtil.targetToSchema(targets);
+//      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
+//      byte[] serializedBytes = encoder.toBytes(outTuple);
+//      ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
+//      serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
+//      serializedResBuilder.setSchema(schema.getProto());
+//      serializedResBuilder.setBytesNum(serializedBytes.length);
+//
+//      responseBuilder.setResultSet(serializedResBuilder);
+//      responseBuilder.setMaxRowNum(1);
+//      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+//      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
+//=======
+  }
 
-      responseBuilder.setResultSet(serializedResBuilder);
-      responseBuilder.setMaxRowNum(1);
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
+  public static void stopScriptExecutors(EvalContext evalContext) {
+    for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
+      executor.shutdown();
     }
   }
 
@@ -398,7 +449,7 @@ public class QueryExecutor {
       List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();
       CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
           .setTableName(nodeUniqName)
-          .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(CatalogProtos.StoreType.CSV).build())
+          .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType("CSV").build())
           .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
           .setStats(stats.getProto())
           .build();
@@ -419,9 +470,9 @@ public class QueryExecutor {
                                       SubmitQueryResponse.Builder responseBuilder) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    CatalogProtos.StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      StorageManager sm = StorageManager.getStorageManager(context.getConf(), storeType);
+      StorageManager sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty();
       if (!storageProperty.isSupportsInsertInto()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
@@ -476,9 +527,9 @@ public class QueryExecutor {
   public static MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
       throws Exception {
 
-    CatalogProtos.StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      StorageManager sm = StorageManager.getStorageManager(planner.getConf(), storeType);
+      StorageManager sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty();
       if (storageProperty.isSortedInsert()) {
         String tableName = PlannerUtil.getStoreTableName(plan);

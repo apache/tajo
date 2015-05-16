@@ -528,7 +528,7 @@ public class CSVFile {
 
     @Override
     public boolean isProjectable() {
-      return true;
+      return false;
     }
 
     @Override

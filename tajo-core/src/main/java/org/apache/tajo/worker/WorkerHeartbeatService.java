@@ -19,19 +19,18 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ServerStatusProto;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
@@ -54,7 +53,7 @@ public class WorkerHeartbeatService extends AbstractService {
 
   private final TajoWorker.WorkerContext context;
   private TajoConf systemConf;
-  private RpcConnectionPool connectionPool;
+  private RpcClientManager connectionManager;
   private WorkerHeartbeatThread thread;
   private static final float HDFS_DATANODE_STORAGE_SIZE;
 
@@ -74,13 +73,13 @@ public class WorkerHeartbeatService extends AbstractService {
     }
     this.systemConf = (TajoConf) conf;
 
-    connectionPool = RpcConnectionPool.getPool();
+    this.connectionManager = RpcClientManager.getInstance();
+    thread = new WorkerHeartbeatThread();
     super.serviceInit(conf);
   }
 
   @Override
   public void serviceStart() throws Exception {
-    thread = new WorkerHeartbeatThread();
     thread.start();
     super.serviceStart();
   }
@@ -181,31 +180,25 @@ public class WorkerHeartbeatService extends AbstractService {
           CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
 
           ServiceTracker serviceTracker = context.getServiceTracker();
-          rmClient = connectionPool.getConnection(serviceTracker.getResourceTrackerAddress(),
+          rmClient = connectionManager.getClient(serviceTracker.getResourceTrackerAddress(),
               TajoResourceTrackerProtocol.class, true);
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 
           TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
-          if(response != null) {
-            ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
-            if(clusterResourceSummary.getNumWorkers() > 0) {
-              context.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
-            }
-            context.setClusterResource(clusterResourceSummary);
-          } else {
-            if(callBack.getController().failed()) {
-              throw new ServiceException(callBack.getController().errorText());
-            }
+
+          QueryCoordinatorProtocol.ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
+          if(clusterResourceSummary.getNumWorkers() > 0) {
+            context.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
           }
+          context.setClusterResource(clusterResourceSummary);
+
         } catch (InterruptedException e) {
           break;
         } catch (TimeoutException te) {
           LOG.warn("Heartbeat response is being delayed.", te);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
-        } finally {
-          connectionPool.releaseConnection(rmClient);
         }
 
         try {

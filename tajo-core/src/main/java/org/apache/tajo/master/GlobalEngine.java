@@ -19,6 +19,10 @@
 package org.apache.tajo.master;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.Weigher;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
@@ -31,14 +35,14 @@ import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.parser.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.logical.InsertNode;
@@ -50,11 +54,13 @@ import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.IPCUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 
@@ -71,7 +77,6 @@ public class GlobalEngine extends AbstractService {
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
   private LogicalPlanVerifier annotatedPlanVerifier;
-  private DistributedQueryHookManager hookManager;
 
   private QueryExecutor queryExecutor;
   private DDLExecutor ddlExecutor;
@@ -145,6 +150,25 @@ public class GlobalEngine extends AbstractService {
       newQueryContext.putAll(CommonTestingUtil.getSessionVarsForTest());
     }
 
+    // Set queryCache in session
+    int queryCacheSize = context.getConf().getIntVar(TajoConf.ConfVars.QUERY_SESSION_QUERY_CACHE_SIZE);
+    if (queryCacheSize > 0 && session.getQueryCache() == null) {
+      Weigher<String, Expr> weighByLength = new Weigher<String, Expr>() {
+        public int weigh(String key, Expr expr) {
+          return key.length();
+        }
+      };
+      LoadingCache<String, Expr> cache = CacheBuilder.newBuilder()
+        .maximumWeight(queryCacheSize * 1024)
+        .weigher(weighByLength)
+        .expireAfterAccess(1, TimeUnit.HOURS)
+        .build(new CacheLoader<String, Expr>() {
+          public Expr load(String sql) throws SQLSyntaxError {
+            return analyzer.parse(sql);
+          }
+        });
+      session.setQueryCache(cache);
+    }
     return newQueryContext;
   }
 
@@ -157,7 +181,7 @@ public class GlobalEngine extends AbstractService {
       if (isJson) {
         planningContext = buildExpressionFromJson(query);
       } else {
-        planningContext = buildExpressionFromSql(query);
+        planningContext = buildExpressionFromSql(query, session);
       }
 
       String jsonExpr = planningContext.toJson();
@@ -185,10 +209,22 @@ public class GlobalEngine extends AbstractService {
     return JsonHelper.fromJson(json, Expr.class);
   }
 
-  public Expr buildExpressionFromSql(String sql) throws InterruptedException, IOException,
+  public Expr buildExpressionFromSql(String sql, Session session) throws InterruptedException, IOException,
       IllegalQueryStatusException {
     context.getSystemMetrics().counter("Query", "totalQuery").inc();
-    return analyzer.parse(sql);
+    try {
+      if (session.getQueryCache() == null) {
+        return analyzer.parse(sql);
+      } else {
+        return (Expr) session.getQueryCache().get(sql.trim()).clone();
+      }
+    } catch (Exception e) {
+      if (e.getCause() instanceof SQLSyntaxError) {
+        throw (SQLSyntaxError) e.getCause();
+      } else {
+        throw new SQLSyntaxError(e.getCause().getMessage());
+      }
+    }
   }
 
   public QueryId updateQuery(QueryContext queryContext, String sql, boolean isJson) throws IOException,
@@ -258,7 +294,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   private void verifyInsertTableSchema(QueryContext queryContext, VerificationState state, LogicalPlan plan) {
-    StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
       if (rootNode.getChild().getType() == NodeType.INSERT) {
@@ -267,7 +303,7 @@ public class GlobalEngine extends AbstractService {
           InsertNode iNode = rootNode.getChild();
           Schema outSchema = iNode.getChild().getOutSchema();
 
-          StorageManager.getStorageManager(queryContext.getConf(), storeType)
+          TableSpaceManager.getStorageManager(queryContext.getConf(), storeType)
               .verifyInsertTableSchema(tableDesc, outSchema);
         } catch (Throwable t) {
           state.addVerification(t.getMessage());

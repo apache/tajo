@@ -377,7 +377,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "orderkeys"));
     TableDesc orderKeys = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "orderkeys");
-    if (!cluster.isHCatalogStoreRunning()) {
+    if (!cluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, orderKeys.getStats().getNumRows().intValue());
     }
   }
@@ -399,7 +399,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testDatabaseRef() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("CREATE DATABASE \"TestSelectQuery\"").close();
       executeString("CREATE TABLE \"TestSelectQuery\".\"LineItem\" AS SELECT * FROM default.lineitem" ).close();
 
@@ -707,5 +707,40 @@ public class TestSelectQuery extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE table2");
     }
+  }
+
+  @Test
+  public void testSelectPythonFuncs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testSelectWithPredicateOnPythonFunc() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testNestedPythonFunction() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testSelectWithParentheses1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testSelectWithParentheses2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

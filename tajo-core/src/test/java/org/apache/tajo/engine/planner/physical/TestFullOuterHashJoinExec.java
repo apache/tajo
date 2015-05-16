@@ -23,7 +23,6 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -103,9 +102,9 @@ public class TestFullOuterHashJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
     Path dep3Path = new Path(testDir, "dep3.csv");
-    Appender appender1 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender1 = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
     Tuple tuple = new VTuple(dep3Schema.size());
@@ -133,9 +132,9 @@ public class TestFullOuterHashJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
     Path job3Path = new Path(testDir, "job3.csv");
-    Appender appender2 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender2 = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
     Tuple tuple2 = new VTuple(job3Schema.size());
@@ -173,9 +172,9 @@ public class TestFullOuterHashJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
     Path emp3Path = new Path(testDir, "emp3.csv");
-    Appender appender3 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender3 = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
     Tuple tuple3 = new VTuple(emp3Schema.size());
@@ -226,9 +225,9 @@ public class TestFullOuterHashJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
     Path phone3Path = new Path(testDir, "phone3.csv");
-    Appender appender5 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender5 = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(phone3Meta, phone3Schema, phone3Path);
     appender5.init();
 

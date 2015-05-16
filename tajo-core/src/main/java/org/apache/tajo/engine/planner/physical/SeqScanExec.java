@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.Target;
@@ -69,9 +70,8 @@ public class SeqScanExec extends ScanExec {
     this.qual = plan.getQual();
     this.fragments = fragments;
 
-    if (fragments != null
-        && plan.getTableDesc().hasPartition()
-        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
+    if (plan.getTableDesc().hasPartition() &&
+        plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
       rewriteColumnPartitionedTableSchema();
     }
   }
@@ -94,20 +94,25 @@ public class SeqScanExec extends ScanExec {
     // Remove partition key columns from an input schema.
     this.inSchema = plan.getTableDesc().getSchema();
 
-    List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
+    Tuple partitionRow = null;
+    if (fragments != null && fragments.length > 0) {
+      List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
-    // Get a partition key value from a given path
-    Tuple partitionRow =
-        PartitionedTableRewriter.buildTupleFromPartitionPath(columnPartitionSchema, fileFragments.get(0).getPath(),
-            false);
+      // Get a partition key value from a given path
+      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
+              columnPartitionSchema, fileFragments.get(0).getPath(), false);
+    }
 
     // Targets or search conditions may contain column references.
     // However, actual values absent in tuples. So, Replace all column references by constant datum.
     for (Column column : columnPartitionSchema.toArray()) {
       FieldEval targetExpr = new FieldEval(column);
-      Datum datum = targetExpr.eval(columnPartitionSchema, partitionRow);
+      Datum datum = NullDatum.get();
+      if (partitionRow != null) {
+        targetExpr.bind(context.getEvalContext(), columnPartitionSchema);
+        datum = targetExpr.eval(partitionRow);
+      }
       ConstEval constExpr = new ConstEval(datum);
-
 
       for (int i = 0; i < plan.getTargets().length; i++) {
         Target target = plan.getTargets()[i];
@@ -133,6 +138,8 @@ public class SeqScanExec extends ScanExec {
   public void init() throws IOException {
     Schema projected;
 
+    // in the case where projected column or expression are given
+    // the target can be an empty list.
     if (plan.hasTargets()) {
       projected = new Schema();
       Set<Column> columnSet = new HashSet<Column>();
@@ -145,17 +152,28 @@ public class SeqScanExec extends ScanExec {
         columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
       }
 
-      for (Column column : inSchema.getColumns()) {
+      for (Column column : inSchema.getAllColumns()) {
         if (columnSet.contains(column)) {
           projected.addColumn(column);
         }
       }
+
     } else {
+      // no any projected columns, meaning that all columns should be projected.
+      // TODO - this implicit rule makes code readability bad. So, we should remove it later
       projected = outSchema;
     }
 
     initScanner(projected);
     super.init();
+
+    if (plan.hasQual()) {
+      if (scanner.isProjectable()) {
+        qual.bind(context.getEvalContext(), projected);
+      } else {
+        qual.bind(context.getEvalContext(), inSchema);
+      }
+    }
   }
 
   @Override
@@ -166,7 +184,7 @@ public class SeqScanExec extends ScanExec {
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    
     TableMeta meta;
     try {
       meta = (TableMeta) plan.getTableDesc().getMeta().clone();
@@ -177,18 +195,30 @@ public class SeqScanExec extends ScanExec {
     // set system default properties
     PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
 
+    // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
             FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        StorageManager storageManager = StorageManager.getStorageManager(
+        StorageManager storageManager = TableSpaceManager.getStorageManager(
             context.getConf(), plan.getTableDesc().getMeta().getStoreType());
         this.scanner = storageManager.getScanner(meta,
             plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();
+
+      // See Scanner.isProjectable() method Depending on the result of isProjectable(),
+      // the width of retrieved tuple is changed.
+      //
+      // If TRUE, the retrieved tuple will contain only projected fields.
+      // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
+      if (scanner.isProjectable()) {
+        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
+      } else {
+        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+      }
     }
   }
 
@@ -211,7 +241,7 @@ public class SeqScanExec extends ScanExec {
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-        if (qual.eval(inSchema, tuple).isTrue()) {
+        if (qual.eval(tuple).isTrue()) {
           projector.eval(tuple, outTuple);
           return outTuple;
         }

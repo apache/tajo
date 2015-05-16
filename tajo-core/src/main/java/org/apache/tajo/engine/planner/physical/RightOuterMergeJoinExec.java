@@ -21,9 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -35,11 +33,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode joinNode;
-  private EvalNode joinQual;
-
+public class RightOuterMergeJoinExec extends CommonJoinExec {
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
   private Tuple leftTuple = null;
@@ -57,9 +51,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
   private boolean end = false;
 
-  // projection
-  private Projector projector;
-
   private int leftNumCols;
   private int posRightTupleSlots = -1;
   private int posLeftTupleSlots = -1;
@@ -68,12 +59,9 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
   public RightOuterMergeJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                  PhysicalExec inner, SortSpec[] outerSortKey, SortSpec[] innerSortKey) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
+    super(context, plan, outer, inner);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.joinNode = plan;
-    this.joinQual = plan.getJoinQual();
-
     this.leftTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
@@ -84,23 +72,11 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
     this.tupleComparator = PhysicalPlanUtil.getComparatorsFromJoinQual(
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
 
     leftNumCols = outer.getSchema().size();
-  }
-
-  @Override
-  protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
-  }
-
-  public JoinNode getPlan() {
-    return this.joinNode;
   }
 
   /**
@@ -126,7 +102,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
    * @throws IOException
    */
   public Tuple next() throws IOException {
-    Tuple previous;
 
     while (!context.isStopped()) {
       boolean newRound = false;
@@ -145,7 +120,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
         // The finalizing stage, where remaining tuples on the only right are transformed into left-padded results
         if (end) {
-          if (initRightDone == false) {
+          if (!initRightDone) {
             // maybe the left operand was empty => the right one didn't have the chance to initialize
             rightTuple = rightChild.next();
             initRightDone = true;
@@ -184,18 +159,24 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
           }
         }
 
-        if(rightTuple == null){
+        if(rightTuple == null) {
           rightTuple = rightChild.next();
-
-          if(rightTuple != null){
-            initRightDone = true;
-          }
-          else {
+          if (rightTuple == null) {
             initRightDone = true;
             end = true;
             continue;
           }
         }
+        if (rightFiltered(rightTuple)) {
+          Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
+          frameTuple.set(nullPaddedTuple, rightTuple);
+          projector.eval(frameTuple, outTuple);
+
+          rightTuple = null;
+          return outTuple;
+        }
+        initRightDone = true;
+
         //////////////////////////////////////////////////////////////////////
         // END INITIALIZATION STAGE
         //////////////////////////////////////////////////////////////////////
@@ -227,10 +208,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
-            rightTuple = rightChild.next();
-            if(rightTuple == null) {
-              end = true;
-            }
+            rightTuple = null;
             return outTuple;
 
           } else if (cmp < 0) {
@@ -247,6 +225,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
         // END MOVE FORWARDING STAGE
         //////////////////////////////////////////////////////////////////////
 
+        Tuple previous = null;
         // once a match is found, retain all tuples with this key in tuple slots on each side
         if(!end) {
           endInPopulationStage = false;
@@ -281,6 +260,19 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
             endInPopulationStage = true;
           }
         } // if end false
+        if (previous != null && rightFiltered(previous)) {
+          Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
+          frameTuple.set(nullPaddedTuple, previous);
+          projector.eval(frameTuple, outTuple);
+
+          // reset tuple slots for a new round
+          leftTupleSlots.clear();
+          innerTupleSlots.clear();
+          posRightTupleSlots = -1;
+          posLeftTupleSlots = -1;
+
+          return outTuple;
+        }
       } // if newRound
 
 
@@ -302,7 +294,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
           posRightTupleSlots = posRightTupleSlots + 1;
 
           frameTuple.set(nextLeft, aTuple);
-          if (joinQual.eval(inSchema, frameTuple).asBool()) {
+          if (joinQual.eval(frameTuple).asBool()) {
             projector.eval(frameTuple, outTuple);
             return outTuple;
           } else {
@@ -324,7 +316,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
             frameTuple.set(nextLeft, aTuple);
 
-            if (joinQual.eval(inSchema, frameTuple).asBool()) {
+            if (joinQual.eval(frameTuple).asBool()) {
               projector.eval(frameTuple, outTuple);
               return outTuple;
             } else {
@@ -357,9 +349,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
     innerTupleSlots.clear();
     leftTupleSlots = null;
     innerTupleSlots = null;
-    joinNode = null;
-    joinQual = null;
-    projector = null;
   }
 }
 

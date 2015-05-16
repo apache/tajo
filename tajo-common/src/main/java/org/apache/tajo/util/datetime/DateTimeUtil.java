@@ -126,6 +126,12 @@ public class DateTimeUtil {
     return julian;
   }
 
+  public static TimeMeta j2date(int julianDate) {
+    TimeMeta tm = new TimeMeta();
+    j2date(julianDate, tm);
+    return tm;
+  }
+
   /**
    * Set TimeMeta's date fields.
    * @param julianDate
@@ -1899,6 +1905,10 @@ public class DateTimeUtil {
   }
 
   public static String encodeDate(TimeMeta tm, DateStyle style) {
+    return encodeDate(tm.years, tm.monthOfYear, tm.dayOfMonth, style);
+  }
+
+  public static String encodeDate(int years, int monthOfYear, int dayOfMonth, DateStyle style) {
     StringBuilder sb = new StringBuilder();
     switch (style) {
       case ISO_DATES:
@@ -1907,8 +1917,8 @@ public class DateTimeUtil {
         // Compatible with Oracle/Ingres date formats
       default:
         sb.append(String.format("%04d-%02d-%02d",
-            (tm.years > 0) ? tm.years : -(tm.years - 1),
-            tm.monthOfYear, tm.dayOfMonth));
+            (years > 0) ? years : -(years - 1),
+            monthOfYear, dayOfMonth));
     }
 
     return sb.toString();

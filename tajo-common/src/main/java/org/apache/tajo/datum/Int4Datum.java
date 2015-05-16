@@ -212,7 +212,7 @@ public class Int4Datum extends NumericDatum {
       DateDatum dateDatum = (DateDatum)datum;
       TimeMeta tm = dateDatum.toTimeMeta();
       tm.plusDays(asInt4());
-      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+      return new DateDatum(tm);
     case NULL_TYPE:
       return datum;
     default:
@@ -237,7 +237,7 @@ public class Int4Datum extends NumericDatum {
       DateDatum dateDatum = (DateDatum)datum;
       TimeMeta tm = dateDatum.toTimeMeta();
       tm.plusDays(0 - asInt4());
-      return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+      return new DateDatum(tm);
     case NULL_TYPE:
       return datum;
     default:

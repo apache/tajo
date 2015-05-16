@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.primitives.Longs;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
@@ -118,19 +119,18 @@ public class TimeDatum extends Datum {
     return Bytes.toBytes(asInt8());
   }
 
+  @Override
   public Datum plus(Datum datum) {
     switch(datum.type()) {
-      case INTERVAL: {
+      case INTERVAL:
         IntervalDatum interval = ((IntervalDatum)datum);
         TimeMeta tm = toTimeMeta();
-        tm.plusMillis(interval.getMilliSeconds());
+        tm.plusInterval(interval.months, interval.milliseconds);
         return new TimeDatum(DateTimeUtil.toTime(tm));
-      }
       case DATE: {
-        TimeMeta tm = toTimeMeta();
         DateDatum dateDatum = (DateDatum) datum;
         TimeMeta dateTm = dateDatum.toTimeMeta();
-        dateTm.plusTime(DateTimeUtil.toTime(tm));
+        dateTm.plusTime(time);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(dateTm));
       }
       default:
@@ -138,19 +138,16 @@ public class TimeDatum extends Datum {
     }
   }
 
+  @Override
   public Datum minus(Datum datum) {
     switch(datum.type()) {
-      case INTERVAL: {
+      case INTERVAL:
         IntervalDatum interval = ((IntervalDatum)datum);
         TimeMeta tm = toTimeMeta();
-        tm.plusMillis(0 - interval.getMilliSeconds());
+        tm.plusInterval(-interval.months, -interval.milliseconds);
         return new TimeDatum(DateTimeUtil.toTime(tm));
-      }
       case TIME:
-        TimeMeta tm1 = toTimeMeta();
-        TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
-
-        return new IntervalDatum((DateTimeUtil.toTime(tm1) - DateTimeUtil.toTime(tm2))/1000);
+        return new IntervalDatum((time - ((TimeDatum)datum).time)/1000);
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -171,7 +168,7 @@ public class TimeDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
       TimeDatum another = (TimeDatum)datum;
-      return (time < another.time) ? -1 : ((time == another.time) ? 0 : 1);
+      return Longs.compare(time, another.time);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
@@ -179,6 +176,7 @@ public class TimeDatum extends Datum {
     }
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof TimeDatum) {
       TimeDatum another = (TimeDatum) obj;
@@ -190,7 +188,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public int hashCode() {
-    return (int)(time ^ (time >>> 32));
+    return Longs.hashCode(time);
   }
 
 }

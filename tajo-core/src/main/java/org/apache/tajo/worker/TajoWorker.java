@@ -33,8 +33,14 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
@@ -50,11 +56,8 @@ import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.JvmPauseMonitor;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
@@ -65,6 +68,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -74,6 +78,7 @@ import static org.apache.tajo.conf.TajoConf.ConfVars;
 public class TajoWorker extends CompositeService {
   public static final PrimitiveProtos.BoolProto TRUE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
   public static final PrimitiveProtos.BoolProto FALSE_PROTO = PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
+  public static final PrimitiveProtos.NullProto NULL_PROTO = PrimitiveProtos.NullProto.newBuilder().build();
 
   private static final Log LOG = LogFactory.getLog(TajoWorker.class);
 
@@ -150,6 +155,11 @@ public class TajoWorker extends CompositeService {
 
     this.systemConf = (TajoConf)conf;
     RackResolver.init(systemConf);
+
+    RpcClientManager rpcManager = RpcClientManager.getInstance();
+    rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
+    rpcManager.setTimeoutSeconds(
+        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
     serviceTracker = ServiceTrackerFactory.get(systemConf);
 
@@ -235,6 +245,8 @@ public class TajoWorker extends CompositeService {
     taskHistoryWriter.init(conf);
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
+
+    FunctionLoader.loadUserDefinedFunctions(systemConf, new HashMap<FunctionSignature, FunctionDesc>());
     
     diagnoseTajoWorker();
   }
@@ -311,6 +323,7 @@ public class TajoWorker extends CompositeService {
     startJvmPauseMonitor();
 
     tajoMasterInfo = new TajoMasterInfo();
+
     if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
       tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
@@ -357,7 +370,7 @@ public class TajoWorker extends CompositeService {
     }
 
     try {
-      StorageManager.close();
+      TableSpaceManager.shutdown();
     } catch (IOException ie) {
       LOG.error(ie.getMessage(), ie);
     }

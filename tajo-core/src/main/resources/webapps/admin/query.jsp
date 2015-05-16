@@ -29,9 +29,14 @@
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.master.QueryInfo" %>
+<%@ page import="java.net.InetSocketAddress" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+
+  String[] masterName = master.getMasterName().split(":");
+  InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
+  String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
   List<QueryInProgress> runningQueries =
           new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getSubmittedQueries());
@@ -89,20 +94,22 @@
     <script type="text/javascript">
 
     function killQuery(queryId) {
-        $.ajax({
-            type: "POST",
-            url: "query_exec",
-            data: { action: "killQuery", queryId: queryId }
-        })
-        .done(function(msg) {
-            var resultJson = $.parseJSON(msg);
-            if(resultJson.success == "false") {
-                alert(resultJson.errorMessage);
-            } else {
-                alert(resultJson.successMessage);
-                location.reload();
-            }
-        })
+        if (confirm("Are you sure to kill " + queryId + "?")) {
+            $.ajax({
+                type: "POST",
+                url: "query_exec",
+                data: { action: "killQuery", queryId: queryId }
+            })
+            .done(function(msg) {
+                var resultJson = $.parseJSON(msg);
+                if(resultJson.success == "false") {
+                    alert(resultJson.errorMessage);
+                } else {
+                    alert(resultJson.successMessage);
+                    location.reload();
+                }
+            })
+        }
     }
 
 
@@ -111,7 +118,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
   <h3>Running Queries</h3>
 <%

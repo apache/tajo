@@ -19,10 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 import java.util.List;
@@ -33,20 +31,10 @@ import java.util.List;
  * If found, it returns the tuple of the FROM side table.
  */
 public class HashLeftSemiJoinExec extends HashJoinExec {
-  private Tuple rightNullTuple;
 
   public HashLeftSemiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec fromSideChild,
                               PhysicalExec inSideChild) {
     super(context, plan, fromSideChild, inSideChild);
-    // NUll Tuple
-    rightNullTuple = new VTuple(leftChild.outColumnNum);
-    for (int i = 0; i < leftChild.outColumnNum; i++) {
-      rightNullTuple.put(i, NullDatum.get());
-    }
-  }
-
-  protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   /**
@@ -62,50 +50,34 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
    * @return The tuple which is firstly matched to a given join condition.
    * @throws java.io.IOException
    */
+  @Override
   public Tuple next() throws IOException {
     if (first) {
       loadRightToHashTable();
     }
 
-    Tuple rightTuple;
-    boolean notFound;
-
     while(!context.isStopped() && !finished) {
-
-      // getting new outer
-      leftTuple = leftChild.next(); // it comes from a disk
-      if (leftTuple == null) { // if no more tuples in left tuples on disk, a join is completed.
-        finished = true;
-        return null;
+      if (iterator != null && iterator.hasNext()) {
+        frameTuple.setRight(iterator.next());
+        projector.eval(frameTuple, outTuple);
+        return outTuple;
       }
-
-      // Try to find a hash bucket in in-memory hash table
-      getKeyLeftTuple(leftTuple, leftKeyTuple);
-      List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
-      if (rightTuples != null) {
-        // if found, it gets a hash bucket from the hash table.
-        iterator = rightTuples.iterator();
-      } else {
+      // getting new outer
+      Tuple leftTuple = leftChild.next(); // it comes from a disk
+      if (leftTuple == null || leftFiltered(leftTuple)) { // if no more tuples in left tuples on disk, a join is completed.
+        finished = leftTuple == null;
         continue;
       }
 
-      // Reach here only when a hash bucket is found. Then, it checks all tuples in the found bucket.
-      // If it finds any matched tuple, it returns the tuple immediately.
-      notFound = true;
-      while (notFound && iterator.hasNext()) {
-        rightTuple = iterator.next();
-        frameTuple.set(leftTuple, rightTuple);
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
-          notFound = false;
-          projector.eval(frameTuple, outTuple);
-        }
-      }
+      frameTuple.setLeft(leftTuple);
 
-      if (!notFound) { // if there is no matched tuple
-        break;
+      // Try to find a hash bucket in in-memory hash table
+      List<Tuple> hashed = tupleSlots.get(toKey(leftTuple));
+      if (hashed != null && rightFiltered(hashed).hasNext()) {
+        // if found, it gets a hash bucket from the hash table.
+        iterator = nullIterator(0);
       }
     }
-
-    return outTuple;
+    return null;
   }
 }

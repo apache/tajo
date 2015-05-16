@@ -30,7 +30,6 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -38,6 +37,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
@@ -108,14 +108,14 @@ public class TestStorages {
           "  ]\n" +
           "}\n";
 
-  private StoreType storeType;
+  private String storeType;
   private boolean splitable;
   private boolean statsable;
   private boolean seekable;
   private Path testDir;
   private FileSystem fs;
 
-  public TestStorages(StoreType type, boolean splitable, boolean statsable, boolean seekable) throws IOException {
+  public TestStorages(String type, boolean splitable, boolean statsable, boolean seekable) throws IOException {
     this.storeType = type;
     this.splitable = splitable;
     this.statsable = statsable;
@@ -123,7 +123,7 @@ public class TestStorages {
 
     conf = new TajoConf();
 
-    if (storeType == StoreType.RCFILE) {
+    if (storeType.equalsIgnoreCase("RCFILE")) {
       conf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, 100);
     }
 
@@ -135,14 +135,14 @@ public class TestStorages {
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
         //type, splitable, statsable, seekable
-        {StoreType.CSV, true, true, true},
-        {StoreType.RAW, false, true, true},
-        {StoreType.RCFILE, true, true, false},
-        {StoreType.PARQUET, false, false, false},
-        {StoreType.SEQUENCEFILE, true, true, false},
-        {StoreType.AVRO, false, false, false},
-        {StoreType.TEXTFILE, true, true, false},
-        {StoreType.JSON, true, true, false},
+        {"CSV", true, true, true},
+        {"RAW", false, true, true},
+        {"RCFILE", true, true, false},
+        {"PARQUET", false, false, false},
+        {"SEQUENCEFILE", true, true, false},
+        {"AVRO", false, false, false},
+        {"TEXT", true, true, true},
+        {"JSON", true, true, false},
     });
   }
 
@@ -155,7 +155,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -203,14 +203,14 @@ public class TestStorages {
 
   @Test
   public void testRCFileSplitable() throws IOException {
-    if (storeType == StoreType.RCFILE) {
+    if (storeType.equalsIgnoreCase("StoreType.RCFILE")) {
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT8);
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -265,13 +265,13 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
-    if (storeType == StoreType.AVRO) {
+    if (storeType.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_PROJECTION_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
     int tupleNum = 10000;
@@ -297,15 +297,7 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
-      if (storeType == StoreType.RCFILE
-          || storeType == StoreType.CSV
-          || storeType == StoreType.PARQUET
-          || storeType == StoreType.SEQUENCEFILE
-          || storeType == StoreType.AVRO) {
-        assertTrue(tuple.get(0) == null);
-      }
-      assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
-      assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
+      verifyProjectedFields(scanner.isProjectable(), tuple, tupleCnt);
       tupleCnt++;
     }
     scanner.close();
@@ -313,9 +305,23 @@ public class TestStorages {
     assertEquals(tupleNum, tupleCnt);
   }
 
+  private void verifyProjectedFields(boolean projectable, Tuple tuple, int tupleCnt) {
+    if (projectable) {
+      assertTrue(tupleCnt + 2 == tuple.get(0).asInt8());
+      assertTrue(tupleCnt + 3 == tuple.get(1).asFloat4());
+    } else {
+      // RAW and ROW always project all fields.
+      if (!storeType.equalsIgnoreCase("RAW") && !storeType.equalsIgnoreCase("ROWFILE")) {
+        assertTrue(tuple.get(0) == null);
+      }
+      assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
+      assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
+    }
+  }
+
   @Test
   public void testVariousTypes() throws IOException {
-    boolean handleProtobuf = storeType != StoreType.JSON;
+    boolean handleProtobuf = !storeType.equalsIgnoreCase("JSON");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -336,12 +342,12 @@ public class TestStorages {
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
-    if (storeType == StoreType.AVRO) {
+    if (storeType.equalsIgnoreCase("AVRO")) {
       String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
@@ -387,7 +393,7 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    boolean handleProtobuf = storeType != StoreType.JSON;
+    boolean handleProtobuf = !storeType.equalsIgnoreCase("JSON");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -413,13 +419,13 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
     meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
-    if (storeType == StoreType.AVRO) {
+    if (storeType.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
 
@@ -463,7 +469,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -485,7 +491,7 @@ public class TestStorages {
 
   @Test
   public void testRCFileTextSerializeDeserialize() throws IOException {
-    if(storeType != StoreType.RCFILE) return;
+    if(!storeType.equalsIgnoreCase("RCFILE")) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -507,7 +513,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -539,7 +545,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -555,7 +561,7 @@ public class TestStorages {
 
   @Test
   public void testRCFileBinarySerializeDeserialize() throws IOException {
-    if(storeType != StoreType.RCFILE) return;
+    if(!storeType.equalsIgnoreCase("RCFILE")) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -577,7 +583,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -609,7 +615,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -625,7 +631,7 @@ public class TestStorages {
 
   @Test
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
-    if(storeType != StoreType.SEQUENCEFILE) return;
+    if(!storeType.equalsIgnoreCase("SEQUENCEFILE")) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -647,7 +653,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -679,7 +685,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -699,7 +705,7 @@ public class TestStorages {
 
   @Test
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
-    if(storeType != StoreType.SEQUENCEFILE) return;
+    if(!storeType.equalsIgnoreCase("SEQUENCEFILE")) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -721,7 +727,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -753,7 +759,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -773,7 +779,7 @@ public class TestStorages {
 
   @Test
   public void testTime() throws IOException {
-    if (storeType == StoreType.CSV || storeType == StoreType.RAW) {
+    if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("RAW")) {
       Schema schema = new Schema();
       schema.addColumn("col1", Type.DATE);
       schema.addColumn("col2", Type.TIME);
@@ -783,7 +789,7 @@ public class TestStorages {
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.init();
 
@@ -799,7 +805,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+      Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
       scanner.init();
 
       Tuple retrieved;
@@ -825,7 +831,7 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -867,7 +873,7 @@ public class TestStorages {
     long readBytes = 0;
     long readRows = 0;
     for (long offset : offsets) {
-      scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema,
+      scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema,
 	        new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
       scanner.init();
 
@@ -902,12 +908,12 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    if (storeType == StoreType.AVRO) {
+    if (storeType.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
 
-    if (storeType == StoreType.RAW) {
-      StorageManager.clearCache();
+    if (storeType.equalsIgnoreCase("RAW")) {
+      TableSpaceManager.clearCache();
       /* TAJO-1250 reproduce BufferOverflow of RAWFile */
       int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
       /* max varint32: 5 bytes, max varint64: 10 bytes */
@@ -915,7 +921,7 @@ public class TestStorages {
       conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
     }
 
-    FileStorageManager sm = (FileStorageManager) StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testMaxValue.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
 
@@ -948,8 +954,119 @@ public class TestStorages {
     scanner.close();
 
 
-    if (storeType == StoreType.RAW){
-      StorageManager.clearCache();
+    if (storeType.equalsIgnoreCase("RAW")){
+      TableSpaceManager.clearCache();
     }
+  }
+
+  @Test
+  public void testLessThanSchemaSize() throws IOException {
+    /* RAW is internal storage. It must be same with schema size */
+    if (storeType.equalsIgnoreCase("RAW") || storeType.equalsIgnoreCase("AVRO")
+        || storeType.equalsIgnoreCase("PARQUET")){
+      return;
+    }
+
+    Schema dataSchema = new Schema();
+    dataSchema.addColumn("col1", Type.FLOAT4);
+    dataSchema.addColumn("col2", Type.FLOAT8);
+    dataSchema.addColumn("col3", Type.INT2);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+
+    Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    Appender appender = sm.getAppender(meta, dataSchema, tablePath);
+    appender.init();
+
+
+    Tuple expect = new VTuple(dataSchema.size());
+    expect.put(new Datum[]{
+        DatumFactory.createFloat4(Float.MAX_VALUE),
+        DatumFactory.createFloat8(Double.MAX_VALUE),
+        DatumFactory.createInt2(Short.MAX_VALUE)
+    });
+
+    appender.addTuple(expect);
+    appender.flush();
+    appender.close();
+
+    assertTrue(fs.exists(tablePath));
+    FileStatus status = fs.getFileStatus(tablePath);
+    Schema inSchema = new Schema();
+    inSchema.addColumn("col1", Type.FLOAT4);
+    inSchema.addColumn("col2", Type.FLOAT8);
+    inSchema.addColumn("col3", Type.INT2);
+    inSchema.addColumn("col4", Type.INT4);
+    inSchema.addColumn("col5", Type.INT8);
+
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, inSchema, fragment);
+
+    Schema target = new Schema();
+
+    target.addColumn("col2", Type.FLOAT8);
+    target.addColumn("col5", Type.INT8);
+    scanner.setTarget(target.toArray());
+    scanner.init();
+
+    Tuple tuple = scanner.next();
+    scanner.close();
+
+    if (scanner.isProjectable()) {
+      assertEquals(expect.get(1), tuple.get(0));
+      assertEquals(NullDatum.get(), tuple.get(1));
+    } else {
+      assertEquals(expect.get(1), tuple.get(1));
+      assertEquals(NullDatum.get(), tuple.get(4));
+    }
+  }
+
+  @Test
+  public final void testInsertFixedCharTypeWithOverSize() throws Exception {
+    if (storeType.equalsIgnoreCase("CSV") == false &&
+        storeType.equalsIgnoreCase("SEQUENCEFILE") == false &&
+        storeType.equalsIgnoreCase("RCFILE") == false &&
+        storeType.equalsIgnoreCase("PARQUET") == false) {
+      return;
+    }
+
+    Schema dataSchema = new Schema();
+    dataSchema.addColumn("col1", Type.CHAR);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+
+    Path tablePath = new Path(testDir, "test_storetype_oversize.data");
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    Appender appender = sm.getAppender(meta, dataSchema, tablePath);
+    appender.init();
+
+    Tuple expect = new VTuple(dataSchema.size());
+    expect.put(new Datum[]{
+        DatumFactory.createChar("1"),
+    });
+
+    appender.addTuple(expect);
+    appender.flush();
+
+    Tuple expect2 = new VTuple(dataSchema.size());
+    expect2.put(new Datum[]{
+        DatumFactory.createChar("12"),
+    });
+
+    boolean ok = false;
+    try {
+      appender.addTuple(expect2);
+      appender.flush();
+      appender.close();
+    } catch (ValueTooLongForTypeCharactersException e) {
+      ok = true;
+    }
+
+    assertTrue(ok);
   }
 }

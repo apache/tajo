@@ -268,14 +268,13 @@ public class DelimitedTextFile {
     }
   }
 
-  public static class DelimitedTextFileScanner extends FileScanner {
+  public static class DelimitedTextFileScanner extends FileScanner implements SeekableScanner {
     private boolean splittable = false;
     private final long startOffset;
 
     private final long endOffset;
     /** The number of actual read records */
     private int recordCount = 0;
-    private int[] targetColumnIndexes;
 
     private DelimitedLineReader reader;
     private TextLineDeserializer deserializer;
@@ -309,6 +308,10 @@ public class DelimitedTextFile {
         reader.close();
       }
 
+      if(deserializer != null) {
+        deserializer.release();
+      }
+
       reader = new DelimitedLineReader(conf, fragment, conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
       reader.init();
       recordCount = 0;
@@ -317,13 +320,7 @@ public class DelimitedTextFile {
         targets = schema.toArray();
       }
 
-      targetColumnIndexes = new int[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
-      }
-
       super.init();
-      Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
@@ -332,7 +329,7 @@ public class DelimitedTextFile {
         reader.readLine();  // skip first line;
       }
 
-      deserializer = getLineSerde().createDeserializer(schema, meta, targetColumnIndexes);
+      deserializer = getLineSerde().createDeserializer(schema, meta, targets);
       deserializer.init();
     }
 
@@ -372,7 +369,7 @@ public class DelimitedTextFile {
 
         // this loop will continue until one tuple is build or EOS (end of stream).
         do {
-
+          long offset = reader.getUnCompressedPosition();
           ByteBuf buf = reader.readLine();
 
           // if no more line, then return EOT (end of tuple)
@@ -387,7 +384,8 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          tuple = new VTuple(schema.size());
+          tuple = new VTuple(targets.length);
+          tuple.setOffset(offset);
 
           try {
             deserializer.deserialize(buf, tuple);
@@ -477,6 +475,16 @@ public class DelimitedTextFile {
         tableStats.setNumBytes(fragment.getLength());
       }
       return tableStats;
+    }
+
+    @Override
+    public long getNextOffset() throws IOException {
+      return reader.getUnCompressedPosition();
+    }
+
+    @Override
+    public void seek(long offset) throws IOException {
+        reader.seek(offset);
     }
   }
 }

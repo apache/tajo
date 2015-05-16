@@ -18,7 +18,7 @@
 
 package org.apache.tajo.datum;
 
-import com.google.common.base.Objects;
+import com.google.common.primitives.Longs;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
@@ -178,10 +178,7 @@ public class TimestampDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
-      TimeMeta myMeta, otherMeta;
-      myMeta = toTimeMeta();
-      otherMeta = another.toTimeMeta();
-      return myMeta.compareTo(otherMeta);
+      return Longs.compare(timestamp, another.timestamp);
     } else if (datum.type() == TajoDataTypes.Type.DATE) {
       DateDatum another = (DateDatum) datum;
       TimeMeta myMeta, otherMeta;
@@ -195,6 +192,7 @@ public class TimestampDatum extends Datum {
     }
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof TimestampDatum) {
       TimestampDatum another = (TimestampDatum) obj;
@@ -208,19 +206,9 @@ public class TimestampDatum extends Datum {
   public Datum plus(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.INTERVAL) {
       IntervalDatum interval = (IntervalDatum)datum;
-
-      TimeMeta tm = new TimeMeta();
-      DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-
-      if (interval.getMonths() > 0) {
-        tm.plusMonths(interval.getMonths());
-      }
-      if (interval.getMilliSeconds() > 0) {
-        tm.plusMillis(interval.getMilliSeconds());
-      }
-
+      TimeMeta tm = toTimeMeta();
+      tm.plusInterval(interval.months, interval.milliseconds);
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-
     } else {
       throw new InvalidOperationException(datum.type());
     }
@@ -231,16 +219,8 @@ public class TimestampDatum extends Datum {
     switch(datum.type()) {
       case INTERVAL:
         IntervalDatum interval = (IntervalDatum)datum;
-
-        TimeMeta tm = new TimeMeta();
-        DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-
-        if (interval.getMonths() > 0) {
-          tm.plusMonths(0 - interval.getMonths());
-        }
-        if (interval.getMilliSeconds() > 0) {
-          tm.plusMillis(0 - interval.getMilliSeconds());
-        }
+        TimeMeta tm = toTimeMeta();
+        tm.plusInterval(-interval.months, -interval.milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       case TIMESTAMP:
         return new IntervalDatum((timestamp - ((TimestampDatum)datum).timestamp) / 1000);
@@ -251,7 +231,7 @@ public class TimestampDatum extends Datum {
 
   @Override
   public int hashCode(){
-     return Objects.hashCode(timestamp);
+    return Longs.hashCode(timestamp);
   }
 
   public TimeMeta toTimeMeta() {

@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -34,36 +35,51 @@ import org.apache.tajo.storage.Tuple;
  * It is also used for evaluation.
  */
 public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<PlanProto.EvalNodeTree> {
-	@Expose protected EvalType type;
+  @Expose
+  protected EvalType type;
+  protected transient boolean isBound;
 
   public EvalNode() {
   }
 
-	public EvalNode(EvalType type) {
-		this.type = type;
-	}
-	
-	public EvalType getType() {
-		return this.type;
-	}
-	
-	public abstract DataType getValueType();
+  public EvalNode(EvalType type) {
+    this.type = type;
+  }
+
+  public EvalType getType() {
+    return this.type;
+  }
+
+  public abstract DataType getValueType();
 
   public abstract int childNum();
 
   public abstract EvalNode getChild(int idx);
-	
-	public abstract String getName();
+
+  public abstract String getName();
 
   @Override
-	public String toJson() {
+  public String toJson() {
     return PlanGsonHelper.toJson(this, EvalNode.class);
-	}
-	
-	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
+  }
+
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
+    for (int i = 0; i < childNum(); i++) {
+      getChild(i).bind(evalContext, schema);
+    }
+    isBound = true;
+    return this;
+  }
+
+  public <T extends Datum> T eval(Tuple tuple) {
+    if (!isBound) {
+      throw new IllegalStateException("bind() must be called before eval()");
+    }
+    return null;
+  }
 
   @Deprecated
-  public abstract  void preOrder(EvalNodeVisitor visitor);
+  public abstract void preOrder(EvalNodeVisitor visitor);
 
   @Deprecated
   public abstract void postOrder(EvalNodeVisitor visitor);
@@ -72,6 +88,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
   public Object clone() throws CloneNotSupportedException {
     EvalNode evalNode = (EvalNode) super.clone();
     evalNode.type = type;
+    evalNode.isBound = isBound;
     return evalNode;
   }
 

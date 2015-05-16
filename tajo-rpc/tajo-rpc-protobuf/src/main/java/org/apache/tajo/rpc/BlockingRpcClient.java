@@ -20,62 +20,65 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
-
-import io.netty.channel.*;
-import io.netty.util.concurrent.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
-import org.apache.tajo.rpc.RpcProtos.RpcRequest;
+import io.netty.channel.ChannelHandler;
+import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-
-import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class BlockingRpcClient extends NettyClientBase {
-  private static final Log LOG = LogFactory.getLog(RpcProtos.class);
-
-  private final Map<Integer, ProtoCallFuture> requests =
-      new ConcurrentHashMap<Integer, ProtoCallFuture>();
+public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCallFuture> {
 
   private final Method stubMethod;
   private final ProxyRpcChannel rpcChannel;
-  private final ChannelInboundHandlerAdapter inboundHandler;
+  private final NettyChannelInboundHandler handler;
+
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+      throws NoSuchMethodException, ClassNotFoundException {
+    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false);
+  }
 
   /**
    * Intentionally make this method package-private, avoiding user directly
    * new an instance through this constructor.
+   *
+   * @param rpcConnectionKey
+   * @param retries          retry operation number of times
+   * @param timeout          disable ping, it trigger timeout event on idle-state.
+   *                         otherwise it is request timeout on active-state
+   * @param timeUnit         TimeUnit
+   * @param enablePing       enable to detect remote peer hangs
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
    */
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
-      throws ClassNotFoundException, NoSuchMethodException {
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit,
+                    boolean enablePing) throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
-    stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
-    rpcChannel = new ProxyRpcChannel();
-    inboundHandler = new ClientChannelInboundHandler();
-    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance()));
+
+    this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
+    this.rpcChannel = new ProxyRpcChannel();
+    this.handler = new ClientChannelInboundHandler();
+    init(new ProtoClientChannelInitializer(handler,
+        RpcResponse.getDefaultInstance(),
+        timeUnit.toNanos(timeout),
+        enablePing));
   }
 
   @Override
-  public <T> T getStub() {
+  public <I> I getStub() {
     return getStub(stubMethod, rpcChannel);
   }
 
   @Override
-  public void close() {
-    for(ProtoCallFuture callback: requests.values()) {
-      callback.setFailed("BlockingRpcClient terminates all the connections",
-          new ServiceException("BlockingRpcClient terminates all the connections"));
-    }
-
-    super.close();
+  protected NettyChannelInboundHandler getHandler() {
+    return handler;
   }
 
   private class ProxyRpcChannel implements BlockingRpcChannel {
+
+    private final AtomicInteger sequence = new AtomicInteger(0);
 
     @Override
     public Message callBlockingMethod(final MethodDescriptor method,
@@ -85,129 +88,66 @@ public class BlockingRpcClient extends NettyClientBase {
         throws TajoServiceException {
 
       int nextSeqId = sequence.getAndIncrement();
+      RpcProtos.RpcRequest rpcRequest = buildRequest(nextSeqId, method, param);
+      ProtoCallFuture callFuture = new ProtoCallFuture(controller, responsePrototype);
 
-      Message rpcRequest = buildRequest(nextSeqId, method, param);
-
-      ProtoCallFuture callFuture =
-          new ProtoCallFuture(controller, responsePrototype);
-      requests.put(nextSeqId, callFuture);
-
-      ChannelPromise channelPromise = getChannel().newPromise();
-      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
-        @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
-          if (!future.isSuccess()) {
-            inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
-          }
-        }
-      });
-      getChannel().writeAndFlush(rpcRequest, channelPromise);
+      invoke(rpcRequest, callFuture, 0);
 
       try {
-        return callFuture.get(60, TimeUnit.SECONDS);
+        return callFuture.get();
       } catch (Throwable t) {
         if (t instanceof ExecutionException) {
           Throwable cause = t.getCause();
           if (cause != null && cause instanceof TajoServiceException) {
-            throw (TajoServiceException)cause;
+            throw (TajoServiceException) cause;
           }
         }
         throw new TajoServiceException(t.getMessage());
       }
     }
-
-    private Message buildRequest(int seqId,
-                                 MethodDescriptor method,
-                                 Message param) {
-      RpcRequest.Builder requestBuilder = RpcRequest.newBuilder()
-          .setId(seqId)
-          .setMethodName(method.getName());
-
-      if (param != null) {
-        requestBuilder.setRequestMessage(param.toByteString());
-      }
-
-      return requestBuilder.build();
-    }
-  }
-
-  private String getErrorMessage(String message) {
-    if(getChannel() != null) {
-      return protocol.getName() +
-          "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
-          getChannel().remoteAddress()) + "): " + message;
-    } else {
-      return "Exception " + message;
-    }
   }
 
   private TajoServiceException makeTajoServiceException(RpcResponse response, Throwable cause) {
-    if(getChannel() != null) {
-      return new TajoServiceException(response.getErrorMessage(), cause, protocol.getName(),
-          RpcUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().remoteAddress()));
+    if (getChannel() != null) {
+      return new TajoServiceException(response.getErrorMessage(), cause, getKey().protocolClass.getName(),
+          RpcUtils.normalizeInetSocketAddress((InetSocketAddress) getChannel().remoteAddress()));
     } else {
       return new TajoServiceException(response.getErrorMessage());
     }
   }
 
   @ChannelHandler.Sharable
-  private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
+  public class ClientChannelInboundHandler extends NettyChannelInboundHandler {
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
-        throws Exception {
+    protected void run(RpcResponse rpcResponse, ProtoCallFuture callback) throws Exception {
+      if (rpcResponse.hasErrorMessage()) {
+        callback.setFailed(rpcResponse.getErrorMessage(),
+            makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
+      } else {
+        Message responseMessage = null;
 
-      if (msg instanceof RpcResponse) {
-        try {
-          RpcResponse rpcResponse = (RpcResponse) msg;
-          ProtoCallFuture callback = requests.remove(rpcResponse.getId());
-
-          if (callback == null) {
-            LOG.warn("Dangling rpc call");
-          } else {
-            if (rpcResponse.hasErrorMessage()) {
-              callback.setFailed(rpcResponse.getErrorMessage(),
-                  makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
-              throw new RemoteException(getErrorMessage(rpcResponse.getErrorMessage()));
-            } else {
-              Message responseMessage;
-
-              if (!rpcResponse.hasResponseMessage()) {
-                responseMessage = null;
-              } else {
-                responseMessage = callback.returnType.newBuilderForType().mergeFrom(rpcResponse.getResponseMessage())
-                    .build();
-              }
-
-              callback.setResponse(responseMessage);
-            }
+        if (rpcResponse.hasResponseMessage()) {
+          try {
+            responseMessage = callback.returnType.newBuilderForType().mergeFrom(rpcResponse.getResponseMessage())
+                .build();
+          } catch (InvalidProtocolBufferException e) {
+            callback.setFailed(e.getMessage(), e);
           }
-        } finally {
-          ReferenceCountUtil.release(msg);
         }
+        callback.setResponse(responseMessage);
       }
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-        throws Exception {
-      for(ProtoCallFuture callback: requests.values()) {
-        callback.setFailed(cause.getMessage(), cause);
-      }
-      
-      if(LOG.isDebugEnabled()) {
-        LOG.error("" + cause.getMessage(), cause);
-      } else {
-        LOG.error("RPC Exception:" + cause.getMessage());
-      }
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
-      }
+    protected void handleException(int requestId, ProtoCallFuture callback, String message) {
+      callback.setFailed(message + "", new TajoServiceException(message));
     }
   }
 
- static class ProtoCallFuture implements Future<Message> {
+  static class ProtoCallFuture implements Future<Message> {
     private Semaphore sem = new Semaphore(0);
+    private boolean done = false;
     private Message response = null;
     private Message returnType;
 
@@ -227,8 +167,9 @@ public class BlockingRpcClient extends NettyClientBase {
 
     @Override
     public Message get() throws InterruptedException, ExecutionException {
-      sem.acquire();
-      if(ee != null) {
+      if(!isDone()) sem.acquire();
+
+      if (ee != null) {
         throw ee;
       }
       return response;
@@ -237,14 +178,16 @@ public class BlockingRpcClient extends NettyClientBase {
     @Override
     public Message get(long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
-      if(sem.tryAcquire(timeout, unit)) {
-        if (ee != null) {
-          throw ee;
+      if(!isDone()) {
+        if (!sem.tryAcquire(timeout, unit)) {
+          throw new TimeoutException();
         }
-        return response;
-      } else {
-        throw new TimeoutException();
       }
+
+      if (ee != null) {
+        throw ee;
+      }
+      return response;
     }
 
     @Override
@@ -254,19 +197,21 @@ public class BlockingRpcClient extends NettyClientBase {
 
     @Override
     public boolean isDone() {
-      return sem.availablePermits() > 0;
+      return done;
     }
 
     public void setResponse(Message response) {
       this.response = response;
+      done = true;
       sem.release();
     }
 
     public void setFailed(String errorText, Throwable t) {
-      if(controller != null) {
+      if (controller != null) {
         this.controller.setFailed(errorText);
       }
       ee = new ExecutionException(errorText, t);
+      done = true;
       sem.release();
     }
   }

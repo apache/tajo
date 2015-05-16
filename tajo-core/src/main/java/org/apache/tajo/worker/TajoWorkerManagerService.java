@@ -121,11 +121,13 @@ public class TajoWorkerManagerService extends CompositeService
           , new ExecutionBlockId(request.getExecutionBlockId())
           , request.getContainerId()
           , new QueryContext(workerContext.getConf(), request.getQueryContext()),
-          request.getPlanJson()
+          request.getPlanJson(),
+          request.getShuffleType()
       ));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
+      controller.setFailed(t.getMessage());
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
@@ -141,6 +143,7 @@ public class TajoWorkerManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      controller.setFailed(e.getMessage());
       done.run(TajoWorker.FALSE_PROTO);
     }
   }

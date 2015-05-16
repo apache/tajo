@@ -29,7 +29,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -39,6 +38,7 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TableSpaceManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -288,7 +288,7 @@ public class DDLExecutor {
         createTable.getPartitionMethod(), ifNotExists);
   }
 
-  public TableDesc createTable(QueryContext queryContext, String tableName, CatalogProtos.StoreType storeType,
+  public TableDesc createTable(QueryContext queryContext, String tableName, String storeType,
                                Schema schema, TableMeta meta, Path path, boolean isExternal,
                                PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
     String databaseName;
@@ -321,7 +321,7 @@ public class DDLExecutor {
       desc.setPartitionMethod(partitionDesc);
     }
 
-    StorageManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
+    TableSpaceManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
 
     if (catalog.createTable(desc)) {
       LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
@@ -368,7 +368,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        StorageManager.getStorageManager(queryContext.getConf(),
+        TableSpaceManager.getStorageManager(queryContext.getConf(),
             tableDesc.getMeta().getStoreType()).purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
@@ -498,6 +498,9 @@ public class DDLExecutor {
         throw new ColumnNameAlreadyExistException(alterTable.getAddNewColumn().getSimpleName());
       }
       catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn(), AlterTableType.ADD_COLUMN));
+      break;
+    case SET_PROPERTY:
+      catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
     default:
       //TODO

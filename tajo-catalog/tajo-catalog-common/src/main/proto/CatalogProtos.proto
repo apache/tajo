@@ -60,6 +60,7 @@ enum AlterTableType {
   ADD_COLUMN = 2;
   ADD_PARTITION = 3;
   DROP_PARTITION = 4;
+  SET_PROPERTY = 5;
 }
 
 message ColumnProto {
@@ -79,7 +80,7 @@ message FragmentProto {
 }
 
 message TableProto {
-  required StoreType storeType = 1;
+  required string storeType = 1;
   optional KeyValueSetProto params = 2;
 }
 
@@ -350,6 +351,7 @@ message AlterTableDescProto {
   optional AlterColumnProto alterColumnName = 4;
   required AlterTableType alterTableType = 5;
   optional PartitionDescProto partitionDesc = 6;
+  optional KeyValueSetProto params = 7;
 }
 
 message AlterColumnProto {
@@ -402,6 +404,7 @@ message FunctionInvocationProto {
   optional ClassBaseInvocationDescProto aggregation = 3;
   optional StaticMethodInvocationDescProto scalarJIT = 4;
   optional ClassBaseInvocationDescProto aggregationJIT = 5;
+  optional PythonInvocationDescProto python = 6;
 }
 
 message ClassBaseInvocationDescProto {
@@ -413,4 +416,10 @@ message StaticMethodInvocationDescProto {
   required string methodName = 2;
   required string returnClass = 3;
   repeated string paramClasses = 4;
+}
+
+message PythonInvocationDescProto {
+  required string funcName = 1;
+  required string filePath = 2;
+  required bool isScalarFunction = 3;
 }

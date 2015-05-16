@@ -104,7 +104,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     } else if (defaultVal != null) {
       return defaultVal;
     } else {
-      throw new IllegalArgumentException("No such a config key: "  + key);
+      throw new IllegalArgumentException("No such config key: "  + key);
     }
   }
 

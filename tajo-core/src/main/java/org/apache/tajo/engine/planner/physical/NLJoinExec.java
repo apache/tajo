@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -28,11 +26,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class NLJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode plan;
-  private EvalNode joinQual;
-
+public class NLJoinExec extends CommonJoinExec {
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
@@ -41,29 +35,13 @@ public class NLJoinExec extends BinaryPhysicalExec {
   private Tuple innerTuple = null;
   private Tuple outTuple = null;
 
-  // projection
-  private final Projector projector;
-
   public NLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
-    this.plan = plan;
-
-    if (plan.hasJoinQual()) {
-      this.joinQual = plan.getJoinQual();
-    }
-
-    // for projection
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
+    super(context, plan, outer, inner);
     // for join
     needNewOuter = true;
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
-  }
-
-  public JoinNode getPlan() {
-    return this.plan;
   }
 
   public Tuple next() throws IOException {
@@ -84,8 +62,8 @@ public class NLJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(outerTuple, innerTuple);
-      if (joinQual != null) {
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+      if (hasJoinQual) {
+        if (joinQual.eval(frameTuple).isTrue()) {
           projector.eval(frameTuple, outTuple);
           return outTuple;
         }

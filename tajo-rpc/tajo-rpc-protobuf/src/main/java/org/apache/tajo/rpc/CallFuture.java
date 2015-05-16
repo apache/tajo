@@ -20,11 +20,9 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
+import com.google.protobuf.ServiceException;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class CallFuture<T> implements RpcCallback<T>, Future<T> {
 
@@ -66,19 +64,29 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   }
 
   @Override
-  public T get() throws InterruptedException {
-    sem.acquire();
+  public T get() throws InterruptedException, ExecutionException {
+    if (!isDone())
+      sem.acquire();
 
+    throwIfFailed();
     return response;
   }
 
   @Override
-  public T get(long timeout, TimeUnit unit)
-      throws InterruptedException, TimeoutException {
-    if (sem.tryAcquire(timeout, unit)) {
-      return response;
-    } else {
-      throw new TimeoutException();
+  public T get(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException, ExecutionException {
+    if (!isDone()) {
+      if (!sem.tryAcquire(timeout, unit)) {
+        throw new TimeoutException();
+      }
+    }
+
+    throwIfFailed();
+    return response;
+  }
+
+  private void throwIfFailed() throws ExecutionException {
+    if (controller.failed()) {
+      throw new ExecutionException(new ServiceException(controller.errorText()));
     }
   }
 }

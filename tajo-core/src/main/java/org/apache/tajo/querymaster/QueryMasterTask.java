@@ -36,7 +36,6 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -59,6 +58,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -323,9 +323,9 @@ public class QueryMasterTask extends CompositeService {
       jsonExpr = null; // remove the possible OOM
       plan = planner.createPlan(queryContext, expr);
 
-      StoreType storeType = PlannerUtil.getStoreType(plan);
+      String storeType = PlannerUtil.getStoreType(plan);
       if (storeType != null) {
-        sm = StorageManager.getStorageManager(systemConf, storeType);
+        sm = TableSpaceManager.getStorageManager(systemConf, storeType);
         StorageProperty storageProperty = sm.getStorageProperty();
         if (storageProperty.isSortedInsert()) {
           String tableName = PlannerUtil.getStoreTableName(plan);

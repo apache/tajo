@@ -151,7 +151,9 @@ public class Insert extends Expr {
     insert.storageType = storageType;
     insert.location = location;
     insert.subquery = (Expr) subquery.clone();
-    insert.params = new HashMap<String, String>(params);
+    if (params != null) {
+      insert.params = new HashMap<String, String>(params);
+    }
     return insert;
   }
 }

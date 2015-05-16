@@ -32,7 +32,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -67,12 +66,12 @@ public class TestResultSet {
   public static void setup() throws Exception {
     util = TpchTestBase.getInstance().getTestingCluster();
     conf = util.getConfiguration();
-    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
 
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
-    scoreMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    scoreMeta = CatalogUtil.newTableMeta("CSV");
     TableStats stats = new TableStats();
 
     Path p = sm.getTablePath("score");
@@ -139,8 +138,8 @@ public class TestResultSet {
 
   @Test
   public void testDateTimeType() throws Exception {
-    // Hcatalog does not support date type, time type in hive-0.12.0
-    if(util.isHCatalogStoreRunning()) return;
+    // HiveCatalog does not support date type, time type in hive-0.12.0
+    if(util.isHiveCatalogStoreRunning()) return;
 
     ResultSet res = null;
     TajoClient client = util.newTajoClient();

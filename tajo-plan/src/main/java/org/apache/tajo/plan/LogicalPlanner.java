@@ -37,7 +37,6 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
@@ -53,6 +52,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
@@ -117,6 +117,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return queryBlock;
     }
 
+    public OverridableConf getQueryContext() {
+      return queryContext;
+    }
+
     public String toString() {
       return "block=" + queryBlock.getName() + ", relNum=" + queryBlock.getRelations().size() + ", "+
           queryBlock.namedExprsMgr.toString();
@@ -134,7 +138,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   @VisibleForTesting
-  public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug) throws PlanningException {
+  public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug)
+      throws PlanningException {
 
     LogicalPlan plan = new LogicalPlan(this);
 
@@ -524,10 +529,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     } else if (projectable instanceof RelationNode) {
       RelationNode relationNode = (RelationNode) projectable;
+      prohibitNestedRecordProjection((Projectable) relationNode);
       verifyIfTargetsCanBeEvaluated(relationNode.getLogicalSchema(), (Projectable) relationNode);
 
     } else {
+      prohibitNestedRecordProjection(projectable);
       verifyIfTargetsCanBeEvaluated(projectable.getInSchema(), projectable);
+    }
+  }
+
+  public static void prohibitNestedRecordProjection(Projectable projectable)
+      throws PlanningException {
+    for (Target t : projectable.getTargets()) {
+      if (t.getEvalTree().getValueType().getType() == TajoDataTypes.Type.RECORD) {
+        throw new PlanningException("Projecting RECORD fields is not supported yet: " + t);
+      }
     }
   }
 
@@ -646,7 +662,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           if (block.namedExprsMgr.isEvaluated(sortKeyRefNames[i])) {
             column = block.namedExprsMgr.getTarget(sortKeyRefNames[i]).getNamedColumn();
           } else {
-            throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(sortSpecs));
+            throw new IllegalStateException("Unexpected State: " + StringUtils.join(sortSpecs));
           }
           annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst());
         }
@@ -812,7 +828,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
 
-    limitNode.setFetchFirst(firstFetNum.eval(null, null).asInt8());
+    firstFetNum.bind(null, null);
+    limitNode.setFetchFirst(firstFetNum.eval(null).asInt8());
 
     return limitNode;
   }
@@ -873,7 +890,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } else if (block.namedExprsMgr.isEvaluated(refName)) {
         column = block.namedExprsMgr.getTarget(refName).getNamedColumn();
       } else {
-        throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(rawSortSpecs));
+        throw new IllegalStateException("Unexpected State: " + StringUtils.join(rawSortSpecs));
       }
       annotatedSortSpecs.add(new SortSpec(column, rawSortSpecs[i].isAscending(), rawSortSpecs[i].isNullFirst()));
     }
@@ -1176,13 +1193,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Schema joinSchema = new Schema();
     Schema commons = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
     joinSchema.addColumns(commons);
-    for (Column c : left.getOutSchema().getColumns()) {
+    for (Column c : left.getOutSchema().getRootColumns()) {
       if (!joinSchema.contains(c.getQualifiedName())) {
         joinSchema.addColumn(c);
       }
     }
 
-    for (Column c : right.getOutSchema().getColumns()) {
+    for (Column c : right.getOutSchema().getRootColumns()) {
       if (!joinSchema.contains(c.getQualifiedName())) {
         joinSchema.addColumn(c);
       }
@@ -1200,7 +1217,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Column leftJoinKey;
     Column rightJoinKey;
 
-    for (Column common : commons.getColumns()) {
+    for (Column common : commons.getRootColumns()) {
       leftJoinKey = leftSchema.getColumn(common.getQualifiedName());
       rightJoinKey = rightSchema.getColumn(common.getQualifiedName());
       equiQual = new BinaryEval(EvalType.EQUAL,
@@ -1313,7 +1330,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private static LinkedHashSet<Target> createFieldTargetsFromRelation(QueryBlock block, RelationNode relationNode,
                                                       Set<String> newlyEvaluatedRefNames) {
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
-    for (Column column : relationNode.getLogicalSchema().getColumns()) {
+    for (Column column : relationNode.getLogicalSchema().getAllColumns()) {
+
+      // TODO - Currently, EvalNode has DataType as a return type. So, RECORD cannot be used for any target.
+      // The following line is a kind of hack, preventing RECORD to be used for target in the logical planning phase.
+      // This problem should be resolved after TAJO-1402.
+      if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
+        continue;
+      }
+
       String aliasName = block.namedExprsMgr.checkAndGetIfAliasedColumn(column.getQualifiedName());
       if (aliasName != null) {
         targets.add(new Target(new FieldEval(column), aliasName));
@@ -1326,7 +1351,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private void updatePhysicalInfo(TableDesc desc) {
-    if (desc.getPath() != null && desc.getMeta().getStoreType() != StoreType.SYSTEM) {
+    if (desc.getPath() != null && desc.getMeta().getStoreType() != "SYSTEM") {
       try {
         Path path = new Path(desc.getPath());
         FileSystem fs = path.getFileSystem(new Configuration());
@@ -1525,7 +1550,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // we use only a sequence of preceding columns of target table's schema
     // as target columns.
     //
-    // For example, consider a target table and an 'insert into' query are give as follows:
+    // For example, consider a target table and an 'insert into' query are given as follows:
     //
     // CREATE TABLE TB1                  (col1 int,  col2 int, col3 long);
     //                                      ||          ||
@@ -1587,11 +1612,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
       List<Target> targets = TUtil.newList();
-      for (int i = 0, j = 0; i < tableSchema.size(); i++) {
+      for (int i = 0; i < tableSchema.size(); i++) {
         Column column = tableSchema.getColumn(i);
 
-        if(targetColumns.contains(column) && j < projectionNode.getTargets().length) {
-          targets.add(projectionNode.getTargets()[j++]);
+        int idxInProjectionNode = targetColumns.getIndex(column);
+        if (idxInProjectionNode >= 0 && idxInProjectionNode < projectionNode.getTargets().length) {
+          targets.add(projectionNode.getTargets()[idxInProjectionNode]);
         } else {
           targets.add(new Target(new ConstEval(NullDatum.get()), column.getSimpleName()));
         }
@@ -1666,7 +1692,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setTargetLocation(new Path(expr.getLocation()));
 
     if (expr.hasStorageType()) {
-      insertNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+      insertNode.setStorageType(expr.getStorageType());
     }
     if (expr.hasParams()) {
       KeyValueSet options = new KeyValueSet();
@@ -1740,9 +1766,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return handleCreateTableLike(context, expr, createTableNode);
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
-      createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+      createTableNode.setStorageType(expr.getStorageType());
     } else { // otherwise, default type
-      createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
+      createTableNode.setStorageType("CSV");
     }
 
 
@@ -1893,6 +1919,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     if (dataType.hasLengthOrPrecision()) {
       builder.setLength(dataType.getLengthOrPrecision());
+    } else {
+      if (type == TajoDataTypes.Type.CHAR) {
+        builder.setLength(1);
+      }
     }
 
     TypeDesc typeDesc;
@@ -1935,6 +1965,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     alterTableNode.setNewTableName(alterTable.getNewTableName());
     alterTableNode.setColumnName(alterTable.getColumnName());
     alterTableNode.setNewColumnName(alterTable.getNewColumnName());
+    alterTableNode.setProperties(new KeyValueSet(alterTable.getParams()));
 
     if (null != alterTable.getAddNewColumn()) {
       alterTableNode.setAddNewColumn(convertColumn(alterTable.getAddNewColumn()));

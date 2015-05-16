@@ -34,13 +34,13 @@ package hadoop.yarn;
 service QueryMasterProtocolService {
   //from Worker
   rpc getTask(GetTaskRequestProto) returns (TaskRequestProto);
-  rpc statusUpdate (TaskStatusProto) returns (BoolProto);
-  rpc ping (ExecutionBlockIdProto) returns (BoolProto);
-  rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
-  rpc done (TaskCompletionReport) returns (BoolProto);
-  rpc doneExecutionBlock(ExecutionBlockReport) returns (BoolProto);
+  rpc statusUpdate (TaskStatusProto) returns (NullProto);
+  rpc ping (ExecutionBlockIdProto) returns (NullProto);
+  rpc fatalError(TaskFatalErrorReport) returns (NullProto);
+  rpc done (TaskCompletionReport) returns (NullProto);
+  rpc doneExecutionBlock(ExecutionBlockReport) returns (NullProto);
 
   //from TajoMaster's QueryJobManager
-  rpc killQuery(QueryIdProto) returns (BoolProto);
-  rpc executeQuery(QueryExecutionRequestProto) returns (BoolProto);
+  rpc killQuery(QueryIdProto) returns (NullProto);
+  rpc executeQuery(QueryExecutionRequestProto) returns (NullProto);
 }

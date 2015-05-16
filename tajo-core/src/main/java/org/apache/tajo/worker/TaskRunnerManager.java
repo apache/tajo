@@ -32,7 +32,6 @@ import org.apache.tajo.worker.event.TaskRunnerEvent;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.apache.tajo.worker.event.TaskRunnerStopEvent;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -95,7 +94,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     }
 
     if(finishedTaskCleanThread != null) {
-      finishedTaskCleanThread.interrupted();
+      finishedTaskCleanThread.interrupt();
     }
 
     super.stop();
@@ -155,8 +154,14 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
 
       if(context == null){
         try {
-          context = new ExecutionBlockContext(getTajoConf(), getWorkerContext(), this, startEvent.getQueryContext(),
-              startEvent.getPlan(), startEvent.getExecutionBlockId(), startEvent.getQueryMaster());
+          context = new ExecutionBlockContext(getTajoConf(),
+              getWorkerContext(),
+              this,
+              startEvent.getQueryContext(),
+              startEvent.getPlan(),
+              startEvent.getExecutionBlockId(),
+              startEvent.getQueryMaster(),
+              startEvent.getShuffleType());
           context.init();
         } catch (Throwable e) {
           LOG.fatal(e.getMessage(), e);
@@ -178,10 +183,9 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
       if(executionBlockContext != null){
         try {
           executionBlockContext.getSharedResource().releaseBroadcastCache(event.getExecutionBlockId());
-          executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
-          workerContext.getHashShuffleAppenderManager().close(event.getExecutionBlockId());
+          executionBlockContext.sendShuffleReport();
           workerContext.getTaskHistoryWriter().flushTaskHistories();
-        } catch (IOException e) {
+        } catch (Exception e) {
           LOG.fatal(e.getMessage(), e);
           throw new RuntimeException(e);
         } finally {

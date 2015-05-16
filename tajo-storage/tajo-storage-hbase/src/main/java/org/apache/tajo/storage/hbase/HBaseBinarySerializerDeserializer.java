@@ -39,10 +39,14 @@ public class HBaseBinarySerializerDeserializer {
         datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt4(Bytes.toInt(bytes));
         break;
       case INT8:
-        if (bytes.length == 4) {
-          datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt8(Bytes.toInt(bytes));
+        if (bytes == null) {
+          datum = NullDatum.get();
         } else {
-          datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt8(Bytes.toLong(bytes));
+          if (bytes.length == 4) {
+            datum = DatumFactory.createInt8(Bytes.toInt(bytes));
+          } else {
+            datum = bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt8(Bytes.toLong(bytes));
+          }
         }
         break;
       case FLOAT4:

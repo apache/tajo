@@ -49,7 +49,7 @@ public class LogicalPlanEqualityTester implements LogicalPlanRewriteRule {
     LogicalPlan plan = context.getPlan();
     LogicalNode root = plan.getRootBlock().getRoot();
     PlanProto.LogicalNodeTree serialized = LogicalNodeSerializer.serialize(plan.getRootBlock().getRoot());
-    LogicalNode deserialized = LogicalNodeDeserializer.deserialize(context.getQueryContext(), serialized);
+    LogicalNode deserialized = LogicalNodeDeserializer.deserialize(context.getQueryContext(), null, serialized);
     assert root.deepEquals(deserialized);
     return plan;
   }

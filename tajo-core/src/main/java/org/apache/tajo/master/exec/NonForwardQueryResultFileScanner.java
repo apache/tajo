@@ -33,11 +33,8 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.StringUtils;
@@ -89,7 +86,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       StringBuffer path = new StringBuffer();
       int depth = 0;
       if (tableDesc.hasPartition()) {
-        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           String partitionValue = EvalTreeUtil.getPartitionValue(scanNode.getQual(), c.getSimpleName());
           if (partitionValue == null)
             break;
@@ -104,7 +101,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   }
 
   private void initSeqScanExec() throws IOException {
-    StorageManager storageManager = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
+    StorageManager storageManager = TableSpaceManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
     List<Fragment> fragments = null;
     setPartition(storageManager);
     fragments = storageManager.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
@@ -141,6 +138,11 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
 
   public TableDesc getTableDesc() {
     return tableDesc;
+  }
+
+  @Override
+  public int getCurrentRowNumber() {
+    return currentNumRows;
   }
 
   public void close() throws Exception {

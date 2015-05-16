@@ -29,9 +29,9 @@ The following example is to set a custom field delimiter, NULL character, and co
   name text,
   score float,
   type text
- ) USING CSV WITH('text.delimiter'='\u0001',
-                  'text.null'='\\N',
-                  'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
+ ) USING TEXT WITH('text.delimiter'='\u0001',
+                   'text.null'='\\N',
+                   'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
 
 Each physical table layout has its own specialized properties. They will be addressed in :doc:`/table_management/file_formats`.
 

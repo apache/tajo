@@ -20,7 +20,7 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
 
-public class NullCallback implements RpcCallback<Object> {
+public class NullCallback<T> implements RpcCallback<T> {
   private final static NullCallback instance;
 
   static {
@@ -31,8 +31,13 @@ public class NullCallback implements RpcCallback<Object> {
     return instance;
   }
 
+  @SuppressWarnings("unchecked")
+  public static <T> RpcCallback<T> get(Class<T> clazz) {
+    return (RpcCallback<T>)instance;
+  }
+
   @Override
-  public void run(Object parameter) {
+  public void run(T parameter) {
     // do nothing
   }
 }

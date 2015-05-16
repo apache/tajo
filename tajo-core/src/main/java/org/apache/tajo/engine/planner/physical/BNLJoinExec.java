@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -32,11 +30,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class BNLJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode plan;
-  private final boolean hasJoinQual;
-  private EvalNode joinQual;
+public class BNLJoinExec extends CommonJoinExec {
 
   private List<Tuple> leftTupleSlots;
   private List<Tuple> rightTupleSlots;
@@ -54,19 +48,9 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
   private final static int TUPLE_SLOT_SIZE = 10000;
 
-  // projection
-  private Projector projector;
-
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), leftExec, rightExec);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
-    if (joinQual != null) { // if join type is not 'cross join'
-      hasJoinQual = true;
-    } else {
-      hasJoinQual = false;
-    }
+    super(context, plan, leftExec, rightExec);
     this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.leftIterator = leftTupleSlots.iterator();
@@ -79,22 +63,9 @@ public class BNLJoinExec extends BinaryPhysicalExec {
       plan.setTargets(PlannerUtil.schemaToTargets(outSchema));
     }
 
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
     frameTuple = new FrameTuple();
     outputTuple = new VTuple(outSchema.size());
-  }
-
-  @Override
-  protected void compile() {
-    if (hasJoinQual) {
-      joinQual = context.getPrecompiledEval(inSchema, joinQual);
-    }
-  }
-
-  public JoinNode getPlan() {
-    return plan;
   }
 
   public Tuple next() throws IOException {
@@ -191,12 +162,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(leftTuple, rightIterator.next());
-      if (hasJoinQual) {
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-          projector.eval(frameTuple, outputTuple);
-          return outputTuple;
-        }
-      } else {
+      if (!hasJoinQual || joinQual.eval(frameTuple).isTrue()) {
         projector.eval(frameTuple, outputTuple);
         return outputTuple;
       }
@@ -224,8 +190,5 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     leftTupleSlots = null;
     rightIterator = null;
     leftIterator = null;
-    plan = null;
-    joinQual = null;
-    projector = null;
   }
 }

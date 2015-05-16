@@ -24,7 +24,6 @@ import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
@@ -169,6 +168,16 @@ public class CatalogUtil {
     return openQuote && closeQuote;
   }
 
+  /**
+   * True if a given name is a simple identifier, meaning is not a dot-chained name.
+   *
+   * @param columnOrTableName Column or Table name to be checked
+   * @return True if a given name is a simple identifier. Otherwise, it will return False.
+   */
+  public static boolean isSimpleIdentifier(String columnOrTableName) {
+    return columnOrTableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 1;
+  }
+
   public static boolean isFQColumnName(String tableName) {
     return tableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 3;
   }
@@ -293,13 +302,13 @@ public class CatalogUtil {
     }
   }
 
-  public static TableMeta newTableMeta(StoreType type) {
-    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(type);
-    return new TableMeta(type, defaultProperties);
+  public static TableMeta newTableMeta(String storeType) {
+    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(storeType);
+    return new TableMeta(storeType, defaultProperties);
   }
 
-  public static TableMeta newTableMeta(StoreType type, KeyValueSet options) {
-    return new TableMeta(type, options);
+  public static TableMeta newTableMeta(String storeType, KeyValueSet options) {
+    return new TableMeta(storeType, options);
   }
 
   public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
@@ -341,7 +350,11 @@ public class CatalogUtil {
   }
 
   public static DataType newSimpleDataType(Type type) {
-    return DataType.newBuilder().setType(type).build();
+		if (type != Type.CHAR) {
+			return DataType.newBuilder().setType(type).build();
+		} else {
+			return newDataTypeWithLen(Type.CHAR, 1);
+		}
   }
 
   /**
@@ -360,7 +373,7 @@ public class CatalogUtil {
   public static DataType [] newSimpleDataTypeArray(Type... types) {
     DataType [] dataTypes = new DataType[types.length];
     for (int i = 0; i < types.length; i++) {
-      dataTypes[i] = DataType.newBuilder().setType(types[i]).build();
+      dataTypes[i] = newSimpleDataType(types[i]);
     }
     return dataTypes;
   }
@@ -415,7 +428,7 @@ public class CatalogUtil {
     //     (a)                    ()
     //    (a,b)                   (a)
 
-    int definedSize = definedTypes == null ? 0 : definedTypes.size();
+    int definedSize = definedTypes.size();
     int givenParamSize = givenTypes == null ? 0 : givenTypes.size();
     int paramDiff = givenParamSize - definedSize;
     if (paramDiff < 0) {
@@ -656,7 +669,7 @@ public class CatalogUtil {
       if (types[i].getType() != Type.NULL_TYPE) {
         Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
         if (candidate == null) {
-          throw new InvalidOperationException("No matched operation for those types: " + TUtil.arrayToString
+          throw new InvalidOperationException("No matched operation for those types: " + StringUtils.join
               (types));
         }
         widest = newSimpleDataType(candidate);
@@ -761,6 +774,14 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
+  public static AlterTableDesc setProperty(String tableName, KeyValueSet params, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setProperties(params);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
   /* It is the relationship graph of type conversions. */
   public static final Map<Type, Map<Type, Type>> OPERATION_CASTING_MAP = Maps.newHashMap();
 
@@ -837,21 +858,21 @@ public class CatalogUtil {
   /**
    * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
    *
-   * @param type StoreType
+   * @param storeType StoreType
    * @return Table properties
    */
-  public static KeyValueSet newPhysicalProperties(StoreType type) {
+  public static KeyValueSet newPhysicalProperties(String storeType) {
     KeyValueSet options = new KeyValueSet();
-    if (StoreType.CSV == type || StoreType.TEXTFILE == type) {
+    if (storeType.equalsIgnoreCase("CSV") ||  storeType.equalsIgnoreCase("TEXT")) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (StoreType.JSON == type) {
+    } else if (storeType.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
-    } else if (StoreType.RCFILE == type) {
+    } else if (storeType.equalsIgnoreCase("RCFILE")) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    } else if (StoreType.SEQUENCEFILE == type) {
+    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
       options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
       options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (type == StoreType.PARQUET) {
+    } else if (storeType.equalsIgnoreCase("PARQUET")) {
       options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
       options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
       options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);

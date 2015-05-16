@@ -24,7 +24,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -81,9 +80,9 @@ public class TestExternalSortExec {
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
@@ -136,13 +135,17 @@ public class TestExternalSortExec {
     ProjectionExec proj = (ProjectionExec) exec;
 
     // TODO - should be planed with user's optimization hint
+    ExternalSortExec extSort;
     if (!(proj.getChild() instanceof ExternalSortExec)) {
       UnaryPhysicalExec sortExec = proj.getChild();
       SeqScanExec scan = sortExec.getChild();
 
-      ExternalSortExec extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
+      extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
+    } else {
+      extSort = proj.getChild();
     }
+    extSort.setSortBufferBytesNum(1024*1024);
 
     Tuple tuple;
     Tuple preVal = null;
@@ -161,7 +164,7 @@ public class TestExternalSortExec {
       if (preVal != null) {
         assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
       }
-      preVal = curVal;
+      preVal = new VTuple(curVal);
       cnt++;
     }
     long end = System.currentTimeMillis();

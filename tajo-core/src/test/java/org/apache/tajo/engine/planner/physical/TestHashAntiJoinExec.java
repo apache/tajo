@@ -23,7 +23,6 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -83,9 +82,9 @@ public class TestHashAntiJoinExec {
     employeeSchema.addColumn("memid", Type.INT4);
     employeeSchema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     Tuple tuple = new VTuple(employeeSchema.size());
@@ -109,9 +108,9 @@ public class TestHashAntiJoinExec {
     peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());

@@ -25,11 +25,10 @@ import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class MemSortExec extends SortExec implements TupleSorter {
+public class MemSortExec extends SortExec {
   private SortNode plan;
   private List<Tuple> tupleSlots;
   private boolean sorted = false;
@@ -54,7 +53,7 @@ public class MemSortExec extends SortExec implements TupleSorter {
       while (!context.isStopped() && (tuple = child.next()) != null) {
         tupleSlots.add(new VTuple(tuple));
       }
-      iterator = getSorter().sort();
+      iterator = getSorter(tupleSlots).sort().iterator();
       sorted = true;
     }
 
@@ -62,14 +61,6 @@ public class MemSortExec extends SortExec implements TupleSorter {
       return this.iterator.next();
     } else {
       return null;
-    }
-  }
-
-  private TupleSorter getSorter() {
-    try {
-      return new VectorizedSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
-    } catch (Exception e) {
-      return this;
     }
   }
 
@@ -91,11 +82,5 @@ public class MemSortExec extends SortExec implements TupleSorter {
 
   public SortNode getPlan() {
     return this.plan;
-  }
-
-  @Override
-  public Iterator<Tuple> sort() {
-    Collections.sort(tupleSlots, comparator);
-    return tupleSlots.iterator();
   }
 }

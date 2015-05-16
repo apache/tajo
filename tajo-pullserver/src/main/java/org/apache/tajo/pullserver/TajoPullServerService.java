@@ -520,7 +520,7 @@ public class TajoPullServerService extends AbstractService {
 
         FileChunk chunk;
         try {
-          chunk = getFileCunks(path, startKey, endKey, last);
+          chunk = getFileChunks(path, startKey, endKey, last);
         } catch (Throwable t) {
           LOG.error("ERROR Request: " + request.getUri(), t);
           sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
@@ -672,10 +672,10 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-  public static FileChunk getFileCunks(Path outDir,
-                                      String startKey,
-                                      String endKey,
-                                      boolean last) throws IOException {
+  public static FileChunk getFileChunks(Path outDir,
+                                        String startKey,
+                                        String endKey,
+                                        boolean last) throws IOException {
     BSTIndex index = new BSTIndex(new TajoConf());
     BSTIndex.BSTIndexReader idxReader =
         index.getIndexReader(new Path(outDir, "index"));
