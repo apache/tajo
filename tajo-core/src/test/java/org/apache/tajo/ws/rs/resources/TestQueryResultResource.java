@@ -18,25 +18,7 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.InputStream;
-import java.net.URI;
-import java.security.MessageDigest;
-import java.util.List;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.compress.compressors.CompressorInputStream;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -54,6 +36,21 @@ import org.glassfish.jersey.filter.LoggingFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.InputStream;
+import java.net.URI;
+import java.security.MessageDigest;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -76,7 +73,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     sessionsURI = new URI(restServiceURI + "/sessions");
-    queriesURI = new URI(restServiceURI + "/databases/" + TajoConstants.DEFAULT_DATABASE_NAME + "/queries");
+    queriesURI = new URI(restServiceURI + "/queries/" + TajoConstants.DEFAULT_DATABASE_NAME);
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
