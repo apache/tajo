@@ -889,25 +889,25 @@ public class FileStorageManager extends StorageManager {
     return null;
   }
 
-  /**
-   * Returns Scanner instance.
-   *
-   * @param conf The system property
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param path The data file path
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
-
-    FileSystem fs = path.getFileSystem(conf);
-    FileStatus status = fs.getFileStatus(path);
-    FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
-
-    return TableSpaceManager.getSeekableScanner(conf, meta, schema, fragment, schema);
-  }
+//  /**
+//   * Returns Scanner instance.
+//   *
+//   * @param conf The system property
+//   * @param meta The table meta
+//   * @param schema The input schema
+//   * @param path The data file path
+//   * @return Scanner instance
+//   * @throws java.io.IOException
+//   */
+//  public static synchronized SeekableScanner getSeekableScanner(
+//      TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
+//
+//    FileSystem fs = path.getFileSystem(conf);
+//    FileStatus status = fs.getFileStatus(path);
+//    FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
+//
+//    return getSeekableScanner(meta, schema, fragment, schema);
+//  }
 
   /**
    * Finalizes result data. Tajo stores result data in the staging directory.

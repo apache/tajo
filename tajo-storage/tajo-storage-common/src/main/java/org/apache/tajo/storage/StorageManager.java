@@ -254,6 +254,22 @@ public abstract class StorageManager implements TableSpace {
   }
 
   /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target The output schema
+   * @return Scanner instance
+   * @throws IOException
+   */
+  @Override
+  public synchronized SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, FragmentProto fragment,
+                                                         Schema target) throws IOException {
+    return (SeekableScanner)this.getScanner(meta, schema, fragment, target);
+  }
+
+  /**
    * Returns Appender instance.
    * @param queryContext Query property.
    * @param taskAttemptId Task id.

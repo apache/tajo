@@ -62,6 +62,9 @@ public interface TableSpace extends Closeable {
 
   Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException;
 
+  SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, CatalogProtos.FragmentProto fragment, Schema target)
+      throws IOException;
+
   Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
                                LogicalPlan plan, Schema schema,
                                TableDesc tableDesc) throws IOException;
