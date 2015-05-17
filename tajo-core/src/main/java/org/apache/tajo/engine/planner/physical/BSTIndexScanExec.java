@@ -268,9 +268,6 @@ public class BSTIndexScanExec extends PhysicalExec {
     }
     reader = null;
     fileScanner = null;
-    plan = null;
-    qual = null;
-    projector = null;
   }
 
   @Override
