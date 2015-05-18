@@ -80,7 +80,7 @@ public class TestFileStorageManager {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-    FileStorageManager fileStorageManager = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace fileStorageManager = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     assertEquals(fs.getUri(), fileStorageManager.getFileSystem().getUri());
 
 		Appender appender = fileStorageManager.getAppender(meta, schema, path);
@@ -127,7 +127,7 @@ public class TestFileStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(tajoConf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(tajoConf);
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
@@ -181,7 +181,7 @@ public class TestFileStorageManager {
         DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
       }
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(tajoConf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(tajoConf);
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
@@ -220,11 +220,11 @@ public class TestFileStorageManager {
 
     try {
       /* Local FileSystem */
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getStorageManager(conf, "CSV");
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getStorageManager(conf, "CSV");
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       /* Distributed FileSystem */
-      sm = (FileStorageManager) TableSpaceManager.getStorageManager(tajoConf, "CSV");
+      sm = (FileTablespace) TableSpaceManager.getStorageManager(tajoConf, "CSV");
       assertNotEquals(fs.getUri(), sm.getFileSystem().getUri());
       assertEquals(cluster.getFileSystem().getUri(), sm.getFileSystem().getUri());
     } finally {

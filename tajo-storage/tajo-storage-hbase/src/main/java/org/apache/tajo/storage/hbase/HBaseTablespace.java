@@ -43,7 +43,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
@@ -64,14 +63,14 @@ import java.io.InputStreamReader;
 import java.util.*;
 
 /**
- * StorageManager for HBase table.
+ * Tablespace for HBase table.
  */
-public class HBaseStorageManager extends StorageManager {
-  private static final Log LOG = LogFactory.getLog(HBaseStorageManager.class);
+public class HBaseTablespace extends Tablespace {
+  private static final Log LOG = LogFactory.getLog(HBaseTablespace.class);
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
-  public HBaseStorageManager (String storeType) {
+  public HBaseTablespace(String storeType) {
     super(storeType);
   }
 
@@ -949,7 +948,7 @@ public class HBaseStorageManager extends StorageManager {
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
-    Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
+    Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
     hbaseConf.set("hbase.loadincremental.threads.max", "2");
 
     JobContextImpl jobContext = new JobContextImpl(hbaseConf,
@@ -995,7 +994,7 @@ public class HBaseStorageManager extends StorageManager {
       }
 
       ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
-      Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
+      Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
 
       HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
       try {
