@@ -19,15 +19,22 @@
 package org.apache.tajo.worker.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.resource.NodeResource;
 
-public class NodeResourceEvent extends AbstractEvent<NodeResourceEvent.EventType> {
+public class NodeStatusEvent extends AbstractEvent<NodeStatusEvent.EventType> {
+  private final NodeResource resource;
+
   public enum EventType {
-    ALLOCATE,
-    DEALLOCATE
+    REPORT_RESOURCE,
+    FLUSH_REPORTS
   }
 
-  public NodeResourceEvent(EventType eventType) {
+  public NodeStatusEvent(EventType eventType, NodeResource resource) {
     super(eventType);
+    this.resource = resource;
+  }
+
+  public NodeResource getResource() {
+    return resource;
   }
 }

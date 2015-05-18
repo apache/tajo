@@ -18,8 +18,18 @@
 
 package org.apache.tajo.worker.event;
 
-public class NodeResourceDeallocateEvent extends NodeResourceEvent {
-  public NodeResourceDeallocateEvent() {
+import org.apache.tajo.resource.NodeResource;
+
+public class NodeResourceDeallocateEvent extends NodeResourceManagerEvent {
+
+  private NodeResource resource;
+
+  public NodeResourceDeallocateEvent(NodeResource resource) {
     super(EventType.DEALLOCATE);
+    this.resource = resource;
+  }
+
+  public NodeResource getResource() {
+    return resource;
   }
 }

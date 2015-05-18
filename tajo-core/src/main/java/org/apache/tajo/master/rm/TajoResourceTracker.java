@@ -182,6 +182,13 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     }
   }
 
+  @Override
+  public void nodeHeartbeat(RpcController controller, TajoResourceTrackerProtocol.NodeHeartbeatRequestProto request,
+                            RpcCallback<TajoResourceTrackerProtocol.NodeHeartbeatResponseProto> done) {
+    //TODO implement with ResourceManager for scheduler
+
+  }
+
   private Worker createWorkerResource(NodeHeartbeat request) {
     WorkerResource workerResource = new WorkerResource();
 

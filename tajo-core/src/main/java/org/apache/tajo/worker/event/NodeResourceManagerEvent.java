@@ -18,29 +18,17 @@
 
 package org.apache.tajo.worker.event;
 
+import org.apache.hadoop.yarn.event.AbstractEvent;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.resource.NodeResource;
 
-import com.google.protobuf.RpcCallback;
-
-import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationRequestProto;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationResponseProto;
-
-public class NodeResourceAllocateEvent extends NodeResourceManagerEvent {
-
-  private BatchAllocationRequestProto request;
-  private RpcCallback<BatchAllocationResponseProto> callback;
-
-  public NodeResourceAllocateEvent(BatchAllocationRequestProto request,
-                                   RpcCallback<BatchAllocationResponseProto> callback) {
-    super(EventType.ALLOCATE);
-    this.callback = callback;
-    this.request = request;
+public class NodeResourceManagerEvent extends AbstractEvent<NodeResourceManagerEvent.EventType> {
+  public enum EventType {
+    ALLOCATE,
+    DEALLOCATE
   }
 
-  public BatchAllocationRequestProto getRequest() {
-    return request;
-  }
-
-  public RpcCallback<BatchAllocationResponseProto> getCallback() {
-    return callback;
+  public NodeResourceManagerEvent(EventType eventType) {
+    super(eventType);
   }
 }
