@@ -23,12 +23,10 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 class SessionTableDescriptor extends AbstractTableDescriptor {
 
     private static final String TABLENAME = "session";
-    private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-            new ColumnDescriptor("session_id", Type.TEXT, 0),
-            new ColumnDescriptor("username", Type.TEXT, 0),
-            new ColumnDescriptor("current_db", Type.TEXT, 0),
-            new ColumnDescriptor("last_access_time", Type.TIMESTAMP, 0)
-    };
+    private final ColumnDescriptor[] columns =
+        new ColumnDescriptor[] {
+            new ColumnDescriptor("name", Type.TEXT, 0), new ColumnDescriptor("value", Type.TEXT, 0)
+        };
 
     public SessionTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
         super(metadataDictionary);

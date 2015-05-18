@@ -94,14 +94,6 @@ public class SessionManager extends CompositeService implements EventHandler<Ses
     return sessions.get(sessionId);
   }
 
-  public List<Session> getAllSessions() {
-    List<Session> current_sessions = new ArrayList<Session>(sessions.size());
-    for (Map.Entry<String, Session> e : sessions.entrySet()) {
-      current_sessions.add(e.getValue());
-    }
-    return current_sessions;
-  }
-
   public void setVariable(String sessionId, String name, String value) throws InvalidSessionException {
     assertSessionExistence(sessionId);
     touch(sessionId);

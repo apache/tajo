@@ -18,10 +18,12 @@
 
 package org.apache.tajo.master.exec;
 
+import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.*;
@@ -49,6 +51,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -544,32 +547,22 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   }
 
   private List<Tuple> getSessionInfo(Schema outSchema) {
-    List<Session> sessions = masterContext.getSessionManager().getAllSessions();
-    List<Tuple> tuples = new ArrayList<Tuple>(sessions.size());
-    List<Column> columns = outSchema.getAllColumns();
-    Tuple aTuple;
+    List<Tuple> outputs = Lists.newArrayList();
+    Tuple eachVariable;
 
-    for (Session sess : sessions) {
-      aTuple = new VTuple(outSchema.size());
+    try {
+      for (Map.Entry<String, String> var: masterContext.getSessionManager().getAllVariables(sessionId).entrySet()) {
+        eachVariable = new VTuple(outSchema.size());
+        eachVariable.put(0, DatumFactory.createText(var.getKey()));
+        eachVariable.put(1, DatumFactory.createText(var.getValue()));
 
-      for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
-        Column column = columns.get(fieldId);
-
-        if ("session_id".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(sess.getSessionId()));
-        } else if ("username".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(sess.getUserName()));
-        } else if ("current_db".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(sess.getCurrentDatabase()));
-        } else if ("last_access_time".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(sess.getLastAccessTime()));
-        }
+        outputs.add(eachVariable);
       }
-
-      tuples.add(aTuple);
+    } catch (InvalidSessionException e) {
+      LOG.error(e);
     }
 
-    return tuples;
+    return outputs;
   }
   
   private List<Tuple> fetchSystemTable(TableDesc tableDesc, Schema inSchema) {
@@ -689,7 +682,12 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     public SystemPhysicalExec(TaskAttemptContext context, ScanNode scanNode) {
       super(context, scanNode.getInSchema(), scanNode.getOutSchema());
       this.scanNode = scanNode;
-      this.qual = this.scanNode.getQual();
+
+      if (this.scanNode.hasQual()) {
+        this.qual = this.scanNode.getQual();
+        this.qual.bind(null, inSchema);
+      }
+
       cachedData = TUtil.newList();
       currentRow = 0;
       isClosed = false;
