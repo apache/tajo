@@ -42,6 +42,7 @@ public class InfoSchemaMetadataDictionary {
     PARTITIONS,
     PARTITION_KEYS,
     CLUSTER,
+    SESSION,
     MAX_TABLE;
   }
   
@@ -63,6 +64,7 @@ public class InfoSchemaMetadataDictionary {
     schemaInfoTableDescriptors.set(DEFINED_TABLES.PARTITIONS.ordinal(), new PartitionsTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.PARTITION_KEYS.ordinal(), new PartitionKeysTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.CLUSTER.ordinal(), new ClusterTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.SESSION.ordinal(), new SessionTableDescriptor(this));
   }
 
   public boolean isSystemDatabase(String databaseName) {

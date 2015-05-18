@@ -49,6 +49,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -541,6 +542,35 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     
     return tuples;
   }
+
+  private List<Tuple> getSessionInfo(Schema outSchema) {
+    List<Session> sessions = masterContext.getSessionManager().getAllSessions();
+    List<Tuple> tuples = new ArrayList<Tuple>(sessions.size());
+    List<Column> columns = outSchema.getColumns();
+    Tuple aTuple;
+
+    for (Session sess : sessions) {
+      aTuple = new VTuple(outSchema.size());
+
+      for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
+        Column column = columns.get(fieldId);
+
+        if ("session_id".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(sess.getSessionId()));
+        } else if ("username".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(sess.getUserName()));
+        } else if ("current_db".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(sess.getCurrentDatabase()));
+        } else if ("last_access_time".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(sess.getLastAccessTime()));
+        }
+      }
+
+      tuples.add(aTuple);
+    }
+
+    return tuples;
+  }
   
   private List<Tuple> fetchSystemTable(TableDesc tableDesc, Schema inSchema) {
     List<Tuple> tuples = null;
@@ -564,6 +594,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       tuples = getAllPartitions(inSchema);
     } else if ("cluster".equalsIgnoreCase(tableName)) {
       tuples = getClusterInfo(inSchema);
+    } else if ("session".equalsIgnoreCase(tableName)) {
+      tuples = getSessionInfo(inSchema);
     }
     
     return tuples;    

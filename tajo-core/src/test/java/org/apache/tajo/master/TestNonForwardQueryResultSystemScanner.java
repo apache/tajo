@@ -34,6 +34,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -312,5 +313,40 @@ public class TestNonForwardQueryResultSystemScanner {
     
     assertThat(tuples.size(), is(2));
     assertThat(tuples, hasItem(getTupleMatcher(0, is("QueryMaster"))));
+  }
+
+  @Test
+  public void testGetSessionDetails() throws Exception {
+    final String dbname = "INFORMATION_SCHEMA";
+
+    TajoClient client = testingCluster.newTajoClient();
+    assertTrue(client.selectDatabase(dbname));  // now, cluster has one session.
+
+    NonForwardQueryResultScanner queryResultScanner =
+            getScanner("SELECT CURRENT_DB FROM INFORMATION_SCHEMA.SESSION");
+
+    queryResultScanner.init();
+
+    List<ByteString> rowBytes = queryResultScanner.getNextRows(100);
+
+    assertThat(rowBytes.size(), is(1));
+
+    RowStoreDecoder decoder = RowStoreUtil.createDecoder(queryResultScanner.getLogicalSchema());
+    List<Tuple> tuples = getTupleList(decoder, rowBytes);
+
+    assertThat(tuples.size(), is(1));
+    assertThat(tuples, hasItem(getTupleMatcher(0, is(dbname))));
+
+    client.close();   // no more active session
+
+    queryResultScanner.close();
+    queryResultScanner.init();
+    queryResultScanner = getScanner("SELECT CURRENT_DB FROM INFORMATION_SCHEMA.SESSION");
+
+    rowBytes = queryResultScanner.getNextRows(100);
+
+    assertThat(rowBytes.size(), is(0));
+
+    queryResultScanner.close();
   }
 }
