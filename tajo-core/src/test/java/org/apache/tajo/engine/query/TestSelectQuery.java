@@ -19,8 +19,13 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Lists;
-import org.apache.tajo.*;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -111,22 +116,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   @SimpleTest(queries = {
-      "explain global " +
-          "select l_orderkey, l_partkey from lineitem",
-      "explain global " +
-          "select n1.n_nationkey, n1.n_name, n2.n_name from nation n1 join nation n2 on n1.n_name = upper(n2.n_name) " +
-          "order by n1.n_nationkey;",
-      "explain global " +
-          "select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem " +
-          "group by l_linenumber having sum(distinct l_orderkey) = 6"})
+      @QuerySpec("explain global select l_orderkey, l_partkey from lineitem"),
+      @QuerySpec("explain global select n1.n_nationkey, n1.n_name, n2.n_name from nation n1 join nation n2 " +
+          "on n1.n_name = upper(n2.n_name) order by n1.n_nationkey"),
+      @QuerySpec("explain global select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem " +
+          "group by l_linenumber having sum(distinct l_orderkey) = 6")})
   public final void testExplainSelectPhysical() throws Exception {
-    // Enable this option to fix the shape of the generated plans.
-    testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
-    try {
-      runSimpleTests();
-    } finally {
-      testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
-    }
+    runSimpleTests();
   }
 
   @Test
