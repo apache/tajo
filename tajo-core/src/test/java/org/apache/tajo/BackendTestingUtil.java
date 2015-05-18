@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -47,7 +46,7 @@ public class BackendTestingUtil {
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)
       throws IOException {
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
     Appender appender;
 
     Path filePath = new Path(tablePath, "table.csv");
