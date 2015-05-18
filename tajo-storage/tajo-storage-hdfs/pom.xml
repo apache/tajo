@@ -352,6 +352,69 @@
       <groupId>net.minidev</groupId>
       <artifactId>json-smart</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.airlift</groupId>
+      <artifactId>slice</artifactId>
+      <version>0.7</version>
+    </dependency>
+    <dependency>
+      <groupId>io.airlift</groupId>
+      <artifactId>units</artifactId>
+      <version>0.97</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>18.0</version>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.iq80.snappy</groupId>
+      <artifactId>snappy</artifactId>
+      <version>0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.facebook.presto.hive</groupId>
+      <artifactId>hive-apache</artifactId>
+      <version>0.9</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains</groupId>
+      <artifactId>annotations</artifactId>
+      <version>13.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.4.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.facebook.hive</groupId>
+      <artifactId>hive-dwrf</artifactId>
+      <version>0.8</version>
+      <exclusions>
+        <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>org.iq80.snappy</groupId>
+            <artifactId>snappy</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>com.facebook.presto.hadoop</groupId>
+            <artifactId>hadoop-cdh4</artifactId>
+        </exclusion>
+        <exclusion>
+            <groupId>it.unimi.dsi</groupId>
+            <artifactId>fastutil</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
   <profiles>
