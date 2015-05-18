@@ -12,8 +12,9 @@ Release 0.10.1 - unreleased
     TAJO-1452: Improve function listing order (Contributed Dongjoon Hyun, 
     Committed by hyunsik)
 
-    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() eliminates 
-    an important kind of information. (Contributed by Jongyoung Park, Committed by jihoon)
+    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() 
+    eliminates an important kind of information. (Contributed by Jongyoung 
+    Park, Committed by jihoon)
 
     TAJO-1381: Support multi-bytes delimiter for Text file.
     (Contributed by navis, Committed by jinho)
@@ -38,6 +39,8 @@ Release 0.10.1 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1612: TestKillQuery occassionally fails. (hyunsik)
 
     TAJO-1440: Some tests fail in parallel test environment in TestKillQuery.
     (Contributed by Jongyoung Park. Committed by jinho)
