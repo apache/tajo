@@ -29,9 +29,11 @@ import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.storage.DiskUtil;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceManagerEvent;
+import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,17 +43,14 @@ public class NodeResourceManagerService extends AbstractService implements Event
   private static final Log LOG = LogFactory.getLog(NodeResourceManagerService.class);
 
   private final Dispatcher dispatcher;
-  private final TajoWorker.WorkerContext context;
   private NodeResource totalResource;
   private NodeResource availableResource;
-  private AtomicInteger running;
+  private AtomicInteger allocatedSize;
   private TajoConf tajoConf;
 
-  private volatile boolean isStopped;
-  public NodeResourceManagerService(TajoWorker.WorkerContext context, Dispatcher dispatcher){
+  public NodeResourceManagerService(Dispatcher dispatcher){
     super(NodeResourceManagerService.class.getName());
     this.dispatcher = dispatcher;
-    this.context = context;
   }
 
   @Override
@@ -63,21 +62,9 @@ public class NodeResourceManagerService extends AbstractService implements Event
     this.totalResource = createWorkerResource(tajoConf);
     this.availableResource = NodeResources.clone(totalResource);
     this.dispatcher.register(NodeResourceManagerEvent.EventType.class, this);
-    this.running = new AtomicInteger();
+    this.allocatedSize = new AtomicInteger();
     super.serviceInit(conf);
-    LOG.info("Initialized NodeMonitorService for " + totalResource);
-  }
-
-  @Override
-  protected void serviceStart() throws Exception {
-    super.serviceStart();
-  }
-
-  @Override
-  protected void serviceStop() throws Exception {
-    // Interrupt the updater.
-    this.isStopped = true;
-    super.serviceStop();
+    LOG.info("Initialized NodeResourceManagerService for " + totalResource);
   }
 
   @Override
@@ -89,7 +76,7 @@ public class NodeResourceManagerService extends AbstractService implements Event
         for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
           NodeResource resource = new NodeResource(request.getResource());
           if (allocate(resource)) {
-            running.incrementAndGet();
+            allocatedSize.incrementAndGet();
             //TODO send task event to taskExecutorService
           } else {
             response.addCancellationTask(request);
@@ -99,44 +86,59 @@ public class NodeResourceManagerService extends AbstractService implements Event
         break;
       }
       case DEALLOCATE: {
-        running.decrementAndGet();
+        allocatedSize.decrementAndGet();
         NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
         release(deallocateEvent.getResource());
+
+        // send current resource to ResourceTracker
+        getDispatcher().getEventHandler().handle(
+            new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE, getAvailableResource()));
         break;
       }
     }
   }
 
-  public Dispatcher getDispatcher() {
+  protected Dispatcher getDispatcher() {
     return dispatcher;
   }
 
-  public NodeResource getTotalResource() {
+  protected NodeResource getTotalResource() {
     return NodeResources.clone(totalResource);
   }
 
-  public NodeResource getAvailableResource() {
+  protected NodeResource getAvailableResource() {
     return NodeResources.clone(availableResource);
   }
 
+  public int getAllocatedSize() {
+    return allocatedSize.get();
+  }
+
   private boolean allocate(NodeResource resource) {
+    //TODO consider the jvm free memory
     if (NodeResources.fitsIn(resource, availableResource)) {
-      NodeResources.addTo(availableResource, resource);
+      NodeResources.subtractFrom(availableResource, resource);
       return true;
     }
     return false;
   }
 
   private void release(NodeResource resource) {
-    NodeResources.subtractFrom(availableResource, resource);
+    NodeResources.addTo(availableResource, resource);
   }
 
   private NodeResource createWorkerResource(TajoConf conf) {
+    int memoryMb;
 
-    int memoryMb = Math.min((int) (Runtime.getRuntime().maxMemory() / StorageUnit.MB),
-        conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB));
+    if (conf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+      memoryMb = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
+    } else {
+      memoryMb = Math.min((int) (Runtime.getRuntime().maxMemory() / StorageUnit.MB),
+          conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB));
+    }
+
     int vCores = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
-    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
+    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_NUM);
 
     int dataNodeStorageSize = DiskUtil.getDataNodeStorageSize();
     if (conf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DFS_DIR_AWARE) && dataNodeStorageSize > 0) {

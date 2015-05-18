@@ -27,9 +27,11 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.net.ConnectException;
@@ -39,7 +41,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
@@ -53,20 +54,20 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
 
   private TajoConf tajoConf;
   private StatusUpdaterThread updaterThread;
-  private AtomicBoolean flushReport = new AtomicBoolean();
   private volatile boolean isStopped;
   private volatile long heartBeatInterval;
-  private BlockingQueue heartBeatRequestQueue;
-  private TajoWorker.WorkerContext context;
-  private NodeResourceManagerService nodeResourceManagerService;
+  private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
+  private final WorkerConnectionInfo connectionInfo;
+  private final NodeResourceManagerService nodeResourceManagerService;
   private AsyncRpcClient rmClient;
-  private TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker;
+  private ServiceTracker serviceTracker;
+  private TajoResourceTrackerProtocolService.Interface resourceTracker;
+  private int queueingLimit;
 
-  public NodeStatusUpdaterService(TajoWorker.WorkerContext context, NodeResourceManagerService resourceManagerService) {
+  public NodeStatusUpdaterService(WorkerConnectionInfo connectionInfo, NodeResourceManagerService resourceManagerService) {
     super(NodeStatusUpdaterService.class.getSimpleName());
-    this.context = context;
+    this.connectionInfo = connectionInfo;
     this.nodeResourceManagerService = resourceManagerService;
-    this.heartBeatInterval = 10 * 1000; //10 sec
   }
 
   @Override
@@ -76,15 +77,21 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
     }
     this.tajoConf = (TajoConf) conf;
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
+    this.serviceTracker = ServiceTrackerFactory.get(tajoConf);
+    this.nodeResourceManagerService.getDispatcher().register(NodeStatusEvent.EventType.class, this);
+    this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
     super.serviceInit(conf);
   }
 
   @Override
   public void serviceStart() throws Exception {
+    // if resource changed over than 50%, send reports
+    this.queueingLimit = nodeResourceManagerService.getTotalResource().getVirtualCores() / 2;
+
     updaterThread.start();
     super.serviceStart();
-    LOG.info("Node status updater started.");
+    LOG.info("NodeStatusUpdater started.");
   }
 
   @Override
@@ -95,33 +102,39 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
       updaterThread.notifyAll();
     }
     super.serviceStop();
+    LOG.info("NodeStatusUpdater stopped.");
   }
 
   @Override
   public void handle(NodeStatusEvent event) {
     switch (event.getType()) {
       case REPORT_RESOURCE:
-        heartBeatRequestQueue.add(event);
+        heartBeatRequestQueue.add(event); //batch report to ResourceTracker
         break;
       case FLUSH_REPORTS:
-        heartBeatRequestQueue.add(event);
-        synchronized (updaterThread) {
-          updaterThread.notifyAll();
-        }
+        heartBeatRequestQueue.add(event); //flush report to ResourceTracker
         break;
     }
+  }
+
+  public int getQueueSize() {
+    return heartBeatRequestQueue.size();
+  }
+
+  public int getQueueingLimit() {
+    return queueingLimit;
   }
 
   private NodeHeartbeatRequestProto createResourceReport(NodeResource resource) {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setAvailableResource(resource.getProto());
-    requestProto.setWorkerId(context.getConnectionInfo().getId());
+    requestProto.setWorkerId(connectionInfo.getId());
     return requestProto.build();
   }
 
   private NodeHeartbeatRequestProto createHeartBeatReport() {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setWorkerId(context.getConnectionInfo().getId());
+    requestProto.setWorkerId(connectionInfo.getId());
     return requestProto.build();
   }
 
@@ -129,16 +142,15 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setTotalResource(nodeResourceManagerService.getTotalResource().getProto());
     requestProto.setAvailableResource(nodeResourceManagerService.getAvailableResource().getProto());
-    requestProto.setWorkerId(context.getConnectionInfo().getId());
-    requestProto.setConnectionInfo(context.getConnectionInfo().getProto());
+    requestProto.setWorkerId(connectionInfo.getId());
+    requestProto.setConnectionInfo(connectionInfo.getProto());
 
     //TODO set node status to requestProto.setStatus()
     return requestProto.build();
   }
 
-  private TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService newStub()
+  protected TajoResourceTrackerProtocolService.Interface newStub()
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    ServiceTracker serviceTracker = context.getServiceTracker();
     RpcClientManager.cleanup(rmClient);
 
     RpcClientManager rpcManager = RpcClientManager.getInstance();
@@ -178,7 +190,7 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
       super("NodeStatusUpdater");
     }
 
-    private <E> int drain(Collection<? super E> buffer, int numElements,
+    private int drain(Collection<NodeStatusEvent> buffer, int numElements,
                           long timeout, TimeUnit unit) throws InterruptedException {
 
       long deadline = System.nanoTime() + unit.toNanos(timeout);
@@ -186,22 +198,22 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
       while (added < numElements) {
         added += heartBeatRequestQueue.drainTo(buffer, numElements - added);
         if (added < numElements) { // not enough elements immediately available; will have to wait
-          if (deadline <= System.currentTimeMillis()) {
+          NodeStatusEvent e = heartBeatRequestQueue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
+          if (e == null) {
+            break; // we already waited enough, and there are no more elements in sight
+          }
+          buffer.add(e);
+          added++;
+
+          if (e.getType() == NodeStatusEvent.EventType.FLUSH_REPORTS) {
             break;
-          } else {
-            synchronized (updaterThread) {
-              updaterThread.wait(deadline - System.currentTimeMillis());
-              if (deadline > System.nanoTime()) {
-                added += heartBeatRequestQueue.drainTo(buffer, numElements - added);
-                break;
-              }
-            }
           }
         }
       }
       return added;
     }
 
+    /* Node sends a heartbeats with its resource and status periodically to master. */
     @Override
     public void run() {
       NodeHeartbeatResponseProto lastResponse = null;
@@ -212,9 +224,8 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
             if (lastResponse.getCommand() == ResponseCommand.NORMAL) {
               List<NodeStatusEvent> events = Lists.newArrayList();
               try {
-                drain(events,
-                    Math.max(nodeResourceManagerService.getTotalResource().getVirtualCores() / 2, 1),
-                    heartBeatInterval, TimeUnit.MILLISECONDS);
+                /* batch update to ResourceTracker */
+                drain(events, Math.max(queueingLimit, 1), heartBeatInterval, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
                 break;
               }
@@ -223,22 +234,25 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
                 // send last available resource;
                 lastResponse = sendHeartbeat(createResourceReport(events.get(events.size() - 1).getResource()));
               } else {
+                // send ping;
                 lastResponse = sendHeartbeat(createHeartBeatReport());
               }
 
             } else if (lastResponse.getCommand() == ResponseCommand.MEMBERSHIP) {
+              // Membership changed
               lastResponse = sendHeartbeat(createNodeStatusReport());
             } else if (lastResponse.getCommand() == ResponseCommand.ABORT_QUERY) {
               //TODO abort failure queries
             }
           } else {
+            // Node registration on startup
             lastResponse = sendHeartbeat(createNodeStatusReport());
           }
-        } catch (NoSuchMethodException e) {
-          LOG.fatal(e.getMessage(), e);
+        } catch (NoSuchMethodException nsme) {
+          LOG.fatal(nsme.getMessage(), nsme);
           Runtime.getRuntime().halt(1);
-        } catch (ClassNotFoundException e) {
-          LOG.fatal(e.getMessage(), e);
+        } catch (ClassNotFoundException cnfe) {
+          LOG.fatal(cnfe.getMessage(), cnfe);
           Runtime.getRuntime().halt(1);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
@@ -246,7 +260,7 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
             synchronized (updaterThread) {
               try {
                 updaterThread.wait(heartBeatInterval);
-              } catch (InterruptedException e1) {
+              } catch (InterruptedException ie) {
                 // Do Nothing
               }
             }

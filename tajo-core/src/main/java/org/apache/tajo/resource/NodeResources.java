@@ -34,7 +34,11 @@ public class NodeResources {
   }
 
   public static NodeResource clone(NodeResource res) {
-    return NodeResource.createResource(res.getMemory(), res.getVirtualCores(), res.getDisks());
+    return NodeResource.createResource(res.getMemory(), res.getDisks(), res.getVirtualCores());
+  }
+
+  public static NodeResource update(NodeResource lhs, NodeResource rhs) {
+    return lhs.setMemory(rhs.getMemory()).setDisks(rhs.getDisks()).setVirtualCores(rhs.getVirtualCores());
   }
 
   public static NodeResource addTo(NodeResource lhs, NodeResource rhs) {
