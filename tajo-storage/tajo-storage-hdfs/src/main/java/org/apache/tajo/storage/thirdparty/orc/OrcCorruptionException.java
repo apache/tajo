@@ -13,6 +13,8 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
+import org.jetbrains.annotations.Contract;
+
 import java.io.IOException;
 
 import static java.lang.String.format;
@@ -20,9 +22,13 @@ import static java.lang.String.format;
 public class OrcCorruptionException
         extends IOException
 {
-    public OrcCorruptionException(String message)
+    @Contract("false, _, _ -> fail")
+    public static void verifyFormat(boolean test, String messageFormat, Object... args)
+            throws OrcCorruptionException
     {
-        super(message);
+        if (!test) {
+            throw new OrcCorruptionException(messageFormat, args);
+        }
     }
 
     public OrcCorruptionException(String messageFormat, Object... args)

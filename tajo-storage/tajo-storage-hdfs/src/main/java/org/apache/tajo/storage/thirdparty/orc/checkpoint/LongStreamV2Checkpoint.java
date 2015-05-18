@@ -13,13 +13,13 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.checkpoint;
 
+import com.google.common.base.MoreObjects;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.Checkpoints.ColumnPositionsList;
 import org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind;
-import com.google.common.base.MoreObjects;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.tajo.storage.thirdparty.orc.checkpoint.InputStreamCheckpoint.createInputStreamCheckpoint;
 import static org.apache.tajo.storage.thirdparty.orc.checkpoint.InputStreamCheckpoint.inputStreamCheckpointToString;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class LongStreamV2Checkpoint
         implements LongStreamCheckpoint

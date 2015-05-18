@@ -13,22 +13,23 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.checkpoint;
 
+import com.google.common.collect.*;
 import org.apache.tajo.storage.thirdparty.orc.StreamId;
 import org.apache.tajo.storage.thirdparty.orc.metadata.*;
 import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind;
 import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
 import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
-import com.google.common.collect.*;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Predicates.equalTo;
 import static org.apache.tajo.storage.thirdparty.orc.checkpoint.InputStreamCheckpoint.createInputStreamCheckpoint;
 import static org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind.*;
 import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.*;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.equalTo;
 
 public final class Checkpoints
 {
@@ -44,7 +45,6 @@ public final class Checkpoints
             List<ColumnEncoding> columnEncodings,
             Map<StreamId, Stream> streams,
             Map<Integer, List<RowGroupIndex>> columnIndexes)
-            throws InvalidCheckpointException
     {
         ImmutableSetMultimap.Builder<Integer, StreamKind> streamKindsBuilder = ImmutableSetMultimap.builder();
         for (Stream stream : streams.values()) {
@@ -105,13 +105,12 @@ public final class Checkpoints
             // it will write checkpoints for all streams, but in other cases it will write only the streams that exist.
             // We detect this case by checking that all offsets in the initial position list are zero, and if so, we
             // clear the extra offsets
-            if (columnPositionsList.hasNextPosition() && !Iterables.all(positionsList, equalTo(0))) {
-                throw new InvalidCheckpointException(String.format("Column %s, of type %s, contains %s offset positions, but only %s positions were consumed",
-                        column,
-                        columnType,
-                        positionsList.size(),
-                        columnPositionsList.getIndex()));
-            }
+            checkState(!columnPositionsList.hasNextPosition() || Iterables.all(positionsList, equalTo(0)),
+                    "Column %s, of type %s, contains %s offset positions, but only %s positions were consumed",
+                    column,
+                    columnType,
+                    positionsList.size(),
+                    columnPositionsList.getIndex());
         }
         return checkpoints.build();
     }
@@ -396,11 +395,9 @@ public final class Checkpoints
 
         public int nextPosition()
         {
-            if (!hasNextPosition()) {
-                throw new InvalidCheckpointException("Not enough positions for column %s, of type %s, checkpoints",
-                        column,
-                        columnType);
-            }
+            checkState(hasNextPosition(), "Not enough positions for column %s, of type %s, checkpoints",
+                    column,
+                    columnType);
 
             return positionsList.get(index++);
         }

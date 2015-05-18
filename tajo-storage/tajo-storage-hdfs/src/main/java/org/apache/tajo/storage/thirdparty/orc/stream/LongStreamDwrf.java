@@ -13,16 +13,16 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
+import com.google.common.primitives.Ints;
 import org.apache.tajo.storage.thirdparty.orc.Vector;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.LongStreamCheckpoint;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.LongStreamDwrfCheckpoint;
 import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
-import com.google.common.primitives.Ints;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.thirdparty.orc.stream.LongDecode.readDwrfLong;
 import static com.google.common.base.Preconditions.checkPositionIndex;
+import static org.apache.tajo.storage.thirdparty.orc.stream.LongDecode.readDwrfLong;
 
 public class LongStreamDwrf
         implements LongStream

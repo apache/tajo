@@ -16,6 +16,8 @@ package org.apache.tajo.storage.thirdparty.orc;
 import org.apache.tajo.storage.thirdparty.orc.metadata.Stream;
 import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
 
+import java.util.Objects;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 public final class StreamId
@@ -48,7 +50,7 @@ public final class StreamId
     @Override
     public int hashCode()
     {
-        return 31 * column + streamKind.hashCode();
+        return Objects.hash(column, streamKind);
     }
 
     @Override
@@ -60,9 +62,8 @@ public final class StreamId
         if (obj == null || getClass() != obj.getClass()) {
             return false;
         }
-
         StreamId other = (StreamId) obj;
-        return column == other.column && streamKind == other.streamKind;
+        return Objects.equals(this.column, other.column) && Objects.equals(this.streamKind, other.streamKind);
     }
 
     @Override

@@ -13,28 +13,26 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.metadata;
 
-import io.airlift.slice.Slice;
-
 public class StringStatistics
-        implements RangeStatistics<Slice>
+        implements RangeStatistics<String>
 {
-    private final Slice minimum;
-    private final Slice maximum;
+    private final String minimum;
+    private final String maximum;
 
-    public StringStatistics(Slice minimum, Slice maximum)
+    public StringStatistics(String minimum, String maximum)
     {
         this.minimum = minimum;
         this.maximum = maximum;
     }
 
     @Override
-    public Slice getMin()
+    public String getMin()
     {
         return minimum;
     }
 
     @Override
-    public Slice getMax()
+    public String getMax()
     {
         return maximum;
     }

@@ -18,23 +18,14 @@ import com.google.common.annotations.VisibleForTesting;
 public class LongVector
         implements Vector
 {
-    public final boolean[] isNull;
-    public final long[] vector;
-
-    public LongVector(int length)
-    {
-        if (length > MAX_VECTOR_LENGTH) {
-            throw new IllegalArgumentException("length greater than max vector length");
-        }
-        vector = new long[length];
-        isNull = new boolean[length];
-    }
+    public final boolean[] isNull = new boolean[MAX_VECTOR_LENGTH];
+    public final long[] vector = new long[MAX_VECTOR_LENGTH];
 
     @Override
     @VisibleForTesting
     public ObjectVector toObjectVector(int size)
     {
-        ObjectVector objectVector = new ObjectVector(vector.length);
+        ObjectVector objectVector = new ObjectVector();
         for (int i = 0; i < size; i++) {
             if (!isNull[i]) {
                 objectVector.vector[i] = vector[i];

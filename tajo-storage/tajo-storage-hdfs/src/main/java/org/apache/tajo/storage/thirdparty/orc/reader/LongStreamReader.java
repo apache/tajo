@@ -21,9 +21,9 @@ import org.apache.tajo.storage.thirdparty.orc.stream.StreamSources;
 import java.io.IOException;
 import java.util.List;
 
-import static org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind.*;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind.*;
 
 public class LongStreamReader
         implements StreamReader

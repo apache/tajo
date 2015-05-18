@@ -13,7 +13,7 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
-import io.airlift.slice.FixedLengthSliceInput;
+import io.airlift.slice.Slice;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,9 +32,6 @@ public interface OrcDataSource
     void readFully(long position, byte[] buffer, int bufferOffset, int bufferLength)
             throws IOException;
 
-    <K> Map<K, FixedLengthSliceInput> readFully(Map<K, DiskRange> diskRanges)
+    <K> Map<K, Slice> readFully(Map<K, DiskRange> diskRanges)
             throws IOException;
-
-    @Override
-    void close() throws IOException;
 }

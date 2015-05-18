@@ -13,13 +13,14 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
 import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
 import static org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind.*;
+import static org.apache.tajo.storage.thirdparty.orc.stream.LongDecode.FixedBitSizes.*;
 import static org.apache.tajo.storage.thirdparty.orc.stream.LongDecode.FixedBitSizes.*;
 
 // This is based on the Apache Hive ORC code
@@ -124,9 +125,7 @@ public final class LongDecode
         long b;
         do {
             b = inputStream.read();
-            if (b == -1) {
-                throw new OrcCorruptionException("EOF while reading unsigned vint");
-            }
+            verifyFormat(b != -1, "EOF while reading unsigned vint");
             result |= (b & 0x7F /* 0b0111_1111 */) << offset;
             offset += 7;
         } while ((b & 0x80 /* 0b1000_0000 */) != 0);

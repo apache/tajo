@@ -13,8 +13,8 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
-import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
 import com.google.common.collect.ImmutableList;
+import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
 
 import java.util.List;
 

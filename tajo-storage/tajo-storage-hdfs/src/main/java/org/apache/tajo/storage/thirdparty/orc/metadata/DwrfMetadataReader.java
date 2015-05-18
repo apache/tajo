@@ -16,25 +16,21 @@ package org.apache.tajo.storage.thirdparty.orc.metadata;
 import com.facebook.hive.orc.OrcProto;
 import com.facebook.hive.orc.OrcProto.ColumnEncoding.Kind;
 import com.google.common.base.Function;
-import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind;
-import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
-import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.CodedInputStream;
-import io.airlift.slice.Slice;
+import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind;
+import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
+import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind.*;
-import static org.apache.tajo.storage.thirdparty.orc.metadata.OrcMetadataReader.getMaxSlice;
-import static org.apache.tajo.storage.thirdparty.orc.metadata.OrcMetadataReader.getMinSlice;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind.*;
 
 public class DwrfMetadataReader
         implements MetadataReader
@@ -77,13 +73,12 @@ public class DwrfMetadataReader
 
     private static List<StripeInformation> toStripeInformation(List<OrcProto.StripeInformation> types)
     {
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(types, DwrfMetadataReader::toStripeInformation));
-        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.StripeInformation, StripeInformation>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.StripeInformation, StripeInformation>()
+        {
             @Override
-            public StripeInformation apply(OrcProto.StripeInformation stripeInformation) {
-                return toStripeInformation(stripeInformation);
+            public StripeInformation apply(OrcProto.StripeInformation type)
+            {
+                return toStripeInformation(type);
             }
         }));
     }
@@ -114,12 +109,11 @@ public class DwrfMetadataReader
 
     private static List<Stream> toStream(List<OrcProto.Stream> streams)
     {
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(streams, DwrfMetadataReader::toStream));
-        return ImmutableList.copyOf(Iterables.transform(streams, new Function<OrcProto.Stream, Stream>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(streams, new Function<OrcProto.Stream, Stream>()
+        {
             @Override
-            public Stream apply(@Nullable OrcProto.Stream stream) {
+            public Stream apply(OrcProto.Stream stream)
+            {
                 return toStream(stream);
             }
         }));
@@ -148,13 +142,11 @@ public class DwrfMetadataReader
     {
         CodedInputStream input = CodedInputStream.newInstance(inputStream);
         OrcProto.RowIndex rowIndex = OrcProto.RowIndex.parseFrom(input);
-
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(rowIndex.getEntryList(), DwrfMetadataReader::toRowGroupIndex));
-        return ImmutableList.copyOf(Iterables.transform(rowIndex.getEntryList(), new Function<OrcProto.RowIndexEntry, RowGroupIndex>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(rowIndex.getEntryList(), new Function<OrcProto.RowIndexEntry, RowGroupIndex>()
+        {
             @Override
-            public RowGroupIndex apply(@Nullable OrcProto.RowIndexEntry rowIndexEntry) {
+            public RowGroupIndex apply(OrcProto.RowIndexEntry rowIndexEntry)
+            {
                 return toRowGroupIndex(rowIndexEntry);
             }
         }));
@@ -180,13 +172,11 @@ public class DwrfMetadataReader
         if (columnStatistics == null) {
             return ImmutableList.of();
         }
-
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(columnStatistics, statistics -> toColumnStatistics(statistics, isRowGroup)));
-        return ImmutableList.copyOf(Iterables.transform(columnStatistics, new Function<OrcProto.ColumnStatistics, ColumnStatistics>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(columnStatistics, new Function<OrcProto.ColumnStatistics, ColumnStatistics>()
+        {
             @Override
-            public ColumnStatistics apply(@Nullable OrcProto.ColumnStatistics columnStatistics) {
+            public ColumnStatistics apply(OrcProto.ColumnStatistics columnStatistics)
+            {
                 return toColumnStatistics(columnStatistics, isRowGroup);
             }
         }));
@@ -229,10 +219,10 @@ public class DwrfMetadataReader
             return null;
         }
 
-        // if either min, max, or sum is NaN, ignore the stat
+        // TODO remove this when double statistics are changed to correctly deal with NaNs
+        // if either min or max is NaN, ignore the stat
         if ((doubleStatistics.hasMinimum() && Double.isNaN(doubleStatistics.getMinimum())) ||
-                (doubleStatistics.hasMaximum() && Double.isNaN(doubleStatistics.getMaximum())) ||
-                (doubleStatistics.hasSum() && Double.isNaN(doubleStatistics.getSum()))) {
+                (doubleStatistics.hasMaximum() && Double.isNaN(doubleStatistics.getMaximum()))) {
             return null;
         }
 
@@ -252,10 +242,15 @@ public class DwrfMetadataReader
             return null;
         }
 
-        Slice minimum = stringStatistics.hasMinimum() ? getMinSlice(stringStatistics.getMinimum()) : null;
-        Slice maximum = stringStatistics.hasMaximum() ? getMaxSlice(stringStatistics.getMaximum()) : null;
+        // temporarily disable string statistics until we figure out the implications of how UTF-16
+        // strings are compared when they contain surrogate pairs and replacement characters
+        if (true) {
+            return null;
+        }
 
-        return new StringStatistics(minimum, maximum);
+        return new StringStatistics(
+                stringStatistics.hasMinimum() ? stringStatistics.getMinimum() : null,
+                stringStatistics.hasMaximum() ? stringStatistics.getMaximum() : null);
     }
 
     private static OrcType toType(OrcProto.Type type)
@@ -265,12 +260,11 @@ public class DwrfMetadataReader
 
     private static List<OrcType> toType(List<OrcProto.Type> types)
     {
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(types, DwrfMetadataReader::toType));
-        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.Type, OrcType>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.Type, OrcType>()
+        {
             @Override
-            public OrcType apply(@Nullable OrcProto.Type type) {
+            public OrcType apply(OrcProto.Type type)
+            {
                 return toType(type);
             }
         }));

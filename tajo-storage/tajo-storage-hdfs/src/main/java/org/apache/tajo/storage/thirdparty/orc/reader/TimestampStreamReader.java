@@ -14,7 +14,6 @@
 package org.apache.tajo.storage.thirdparty.orc.reader;
 
 import org.apache.tajo.storage.thirdparty.orc.LongVector;
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
 import org.apache.tajo.storage.thirdparty.orc.StreamDescriptor;
 import org.apache.tajo.storage.thirdparty.orc.Vector;
 import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding;
@@ -31,11 +30,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.*;
-import static org.apache.tajo.storage.thirdparty.orc.reader.OrcReaderUtils.castOrcVector;
-import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.*;
+import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 
 public class TimestampStreamReader
         implements StreamReader
@@ -95,26 +94,18 @@ public class TimestampStreamReader
                 readOffset = presentStream.countBitsSet(readOffset);
             }
             if (readOffset > 0) {
-                if (secondsStream == null) {
-                    throw new OrcCorruptionException("Value is not null but seconds stream is not present");
-                }
-                if (nanosStream == null) {
-                    throw new OrcCorruptionException("Value is not null but nanos stream is not present");
-                }
+                verifyFormat(secondsStream != null, "Value is not null but seconds stream is not present");
+                verifyFormat(nanosStream != null, "Value is not null but nanos stream is not present");
 
                 secondsStream.skip(readOffset);
                 nanosStream.skip(readOffset);
             }
         }
 
-        LongVector longVector = castOrcVector(vector, LongVector.class);
+        LongVector longVector = (LongVector) vector;
         if (presentStream == null) {
-            if (secondsStream == null) {
-                throw new OrcCorruptionException("Value is not null but seconds stream is not present");
-            }
-            if (nanosStream == null) {
-                throw new OrcCorruptionException("Value is not null but nanos stream is not present");
-            }
+            verifyFormat(secondsStream != null, "Value is not null but seconds stream is not present");
+            verifyFormat(nanosStream != null, "Value is not null but nanos stream is not present");
 
             Arrays.fill(longVector.isNull, false);
             secondsStream.nextLongVector(nextBatchSize, longVector.vector);
@@ -123,12 +114,8 @@ public class TimestampStreamReader
         else {
             int nullValues = presentStream.getUnsetBits(nextBatchSize, longVector.isNull);
             if (nullValues != nextBatchSize) {
-                if (secondsStream == null) {
-                    throw new OrcCorruptionException("Value is not null but seconds stream is not present");
-                }
-                if (nanosStream == null) {
-                    throw new OrcCorruptionException("Value is not null but nanos stream is not present");
-                }
+                verifyFormat(secondsStream != null, "Value is not null but seconds stream is not present");
+                verifyFormat(nanosStream != null, "Value is not null but nanos stream is not present");
 
                 secondsStream.nextLongVector(nextBatchSize, longVector.vector, longVector.isNull);
                 nanosStream.nextLongVector(nextBatchSize, nanosVector, longVector.isNull);

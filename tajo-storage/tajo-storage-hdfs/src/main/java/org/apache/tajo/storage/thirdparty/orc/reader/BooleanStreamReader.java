@@ -14,7 +14,6 @@
 package org.apache.tajo.storage.thirdparty.orc.reader;
 
 import org.apache.tajo.storage.thirdparty.orc.BooleanVector;
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
 import org.apache.tajo.storage.thirdparty.orc.StreamDescriptor;
 import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding;
 import org.apache.tajo.storage.thirdparty.orc.stream.BooleanStream;
@@ -27,12 +26,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.DATA;
-import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.PRESENT;
-import static org.apache.tajo.storage.thirdparty.orc.reader.OrcReaderUtils.castOrcVector;
-import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.DATA;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.PRESENT;
+import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 
 public class BooleanStreamReader
         implements StreamReader
@@ -81,27 +80,21 @@ public class BooleanStreamReader
                 readOffset = presentStream.countBitsSet(readOffset);
             }
             if (readOffset > 0) {
-                if (dataStream == null) {
-                    throw new OrcCorruptionException("Value is not null but data stream is not present");
-                }
+                verifyFormat(dataStream != null, "Value is not null but data stream is not present");
                 dataStream.skip(readOffset);
             }
         }
 
-        BooleanVector booleanVector = castOrcVector(vector, BooleanVector.class);
+        BooleanVector booleanVector = (BooleanVector) vector;
         if (presentStream == null) {
-            if (dataStream == null) {
-                throw new OrcCorruptionException("Value is not null but data stream is not present");
-            }
+            verifyFormat(dataStream != null, "Value is not null but data stream is not present");
             Arrays.fill(booleanVector.isNull, false);
             dataStream.getSetBits(nextBatchSize, booleanVector.vector);
         }
         else {
             int nullValues = presentStream.getUnsetBits(nextBatchSize, booleanVector.isNull);
             if (nullValues != nextBatchSize) {
-                if (dataStream == null) {
-                    throw new OrcCorruptionException("Value is not null but data stream is not present");
-                }
+                verifyFormat(dataStream != null, "Value is not null but data stream is not present");
                 dataStream.getSetBits(nextBatchSize, booleanVector.vector, booleanVector.isNull);
             }
         }

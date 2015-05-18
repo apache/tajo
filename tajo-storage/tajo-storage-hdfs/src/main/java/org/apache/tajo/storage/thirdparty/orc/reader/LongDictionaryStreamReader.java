@@ -14,7 +14,6 @@
 package org.apache.tajo.storage.thirdparty.orc.reader;
 
 import org.apache.tajo.storage.thirdparty.orc.LongVector;
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
 import org.apache.tajo.storage.thirdparty.orc.StreamDescriptor;
 import org.apache.tajo.storage.thirdparty.orc.Vector;
 import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding;
@@ -29,11 +28,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.*;
-import static org.apache.tajo.storage.thirdparty.orc.reader.OrcReaderUtils.castOrcVector;
-import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind.*;
+import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 
 public class LongDictionaryStreamReader
         implements StreamReader
@@ -100,28 +99,22 @@ public class LongDictionaryStreamReader
             }
 
             if (readOffset > 0) {
-                if (dataStream == null) {
-                    throw new OrcCorruptionException("Value is not null but data stream is not present");
-                }
+                verifyFormat(dataStream != null, "Value is not null but data stream is not present");
                 dataStream.skip(readOffset);
             }
         }
 
-        LongVector longVector = castOrcVector(vector, LongVector.class);
+        LongVector longVector = (LongVector) vector;
 
         if (presentStream == null) {
-            if (dataStream == null) {
-                throw new OrcCorruptionException("Value is not null but data stream is not present");
-            }
+            verifyFormat(dataStream != null, "Value is not null but data stream is not present");
             Arrays.fill(longVector.isNull, false);
             dataStream.nextLongVector(nextBatchSize, longVector.vector);
         }
         else {
             int nullValues = presentStream.getUnsetBits(nextBatchSize, longVector.isNull);
             if (nullValues != nextBatchSize) {
-                if (dataStream == null) {
-                    throw new OrcCorruptionException("Value is not null but data stream is not present");
-                }
+                verifyFormat(dataStream != null, "Value is not null but data stream is not present");
                 dataStream.nextLongVector(nextBatchSize, longVector.vector, longVector.isNull);
             }
         }
@@ -155,9 +148,7 @@ public class LongDictionaryStreamReader
             }
 
             LongStream dictionaryStream = dictionaryDataStreamSource.openStream();
-            if (dictionaryStream == null) {
-                throw new OrcCorruptionException("Dictionary is not empty but data stream is not present");
-            }
+            verifyFormat(dictionaryStream != null, "Dictionary is not empty but data stream is not present");
             dictionaryStream.nextLongVector(dictionarySize, dictionary);
         }
         dictionaryOpen = true;

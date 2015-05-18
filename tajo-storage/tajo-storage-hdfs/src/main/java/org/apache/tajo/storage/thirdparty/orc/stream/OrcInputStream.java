@@ -13,50 +13,50 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
+import com.google.common.base.MoreObjects;
 import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
 import org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind;
-import com.google.common.base.MoreObjects;
-import com.google.common.primitives.Ints;
-import io.airlift.slice.FixedLengthSliceInput;
+import io.airlift.slice.BasicSliceInput;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import org.iq80.snappy.Snappy;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-import static org.apache.tajo.storage.thirdparty.orc.checkpoint.InputStreamCheckpoint.*;
-import static org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind.*;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
+import static org.apache.tajo.storage.thirdparty.orc.checkpoint.InputStreamCheckpoint.*;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind.*;
 import static io.airlift.slice.Slices.EMPTY_SLICE;
 import static sun.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 public final class OrcInputStream
         extends InputStream
 {
-    public static final int EXPECTED_COMPRESSION_RATIO = 5;
+    public static final int BLOCK_HEADER_SIZE = 3;
+
     private final String source;
-    private final FixedLengthSliceInput compressedSliceInput;
+    private final BasicSliceInput compressedSliceInput;
     private final CompressionKind compressionKind;
-    private final int maxBufferSize;
+    private final int bufferSize;
 
     private int currentCompressedBlockOffset;
-    private FixedLengthSliceInput current;
+    private BasicSliceInput current;
 
-    private byte[] buffer;
+    private Slice buffer;
 
-    public OrcInputStream(String source, FixedLengthSliceInput sliceInput, CompressionKind compressionKind, int bufferSize)
+    public OrcInputStream(String source, BasicSliceInput sliceInput, CompressionKind compressionKind, int bufferSize)
     {
         this.source = checkNotNull(source, "source is null");
 
         checkNotNull(sliceInput, "sliceInput is null");
 
         this.compressionKind = checkNotNull(compressionKind, "compressionKind is null");
-        this.maxBufferSize = bufferSize;
+        this.bufferSize = bufferSize;
 
         if (compressionKind == UNCOMPRESSED) {
             this.current = sliceInput;
@@ -117,7 +117,7 @@ public final class OrcInputStream
             return -1;
         }
 
-        if (current.remaining() == 0) {
+        if (!current.isReadable()) {
             advance();
             if (current == null) {
                 return -1;
@@ -130,11 +130,11 @@ public final class OrcInputStream
     public long getCheckpoint()
     {
         // if the decompressed buffer is empty, return a checkpoint starting at the next block
-        if (current == null || (current.position() == 0 && current.remaining() == 0)) {
-            return createInputStreamCheckpoint(Ints.checkedCast(compressedSliceInput.position()), 0);
+        if (current == null || (current.position() == 0 && current.available() == 0)) {
+            return createInputStreamCheckpoint(compressedSliceInput.position(), 0);
         }
         // otherwise return a checkpoint at the last compressed block read and the current position in the buffer
-        return createInputStreamCheckpoint(currentCompressedBlockOffset, Ints.checkedCast(current.position()));
+        return createInputStreamCheckpoint(currentCompressedBlockOffset, current.position());
     }
 
     public boolean seekToCheckpoint(long checkpoint)
@@ -144,9 +144,7 @@ public final class OrcInputStream
         int decompressedOffset = decodeDecompressedOffset(checkpoint);
         boolean discardedBuffer;
         if (compressedBlockOffset != currentCompressedBlockOffset) {
-            if (compressionKind == UNCOMPRESSED) {
-                throw new OrcCorruptionException("Reset stream has a compressed block offset but stream is not compressed");
-            }
+            verifyFormat(compressionKind != UNCOMPRESSED, "Reset stream has a compressed block offset but stream is not compressed");
             compressedSliceInput.setPosition(compressedBlockOffset);
             current = EMPTY_SLICE.getInput();
             discardedBuffer = true;
@@ -157,8 +155,8 @@ public final class OrcInputStream
 
         if (decompressedOffset != current.position()) {
             current.setPosition(0);
-            if (current.remaining() < decompressedOffset) {
-                decompressedOffset -= current.remaining();
+            if (current.available() < decompressedOffset)  {
+                decompressedOffset -= current.available();
                 advance();
             }
             current.setPosition(decompressedOffset);
@@ -188,14 +186,14 @@ public final class OrcInputStream
     private void advance()
             throws IOException
     {
-        if (compressedSliceInput == null || compressedSliceInput.remaining() == 0) {
+        if (compressedSliceInput == null || compressedSliceInput.available() == 0) {
             current = null;
             return;
         }
 
         // 3 byte header
         // NOTE: this must match BLOCK_HEADER_SIZE
-        currentCompressedBlockOffset = Ints.checkedCast(compressedSliceInput.position());
+        currentCompressedBlockOffset = compressedSliceInput.position();
         int b0 = compressedSliceInput.readUnsignedByte();
         int b1 = compressedSliceInput.readUnsignedByte();
         int b2 = compressedSliceInput.readUnsignedByte();
@@ -209,15 +207,19 @@ public final class OrcInputStream
             current = chunk.getInput();
         }
         else {
-            int uncompressedSize;
-            if (compressionKind == ZLIB) {
-                uncompressedSize = decompressZip(chunk);
-            }
-            else {
-                uncompressedSize = decompressSnappy(chunk);
+            if (buffer == null) {
+                buffer = Slices.allocate(bufferSize);
             }
 
-            current = Slices.wrappedBuffer(buffer, 0, uncompressedSize).getInput();
+            int uncompressedSize;
+            if (compressionKind == ZLIB) {
+                uncompressedSize = decompressZip(chunk, buffer);
+            }
+            else {
+                uncompressedSize = decompressSnappy(chunk, buffer);
+            }
+
+            current = buffer.slice(0, uncompressedSize).getInput();
         }
     }
 
@@ -233,63 +235,40 @@ public final class OrcInputStream
     }
 
     // This comes from the Apache Hive ORC code
-    private int decompressZip(Slice in)
+    private static int decompressZip(Slice in, Slice buffer)
             throws IOException
     {
-        Inflater inflater = new Inflater(true);
-        try {
-            inflater.setInput((byte[]) in.getBase(), (int) (in.getAddress() - ARRAY_BYTE_BASE_OFFSET), in.length());
-            allocateOrGrowBuffer(in.length() * EXPECTED_COMPRESSION_RATIO, false);
-            int uncompressedLength = 0;
-            while (true) {
-                uncompressedLength += inflater.inflate(buffer, uncompressedLength, buffer.length - uncompressedLength);
-                if (inflater.finished() || buffer.length >= maxBufferSize) {
-                    break;
-                }
-                int oldBufferSize = buffer.length;
-                allocateOrGrowBuffer(buffer.length * 2, true);
-                if (buffer.length <= oldBufferSize) {
-                    throw new IllegalStateException(String.format("Buffer failed to grow. Old size %d, current size %d", oldBufferSize, buffer.length));
-                }
-            }
+        byte[] outArray = (byte[]) buffer.getBase();
+        int outOffset = 0;
 
-            if (!inflater.finished()) {
-                throw new OrcCorruptionException("Could not decompress all input (output buffer too small?)");
-            }
-
-            return uncompressedLength;
-        }
-        catch (DataFormatException e) {
-            throw new OrcCorruptionException(e, "Invalid compressed stream");
-        }
-        finally {
-            inflater.end();
-        }
-    }
-
-    private int decompressSnappy(Slice in)
-            throws IOException
-    {
         byte[] inArray = (byte[]) in.getBase();
         int inOffset = (int) (in.getAddress() - ARRAY_BYTE_BASE_OFFSET);
         int inLength = in.length();
 
-        int uncompressedLength = Snappy.getUncompressedLength(inArray, inOffset);
-        checkArgument(uncompressedLength <= maxBufferSize, "Snappy requires buffer (%d) larger than max size (%d)", uncompressedLength, maxBufferSize);
-        allocateOrGrowBuffer(uncompressedLength, false);
-
-        return Snappy.uncompress(inArray, inOffset, inLength, buffer, 0);
-    }
-
-    private void allocateOrGrowBuffer(int size, boolean copyExistingData)
-    {
-        if (buffer == null || buffer.length < size) {
-            if (copyExistingData && buffer != null) {
-                buffer = Arrays.copyOfRange(buffer, 0, Math.min(size, maxBufferSize));
+        Inflater inflater = new Inflater(true);
+        inflater.setInput(inArray, inOffset, inLength);
+        while (!(inflater.finished() || inflater.needsDictionary() || inflater.needsInput())) {
+            try {
+                int count = inflater.inflate(outArray, outOffset, outArray.length - outOffset);
+                outOffset += count;
             }
-            else {
-                buffer = new byte[Math.min(size, maxBufferSize)];
+            catch (DataFormatException e) {
+                throw new OrcCorruptionException(e, "Invalid compressed stream");
             }
         }
+        inflater.end();
+        return outOffset;
+    }
+
+    private static int decompressSnappy(Slice in, Slice buffer)
+            throws IOException
+    {
+        byte[] outArray = (byte[]) buffer.getBase();
+
+        byte[] inArray = (byte[]) in.getBase();
+        int inOffset = (int) (in.getAddress() - ARRAY_BYTE_BASE_OFFSET);
+        int inLength = in.length();
+
+        return Snappy.uncompress(inArray, inOffset, inLength, outArray, 0);
     }
 }

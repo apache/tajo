@@ -18,15 +18,7 @@ import com.google.common.annotations.VisibleForTesting;
 public class ObjectVector
     implements Vector
 {
-    public final Object[] vector;
-
-    public ObjectVector(int length)
-    {
-        if (length > MAX_VECTOR_LENGTH) {
-            throw new IllegalArgumentException("length greater than max vector length");
-        }
-        vector = new Object[length];
-    }
+    public final Object[] vector = new Object[MAX_VECTOR_LENGTH];
 
     @Override
     @VisibleForTesting

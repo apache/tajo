@@ -17,9 +17,9 @@ import org.apache.tajo.storage.thirdparty.orc.checkpoint.ByteArrayStreamCheckpoi
 
 import java.io.IOException;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.readFully;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.skipFully;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ByteArrayStream
         implements ValueStream<ByteArrayStreamCheckpoint>

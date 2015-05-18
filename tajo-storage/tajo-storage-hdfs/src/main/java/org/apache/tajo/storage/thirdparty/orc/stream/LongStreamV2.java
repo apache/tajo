@@ -13,14 +13,14 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
+import com.google.common.primitives.Ints;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.LongStreamCheckpoint;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.LongStreamV2Checkpoint;
-import com.google.common.primitives.Ints;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.MIN_REPEAT_SIZE;
 
 /**
@@ -61,9 +61,7 @@ public class LongStreamV2
 
         // read the first 2 bits and determine the encoding type
         int firstByte = input.read();
-        if (firstByte < 0) {
-            throw new OrcCorruptionException("Read past end of RLE integer from %s", input);
-        }
+        verifyFormat(firstByte >= 0, "Read past end of RLE integer from %s", input);
 
         int enc = (firstByte >>> 6) & 0x03;
         if (EncodingType.SHORT_REPEAT.ordinal() == enc) {
@@ -184,9 +182,7 @@ public class LongStreamV2
         // unpack the patch blob
         long[] unpackedPatch = new long[patchListLength];
 
-        if ((patchWidth + patchGapWidth) > 64 && !skipCorrupt) {
-            throw new OrcCorruptionException("ORC file is corrupt");
-        }
+        verifyFormat((patchWidth + patchGapWidth) <= 64 || skipCorrupt, "ORC file is corrupt");
 
         int bitSize = LongDecode.getClosestFixedBits(patchWidth + patchGapWidth);
         readBitPackedLongs(unpackedPatch, 0, patchListLength, bitSize, input);

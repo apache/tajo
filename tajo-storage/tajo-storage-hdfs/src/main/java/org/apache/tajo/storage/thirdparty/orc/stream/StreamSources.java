@@ -13,17 +13,17 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.tajo.storage.thirdparty.orc.StreamDescriptor;
 import org.apache.tajo.storage.thirdparty.orc.StreamId;
 import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
-import com.google.common.collect.ImmutableMap;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.stream.MissingStreamSource.missingStreamSource;
 
 public class StreamSources
 {

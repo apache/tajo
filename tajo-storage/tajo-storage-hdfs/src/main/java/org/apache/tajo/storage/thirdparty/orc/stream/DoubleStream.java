@@ -20,9 +20,9 @@ import io.airlift.slice.Slices;
 
 import java.io.IOException;
 
+import static com.google.common.base.Preconditions.checkPositionIndex;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.readFully;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.skipFully;
-import static com.google.common.base.Preconditions.checkPositionIndex;
 import static io.airlift.slice.SizeOf.SIZE_OF_DOUBLE;
 
 public class DoubleStream

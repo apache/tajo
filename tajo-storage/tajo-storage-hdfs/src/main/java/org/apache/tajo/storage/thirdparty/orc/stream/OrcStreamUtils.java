@@ -13,13 +13,12 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
-
 import java.io.IOException;
 import java.io.InputStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
 
 final class OrcStreamUtils
 {
@@ -34,9 +33,7 @@ final class OrcStreamUtils
     {
         while (length > 0) {
             long result = input.skip(length);
-            if (result < 0) {
-                throw new OrcCorruptionException("Unexpected end of stream");
-            }
+            verifyFormat(result >= 0, "Unexpected end of stream");
             length -= result;
         }
     }
@@ -46,9 +43,7 @@ final class OrcStreamUtils
     {
         while (offset < length) {
             int result = input.read(buffer, offset, length - offset);
-            if (result < 0) {
-                throw new OrcCorruptionException("Unexpected end of stream");
-            }
+            verifyFormat(result >= 0, "Unexpected end of stream");
             offset += result;
         }
     }

@@ -11,22 +11,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.storage.thirdparty.orc.reader;
+package org.apache.tajo.storage.thirdparty.orc.json;
 
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
+import java.io.IOException;
 
-final class OrcReaderUtils
+public interface JsonMapKeyReader
+        extends JsonReader
 {
-    private OrcReaderUtils()
-    {
-    }
-
-    public static <T> T castOrcVector(Object vector, Class<T> type)
-            throws OrcCorruptionException
-    {
-        if (!type.isInstance(vector)) {
-            throw new OrcCorruptionException("Expected %s, but got %s", type.getSimpleName(), vector.getClass().getName());
-        }
-        return type.cast(vector);
-    }
+    String nextValueAsMapKey()
+            throws IOException;
 }

@@ -13,9 +13,9 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding;
 import org.apache.tajo.storage.thirdparty.orc.stream.StreamSources;
-import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 

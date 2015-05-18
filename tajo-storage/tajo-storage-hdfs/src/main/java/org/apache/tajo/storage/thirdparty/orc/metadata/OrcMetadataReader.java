@@ -13,34 +13,27 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.metadata;
 
-import com.facebook.presto.hive.protobuf.CodedInputStream;
+import com.facebook.presto.hive.shaded.com.google.protobuf.CodedInputStream;
 import com.google.common.base.Function;
-import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind;
-import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
-import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.primitives.Ints;
-import io.airlift.slice.Slice;
-import io.airlift.slice.Slices;
+import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnEncoding.ColumnEncodingKind;
+import org.apache.tajo.storage.thirdparty.orc.metadata.OrcType.OrcTypeKind;
+import org.apache.tajo.storage.thirdparty.orc.metadata.Stream.StreamKind;
 import org.apache.hadoop.hive.ql.io.orc.OrcProto;
 import org.apache.hadoop.hive.ql.io.orc.OrcProto.RowIndexEntry;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind.*;
 import static com.google.common.base.Preconditions.checkState;
-import static java.lang.Character.MIN_SURROGATE;
+import static org.apache.tajo.storage.thirdparty.orc.metadata.CompressionKind.*;
 
 public class OrcMetadataReader
         implements MetadataReader
 {
-    private static final Slice MAX_BYTE = Slices.wrappedBuffer(new byte[] { (byte) 0xFF });
-
     @Override
     public PostScript readPostScript(byte[] data, int offset, int length)
             throws IOException
@@ -67,13 +60,12 @@ public class OrcMetadataReader
 
     private static List<StripeStatistics> toStripeStatistics(List<OrcProto.StripeStatistics> types)
     {
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(types, OrcMetadataReader::toStripeStatistics));
-        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.StripeStatistics, StripeStatistics>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.StripeStatistics, StripeStatistics>()
+        {
             @Override
-            public StripeStatistics apply(@Nullable OrcProto.StripeStatistics stripeStatistics) {
-                return new StripeStatistics(toColumnStatistics(stripeStatistics.getColStatsList(), false));
+            public StripeStatistics apply(OrcProto.StripeStatistics type)
+            {
+                return toStripeStatistics(type);
             }
         }));
     }
@@ -99,12 +91,12 @@ public class OrcMetadataReader
 
     private static List<StripeInformation> toStripeInformation(List<OrcProto.StripeInformation> types)
     {
-        // Modifying for JDK 1.6
-        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.StripeInformation, StripeInformation>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.StripeInformation, StripeInformation>()
+        {
             @Override
-            public StripeInformation apply(@Nullable OrcProto.StripeInformation stripeInformation) {
-                return toStripeInformation(stripeInformation);
+            public StripeInformation apply(OrcProto.StripeInformation type)
+            {
+                return toStripeInformation(type);
             }
         }));
     }
@@ -135,12 +127,11 @@ public class OrcMetadataReader
 
     private static List<Stream> toStream(List<OrcProto.Stream> streams)
     {
-        // Modifying for JDK 1.6
-        //return ImmutableList.copyOf(Iterables.transform(streams, OrcMetadataReader::toStream));
-        return ImmutableList.copyOf(Iterables.transform(streams, new Function<OrcProto.Stream, Stream>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(streams, new Function<OrcProto.Stream, Stream>()
+        {
             @Override
-            public Stream apply(@Nullable OrcProto.Stream stream) {
+            public Stream apply(OrcProto.Stream stream)
+            {
                 return toStream(stream);
             }
         }));
@@ -153,12 +144,11 @@ public class OrcMetadataReader
 
     private static List<ColumnEncoding> toColumnEncoding(List<OrcProto.ColumnEncoding> columnEncodings)
     {
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(columnEncodings, OrcMetadataReader::toColumnEncoding));
-        return ImmutableList.copyOf(Iterables.transform(columnEncodings, new Function<OrcProto.ColumnEncoding, ColumnEncoding>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(columnEncodings, new Function<OrcProto.ColumnEncoding, ColumnEncoding>()
+        {
             @Override
-            public ColumnEncoding apply(@Nullable OrcProto.ColumnEncoding columnEncoding) {
+            public ColumnEncoding apply(OrcProto.ColumnEncoding columnEncoding)
+            {
                 return toColumnEncoding(columnEncoding);
             }
         }));
@@ -170,13 +160,11 @@ public class OrcMetadataReader
     {
         CodedInputStream input = CodedInputStream.newInstance(inputStream);
         OrcProto.RowIndex rowIndex = OrcProto.RowIndex.parseFrom(input);
-
-        // Modifying for JDK 1.6
-        //return ImmutableList.copyOf(Iterables.transform(rowIndex.getEntryList(), OrcMetadataReader::toRowGroupIndex));
-        return ImmutableList.copyOf(Iterables.transform(rowIndex.getEntryList(), new Function<RowIndexEntry, RowGroupIndex>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(rowIndex.getEntryList(), new Function<RowIndexEntry, RowGroupIndex>()
+        {
             @Override
-            public RowGroupIndex apply(@Nullable RowIndexEntry rowIndexEntry) {
+            public RowGroupIndex apply(RowIndexEntry rowIndexEntry)
+            {
                 return toRowGroupIndex(rowIndexEntry);
             }
         }));
@@ -213,13 +201,11 @@ public class OrcMetadataReader
         if (columnStatistics == null) {
             return ImmutableList.of();
         }
-
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(columnStatistics, statistics -> toColumnStatistics(statistics, isRowGroup)));
-        return ImmutableList.copyOf(Iterables.transform(columnStatistics, new Function<OrcProto.ColumnStatistics, ColumnStatistics>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(columnStatistics, new Function<OrcProto.ColumnStatistics, ColumnStatistics>()
+        {
             @Override
-            public ColumnStatistics apply(@Nullable OrcProto.ColumnStatistics columnStatistics) {
+            public ColumnStatistics apply(OrcProto.ColumnStatistics columnStatistics)
+            {
                 return toColumnStatistics(columnStatistics, isRowGroup);
             }
         }));
@@ -252,10 +238,9 @@ public class OrcMetadataReader
         }
 
         // TODO remove this when double statistics are changed to correctly deal with NaNs
-        // if either min, max, or sum is NaN, ignore the stat
+        // if either min or max is NaN, ignore the stat
         if ((doubleStatistics.hasMinimum() && Double.isNaN(doubleStatistics.getMinimum())) ||
-                (doubleStatistics.hasMaximum() && Double.isNaN(doubleStatistics.getMaximum())) ||
-                (doubleStatistics.hasSum() && Double.isNaN(doubleStatistics.getSum()))) {
+                (doubleStatistics.hasMaximum() && Double.isNaN(doubleStatistics.getMaximum()))) {
             return null;
         }
 
@@ -275,84 +260,9 @@ public class OrcMetadataReader
             return null;
         }
 
-        /*
-        The writer performs comparisons using java Strings to determine the minimum and maximum
-        values. This results in weird behaviors in the presence of surrogate pairs and special characters.
-
-        For example, unicode codepoint 0x1D403 has the following representations:
-        UTF-16: [0xD835, 0xDC03]
-        UTF-8: [0xF0, 0x9D, 0x90, 0x83]
-
-        while codepoint 0xFFFD (the replacement character) has the following representations:
-        UTF-16: [0xFFFD]
-        UTF-8: [0xEF, 0xBF, 0xBD]
-
-        when comparisons between strings containing these characters are done with Java Strings (UTF-16),
-        0x1D403 < 0xFFFD, but when comparisons are done using raw codepoints or UTF-8, 0x1D403 > 0xFFFD
-
-        We use the following logic to ensure that we have a wider range of min-max
-        * if a min string has a surrogate character, the min string is truncated
-          at the first occurrence of the surrogate character (to exclude the surrogate character)
-        * if a max string has a surrogate character, the max string is truncated
-          at the first occurrence the surrogate character and 0xFF byte is appended to it.
-
-         */
-        Slice minimum = stringStatistics.hasMinimum() ? getMinSlice(stringStatistics.getMinimum()) : null;
-        Slice maximum = stringStatistics.hasMaximum() ? getMaxSlice(stringStatistics.getMaximum()) : null;
-
-        return new StringStatistics(minimum, maximum);
-    }
-
-    @VisibleForTesting
-    public static Slice getMaxSlice(String maximum)
-    {
-        if (maximum == null) {
-            return null;
-        }
-
-        int index = firstSurrogateCharacter(maximum);
-        if (index == -1) {
-            return Slices.utf8Slice(maximum);
-        }
-        // Append 0xFF so that it is larger than maximum
-        return concatSlices(Slices.utf8Slice(maximum.substring(0, index)), MAX_BYTE);
-    }
-
-    @VisibleForTesting
-    public static Slice getMinSlice(String minimum)
-    {
-        if (minimum == null) {
-            return null;
-        }
-
-        int index = firstSurrogateCharacter(minimum);
-        if (index == -1) {
-            return Slices.utf8Slice(minimum);
-        }
-        // truncate the string at the first surrogate character
-        return Slices.utf8Slice(minimum.substring(0, index));
-    }
-
-    // returns index of first surrogateCharacter in the string -1 if no surrogate character is found
-    @VisibleForTesting
-    static int firstSurrogateCharacter(String value)
-    {
-        char[] chars = value.toCharArray();
-        for (int i = 0; i < chars.length; i++) {
-            if (chars[i] >= MIN_SURROGATE) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    @VisibleForTesting
-    static Slice concatSlices(Slice slice1, Slice slice2)
-    {
-        Slice slice = Slices.allocate(slice1.length() + slice2.length());
-        slice.setBytes(0, slice1.getBytes());
-        slice.setBytes(slice1.length(), slice2.getBytes());
-        return slice;
+        return new StringStatistics(
+                stringStatistics.hasMinimum() ? stringStatistics.getMinimum() : null,
+                stringStatistics.hasMaximum() ? stringStatistics.getMaximum() : null);
     }
 
     private static DateStatistics toDateStatistics(OrcProto.DateStatistics dateStatistics, boolean isRowGroup)
@@ -363,6 +273,12 @@ public class OrcMetadataReader
         }
 
         if (!dateStatistics.hasMinimum() && !dateStatistics.hasMaximum()) {
+            return null;
+        }
+
+        // temporarily disable string statistics until we figure out the implications of how UTF-16
+        // strings are compared when they contain surrogate pairs and replacement characters
+        if (true) {
             return null;
         }
 
@@ -378,12 +294,11 @@ public class OrcMetadataReader
 
     private static List<OrcType> toType(List<OrcProto.Type> types)
     {
-        // Modifying for JDK 1.6
-        // return ImmutableList.copyOf(Iterables.transform(types, OrcMetadataReader::toType));
-        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.Type, OrcType>() {
-            @Nullable
+        return ImmutableList.copyOf(Iterables.transform(types, new Function<OrcProto.Type, OrcType>()
+        {
             @Override
-            public OrcType apply(@Nullable OrcProto.Type type) {
+            public OrcType apply(OrcProto.Type type)
+            {
                 return toType(type);
             }
         }));

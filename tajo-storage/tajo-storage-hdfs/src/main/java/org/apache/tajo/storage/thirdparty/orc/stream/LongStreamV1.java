@@ -13,13 +13,13 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
+import com.google.common.primitives.Ints;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.LongStreamCheckpoint;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.LongStreamV1Checkpoint;
-import com.google.common.primitives.Ints;
 
 import java.io.IOException;
 
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.MIN_REPEAT_SIZE;
 
 public class LongStreamV1
@@ -50,18 +50,14 @@ public class LongStreamV1
         lastReadInputCheckpoint = input.getCheckpoint();
 
         int control = input.read();
-        if (control == -1) {
-            throw new OrcCorruptionException("Read past end of RLE integer from %s", input);
-        }
+        verifyFormat(control != -1, "Read past end of RLE integer from %s", input);
 
         if (control < 0x80) {
             numLiterals = control + MIN_REPEAT_SIZE;
             used = 0;
             repeat = true;
             delta = input.read();
-            if (delta == -1) {
-                throw new OrcCorruptionException("End of stream in RLE Integer from %s", input);
-            }
+            verifyFormat(delta != -1, "End of stream in RLE Integer from %s", input);
 
             // convert from 0 to 255 to -128 to 127 by converting to a signed byte
             // noinspection SillyAssignment

@@ -13,8 +13,8 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
-import org.apache.tajo.storage.thirdparty.orc.checkpoint.StreamCheckpoint;
 import com.google.common.base.MoreObjects;
+import org.apache.tajo.storage.thirdparty.orc.checkpoint.StreamCheckpoint;
 
 import javax.annotation.Nullable;
 import java.io.IOException;

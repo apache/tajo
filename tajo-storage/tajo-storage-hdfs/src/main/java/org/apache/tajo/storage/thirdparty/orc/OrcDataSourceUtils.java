@@ -13,16 +13,12 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 import io.airlift.slice.Slice;
 import io.airlift.slice.Slices;
 import io.airlift.units.DataSize;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -36,29 +32,25 @@ public final class OrcDataSourceUtils
     /**
      * Merge disk ranges that are closer than {@code maxMergeDistance}.
      */
-    public static List<DiskRange> mergeAdjacentDiskRanges(Iterable<DiskRange> diskRanges, DataSize maxMergeDistance, DataSize maxReadSize)
+    public static Iterable<DiskRange> mergeAdjacentDiskRanges(Iterable<DiskRange> diskRanges, DataSize maxMergeDistance)
     {
         // sort ranges by start offset
         List<DiskRange> ranges = newArrayList(diskRanges);
-        Collections.sort(ranges, new Comparator<DiskRange>()
-        {
+        Collections.sort(ranges, new Comparator<DiskRange>() {
             @Override
-            public int compare(DiskRange o1, DiskRange o2)
-            {
+            public int compare(DiskRange o1, DiskRange o2) {
                 return Long.compare(o1.getOffset(), o2.getOffset());
             }
         });
 
         // merge overlapping ranges
-        long maxReadSizeBytes = maxReadSize.toBytes();
         long maxMergeDistanceBytes = maxMergeDistance.toBytes();
-        ImmutableList.Builder<DiskRange> result = ImmutableList.builder();
+        List<DiskRange> result = new ArrayList<DiskRange>();
         DiskRange last = ranges.get(0);
         for (int i = 1; i < ranges.size(); i++) {
             DiskRange current = ranges.get(i);
-            DiskRange merged = last.span(current);
-            if (merged.getLength() <= maxReadSizeBytes && last.getEnd() + maxMergeDistanceBytes >= current.getOffset()) {
-                last = merged;
+            if (last.getEnd() + maxMergeDistanceBytes + 1 >= current.getOffset()) {
+                last = last.span(current);
             }
             else {
                 result.add(last);
@@ -67,7 +59,7 @@ public final class OrcDataSourceUtils
         }
         result.add(last);
 
-        return result.build();
+        return result;
     }
 
     /**

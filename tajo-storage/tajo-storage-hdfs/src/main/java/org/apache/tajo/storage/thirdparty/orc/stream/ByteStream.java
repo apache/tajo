@@ -13,12 +13,12 @@
  */
 package org.apache.tajo.storage.thirdparty.orc.stream;
 
-import org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException;
 import org.apache.tajo.storage.thirdparty.orc.checkpoint.ByteStreamCheckpoint;
 
 import java.io.IOException;
 import java.util.Arrays;
 
+import static org.apache.tajo.storage.thirdparty.orc.OrcCorruptionException.verifyFormat;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.MIN_REPEAT_SIZE;
 import static org.apache.tajo.storage.thirdparty.orc.stream.OrcStreamUtils.readFully;
 
@@ -44,9 +44,7 @@ public class ByteStream
         lastReadInputCheckpoint = input.getCheckpoint();
 
         int control = input.read();
-        if (control == -1) {
-            throw new OrcCorruptionException("Read past end of buffer RLE byte from %s", input);
-        }
+        verifyFormat(control != -1, "Read past end of buffer RLE byte from %s", input);
 
         offset = 0;
 
@@ -56,9 +54,7 @@ public class ByteStream
 
             // read the repeated value
             int value = input.read();
-            if (value == -1) {
-                throw new OrcCorruptionException("Reading RLE byte got EOF");
-            }
+            verifyFormat(value != -1, "Reading RLE byte got EOF");
 
             // fill buffer with the value
             Arrays.fill(buffer, 0, length, (byte) value);
