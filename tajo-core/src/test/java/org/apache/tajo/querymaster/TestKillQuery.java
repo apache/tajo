@@ -33,11 +33,7 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.master.event.QueryEvent;
-import org.apache.tajo.master.event.QueryEventType;
-import org.apache.tajo.master.event.StageEvent;
-import org.apache.tajo.master.event.StageEventType;
+import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -131,8 +127,7 @@ public class TestKillQuery {
     assertNotNull(stage);
 
     // fire kill event
-    Query q = queryMasterTask.getQuery();
-    q.handle(new QueryEvent(queryId, QueryEventType.KILL));
+    queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
 
     try {
       cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
@@ -157,24 +152,55 @@ public class TestKillQuery {
   @Test
   public final void testIgnoreStageStateFromKilled() throws Exception {
 
-    ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
-    QueryId queryId = new QueryId(res.getQueryId());
-    cluster.waitForQuerySubmitted(queryId);
+    SQLAnalyzer analyzer = new SQLAnalyzer();
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
+    Session session = LocalTajoTestingUtility.createDummySession();
+    CatalogService catalog = cluster.getMaster().getCatalog();
 
-    QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
-    Query query = qmt.getQuery();
+    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    Expr expr =  analyzer.parse(queryStr);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
-    // wait for a stage created
-    cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_RUNNING, 10);
-    query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+    optimizer.optimize(plan);
+
+    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
+    QueryContext queryContext = new QueryContext(conf);
+    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
+    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
+    globalPlanner.build(masterPlan);
+
+    CountDownLatch barrier  = new CountDownLatch(1);
+    MockAsyncDispatch dispatch = new MockAsyncDispatch(barrier, TajoProtos.QueryState.QUERY_RUNNING);
+
+    QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
+    QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
+        queryId, session, defaultContext, expr.toJson(), dispatch);
+
+    queryMasterTask.init(conf);
+    queryMasterTask.getQueryTaskContext().getDispatcher().start();
+    queryMasterTask.startQuery();
 
     try{
-      cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_KILLED, 50);
-    } finally {
-      assertEquals(TajoProtos.QueryState.QUERY_KILLED, query.getSynchronizedState());
+      barrier.await(5000, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      fail("Query state : " + queryMasterTask.getQuery().getSynchronizedState());
     }
 
-    List<Stage> stages = Lists.newArrayList(query.getStages());
+    Stage stage = queryMasterTask.getQuery().getStages().iterator().next();
+    assertNotNull(stage);
+
+    // fire kill event
+    queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
+
+    try {
+      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
+      assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
+    }   finally {
+      queryMasterTask.stop();
+    }
+
+    List<Stage> stages = Lists.newArrayList(queryMasterTask.getQuery().getStages());
     Stage lastStage = stages.get(stages.size() - 1);
 
     assertEquals(StageState.KILLED, lastStage.getSynchronizedState());
