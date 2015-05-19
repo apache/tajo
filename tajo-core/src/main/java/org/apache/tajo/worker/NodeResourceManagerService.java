@@ -30,10 +30,7 @@ import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.storage.DiskUtil;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
-import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
-import org.apache.tajo.worker.event.NodeResourceManagerEvent;
-import org.apache.tajo.worker.event.NodeStatusEvent;
+import org.apache.tajo.worker.event.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -77,8 +74,10 @@ public class NodeResourceManagerService extends AbstractService implements Event
           NodeResource resource = new NodeResource(request.getResource());
           if (allocate(resource)) {
             allocatedSize.incrementAndGet();
-            //TODO send task event to taskExecutorService
+            //send task start event to TaskExecutorService
+            getDispatcher().getEventHandler().handle(new TaskStartEvent(request.getTaskRequest(), resource));
           } else {
+            // reject the exceeded requests
             response.addCancellationTask(request);
           }
         }

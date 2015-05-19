@@ -265,6 +265,17 @@ public class ExecutionBlockContext {
     histories.get(taskRunnerId).addTaskHistory(quAttemptId, taskHistory);
   }
 
+  public void fatalError(TaskAttemptId taskAttemptId, String message) {
+    if (message == null) {
+      message = "No error message";
+    }
+    TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
+        .setId(taskAttemptId.getProto())
+        .setErrorMessage(message);
+
+    getStub().fatalError(null, builder.build(), NullCallback.get());
+  }
+
   public TaskRunnerHistory createTaskRunnerHistory(TaskRunner runner){
     histories.putIfAbsent(runner.getId(), new TaskRunnerHistory(runner.getContainerId(), executionBlockId));
     return histories.get(runner.getId());

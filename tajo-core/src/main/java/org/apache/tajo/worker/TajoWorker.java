@@ -627,6 +627,7 @@ public class TajoWorker extends CompositeService {
   }
 
   public static void main(String[] args) throws Exception {
+    Thread.setDefaultUncaughtExceptionHandler(new TajoUncaughtExceptionHandler());
     StringUtils.startupShutdownMessage(TajoWorker.class, args, LOG);
 
     TajoConf tajoConf = new TajoConf();
