@@ -32,12 +32,9 @@ import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.junit.*;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.Queue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -161,8 +158,7 @@ public class TestNodeResourceManagerService {
     final AtomicInteger totalCanceled = new AtomicInteger();
 
     final ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
-    final List<TaskAllocationRequestProto> totalTasks =
-        Collections.synchronizedList(createTaskRequests(taskMemory, taskSize));
+    final Queue<TaskAllocationRequestProto> totalTasks = createTaskRequests(taskMemory, taskSize);
 
     ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
     List<Future> futureList = Lists.newArrayList();
@@ -174,13 +170,9 @@ public class TestNodeResourceManagerService {
             public void run() {
               int complete = 0;
               while (true) {
-                TaskAllocationRequestProto task;
-                synchronized (totalTasks) {
-                  if (totalTasks.isEmpty()) break;
-                  else {
-                    task = totalTasks.remove(0);
-                  }
-                }
+                TaskAllocationRequestProto task = totalTasks.poll();
+                if (task == null) break;
+
 
                 BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
                 requestProto.addTaskRequest(task);
@@ -201,7 +193,7 @@ public class TestNodeResourceManagerService {
                   fail(e.getMessage());
                 }
               }
-              System.out.println(Thread.currentThread().getName() + " complete task: " + complete);
+              System.out.println(Thread.currentThread().getName() + " complete requests: " + complete);
               totalComplete.addAndGet(complete);
             }
           })
@@ -218,8 +210,8 @@ public class TestNodeResourceManagerService {
     assertEquals(taskSize, totalComplete.get());
   }
 
-  protected static List<TaskAllocationRequestProto> createTaskRequests(int memory, int size) {
-    List<TaskAllocationRequestProto> requestProtoList = Lists.newArrayList();
+  protected static Queue<TaskAllocationRequestProto> createTaskRequests(int memory, int size) {
+    Queue<TaskAllocationRequestProto> requestProtoList = new LinkedBlockingQueue<TaskAllocationRequestProto>();
     for (int i = 0; i < size; i++) {
 
       ExecutionBlockId nullStage = QueryIdFactory.newExecutionBlockId(QueryIdFactory.NULL_QUERY_ID, 0);

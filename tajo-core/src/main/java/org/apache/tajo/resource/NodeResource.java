@@ -19,8 +19,11 @@
 package org.apache.tajo.resource;
 
 import com.google.common.base.Objects;
+import io.netty.util.internal.PlatformDependent;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.common.ProtoObject;
+
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * <p><code>NodeResource</code> models a set of computer resources in the
@@ -37,14 +40,30 @@ import org.apache.tajo.common.ProtoObject;
 
 public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, Comparable<NodeResource> {
 
-  private int memory;
-  private int disks;
-  private int vCores;
+  private volatile int memory;
+  private volatile int disks;
+  private volatile int vCores;
+
+  private static AtomicIntegerFieldUpdater MEMORY_UPDATER;
+  private static AtomicIntegerFieldUpdater DISKS_UPDATER;
+  private static AtomicIntegerFieldUpdater VCORES_UPDATER;
+
+  static {
+    MEMORY_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "memory");
+    if (MEMORY_UPDATER == null) {
+      MEMORY_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "memory");
+      DISKS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "disks");
+      VCORES_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "vCores");
+    } else {
+      DISKS_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "disks");
+      VCORES_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "vCores");
+    }
+  }
 
   public NodeResource(TajoProtos.NodeResourceProto proto) {
-    this.memory = proto.getMemory();
-    this.vCores = proto.getVirtualCores();
-    this.disks = proto.getDisks();
+    setMemory(proto.getMemory());
+    setDisks(proto.getDisks());
+    setVirtualCores(proto.getVirtualCores());
   }
 
   private NodeResource() {
@@ -69,8 +88,9 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
    *
    * @param memory <em>memory</em> of the resource
    */
+  @SuppressWarnings("unchecked")
   public NodeResource setMemory(int memory) {
-    this.memory = memory;
+    MEMORY_UPDATER.lazySet(this, memory);
     return this;
   }
 
@@ -89,8 +109,9 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
    *
    * @param disks <em>number of disks</em> of the resource
    */
+  @SuppressWarnings("unchecked")
   public NodeResource setDisks(int disks) {
-    this.disks = disks;
+    DISKS_UPDATER.lazySet(this, disks);
     return this;
   }
 
@@ -111,8 +132,9 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
    *
    * @param vCores <em>number of virtual cpu cores</em> of the resource
    */
+  @SuppressWarnings("unchecked")
   public NodeResource setVirtualCores(int vCores) {
-    this.vCores = vCores;
+    VCORES_UPDATER.lazySet(this, vCores);
     return this;
   }
 

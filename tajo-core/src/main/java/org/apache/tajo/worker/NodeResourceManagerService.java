@@ -103,11 +103,11 @@ public class NodeResourceManagerService extends AbstractService implements Event
   }
 
   protected NodeResource getTotalResource() {
-    return NodeResources.clone(totalResource);
+    return totalResource;
   }
 
   protected NodeResource getAvailableResource() {
-    return NodeResources.clone(availableResource);
+    return availableResource;
   }
 
   public int getAllocatedSize() {
