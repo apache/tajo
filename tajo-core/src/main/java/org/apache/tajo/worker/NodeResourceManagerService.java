@@ -138,12 +138,14 @@ public class NodeResourceManagerService extends AbstractService implements Event
     }
 
     int vCores = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
-    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_NUM);
+    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS_NUM);
 
     int dataNodeStorageSize = DiskUtil.getDataNodeStorageSize();
     if (conf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DFS_DIR_AWARE) && dataNodeStorageSize > 0) {
       disks = dataNodeStorageSize;
     }
-    return NodeResource.createResource(memoryMb, disks, vCores);
+
+    int diskParallels = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM);
+    return NodeResource.createResource(memoryMb, disks * diskParallels, vCores);
   }
 }
