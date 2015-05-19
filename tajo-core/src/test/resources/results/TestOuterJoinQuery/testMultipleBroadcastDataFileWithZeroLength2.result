@@ -1,0 +1,7 @@
+o_orderkey,o_orderdate,o_custkey,c_custkey,c_name,n_nationkey,n_name
+-------------------------------
+1,1996-01-02,3,3,Customer#000000003,1,ARGENTINA
+2,1996-12-01,4,4,Customer#000000004,4,EGYPT
+3,1993-10-14,2,2,Customer#000000002,13,JORDAN
+null,null,null,1,Customer#000000001,15,MOROCCO
+null,null,null,5,Customer#000000005,3,CANADA

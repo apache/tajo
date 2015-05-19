@@ -1,0 +1,7 @@
+l_orderkey,c_custkey,c_name,c_nationkey,n_name
+-------------------------------
+1,1,Customer#000000001,15,ARGENTINA
+1,1,Customer#000000001,15,ARGENTINA
+2,2,Customer#000000002,13,BRAZIL
+3,3,Customer#000000003,1,CANADA
+3,3,Customer#000000003,1,CANADA

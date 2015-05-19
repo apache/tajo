@@ -1,0 +1,7 @@
+l_orderkey,o_orderkey,c_custkey
+-------------------------------
+1,1,null
+1,1,null
+2,2,null
+3,3,null
+3,3,null

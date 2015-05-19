@@ -1,0 +1,57 @@
+explain
+-------------------------------
+SELECTION(3)
+  => Search Cond: default.b.n_nationkey (INT4) IS NULL
+   JOIN(6)(LEFT_OUTER)
+     => Join Cond: default.a.c_nationkey (INT4) = default.b.n_nationkey (INT4)
+     => target list: default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)
+     => out schema: {(12) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+     => in schema: {(12) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+      SCAN(1) on default.nation_multifile as b
+        => target list: default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)
+        => out schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+        => in schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+      SCAN(0) on default.customer as a
+        => target list: default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)
+        => out schema: {(8) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)}
+        => in schema: {(8) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.b
+
+SELECTION(3)
+  => Search Cond: default.b.n_nationkey (INT4) IS NULL
+   JOIN(6)(LEFT_OUTER)
+     => Join Cond: default.a.c_nationkey (INT4) = default.b.n_nationkey (INT4)
+     => target list: default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)
+     => out schema: {(12) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+     => in schema: {(12) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+      SCAN(1) on default.nation_multifile as b
+        => target list: default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)
+        => out schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+        => in schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+      SCAN(0) on default.customer as a
+        => target list: default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)
+        => out schema: {(8) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)}
+        => in schema: {(8) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================
