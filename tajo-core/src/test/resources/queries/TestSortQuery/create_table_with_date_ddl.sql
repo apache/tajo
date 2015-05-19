@@ -1,7 +1,7 @@
 -- Sort Table
 -- It is used in TestSortQuery::testSortWithDate
 
-create external table table1 (
+create external table testSortWithDate (
   col1 timestamp,
 	col2 date,
 	col3 time
