@@ -69,32 +69,29 @@ public class NodeResourceManagerService extends AbstractService implements Event
 
   @Override
   public void handle(NodeResourceManagerEvent event) {
-    switch (event.getType()) {
-      case ALLOCATE: {
-        NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
-        BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
-        for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
-          NodeResource resource = new NodeResource(request.getResource());
-          if (allocate(resource)) {
-            allocatedSize.incrementAndGet();
-            //TODO send task event to taskExecutorService
-          } else {
-            response.addCancellationTask(request);
-          }
-        }
-        allocateEvent.getCallback().run(response.build());
-        break;
-      }
-      case DEALLOCATE: {
-        allocatedSize.decrementAndGet();
-        NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
-        release(deallocateEvent.getResource());
 
-        // send current resource to ResourceTracker
-        getDispatcher().getEventHandler().handle(
-            new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE, getAvailableResource()));
-        break;
+    if (event instanceof NodeResourceAllocateEvent) {
+      NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
+      BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
+      for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
+        NodeResource resource = new NodeResource(request.getResource());
+        if (allocate(resource)) {
+          allocatedSize.incrementAndGet();
+          //TODO send task event to taskExecutorService
+        } else {
+          response.addCancellationTask(request);
+        }
       }
+      allocateEvent.getCallback().run(response.build());
+
+    } else if (event instanceof NodeResourceDeallocateEvent) {
+      allocatedSize.decrementAndGet();
+      NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
+      release(deallocateEvent.getResource());
+
+      // send current resource to ResourceTracker
+      getDispatcher().getEventHandler().handle(
+          new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE, getAvailableResource()));
     }
   }
 

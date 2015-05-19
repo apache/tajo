@@ -152,7 +152,7 @@ public class TestNodeResourceManagerService {
 
   @Test(timeout = 30000)
   public void testParallelRequest() throws Exception {
-    final int parallelCount = Runtime.getRuntime().availableProcessors();
+    final int parallelCount = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES) * 2;
     final int taskSize = 100000;
     final AtomicInteger totalComplete = new AtomicInteger();
     final AtomicInteger totalCanceled = new AtomicInteger();
