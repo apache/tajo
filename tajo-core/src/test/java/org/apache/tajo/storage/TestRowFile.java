@@ -67,8 +67,8 @@ public class TestRowFile {
 
     TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
 
-    FileStorageManager sm =
-        (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm =
+        (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");

@@ -299,6 +299,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1613: Rename StorageManager to Tablespace. (hyunsik)
+
     TAJO-1359: Add nested field projector and language extension to project 
     nested record. (hyunsik)
 
