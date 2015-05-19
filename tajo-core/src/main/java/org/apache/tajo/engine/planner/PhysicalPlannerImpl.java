@@ -1192,11 +1192,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Preconditions.checkNotNull(ctx.getTable(annotation.getCanonicalName()),
         "Error: There is no table matched to %s", annotation.getCanonicalName());
 
-    FragmentProto [] fragmentProtos = ctx.getTables(annotation.getTableName());
-    List<FileFragment> fragments =
-        FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
+    FragmentProto [] fragments = ctx.getTables(annotation.getTableName());
 
-    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), annotation.getIndexPath(),
+    Preconditions.checkState(fragments.length == 1);
+    return new BSTIndexScanExec(ctx, annotation, fragments[0], annotation.getIndexPath(),
         annotation.getKeySchema(), annotation.getPredicates());
   }
 
