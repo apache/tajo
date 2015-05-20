@@ -16,17 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.catalog.dictionary;
 
-import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
-import java.io.IOException;
+class SessionTableDescriptor extends AbstractTableDescriptor {
 
-public interface Task {
+    private static final String TABLENAME = "session";
+    private final ColumnDescriptor[] columns =
+        new ColumnDescriptor[] {
+            new ColumnDescriptor("name", Type.TEXT, 0), new ColumnDescriptor("value", Type.TEXT, 0)
+        };
 
-  void waitForFetch() throws InterruptedException, IOException;
+    public SessionTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
+        super(metadataDictionary);
+    }
 
-  void run() throws Exception;
+    @Override
+    public String getTableNameString() {
+        return TABLENAME;
+    }
 
-  TaskAttemptId getId();
+    @Override
+    protected ColumnDescriptor[] getColumnDescriptors() {
+        return columns;
+    }
+
 }

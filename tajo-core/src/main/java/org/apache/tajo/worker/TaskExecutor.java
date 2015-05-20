@@ -24,47 +24,51 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.resource.NodeResource;
-import org.apache.tajo.worker.event.TaskEvent;
+import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
+import org.apache.tajo.worker.event.TaskExecutorEvent;
+import org.apache.tajo.worker.event.TaskManagerEvent;
 import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.*;
 
-public class TaskManagerService implements EventHandler<TaskEvent> {
-  private static final Log LOG = LogFactory.getLog(TaskManagerService.class);
+public class TaskExecutor<T extends TaskContainer> extends ThreadPoolExecutor
+    implements EventHandler<TaskExecutorEvent> {
+  private static final Log LOG = LogFactory.getLog(TaskExecutor.class);
 
   private final TajoConf conf;
-  private final NodeResourceManagerService resourceManagerService;
-
-  private final ConcurrentMap<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
-  private final ConcurrentMap<TaskId, NodeResource> allocatedResourceMap;
+  private final TaskManager taskManager;
+  private final NodeResourceManager resourceManager;
+  private final Map<TaskAttemptId, NodeResource> allocatedResourceMap;
   private final ThreadPoolExecutor fetcherExecutor;
 
-  public TaskManagerService(TajoConf conf, NodeResourceManagerService resourceManagerService) {
-    this(conf, conf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES), resourceManagerService);
+  public TaskExecutor(TajoConf conf, TaskManager taskManager, NodeResourceManager resourceManager) {
+    this(conf, conf.getIntVar(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES), taskManager, resourceManager);
 
   }
 
-  public TaskManagerService(TajoConf conf, int nThreads, NodeResourceManagerService resourceManagerService) {
+  public TaskExecutor(TajoConf conf, int nThreads, TaskManager taskManager, NodeResourceManager resourceManager) {
     super(nThreads, nThreads,
         0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new ThreadFactoryBuilder().setNameFormat("Task executor #%d").build());
     this.conf = conf;
-    this.resourceManagerService = resourceManagerService;
-    this.executionBlockContextMap = Maps.newConcurrentMap();
-    this.allocatedResourceMap = Maps.newConcurrentMap();
+    this.taskManager = taskManager;
+    this.resourceManager = resourceManager;
+    this.allocatedResourceMap = Maps.newHashMap();
 
     int maxFetcherThreads = conf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
     this.fetcherExecutor = new ThreadPoolExecutor(Math.min(nThreads, maxFetcherThreads),
         maxFetcherThreads,
         60L, TimeUnit.SECONDS,
         new SynchronousQueue<Runnable>(true));
-    LOG.info("Startup TaskExecutorService");
+    LOG.info("Startup TaskExecutor");
   }
 
   @Override
@@ -81,18 +85,24 @@ public class TaskManagerService implements EventHandler<TaskEvent> {
   @Override
   protected void afterExecute(Runnable r, Throwable t) {
     TaskContainer container = (T) r;
-
-    if (container != null) {
-      LOG.error(t.getMessage(), t);
-      container.getContext().fatalError(container.getTask().getId(), t.getMessage());
-      return;
-    }
-
     try {
-      container.stop();
-    } catch (Throwable throwable) {
-      LOG.error(t.getMessage(), t);
-      container.getContext().fatalError(container.getTask().getId(), t.getMessage());
+
+      if (container != null) {
+        LOG.error(t.getMessage(), t);
+        container.getContext().fatalError(container.getTask().getId(), t.getMessage());
+        return;
+      }
+
+      try {
+        container.stop();
+      } catch (Throwable throwable) {
+        LOG.error(t.getMessage(), t);
+        container.getContext().fatalError(container.getTask().getId(), t.getMessage());
+      }
+    } finally {
+      //FIXME change to TaskStopEvent ?
+      resourceManager.getDispatcher().getEventHandler()
+          .handle(new NodeResourceDeallocateEvent(allocatedResourceMap.remove(container.getTask().getId())));
     }
   }
 
@@ -101,11 +111,34 @@ public class TaskManagerService implements EventHandler<TaskEvent> {
   }
 
   @Override
-  public void handle(TaskEvent event) {
+  public void handle(TaskExecutorEvent event) {
+
+    if(event instanceof TaskStartEvent)
      switch (event.getType()) {
        case START:{
-         TaskStartEvent startEvent = (TaskStartEvent)event;
-         allocatedResourceMap.putIfAbsent()
+         final TaskStartEvent startEvent = (TaskStartEvent)event;
+         allocatedResourceMap.put(startEvent.getTaskId(), startEvent.getAllocatedResource());
+
+//         FIXME
+         submit(new TaskContainer(
+             taskManager.getExecutionBlockContext(
+                 startEvent.getTaskId().getTaskId().getExecutionBlockId()), new Task(){
+
+           @Override
+           public void waitForFetch() throws InterruptedException, IOException {
+
+           }
+
+           @Override
+           public void run() throws Exception {
+
+           }
+
+           @Override
+           public TaskAttemptId getId() {
+             return startEvent.getTaskId();
+           }
+         }));
        }
      }
   }

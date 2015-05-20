@@ -16,17 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.worker.event;
 
-import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
-import java.io.IOException;
+public class ExecutionBlockStartEvent extends TaskManagerEvent {
+  private TajoWorkerProtocol.RunExecutionBlockRequestProto requestProto;
 
-public interface Task {
+  public ExecutionBlockStartEvent(TajoWorkerProtocol.RunExecutionBlockRequestProto requestProto) {
+    super(EventType.EB_START, new ExecutionBlockId(requestProto.getExecutionBlockId()));
+    this.requestProto = requestProto;
+  }
 
-  void waitForFetch() throws InterruptedException, IOException;
-
-  void run() throws Exception;
-
-  TaskAttemptId getId();
+  public TajoWorkerProtocol.RunExecutionBlockRequestProto getRequestProto() {
+    return requestProto;
+  }
 }

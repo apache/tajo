@@ -42,12 +42,12 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * StorageManager manages the functions of storing and reading data.
- * StorageManager is a abstract class.
- * For supporting such as HDFS, HBASE, a specific StorageManager should be implemented by inheriting this class.
+ * Tablespace manages the functions of storing and reading data.
+ * Tablespace is a abstract class.
+ * For supporting such as HDFS, HBASE, a specific Tablespace should be implemented by inheriting this class.
  *
  */
-public abstract class StorageManager implements TableSpace {
+public abstract class Tablespace {
 
   public static final PathFilter hiddenFileFilter = new PathFilter() {
     public boolean accept(Path p) {
@@ -59,7 +59,7 @@ public abstract class StorageManager implements TableSpace {
   protected TajoConf conf;
   protected String storeType;
 
-  public StorageManager(String storeType) {
+  public Tablespace(String storeType) {
     this.storeType = storeType;
   }
 
@@ -77,7 +77,6 @@ public abstract class StorageManager implements TableSpace {
    * @param ifNotExists Creates the table only when the table does not exist.
    * @throws java.io.IOException
    */
-  @Override
   public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
 
   /**
@@ -87,7 +86,6 @@ public abstract class StorageManager implements TableSpace {
    * @param tableDesc
    * @throws java.io.IOException
    */
-  @Override
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
 
   /**
@@ -99,7 +97,6 @@ public abstract class StorageManager implements TableSpace {
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
-  @Override
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
                                            ScanNode scanNode) throws IOException;
 
@@ -124,7 +121,6 @@ public abstract class StorageManager implements TableSpace {
   /**
    * Release storage manager resource
    */
-  @Override
   public abstract void close();
 
 
@@ -162,7 +158,6 @@ public abstract class StorageManager implements TableSpace {
    * @param node The child node of the root node.
    * @throws java.io.IOException
    */
-  public abstract void rollbackOutputCommit(LogicalNode node) throws IOException;
 
   /**
    * Returns the current storage type.
@@ -173,7 +168,7 @@ public abstract class StorageManager implements TableSpace {
   }
 
   /**
-   * Initialize StorageManager instance. It should be called before using.
+   * Initialize Tablespace instance. It should be called before using.
    *
    * @param tajoConf
    * @throws java.io.IOException
@@ -206,7 +201,6 @@ public abstract class StorageManager implements TableSpace {
    * @return Scanner instance
    * @throws java.io.IOException
    */
-  @Override
   public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
     return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
   }
@@ -220,7 +214,6 @@ public abstract class StorageManager implements TableSpace {
    * @return Scanner instance
    * @throws java.io.IOException
    */
-  @Override
   public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {
     return getScanner(meta, schema, fragment, schema);
   }
@@ -235,7 +228,6 @@ public abstract class StorageManager implements TableSpace {
    * @return Scanner instance
    * @throws java.io.IOException
    */
-  @Override
   public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
     if (fragment.isEmpty()) {
       Scanner scanner = new NullScanner(conf, schema, meta, fragment);
@@ -326,6 +318,8 @@ public abstract class StorageManager implements TableSpace {
     }
   }
 
+  public abstract void rollbackOutputCommit(LogicalNode node) throws IOException;
+
   /**
    * It is called after making logical plan. Storage manager should verify the schema for inserting.
    *
@@ -333,10 +327,7 @@ public abstract class StorageManager implements TableSpace {
    * @param outSchema  The output schema of select query for inserting.
    * @throws java.io.IOException
    */
-  @Override
-  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
-    // nothing to do
-  }
+  public abstract void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException;
 
   /**
    * Returns the list of storage specified rewrite rules.
@@ -347,11 +338,8 @@ public abstract class StorageManager implements TableSpace {
    * @return The list of storage specified rewrite rules
    * @throws java.io.IOException
    */
-  @Override
-  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
-      throws IOException {
-    return null;
-  }
+  public abstract List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
+      throws IOException;
 
   /**
    * Finalizes result data. Tajo stores result data in the staging directory.
@@ -366,7 +354,6 @@ public abstract class StorageManager implements TableSpace {
    * @return Saved path
    * @throws java.io.IOException
    */
-  @Override
   public abstract Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
                                LogicalPlan plan, Schema schema,
                                TableDesc tableDesc) throws IOException;

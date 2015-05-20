@@ -16,17 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.worker.event;
 
+import org.apache.hadoop.yarn.event.AbstractEvent;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 
-import java.io.IOException;
+public class TaskManagerEvent extends AbstractEvent<TaskManagerEvent.EventType> {
+  public enum EventType {
+    EB_START,
+    EB_STOP
+  }
 
-public interface Task {
+  private ExecutionBlockId executionBlockId;
 
-  void waitForFetch() throws InterruptedException, IOException;
+  public TaskManagerEvent(EventType eventType,
+                          ExecutionBlockId executionBlockId) {
+    super(eventType);
+    this.executionBlockId = executionBlockId;
+  }
 
-  void run() throws Exception;
-
-  TaskAttemptId getId();
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
+  }
 }

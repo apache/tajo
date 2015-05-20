@@ -36,18 +36,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
-public class NodeResourceManagerService extends AbstractService implements EventHandler<NodeResourceManagerEvent> {
-  private static final Log LOG = LogFactory.getLog(NodeResourceManagerService.class);
+public class NodeResourceManager extends AbstractService implements EventHandler<NodeResourceManagerEvent> {
+  private static final Log LOG = LogFactory.getLog(NodeResourceManager.class);
 
   private final Dispatcher dispatcher;
+  private final TaskManager taskManager;
   private NodeResource totalResource;
   private NodeResource availableResource;
   private AtomicInteger allocatedSize;
   private TajoConf tajoConf;
 
-  public NodeResourceManagerService(Dispatcher dispatcher){
-    super(NodeResourceManagerService.class.getName());
+  public NodeResourceManager(Dispatcher dispatcher, TaskManager taskManager){
+    super(NodeResourceManager.class.getName());
     this.dispatcher = dispatcher;
+    this.taskManager = taskManager;
   }
 
   @Override
@@ -61,7 +63,7 @@ public class NodeResourceManagerService extends AbstractService implements Event
     this.dispatcher.register(NodeResourceManagerEvent.EventType.class, this);
     this.allocatedSize = new AtomicInteger();
     super.serviceInit(conf);
-    LOG.info("Initialized NodeResourceManagerService for " + totalResource);
+    LOG.info("Initialized NodeResourceManager for " + totalResource);
   }
 
   @Override
@@ -74,8 +76,8 @@ public class NodeResourceManagerService extends AbstractService implements Event
         NodeResource resource = new NodeResource(request.getResource());
         if (allocate(resource)) {
           allocatedSize.incrementAndGet();
-          //send task start event to TaskExecutorService
-          getDispatcher().getEventHandler().handle(new TaskStartEvent(request.getTaskRequest(), resource));
+          //send task start event to TaskExecutor
+          //taskManager.getEventHandler().handle(new TaskStartEvent(request.getTaskRequest(), resource));
         } else {
           // reject the exceeded requests
           response.addCancellationTask(request);

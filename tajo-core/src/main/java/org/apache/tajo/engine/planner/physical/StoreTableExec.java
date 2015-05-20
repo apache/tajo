@@ -90,7 +90,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(context.getConf()))
+      appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(context.getConf()))
           .getAppender(meta, appenderSchema, lastFileName);
 
       if (suffixId > 0) {

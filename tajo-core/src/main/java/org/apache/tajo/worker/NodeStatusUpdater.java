@@ -48,9 +48,9 @@ import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
 /**
  * It periodically sends heartbeat to {@link org.apache.tajo.master.rm.TajoResourceTracker} via asynchronous rpc.
  */
-public class NodeStatusUpdaterService extends AbstractService implements EventHandler<NodeStatusEvent> {
+public class NodeStatusUpdater extends AbstractService implements EventHandler<NodeStatusEvent> {
 
-  private final static Log LOG = LogFactory.getLog(NodeStatusUpdaterService.class);
+  private final static Log LOG = LogFactory.getLog(NodeStatusUpdater.class);
 
   private TajoConf tajoConf;
   private StatusUpdaterThread updaterThread;
@@ -58,16 +58,16 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
   private volatile long heartBeatInterval;
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
   private final WorkerConnectionInfo connectionInfo;
-  private final NodeResourceManagerService nodeResourceManagerService;
+  private final NodeResourceManager nodeResourceManager;
   private AsyncRpcClient rmClient;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingLimit;
 
-  public NodeStatusUpdaterService(WorkerConnectionInfo connectionInfo, NodeResourceManagerService resourceManagerService) {
-    super(NodeStatusUpdaterService.class.getSimpleName());
+  public NodeStatusUpdater(WorkerConnectionInfo connectionInfo, NodeResourceManager resourceManager) {
+    super(NodeStatusUpdater.class.getSimpleName());
     this.connectionInfo = connectionInfo;
-    this.nodeResourceManagerService = resourceManagerService;
+    this.nodeResourceManager = resourceManager;
   }
 
   @Override
@@ -78,7 +78,7 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
     this.tajoConf = (TajoConf) conf;
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
     this.serviceTracker = ServiceTrackerFactory.get(tajoConf);
-    this.nodeResourceManagerService.getDispatcher().register(NodeStatusEvent.EventType.class, this);
+    this.nodeResourceManager.getDispatcher().register(NodeStatusEvent.EventType.class, this);
     this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
     super.serviceInit(conf);
@@ -87,7 +87,7 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
   @Override
   public void serviceStart() throws Exception {
     // if resource changed over than 50%, send reports
-    this.queueingLimit = nodeResourceManagerService.getTotalResource().getVirtualCores() / 2;
+    this.queueingLimit = nodeResourceManager.getTotalResource().getVirtualCores() / 2;
 
     updaterThread.start();
     super.serviceStart();
@@ -140,8 +140,8 @@ public class NodeStatusUpdaterService extends AbstractService implements EventHa
 
   private NodeHeartbeatRequestProto createNodeStatusReport() {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setTotalResource(nodeResourceManagerService.getTotalResource().getProto());
-    requestProto.setAvailableResource(nodeResourceManagerService.getAvailableResource().getProto());
+    requestProto.setTotalResource(nodeResourceManager.getTotalResource().getProto());
+    requestProto.setAvailableResource(nodeResourceManager.getAvailableResource().getProto());
     requestProto.setWorkerId(connectionInfo.getId());
     requestProto.setConnectionInfo(connectionInfo.getProto());
 

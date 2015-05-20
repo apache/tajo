@@ -21,7 +21,7 @@ package org.apache.tajo.worker.event;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.TaskAttemptId;
 
-public class TaskEvent extends AbstractEvent<TaskEvent.EventType> {
+public class TaskExecutorEvent extends AbstractEvent<TaskExecutorEvent.EventType> {
   public enum EventType {
     START,
     KILL,
@@ -30,8 +30,8 @@ public class TaskEvent extends AbstractEvent<TaskEvent.EventType> {
 
   private TaskAttemptId taskAttemptId;
 
-  public TaskEvent(EventType eventType,
-                   TaskAttemptId taskAttemptId) {
+  public TaskExecutorEvent(EventType eventType,
+                           TaskAttemptId taskAttemptId) {
     super(eventType);
     this.taskAttemptId = taskAttemptId;
   }

@@ -35,6 +35,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
@@ -45,8 +46,8 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class FileStorageManager extends StorageManager {
-  private final Log LOG = LogFactory.getLog(FileStorageManager.class);
+public class FileTablespace extends Tablespace {
+  private final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
@@ -86,7 +87,7 @@ public class FileStorageManager extends StorageManager {
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileStorageManager(String storeType) {
+  public FileTablespace(String storeType) {
     super(storeType);
   }
 
@@ -117,10 +118,6 @@ public class FileStorageManager extends StorageManager {
     return this.fs;
   }
 
-  public Path getWarehouseDir() {
-    return this.tableBaseDir;
-  }
-
   public void delete(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     fs.delete(tablePath, true);
@@ -129,20 +126,6 @@ public class FileStorageManager extends StorageManager {
   public boolean exists(Path path) throws IOException {
     FileSystem fileSystem = path.getFileSystem(conf);
     return fileSystem.exists(path);
-  }
-
-  /**
-   * This method deletes only data contained in the given path.
-   *
-   * @param path The path in which data are deleted.
-   * @throws IOException
-   */
-  public void deleteData(Path path) throws IOException {
-    FileSystem fileSystem = path.getFileSystem(conf);
-    FileStatus[] fileLists = fileSystem.listStatus(path);
-    for (FileStatus status : fileLists) {
-      fileSystem.delete(status.getPath(), true);
-    }
   }
 
   public Path getTablePath(String tableName) {
@@ -178,23 +161,6 @@ public class FileStorageManager extends StorageManager {
   public FileFragment[] split(String tableName, long fragmentSize) throws IOException {
     Path tablePath = new Path(tableBaseDir, tableName);
     return split(tableName, tablePath, fragmentSize);
-  }
-
-  public FileFragment[] splitBroadcastTable(Path tablePath) throws IOException {
-    FileSystem fs = tablePath.getFileSystem(conf);
-    List<FileFragment> listTablets = new ArrayList<FileFragment>();
-    FileFragment tablet;
-
-    FileStatus[] fileLists = fs.listStatus(tablePath);
-    for (FileStatus file : fileLists) {
-      tablet = new FileFragment(tablePath.getName(), file.getPath(), 0, file.getLen());
-      listTablets.add(tablet);
-    }
-
-    FileFragment[] tablets = new FileFragment[listTablets.size()];
-    listTablets.toArray(tablets);
-
-    return tablets;
   }
 
   public FileFragment[] split(Path tablePath) throws IOException {
@@ -802,7 +768,7 @@ public class FileStorageManager extends StorageManager {
     // Intermediate directory
     if (fs.isDirectory(path)) {
 
-      FileStatus[] files = fs.listStatus(path, StorageManager.hiddenFileFilter);
+      FileStatus[] files = fs.listStatus(path, Tablespace.hiddenFileFilter);
 
       if (files != null && files.length > 0) {
 
@@ -877,6 +843,16 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
+  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
+  }
+
+  @Override
+  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
+      throws IOException {
+    return null;
+  }
+
+  @Override
   public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
                                Schema schema, TableDesc tableDesc) throws IOException {
     return commitOutputData(queryContext, true);
@@ -887,26 +863,6 @@ public class FileStorageManager extends StorageManager {
                                           Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange)
       throws IOException {
     return null;
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param conf The system property
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param path The data file path
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
-
-    FileSystem fs = path.getFileSystem(conf);
-    FileStatus status = fs.getFileStatus(path);
-    FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
-
-    return TableSpaceManager.getSeekableScanner(conf, meta, schema, fragment, schema);
   }
 
   /**
@@ -993,7 +949,7 @@ public class FileStorageManager extends StorageManager {
               if (fs.exists(finalOutputDir)) {
                 fs.mkdirs(oldTableDir);
 
-                for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
+                for (FileStatus status : fs.listStatus(finalOutputDir, Tablespace.hiddenFileFilter)) {
                   fs.rename(status.getPath(), oldTableDir);
                 }
 
@@ -1015,7 +971,7 @@ public class FileStorageManager extends StorageManager {
               if (movedToOldTable && !committed) {
 
                 // if commit is failed, recover the old data
-                for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
+                for (FileStatus status : fs.listStatus(finalOutputDir, Tablespace.hiddenFileFilter)) {
                   fs.delete(status.getPath(), true);
                 }
 

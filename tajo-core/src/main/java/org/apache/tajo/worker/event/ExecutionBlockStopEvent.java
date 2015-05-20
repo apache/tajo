@@ -16,17 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.worker.event;
 
-import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
-import java.io.IOException;
+public class ExecutionBlockStopEvent extends TaskManagerEvent {
+  private TajoWorkerProtocol.ExecutionBlockListProto cleanupList;
 
-public interface Task {
+  public ExecutionBlockStopEvent(TajoIdProtos.ExecutionBlockIdProto executionBlockId,
+                                 TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+    super(EventType.EB_STOP, new ExecutionBlockId(executionBlockId));
+    this.cleanupList = cleanupList;
+  }
 
-  void waitForFetch() throws InterruptedException, IOException;
-
-  void run() throws Exception;
-
-  TaskAttemptId getId();
+  public TajoWorkerProtocol.ExecutionBlockListProto getCleanupList() {
+    return cleanupList;
+  }
 }
