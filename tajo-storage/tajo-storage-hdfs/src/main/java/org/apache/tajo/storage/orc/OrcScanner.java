@@ -217,7 +217,9 @@ public class OrcScanner extends FileScanner {
 
   @Override
   public void close() throws IOException {
-    recordReader.close();
+    if (recordReader != null) {
+      recordReader.close();
+    }
   }
 
   @Override
