@@ -74,7 +74,6 @@ public class OrcScanner extends FileScanner {
     }
   }
 
-
   private FileSystem fs;
   private FSDataInputStream fis;
 
@@ -102,6 +101,7 @@ public class OrcScanner extends FileScanner {
         fs.getFileStatus(path).getLen(),
         200000000);
 
+    vectors = new Vector[schema.size()];
     for (int i=0; i<schema.size(); i++) {
       vectors[i] = createOrcVector(schema.getColumn(i).getDataType().getType());
     }
