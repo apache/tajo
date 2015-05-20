@@ -55,7 +55,7 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TableSpaceManager;
@@ -308,7 +308,7 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public synchronized void startQuery() {
-    StorageManager sm = null;
+    Tablespace sm = null;
     LogicalPlan plan = null;
     try {
       if (query != null) {

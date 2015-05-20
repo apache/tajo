@@ -4,6 +4,9 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1537: Implement a virtual table for sessions. 
+    (Contributed by Yongjin Choi, Committed by hyunsik)
+
     TAJO-1562: Python UDAF support. (jihoon)
 
     TAJO-1344: Python UDF support. (jihoon)
@@ -24,9 +27,14 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1577: Add test cases to verify join plans. (jihoon)
+
+    TAJO-1607: Tajo Rest Cache-Id should be bigger than zero. (Contributed by 
+    DaeMyoung Kang, Committed by hyunsik)
+
     TAJO-1603: Refactor StorageManager. (hyunsik)
 
-    TAJO-1542: Refactoring of HashJoinExecs. (Contributed Navis, Committed by 
+    TAJO-1542: Refactoring of HashJoinExecs. (Contributed by Navis, Committed by 
     hyunsik)
 
     TAJO-1591: Change StoreType represented as Enum to String type. (hyunsik)
@@ -293,6 +301,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1613: Rename StorageManager to Tablespace. (hyunsik)
 
     TAJO-1359: Add nested field projector and language extension to project 
     nested record. (hyunsik)

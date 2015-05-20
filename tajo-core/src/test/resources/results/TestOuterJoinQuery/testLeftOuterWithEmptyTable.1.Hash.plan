@@ -1,0 +1,53 @@
+explain
+-------------------------------
+JOIN(5)(LEFT_OUTER)
+  => Join Cond: default.t1.id (INT4) = default.t2.id (INT4)
+  => target list: default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)
+  => out schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+  => in schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+   SCAN(1) on default.jointable15 as t2
+     => target list: default.t2.id (INT4)
+     => out schema: {(1) default.t2.id (INT4)}
+     => in schema: {(2) default.t2.id (INT4), default.t2.name (TEXT)}
+   SCAN(0) on default.jointable11 as t1
+     => target list: default.t1.id (INT4), default.t1.name (TEXT)
+     => out schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+     => in schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.t2
+
+JOIN(5)(LEFT_OUTER)
+  => Join Cond: default.t1.id (INT4) = default.t2.id (INT4)
+  => target list: default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)
+  => out schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+  => in schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+   SCAN(1) on default.jointable15 as t2
+     => target list: default.t2.id (INT4)
+     => out schema: {(1) default.t2.id (INT4)}
+     => in schema: {(2) default.t2.id (INT4), default.t2.name (TEXT)}
+   SCAN(0) on default.jointable11 as t1
+     => target list: default.t1.id (INT4), default.t1.name (TEXT)
+     => out schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+     => in schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================

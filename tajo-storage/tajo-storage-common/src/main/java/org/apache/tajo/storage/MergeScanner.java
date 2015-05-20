@@ -64,7 +64,7 @@ public class MergeScanner implements Scanner {
 
     long numBytes = 0;
     for (Fragment eachFileFragment: rawFragmentList) {
-      long fragmentLength = StorageManager.getFragmentLength((TajoConf)conf, eachFileFragment);
+      long fragmentLength = Tablespace.getFragmentLength((TajoConf) conf, eachFileFragment);
       if (fragmentLength > 0) {
         numBytes += fragmentLength;
         fragments.add(eachFileFragment);

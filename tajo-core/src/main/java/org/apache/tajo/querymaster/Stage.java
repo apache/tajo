@@ -59,8 +59,8 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
@@ -1095,13 +1095,13 @@ public class Stage implements EventHandler<StageEvent> {
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        FileStorageManager storageManager =
-            (FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+        FileTablespace storageManager =
+            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
         fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
-        StorageManager storageManager =
+        Tablespace tablespace =
             TableSpaceManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
-        fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
+        fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan);
       }
 
       Stage.scheduleFragments(stage, fragments);

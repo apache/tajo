@@ -95,7 +95,11 @@ public class ClientApplication extends Application {
     for (byte generatedByte: generatedBytes) {
       generatedId = (generatedId << 8) + (generatedByte & 0xff);
     }
-    
+
+    if (generatedId < 0) {
+      generatedId = generatedId * -1;
+    }
+
     return generatedId;
   }
   

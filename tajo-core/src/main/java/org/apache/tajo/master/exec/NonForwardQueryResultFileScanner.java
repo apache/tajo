@@ -78,11 +78,11 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   /**
    * Set partition path and depth if ScanNode's qualification exists
    *
-   * @param storageManager target storage manager to be set with partition info
+   * @param tablespace target storage manager to be set with partition info
    */
-  private void setPartition(StorageManager storageManager) {
+  private void setPartition(Tablespace tablespace) {
     if (tableDesc.isExternal() && tableDesc.hasPartition() && scanNode.getQual() != null &&
-        storageManager instanceof FileStorageManager) {
+        tablespace instanceof FileTablespace) {
       StringBuffer path = new StringBuffer();
       int depth = 0;
       if (tableDesc.hasPartition()) {
@@ -94,17 +94,17 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           depth++;
         }
       }
-      ((FileStorageManager)storageManager).setPartitionPath(path.toString());
-      ((FileStorageManager)storageManager).setCurrentDepth(depth);
+      ((FileTablespace) tablespace).setPartitionPath(path.toString());
+      ((FileTablespace) tablespace).setCurrentDepth(depth);
       scanNode.setQual(null);
     }
   }
 
   private void initSeqScanExec() throws IOException {
-    StorageManager storageManager = TableSpaceManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
+    Tablespace tablespace = TableSpaceManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
     List<Fragment> fragments = null;
-    setPartition(storageManager);
-    fragments = storageManager.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
+    setPartition(tablespace);
+    fragments = tablespace.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
 
     if (fragments != null && !fragments.isEmpty()) {
       FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[] {}));

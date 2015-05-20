@@ -1,0 +1,57 @@
+explain
+-------------------------------
+SELECTION(3)
+  => Search Cond: default.a.r_name (TEXT) < default.b.c_name (TEXT)
+   JOIN(6)(LEFT_OUTER)
+     => Join Cond: default.a.r_regionkey (INT4) = default.b.c_custkey (INT4)
+     => target list: default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)
+     => out schema: {(11) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+     => in schema: {(11) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+      SCAN(1) on default.customer as b
+        => target list: default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)
+        => out schema: {(8) default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+        => in schema: {(8) default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+      SCAN(0) on default.region as a
+        => target list: default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)
+        => out schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
+        => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.b
+
+SELECTION(3)
+  => Search Cond: default.a.r_name (TEXT) < default.b.c_name (TEXT)
+   JOIN(6)(LEFT_OUTER)
+     => Join Cond: default.a.r_regionkey (INT4) = default.b.c_custkey (INT4)
+     => target list: default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)
+     => out schema: {(11) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+     => in schema: {(11) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+      SCAN(1) on default.customer as b
+        => target list: default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)
+        => out schema: {(8) default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+        => in schema: {(8) default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
+      SCAN(0) on default.region as a
+        => target list: default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)
+        => out schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
+        => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================
