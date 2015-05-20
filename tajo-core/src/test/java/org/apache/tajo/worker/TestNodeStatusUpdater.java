@@ -31,10 +31,10 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import static org.junit.Assert.*;
 
-public class TestNodeStatusUpdaterService {
+public class TestNodeStatusUpdater {
 
-  private NodeResourceManagerService resourceManagerService;
-  private MockNodeStatusUpdaterService statusUpdater;
+  private NodeResourceManager resourceManager;
+  private MockNodeStatusUpdater statusUpdater;
   private AsyncDispatcher dispatcher;
   private TajoConf conf;
 
@@ -48,14 +48,14 @@ public class TestNodeStatusUpdaterService {
     dispatcher.init(conf);
     dispatcher.start();
 
-    resourceManagerService = new NodeResourceManagerService(dispatcher);
-    resourceManagerService.init(conf);
-    resourceManagerService.start();
+    resourceManager = new NodeResourceManager(dispatcher);
+    resourceManager.init(conf);
+    resourceManager.start();
   }
 
   @After
   public void tearDown() {
-    resourceManagerService.stop();
+    resourceManager.stop();
     if (statusUpdater != null) statusUpdater.stop();
     dispatcher.stop();
   }
@@ -64,18 +64,18 @@ public class TestNodeStatusUpdaterService {
   public void testNodeMembership() throws Exception {
     CountDownLatch barrier = new CountDownLatch(1);
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    statusUpdater = new MockNodeStatusUpdaterService(barrier, worker, resourceManagerService);
+    statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
 
-    MockNodeStatusUpdaterService.MockResourceTracker resourceTracker = statusUpdater.getResourceTracker();
+    MockNodeStatusUpdater.MockResourceTracker resourceTracker = statusUpdater.getResourceTracker();
     barrier.await();
 
     assertTrue(resourceTracker.getTotalResource().containsKey(worker.getId()));
-    assertEquals(resourceManagerService.getTotalResource(),
+    assertEquals(resourceManager.getTotalResource(),
         resourceTracker.getTotalResource().get(worker.getId()));
 
-    assertEquals(resourceManagerService.getAvailableResource(),
+    assertEquals(resourceManager.getAvailableResource(),
         resourceTracker.getAvailableResource().get(worker.getId()));
   }
 
@@ -83,11 +83,11 @@ public class TestNodeStatusUpdaterService {
   public void testPing() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    statusUpdater = new MockNodeStatusUpdaterService(barrier, worker, resourceManagerService);
+    statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
 
-    MockNodeStatusUpdaterService.MockResourceTracker resourceTracker = statusUpdater.getResourceTracker();
+    MockNodeStatusUpdater.MockResourceTracker resourceTracker = statusUpdater.getResourceTracker();
     barrier.await();
 
     TajoResourceTrackerProtocol.NodeHeartbeatRequestProto lastRequest = resourceTracker.getLastRequest();
@@ -101,13 +101,13 @@ public class TestNodeStatusUpdaterService {
   public void testResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    statusUpdater = new MockNodeStatusUpdaterService(barrier, worker, resourceManagerService);
+    statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
 
     for (int i = 0; i < statusUpdater.getQueueingLimit(); i++) {
       dispatcher.getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE,
-          resourceManagerService.getAvailableResource()));
+          resourceManager.getAvailableResource()));
     }
     barrier.await();
     assertEquals(0, statusUpdater.getQueueSize());

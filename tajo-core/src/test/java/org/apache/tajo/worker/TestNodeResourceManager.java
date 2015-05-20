@@ -40,10 +40,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
-public class TestNodeResourceManagerService {
+public class TestNodeResourceManager {
 
-  private NodeResourceManagerService resourceManagerService;
-  private MockNodeStatusUpdaterService statusUpdater;
+  private NodeResourceManager resourceManager;
+  private MockNodeStatusUpdater statusUpdater;
   private AsyncDispatcher dispatcher;
   private int taskMemory;
   private TajoConf conf;
@@ -64,19 +64,19 @@ public class TestNodeResourceManagerService {
     dispatcher.init(conf);
     dispatcher.start();
 
-    resourceManagerService = new NodeResourceManagerService(dispatcher);
-    resourceManagerService.init(conf);
-    resourceManagerService.start();
+    resourceManager = new NodeResourceManager(dispatcher);
+    resourceManager.init(conf);
+    resourceManager.start();
 
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    statusUpdater = new MockNodeStatusUpdaterService(new CountDownLatch(0), worker, resourceManagerService);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
   }
 
   @After
   public void tearDown() {
-    resourceManagerService.stop();
+    resourceManager.stop();
     statusUpdater.stop();
     dispatcher.stop();
   }
@@ -90,15 +90,15 @@ public class TestNodeResourceManagerService {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     requestProto.setExecutionBlockId(ebId.getProto());
 
-    assertEquals(resourceManagerService.getTotalResource(), resourceManagerService.getAvailableResource());
+    assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     requestProto.addAllTaskRequest(createTaskRequests(taskMemory, requestSize));
 
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
 
     BatchAllocationResponseProto responseProto = callFuture.get();
-    assertNotEquals(resourceManagerService.getTotalResource(), resourceManagerService.getAvailableResource());
+    assertNotEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     assertEquals(0, responseProto.getCancellationTaskCount());
-    assertEquals(requestSize, resourceManagerService.getAllocatedSize());
+    assertEquals(requestSize, resourceManager.getAllocatedSize());
   }
 
 
@@ -112,14 +112,14 @@ public class TestNodeResourceManagerService {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     requestProto.setExecutionBlockId(ebId.getProto());
 
-    assertEquals(resourceManagerService.getTotalResource(), resourceManagerService.getAvailableResource());
+    assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     requestProto.addAllTaskRequest(createTaskRequests(taskMemory, requestSize + overSize));
 
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
     BatchAllocationResponseProto responseProto = callFuture.get();
 
     assertEquals(overSize, responseProto.getCancellationTaskCount());
-    assertEquals(requestSize, resourceManagerService.getAllocatedSize());
+    assertEquals(requestSize, resourceManager.getAllocatedSize());
   }
 
   @Test
@@ -131,23 +131,23 @@ public class TestNodeResourceManagerService {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     requestProto.setExecutionBlockId(ebId.getProto());
 
-    assertEquals(resourceManagerService.getTotalResource(), resourceManagerService.getAvailableResource());
+    assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     requestProto.addAllTaskRequest(createTaskRequests(taskMemory, requestSize));
 
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
 
     BatchAllocationResponseProto responseProto = callFuture.get();
-    assertNotEquals(resourceManagerService.getTotalResource(), resourceManagerService.getAvailableResource());
+    assertNotEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     assertEquals(0, responseProto.getCancellationTaskCount());
-    assertEquals(requestSize, resourceManagerService.getAllocatedSize());
+    assertEquals(requestSize, resourceManager.getAllocatedSize());
 
     //deallocate
     for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
       // direct invoke handler for testing
-      resourceManagerService.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
+      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
     }
-    assertEquals(0, resourceManagerService.getAllocatedSize());
-    assertEquals(resourceManagerService.getTotalResource(), resourceManagerService.getAvailableResource());
+    assertEquals(0, resourceManager.getAllocatedSize());
+    assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
   }
 
   @Test(timeout = 30000)

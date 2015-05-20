@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
-public class NodeResourceManagerService extends AbstractService implements EventHandler<NodeResourceManagerEvent> {
-  private static final Log LOG = LogFactory.getLog(NodeResourceManagerService.class);
+public class NodeResourceManager extends AbstractService implements EventHandler<NodeResourceManagerEvent> {
+  private static final Log LOG = LogFactory.getLog(NodeResourceManager.class);
 
   private final Dispatcher dispatcher;
   private NodeResource totalResource;
@@ -48,8 +48,8 @@ public class NodeResourceManagerService extends AbstractService implements Event
   private AtomicInteger allocatedSize;
   private TajoConf tajoConf;
 
-  public NodeResourceManagerService(Dispatcher dispatcher){
-    super(NodeResourceManagerService.class.getName());
+  public NodeResourceManager(Dispatcher dispatcher){
+    super(NodeResourceManager.class.getName());
     this.dispatcher = dispatcher;
   }
 
@@ -64,7 +64,7 @@ public class NodeResourceManagerService extends AbstractService implements Event
     this.dispatcher.register(NodeResourceManagerEvent.EventType.class, this);
     this.allocatedSize = new AtomicInteger();
     super.serviceInit(conf);
-    LOG.info("Initialized NodeResourceManagerService for " + totalResource);
+    LOG.info("Initialized NodeResourceManager for " + totalResource);
   }
 
   @Override
@@ -77,7 +77,7 @@ public class NodeResourceManagerService extends AbstractService implements Event
         NodeResource resource = new NodeResource(request.getResource());
         if (allocate(resource)) {
           allocatedSize.incrementAndGet();
-          //TODO send task event to taskExecutorService
+          //TODO send task event to taskExecutor
         } else {
           response.addCancellationTask(request);
         }

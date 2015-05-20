@@ -32,16 +32,16 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
 
-public class MockNodeStatusUpdaterService extends NodeStatusUpdaterService {
+public class MockNodeStatusUpdater extends NodeStatusUpdater {
 
   private CountDownLatch barrier;
   private Map<Integer, NodeResource> membership = Maps.newHashMap();
   private Map<Integer, NodeResource> resources = Maps.newHashMap();
   private MockResourceTracker resourceTracker;
 
-  public MockNodeStatusUpdaterService(CountDownLatch barrier, WorkerConnectionInfo connectionInfo,
-                                      NodeResourceManagerService resourceManagerService) {
-    super(connectionInfo, resourceManagerService);
+  public MockNodeStatusUpdater(CountDownLatch barrier, WorkerConnectionInfo connectionInfo,
+                               NodeResourceManager resourceManager) {
+    super(connectionInfo, resourceManager);
     this.barrier = barrier;
     this.resourceTracker = new MockResourceTracker();
   }
