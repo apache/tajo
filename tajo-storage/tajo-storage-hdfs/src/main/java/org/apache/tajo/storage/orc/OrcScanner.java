@@ -42,6 +42,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * OrcScanner for reading ORC files
+ */
 public class OrcScanner extends FileScanner {
   private OrcRecordReader recordReader;
   private Vector [] vectors;
@@ -89,23 +92,28 @@ public class OrcScanner extends FileScanner {
 
     Path path = fragment.getPath();
 
-    // FileFragment information
     if(fs == null) {
       fs = FileScanner.getFileSystem((TajoConf)conf, path);
     }
-    if(fis == null) fis = fs.open(path);
 
+    if(fis == null) {
+      fis = fs.open(path);
+    }
+
+    // TODO: max merge distance should be fetched from conf
     OrcDataSource orcDataSource = new HdfsOrcDataSource(
         this.fragment.getPath().toString(),
         fis,
         fs.getFileStatus(path).getLen(),
         200000000);
 
+    // creating vectors for buffering
     vectors = new Vector[schema.size()];
     for (int i=0; i<schema.size(); i++) {
       vectors[i] = createOrcVector(schema.getColumn(i).getDataType().getType());
     }
 
+    // TODO: it can be projectable
     Set<Integer> columnSet = new HashSet<Integer>();
     for (int i=0; i<schema.size(); i++) {
       columnSet.add(i);
@@ -113,11 +121,9 @@ public class OrcScanner extends FileScanner {
 
     orcReader = new OrcReader(orcDataSource, new OrcMetadataReader());
 
-    // TODO :
-    // 1. splittable implementation
-    // 2. fetching time zone from configuration
-    // 3. making predicate useful
-    // 4. support more types(timestamp, map, list...)
+    // TODO: make OrcPredicate useful
+    // TODO: TimeZone should be from conf
+    // TODO: it might be splittable
     recordReader = orcReader.createRecordReader(columnSet, new OrcPredicate() {
         @Override
         public boolean matches(long numberOfRows, Map<Integer, ColumnStatistics> statisticsByColumnIndex) {
@@ -152,6 +158,7 @@ public class OrcScanner extends FileScanner {
     return tuple;
   }
 
+  // TODO: support more types
   private Datum createValueDatum(Vector vector, TajoDataTypes.Type type) {
     switch (type) {
       case INT1:
@@ -212,7 +219,6 @@ public class OrcScanner extends FileScanner {
 
   @Override
   public void reset() throws IOException {
-
   }
 
   @Override
