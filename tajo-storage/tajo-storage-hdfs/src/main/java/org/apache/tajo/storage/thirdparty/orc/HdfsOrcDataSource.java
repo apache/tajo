@@ -40,14 +40,15 @@ public class HdfsOrcDataSource
   private final DataSize maxMergeDistance;
   private long readTimeNanos;
 
-  public HdfsOrcDataSource(String path, FSDataInputStream inputStream, long size, DataSize maxMergeDistance)
+  public HdfsOrcDataSource(String path, FSDataInputStream inputStream, long size, double maxMergeDistance)
   {
     this.path = checkNotNull(path, "path is null");
     this.inputStream = checkNotNull(inputStream, "inputStream is null");
     this.size = size;
     checkArgument(size >= 0, "size is negative");
 
-    this.maxMergeDistance = checkNotNull(maxMergeDistance, "maxMergeDistance is null");
+    DataSize mergeDistance = new DataSize(maxMergeDistance, DataSize.Unit.BYTE);
+    this.maxMergeDistance = checkNotNull(mergeDistance, "maxMergeDistance is null");
   }
 
   @Override
