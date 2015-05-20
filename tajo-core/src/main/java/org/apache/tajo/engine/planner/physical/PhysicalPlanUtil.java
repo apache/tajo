@@ -35,7 +35,7 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.BaseTupleComparator;
-import org.apache.tajo.storage.FileStorageManager;
+import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -141,7 +141,7 @@ public class PhysicalPlanUtil {
                                          int currentDepth, int maxDepth) throws IOException {
     // Intermediate directory
     if (fs.isDirectory(path)) {
-      FileStatus[] files = fs.listStatus(path, FileStorageManager.hiddenFileFilter);
+      FileStatus[] files = fs.listStatus(path, FileTablespace.hiddenFileFilter);
       if (files != null && files.length > 0) {
 
         for (FileStatus eachFile : files) {

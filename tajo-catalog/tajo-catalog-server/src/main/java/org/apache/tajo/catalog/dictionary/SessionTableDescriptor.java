@@ -16,30 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.catalog.dictionary;
 
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.PhysicalPlanner;
-import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
-import java.io.IOException;
+class SessionTableDescriptor extends AbstractTableDescriptor {
 
-public class TajoQueryEngine {
+    private static final String TABLENAME = "session";
+    private final ColumnDescriptor[] columns =
+        new ColumnDescriptor[] {
+            new ColumnDescriptor("name", Type.TEXT, 0), new ColumnDescriptor("value", Type.TEXT, 0)
+        };
 
-  private final PhysicalPlanner phyPlanner;
+    public SessionTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
+        super(metadataDictionary);
+    }
 
-  public TajoQueryEngine(TajoConf conf) throws IOException {
-    this.phyPlanner = new PhysicalPlannerImpl(conf);
-  }
-  
-  public PhysicalExec createPlan(TaskAttemptContext ctx, LogicalNode plan)
-      throws InternalException {
-    return phyPlanner.createPlan(ctx, plan);
-  }
-  
-  public void stop() throws IOException {
-  }
+    @Override
+    public String getTableNameString() {
+        return TABLENAME;
+    }
+
+    @Override
+    protected ColumnDescriptor[] getColumnDescriptors() {
+        return columns;
+    }
+
 }

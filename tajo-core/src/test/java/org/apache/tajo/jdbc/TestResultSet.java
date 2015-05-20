@@ -57,7 +57,7 @@ public class TestResultSet {
   private static TajoTestingCluster util;
   private static TajoConf conf;
   private static TableDesc desc;
-  private static FileStorageManager sm;
+  private static FileTablespace sm;
   private static TableMeta scoreMeta;
   private static Schema scoreSchema;
   private static List<ByteString> serializedData;
@@ -66,7 +66,7 @@ public class TestResultSet {
   public static void setup() throws Exception {
     util = TpchTestBase.getInstance().getTestingCluster();
     conf = util.getConfiguration();
-    sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
