@@ -38,7 +38,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>csv,raw,rcfile,row,trevni,parquet,orc,sequencefile,avro</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -64,6 +64,10 @@
   </property>
   <property>
     <name>tajo.storage.fragment.parquet.class</name>
+    <value>org.apache.tajo.storage.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.orc.class</name>
     <value>org.apache.tajo.storage.FileFragment</value>
   </property>
   <property>
@@ -104,6 +108,11 @@
   <property>
     <name>tajo.storage.scanner-handler.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.orc.class</name>
+    <value>org.apache.tajo.storage.orc.OrcScanner</value>
   </property>
 
   <property>
