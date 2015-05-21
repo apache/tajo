@@ -297,7 +297,7 @@ public abstract class Tablespace {
     }
 
     if (scannerClass == null) {
-      throw new UnsupportedException("Unsupported Storage Type: " + storeType.name());
+      throw new UnsupportedException("Unsupported Storage Type: " + storeType);
     }
 
     return scannerClass;
