@@ -36,7 +36,7 @@ public class TimestampDatum extends Datum {
 
   /**
    *
-   * @param timestamp UTC based
+   * @param timestamp UTC based Julian time microseconds
    */
   public TimestampDatum(long timestamp) {
     super(TajoDataTypes.Type.TIMESTAMP);
