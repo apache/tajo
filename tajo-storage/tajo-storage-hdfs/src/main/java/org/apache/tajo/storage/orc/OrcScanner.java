@@ -35,6 +35,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.thirdparty.orc.*;
 import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnStatistics;
 import org.apache.tajo.storage.thirdparty.orc.metadata.OrcMetadataReader;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
@@ -59,6 +60,7 @@ public class OrcScanner extends FileScanner {
     switch (type) {
       case INT1: case INT2: case INT4: case INT8:
       case UINT1: case UINT2: case UINT4: case UINT8:
+      case TIMESTAMP:
         return new LongVector();
 
       case FLOAT4:
@@ -189,6 +191,9 @@ public class OrcScanner extends FileScanner {
 
       case BLOB:
         return new BlobDatum(((SliceVector)vector).vector[currentPosInBatch].getBytes());
+
+      case TIMESTAMP:
+        return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(((LongVector) vector).vector[currentPosInBatch]));
 
       default:
         throw new UnsupportedException("This data type is not supported currently: "+type.toString());
