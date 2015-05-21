@@ -37,14 +37,14 @@ public class FileOrcDataSource
     private final DataSize maxMergeDistance;
     private long readTimeNanos;
 
-    public FileOrcDataSource(File path, DataSize maxMergeDistance)
+    public FileOrcDataSource(File path, double mergeDistance)
             throws IOException
     {
         this.path = checkNotNull(path, "path is null");
         this.size = path.length();
         this.input = new RandomAccessFile(path, "r");
 
-        this.maxMergeDistance = checkNotNull(maxMergeDistance, "maxMergeDistance is null");
+        maxMergeDistance = new DataSize(mergeDistance, DataSize.Unit.BYTE);
     }
 
     @Override
