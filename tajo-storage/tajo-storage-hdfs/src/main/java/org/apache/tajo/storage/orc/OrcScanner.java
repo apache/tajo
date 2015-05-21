@@ -32,9 +32,10 @@ import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.thirdparty.orc.*;
-import org.apache.tajo.storage.thirdparty.orc.metadata.ColumnStatistics;
-import org.apache.tajo.storage.thirdparty.orc.metadata.OrcMetadataReader;
+import com.facebook.presto.orc.*;
+import com.facebook.presto.orc.metadata.ColumnStatistics;
+import com.facebook.presto.orc.metadata.OrcMetadataReader;
+import org.apache.tajo.storage.thirdparty.orc.HdfsOrcDataSource;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.joda.time.DateTimeZone;
 
@@ -107,7 +108,7 @@ public class OrcScanner extends FileScanner {
         this.fragment.getPath().toString(),
         fis,
         fs.getFileStatus(path).getLen(),
-        200000000);
+        100000000);
 
     // creating vectors for buffering
     vectors = new Vector[schema.size()];

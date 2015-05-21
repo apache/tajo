@@ -395,6 +395,11 @@
       <version>2.4.2</version>
     </dependency>
     <dependency>
+      <groupId>com.facebook.presto</groupId>
+      <artifactId>presto-orc</artifactId>
+      <version>0.86</version>
+    </dependency>
+    <dependency>
       <groupId>com.facebook.hive</groupId>
       <artifactId>hive-dwrf</artifactId>
       <version>0.8</version>

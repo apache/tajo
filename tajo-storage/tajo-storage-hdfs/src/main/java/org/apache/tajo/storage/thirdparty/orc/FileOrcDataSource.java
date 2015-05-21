@@ -13,6 +13,8 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
+import com.facebook.presto.orc.DiskRange;
+import com.facebook.presto.orc.OrcDataSource;
 import com.google.common.collect.ImmutableMap;
 import io.airlift.slice.Slice;
 import io.airlift.units.DataSize;
@@ -25,9 +27,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.tajo.storage.thirdparty.orc.OrcDataSourceUtils.getDiskRangeSlice;
-import static org.apache.tajo.storage.thirdparty.orc.OrcDataSourceUtils.mergeAdjacentDiskRanges;
+import static com.facebook.presto.orc.OrcDataSourceUtils.getDiskRangeSlice;
+import static com.facebook.presto.orc.OrcDataSourceUtils.mergeAdjacentDiskRanges;
 
+/**
+ * File data source class for Orc Reader
+ *
+ * Most of code is from Presto
+ */
 public class FileOrcDataSource
         implements OrcDataSource
 {
