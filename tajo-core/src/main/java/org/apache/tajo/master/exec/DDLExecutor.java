@@ -36,9 +36,9 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.Tablespace;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,10 +54,12 @@ public class DDLExecutor {
 
   private final TajoMaster.MasterContext context;
   private final CatalogService catalog;
+  private final Tablespace tablespace;
 
   public DDLExecutor(TajoMaster.MasterContext context) {
     this.context = context;
     this.catalog = context.getCatalog();
+    this.tablespace = context.getStorageManager();
   }
 
   public boolean execute(QueryContext queryContext, LogicalPlan plan) throws IOException {

@@ -1,0 +1,90 @@
+explain
+-------------------------------
+PROJECTION(3)
+  => Targets: a_name (TEXT), b_name (TEXT)
+  => out schema: {(2) a_name (TEXT), b_name (TEXT)}
+  => in  schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+   SELECTION(2)
+     => Search Cond: default.a.r_name (TEXT) < default.b.r_name (TEXT)
+      JOIN(6)(CROSS)
+        => target list: a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)
+        => out schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+        => in schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+         SCAN(1) on default.region as b
+           => target list: default.b.r_name (TEXT) as b_name, default.b.r_name (TEXT)
+           => out schema: {(2) b_name (TEXT), default.b.r_name (TEXT)}
+           => in schema: {(3) default.b.r_comment (TEXT), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+         SCAN(0) on default.region as a
+           => target list: default.a.r_name (TEXT) as a_name, default.a.r_name (TEXT)
+           => out schema: {(2) a_name (TEXT), default.a.r_name (TEXT)}
+           => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+      |-eb_0000000000000_0000_000002
+      |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE)
+
+SCAN(0) on default.region as a
+  => target list: default.a.r_name (TEXT) as a_name, default.a.r_name (TEXT)
+  => out schema: {(2) a_name (TEXT), default.a.r_name (TEXT)}
+  => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE)
+
+SCAN(1) on default.region as b
+  => target list: default.b.r_name (TEXT) as b_name, default.b.r_name (TEXT)
+  => out schema: {(2) b_name (TEXT), default.b.r_name (TEXT)}
+  => in schema: {(3) default.b.r_comment (TEXT), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE)
+
+PROJECTION(3)
+  => Targets: a_name (TEXT), b_name (TEXT)
+  => out schema: {(2) a_name (TEXT), b_name (TEXT)}
+  => in  schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+   SELECTION(2)
+     => Search Cond: default.a.r_name (TEXT) < default.b.r_name (TEXT)
+      JOIN(6)(CROSS)
+        => target list: a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)
+        => out schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+        => in schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+         SCAN(9) on eb_0000000000000_0000_000002
+           => out schema: {(2) b_name (TEXT), default.b.r_name (TEXT)}
+           => in schema: {(2) b_name (TEXT), default.b.r_name (TEXT)}
+         SCAN(8) on eb_0000000000000_0000_000001
+           => out schema: {(2) a_name (TEXT), default.a.r_name (TEXT)}
+           => in schema: {(2) a_name (TEXT), default.a.r_name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================

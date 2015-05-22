@@ -18,10 +18,12 @@
 
 package org.apache.tajo.master.exec;
 
+import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.*;
@@ -49,6 +51,8 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.session.InvalidSessionException;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -541,6 +545,25 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     
     return tuples;
   }
+
+  private List<Tuple> getSessionInfo(Schema outSchema) {
+    List<Tuple> outputs = Lists.newArrayList();
+    Tuple eachVariable;
+
+    try {
+      for (Map.Entry<String, String> var: masterContext.getSessionManager().getAllVariables(sessionId).entrySet()) {
+        eachVariable = new VTuple(outSchema.size());
+        eachVariable.put(0, DatumFactory.createText(var.getKey()));
+        eachVariable.put(1, DatumFactory.createText(var.getValue()));
+
+        outputs.add(eachVariable);
+      }
+    } catch (InvalidSessionException e) {
+      LOG.error(e);
+    }
+
+    return outputs;
+  }
   
   private List<Tuple> fetchSystemTable(TableDesc tableDesc, Schema inSchema) {
     List<Tuple> tuples = null;
@@ -564,6 +587,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       tuples = getAllPartitions(inSchema);
     } else if ("cluster".equalsIgnoreCase(tableName)) {
       tuples = getClusterInfo(inSchema);
+    } else if ("session".equalsIgnoreCase(tableName)) {
+      tuples = getSessionInfo(inSchema);
     }
     
     return tuples;    
@@ -657,7 +682,12 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     public SystemPhysicalExec(TaskAttemptContext context, ScanNode scanNode) {
       super(context, scanNode.getInSchema(), scanNode.getOutSchema());
       this.scanNode = scanNode;
-      this.qual = this.scanNode.getQual();
+
+      if (this.scanNode.hasQual()) {
+        this.qual = this.scanNode.getQual();
+        this.qual.bind(null, inSchema);
+      }
+
       cachedData = TUtil.newList();
       currentRow = 0;
       isClosed = false;

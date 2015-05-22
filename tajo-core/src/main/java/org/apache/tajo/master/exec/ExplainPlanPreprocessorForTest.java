@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.exec;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.LogicalPlan;
@@ -25,10 +26,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.logical.SelectionNode;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -127,6 +125,25 @@ public class ExplainPlanPreprocessorForTest {
     }
 
     @Override
+    public LogicalNode visitPartitionedTableScan(PlanShapeFixerContext context, LogicalPlan plan,
+                                                 LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
+                                                 Stack<LogicalNode> stack)
+        throws PlanningException {
+      super.visitPartitionedTableScan(context, plan, block, node, stack);
+      context.childNumbers.push(1);
+      Path[] inputPaths = node.getInputPaths();
+      Arrays.sort(inputPaths);
+      node.setInputPaths(inputPaths);
+      if (node.hasTargets()) {
+        node.setTargets(sortTargets(node.getTargets()));
+      }
+      if (node.hasQual()) {
+        node.setQual(sortQual(node.getQual()));
+      }
+      return null;
+    }
+
+    @Override
     public LogicalNode visitJoin(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
       super.visitJoin(context, plan, block, node, stack);
@@ -147,6 +164,10 @@ public class ExplainPlanPreprocessorForTest {
 
       if (node.hasTargets()) {
         node.setTargets(sortTargets(node.getTargets()));
+      }
+
+      if (node.hasJoinQual()) {
+        node.setJoinQual(sortQual(node.getJoinQual()));
       }
 
       context.childNumbers.push(rightChildNum + leftChildNum);

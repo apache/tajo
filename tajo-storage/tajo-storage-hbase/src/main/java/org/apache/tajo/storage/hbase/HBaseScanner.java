@@ -133,7 +133,7 @@ public class HBaseScanner implements Scanner {
     rowKeyDelimiter = columnMapping.getRowKeyDelimiter();
     rowKeyFieldIndexes = columnMapping.getRowKeyFieldIndexes();
 
-    hbaseConf = HBaseStorageManager.getHBaseConfiguration(conf, meta);
+    hbaseConf = HBaseTablespace.getHBaseConfiguration(conf, meta);
 
     initScanner();
   }
@@ -181,7 +181,7 @@ public class HBaseScanner implements Scanner {
     }
 
     if (htable == null) {
-      HConnection hconn = ((HBaseStorageManager) TableSpaceManager.getStorageManager(conf, "HBASE"))
+      HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
           .getConnection(hbaseConf);
       htable = hconn.getTable(fragment.getHbaseTableName());
     }

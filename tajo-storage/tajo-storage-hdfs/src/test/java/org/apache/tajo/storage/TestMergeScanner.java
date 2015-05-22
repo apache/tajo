@@ -49,7 +49,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class TestMergeScanner {
   private TajoConf conf;
-  StorageManager sm;
+  Tablespace sm;
   private static String TEST_PATH = "target/test-data/TestMergeScanner";
 
   private static String TEST_MULTIPLE_FILES_AVRO_SCHEMA =

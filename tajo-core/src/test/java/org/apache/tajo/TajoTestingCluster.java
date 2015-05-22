@@ -624,6 +624,17 @@ public class TajoTestingCluster {
     }
   }
 
+  public static TajoClient newTajoClient(TajoTestingCluster util) throws InterruptedException, IOException {
+    while(true) {
+      if(util.getMaster().isMasterRunning()) {
+        break;
+      }
+      Thread.sleep(1000);
+    }
+    TajoConf conf = util.getConfiguration();
+    return new TajoClientImpl(ServiceTrackerFactory.get(conf));
+  }
+
   public static void createTable(String tableName, Schema schema,
                                  KeyValueSet tableOption, String[] tableDatas) throws Exception {
     createTable(tableName, schema, tableOption, tableDatas, 1);
@@ -633,14 +644,7 @@ public class TajoTestingCluster {
                                  KeyValueSet tableOption, String[] tableDatas, int numDataFiles) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
     TajoTestingCluster util = instance.getTestingCluster();
-    while(true) {
-      if(util.getMaster().isMasterRunning()) {
-        break;
-      }
-      Thread.sleep(1000);
-    }
-    TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
+    TajoClient client = newTajoClient(util);
     try {
       FileSystem fs = util.getDefaultFileSystem();
       Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
