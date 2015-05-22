@@ -135,8 +135,9 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         }
 
         // TODO: check all inputs are marked as broadcast
-        for (ExecutionBlock child : childs) {
-          if (child.hasBroadcastRelation()) {
+        if (broadcastCandidates.size() > 0) {
+          for (ExecutionBlock child : childs) {
+//          if (child.hasBroadcastRelation()) {
             List<ExecutionBlockId> unionScans = TUtil.newList();
             ExecutionBlockId representativeId = null;
             if (unionScanMap.containsKey(child.getId())) {

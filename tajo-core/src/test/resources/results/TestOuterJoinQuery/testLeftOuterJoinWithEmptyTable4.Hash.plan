@@ -75,7 +75,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [Enforcers]
  0: type=Broadcast, tables=default.orders
 
-GROUP_BY(15)()
+GROUP_BY(17)()
   => exprs: (max(default.customer.c_custkey (INT4)),sum(default.orders.o_orderkey (INT4)),max(default.orders.o_orderstatus (TEXT)),max(default.orders.o_orderdate (TEXT)))
   => target list: ?max_12 (INT4), ?sum_13 (INT8), ?max_14 (TEXT), ?max_15 (TEXT)
   => out schema:{(4) ?max_12 (INT4), ?sum_13 (INT8), ?max_14 (TEXT), ?max_15 (TEXT)}
@@ -106,7 +106,7 @@ GROUP_BY(9)()
   => target list: ?max (INT4), ?sum_1 (INT8), ?max_2 (TEXT), ?max_3 (TEXT)
   => out schema:{(4) ?max (INT4), ?max_2 (TEXT), ?max_3 (TEXT), ?sum_1 (INT8)}
   => in schema:{(4) ?max_12 (INT4), ?sum_13 (INT8), ?max_14 (TEXT), ?max_15 (TEXT)}
-   SCAN(16) on eb_0000000000000_0000_000003
+   SCAN(18) on eb_0000000000000_0000_000003
      => out schema: {(4) ?max_12 (INT4), ?sum_13 (INT8), ?max_14 (TEXT), ?max_15 (TEXT)}
      => in schema: {(4) ?max_12 (INT4), ?sum_13 (INT8), ?max_14 (TEXT), ?max_15 (TEXT)}
 
@@ -120,7 +120,7 @@ Block Id: eb_0000000000000_0000_000007 [LEAF]
 [Enforcers]
  0: type=Broadcast, tables=default.empty_orders
 
-GROUP_BY(17)()
+GROUP_BY(21)()
   => exprs: (max(default.customer.c_custkey (INT4)),sum(default.empty_orders.o_orderkey (INT4)),max(default.empty_orders.o_orderstatus (TEXT)),max(default.empty_orders.o_orderdate (TEXT)))
   => target list: ?max_16 (INT4), ?sum_17 (INT8), ?max_18 (TEXT), ?max_19 (TEXT)
   => out schema:{(4) ?max_16 (INT4), ?sum_17 (INT8), ?max_18 (TEXT), ?max_19 (TEXT)}
@@ -151,7 +151,7 @@ GROUP_BY(10)()
   => target list: ?max_5 (INT4), ?sum_6 (INT8), ?max_7 (TEXT), ?max_8 (TEXT)
   => out schema:{(4) ?max_5 (INT4), ?max_7 (TEXT), ?max_8 (TEXT), ?sum_6 (INT8)}
   => in schema:{(4) ?max_16 (INT4), ?sum_17 (INT8), ?max_18 (TEXT), ?max_19 (TEXT)}
-   SCAN(18) on eb_0000000000000_0000_000007
+   SCAN(22) on eb_0000000000000_0000_000007
      => out schema: {(4) ?max_16 (INT4), ?sum_17 (INT8), ?max_18 (TEXT), ?max_19 (TEXT)}
      => in schema: {(4) ?max_16 (INT4), ?sum_17 (INT8), ?max_18 (TEXT), ?max_19 (TEXT)}
 
