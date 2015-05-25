@@ -36,7 +36,7 @@ import java.util.*;
 
 /**
  * {@link BroadcastJoinRule} converts repartition join plan into broadcast join plan.
- * To describe the broadcast join rules, we have to define the <em>broadcastable</em> property for a relation as follows.
+ * Broadcast join rules can be defined as follows.
  *
  * <h3>Broadcastable relation</h3>
  * A relation is broadcastable when its size is smaller than a given threshold.
