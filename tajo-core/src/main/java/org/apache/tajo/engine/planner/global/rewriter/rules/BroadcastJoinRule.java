@@ -23,7 +23,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -32,7 +31,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 
@@ -156,9 +154,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           try {
             updateScanOfParentAsBroadcastable(plan, current);
           } catch (PlanningException e) {
-//            throw new RuntimeException(e);
-            // This case is when the current has two or more inputs via union.
-            // It is able to be simply ignored.
+            // This case is when the current has two or more inputs via union, and simply ignored.
           }
         }
       }

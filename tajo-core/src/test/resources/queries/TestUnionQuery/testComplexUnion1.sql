@@ -1,5 +1,3 @@
-create table xdr_url as
-
 SELECT
   l_orderkey,
   l_partkey,

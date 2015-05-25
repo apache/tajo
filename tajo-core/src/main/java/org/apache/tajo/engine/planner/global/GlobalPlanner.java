@@ -130,19 +130,6 @@ public class GlobalPlanner {
     LogicalNode inputPlan = PlannerUtil.clone(masterPlan.getLogicalPlan(),
         masterPlan.getLogicalPlan().getRootBlock().getRoot());
 
-//    boolean broadcastEnabled = masterPlan.getContext().getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
-//    if (broadcastEnabled) {
-//      // pre-visit the master plan in order to find tables to be broadcasted
-//      // this visiting does not make any execution block and change plan.
-//      BroadcastJoinMarkCandidateVisitor markCandidateVisitor = new BroadcastJoinMarkCandidateVisitor();
-//      markCandidateVisitor.visit(globalPlanContext,
-//          masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
-//
-//      BroadcastJoinPlanVisitor broadcastJoinPlanVisitor = new BroadcastJoinPlanVisitor();
-//      broadcastJoinPlanVisitor.visit(globalPlanContext,
-//          masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
-//    }
-
     // create a distributed execution plan by visiting each logical node.
     // Its output is a graph, where each vertex is an execution block, and each edge is a data channel.
     // MasterPlan contains them.
@@ -208,186 +195,11 @@ public class GlobalPlanner {
     return channel;
   }
 
-  /**
-   * It calculates the total volume of all descendent relation nodes.
-   */
-  public static long computeDescendentVolume(LogicalNode node) throws PlanningException {
-
-    if (node instanceof RelationNode) {
-      switch (node.getType()) {
-      case SCAN:
-        ScanNode scanNode = (ScanNode) node;
-        if (scanNode.getTableDesc().getStats() == null) {
-          // TODO - this case means that data is not located in HDFS. So, we need additional
-          // broadcast method.
-          return Long.MAX_VALUE;
-        } else {
-          return scanNode.getTableDesc().getStats().getNumBytes();
-        }
-      case PARTITIONS_SCAN:
-        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
-        if (pScanNode.getTableDesc().getStats() == null) {
-          // TODO - this case means that data is not located in HDFS. So, we need additional
-          // broadcast method.
-          return Long.MAX_VALUE;
-        } else {
-          // if there is no selected partition
-          if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-            return 0;
-          } else {
-            return pScanNode.getTableDesc().getStats().getNumBytes();
-          }
-        }
-      case TABLE_SUBQUERY:
-        return computeDescendentVolume(((TableSubQueryNode) node).getSubQuery());
-      default:
-        throw new IllegalArgumentException("Not RelationNode");
-      }
-    } else if (node instanceof UnaryNode) {
-      return computeDescendentVolume(((UnaryNode) node).getChild());
-    } else if (node instanceof BinaryNode) {
-      BinaryNode binaryNode = (BinaryNode) node;
-      return computeDescendentVolume(binaryNode.getLeftChild()) + computeDescendentVolume(binaryNode.getRightChild());
-    }
-
-    throw new PlanningException("Invalid State");
-  }
-
-  private static boolean checkIfCanBeOneOfBroadcastJoin(LogicalNode node) {
-    return node.getType() == NodeType.SCAN || node.getType() == NodeType.PARTITIONS_SCAN;
-  }
-
-  /**
-   * Get a volume of a table of a partitioned table
-   * @param scanNode ScanNode corresponding to a table
-   * @return table volume (bytes)
-   */
-  private static long getTableVolume(ScanNode scanNode) {
-    long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-    if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-      PartitionedTableScanNode pScanNode = (PartitionedTableScanNode)scanNode;
-      if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-        scanBytes = 0L;
-      }
-    }
-
-    return scanBytes;
-  }
-
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
                                         ExecutionBlock leftBlock, ExecutionBlock rightBlock)
       throws PlanningException {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
-
-//    boolean broadcastEnabled = context.getPlan().getContext().getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
-//    long broadcastTableSizeLimit = context.getPlan().getContext().getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
-
-    // to check when the tajo.dist-query.join.broadcast.auto property is true
-//    if (broadcastEnabled && joinNode.isCandidateBroadcast()) {
-//      LogicalNode leftNode = joinNode.getLeftChild();
-//      LogicalNode rightNode = joinNode.getRightChild();
-//
-//      List<ScanNode> broadcastTargetScanNodes = new ArrayList<ScanNode>();
-//      int numLargeTables = 0;
-//      boolean leftBroadcast = false;
-//      boolean rightBroadcast = false;
-//
-//      // TODO - in the the current implementation, a broadcast join on a bush join tree is not supported yet.
-//      //
-//      //        Join
-//      //       /    \
-//      //   Join     Join
-//      //   /  \     /  \
-//      // Scan Scan Scan Scan
-//
-//
-//      // Checking Left Side of Join
-//      if (ScanNode.isScanNode(leftNode)) {
-//        ScanNode scanNode = (ScanNode)leftNode;
-//        if (joinNode.getJoinType() == JoinType.LEFT_OUTER || getTableVolume(scanNode) >= broadcastTableSizeLimit) {
-//          numLargeTables++;
-//        } else {
-//          leftBroadcast = true;
-//          broadcastTargetScanNodes.add(scanNode);
-//          LOG.info("JoinNode's left table " + scanNode.getCanonicalName() + " ("
-//              + getTableVolume(scanNode) + ") is marked a broadcasted table");
-//        }
-//      }
-//
-//      // Checking Right Side OF Join
-//      if (ScanNode.isScanNode(rightNode)) {
-//        ScanNode scanNode = (ScanNode)rightNode;
-//        if (joinNode.getJoinType() == JoinType.RIGHT_OUTER || getTableVolume(scanNode) >= broadcastTableSizeLimit) {
-//          numLargeTables++;
-//        } else {
-//          rightBroadcast = true;
-//          broadcastTargetScanNodes.add(scanNode);
-//          LOG.info("JoinNode's right table " + scanNode.getCanonicalName() + " ("
-//              + getTableVolume(scanNode) + ") is marked a broadcasted table");
-//        }
-//      }
-//
-//      JoinNode blockJoinNode = null;
-//      if (!leftBroadcast && !rightBroadcast) {
-//        // In the case of large, large, small, small
-//        // all small tables broadcast to right large table
-//        numLargeTables = 1;
-//      }
-//      for(LogicalNode eachNode: joinNode.getBroadcastCandidateTargets()) {
-//        if (eachNode.getPID() == joinNode.getPID()) {
-//          continue;
-//        }
-//        if (numLargeTables >= 2) {
-//          break;
-//        }
-//        JoinNode broadcastJoinNode = (JoinNode)eachNode;
-//        ScanNode scanNode = broadcastJoinNode.getRightChild();
-//        if (getTableVolume(scanNode) < broadcastTableSizeLimit) {
-//          broadcastTargetScanNodes.add(scanNode);
-//          blockJoinNode = broadcastJoinNode;
-//          LOG.info("The table " + scanNode.getCanonicalName() + " ("
-//              + getTableVolume(scanNode) + ") is marked a broadcasted table");
-//        } else {
-//          numLargeTables++;
-//          if (numLargeTables < 2) {
-//            blockJoinNode = broadcastJoinNode;
-//          }
-//        }
-//      }
-//
-//      if (!broadcastTargetScanNodes.isEmpty()) {
-//        // make new execution block
-//        currentBlock = masterPlan.newExecutionBlock();
-//
-//        if (!leftBroadcast && !rightBroadcast) {
-//          DataChannel leftChannel = createDataChannelFromJoin(leftBlock, rightBlock, currentBlock, joinNode, true);
-//          ScanNode leftScan = buildInputExecutor(masterPlan.getLogicalPlan(), leftChannel);
-//          joinNode.setLeftChild(leftScan);
-//          masterPlan.addConnect(leftChannel);
-//
-//          DataChannel rightChannel = createDataChannelFromJoin(leftBlock, rightBlock, currentBlock, joinNode, false);
-//          ScanNode rightScan = buildInputExecutor(masterPlan.getLogicalPlan(), rightChannel);
-//          joinNode.setRightChild(rightScan);
-//          masterPlan.addConnect(rightChannel);
-//        }
-//
-//        if (blockJoinNode != null) {
-//          LOG.info("Set execution's plan with join " + blockJoinNode + " for broadcast join");
-//          // set current execution block's plan with last broadcast join node
-//          currentBlock.setPlan(blockJoinNode);
-//        } else {
-//          currentBlock.setPlan(joinNode);
-//        }
-//
-//        for (ScanNode eachBroadcastTarget: broadcastTargetScanNodes) {
-//          currentBlock.addBroadcastRelation(eachBroadcastTarget.getCanonicalName());
-//          context.execBlockMap.remove(eachBroadcastTarget.getPID());
-//        }
-//
-//        return currentBlock;
-//      }
-//    }
 
     LogicalNode leftNode = joinNode.getLeftChild();
     LogicalNode rightNode = joinNode.getRightChild();
@@ -815,7 +627,7 @@ public class GlobalPlanner {
       if (hasUnionChild(firstPhaseGroupby)) {
         currentBlock = buildGroupbyAndUnionPlan(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
       } else {
-//         general hash-shuffled aggregation
+        // general hash-shuffled aggregation
         currentBlock = buildTwoPhaseGroupby(masterPlan, lastBlock, firstPhaseGroupby, groupbyNode);
       }
     }
@@ -1354,34 +1166,8 @@ public class GlobalPlanner {
       LogicalNode leftChild = visit(context, plan, block, node.getLeftChild(), stack);
       ExecutionBlock leftChildBlock = context.execBlockMap.get(leftChild.getPID());
 
-//      if (leftChild.getType() == NodeType.JOIN && checkIfCanBeOneOfBroadcastJoin(node.getRightChild())) {
-//        ScanNode scanNode = node.getRightChild();
-//        if (leftChildBlock.isBroadcastRelation(scanNode.getCanonicalName())) {
-//          context.execBlockMap.put(node.getPID(), leftChildBlock);
-//          return node;
-//        }
-//
-//        // if left execution block's plan is replaced with parent node(join node)
-//        if (leftChildBlock.getPlan().getPID() == node.getPID()) {
-//          context.execBlockMap.put(node.getPID(), leftChildBlock);
-//          return node;
-//        }
-//      }
-
       LogicalNode rightChild = visit(context, plan, block, node.getRightChild(), stack);
       ExecutionBlock rightChildBlock = context.execBlockMap.get(rightChild.getPID());
-
-//      // In the case of broadcast join leftChildBlock can be replaced with upper join node.
-//      // So if the current join node is a child node of leftChildBlock's plan(join node)
-//      // the current join node already participates in broadcast join.
-//      LogicalNode leftChildBlockNode = leftChildBlock.getPlan();
-//      // If child block is union, child block has not plan
-//      if (leftChildBlockNode != null && leftChildBlockNode.getType() == NodeType.JOIN) {
-//        if (leftChildBlockNode.getPID() > node.getPID()) {
-//          context.execBlockMap.put(node.getPID(), leftChildBlock);
-//          return node;
-//        }
-//      }
 
       if (node.getJoinType() == JoinType.LEFT_OUTER) {
         leftChildBlock.setPreservedRow();
@@ -1623,29 +1409,4 @@ public class GlobalPlanner {
       return node;
     }
   }
-
-//  @SuppressWarnings("unused")
-//  private static class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<List<UnionNode>, LogicalNode> {
-//    @Override
-//    public LogicalNode visitUnion(List<UnionNode> unionNodeList, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-//                                  UnionNode node, Stack<LogicalNode> stack)
-//        throws PlanningException {
-//      if (node.getType() == NodeType.UNION) {
-//        unionNodeList.add(node);
-//      }
-//
-//      stack.push(node);
-//      TableSubQueryNode leftSubQuery = node.getLeftChild();
-//      TableSubQueryNode rightSubQuery = node.getRightChild();
-//      if (leftSubQuery.getSubQuery().getType() == NodeType.UNION) {
-//        visit(unionNodeList, plan, queryBlock, leftSubQuery, stack);
-//      }
-//      if (rightSubQuery.getSubQuery().getType() == NodeType.UNION) {
-//        visit(unionNodeList, plan, queryBlock, rightSubQuery, stack);
-//      }
-//      stack.pop();
-//
-//      return node;
-//    }
-//  }
 }

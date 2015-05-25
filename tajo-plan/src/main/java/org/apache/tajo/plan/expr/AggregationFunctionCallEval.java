@@ -34,7 +34,6 @@ import java.io.IOException;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
 
-//  private static final Log LOG = LogFactory.getLog(AggregationFunctionCallEval.class);
   // Both firstPhase and lastPhase flags should be true before global planning.
   @Expose private boolean firstPhase = true;
   @Expose private boolean lastPhase = true;
@@ -87,7 +86,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   protected void mergeParam(FunctionContext context, Tuple params) {
-//    if (!intermediatePhase && !lastPhase) {
     if (firstPhase) {
       // firstPhase
       functionInvoke.eval(context, params);
@@ -114,7 +112,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   @Override
   public DataType getValueType() {
-//    LOG.info("at getValueType, " + funcDesc.getFunctionName() + " firstPhase: " + firstPhase + ", lastPhase: " + lastPhase);
     if (!lastPhase) {
       return functionInvoke.getPartialResultType();
     } else {

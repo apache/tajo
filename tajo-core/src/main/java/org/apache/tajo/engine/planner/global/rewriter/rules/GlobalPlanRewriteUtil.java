@@ -103,6 +103,51 @@ public class GlobalPlanRewriteUtil {
     }
   }
 
+  /**
+   * It calculates the total volume of all descendent relation nodes.
+   */
+  public static long computeDescendentVolume(LogicalNode node) throws PlanningException {
+
+    if (node instanceof RelationNode) {
+      switch (node.getType()) {
+        case SCAN:
+          ScanNode scanNode = (ScanNode) node;
+          if (scanNode.getTableDesc().getStats() == null) {
+            // TODO - this case means that data is not located in HDFS. So, we need additional
+            // broadcast method.
+            return Long.MAX_VALUE;
+          } else {
+            return scanNode.getTableDesc().getStats().getNumBytes();
+          }
+        case PARTITIONS_SCAN:
+          PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
+          if (pScanNode.getTableDesc().getStats() == null) {
+            // TODO - this case means that data is not located in HDFS. So, we need additional
+            // broadcast method.
+            return Long.MAX_VALUE;
+          } else {
+            // if there is no selected partition
+            if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+              return 0;
+            } else {
+              return pScanNode.getTableDesc().getStats().getNumBytes();
+            }
+          }
+        case TABLE_SUBQUERY:
+          return computeDescendentVolume(((TableSubQueryNode) node).getSubQuery());
+        default:
+          throw new IllegalArgumentException("Not RelationNode");
+      }
+    } else if (node instanceof UnaryNode) {
+      return computeDescendentVolume(((UnaryNode) node).getChild());
+    } else if (node instanceof BinaryNode) {
+      BinaryNode binaryNode = (BinaryNode) node;
+      return computeDescendentVolume(binaryNode.getLeftChild()) + computeDescendentVolume(binaryNode.getRightChild());
+    }
+
+    throw new PlanningException("Invalid State");
+  }
+
   public static class ParentFinder implements LogicalNodeVisitor {
     private LogicalNode target;
     private LogicalNode found;

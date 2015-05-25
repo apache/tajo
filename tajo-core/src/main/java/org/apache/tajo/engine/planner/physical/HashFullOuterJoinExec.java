@@ -103,29 +103,6 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
         iterator = nullIterator(rightNumCols);
         continue;
       }
-//<<<<<<< HEAD
-//
-//      /*
-//       * TODO
-//       * Currently, some physical executors can return new instances of tuple, but others not.
-//       * This sometimes causes wrong results due to the singleton Tuple instance.
-//       * The below line is a temporal solution to fix this problem.
-//       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
-//       */
-//      try {
-//        tuple = tuple.clone();
-//      } catch (CloneNotSupportedException e) {
-//        throw new IOException(e);
-//      }
-//      List<Tuple> newValue = tupleSlots.get(keyTuple);
-//      if (newValue != null) {
-//        newValue.add(tuple);
-//      } else {
-//        newValue = new ArrayList<Tuple>();
-//        newValue.add(tuple);
-//        tupleSlots.put(keyTuple, newValue);
-//        matched.put(keyTuple,false);
-//=======
       // getting corresponding right
       Pair<Boolean, List<Tuple>> hashed = tupleSlots.get(toKey(leftTuple));
       if (hashed == null) {
@@ -136,7 +113,6 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
       if (!rightTuples.hasNext()) {
         iterator = nullIterator(rightNumCols);
         continue;
-//>>>>>>> 5491f0e7507c7efa1b2306d4c1f1d25240e482a9
       }
       iterator = rightTuples;
       hashed.setFirst(true);   // match found

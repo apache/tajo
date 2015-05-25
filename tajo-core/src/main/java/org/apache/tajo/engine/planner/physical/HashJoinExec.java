@@ -58,32 +58,11 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
 
       frameTuple.setLeft(leftTuple);
 
-//<<<<<<< HEAD
-//      /*
-//       * TODO
-//       * Currently, some physical executors can return new instances of tuple, but others not.
-//       * This sometimes causes wrong results due to the singleton Tuple instance.
-//       * The below line is a temporal solution to fix this problem.
-//       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
-//       */
-//      try {
-//        tuple = tuple.clone();
-//      } catch (CloneNotSupportedException e) {
-//        throw new IOException(e);
-//      }
-//      if (newValue != null) {
-//        newValue.add(tuple);
-//      } else {
-//        newValue = new ArrayList<Tuple>();
-//        newValue.add(tuple);
-//        map.put(keyTuple, newValue);
-//=======
       // getting corresponding right
       Iterable<Tuple> hashed = getRights(toKey(leftTuple));
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (rightTuples.hasNext()) {
         iterator = rightTuples;
-//>>>>>>> 5491f0e7507c7efa1b2306d4c1f1d25240e482a9
       }
     }
 

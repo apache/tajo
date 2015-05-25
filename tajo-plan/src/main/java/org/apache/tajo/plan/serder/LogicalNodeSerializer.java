@@ -76,12 +76,6 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   private static PlanProto.LogicalNode.Builder createNodeBuilder(SerializeContext context, LogicalNode node) {
     int selfId;
-//    if (context.idMap.containsKey(node)) {
-//      selfId = context.idMap.get(node);
-//    } else {
-//      selfId = context.seqId++;
-//      context.idMap.put(node, selfId);
-//    }
     if (context.idMap.containsKey(node.getPID())) {
       selfId = context.idMap.get(node.getPID());
     } else {
@@ -727,8 +721,6 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   private int [] registerGetChildIds(SerializeContext context, LogicalNode node) {
     int [] childIds = new int[node.childNum()];
     for (int i = 0; i < node.childNum(); i++) {
-//      if (context.idMap.containsKey(node.getChild(i))) {
-//        childIds[i] = context.idMap.get(node.getChild(i));
       if (node.getChild(i) != null && context.idMap.containsKey(node.getChild(i).getPID())) {
         childIds[i] = context.idMap.get(node.getChild(i).getPID());
       } else {

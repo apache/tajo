@@ -55,46 +55,6 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
       }
       frameTuple.setLeft(leftTuple);
 
-//<<<<<<< HEAD
-//  /**
-//   * Build a hash table for right input relation.
-//   * If the right child is not scan exec,
-//   *
-//   * @return
-//   * @throws IOException
-//   */
-//  private Map<Tuple, List<Tuple>> buildRightToHashTable() throws IOException {
-//    Tuple tuple;
-//    Tuple keyTuple;
-//    Map<Tuple, List<Tuple>> map = new HashMap<Tuple, List<Tuple>>(100000);
-//
-//    while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-//      keyTuple = new VTuple(joinKeyPairs.size());
-//      for (int i = 0; i < rightKeyList.length; i++) {
-//        keyTuple.put(i, tuple.get(rightKeyList[i]));
-//      }
-//
-//      List<Tuple> newValue = map.get(keyTuple);
-//
-//      /*
-//       * TODO
-//       * Currently, some physical executors can return new instances of tuple, but others not.
-//       * This sometimes causes wrong results due to the singleton Tuple instance.
-//       * The below line is a temporal solution to fix this problem.
-//       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
-//       */
-//      try {
-//        tuple = tuple.clone();
-//      } catch (CloneNotSupportedException e) {
-//        throw new IOException(e);
-//      }
-//      if (newValue != null) {
-//        newValue.add(tuple);
-//      } else {
-//        newValue = new ArrayList<Tuple>();
-//        newValue.add(tuple);
-//        map.put(keyTuple, newValue);
-//=======
       if (leftFiltered(leftTuple)) {
         iterator = nullIterator(rightNumCols);
         continue;
@@ -108,7 +68,6 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
         //output a tuple with the nulls padded rightTuple
         iterator = nullIterator(rightNumCols);
         continue;
-//>>>>>>> 5491f0e7507c7efa1b2306d4c1f1d25240e482a9
       }
       iterator = rightTuples;
     }

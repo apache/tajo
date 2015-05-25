@@ -38,6 +38,7 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
@@ -107,7 +108,7 @@ public class Repartitioner {
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
         try {
-          stats[i] = GlobalPlanner.computeDescendentVolume(scans[i]);
+          stats[i] = GlobalPlanRewriteUtil.computeDescendentVolume(scans[i]);
         } catch (PlanningException e) {
           throw new IOException(e);
         }
@@ -188,37 +189,6 @@ public class Repartitioner {
     }
 
     // Assigning either fragments or fetch urls to query units
-//    boolean isAllBroadcastTable = true;
-//    for (int i = 0; i < scans.length; i++) {
-//      if (!execBlock.isBroadcastRelation(scans[i].getCanonicalName())) {
-//        isAllBroadcastTable = false;
-//        break;
-//      }
-//    }
-
-
-//    if (isAllBroadcastTable) { // if all relations of this EB are broadcasted
-//      // set largest table to normal mode
-//      long maxStats = Long.MIN_VALUE;
-//      int maxStatsScanIdx = -1;
-//      for (int i = 0; i < scans.length; i++) {
-//        // finding largest table.
-//        // If stats == 0, can't be base table.
-//        if (stats[i] > 0 && stats[i] > maxStats) {
-//          maxStats = stats[i];
-//          maxStatsScanIdx = i;
-//        }
-//      }
-//      if (maxStatsScanIdx == -1) {
-//        maxStatsScanIdx = 0;
-//      }
-//      int baseScanIdx = maxStatsScanIdx;
-//      scans[baseScanIdx].setBroadcastTable(false);
-//      execBlock.removeBroadcastRelation(scans[baseScanIdx].getCanonicalName());
-//      LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join with all tables, base_table=%s, base_volume=%d",
-//          scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
-//      scheduleLeafTasksWithBroadcastTable(schedulerContext, stage, baseScanIdx, fragments);
-//    } else if (!execBlock.getBroadcastTables().isEmpty()) { // If some relations of this EB are broadcasted
     if (execBlock.hasBroadcastRelation()) { // If some relations of this EB are broadcasted
       boolean hasNonLeafNode = false;
       List<Integer> largeScanIndexList = new ArrayList<Integer>();
@@ -384,7 +354,6 @@ public class Repartitioner {
 
     // Getting the desire number of join tasks according to the volumn
     // of a larger table
-//    int largerIdx = leftStats >= rightStats ? 0 : 1;
     long largerStat = leftStats >= rightStats ? leftStats : rightStats;
     int desireJoinTaskVolumn = stage.getMasterPlan().getContext().getInt(SessionVars.JOIN_TASK_INPUT_SIZE);
 
