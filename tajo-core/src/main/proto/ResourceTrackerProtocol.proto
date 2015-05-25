@@ -25,15 +25,42 @@ option java_generate_equals_and_hash = true;
 import "QueryCoordinatorProtocol.proto";
 import "ContainerProtocol.proto";
 import "tajo_protos.proto";
+import "TajoIdProtos.proto";
 
 package hadoop.yarn;
 
+// deprecated
 message NodeHeartbeat {
   required WorkerConnectionInfoProto connectionInfo = 1;
   optional ServerStatusProto serverStatus = 2;
   optional string statusMessage = 3;
 }
 
+message NodeHeartbeatRequestProto {
+  required int32 workerId = 1;
+  optional NodeResourceProto totalResource = 2;
+  optional NodeResourceProto availableResource = 3;
+  optional WorkerConnectionInfoProto connectionInfo = 4;
+  optional NodeStatusProto status = 5;
+}
+
+message NodeHeartbeatResponseProto {
+  required ResponseCommand command = 1 [default = NORMAL];
+  repeated QueryIdProto queryId = 2;
+}
+
+enum ResponseCommand {
+  NORMAL = 1; //ping
+  MEMBERSHIP = 2; // request membership to worker node
+  ABORT_QUERY = 3; //query master failure
+  SHUTDOWN = 4; // black list
+}
+
+//TODO add node health information
+message NodeStatusProto {
+}
+
 service TajoResourceTrackerProtocolService {
   rpc heartbeat(NodeHeartbeat) returns (TajoHeartbeatResponse);
+  rpc nodeHeartbeat(NodeHeartbeatRequestProto) returns (NodeHeartbeatResponseProto);
 }

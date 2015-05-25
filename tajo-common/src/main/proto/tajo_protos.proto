@@ -63,3 +63,9 @@ message WorkerConnectionInfoProto {
     required int32 clientPort = 6;
     required int32 httpInfoPort = 7;
 }
+
+message NodeResourceProto {
+  optional int32 memory = 1;
+  optional int32 virtual_cores = 2;
+  optional int32 disks = 3;
+}
