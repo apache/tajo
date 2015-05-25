@@ -45,7 +45,30 @@ public class ExecutionBlock {
   private Map<String, ScanNode> broadcastRelations = TUtil.newHashMap();
 
   /*
-   * The nullSupplying and preservedRow flags are used for finding which relations will be broadcasted.
+   * An execution block is null-supplying or preserved-row when its output is used as an input for outer join.
+   * These flags are set according to the type of outer join.
+   * Here are brief descriptions for these flags.
+   *
+   * 1) left outer join
+   *
+   *        left outer join
+   *          /        \
+   * preserved-row  null-supplying
+   *
+   * 2) right outer join
+   *
+   *        right outer join
+   *          /        \
+   * null-supplying  preserved-row
+   *
+   * 3) full outer join
+   *
+   *        full outer join
+   *          /        \
+   * null-supplying  preserved-row
+   * preserved-row   null-supplying
+   *
+   * The null-supplying and preserved-row flags are used to find which relations will be broadcasted.
    */
   protected transient boolean nullSuppllying = false;
   protected transient boolean preservedRow = false;
@@ -74,6 +97,7 @@ public class ExecutionBlock {
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);
+      // TODO: the below code should be improved to handle every case
       if (isUnionOnly && node.getType() != NodeType.ROOT && node.getType() != NodeType.TABLE_SUBQUERY &&
           node.getType() != NodeType.SCAN && node.getType() != NodeType.PARTITIONS_SCAN &&
           node.getType() != NodeType.UNION && node.getType() != NodeType.PROJECTION) {

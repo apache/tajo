@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
@@ -37,14 +35,34 @@ import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import java.util.*;
 
 /**
- * Broadcast rules are as follows.
+ * {@link BroadcastJoinRule} converts repartition join plan into broadcast join plan.
+ * To describe the broadcast join rules, we have to define the <em>broadcastable</em> property for a relation as follows.
+ *
+ * <h3>Broadcastable relation</h3>
  * A relation is broadcastable when its size is smaller than a given threshold.
+ *
+ * <h3>Assumetion</h3>
+ * If every input of an execution block is broadcastable, the output of the execution block is also broadcastable.
+ *
+ * <h3>Rules to convert repartition join into broadcast join</h3>
+ * <ul>
+ *   <li>Given an EB containing a join and its child EBs, those EBs can be merged into a single EB if at least one child EB's output is broadcastable.</li>
+ *   <li>Given a user-defined threshold, the total size of broadcast relations of an EB cannot exceed such threshold.</li>
+ *   <ul>
+ *     <li>After merging EBs according to the first rule, the result EB may not satisfy the second rule. In this case, enforce repartition join for large relations to satisfy the second rule.</li>
+ *   </ul>
+ *   <li>Preserved-row relations cannot be broadcasted to avoid duplicated results. That is, full outer join cannot be executed with broadcast join.</li>
+ *   <ul>
+ *     <li>Here is brief backgrounds for this rule. Data of preserved-row relations will be appeared in the join result regardless of join conditions. If multiple tasks execute outer join with broadcasted preserved-row relations, they emit duplicates results.</li>
+ *     <li>Even though a single task can execute outer join when every input is broadcastable, broadcast join is not allowed if one of input relation consists of multiple files.</li>
+ *   </ul>
+ * </ul>
+ *
  */
 public class BroadcastJoinRule implements GlobalPlanRewriteRule {
-  private final static Log LOG = LogFactory.getLog(BroadcastJoinRule.class);
 
-  private BroadcastJoinPlanBuilder planOptimizer;
-  private BroadcastJoinOptimizeFinalizer optimizeFinalizer;
+  private BroadcastJoinPlanBuilder planBuilder;
+  private BroadcastJoinPlanFinalizer planFinalizer;
 
   @Override
   public String getName() {
@@ -60,8 +78,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           if (broadcastSizeThreshold > 0) {
             GlobalPlanRewriteUtil.ParentFinder parentFinder = new GlobalPlanRewriteUtil.ParentFinder();
             RelationSizeComparator relSizeComparator = new RelationSizeComparator();
-            planOptimizer = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder, broadcastSizeThreshold);
-            optimizeFinalizer = new BroadcastJoinOptimizeFinalizer(plan, relSizeComparator);
+            planBuilder = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder, broadcastSizeThreshold);
+            planFinalizer = new BroadcastJoinPlanFinalizer(plan, relSizeComparator);
             return true;
           }
         }
@@ -72,8 +90,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public MasterPlan rewrite(MasterPlan plan) throws PlanningException{
-    plan.accept(plan.getRoot().getId(), planOptimizer);
-    plan.accept(plan.getRoot().getId(), optimizeFinalizer);
+    plan.accept(plan.getRoot().getId(), planBuilder);
+    plan.accept(plan.getRoot().getId(), planFinalizer);
     return plan;
   }
 
@@ -86,13 +104,15 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   }
 
   /**
-   *
+   * If a plan contains only broadcast relations, it will be executed at multiple workers who store any broadcast relations.
+   * {@Link BroadcastJoinPlanFinalizer} checks whether every input is the broadcast candidate or not.
+   * If so, it removes the broadcast property from the largest relation.
    */
-  private static class BroadcastJoinOptimizeFinalizer implements DirectedGraphVisitor<ExecutionBlockId> {
+  private static class BroadcastJoinPlanFinalizer implements DirectedGraphVisitor<ExecutionBlockId> {
     private final MasterPlan plan;
     private final RelationSizeComparator relSizeComparator;
 
-    public BroadcastJoinOptimizeFinalizer(MasterPlan plan, RelationSizeComparator relationSizeComparator) {
+    public BroadcastJoinPlanFinalizer(MasterPlan plan, RelationSizeComparator relationSizeComparator) {
       this.plan = plan;
       this.relSizeComparator = relationSizeComparator;
     }
@@ -168,33 +188,6 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           List<ExecutionBlock> childs = plan.getChilds(current);
           Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = current.getUnionScanMap();
 
-          // When the total size of broadcastable relations exceeds the threshold, enforce two-phase join for large ones
-          // in order to broadcast as many relations as possible.
-          List<ScanNode> broadcastCandidates = TUtil.newList();
-          for (ScanNode scanNode : current.getScanNodes()) {
-            long estimatedRelationSize = GlobalPlanRewriteUtil.getTableVolume(scanNode);
-            if (estimatedRelationSize > 0 && estimatedRelationSize <= broadcastSizeThreshold) {
-              broadcastCandidates.add(scanNode);
-            }
-          }
-          Collections.sort(broadcastCandidates, relSizeComparator);
-
-          // Enforce broadcast for candidates in ascending order of relation size
-          long totalBroadcastVolume = 0;
-          int i;
-          for (i = 0; i < broadcastCandidates.size(); i++) {
-            long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
-            if (totalBroadcastVolume + volumeOfCandidate > broadcastSizeThreshold) {
-              break;
-            }
-            totalBroadcastVolume += volumeOfCandidate;
-          }
-
-          for (; i < broadcastCandidates.size(); ) {
-            ScanNode nonBroadcast = broadcastCandidates.remove(i);
-            broadcastCandidates.remove(nonBroadcast);
-          }
-
           if (current.hasBroadcastRelation()) {
             // The current execution block and its every child are able to be merged.
             for (ExecutionBlock child : childs) {
@@ -205,6 +198,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
                 throw new RuntimeException(e);
               }
             }
+
+            checkTotalSizeOfBroadcastableRelations(current);
 
             // We assume that if every input of an execution block is broadcastable,
             // the output of the execution block is also broadcastable.
@@ -222,6 +217,39 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             current.removeBroadcastRelation(eachRelation);
           }
         }
+      }
+    }
+
+    /**
+     * When the total size of broadcastable relations exceeds the threshold, enforce repartition join for large ones
+     * in order to broadcast as many relations as possible.
+     *
+     * @param block
+     */
+    private void checkTotalSizeOfBroadcastableRelations(ExecutionBlock block) {
+      List<ScanNode> broadcastCandidates = TUtil.newList();
+      for (ScanNode scanNode : block.getScanNodes()) {
+        long estimatedRelationSize = GlobalPlanRewriteUtil.getTableVolume(scanNode);
+        if (estimatedRelationSize > 0 && estimatedRelationSize <= broadcastSizeThreshold) {
+          broadcastCandidates.add(scanNode);
+        }
+      }
+      Collections.sort(broadcastCandidates, relSizeComparator);
+
+      // Enforce broadcast for candidates in ascending order of relation size
+      long totalBroadcastVolume = 0;
+      int i;
+      for (i = 0; i < broadcastCandidates.size(); i++) {
+        long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
+        if (totalBroadcastVolume + volumeOfCandidate > broadcastSizeThreshold) {
+          break;
+        }
+        totalBroadcastVolume += volumeOfCandidate;
+      }
+
+      for (; i < broadcastCandidates.size(); ) {
+        ScanNode nonBroadcast = broadcastCandidates.remove(i);
+        block.removeBroadcastRelation(nonBroadcast);
       }
     }
 

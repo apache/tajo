@@ -27,6 +27,14 @@ import org.apache.tajo.plan.logical.*;
 import java.util.List;
 
 public class GlobalPlanRewriteUtil {
+  /**
+   * Merge the parent EB with the child EB.
+   *
+   * @param plan
+   * @param child
+   * @param parent
+   * @return
+   */
   public static ExecutionBlock mergeExecutionBlocks(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
     for (ScanNode broadcastable : child.getBroadcastRelations()) {
       parent.addBroadcastRelation(broadcastable);
@@ -50,6 +58,14 @@ public class GlobalPlanRewriteUtil {
     return parent;
   }
 
+  /**
+   * Replace a child of the given parent logical node with the new one.
+   *
+   * @param newChild
+   * @param originalChild
+   * @param parent
+   * @throws PlanningException
+   */
   public static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent)
       throws PlanningException {
     if (parent instanceof UnaryNode) {
@@ -68,6 +84,14 @@ public class GlobalPlanRewriteUtil {
     }
   }
 
+  /**
+   * Find a scan node in the plan of the parent EB corresponding to the output of the child EB.
+   *
+   * @param child
+   * @param parent
+   * @return
+   * @throws PlanningException
+   */
   public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
     ScanNode scanForChild = null;
     for (ScanNode scanNode : parent.getScanNodes()) {
