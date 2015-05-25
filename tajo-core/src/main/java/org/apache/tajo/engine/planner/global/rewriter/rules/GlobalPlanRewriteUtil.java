@@ -24,12 +24,11 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 
-import java.util.Collection;
 import java.util.List;
 
 public class GlobalPlanRewriteUtil {
   public static ExecutionBlock mergeExecutionBlocks(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
-    for (String broadcastable : child.getBroadcastTables()) {
+    for (ScanNode broadcastable : child.getBroadcastRelations()) {
       parent.addBroadcastRelation(broadcastable);
     }
 
@@ -69,13 +68,16 @@ public class GlobalPlanRewriteUtil {
     }
   }
 
-  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
+  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
     ScanNode scanForChild = null;
     for (ScanNode scanNode : parent.getScanNodes()) {
       if (scanNode.getTableName().equals(child.getId().toString())) {
         scanForChild = scanNode;
         break;
       }
+    }
+    if (scanForChild == null) {
+      throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
     return scanForChild;
   }
@@ -86,34 +88,19 @@ public class GlobalPlanRewriteUtil {
    * @return table volume (bytes)
    */
   public static long getTableVolume(ScanNode scanNode) {
-    long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-    if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-      PartitionedTableScanNode pScanNode = (PartitionedTableScanNode)scanNode;
-      if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-        scanBytes = 0L;
+    if (scanNode.getTableDesc().hasStats()) {
+      long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
+      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
+        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
+        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+          scanBytes = 0L;
+        }
       }
-    }
 
-    return scanBytes;
-  }
-
-  public static long getBroadcastInputVolume(ExecutionBlock block) {
-    Collection<String> broadcastRelations = block.getBroadcastTables();
-    long volume = 0;
-    for (ScanNode scanNode : block.getScanNodes()) {
-      if (broadcastRelations.contains(scanNode.getCanonicalName())) {
-        volume += getTableVolume(scanNode);
-      }
+      return scanBytes;
+    } else {
+      return -1;
     }
-    return volume;
-  }
-
-  public static long getInputVolume(ExecutionBlock block) {
-    long volume = 0;
-    for (ScanNode scanNode : block.getScanNodes()) {
-      volume += getTableVolume(scanNode);
-    }
-    return volume;
   }
 
   public static class ParentFinder implements LogicalNodeVisitor {
@@ -129,7 +116,10 @@ public class GlobalPlanRewriteUtil {
       this.visit(root);
     }
 
-    public LogicalNode getFound() {
+    public LogicalNode getFound() throws PlanningException {
+      if (found == null) {
+        throw new PlanningException("Cannot find the parent of " + target.getPID());
+      }
       return this.found;
     }
 

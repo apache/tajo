@@ -51,8 +51,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.nation
- 1: type=Broadcast, tables=default.region
+ 0: type=Broadcast, tables=default.region
 
 GROUP_BY(12)(?plus,n_regionkey,r_regionkey,result,v1)
   => exprs: (sum(?plus (INT4)))

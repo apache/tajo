@@ -39,7 +39,6 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.region
- 1: type=Broadcast, tables=default.customer
 
 SORT(10)
   => Sort Keys: default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc),default.customer.c_custkey (INT4) (asc)

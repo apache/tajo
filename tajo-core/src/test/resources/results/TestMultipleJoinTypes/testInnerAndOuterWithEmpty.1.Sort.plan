@@ -42,9 +42,8 @@ Block Id: eb_0000000000000_0000_000005 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.a
- 1: type=Broadcast, tables=default.b
- 2: type=Broadcast, tables=default.c
+ 0: type=Broadcast, tables=default.b
+ 1: type=Broadcast, tables=default.c
 
 JOIN(8)(LEFT_OUTER)
   => Join Cond: default.a.l_orderkey (INT4) = default.c.c_custkey (INT4)

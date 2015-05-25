@@ -53,8 +53,7 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.orders
- 1: type=Broadcast, tables=default.lineitem
- 2: type=Broadcast, tables=default.part
+ 1: type=Broadcast, tables=default.part
 
 SORT(18)
   => Sort Keys: default.lineitem.l_orderkey (INT4) (asc),default.a.o_custkey (INT4) (asc),default.part.p_name (TEXT) (asc)

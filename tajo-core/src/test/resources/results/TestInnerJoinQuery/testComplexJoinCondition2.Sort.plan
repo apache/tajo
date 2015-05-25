@@ -40,7 +40,6 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.n1
- 1: type=Broadcast, tables=default.n2
 
 SORT(10)
   => Sort Keys: default.n1.n_nationkey (INT4) (asc)

@@ -26,6 +26,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -216,6 +217,10 @@ public class MasterPlan {
 
   public ExecutionBlock getChild(ExecutionBlock executionBlock, int idx) {
     return getChild(executionBlock.getId(), idx);
+  }
+
+  public void accept(ExecutionBlockId v, DirectedGraphVisitor<ExecutionBlockId> visitor) {
+    execBlockGraph.accept(v, visitor);
   }
 
   @Override

@@ -57,9 +57,6 @@ Block Id: eb_0000000000000_0000_000002 [LEAF]
 [Outgoing]
 [q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
 
-[Enforcers]
- 0: type=Broadcast, tables=default.customer
-
 GROUP_BY(11)(c_custkey)
   => exprs: (min(default.customer.c_name (TEXT)))
   => target list: default.customer.c_custkey (INT4), ?min_2 (TEXT)

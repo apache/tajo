@@ -69,8 +69,7 @@ Block Id: eb_0000000000000_0000_000009 [LEAF]
  0: type=Broadcast, tables=default.orders
  1: type=Broadcast, tables=default.part
  2: type=Broadcast, tables=default.lineitem
- 3: type=Broadcast, tables=default.nation
- 4: type=Broadcast, tables=default.customer
+ 3: type=Broadcast, tables=default.customer
 
 SORT(26)
   => Sort Keys: default.lineitem.l_orderkey (INT4) (asc),default.part.p_name (TEXT) (asc),default.nation.n_name (TEXT) (asc)

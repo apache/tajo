@@ -17,6 +17,7 @@ package org.apache.tajo.engine.planner.global;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -41,7 +42,7 @@ public class ExecutionBlock {
   private boolean hasUnionPlan;
   private boolean isUnionOnly;
 
-  private Set<String> broadcasted = new HashSet<String>();
+  private Map<String, ScanNode> broadcastRelations = TUtil.newHashMap();
 
   /*
    * The nullSupplying and preservedRow flags are used for finding which relations will be broadcasted.
@@ -127,7 +128,7 @@ public class ExecutionBlock {
   public int getNonBroadcastRelNum() {
     int nonBroadcastRelNum = 0;
     for (ScanNode scanNode : scanlist) {
-      if (!broadcasted.contains(scanNode.getCanonicalName())) {
+      if (!broadcastRelations.containsKey(scanNode.getCanonicalName())) {
         nonBroadcastRelNum++;
       }
     }
@@ -150,67 +151,26 @@ public class ExecutionBlock {
     return isUnionOnly;
   }
 
-  public void addBroadcastRelation(String tableName) {
-    broadcasted.add(tableName);
-    enforcer.addBroadcast(tableName);
+  public void addBroadcastRelation(ScanNode relationNode) {
+    broadcastRelations.put(relationNode.getCanonicalName(), relationNode);
+    enforcer.addBroadcast(relationNode.getCanonicalName());
   }
 
-  public void removeBroadcastRelation(String tableName) {
-    broadcasted.remove(tableName);
-    enforcer.removeBroadcast(tableName);
+  public void removeBroadcastRelation(ScanNode relationNode) {
+    broadcastRelations.remove(relationNode.getCanonicalName());
+    enforcer.removeBroadcast(relationNode.getCanonicalName());
   }
 
-  public boolean isBroadcastRelation(String tableName) {
-    return broadcasted.contains(tableName);
+  public boolean isBroadcastRelation(ScanNode relationNode) {
+    return broadcastRelations.containsKey(relationNode.getCanonicalName());
   }
 
   public boolean hasBroadcastRelation() {
-    return broadcasted.size() > 0;
+    return broadcastRelations.size() > 0;
   }
 
-  /**
-   * Check this execution block is broadcastable.
-   * This execution block is broadcastable only when its every input is broadcastable.
-   * @return true if broadcastable
-   */
-  public boolean isBroadcastable(final long broadcastThreshold) {
-    long totalTableVolume = 0;
-    for (ScanNode scanNode : scanlist) {
-      long volume = getTableVolume(scanNode);
-      if (volume == Long.MAX_VALUE) {
-        return false;
-      }
-      totalTableVolume += volume;
-      if (totalTableVolume > broadcastThreshold) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Get a volume of a table of a partitioned table
-   * @param scanNode ScanNode corresponding to a table
-   * @return table volume (bytes)
-   */
-  private static long getTableVolume(ScanNode scanNode) {
-    if (scanNode.getTableDesc().hasStats()) {
-      long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
-        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-          scanBytes = 0L;
-        }
-      }
-
-      return scanBytes;
-    } else {
-      return Long.MAX_VALUE;
-    }
-  }
-
-  public Collection<String> getBroadcastTables() {
-    return broadcasted;
+  public Collection<ScanNode> getBroadcastRelations() {
+    return broadcastRelations.values();
   }
 
   public String toString() {

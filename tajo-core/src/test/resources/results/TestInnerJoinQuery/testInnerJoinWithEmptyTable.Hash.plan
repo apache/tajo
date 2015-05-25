@@ -40,7 +40,6 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.empty_orders
- 1: type=Broadcast, tables=default.customer
 
 SORT(11)
   => Sort Keys: default.customer.c_custkey (INT4) (asc),default.empty_orders.o_orderkey (INT4) (asc)

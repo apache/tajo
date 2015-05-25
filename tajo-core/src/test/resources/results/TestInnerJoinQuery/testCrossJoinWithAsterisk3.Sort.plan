@@ -38,8 +38,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.customer.c_custkey (INT4), default.customer.c_name (TEXT), default.region.r_regionkey (INT4), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.customer
- 1: type=Broadcast, tables=default.region
+ 0: type=Broadcast, tables=default.region
 
 SORT(10)
   => Sort Keys: default.customer.c_custkey (INT4) (asc),default.customer.c_name (TEXT) (asc),default.region.r_regionkey (INT4) (asc)
