@@ -510,6 +510,7 @@ public class TajoTestingCluster {
     startMiniDFSCluster(numDataNodes, clusterTestBuildDir, dataNodeHosts);
     this.dfsCluster.waitClusterUp();
 
+    conf.setInt("hbase.hconnection.threads.core", 50);
     hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
 
     if(!standbyWorkerMode) {
