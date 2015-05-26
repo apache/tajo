@@ -136,6 +136,12 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1620: random() in an SQL should generate RANDOM numbers.
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
+    TAJO-1558: HBASE_LIB/hbase-server-*.jar should be included in the CLASSPATH.
+    (Contributed by Jongyoung Park, Committed by jaehwa)
+
     TAJO-1605: Fix master build failure on jdk 1.6. (jinho)
 
     TAJO-1485: Datum 'Char' returned only 1byte.
