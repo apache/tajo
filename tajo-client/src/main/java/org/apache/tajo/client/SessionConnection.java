@@ -30,9 +30,11 @@ import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
@@ -72,6 +75,8 @@ public class SessionConnection implements Closeable {
   private NettyClientBase client;
 
   private KeyValueSet properties;
+
+  private AtomicInteger connections = new AtomicInteger();
 
   /**
    * Connect to TajoMaster
@@ -112,6 +117,7 @@ public class SessionConnection implements Closeable {
         // Client do not closed on idle state for support high available
         this.client = manager.newClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, false,
             manager.getRetries(), 0, TimeUnit.SECONDS, false);
+        connections.incrementAndGet();
       } catch (Exception e) {
         throw new ServiceException(e);
       }
@@ -272,6 +278,14 @@ public class SessionConnection implements Closeable {
       // ignore
     } finally {
       RpcClientManager.cleanup(client);
+      if(connections.decrementAndGet() == 0) {
+        if (!System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
+          RpcChannelFactory.shutdownGracefully();
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("RPC connection is closed");
+          }
+        }
+      }
     }
   }
 

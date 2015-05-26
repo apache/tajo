@@ -33,7 +33,9 @@ import org.apache.tajo.util.KeyValueSet;
 import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,12 +54,10 @@ public class JdbcConnection implements Connection {
   @SuppressWarnings("unused")
   /** it will be used soon. */
   private final Map<String, List<String>> params;
-  private TajoDriver driver;
 
-  public JdbcConnection(String rawURI, Properties properties, TajoDriver driver) throws SQLException {
+  public JdbcConnection(String rawURI, Properties properties) throws SQLException {
     this.rawURI = rawURI;
     this.properties = properties;
-    this.driver = driver;
 
     try {
       if (!rawURI.startsWith(TajoDriver.TAJO_JDBC_URL_PREFIX)) {
@@ -137,11 +137,6 @@ public class JdbcConnection implements Connection {
     if(!closed.get()) {
       if(tajoClient != null) {
         tajoClient.close();
-      }
-      try {
-        driver.close();
-      } catch (IOException ie) {
-        throw new SQLException(ie);
       }
 
       closed.set(true);

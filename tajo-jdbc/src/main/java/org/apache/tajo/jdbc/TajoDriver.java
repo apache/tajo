@@ -16,20 +16,13 @@ package org.apache.tajo.jdbc; /**
  * limitations under the License.
  */
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcChannelFactory;
-import org.apache.tajo.util.CommonTestingUtil;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class TajoDriver implements Driver, Closeable {
-  private static final Log LOG = LogFactory.getLog(TajoDriver.class);
   public static final int MAJOR_VERSION = 1;
   public static final int MINOR_VERSION = 0;
 
@@ -37,7 +30,6 @@ public class TajoDriver implements Driver, Closeable {
   public static final int JDBC_VERSION_MINOR = 0;
 
   public static final String TAJO_JDBC_URL_PREFIX = "jdbc:tajo:";
-  private AtomicInteger connections = new AtomicInteger();
 
   static {
     try {
@@ -52,20 +44,11 @@ public class TajoDriver implements Driver, Closeable {
 
   @Override
   public void close() throws IOException {
-    if(connections.decrementAndGet() == 0) {
-      if (!System.getProperty(CommonTestingUtil.TAJO_TEST_KEY).equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
-        RpcChannelFactory.shutdownGracefully();
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Tajo driver is closed");
-        }
-      }
-    }
   }
 
   @Override
   public Connection connect(String url, Properties properties) throws SQLException {
-    connections.incrementAndGet();
-    return acceptsURL(url) ? new JdbcConnection(url, properties, this) : null;
+    return acceptsURL(url) ? new JdbcConnection(url, properties) : null;
   }
 
   @Override
