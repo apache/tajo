@@ -769,18 +769,4 @@ public class TestTajoClient {
     assertEquals(1, taskHistories.get(1).getTotalReadRows());
     assertEquals(1, taskHistories.get(1).getTotalWriteRows());
   }
-
-  @Test(timeout = 10000)
-  public void testClientClose() throws Exception {
-    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE");
-
-    try {
-      String sql = "select count(*) from nation";
-      ResultSet res = client.executeQueryAndGetResult(sql);
-      res.close();
-    } finally {
-      client.close();
-      System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
-    }
-  }
 }
