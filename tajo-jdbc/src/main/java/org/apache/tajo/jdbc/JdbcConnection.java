@@ -140,7 +140,6 @@ public class JdbcConnection implements Connection {
       }
 
       closed.set(true);
-
     }
   }
 
