@@ -57,6 +57,8 @@ public class SessionConnection implements Closeable {
 
   private final static Log LOG = LogFactory.getLog(SessionConnection.class);
 
+  private final static AtomicInteger connections = new AtomicInteger();
+
   final RpcClientManager manager;
 
   private String baseDatabase;
@@ -75,8 +77,6 @@ public class SessionConnection implements Closeable {
   private NettyClientBase client;
 
   private KeyValueSet properties;
-
-  private AtomicInteger connections = new AtomicInteger();
 
   /**
    * Connect to TajoMaster
