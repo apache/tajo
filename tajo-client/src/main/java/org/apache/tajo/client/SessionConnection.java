@@ -281,9 +281,10 @@ public class SessionConnection implements Closeable {
       if(connections.decrementAndGet() == 0) {
         if (!System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
           RpcChannelFactory.shutdownGracefully();
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("RPC connection is closed");
-          }
+//          if (LOG.isDebugEnabled()) {
+//            LOG.debug("RPC connection is closed");
+//          }
+          LOG.info("RPC connection is closed");
         }
       }
     }
