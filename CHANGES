@@ -1,6 +1,16 @@
 Tajo Change Log 
 
-Release 0.10.1 - unreleased
+Release 0.10.2 - Released
+
+  NEW FEATURES
+
+  IMPROVEMENT
+
+  BUG FIXES
+
+  TASKS
+
+Release 0.10.1 - Released
 
   NEW FEATURES
 
@@ -41,6 +51,8 @@ Release 0.10.1 - unreleased
   BUG FIXES
 
     TAJO-1621: Compilation error with hadoop 2.7.0. (jinho)
+
+    TAJO-1619: JDBC program is stuck after closing. (jihoon)
 
     TAJO-1612: TestKillQuery occassionally fails. (hyunsik)
 
