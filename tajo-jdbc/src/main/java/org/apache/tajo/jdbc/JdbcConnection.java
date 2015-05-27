@@ -360,7 +360,7 @@ public class JdbcConnection implements Connection {
 
   @Override
   public void setAutoCommit(boolean autoCommit) throws SQLException {
-    LOG.warn("JdbcConnection.setAutoCommit is invoked.");
+    LOG.warn("Tajo does not support setAutoCommit, so this invocation is ignored.");
   }
 
   @Override
