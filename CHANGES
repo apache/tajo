@@ -40,6 +40,8 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1621: Compilation error with hadoop 2.7.0. (jinho)
+
     TAJO-1612: TestKillQuery occassionally fails. (hyunsik)
 
     TAJO-1440: Some tests fail in parallel test environment in TestKillQuery.
