@@ -1534,6 +1534,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
         Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
+
+        if (targetColumn == null) {
+          throw new PlanningException("column \"" + targets[i] + "\" of relation \"" +
+              desc.getName() + "\" does not exist");
+        }
+
         targetColumns.addColumn(targetColumn);
       }
       insertNode.setTargetSchema(targetColumns);

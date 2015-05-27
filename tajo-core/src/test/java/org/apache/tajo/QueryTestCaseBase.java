@@ -276,22 +276,30 @@ public class QueryTestCaseBase {
     return state;
   }
 
-  public void assertValidSQL(String fileName) throws PlanningException, IOException {
-    Path queryFilePath = getQueryFilePath(fileName);
-    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+  public void assertValidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
     if (state.getErrorMessages().size() > 0) {
       fail(state.getErrorMessages().get(0));
     }
   }
 
-  public void assertInvalidSQL(String fileName) throws PlanningException, IOException {
+  public void assertValidSQLFromFile(String fileName) throws PlanningException, IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    assertValidSQL(query);
+  }
+
+  public void assertInvalidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
     if (state.getErrorMessages().size() == 0) {
       fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
     }
+  }
+
+  public void assertInvalidSQLFromFile(String fileName) throws PlanningException, IOException {
+    Path queryFilePath = getQueryFilePath(fileName);
+    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    assertInvalidSQL(query);
   }
 
   public void assertPlanError(String fileName) throws PlanningException, IOException {
