@@ -46,32 +46,50 @@ public class ExecutionBlock {
 
   /*
    * An execution block is null-supplying or preserved-row when its output is used as an input for outer join.
-   * These flags are set according to the type of outer join.
-   * Here are brief descriptions for these flags.
+   * These properties are decided based on the type of parent execution block's outer join.
+   * Here are brief descriptions for these properties.
    *
    * 1) left outer join
    *
-   *        left outer join
-   *          /        \
-   * preserved-row  null-supplying
+   *              parent eb
+   *         -------------------
+   *         | left outer join |
+   *         -------------------
+   *           /              \
+   *   left child eb     right child eb
+   * ----------------- ------------------
+   * | preserved-row | | null-supplying |
+   * ----------------- ------------------
    *
    * 2) right outer join
    *
-   *        right outer join
-   *          /        \
-   * null-supplying  preserved-row
+   *               parent eb
+   *         --------------------
+   *         | right outer join |
+   *         --------------------
+   *           /              \
+   *   left child eb     right child eb
+   * ------------------ -----------------
+   * | null-supplying | | preserved-row |
+   * ------------------ -----------------
    *
    * 3) full outer join
    *
-   *        full outer join
-   *          /        \
-   * null-supplying  preserved-row
-   * preserved-row   null-supplying
+   *               parent eb
+   *         -------------------
+   *         | full outer join |
+   *         -------------------
+   *           /              \
+   *   left child eb      right child eb
+   * ------------------ ------------------
+   * | null-supplying | | preserved-row  |
+   * | preserved-row  | | null-supplying |
+   * ------------------ ------------------
    *
-   * The null-supplying and preserved-row flags are used to find which relations will be broadcasted.
+   * The null-supplying and preserved-row properties are used to find which relations will be broadcasted.
    */
-  protected transient boolean nullSuppllying = false;
-  protected transient boolean preservedRow = false;
+  protected boolean nullSuppllying = false;
+  protected boolean preservedRow = false;
 
   public ExecutionBlock(ExecutionBlockId executionBlockId) {
     this.executionBlockId = executionBlockId;

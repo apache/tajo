@@ -99,7 +99,14 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
     @Override
     public int compare(ScanNode o1, ScanNode o2) {
-      return (int) (GlobalPlanRewriteUtil.getTableVolume(o1) - GlobalPlanRewriteUtil.getTableVolume(o2));
+      long compare = GlobalPlanRewriteUtil.getTableVolume(o1) - GlobalPlanRewriteUtil.getTableVolume(o2);
+      if (compare == 0) {
+        return 0;
+      } else if (compare > 0) {
+        return 1;
+      } else {
+        return -1;
+      }
     }
   }
 

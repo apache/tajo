@@ -86,23 +86,6 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
-  public void removeSortedInput(String tableName) {
-    EnforceProperty willBeRemoved = null;
-    List<EnforceProperty> sortedInputProperties = properties.get(EnforceType.SORTED_INPUT);
-    // assume that there is only a single sorted input property for each table
-    for (EnforceProperty property : sortedInputProperties) {
-      if (property.hasSortedInput()) {
-        if (property.getSortedInput().getTableName().equals(tableName)) {
-          willBeRemoved = property;
-          break;
-        }
-      }
-    }
-    if (willBeRemoved != null) {
-      sortedInputProperties.remove(willBeRemoved);
-    }
-  }
-
   public void addOutputDistinct() {
     EnforceProperty.Builder builder = newProperty();
     OutputDistinctEnforce.Builder enforce = OutputDistinctEnforce.newBuilder();
