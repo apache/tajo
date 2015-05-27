@@ -18,25 +18,7 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.InputStream;
-import java.net.URI;
-import java.security.MessageDigest;
-import java.util.List;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.compress.compressors.CompressorInputStream;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -54,6 +36,21 @@ import org.glassfish.jersey.filter.LoggingFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.InputStream;
+import java.net.URI;
+import java.security.MessageDigest;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -284,4 +281,65 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
     }
   }
+
+	@Test
+	public void testGetQueryResultSetWithDefaultCount() throws Exception {
+		String sessionId = generateNewSessionAndGetId();
+		URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
+		URI queryResultURI = new URI(queryIdURI + "/result");
+
+		GetQueryResultDataResponse response = restClient.target(queryResultURI)
+			.request().header(tajoSessionIdHeaderName, sessionId)
+			.get(new GenericType<GetQueryResultDataResponse>(GetQueryResultDataResponse.class));
+
+		assertNotNull(response);
+		assertNotNull(response.getResultCode());
+		assertEquals(ResultCode.OK, response.getResultCode());
+		assertNotNull(response.getSchema());
+		assertEquals(16, response.getSchema().getRootColumns().size());
+		assertNotNull(response.getResultset());
+		assertTrue(response.getResultset().getId() != 0);
+		assertNotNull(response.getResultset().getLink());
+
+		URI queryResultSetURI = response.getResultset().getLink();
+
+		Response queryResultSetResponse = restClient.target(queryResultSetURI)
+			.request().header(tajoSessionIdHeaderName, sessionId)
+			.get();
+
+		assertNotNull(queryResultSetResponse);
+		String tajoDigest = queryResultSetResponse.getHeaderString(tajoDigestHeaderName);
+		assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
+
+		DataInputStream queryResultSetInputStream =
+			new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
+
+		assertNotNull(queryResultSetInputStream);
+
+		boolean isFinished = false;
+		List<Tuple> tupleList = TUtil.newList();
+		RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
+		MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
+		while (!isFinished) {
+			try {
+				int length = queryResultSetInputStream.readInt();
+				byte[] dataByteArray = new byte[length];
+				int readBytes = queryResultSetInputStream.read(dataByteArray);
+
+				assertEquals(length, readBytes);
+
+				tupleList.add(decoder.toTuple(dataByteArray));
+				messageDigest.update(dataByteArray);
+			} catch (EOFException eof) {
+				isFinished = true;
+			}
+		}
+
+		assertEquals(5, tupleList.size());
+		assertEquals(tajoDigest, Base64.encodeBase64String(messageDigest.digest()));
+
+		for (Tuple aTuple: tupleList) {
+			assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
+		}
+	}
 }
