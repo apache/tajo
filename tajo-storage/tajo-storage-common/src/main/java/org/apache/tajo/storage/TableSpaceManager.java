@@ -20,6 +20,10 @@ package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import net.minidev.json.parser.JSONParser;
+import net.minidev.json.parser.ParseException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -28,9 +32,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.util.FileUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,6 +44,39 @@ import java.util.concurrent.ConcurrentHashMap;
  * It handles available table spaces and cache TableSpace instances.
  */
 public class TableSpaceManager {
+  private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
+  private static final JSONParser parser;
+
+  static  {
+    instance = new TableSpaceManager();
+
+    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
+    try {
+      parser.parse(FileUtil.readTextFileFromResource("storage-site.json"));
+    } catch (Throwable t) {
+      LOG.fatal(t);
+    }
+  }
+
+  /**
+   * Singleton instance
+   */
+  private static final TableSpaceManager instance;
+  /**
+   * Cache of all tablespace handlers
+   */
+  protected static final Map<URI, Class<? extends TableSpace>> TABLE_SPACES = Maps.newConcurrentMap();
+
+  private TableSpaceManager() {}
+
+  public static TableSpace get(URI uri) throws IOException {
+
+    if (TABLE_SPACES.containsKey(uri)) {
+
+    } else {
+
+    }
+  }
 
   /**
    * Cache of scanner handlers for each storage type.
@@ -71,8 +110,7 @@ public class TableSpaceManager {
    * Cache of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
    */
-  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
-      new ConcurrentHashMap<Class<?>, Constructor<?>>();
+  protected static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
   /**
    * Clear all class cache

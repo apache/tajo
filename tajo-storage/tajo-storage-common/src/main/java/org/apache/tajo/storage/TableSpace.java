@@ -38,7 +38,7 @@ import java.util.List;
  * It manages each tablespace; e.g., HDFS, Local file system, and Amazon S3.
  */
 public interface TableSpace extends Closeable {
-  //public void format() throws IOException;
+  public void format() throws IOException;
 
   void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
 
@@ -48,13 +48,13 @@ public interface TableSpace extends Closeable {
 
   List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException;
 
-//  public void renameTable() throws IOException;
-//
-//  public void truncateTable() throws IOException;
-//
-//  public long availableCapacity() throws IOException;
-//
-//  public long totalCapacity() throws IOException;
+  public void renameTable() throws IOException;
+
+  public void truncateTable() throws IOException;
+
+  public long availableCapacity() throws IOException;
+
+  public long totalCapacity() throws IOException;
 
   Scanner getScanner(TableMeta meta, Schema schema, CatalogProtos.FragmentProto fragment, Schema target) throws IOException;
 
