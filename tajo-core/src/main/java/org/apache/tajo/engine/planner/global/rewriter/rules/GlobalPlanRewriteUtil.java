@@ -43,7 +43,14 @@ public class GlobalPlanRewriteUtil {
     // connect parent and grand children
     List<ExecutionBlock> grandChilds = plan.getChilds(child);
     for (ExecutionBlock eachGrandChild : grandChilds) {
-      plan.addConnect(eachGrandChild, parent, plan.getChannel(eachGrandChild, child).getShuffleType());
+      DataChannel originalChannel = plan.getChannel(eachGrandChild, child);
+      DataChannel newChannel = new DataChannel(eachGrandChild, parent, originalChannel.getShuffleType(),
+          originalChannel.getShuffleOutputNum());
+      newChannel.setSchema(originalChannel.getSchema());
+      newChannel.setShuffleKeys(originalChannel.getShuffleKeys());
+      newChannel.setStoreType(originalChannel.getStoreType());
+      newChannel.setTransmitType(originalChannel.getTransmitType());
+      plan.addConnect(newChannel);
       plan.disconnect(eachGrandChild, child);
     }
 

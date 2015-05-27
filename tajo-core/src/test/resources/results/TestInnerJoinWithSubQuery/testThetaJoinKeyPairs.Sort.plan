@@ -56,7 +56,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 3 => 6 (type=HASH_SHUFFLE)
+[q_0000000000000_0000] 3 => 6 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
 
 [Enforcers]
  0: type=Broadcast, tables=default.r
@@ -85,7 +85,7 @@ Block Id: eb_0000000000000_0000_000006 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 3 => 6 (type=HASH_SHUFFLE)
+[q_0000000000000_0000] 3 => 6 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 6 => 7 (type=RANGE_SHUFFLE, key=default.n.n_nationkey (INT4), num=32)
