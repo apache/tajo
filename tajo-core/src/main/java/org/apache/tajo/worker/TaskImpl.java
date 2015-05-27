@@ -232,6 +232,7 @@ public class TaskImpl implements Task {
     return taskId;
   }
 
+  @Override
   public TaskAttemptId getId() {
     return context.getTaskId();
   }
@@ -252,6 +253,7 @@ public class TaskImpl implements Task {
     return context;
   }
 
+  @Override
   public boolean hasFetchPhase() {
     return fetcherRunners.size() > 0;
   }
@@ -260,6 +262,7 @@ public class TaskImpl implements Task {
     return new ArrayList<Fetcher>(fetcherRunners);
   }
 
+  @Override
   public void fetch() {
     ExecutorService executorService = executionBlockContext.getTaskRunner(taskRunnerId).getFetchLauncher();
     for (Fetcher f : fetcherRunners) {
@@ -267,6 +270,7 @@ public class TaskImpl implements Task {
     }
   }
 
+  @Override
   public void kill() {
     stopScriptExecutors();
     context.setState(TaskAttemptState.TA_KILLED);
@@ -276,17 +280,6 @@ public class TaskImpl implements Task {
   public void abort() {
     stopScriptExecutors();
     context.stop();
-  }
-
-  public void cleanUp() {
-    // remove itself from worker
-    if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
-      synchronized (executionBlockContext.getTasks()) {
-        executionBlockContext.getTasks().remove(this.getId());
-      }
-    } else {
-      LOG.error("TaskAttemptId: " + context.getTaskId() + " status: " + context.getState());
-    }
   }
 
   public TaskStatusProto getReport() {
@@ -373,8 +366,7 @@ public class TaskImpl implements Task {
     return builder.build();
   }
 
-  @Override
-  public void waitForFetch() throws InterruptedException, IOException {
+  private void waitForFetch() throws InterruptedException, IOException {
     context.getFetchLatch().await();
     LOG.info(context.getTaskId() + " All fetches are done!");
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
@@ -480,11 +472,12 @@ public class TaskImpl implements Task {
           ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
           + ", killed: " + executionBlockContext.killedTasksNum.intValue()
           + ", failed: " + executionBlockContext.failedTasksNum.intValue());
-      cleanupTask();
+      cleanup();
     }
   }
 
-  public void cleanupTask() {
+  @Override
+  public void cleanup() {
     TaskHistory taskHistory = createTaskHistory();
     executionBlockContext.addTaskHistory(taskRunnerId, getId(), taskHistory);
     executionBlockContext.getTasks().remove(getId());

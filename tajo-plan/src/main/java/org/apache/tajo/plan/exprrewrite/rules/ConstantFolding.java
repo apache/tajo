@@ -27,13 +27,14 @@ import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Stack;
 
 @Prioritized(priority = 10)
 public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanContext>
     implements EvalTreeOptimizationRule {
-
-  private final static String SLEEP_FUNCTION_NAME = "sleep";
 
   @Override
   public EvalNode optimize(LogicalPlanner.PlanContext context, EvalNode evalNode) {
@@ -77,11 +78,14 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     return unaryEval;
   }
 
+  // exceptional func names not to use constant folding
+  private static final Set<String> NON_CONSTANT_FUNC_NAMES = new HashSet<String>(Arrays.asList("sleep", "random"));
+
   @Override
   public EvalNode visitFuncCall(LogicalPlanner.PlanContext context, FunctionEval evalNode, Stack<EvalNode> stack) {
     boolean constantOfAllDescendents = true;
 
-    if (SLEEP_FUNCTION_NAME.equals(evalNode.getFuncDesc().getFunctionName())) {
+    if (NON_CONSTANT_FUNC_NAMES.contains(evalNode.getFuncDesc().getFunctionName())) {
       constantOfAllDescendents = false;
     } else {
       for (EvalNode arg : evalNode.getArgs()) {

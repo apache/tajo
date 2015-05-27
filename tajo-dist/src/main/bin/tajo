@@ -239,6 +239,10 @@ HBASE_LIB=$HBASE_HOME/lib
 
 if [ -d ${HBASE_LIB} ]; then
 
+  for f in ${HBASE_LIB}/hbase-server-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
   for f in ${HBASE_LIB}/hbase-client-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
   done

@@ -18,15 +18,26 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 
 import java.io.IOException;
 
 public interface Task {
 
-  void waitForFetch() throws InterruptedException, IOException;
+  TaskAttemptId getId();
+
+  TajoProtos.TaskAttemptState getStatus();
+
+  void init() throws IOException;
+
+  boolean hasFetchPhase();
+
+  void fetch();
 
   void run() throws Exception;
 
-  TaskAttemptId getId();
+  void kill();
+
+  void cleanup();
 }

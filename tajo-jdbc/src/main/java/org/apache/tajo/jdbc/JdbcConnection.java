@@ -33,7 +33,9 @@ import org.apache.tajo.util.KeyValueSet;
 import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 

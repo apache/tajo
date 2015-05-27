@@ -256,7 +256,7 @@ public class TaskRunner extends AbstractService {
                   LOG.info("Initializing: " + taskAttemptId);
                   Task task = null;
                   try {
-                    task = new Task(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
+                    task = new TaskImpl(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
                         new TaskRequestImpl(taskRequest));
                     getContext().getTasks().put(taskAttemptId, task);
 
@@ -270,7 +270,7 @@ public class TaskRunner extends AbstractService {
                     LOG.error(t.getMessage(), t);
                     fatalError(qmClientService, taskAttemptId, t.getMessage());
                     if(task != null) {
-                      task.cleanupTask();
+                      task.cleanup();
                     }
                   } finally {
                     callFuture = null;
