@@ -136,6 +136,12 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1623: INSERT INTO with wrong target columns causes NPE. (hyunsik)
+
+    TAJO-1621: Compilation error with hadoop 2.7.0. (jinho)
+
+    TAJO-1619: JDBC program is stuck after closing. (jihoon)
+
     TAJO-1620: random() in an SQL should generate RANDOM numbers.
     (Contributed by Jongyoung Park, Committed by jihoon)
 
@@ -307,6 +313,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1599: Implement NodeResourceManager and Status updater. (jinho)
 
     TAJO-1613: Rename StorageManager to Tablespace. (hyunsik)
 
