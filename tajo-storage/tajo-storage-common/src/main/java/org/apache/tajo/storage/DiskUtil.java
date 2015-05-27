@@ -189,10 +189,10 @@ public class DiskUtil {
 	}
 
   public static int getDataNodeStorageSize(){
-    return getStorageDirs().size();
+    return getDataNodeStorageDirs().size();
   }
 
-  public static List<URI> getStorageDirs(){
+  public static List<URI> getDataNodeStorageDirs(){
     Configuration conf = new HdfsConfiguration();
     Collection<String> dirNames = conf.getTrimmedStringCollection(DFS_DATANODE_DATA_DIR_KEY);
     return Util.stringCollectionAsURIs(dirNames);
