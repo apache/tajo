@@ -1,1 +1,0 @@
-explain global select region.*, customer.* from region, customer order by r_regionkey,r_name,c_custkey;

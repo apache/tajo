@@ -110,7 +110,7 @@ public class TestExecutionBlockCursor {
     optimizer.optimize(logicalPlan);
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan plan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), queryContext, logicalPlan);
-    planner.build(plan);
+    planner.build(queryContext, plan);
 
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);
 

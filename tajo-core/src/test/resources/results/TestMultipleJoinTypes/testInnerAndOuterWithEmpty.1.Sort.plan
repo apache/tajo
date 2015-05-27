@@ -26,25 +26,24 @@ JOIN(8)(LEFT_OUTER)
 explain
 -------------------------------
 -------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
 -------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000004
-   |-eb_0000000000000_0000_000003
+|-eb_0000000000000_0000_000006
+   |-eb_0000000000000_0000_000005
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000003
-2: eb_0000000000000_0000_000004
+1: eb_0000000000000_0000_000005
+2: eb_0000000000000_0000_000006
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [ROOT]
+Block Id: eb_0000000000000_0000_000005 [ROOT]
 =======================================================
 
 [Enforcers]
  0: type=Broadcast, tables=default.b
- 1: type=Broadcast, tables=default.a
- 2: type=Broadcast, tables=default.c
+ 1: type=Broadcast, tables=default.c
 
 JOIN(8)(LEFT_OUTER)
   => Join Cond: default.a.l_orderkey (INT4) = default.c.c_custkey (INT4)
@@ -71,5 +70,5 @@ JOIN(8)(LEFT_OUTER)
         => in schema: {(9) default.b.o_clerk (TEXT), default.b.o_comment (TEXT), default.b.o_custkey (INT4), default.b.o_orderdate (TEXT), default.b.o_orderkey (INT4), default.b.o_orderpriority (TEXT), default.b.o_orderstatus (TEXT), default.b.o_shippriority (INT4), default.b.o_totalprice (FLOAT8)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+Block Id: eb_0000000000000_0000_000006 [TERMINAL]
 =======================================================

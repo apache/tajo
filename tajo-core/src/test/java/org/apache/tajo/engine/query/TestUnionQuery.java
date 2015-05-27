@@ -512,4 +512,17 @@ public class TestUnionQuery extends QueryTestCaseBase {
     res.close();
   }
 
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest
+  public void testComplexUnion1() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest
+  public void testComplexUnion2() throws Exception {
+    runSimpleTests();
+  }
 }

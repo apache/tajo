@@ -43,7 +43,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [Enforcers]
  0: type=Broadcast, tables=default.orders
 
-SORT(9)
+SORT(11)
   => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
    SELECTION(3)
      => Search Cond: default.orders.o_orderkey (INT4) IS NULL
@@ -73,7 +73,7 @@ Block Id: eb_0000000000000_0000_000004 [ROOT]
 
 SORT(4)
   => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
-   SCAN(10) on eb_0000000000000_0000_000003
+   SCAN(12) on eb_0000000000000_0000_000003
      => out schema: {(4) ?coalesce (TEXT), default.customer.c_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4)}
      => in schema: {(4) ?coalesce (TEXT), default.customer.c_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4)}
 

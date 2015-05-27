@@ -34,8 +34,7 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.b
- 1: type=Broadcast, tables=default.a
+ 0: type=Broadcast, tables=default.a
 
 SELECTION(3)
   => Search Cond: default.a.r_name (TEXT) <= default.b.r_name (TEXT)

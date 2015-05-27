@@ -260,7 +260,7 @@ public class QueryResultResource {
   public Response getQueryResultSet(@HeaderParam(QueryResource.tajoSessionIdHeaderName) String sessionId,
       @PathParam("cacheId") String cacheId,
       @DefaultValue("-1") @QueryParam("offset") int offset,
-      @DefaultValue("-1") @QueryParam("count") int count) {
+      @DefaultValue("100") @QueryParam("count") int count) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a get query result set request.");
     }
