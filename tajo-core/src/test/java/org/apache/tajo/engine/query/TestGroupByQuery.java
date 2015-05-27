@@ -835,7 +835,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  // TODO: this test cannot be executed due to the bug of logical planner
+  // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
 //  @Test
   public final void testPythonUdafWithHaving() throws Exception {
     ResultSet res = executeQuery();
@@ -850,7 +850,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  // TODO: this test cannot be executed due to the bug of logical planner
+  // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
 //  @Test
   public final void testComplexTargetWithPythonUdaf() throws Exception {
     ResultSet res = executeQuery();
@@ -858,7 +858,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  // TODO: this test cannot be executed due to the bug of logical planner
+  // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
 //  @Test
   public final void testDistinctPythonUdafWithUnion1() throws Exception {
     ResultSet res = executeQuery();

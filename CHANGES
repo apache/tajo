@@ -27,6 +27,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1553: Improve broadcast join planning. (jihoon)
+
     TAJO-1577: Add test cases to verify join plans. (jihoon)
 
     TAJO-1607: Tajo Rest Cache-Id should be bigger than zero. (Contributed by 
