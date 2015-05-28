@@ -358,7 +358,7 @@ public class JdbcConnection implements Connection {
 
   @Override
   public void setAutoCommit(boolean autoCommit) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setAutoCommit");
+    LOG.warn("Tajo does not support setAutoCommit, so this invocation is ignored.");
   }
 
   @Override
