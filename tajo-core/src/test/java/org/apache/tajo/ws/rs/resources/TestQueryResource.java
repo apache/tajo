@@ -19,14 +19,19 @@
 package org.apache.tajo.ws.rs.resources;
 
 import com.google.gson.internal.StringMap;
+import com.google.protobuf.ByteString;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.master.QueryInfo;
+import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
+import org.apache.tajo.ws.rs.responses.GetDirectQueryResultResponse;
 import org.apache.tajo.ws.rs.responses.NewSessionResponse;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.filter.LoggingFilter;
@@ -192,5 +197,35 @@ public class TestQueryResource extends QueryTestCaseBase {
 
     assertNotNull(queryInfo);
     assertEquals(queryId, queryInfo.getQueryIdStr());
+  }
+
+  @Test
+  public void testGetDirectQueryResult() throws Exception {
+    String sessionId = generateNewSessionAndGetId();
+    SubmitQueryRequest queryRequest = createNewQueryRequest("select 6");
+
+    GetDirectQueryResultResponse response = restClient.target(queriesURI)
+      .request().header(tajoSessionIdHeaderName, sessionId)
+      .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
+          new GenericType<GetDirectQueryResultResponse>(GetDirectQueryResultResponse.class));
+
+    assertNotNull(response);
+    assertNotNull(response.getResultCode());
+    assertEquals(ResultCode.OK, response.getResultCode());
+    assertNotNull(response.getSchema());
+    assertEquals(1, response.getSchema().getRootColumns().size());
+    assertNotNull(response.getSerializedTupes());
+
+    List<String> serializedTupes = response.getSerializedTupes();
+    assertEquals(1, serializedTupes.size());
+
+    RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
+
+    for (String strTuple: serializedTupes) {
+      byte [] array = Base64.decodeBase64(strTuple);
+      ByteString bStr = ByteString.copyFrom(array);
+      Tuple tuple = decoder.toTuple(bStr.toByteArray());
+      assertEquals(6, tuple.getInt4(0));
+    }
   }
 }
