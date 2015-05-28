@@ -134,29 +134,6 @@ SCAN(4) on default.region
   => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
-=======================================================
-
-[Incoming]
-[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.nation.n_regionkey (INT4), num=32)
-[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
-
-[Outgoing]
-[q_0000000000000_0000] 5 => 9 (type=HASH_SHUFFLE, key=joins.supplier_.s_suppkey (INT4), num=32)
-
-JOIN(14)(INNER)
-  => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
-  => target list: default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
-  => out schema: {(7) default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-  => in schema: {(9) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-   SCAN(21) on eb_0000000000000_0000_000004
-     => out schema: {(1) default.region.r_regionkey (INT4)}
-     => in schema: {(1) default.region.r_regionkey (INT4)}
-   SCAN(20) on eb_0000000000000_0000_000003
-     => out schema: {(8) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-     => in schema: {(8) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-
-=======================================================
 Block Id: eb_0000000000000_0000_000006 [LEAF]
 =======================================================
 
@@ -179,6 +156,29 @@ SCAN(2) on default.partsupp
   => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
   => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
   => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.nation.n_regionkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 9 (type=HASH_SHUFFLE, key=joins.supplier_.s_suppkey (INT4), num=32)
+
+JOIN(14)(INNER)
+  => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+  => target list: default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
+  => out schema: {(7) default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+  => in schema: {(9) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+   SCAN(21) on eb_0000000000000_0000_000004
+     => out schema: {(1) default.region.r_regionkey (INT4)}
+     => in schema: {(1) default.region.r_regionkey (INT4)}
+   SCAN(20) on eb_0000000000000_0000_000003
+     => out schema: {(8) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+     => in schema: {(8) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000008 [INTERMEDIATE]
