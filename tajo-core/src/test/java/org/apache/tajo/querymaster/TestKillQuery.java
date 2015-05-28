@@ -33,7 +33,6 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -42,7 +41,7 @@ import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.ExecutionBlockContext;
-import org.apache.tajo.worker.Task;
+import org.apache.tajo.worker.LegacyTaskImpl;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -241,15 +240,15 @@ public class TestKillQuery {
     ExecutionBlockContext context =
         new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null, null);
 
-    org.apache.tajo.worker.Task task = new Task("test", CommonTestingUtil.getTestDir(), attemptId,
+    org.apache.tajo.worker.Task task = new LegacyTaskImpl("test", CommonTestingUtil.getTestDir(), attemptId,
         conf, context, taskRequest);
     task.kill();
-    assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+    assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     try {
       task.run();
-      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     } catch (Exception e) {
-      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     }
   }
 

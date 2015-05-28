@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -45,24 +46,30 @@ import java.util.concurrent.*;
 public class TaskManager extends CompositeService implements EventHandler<TaskManagerEvent> {
   private static final Log LOG = LogFactory.getLog(TaskManager.class);
 
-  private final NodeResourceManager resourceManager;
   private final TajoWorker.WorkerContext workerContext;
   private final Map<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
   private final Dispatcher dispatcher;
-  private final TaskExecutor<TaskContainer> taskExecutor;
 
   private TajoConf tajoConf;
+  private TaskExecutor<TaskContainer> taskExecutor;
   private volatile boolean isStopped = false;
   private TaskHistoryCleanerThread taskHistoryCleanerThread;
+  private EventHandler rmEventHandler;
 
-  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, NodeResourceManager resourceManager) {
+  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext,
+                     EventHandler rmEventHandler) {
+    this(dispatcher, workerContext, null, rmEventHandler);
+  }
+
+  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, TaskExecutor taskExecutor,
+                     EventHandler rmEventHandler) {
     super(TaskManager.class.getName());
 
     this.dispatcher = dispatcher;
     this.workerContext = workerContext;
-    this.resourceManager = resourceManager;
     this.executionBlockContextMap = Maps.newHashMap();
-    this.taskExecutor = new TaskExecutor<TaskContainer>(workerContext.getConf(), this, resourceManager);
+    this.taskExecutor = taskExecutor;
+    this.rmEventHandler = rmEventHandler;
   }
 
   @Override
@@ -70,12 +77,19 @@ public class TaskManager extends CompositeService implements EventHandler<TaskMa
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("Configuration must be a TajoConf instance");
     }
-    tajoConf = (TajoConf)conf;
-    addIfService(this.taskExecutor);
+    this.tajoConf = (TajoConf)conf;
+
+    if (taskExecutor == null) {
+      this.taskExecutor = new TaskExecutor<TaskContainer>(this, rmEventHandler);
+    }
+    addIfService(dispatcher);
+    addService(taskExecutor);
+
+    dispatcher.register(TaskExecutorEvent.EventType.class, taskExecutor);
     dispatcher.register(TaskManagerEvent.EventType.class, this);
 
     taskHistoryCleanerThread = new TaskHistoryCleanerThread();
-    super.serviceInit(tajoConf);
+    super.serviceInit(conf);
   }
 
   @Override
@@ -88,16 +102,10 @@ public class TaskManager extends CompositeService implements EventHandler<TaskMa
   protected void serviceStop() throws Exception {
     isStopped = true;
 
-//    synchronized(executionBlockContextMap) {
-//      for(TaskRunner eachTaskRunner: taskRunnerMap.values()) {
-//        if(!eachTaskRunner.isStopped()) {
-//          eachTaskRunner.stop();
-//        }
-//      }
-//    }
     for(ExecutionBlockContext context: executionBlockContextMap.values()) {
       context.stop();
     }
+    executionBlockContextMap.clear();
 
     if(taskHistoryCleanerThread != null) {
       taskHistoryCleanerThread.interrupt();
@@ -136,8 +144,6 @@ public class TaskManager extends CompositeService implements EventHandler<TaskMa
         }
         executionBlockContextMap.put(startEvent.getExecutionBlockId(), context);
       }
-      //get NodeResourceManager().getEventHandler().handler()
-
     } else if (event instanceof ExecutionBlockStopEvent) {
       ExecutionBlockStopEvent stopEvent = (ExecutionBlockStopEvent) event;
       ExecutionBlockContext executionBlockContext =  executionBlockContextMap.remove(stopEvent.getExecutionBlockId());

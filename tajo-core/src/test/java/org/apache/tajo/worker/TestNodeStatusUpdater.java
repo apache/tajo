@@ -48,7 +48,7 @@ public class TestNodeStatusUpdater {
     dispatcher.init(conf);
     dispatcher.start();
 
-    resourceManager = new NodeResourceManager(dispatcher);
+    resourceManager = new NodeResourceManager(dispatcher, null);
     resourceManager.init(conf);
     resourceManager.start();
   }

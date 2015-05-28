@@ -68,14 +68,13 @@ import java.util.concurrent.ExecutorService;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
-public class TaskImpl implements Task {
-  private static final Log LOG = LogFactory.getLog(TaskImpl.class);
+public class LegacyTaskImpl implements Task {
+  private static final Log LOG = LogFactory.getLog(LegacyTaskImpl.class);
   private static final float FETCHER_PROGRESS = 0.5f;
 
   private final TajoConf systemConf;
   private final QueryContext queryContext;
   private final ExecutionBlockContext executionBlockContext;
-  private final TaskAttemptId taskId;
   private final String taskRunnerId;
 
   private final Path taskDir;
@@ -99,23 +98,22 @@ public class TaskImpl implements Task {
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
-  public TaskImpl(String taskRunnerId,
-              Path baseDir,
-              TaskAttemptId taskId,
-              final ExecutionBlockContext executionBlockContext,
-              final TaskRequest request) throws IOException {
+  public LegacyTaskImpl(String taskRunnerId,
+                        Path baseDir,
+                        TaskAttemptId taskId,
+                        final ExecutionBlockContext executionBlockContext,
+                        final TaskRequest request) throws IOException {
     this(taskRunnerId, baseDir, taskId, executionBlockContext.getConf(), executionBlockContext, request);
   }
 
-  public TaskImpl(String taskRunnerId,
-              Path baseDir,
-              TaskAttemptId taskId,
-              TajoConf conf,
-              final ExecutionBlockContext executionBlockContext,
-              final TaskRequest request) throws IOException {
+  public LegacyTaskImpl(String taskRunnerId,
+                        Path baseDir,
+                        TaskAttemptId taskId,
+                        TajoConf conf,
+                        final ExecutionBlockContext executionBlockContext,
+                        final TaskRequest request) throws IOException {
     this.taskRunnerId = taskRunnerId;
     this.request = request;
-    this.taskId = taskId;
 
     this.systemConf = conf;
     this.queryContext = request.getQueryContext(systemConf);
@@ -162,7 +160,7 @@ public class TaskImpl implements Task {
       }
     } else {
       Path outFilePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(systemConf))
-          .getAppenderFilePath(taskId, queryContext.getStagingDir());
+          .getAppenderFilePath(getId(), queryContext.getStagingDir());
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
     }
@@ -200,6 +198,7 @@ public class TaskImpl implements Task {
     }
   }
 
+  @Override
   public void init() throws IOException {
     initPlan();
     startScriptExecutors();
@@ -228,38 +227,32 @@ public class TaskImpl implements Task {
     }
   }
 
-  public TaskAttemptId getTaskId() {
-    return taskId;
-  }
-
-  @Override
-  public TaskAttemptId getId() {
+  private TaskAttemptId getId() {
     return context.getTaskId();
   }
 
-  public TaskAttemptState getStatus() {
-    return context.getState();
-  }
-
   public String toString() {
-    return "queryId: " + this.getId() + " status: " + this.getStatus();
+    return "queryId: " + this.getId() + " status: " + context.getState();
   }
 
-  public void setState(TaskAttemptState status) {
-    context.setState(status);
+  @Override
+  public boolean isStopped() {
+    return context.isStopped();
   }
 
-  public TaskAttemptContext getContext() {
+  @Override
+  public TaskAttemptContext getTaskContext() {
     return context;
+  }
+
+  @Override
+  public ExecutionBlockContext getExecutionBlockContext() {
+    return executionBlockContext;
   }
 
   @Override
   public boolean hasFetchPhase() {
     return fetcherRunners.size() > 0;
-  }
-
-  public List<Fetcher> getFetchers() {
-    return new ArrayList<Fetcher>(fetcherRunners);
   }
 
   @Override
@@ -277,11 +270,14 @@ public class TaskImpl implements Task {
     context.stop();
   }
 
+  @Override
   public void abort() {
     stopScriptExecutors();
+    context.setState(TajoProtos.TaskAttemptState.TA_FAILED);
     context.stop();
   }
 
+  @Override
   public TaskStatusProto getReport() {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
     builder.setWorkerName(executionBlockContext.getWorkerContext().getConnectionInfo().getHostAndPeerRpcPort());
@@ -297,14 +293,12 @@ public class TaskImpl implements Task {
     return builder.build();
   }
 
-  public boolean isRunning(){
-    return context.getState() == TaskAttemptState.TA_RUNNING;
-  }
-
+  @Override
   public boolean isProgressChanged() {
     return context.isProgressChanged();
   }
 
+  @Override
   public void updateProgress() {
     if(context != null && context.isStopped()){
       return;
@@ -403,7 +397,6 @@ public class TaskImpl implements Task {
           // complete.
           waitForFetch();
           context.setFetcherProgress(FETCHER_PROGRESS);
-          context.setProgressChanged(true);
           updateProgress();
         }
 
@@ -431,7 +424,7 @@ public class TaskImpl implements Task {
       }
 
       executionBlockContext.completedTasksNum.incrementAndGet();
-      context.getHashShuffleAppenderManager().finalizeTask(taskId);
+      context.getHashShuffleAppenderManager().finalizeTask(getId());
 
       QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = executionBlockContext.getStub();
       if (context.isStopped()) {
@@ -459,6 +452,7 @@ public class TaskImpl implements Task {
         }
       } else {
         // if successful
+        context.stop();
         context.setProgress(1.0f);
         context.setState(TaskAttemptState.TA_SUCCEEDED);
         executionBlockContext.succeededTasksNum.incrementAndGet();
@@ -472,7 +466,6 @@ public class TaskImpl implements Task {
           ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
           + ", killed: " + executionBlockContext.killedTasksNum.intValue()
           + ", failed: " + executionBlockContext.failedTasksNum.intValue());
-      cleanup();
     }
   }
 
@@ -500,7 +493,7 @@ public class TaskImpl implements Task {
   public TaskHistory createTaskHistory() {
     TaskHistory taskHistory = null;
     try {
-      taskHistory = new TaskHistory(getTaskId(), getStatus(), context.getProgress(),
+      taskHistory = new TaskHistory(context.getTaskId(), context.getState(), context.getProgress(),
           startTime, finishTime, reloadInputStats());
 
       if (context.getOutputPath() != null) {
@@ -546,8 +539,8 @@ public class TaskImpl implements Task {
   }
 
   public boolean equals(Object obj) {
-    if (obj instanceof TaskImpl) {
-      TaskImpl other = (TaskImpl) obj;
+    if (obj instanceof LegacyTaskImpl) {
+      LegacyTaskImpl other = (LegacyTaskImpl) obj;
       return this.context.equals(other.context);
     }
     return false;
@@ -668,7 +661,6 @@ public class TaskImpl implements Task {
       context.setFetcherProgress(FETCHER_PROGRESS);
     } else {
       context.setFetcherProgress(adjustFetchProcess(fetcherSize, remainFetcher));
-      context.setProgressChanged(true);
     }
   }
 

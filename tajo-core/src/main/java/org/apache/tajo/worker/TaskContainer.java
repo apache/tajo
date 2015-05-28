@@ -48,50 +48,51 @@ public class TaskContainer implements Runnable {
   private static final Log LOG = LogFactory.getLog(TaskContainer.class);
 
   // Contains the object references related for TaskRunner
-  private ExecutionBlockContext executionBlockContext;
-  private Task task = null;
+  private final TaskExecutor executor;
+  private final int sequenceId;
 
-  public TaskContainer(ExecutionBlockContext executionBlockContext, Task task) {
-    this.executionBlockContext = executionBlockContext;
-    this.task = task;
+  public TaskContainer(int sequenceId, TaskExecutor executor) {
+    this.sequenceId = sequenceId;
+    this.executor = executor;
   }
 
   public void init() throws IOException {
-    if (executionBlockContext.isStopped()) return;
+    //if (executionBlockContext.isStopped()) return;
 
-    LOG.info("Initializing: " + task.getId());
-    getContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
-    task.init();
-  }
-
-  public void stop() {
-    task.cleanupTask();
-  }
-
-  public Task getTask() {
-    return task;
-  }
-
-  public ExecutionBlockContext getContext() {
-    return executionBlockContext;
+//    LOG.info("Initializing: " + task.getId());
+//    getContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
   }
 
   @Override
   public void run() {
-    if (executionBlockContext.isStopped()) return;
+    while (true) {
+      Task task = null;
+      try {
+        task = executor.getNextTask();
+        LOG.debug(sequenceId + " got task:" + task.getTaskContext().getTaskId());
 
-    try {
-      if (task.hasFetchPhase()) {
-        task.fetch(); // The fetch is performed in an asynchronous way.
+        TaskAttemptContext taskAttemptContext = task.getTaskContext();
+        task.init();
+
+        if (taskAttemptContext.isStopped()) return;
+
+        if (task.hasFetchPhase()) {
+          task.fetch(); // The fetch is performed in an asynchronous way.
+        }
+
+        if (!taskAttemptContext.isStopped()) {
+          task.run();
+        }
+
+        task.cleanup();
+      } catch (Exception t) {
+        LOG.error(t.getMessage(), t);
+        if(task != null){
+          task.getExecutionBlockContext().fatalError(task.getTaskContext().getTaskId(), t.getMessage());
+        }
+      } finally {
+        executor.stopTask(task);
       }
-      if (!executionBlockContext.isStopped()) {
-        task.run();
-      }
-    } catch (Exception t) {
-      LOG.error(t.getMessage(), t);
-      getContext().fatalError(task.getId(), t.getMessage());
-    } finally {
-      task.cleanupTask();
     }
   }
 }

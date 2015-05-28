@@ -34,10 +34,8 @@ import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.container.TajoContainerIdPBImpl;
 import org.apache.tajo.master.container.TajoConverterUtils;
 import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 
-import java.net.ConnectException;
 import java.util.concurrent.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -256,7 +254,7 @@ public class TaskRunner extends AbstractService {
                   LOG.info("Initializing: " + taskAttemptId);
                   Task task = null;
                   try {
-                    task = new TaskImpl(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
+                    task = new LegacyTaskImpl(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
                         new TaskRequestImpl(taskRequest));
                     getContext().getTasks().put(taskAttemptId, task);
 
@@ -269,10 +267,11 @@ public class TaskRunner extends AbstractService {
                   } catch (Throwable t) {
                     LOG.error(t.getMessage(), t);
                     fatalError(qmClientService, taskAttemptId, t.getMessage());
+                  } finally {
                     if(task != null) {
                       task.cleanup();
                     }
-                  } finally {
+
                     callFuture = null;
                     taskRequest = null;
                   }

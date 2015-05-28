@@ -46,7 +46,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private AtomicInteger allocatedSize;
   private TajoConf tajoConf;
 
-  public NodeResourceManager(Dispatcher dispatcher, TaskManager taskManager){
+  public NodeResourceManager(Dispatcher dispatcher, TaskManager taskManager) {
     super(NodeResourceManager.class.getName());
     this.dispatcher = dispatcher;
     this.taskManager = taskManager;
@@ -76,8 +76,14 @@ public class NodeResourceManager extends AbstractService implements EventHandler
         NodeResource resource = new NodeResource(request.getResource());
         if (allocate(resource)) {
           allocatedSize.incrementAndGet();
+          if(allocateEvent.getRequest().hasExecutionBlockRequest()){
+            //send ExecutionBlock start event to TaskManager
+            taskManager.getEventHandler().handle(
+                new ExecutionBlockStartEvent(allocateEvent.getRequest().getExecutionBlockRequest()));
+          }
+
           //send task start event to TaskExecutor
-          //taskManager.getEventHandler().handle(new TaskStartEvent(request.getTaskRequest(), resource));
+          taskManager.getEventHandler().handle(new TaskStartEvent(request.getTaskRequest(), resource));
         } else {
           // reject the exceeded requests
           response.addCancellationTask(request);

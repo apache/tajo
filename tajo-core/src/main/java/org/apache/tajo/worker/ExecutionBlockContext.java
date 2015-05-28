@@ -183,9 +183,9 @@ public class ExecutionBlockContext {
 
     // If ExecutionBlock is stopped, all running or pending tasks will be marked as failed.
     for (Task task : tasks.values()) {
-      if (task.getStatus() == TajoProtos.TaskAttemptState.TA_PENDING ||
-          task.getStatus() == TajoProtos.TaskAttemptState.TA_RUNNING) {
-        task.setState(TajoProtos.TaskAttemptState.TA_FAILED);
+      if (task.getTaskContext().getState() == TajoProtos.TaskAttemptState.TA_PENDING ||
+          task.getTaskContext().getState() == TajoProtos.TaskAttemptState.TA_RUNNING) {
+
         try{
           task.abort();
         } catch (Throwable e){
@@ -395,13 +395,11 @@ public class ExecutionBlockContext {
               } else {
                 for (Task task : new ArrayList<Task>(tasks.values())){
 
-                  if (task.isRunning() && task.isProgressChanged()) {
-                    task.updateProgress();
+                  if (task.getTaskContext().getState() ==
+                      TajoProtos.TaskAttemptState.TA_RUNNING && task.isProgressChanged()) {
                     masterStub.statusUpdate(null, task.getReport(), NullCallback.get());
-                    task.getContext().setProgressChanged(false);
-                  } else {
-                    task.updateProgress();
                   }
+                  task.updateProgress();
                 }
               }
             } catch (Throwable t) {

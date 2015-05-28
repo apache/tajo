@@ -18,20 +18,13 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.tajo.TajoProtos;
-import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 import java.io.IOException;
 
 public interface Task {
 
-  TaskAttemptId getId();
-
-  TajoProtos.TaskAttemptState getStatus();
-
   void init() throws IOException;
-
-  boolean hasFetchPhase();
 
   void fetch();
 
@@ -39,5 +32,21 @@ public interface Task {
 
   void kill();
 
+  void abort();
+
   void cleanup();
+
+  boolean hasFetchPhase();
+
+  boolean isProgressChanged();
+
+  boolean isStopped();
+
+  void updateProgress();
+
+  TaskAttemptContext getTaskContext();
+
+  ExecutionBlockContext getExecutionBlockContext();
+
+  TajoWorkerProtocol.TaskStatusProto getReport();
 }

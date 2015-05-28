@@ -64,7 +64,12 @@ public class TestNodeResourceManager {
     dispatcher.init(conf);
     dispatcher.start();
 
-    resourceManager = new NodeResourceManager(dispatcher);
+    AsyncDispatcher taskDispatcher = new AsyncDispatcher();
+    TaskManager taskManager = new TaskManager(taskDispatcher, null, dispatcher.getEventHandler());
+    taskManager.init(conf);
+    taskManager.start();
+
+    resourceManager = new NodeResourceManager(dispatcher, taskManager);
     resourceManager.init(conf);
     resourceManager.start();
 
@@ -142,10 +147,11 @@ public class TestNodeResourceManager {
     assertEquals(requestSize, resourceManager.getAllocatedSize());
 
     //deallocate
-    for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
-      // direct invoke handler for testing
-      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
-    }
+//    for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
+//      // direct invoke handler for testing
+//      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
+//    }
+    Thread.sleep(1000);
     assertEquals(0, resourceManager.getAllocatedSize());
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
   }
@@ -187,7 +193,7 @@ public class TestNodeResourceManager {
                     totalCanceled.addAndGet(proto.getCancellationTaskCount());
                   } else {
                     complete++;
-                    dispatcher.getEventHandler().handle(new NodeResourceDeallocateEvent(task.getResource()));
+                   // dispatcher.getEventHandler().handle(new NodeResourceDeallocateEvent(task.getResource()));
                   }
                 } catch (Exception e) {
                   fail(e.getMessage());
@@ -216,7 +222,6 @@ public class TestNodeResourceManager {
 
       ExecutionBlockId nullStage = QueryIdFactory.newExecutionBlockId(QueryIdFactory.NULL_QUERY_ID, 0);
       TaskAttemptId taskAttemptId = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(nullStage, i), 0);
-
       TajoWorkerProtocol.TaskRequestProto.Builder builder =
           TajoWorkerProtocol.TaskRequestProto.newBuilder();
       builder.setId(taskAttemptId.getProto());
