@@ -34,19 +34,19 @@ JOIN(11)(LEFT_OUTER)
 explain
 -------------------------------
 -------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000008)
 -------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000004
-   |-eb_0000000000000_0000_000003
+|-eb_0000000000000_0000_000008
+   |-eb_0000000000000_0000_000007
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000003
-2: eb_0000000000000_0000_000004
+1: eb_0000000000000_0000_000007
+2: eb_0000000000000_0000_000008
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [ROOT]
+Block Id: eb_0000000000000_0000_000007 [ROOT]
 =======================================================
 
 [Enforcers]
@@ -87,5 +87,5 @@ JOIN(11)(LEFT_OUTER)
            => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+Block Id: eb_0000000000000_0000_000008 [TERMINAL]
 =======================================================

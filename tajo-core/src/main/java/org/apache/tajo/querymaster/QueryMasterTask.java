@@ -363,7 +363,7 @@ public class QueryMasterTask extends CompositeService {
         }
       }
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
-      queryMasterContext.getGlobalPlanner().build(masterPlan);
+      queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);

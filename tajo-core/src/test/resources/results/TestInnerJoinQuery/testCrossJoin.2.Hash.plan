@@ -32,7 +32,6 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 
 [Enforcers]
  0: type=Broadcast, tables=default.region
- 1: type=Broadcast, tables=default.customer
 
 JOIN(5)(CROSS)
   => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)

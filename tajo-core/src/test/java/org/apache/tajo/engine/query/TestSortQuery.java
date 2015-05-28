@@ -370,4 +370,11 @@ public class TestSortQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest()
+  public final void testSubQuerySortAfterGroupMultiBlocks() throws Exception {
+    runSimpleTests();
+  }
 }

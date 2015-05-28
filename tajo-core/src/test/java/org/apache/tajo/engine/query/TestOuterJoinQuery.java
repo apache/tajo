@@ -348,8 +348,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
@@ -363,8 +362,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
@@ -382,8 +380,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
@@ -397,8 +394,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
