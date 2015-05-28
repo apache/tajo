@@ -134,29 +134,6 @@ SCAN(7) on default.part as p
   => in schema: {(9) default.p.p_brand (TEXT), default.p.p_comment (TEXT), default.p.p_container (TEXT), default.p.p_mfgr (TEXT), default.p.p_name (TEXT), default.p.p_partkey (INT4), default.p.p_retailprice (FLOAT8), default.p.p_size (INT4), default.p.p_type (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
-=======================================================
-
-[Incoming]
-[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.ps.ps_partkey (INT4), num=32)
-[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.p.p_partkey (INT4), num=32)
-
-[Outgoing]
-[q_0000000000000_0000] 5 => 9 (type=HASH_SHUFFLE, key=default.ps.ps_suppkey (INT4), default.s.s_nationkey (INT4), num=32)
-
-JOIN(14)(INNER)
-  => Join Cond: default.p.p_partkey (INT4) = default.ps.ps_partkey (INT4)
-  => target list: default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)
-  => out schema: {(9) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
-  => in schema: {(10) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
-   SCAN(21) on eb_0000000000000_0000_000004
-     => out schema: {(2) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4)}
-     => in schema: {(2) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4)}
-   SCAN(20) on eb_0000000000000_0000_000003
-     => out schema: {(8) default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
-     => in schema: {(8) default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
-
-=======================================================
 Block Id: eb_0000000000000_0000_000006 [LEAF]
 =======================================================
 
@@ -179,6 +156,29 @@ SCAN(1) on default.region as r
   => target list: default.r.r_regionkey (INT4)
   => out schema: {(1) default.r.r_regionkey (INT4)}
   => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.ps.ps_partkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.p.p_partkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 9 (type=HASH_SHUFFLE, key=default.ps.ps_suppkey (INT4), default.s.s_nationkey (INT4), num=32)
+
+JOIN(14)(INNER)
+  => Join Cond: default.p.p_partkey (INT4) = default.ps.ps_partkey (INT4)
+  => target list: default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)
+  => out schema: {(9) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
+  => in schema: {(10) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
+   SCAN(21) on eb_0000000000000_0000_000004
+     => out schema: {(2) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4)}
+     => in schema: {(2) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4)}
+   SCAN(20) on eb_0000000000000_0000_000003
+     => out schema: {(8) default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
+     => in schema: {(8) default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000008 [INTERMEDIATE]
