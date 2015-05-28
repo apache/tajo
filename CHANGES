@@ -27,6 +27,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1624: Add managed table or external description in Table management 
+    section. (hyunsik)
+
     TAJO-1626: JdbcConnection::setAutoCommit() should not throw an exception.
     (hyunsik)
 
