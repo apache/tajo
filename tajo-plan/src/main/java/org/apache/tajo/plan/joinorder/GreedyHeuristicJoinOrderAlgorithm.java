@@ -42,69 +42,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   private static final Log LOG = LogFactory.getLog(GreedyHeuristicJoinOrderAlgorithm.class);
 
   @Override
-//<<<<<<< HEAD
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
       throws PlanningException {
-//=======
-//  public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph,
-//                                      Set<String> relationsWithoutQual) throws PlanningException {
-//
-//    // Setup a remain relation set to be joined
-//    // Why we should use LinkedHashSet? - it should keep the deterministic for the order of joins.
-//    // Otherwise, join orders can be different even if join costs are the same to each other.
-//    Set<LogicalNode> remainRelations = new LinkedHashSet<LogicalNode>();
-//    for (RelationNode relation : block.getRelations()) {
-//      remainRelations.add(relation);
-//    }
-//
-//    LogicalNode latestJoin;
-//    JoinEdge bestPair;
-//
-//    while (remainRelations.size() > 1) {
-//      Set<LogicalNode> checkingRelations = new LinkedHashSet<LogicalNode>();
-//
-//      for (LogicalNode relation : remainRelations) {
-//        Collection <String> relationStrings = PlannerUtil.getRelationLineageWithinQueryBlock(plan, relation);
-//        List<JoinEdge> joinEdges = new ArrayList<JoinEdge>();
-//        String relationCollection = StringUtils.join(relationStrings, ",");
-//        List<JoinEdge> joinEdgesForGiven = joinGraph.getIncomingEdges(relationCollection);
-//        if (joinEdgesForGiven != null) {
-//          joinEdges.addAll(joinEdgesForGiven);
-//        }
-//        if (relationStrings.size() > 1) {
-//          for (String relationString: relationStrings) {
-//            joinEdgesForGiven = joinGraph.getIncomingEdges(relationString);
-//            if (joinEdgesForGiven != null) {
-//              joinEdges.addAll(joinEdgesForGiven);
-//            }
-//          }
-//        }
-//
-//        // check if the relation is the last piece of outer join
-//        boolean endInnerRelation = false;
-//        for (JoinEdge joinEdge: joinEdges) {
-//          switch(joinEdge.getJoinType()) {
-//            case LEFT_ANTI:
-//            case RIGHT_ANTI:
-//            case LEFT_SEMI:
-//            case RIGHT_SEMI:
-//            case LEFT_OUTER:
-//            case RIGHT_OUTER:
-//            case FULL_OUTER:
-//              endInnerRelation = true;
-//              if (checkingRelations.size() <= 1) {
-//                checkingRelations.add(relation);
-//              }
-//              break;
-//            default:
-//              break;
-//          }
-//        }
-//
-//        if (endInnerRelation) {
-//          break;
-//        }
-//>>>>>>> 53ed1c376f4969b5a2c54e30ddbd8113847a8768
 
     Set<JoinVertex> vertexes = TUtil.newHashSet();
     for (RelationNode relationNode : block.getRelations()) {
@@ -257,13 +196,24 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (bestNonCrossJoin.hasJoinQual()) {
         graphContext.removeCandidateJoinFilters(bestNonCrossJoin.getJoinQual());
       }
-      return bestNonCrossJoin;
-    } else {
+      return swapLeftAndRightIfNecessary(bestNonCrossJoin);
+    } else if (bestJoin != null) {
       if (bestJoin.hasJoinQual()) {
         graphContext.removeCandidateJoinFilters(bestJoin.getJoinQual());
       }
-      return bestJoin;
+      return swapLeftAndRightIfNecessary(bestJoin);
+    } else {
+      throw new PlanningException("Cannot find the best join");
     }
+  }
+
+  private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
+    if (PlannerUtil.isCommutativeJoin(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
+      if (getCost(edge.getLeftVertex()) > getCost(edge.getRightVertex())) {
+        return new JoinEdge(edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
+      }
+    }
+    return edge;
   }
 
   private static class JoinEdgeFinderContext {
@@ -288,57 +238,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   private static JoinEdge findJoin(final JoinEdgeFinderContext context, final JoinGraphContext graphContext,
                                    JoinVertex begin, final JoinVertex leftTarget, final JoinVertex rightTarget)
       throws PlanningException {
-//<<<<<<< HEAD
 
     context.visited.add(begin);
 
     JoinGraph joinGraph = graphContext.getJoinGraph();
-//=======
-//    JoinEdge foundJoinEdge = null;
-//
-//    // If outer is outer join, make edge key using all relation names in outer.
-//    SortedSet<String> relationNames =
-//        new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer));
-//    String outerEdgeKey = StringUtils.join(relationNames, ", ");
-//    for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
-//      if (graph.hasEdge(outerEdgeKey, innerName)) {
-//        JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
-//        String[] joinEdgePair = {outerEdgeKey, innerName};
-//        joinEdgePairs.add(joinEdgePair);
-//        if (foundJoinEdge == null) {
-//          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
-//              existJoinEdge.getJoinQual());
-//        } else {
-//          foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
-//              existJoinEdge.getJoinQual()));
-//        }
-//      }
-//    }
-//    if (foundJoinEdge != null) {
-//      return foundJoinEdge;
-//    }
-//
-//    relationNames =
-//        new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner));
-//    outerEdgeKey = StringUtils.join(relationNames, ", ");
-//    for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
-//      if (graph.hasEdge(outerEdgeKey, outerName)) {
-//        JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, outerName);
-//        String[] joinEdgePair = {outerEdgeKey, outerName};
-//        joinEdgePairs.add(joinEdgePair);
-//        if (foundJoinEdge == null) {
-//          foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), inner, outer,
-//              existJoinEdge.getJoinQual());
-//        } else {
-//          foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
-//              existJoinEdge.getJoinQual()));
-//        }
-//      }
-//    }
-//    if (foundJoinEdge != null) {
-//      return foundJoinEdge;
-//    }
-//>>>>>>> 53ed1c376f4969b5a2c54e30ddbd8113847a8768
 
     // Find the matching edge from begin
     Set<JoinVertex> interchangeableWithBegin = JoinOrderingUtil.getAllInterchangeableVertexes(graphContext, begin);
