@@ -104,7 +104,7 @@ public class TestKillQuery {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     CountDownLatch barrier  = new CountDownLatch(1);
     MockAsyncDispatch dispatch = new MockAsyncDispatch(barrier, StageEventType.SQ_INIT);
@@ -168,7 +168,7 @@ public class TestKillQuery {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     CountDownLatch barrier  = new CountDownLatch(1);
     MockAsyncDispatch dispatch = new MockAsyncDispatch(barrier, TajoProtos.QueryState.QUERY_RUNNING);

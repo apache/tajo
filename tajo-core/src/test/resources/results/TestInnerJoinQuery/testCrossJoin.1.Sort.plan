@@ -38,10 +38,9 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.nation.n_name (TEXT), default.region.r_name (TEXT), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.nation
- 1: type=Broadcast, tables=default.region
+ 0: type=Broadcast, tables=default.region
 
-SORT(8)
+SORT(10)
   => Sort Keys: default.nation.n_name (TEXT) (asc),default.region.r_name (TEXT) (asc)
    JOIN(6)(CROSS)
      => target list: default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_name (TEXT), default.region.r_regionkey (INT4)
@@ -68,7 +67,7 @@ Block Id: eb_0000000000000_0000_000004 [ROOT]
 
 SORT(2)
   => Sort Keys: default.nation.n_name (TEXT) (asc),default.region.r_name (TEXT) (asc)
-   SCAN(9) on eb_0000000000000_0000_000003
+   SCAN(11) on eb_0000000000000_0000_000003
      => out schema: {(4) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
      => in schema: {(4) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
 

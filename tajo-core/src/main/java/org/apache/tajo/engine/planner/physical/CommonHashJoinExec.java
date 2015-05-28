@@ -125,6 +125,19 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
         keyTuple.put(i, tuple.get(rightKeyList[i]));
       }
 
+      /*
+       * TODO
+       * Currently, some physical executors can return new instances of tuple, but others not.
+       * This sometimes causes wrong results due to the singleton Tuple instance.
+       * The below line is a temporal solution to fix this problem.
+       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
+       */
+      try {
+        tuple = tuple.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e);
+      }
+
       List<Tuple> newValue = map.get(keyTuple);
       if (newValue == null) {
         map.put(keyTuple, newValue = new ArrayList<Tuple>());

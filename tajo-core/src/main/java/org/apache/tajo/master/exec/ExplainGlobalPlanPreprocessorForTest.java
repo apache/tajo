@@ -44,8 +44,7 @@ public class ExplainGlobalPlanPreprocessorForTest {
   public void prepareTest(MasterPlan plan) {
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);
 
-    while (cursor.hasNext()) {
-      ExecutionBlock block = cursor.nextBlock();
+    for (ExecutionBlock block : cursor) {
       List<DataChannel> outgoingChannels = plan.getOutgoingChannels(block.getId());
       if (outgoingChannels != null) {
         for (DataChannel channel : outgoingChannels) {

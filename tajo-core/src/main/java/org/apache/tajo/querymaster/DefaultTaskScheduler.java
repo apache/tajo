@@ -865,7 +865,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
 
       ExecutionBlock parent = masterPlan.getParent(block);
-      if (masterPlan.isRoot(parent) && parent.hasUnion()) {
+      if (masterPlan.isRoot(parent) && parent.isUnionOnly()) {
         return false;
       }
 

@@ -27,10 +27,18 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1130: Concurrent execution of independent execution blocks.
+    (Contributed by navis, Committed by jihoon)
+
+    TAJO-1618: [Rest API] queries/{queryId} should set default print type.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1553: Improve broadcast join planning. (jihoon)
+
     TAJO-1577: Add test cases to verify join plans. (jihoon)
 
     TAJO-1607: Tajo Rest Cache-Id should be bigger than zero. (Contributed by 
-    DaeMyoung Kang, Committed by hyunsik)
+    DaeMyung Kang, Committed by hyunsik)
 
     TAJO-1603: Refactor StorageManager. (hyunsik)
 
@@ -135,6 +143,8 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1623: INSERT INTO with wrong target columns causes NPE. (hyunsik)
 
     TAJO-1621: Compilation error with hadoop 2.7.0. (jinho)
 

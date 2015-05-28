@@ -34,23 +34,30 @@ public class TestTPCH extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest
   public void testQ1OrderBy() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest
   public void testQ2FourJoins() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest
   public void testTPCH14Expr() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true)
+  @SimpleTest
+  public void testTPCHQ5() throws Exception {
+    runSimpleTests();
   }
 }
