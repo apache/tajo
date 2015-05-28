@@ -27,6 +27,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1626: JdbcConnection::setAutoCommit() should not throw an exception.
+    (hyunsik)
+
     TAJO-1130: Concurrent execution of independent execution blocks.
     (Contributed by navis, Committed by jihoon)
 
