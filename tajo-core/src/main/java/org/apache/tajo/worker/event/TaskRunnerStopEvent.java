@@ -20,6 +20,7 @@ package org.apache.tajo.worker.event;
 
 import org.apache.tajo.ExecutionBlockId;
 
+@Deprecated
 public class TaskRunnerStopEvent extends TaskRunnerEvent {
 
   public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {

@@ -22,19 +22,13 @@ import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.resource.NodeResource;
 
 public class NodeStatusEvent extends AbstractEvent<NodeStatusEvent.EventType> {
-  private final NodeResource resource;
 
   public enum EventType {
     REPORT_RESOURCE,
     FLUSH_REPORTS
   }
 
-  public NodeStatusEvent(EventType eventType, NodeResource resource) {
+  public NodeStatusEvent(EventType eventType) {
     super(eventType);
-    this.resource = resource;
-  }
-
-  public NodeResource getResource() {
-    return resource;
   }
 }

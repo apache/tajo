@@ -19,6 +19,8 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
@@ -42,9 +44,14 @@ import static org.junit.Assert.*;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 public class TestNodeResourceManager {
 
-  private NodeResourceManager resourceManager;
-  private MockNodeStatusUpdater statusUpdater;
+  private MockNodeNodeResourceManager resourceManager;
+  private NodeStatusUpdater statusUpdater;
+  private TaskManager taskManager;
+  private TaskExecutor taskExecutor;
   private AsyncDispatcher dispatcher;
+  private AsyncDispatcher taskDispatcher;
+
+  private CompositeService service;
   private int taskMemory;
   private TajoConf conf;
 
@@ -61,34 +68,40 @@ public class TestNodeResourceManager {
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM, 1);
 
     dispatcher = new AsyncDispatcher();
-    dispatcher.init(conf);
-    dispatcher.start();
+    taskDispatcher = new AsyncDispatcher();
 
-    AsyncDispatcher taskDispatcher = new AsyncDispatcher();
-    TaskManager taskManager = new TaskManager(taskDispatcher, null, dispatcher.getEventHandler());
-    taskManager.init(conf);
-    taskManager.start();
-
-    resourceManager = new NodeResourceManager(dispatcher, taskManager);
-    resourceManager.init(conf);
-    resourceManager.start();
-
+    taskManager = new TaskManager(taskDispatcher, null, dispatcher.getEventHandler());
+    taskExecutor = new MockTaskExecutor(taskManager, dispatcher.getEventHandler());
+    resourceManager = new MockNodeNodeResourceManager(dispatcher, taskDispatcher.getEventHandler());
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), worker, resourceManager);
-    statusUpdater.init(conf);
-    statusUpdater.start();
+
+    service = new CompositeService("MockService") {
+      @Override
+      protected void serviceInit(Configuration conf) throws Exception {
+        addIfService(dispatcher);
+        addIfService(taskDispatcher);
+        addIfService(taskManager);
+        addIfService(taskExecutor);
+        addIfService(resourceManager);
+        addIfService(statusUpdater);
+        super.serviceInit(conf);
+      }
+    };
+
+    service.init(conf);
+    service.start();
   }
 
   @After
   public void tearDown() {
-    resourceManager.stop();
-    statusUpdater.stop();
-    dispatcher.stop();
+    service.stop();
   }
 
   @Test
   public void testNodeResourceAllocateEvent() throws Exception {
     int requestSize = 4;
+    resourceManager.setTaskHandlerEvent(false); //skip task execution
 
     CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
     BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
@@ -102,8 +115,8 @@ public class TestNodeResourceManager {
 
     BatchAllocationResponseProto responseProto = callFuture.get();
     assertNotEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
+    // allocated all
     assertEquals(0, responseProto.getCancellationTaskCount());
-    assertEquals(requestSize, resourceManager.getAllocatedSize());
   }
 
 
@@ -111,6 +124,7 @@ public class TestNodeResourceManager {
   public void testNodeResourceCancellation() throws Exception {
     int requestSize = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
     int overSize = 10;
+    resourceManager.setTaskHandlerEvent(false); //skip task execution
 
     CallFuture<BatchAllocationResponseProto> callFuture = new CallFuture<BatchAllocationResponseProto>();
     BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
@@ -124,12 +138,12 @@ public class TestNodeResourceManager {
     BatchAllocationResponseProto responseProto = callFuture.get();
 
     assertEquals(overSize, responseProto.getCancellationTaskCount());
-    assertEquals(requestSize, resourceManager.getAllocatedSize());
   }
 
   @Test
   public void testNodeResourceDeallocateEvent() throws Exception {
     int requestSize = 4;
+    resourceManager.setTaskHandlerEvent(false); //skip task execution
 
     CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
     BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
@@ -144,15 +158,13 @@ public class TestNodeResourceManager {
     BatchAllocationResponseProto responseProto = callFuture.get();
     assertNotEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     assertEquals(0, responseProto.getCancellationTaskCount());
-    assertEquals(requestSize, resourceManager.getAllocatedSize());
 
     //deallocate
-//    for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
-//      // direct invoke handler for testing
-//      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
-//    }
-    Thread.sleep(1000);
-    assertEquals(0, resourceManager.getAllocatedSize());
+    for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
+      // direct invoke handler for testing
+      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
+    }
+
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
   }
 
@@ -160,6 +172,8 @@ public class TestNodeResourceManager {
   public void testParallelRequest() throws Exception {
     final int parallelCount = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES) * 2;
     final int taskSize = 100000;
+    resourceManager.setTaskHandlerEvent(true);
+
     final AtomicInteger totalComplete = new AtomicInteger();
     final AtomicInteger totalCanceled = new AtomicInteger();
 
@@ -193,7 +207,6 @@ public class TestNodeResourceManager {
                     totalCanceled.addAndGet(proto.getCancellationTaskCount());
                   } else {
                     complete++;
-                   // dispatcher.getEventHandler().handle(new NodeResourceDeallocateEvent(task.getResource()));
                   }
                 } catch (Exception e) {
                   fail(e.getMessage());

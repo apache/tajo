@@ -32,24 +32,21 @@ import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.*;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
-public class NodeResourceManager extends AbstractService implements EventHandler<NodeResourceManagerEvent> {
+public class NodeResourceManager extends AbstractService implements EventHandler<NodeResourceEvent> {
   private static final Log LOG = LogFactory.getLog(NodeResourceManager.class);
 
   private final Dispatcher dispatcher;
-  private final TaskManager taskManager;
+  private final EventHandler taskEventHandler;
   private NodeResource totalResource;
   private NodeResource availableResource;
-  private AtomicInteger allocatedSize;
   private TajoConf tajoConf;
 
-  public NodeResourceManager(Dispatcher dispatcher, TaskManager taskManager) {
+  public NodeResourceManager(Dispatcher dispatcher, EventHandler taskEventHandler) {
     super(NodeResourceManager.class.getName());
     this.dispatcher = dispatcher;
-    this.taskManager = taskManager;
+    this.taskEventHandler = taskEventHandler;
   }
 
   @Override
@@ -60,14 +57,14 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     this.tajoConf = (TajoConf)conf;
     this.totalResource = createWorkerResource(tajoConf);
     this.availableResource = NodeResources.clone(totalResource);
-    this.dispatcher.register(NodeResourceManagerEvent.EventType.class, this);
-    this.allocatedSize = new AtomicInteger();
+    this.dispatcher.register(NodeResourceEvent.EventType.class, this);
+
     super.serviceInit(conf);
     LOG.info("Initialized NodeResourceManager for " + totalResource);
   }
 
   @Override
-  public void handle(NodeResourceManagerEvent event) {
+  public void handle(NodeResourceEvent event) {
 
     if (event instanceof NodeResourceAllocateEvent) {
       NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
@@ -75,15 +72,13 @@ public class NodeResourceManager extends AbstractService implements EventHandler
       for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
         NodeResource resource = new NodeResource(request.getResource());
         if (allocate(resource)) {
-          allocatedSize.incrementAndGet();
           if(allocateEvent.getRequest().hasExecutionBlockRequest()){
             //send ExecutionBlock start event to TaskManager
-            taskManager.getEventHandler().handle(
-                new ExecutionBlockStartEvent(allocateEvent.getRequest().getExecutionBlockRequest()));
+            startExecutionBlock(allocateEvent.getRequest().getExecutionBlockRequest());
           }
 
           //send task start event to TaskExecutor
-          taskManager.getEventHandler().handle(new TaskStartEvent(request.getTaskRequest(), resource));
+          startTask(request.getTaskRequest(), resource);
         } else {
           // reject the exceeded requests
           response.addCancellationTask(request);
@@ -92,13 +87,12 @@ public class NodeResourceManager extends AbstractService implements EventHandler
       allocateEvent.getCallback().run(response.build());
 
     } else if (event instanceof NodeResourceDeallocateEvent) {
-      allocatedSize.decrementAndGet();
       NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
       release(deallocateEvent.getResource());
 
       // send current resource to ResourceTracker
       getDispatcher().getEventHandler().handle(
-          new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE, getAvailableResource()));
+          new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE));
     }
   }
 
@@ -114,10 +108,6 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     return availableResource;
   }
 
-  public int getAllocatedSize() {
-    return allocatedSize.get();
-  }
-
   private boolean allocate(NodeResource resource) {
     //TODO consider the jvm free memory
     if (NodeResources.fitsIn(resource, availableResource)) {
@@ -125,6 +115,14 @@ public class NodeResourceManager extends AbstractService implements EventHandler
       return true;
     }
     return false;
+  }
+
+  protected void startExecutionBlock(RunExecutionBlockRequestProto request) {
+    taskEventHandler.handle(new ExecutionBlockStartEvent(request));
+  }
+
+  protected void startTask(TaskRequestProto request, NodeResource resource) {
+    taskEventHandler.handle(new TaskStartEvent(request, resource));
   }
 
   private void release(NodeResource resource) {

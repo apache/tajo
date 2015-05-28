@@ -43,6 +43,7 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 /**
  * The driver class for Tajo Task processing.
  */
+@Deprecated
 public class TaskRunner extends AbstractService {
   /** class logger */
   private static final Log LOG = LogFactory.getLog(TaskRunner.class);

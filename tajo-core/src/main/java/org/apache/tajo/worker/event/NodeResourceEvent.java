@@ -19,16 +19,14 @@
 package org.apache.tajo.worker.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.resource.NodeResource;
 
-public class NodeResourceManagerEvent extends AbstractEvent<NodeResourceManagerEvent.EventType> {
+public class NodeResourceEvent extends AbstractEvent<NodeResourceEvent.EventType> {
   public enum EventType {
     ALLOCATE,
     DEALLOCATE
   }
 
-  public NodeResourceManagerEvent(EventType eventType) {
+  public NodeResourceEvent(EventType eventType) {
     super(eventType);
   }
 }

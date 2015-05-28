@@ -107,14 +107,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
   @Override
   public void handle(NodeStatusEvent event) {
-    switch (event.getType()) {
-      case REPORT_RESOURCE:
-        heartBeatRequestQueue.add(event); //batch report to ResourceTracker
-        break;
-      case FLUSH_REPORTS:
-        heartBeatRequestQueue.add(event); //flush report to ResourceTracker
-        break;
-    }
+    heartBeatRequestQueue.add(event);
   }
 
   public int getQueueSize() {
@@ -231,8 +224,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
               }
 
               if (!events.isEmpty()) {
-                // send last available resource;
-                lastResponse = sendHeartbeat(createResourceReport(events.get(events.size() - 1).getResource()));
+                // send current available resource;
+                lastResponse = sendHeartbeat(createResourceReport(nodeResourceManager.getAvailableResource()));
               } else {
                 // send ping;
                 lastResponse = sendHeartbeat(createHeartBeatReport());
@@ -250,10 +243,10 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           }
         } catch (NoSuchMethodException nsme) {
           LOG.fatal(nsme.getMessage(), nsme);
-          Runtime.getRuntime().halt(1);
+          Runtime.getRuntime().halt(-1);
         } catch (ClassNotFoundException cnfe) {
           LOG.fatal(cnfe.getMessage(), cnfe);
-          Runtime.getRuntime().halt(1);
+          Runtime.getRuntime().halt(-1);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
           if (!isStopped) {

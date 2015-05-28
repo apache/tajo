@@ -68,67 +68,61 @@ import java.util.concurrent.ExecutorService;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
-@Deprecated
-public class LegacyTaskImpl implements Task {
-  private static final Log LOG = LogFactory.getLog(LegacyTaskImpl.class);
+public class TaskImpl implements Task {
+  private static final Log LOG = LogFactory.getLog(TaskImpl.class);
   private static final float FETCHER_PROGRESS = 0.5f;
 
   private final TajoConf systemConf;
   private final QueryContext queryContext;
   private final ExecutionBlockContext executionBlockContext;
-  private final String taskRunnerId;
-
-  private final Path taskDir;
   private final TaskRequest request;
-  private TaskAttemptContext context;
+  private final Map<String, TableDesc> descs;
+  private final TableStats inputStats;
+  private final ExecutorService fetcherExecutor;
+  private final Path taskDir;
+
+  private final TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
   private LogicalNode plan;
-  private final Map<String, TableDesc> descs = Maps.newHashMap();
   private PhysicalExec executor;
+
   private boolean interQuery;
   private Path inputTableBaseDir;
 
   private long startTime;
-  private long finishTime;
+  private long endTime;
 
-  private final TableStats inputStats;
   private List<FileChunk> localChunks;
-
   // TODO - to be refactored
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
+
   private TupleComparator sortComp = null;
 
-  public LegacyTaskImpl(String taskRunnerId,
-                        Path baseDir,
-                        TaskAttemptId taskId,
-                        final ExecutionBlockContext executionBlockContext,
-                        final TaskRequest request) throws IOException {
-    this(taskRunnerId, baseDir, taskId, executionBlockContext.getConf(), executionBlockContext, request);
-  }
+  public TaskImpl(final TaskRequest request,
+                  final ExecutionBlockContext executionBlockContext,
+                  final ExecutorService fetcherExecutor) throws IOException {
 
-  public LegacyTaskImpl(String taskRunnerId,
-                        Path baseDir,
-                        TaskAttemptId taskId,
-                        TajoConf conf,
-                        final ExecutionBlockContext executionBlockContext,
-                        final TaskRequest request) throws IOException {
-    this.taskRunnerId = taskRunnerId;
     this.request = request;
-
-    this.systemConf = conf;
-    this.queryContext = request.getQueryContext(systemConf);
     this.executionBlockContext = executionBlockContext;
-    this.taskDir = StorageUtil.concatPath(baseDir,
-        taskId.getTaskId().getId() + "_" + taskId.getId());
+    this.systemConf = executionBlockContext.getConf();
+    this.queryContext = request.getQueryContext(systemConf);
+    this.inputStats = new TableStats();
+    this.fetcherRunners = Lists.newArrayList();
+    this.fetcherExecutor = fetcherExecutor;
+    this.descs = Maps.newHashMap();
 
-    this.context = new TaskAttemptContext(queryContext, executionBlockContext, taskId,
+    Path baseDirPath = executionBlockContext.createBaseDir();
+    LOG.info("Task basedir is created (" + baseDirPath +")");
+    TaskAttemptId taskAttemptId = request.getId();
+
+    this.taskDir = StorageUtil.concatPath(baseDirPath,
+        taskAttemptId.getTaskId().getId() + "_" + taskAttemptId.getId());
+    this.context = new TaskAttemptContext(queryContext, executionBlockContext, taskAttemptId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
     this.context.setState(TaskAttemptState.TA_PENDING);
-    this.inputStats = new TableStats();
-    this.fetcherRunners = Lists.newArrayList();
   }
 
   public void initPlan() throws IOException {
@@ -201,6 +195,8 @@ public class LegacyTaskImpl implements Task {
 
   @Override
   public void init() throws IOException {
+    LOG.info("Initializing: " + getId());
+
     initPlan();
     startScriptExecutors();
 
@@ -233,7 +229,7 @@ public class LegacyTaskImpl implements Task {
   }
 
   public String toString() {
-    return "queryId: " + this.getId() + " status: " + context.getState();
+    return "TaskId: " + this.getId() + " Status: " + context.getState();
   }
 
   @Override
@@ -258,9 +254,8 @@ public class LegacyTaskImpl implements Task {
 
   @Override
   public void fetch() {
-    ExecutorService executorService = executionBlockContext.getTaskRunner(taskRunnerId).getFetchLauncher();
     for (Fetcher f : fetcherRunners) {
-      executorService.submit(new FetchRunner(context, f));
+      fetcherExecutor.submit(new FetchRunner(context, f));
     }
   }
 
@@ -274,7 +269,7 @@ public class LegacyTaskImpl implements Task {
   @Override
   public void abort() {
     stopScriptExecutors();
-    context.setState(TajoProtos.TaskAttemptState.TA_FAILED);
+    context.setState(TaskAttemptState.TA_FAILED);
     context.stop();
   }
 
@@ -390,19 +385,18 @@ public class LegacyTaskImpl implements Task {
   public void run() throws Exception {
     startTime = System.currentTimeMillis();
     Throwable error = null;
+
     try {
       if(!context.isStopped()) {
-        context.setState(TaskAttemptState.TA_RUNNING);
+        context.setState(TajoProtos.TaskAttemptState.TA_RUNNING);
         if (context.hasFetchPhase()) {
-          // If the fetch is still in progress, the query unit must wait for
-          // complete.
+          // If the fetch is still in progress, the query unit must wait for complete.
           waitForFetch();
           context.setFetcherProgress(FETCHER_PROGRESS);
           updateProgress();
         }
 
-        this.executor = executionBlockContext.getTQueryEngine().
-            createPlan(context, plan);
+        this.executor = executionBlockContext.getTQueryEngine().createPlan(context, plan);
         this.executor.init();
 
         while(!context.isStopped() && executor.next() != null) {
@@ -461,7 +455,7 @@ public class LegacyTaskImpl implements Task {
         TaskCompletionReport report = getTaskCompletionReport();
         queryMasterStub.done(null, report, NullCallback.get());
       }
-      finishTime = System.currentTimeMillis();
+      endTime = System.currentTimeMillis();
       LOG.info(context.getTaskId() + " completed. " +
           "Worker's task counter - total:" + executionBlockContext.completedTasksNum.intValue() +
           ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
@@ -473,7 +467,7 @@ public class LegacyTaskImpl implements Task {
   @Override
   public void cleanup() {
     TaskHistory taskHistory = createTaskHistory();
-    executionBlockContext.addTaskHistory(taskRunnerId, getId(), taskHistory);
+    executionBlockContext.addTaskHistory(getId().getTaskId(), taskHistory);
     executionBlockContext.getTasks().remove(getId());
 
     fetcherRunners.clear();
@@ -495,7 +489,7 @@ public class LegacyTaskImpl implements Task {
     TaskHistory taskHistory = null;
     try {
       taskHistory = new TaskHistory(context.getTaskId(), context.getState(), context.getProgress(),
-          startTime, finishTime, reloadInputStats());
+          startTime, endTime, reloadInputStats());
 
       if (context.getOutputPath() != null) {
         taskHistory.setOutputPath(context.getOutputPath().toString());
@@ -540,8 +534,8 @@ public class LegacyTaskImpl implements Task {
   }
 
   public boolean equals(Object obj) {
-    if (obj instanceof LegacyTaskImpl) {
-      LegacyTaskImpl other = (LegacyTaskImpl) obj;
+    if (obj instanceof TaskImpl) {
+      TaskImpl other = (TaskImpl) obj;
       return this.context.equals(other.context);
     }
     return false;
@@ -681,7 +675,7 @@ public class LegacyTaskImpl implements Task {
       for (FetchImpl f : fetches) {
         storeDir = new File(inputDir.toString(), f.getName());
         if (!storeDir.exists()) {
-          storeDir.mkdirs();
+          if (!storeDir.mkdirs()) throw new IOException("Failed to create " + storeDir);
         }
 
         for (URI uri : f.getURIs()) {
@@ -765,7 +759,7 @@ public class LegacyTaskImpl implements Task {
     }
     List<String> taskIds = splitMaps(taskIdList);
 
-    FileChunk chunk = null;
+    FileChunk chunk;
     long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
     long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
 

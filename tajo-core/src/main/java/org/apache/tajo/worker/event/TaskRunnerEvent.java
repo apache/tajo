@@ -21,6 +21,7 @@ package org.apache.tajo.worker.event;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
 
+@Deprecated
 public class TaskRunnerEvent extends AbstractEvent<TaskRunnerEvent.EventType> {
   public enum EventType {
     START,

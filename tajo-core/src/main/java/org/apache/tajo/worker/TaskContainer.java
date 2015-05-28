@@ -18,28 +18,9 @@
 
 package org.apache.tajo.worker;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
-import org.apache.tajo.master.container.TajoContainerId;
-import org.apache.tajo.master.container.TajoContainerIdPBImpl;
-import org.apache.tajo.master.container.TajoConverterUtils;
-import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NullCallback;
-
-import java.io.IOException;
-import java.util.concurrent.*;
-
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import org.apache.tajo.TajoProtos;
 
 /**
  * The driver class for Tajo Task processing.
@@ -47,7 +28,6 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 public class TaskContainer implements Runnable {
   private static final Log LOG = LogFactory.getLog(TaskContainer.class);
 
-  // Contains the object references related for TaskRunner
   private final TaskExecutor executor;
   private final int sequenceId;
 
@@ -56,25 +36,28 @@ public class TaskContainer implements Runnable {
     this.executor = executor;
   }
 
-  public void init() throws IOException {
-    //if (executionBlockContext.isStopped()) return;
-
-//    LOG.info("Initializing: " + task.getId());
-//    getContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
-  }
-
   @Override
   public void run() {
-    while (true) {
+    while (!executor.isStopped()) {
+
       Task task = null;
       try {
         task = executor.getNextTask();
-        LOG.debug(sequenceId + " got task:" + task.getTaskContext().getTaskId());
+
+        if (task.getExecutionBlockContext() != null) {
+          task.getExecutionBlockContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
+        }
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sequenceId + TaskContainer.class.getSimpleName() +
+              " got task:" + task.getTaskContext().getTaskId());
+        }
+
 
         TaskAttemptContext taskAttemptContext = task.getTaskContext();
-        task.init();
-
         if (taskAttemptContext.isStopped()) return;
+
+        task.init();
 
         if (task.hasFetchPhase()) {
           task.fetch(); // The fetch is performed in an asynchronous way.
@@ -85,13 +68,20 @@ public class TaskContainer implements Runnable {
         }
 
         task.cleanup();
-      } catch (Exception t) {
-        LOG.error(t.getMessage(), t);
-        if(task != null){
-          task.getExecutionBlockContext().fatalError(task.getTaskContext().getTaskId(), t.getMessage());
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        if (task != null) {
+          try {
+            task.abort();
+            task.getExecutionBlockContext().fatalError(task.getTaskContext().getTaskId(), e.getMessage());
+          } catch (Throwable t) {
+            LOG.fatal(t.getMessage(), t);
+          }
         }
       } finally {
-        executor.stopTask(task);
+        if (task != null) {
+          executor.stopTask(task.getTaskContext().getTaskId());
+        }
       }
     }
   }

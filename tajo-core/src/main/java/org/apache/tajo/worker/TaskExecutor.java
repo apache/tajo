@@ -32,6 +32,7 @@ import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.TaskRequest;
+import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
@@ -42,8 +43,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TaskExecutor<T extends TaskContainer> extends AbstractService
-    implements EventHandler<TaskExecutorEvent> {
+public class TaskExecutor extends AbstractService implements EventHandler<TaskExecutorEvent> {
   private static final Log LOG = LogFactory.getLog(TaskExecutor.class);
 
   private final TaskManager taskManager;
@@ -54,6 +54,7 @@ public class TaskExecutor<T extends TaskContainer> extends AbstractService
   private ThreadPoolExecutor fetcherExecutor;
   private ExecutorService threadPool;
   private TajoConf tajoConf;
+  private volatile boolean isStopped;
 
   public TaskExecutor(TaskManager taskManager, EventHandler rmEventHandler) {
     super(TaskExecutor.class.getName());
@@ -69,7 +70,9 @@ public class TaskExecutor<T extends TaskContainer> extends AbstractService
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("Configuration must be a TajoConf instance");
     }
+
     this.tajoConf = (TajoConf) conf;
+    this.taskManager.getDispatcher().register(TaskExecutorEvent.EventType.class, this);
     super.serviceInit(conf);
   }
 
@@ -94,6 +97,23 @@ public class TaskExecutor<T extends TaskContainer> extends AbstractService
     LOG.info("Started TaskExecutor[" + nThreads + "], Fetcher executor[" + maxFetcherThreads + "]");
   }
 
+  @Override
+  protected void serviceStop() throws Exception {
+    isStopped = true;
+
+    threadPool.shutdown();
+    fetcherExecutor.shutdown();
+    super.serviceStop();
+  }
+
+  public boolean isStopped() {
+    return isStopped;
+  }
+
+  public int getRunningTasks() {
+    return runningTasks.get();
+  }
+
   /**
    * This will block until a task is available.
    */
@@ -107,169 +127,62 @@ public class TaskExecutor<T extends TaskContainer> extends AbstractService
     return task;
   }
 
-
-  protected void beforeExecute(Thread t, Runnable r) {
-    System.out.println(r);
-    Future<TaskContainer> future = (Future<TaskContainer>) r;
-
-    TaskContainer container = null;
-//    try {
-//      container = future.get();
-//    } catch (InterruptedException e) {
-//      e.printStackTrace();
-//    } catch (ExecutionException e) {
-//      e.printStackTrace();
-//    }
-//    try {
-//      container.init();
-//    } catch (IOException e) {
-//      LOG.error(e.getMessage(), e);
-//      container.getTask().abort();
-//      container.getContext().fatalError(container.getTask().getId(), e.getMessage());
-    //}
-  }
-
-
-  protected void afterExecute(Runnable r, Throwable t) {
-    TaskContainer container = null;
-    try {
-      container = ((Future<TaskContainer>) r).get();
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } catch (ExecutionException e) {
-      e.printStackTrace();
-    }
-    try {
-
-      if (t != null) {
-        LOG.error(t.getMessage(), t);
-       // container.getContext().fatalError(container.getTask().getId(), t.getMessage());
-        return;
-      }
-
-      try {
-       // container.stop();
-      } catch (Throwable throwable) {
-        LOG.error(throwable.getMessage(), throwable);
-        //container.getContext().fatalError(container.getTask().getId(), throwable.getMessage());
-      }
-    } finally {
-
-    }
-  }
-
   @SuppressWarnings("unchecked")
-  protected void stopTask(Task task) {
-    //FIXME change to TaskStopEvent ?
-    if(task != null) {
-      rmEventHandler
-          .handle(new NodeResourceDeallocateEvent(allocatedResourceMap.remove(task.getTaskContext().getTaskId())));
-      runningTasks.decrementAndGet();
-    }
-
+  protected void stopTask(TaskAttemptId taskId) {
+    runningTasks.decrementAndGet();
+    rmEventHandler.handle(new NodeResourceDeallocateEvent(allocatedResourceMap.remove(taskId)));
   }
+
   protected ExecutorService getFetcherExecutor() {
     return fetcherExecutor;
   }
 
-  /*FIXME*/
-  protected Task createTask(final ExecutionBlockContext context, TajoWorkerProtocol.TaskRequestProto taskRequest){
 
-    final TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
-//    if (getContext().getTasks().containsKey(taskAttemptId)) {
-//      LOG.error("Duplicate Task Attempt: " + taskAttemptId);
-//      fatalError(qmClientService, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
-//      continue;
-//    }
-     final TaskAttemptContext taskAttemptContext = new TaskAttemptContext(null,context,taskAttemptId, null, null);
-    //LOG.info("Initializing: " + taskAttemptId);
-    return new Task() {
-      @Override
-      public void init() throws IOException {
-
-      }
-
-      @Override
-      public void fetch() {
-
-      }
-
-      @Override
-      public void run() throws Exception {
-
-      }
-
-      @Override
-      public void kill() {
-
-      }
-
-      @Override
-      public void abort() {
-
-      }
-
-      @Override
-      public void cleanup() {
-
-      }
-
-      @Override
-      public boolean hasFetchPhase() {
-        return false;
-      }
-
-      @Override
-      public boolean isProgressChanged() {
-        return false;
-      }
-
-      @Override
-      public boolean isStopped() {
-        return taskAttemptContext.isStopped();
-      }
-
-      @Override
-      public void updateProgress() {
-
-      }
-
-      @Override
-      public TaskAttemptContext getTaskContext() {
-        return taskAttemptContext;
-      }
-
-      @Override
-      public ExecutionBlockContext getExecutionBlockContext() {
-        return context;
-      }
-
-      @Override
-      public TajoWorkerProtocol.TaskStatusProto getReport() {
-        return null;
-      }
-    };
+  protected Task createTask(ExecutionBlockContext executionBlockContext,
+                            TajoWorkerProtocol.TaskRequestProto taskRequest) throws IOException {
+    Task task = null;
+    TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
+    if (executionBlockContext.getTasks().containsKey(taskAttemptId)) {
+      String errorMessage = "Duplicate Task Attempt: " + taskAttemptId;
+      LOG.error(errorMessage);
+      executionBlockContext.fatalError(taskAttemptId, errorMessage);
+    } else {
+      task = new TaskImpl(new TaskRequestImpl(taskRequest), executionBlockContext, getFetcherExecutor());
+      executionBlockContext.getTasks().put(task.getTaskContext().getTaskId(), task);
+    }
+    return task;
   }
 
   @Override
   public void handle(TaskExecutorEvent event) {
 
-    if(event instanceof TaskStartEvent)
-     switch (event.getType()) {
-       case START:{
-         final TaskStartEvent startEvent = (TaskStartEvent)event;
-         allocatedResourceMap.put(startEvent.getTaskId(), startEvent.getAllocatedResource());
+    if (event instanceof TaskStartEvent) {
+      TaskStartEvent startEvent = (TaskStartEvent) event;
+      allocatedResourceMap.put(startEvent.getTaskId(), startEvent.getAllocatedResource());
 
-         ExecutionBlockContext context = taskManager.getExecutionBlockContext(
-             startEvent.getTaskId().getTaskId().getExecutionBlockId());
+      ExecutionBlockContext context = taskManager.getExecutionBlockContext(
+          startEvent.getTaskId().getTaskId().getExecutionBlockId());
 
-         try {
-           taskQueue.put(createTask(context, startEvent.getTaskRequest()));
-           runningTasks.incrementAndGet();
-         } catch (InterruptedException e) {
-           LOG.fatal(e.getMessage(), e);
-         }
-       }
-     }
+      try {
+        Task task = createTask(context, startEvent.getTaskRequest());
+        if (task != null) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Arrival task: " + task.getTaskContext().getTaskId() +
+                ", allocated resource: " + startEvent.getAllocatedResource());
+          }
+          taskQueue.put(task);
+          runningTasks.incrementAndGet();
+        } else {
+          LOG.warn("Release duplicate task resource: " + startEvent.getAllocatedResource());
+          stopTask(startEvent.getTaskId());
+        }
+      } catch (InterruptedException e) {
+        if (!isStopped) {
+          LOG.fatal(e.getMessage(), e);
+        }
+      } catch (IOException e) {
+        stopTask(startEvent.getTaskId());
+      }
+    }
   }
 }

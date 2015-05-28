@@ -105,10 +105,25 @@ public class TestNodeStatusUpdater {
     statusUpdater.init(conf);
     statusUpdater.start();
 
+    assertEquals(0, statusUpdater.getQueueSize());
     for (int i = 0; i < statusUpdater.getQueueingLimit(); i++) {
-      dispatcher.getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE,
-          resourceManager.getAvailableResource()));
+      dispatcher.getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE));
     }
+    barrier.await();
+    assertEquals(0, statusUpdater.getQueueSize());
+  }
+
+  @Test(timeout = 20000)
+  public void testFlushResourceReport() throws Exception {
+    CountDownLatch barrier = new CountDownLatch(2);
+    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+    statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
+    statusUpdater.init(conf);
+    statusUpdater.start();
+
+    assertEquals(0, statusUpdater.getQueueSize());
+    dispatcher.getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
+
     barrier.await();
     assertEquals(0, statusUpdater.getQueueSize());
   }
