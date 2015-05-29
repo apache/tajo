@@ -1,11 +1,14 @@
 {
   "spaces": {
-    "file": {
+    "default": {
       "uri": "file:///",
       "configs": [
         {"x": "y"},
         {"x": "y"}
       ]
+    },
+    "hb1": {
+      "uri": "hbase:zk:///x1.com:2181,x2.com:2181/"
     }
   },
 
@@ -18,9 +21,23 @@
       "handler": "org.apache.tajo.storage.FileTablespace",
       "default-format": "text"
     },
+
     "hbase": {
       "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
-      "default-format": "hbase"
+
+      "config": {
+        "clusters" : {
+
+          "hb1" : {
+
+          },
+
+          "hb2" : {
+            "quorum": "x1.com,x2.com",
+            "client-port": 2181
+          }
+        }
+      }
     },
     "s3": {
       "handler": "org.apache.tajo.storage.S3Tablespace",
