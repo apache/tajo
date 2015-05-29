@@ -31,43 +31,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class StorageUtil extends StorageConstants {
-
-  public static int getColByteSize(Column col) {
-    switch (col.getDataType().getType()) {
-      case BOOLEAN:
-        return 1;
-      case CHAR:
-        return 1;
-      case BIT:
-        return 1;
-      case INT2:
-        return 2;
-      case INT4:
-        return 4;
-      case INT8:
-        return 8;
-      case FLOAT4:
-        return 4;
-      case FLOAT8:
-        return 8;
-      case INET4:
-        return 4;
-      case INET6:
-        return 32;
-      case TEXT:
-        return 256;
-      case BLOB:
-        return 256;
-      case DATE:
-        return 4;
-      case TIME:
-        return 8;
-      case TIMESTAMP:
-        return 8;
-      default:
-        return 0;
-    }
-  }
   
   public static Path concatPath(String parent, String...childs) {
     return concatPath(new Path(parent), childs);

@@ -21,6 +21,8 @@ package org.apache.tajo.plan.joinorder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
@@ -302,14 +304,41 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @return
    */
   public static double getCost(JoinEdge joinEdge) {
-    double filterFactor = 1;
+    double factor = 1;
     double cost;
     if (joinEdge.getJoinType() != JoinType.CROSS) {
-      // TODO - should consider join type
       // TODO - should statistic information obtained from query history
-      filterFactor = filterFactor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size());
+      switch (joinEdge.getJoinType()) {
+        // TODO - improve cost estimation
+        // cost = estimated input size * filter factor * estimated write size
+        case INNER:
+          factor = factor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size())
+              * SchemaUtil.estimateSchemaSize(joinEdge.getSchema())
+              / (SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema())
+              + SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
+          break;
+        // for outer joins, filter factor does not matter
+        case LEFT_OUTER:
+          factor = SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+              SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema());
+          break;
+        case RIGHT_OUTER:
+          factor = SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+              SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema());
+          break;
+        case FULL_OUTER:
+          factor = Math.max(SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+              SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema()),
+                  SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+                  SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
+          break;
+        default:
+          // by default, do the same operation with that of inner join
+          factor = factor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size());
+          break;
+      }
       cost = getCost(joinEdge.getLeftVertex()) *
-          getCost(joinEdge.getRightVertex()) * filterFactor;
+          getCost(joinEdge.getRightVertex()) * factor;
     } else {
       // make cost bigger if cross join
       cost = Math.pow(getCost(joinEdge.getLeftVertex()) *

@@ -96,7 +96,7 @@ public class LogicalOptimizer {
         optimizeJoinOrder(plan, blockCursor.nextBlock());
       }
     } else {
-      LOG.info("Skip Join Optimized.");
+      LOG.info("Skip join order optimization");
     }
     // TODO: filter push down
     rulesAfterToJoinOpt.rewrite(context, plan);
@@ -113,7 +113,7 @@ public class LogicalOptimizer {
       // finding relations and filter expressions
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
 
-      // finding join order and restore remain filter order
+      // finding join order and restore remaining filters
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
 
       // replace join node with FoundJoinOrder.

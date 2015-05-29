@@ -274,7 +274,9 @@ public class ExplainPlanPreprocessorForTest {
     public LogicalNode visitJoin(PidReseterContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
       super.visitJoin(context, plan, block, node, stack);
+//      block.unregisterNode(node);
       node.setPID(context.joinPids.remove(0));
+      block.registerNode(node);
       
       return null;
     }
