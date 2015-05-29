@@ -27,32 +27,31 @@ SORT(4)
 explain
 -------------------------------
 -------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000005)
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000007)
 -------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000005
-   |-eb_0000000000000_0000_000004
-      |-eb_0000000000000_0000_000003
+|-eb_0000000000000_0000_000007
+   |-eb_0000000000000_0000_000006
+      |-eb_0000000000000_0000_000005
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000003
-2: eb_0000000000000_0000_000004
-3: eb_0000000000000_0000_000005
+1: eb_0000000000000_0000_000005
+2: eb_0000000000000_0000_000006
+3: eb_0000000000000_0000_000007
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [LEAF]
+Block Id: eb_0000000000000_0000_000005 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
 
 [Enforcers]
  0: type=Broadcast, tables=default.supplier
- 1: type=Broadcast, tables=default.partsupp
- 2: type=Broadcast, tables=default.part
+ 1: type=Broadcast, tables=default.part
 
-SORT(12)
+SORT(16)
   => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
    JOIN(10)(INNER)
      => Join Cond: default.part.p_partkey (INT4) = default.partsupp.ps_partkey (INT4)
@@ -78,21 +77,21 @@ SORT(12)
            => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000004 [ROOT]
+Block Id: eb_0000000000000_0000_000006 [ROOT]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
 
 [Enforcers]
- 0: sorted input=eb_0000000000000_0000_000003
+ 0: sorted input=eb_0000000000000_0000_000005
 
 SORT(4)
   => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
-   SCAN(13) on eb_0000000000000_0000_000003
+   SCAN(17) on eb_0000000000000_0000_000005
      => out schema: {(3) default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)}
      => in schema: {(3) default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000005 [TERMINAL]
+Block Id: eb_0000000000000_0000_000007 [TERMINAL]
 =======================================================

@@ -1,0 +1,116 @@
+explain
+-------------------------------
+TABLE_SUBQUERY(8) as default.result
+  => Targets: default.result.l_orderkey (INT4), default.result.l_partkey (INT4), default.result.url (TEXT)
+  => out schema: {(3) default.result.l_orderkey (INT4), default.result.l_partkey (INT4), default.result.url (TEXT)}
+  => in  schema: {(3) default.result.l_orderkey (INT4), default.result.l_partkey (INT4), default.result.url (TEXT)}
+   JOIN(11)(INNER)
+     => Join Cond: default.res1.l_partkey (INT4) = default.res2.p_partkey (INT4)
+     => target list: default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)
+     => out schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+     => in schema: {(4) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT), default.res2.p_partkey (INT4)}
+      TABLE_SUBQUERY(5) as default.res2
+        => Targets: default.res2.p_partkey (INT4)
+        => out schema: {(1) default.res2.p_partkey (INT4)}
+        => in  schema: {(9) default.res2.p_brand (TEXT), default.res2.p_comment (TEXT), default.res2.p_container (TEXT), default.res2.p_mfgr (TEXT), default.res2.p_name (TEXT), default.res2.p_partkey (INT4), default.res2.p_retailprice (FLOAT8), default.res2.p_size (INT4), default.res2.p_type (TEXT)}
+         SCAN(3) on default.part
+           => target list: default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)
+           => out schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+           => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+      TABLE_SUBQUERY(2) as default.res1
+        => Targets: default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)
+        => out schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+        => in  schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+         SCAN(0) on default.lineitem
+           => target list: CASE WHEN default.lineitem.l_partkey (INT4) IS NOT NULL THEN  WHEN default.lineitem.l_orderkey (INT4) = 1 THEN 1 ELSE 2 END as url, default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4)
+           => out schema: {(3) default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), url (TEXT)}
+           => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+      |-eb_0000000000000_0000_000002
+      |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.res1.l_partkey (INT4), num=32)
+
+TABLE_SUBQUERY(2) as default.res1
+  => Targets: default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)
+  => out schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+  => in  schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+   PROJECTION(1)
+     => Targets: default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), url (TEXT)
+     => out schema: {(3) default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), url (TEXT)}
+     => in  schema: {(3) default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), url (TEXT)}
+      SCAN(0) on default.lineitem
+        => target list: CASE WHEN default.lineitem.l_partkey (INT4) IS NOT NULL THEN  WHEN default.lineitem.l_orderkey (INT4) = 1 THEN 1 ELSE 2 END as url, default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4)
+        => out schema: {(3) default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), url (TEXT)}
+        => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.res2.p_partkey (INT4), num=32)
+
+TABLE_SUBQUERY(5) as default.res2
+  => Targets: default.res2.p_partkey (INT4)
+  => out schema: {(1) default.res2.p_partkey (INT4)}
+  => in  schema: {(9) default.res2.p_brand (TEXT), default.res2.p_comment (TEXT), default.res2.p_container (TEXT), default.res2.p_mfgr (TEXT), default.res2.p_name (TEXT), default.res2.p_partkey (INT4), default.res2.p_retailprice (FLOAT8), default.res2.p_size (INT4), default.res2.p_type (TEXT)}
+   PROJECTION(4)
+     => Targets: default.part.p_partkey (INT4), default.part.p_name (TEXT), default.part.p_mfgr (TEXT), default.part.p_brand (TEXT), default.part.p_type (TEXT), default.part.p_size (INT4), default.part.p_container (TEXT), default.part.p_retailprice (FLOAT8), default.part.p_comment (TEXT)
+     => out schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+     => in  schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+      SCAN(3) on default.part
+        => target list: default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)
+        => out schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+        => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.res1.l_partkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.res2.p_partkey (INT4), num=32)
+
+TABLE_SUBQUERY(8) as default.result
+  => Targets: default.result.l_orderkey (INT4), default.result.l_partkey (INT4), default.result.url (TEXT)
+  => out schema: {(3) default.result.l_orderkey (INT4), default.result.l_partkey (INT4), default.result.url (TEXT)}
+  => in  schema: {(3) default.result.l_orderkey (INT4), default.result.l_partkey (INT4), default.result.url (TEXT)}
+   PROJECTION(7)
+     => Targets: default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)
+     => out schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+     => in  schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+      JOIN(11)(INNER)
+        => Join Cond: default.res1.l_partkey (INT4) = default.res2.p_partkey (INT4)
+        => target list: default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)
+        => out schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+        => in schema: {(4) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT), default.res2.p_partkey (INT4)}
+         SCAN(14) on eb_0000000000000_0000_000002
+           => out schema: {(1) default.res2.p_partkey (INT4)}
+           => in schema: {(1) default.res2.p_partkey (INT4)}
+         SCAN(13) on eb_0000000000000_0000_000001
+           => out schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+           => in schema: {(3) default.res1.l_orderkey (INT4), default.res1.l_partkey (INT4), default.res1.url (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================

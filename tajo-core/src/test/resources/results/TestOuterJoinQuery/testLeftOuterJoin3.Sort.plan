@@ -52,26 +52,26 @@ JOIN(17)(LEFT_OUTER)
 explain
 -------------------------------
 -------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000012)
 -------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000004
-   |-eb_0000000000000_0000_000003
+|-eb_0000000000000_0000_000012
+   |-eb_0000000000000_0000_000011
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000003
-2: eb_0000000000000_0000_000004
+1: eb_0000000000000_0000_000011
+2: eb_0000000000000_0000_000012
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [ROOT]
+Block Id: eb_0000000000000_0000_000011 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.b
- 1: type=Broadcast, tables=default.c
- 2: type=Broadcast, tables=default.d
- 3: type=Broadcast, tables=default.e
+ 0: type=Broadcast, tables=default.e
+ 1: type=Broadcast, tables=default.b
+ 2: type=Broadcast, tables=default.c
+ 3: type=Broadcast, tables=default.d
  4: type=Broadcast, tables=default.f
 
 JOIN(17)(LEFT_OUTER)
@@ -125,5 +125,5 @@ JOIN(17)(LEFT_OUTER)
                  => in schema: {(8) default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+Block Id: eb_0000000000000_0000_000012 [TERMINAL]
 =======================================================

@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -110,13 +111,12 @@ public class TestExecutionBlockCursor {
     optimizer.optimize(logicalPlan);
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan plan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), queryContext, logicalPlan);
-    planner.build(plan);
+    planner.build(queryContext, plan);
 
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);
 
     int count = 0;
-    while(cursor.hasNext()) {
-      cursor.nextBlock();
+    for (ExecutionBlock eb : cursor) {
       count++;
     }
 

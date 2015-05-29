@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.planner.global.rewriter;
 
+import com.google.common.collect.Lists;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.global.rewriter.rules.BroadcastJoinRule;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
@@ -34,6 +36,8 @@ public class BaseGlobalPlanRewriteRuleProvider extends GlobalPlanRewriteRuleProv
 
   @Override
   public Collection<Class<? extends GlobalPlanRewriteRule>> getRules() {
-    return EMPTY_RULES;
+    List<Class<? extends GlobalPlanRewriteRule>> rules = Lists.newArrayList();
+    rules.add(BroadcastJoinRule.class);
+    return rules;
   }
 }

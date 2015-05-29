@@ -99,6 +99,10 @@ public class DataChannel {
     return shuffleType;
   }
 
+  public boolean needShuffle() {
+    return shuffleType != ShuffleType.NONE_SHUFFLE;
+  }
+
   public TransmitType getTransmitType() {
     return this.transmitType;
   }

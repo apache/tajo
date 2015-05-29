@@ -44,10 +44,9 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.nation.n_regionkey (INT4), v1 (INT4), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.nation
- 1: type=Broadcast, tables=default.region
+ 0: type=Broadcast, tables=default.region
 
-SORT(9)
+SORT(11)
   => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
    JOIN(7)(INNER)
      => Join Cond: default.region.r_regionkey (INT4) = default.nation.n_regionkey (INT4)
@@ -80,7 +79,7 @@ PROJECTION(4)
   => in  schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}
    SORT(3)
      => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
-      SCAN(10) on eb_0000000000000_0000_000003
+      SCAN(12) on eb_0000000000000_0000_000003
         => out schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}
         => in schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}
 
