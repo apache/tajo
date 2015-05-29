@@ -22,6 +22,7 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 import org.junit.After;
@@ -37,11 +38,14 @@ public class TestNodeStatusUpdater {
   private MockNodeStatusUpdater statusUpdater;
   private AsyncDispatcher dispatcher;
   private TajoConf conf;
+  private WorkerConnectionInfo worker;
+
 
   @Before
   public void setup() {
     conf = new TajoConf();
     conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
 
     conf.setIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL, 1000);
     dispatcher = new AsyncDispatcher();
@@ -63,7 +67,6 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testNodeMembership() throws Exception {
     CountDownLatch barrier = new CountDownLatch(1);
-    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
@@ -82,7 +85,6 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testPing() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
@@ -100,7 +102,6 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();
@@ -116,7 +117,6 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testFlushResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     statusUpdater = new MockNodeStatusUpdater(barrier, worker, resourceManager);
     statusUpdater.init(conf);
     statusUpdater.start();

@@ -23,18 +23,31 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.worker.event.TaskExecutorEvent;
 
 import java.io.IOException;
+import java.util.concurrent.Semaphore;
 
 public class MockTaskExecutor extends TaskExecutor {
 
-  public MockTaskExecutor(TaskManager taskManager, EventHandler rmEventHandler) {
+  protected final Semaphore barrier;
+
+  public MockTaskExecutor(Semaphore barrier, TaskManager taskManager, EventHandler rmEventHandler) {
     super(taskManager, rmEventHandler);
+    this.barrier = barrier;
+  }
+
+  @Override
+  public void handle(TaskExecutorEvent event) {
+    super.handle(event);
+    barrier.release();
   }
 
   @Override
   protected Task createTask(final ExecutionBlockContext context, TajoWorkerProtocol.TaskRequestProto taskRequest) {
     final TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
+
+    //ignore status changed log
     final TaskAttemptContext taskAttemptContext = new TaskAttemptContext(null, context, taskAttemptId, null, null) {
       private TajoProtos.TaskAttemptState state;
 

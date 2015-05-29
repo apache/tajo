@@ -132,7 +132,8 @@ public class ExecutionBlockContext {
     UserGroupInformation.setConfiguration(systemConf);
     // TODO - 'load credential' should be implemented
     // Getting taskOwner
-    UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(systemConf.getVar(TajoConf.ConfVars.USERNAME));
+    UserGroupInformation
+        taskOwner = UserGroupInformation.createRemoteUser(systemConf.getVar(TajoConf.ConfVars.USERNAME));
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
@@ -378,7 +379,6 @@ public class ExecutionBlockContext {
 
   protected class Reporter {
     private Thread reporterThread;
-    private AtomicBoolean reporterStop = new AtomicBoolean();
     private static final int PROGRESS_INTERVAL = 1000;
     private static final int MAX_RETRIES = 10;
 
@@ -397,7 +397,7 @@ public class ExecutionBlockContext {
         int remainingRetries = MAX_RETRIES;
         @Override
         public void run() {
-          while (!reporterStop.get() && !Thread.interrupted()) {
+          while (!isStopped() && !Thread.interrupted()) {
 
             try {
               Interface masterStub = getStub();
@@ -423,7 +423,7 @@ public class ExecutionBlockContext {
                 throw new RuntimeException(t);
               }
             } finally {
-              if (remainingRetries > 0 && !reporterStop.get()) {
+              if (remainingRetries > 0 && !isStopped()) {
                 synchronized (reporterThread) {
                   try {
                     reporterThread.wait(PROGRESS_INTERVAL);
@@ -438,10 +438,6 @@ public class ExecutionBlockContext {
     }
 
     public void stop() throws InterruptedException {
-      if (reporterStop.getAndSet(true)) {
-        return;
-      }
-
       if (reporterThread != null) {
         // Intent of the lock is to not send an interupt in the middle of an
         // umbilical.ping or umbilical.statusUpdate

@@ -44,15 +44,12 @@ public class TaskContainer implements Runnable {
       try {
         task = executor.getNextTask();
 
-        if (task.getExecutionBlockContext() != null) {
-          task.getExecutionBlockContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
-        }
+        task.getExecutionBlockContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sequenceId + TaskContainer.class.getSimpleName() +
               " got task:" + task.getTaskContext().getTaskId());
         }
-
 
         TaskAttemptContext taskAttemptContext = task.getTaskContext();
         if (taskAttemptContext.isStopped()) return;

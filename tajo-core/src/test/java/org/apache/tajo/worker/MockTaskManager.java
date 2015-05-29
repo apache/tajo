@@ -22,33 +22,38 @@ import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.worker.event.TaskManagerEvent;
 
-public class MockNodeNodeResourceManager extends NodeResourceManager {
+import java.io.IOException;
+import java.util.concurrent.Semaphore;
 
-  volatile boolean enableTaskHandlerEvent;
+public class MockTaskManager extends TaskManager {
 
-  public MockNodeNodeResourceManager(Dispatcher dispatcher, EventHandler taskEventHandler) {
-    super(dispatcher, taskEventHandler);
+  private final Semaphore barrier;
+
+  public MockTaskManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, EventHandler rmEventHandler) {
+    super(dispatcher, workerContext, rmEventHandler);
+    this.barrier = barrier;
   }
 
   @Override
-  protected void startExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
-    if(enableTaskHandlerEvent) {
-      super.startExecutionBlock(request);
+  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+    try {
+      return new MockExecutionBlock(getWorkerContext(), request);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
   @Override
-  protected void startTask(TajoWorkerProtocol.TaskRequestProto request, NodeResource resource) {
-    if(enableTaskHandlerEvent) {
-      super.startTask(request, resource);
-    }
+  protected void stopExecutionBlock(ExecutionBlockContext context,
+                                    TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+    //skip for testing
   }
 
-  /**
-   * skip task execution and deallocation for testing
-   * */
-  public void setTaskHandlerEvent(boolean flag) {
-    enableTaskHandlerEvent = flag;
+  @Override
+  public void handle(TaskManagerEvent event) {
+    super.handle(event);
+    barrier.release();
   }
 }

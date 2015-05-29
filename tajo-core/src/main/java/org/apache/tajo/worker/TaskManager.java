@@ -19,12 +19,10 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
@@ -32,16 +30,11 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.worker.event.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
 
 public class TaskManager extends AbstractService implements EventHandler<TaskManagerEvent> {
   private static final Log LOG = LogFactory.getLog(TaskManager.class);
@@ -52,7 +45,6 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   private final EventHandler rmEventHandler;
 
   private TajoConf tajoConf;
-  private volatile boolean isStopped = false;
 
   public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, EventHandler rmEventHandler) {
     super(TaskManager.class.getName());
@@ -76,7 +68,6 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
 
   @Override
   protected void serviceStop() throws Exception {
-    isStopped = true;
 
     for(ExecutionBlockContext context: executionBlockContextMap.values()) {
       context.stop();
@@ -89,47 +80,46 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     return dispatcher;
   }
 
-  protected void startExecutionBlock(ExecutionBlockStartEvent event){
-    ExecutionBlockContext context = executionBlockContextMap.get(event.getExecutionBlockId());
+  protected TajoWorker.WorkerContext getWorkerContext() {
+    return workerContext;
+  }
 
-    if(context == null){
-      TajoWorkerProtocol.RunExecutionBlockRequestProto request = event.getRequestProto();
-      try {
-        context = new ExecutionBlockContext(workerContext, null, request);
+  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+    try {
+      ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), null, request);
 
-        context.init();
-      } catch (Throwable e) {
-        LOG.fatal(e.getMessage(), e);
-        throw new RuntimeException(e);
-      }
-      executionBlockContextMap.put(event.getExecutionBlockId(), context);
+      context.init();
+      return context;
+    } catch (Throwable e) {
+      LOG.fatal(e.getMessage(), e);
+      throw new RuntimeException(e);
     }
   }
 
-  protected void stopExecutionBlock(ExecutionBlockStopEvent event) {
-    ExecutionBlockContext executionBlockContext =  executionBlockContextMap.remove(event.getExecutionBlockId());
-    if(executionBlockContext != null){
+  protected void stopExecutionBlock(ExecutionBlockContext context,
+                                    TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+
+    if(context != null){
       try {
-        executionBlockContext.getSharedResource().releaseBroadcastCache(event.getExecutionBlockId());
-        executionBlockContext.sendShuffleReport();
-        workerContext.getTaskHistoryWriter().flushTaskHistories();
+        context.getSharedResource().releaseBroadcastCache(context.getExecutionBlockId());
+        context.sendShuffleReport();
+        getWorkerContext().getTaskHistoryWriter().flushTaskHistories();
       } catch (Exception e) {
         LOG.fatal(e.getMessage(), e);
         throw new RuntimeException(e);
       } finally {
-        executionBlockContext.stop();
+        context.stop();
 
           /* cleanup intermediate files */
-        List<TajoIdProtos.ExecutionBlockIdProto> cleanupList = event.getCleanupList().getExecutionBlockIdList();
-        for (TajoIdProtos.ExecutionBlockIdProto ebId : cleanupList) {
+        for (TajoIdProtos.ExecutionBlockIdProto ebId : cleanupList.getExecutionBlockIdList()) {
           String inputDir = ExecutionBlockContext.getBaseInputDir(new ExecutionBlockId(ebId)).toString();
           workerContext.cleanup(inputDir);
           String outputDir = ExecutionBlockContext.getBaseOutputDir(new ExecutionBlockId(ebId)).toString();
           workerContext.cleanup(outputDir);
         }
       }
+      LOG.info("Stopped execution block:" + context.getExecutionBlockId());
     }
-    LOG.info("Stopped execution block:" + event.getExecutionBlockId());
   }
 
   @Override
@@ -138,12 +128,18 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
 
     if (event instanceof ExecutionBlockStartEvent) {
 
-      //trigger event from NodeResourceManager
-      startExecutionBlock((ExecutionBlockStartEvent) event);
+      //receive event from NodeResourceManager
+      if(!executionBlockContextMap.containsKey(event.getExecutionBlockId())) {
+        ExecutionBlockContext context = createExecutionBlock(((ExecutionBlockStartEvent) event).getRequestProto());
+        executionBlockContextMap.put(context.getExecutionBlockId(), context);
+      } else {
+        LOG.warn("Already initialized ExecutionBlock: " + event.getExecutionBlockId());
+      }
     } else if (event instanceof ExecutionBlockStopEvent) {
-      //trigger event from QueryMaster
+      //receive event from QueryMaster
       rmEventHandler.handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
-      stopExecutionBlock((ExecutionBlockStopEvent) event);
+      stopExecutionBlock(executionBlockContextMap.remove(event.getExecutionBlockId()),
+          ((ExecutionBlockStopEvent) event).getCleanupList());
     }
   }
 
