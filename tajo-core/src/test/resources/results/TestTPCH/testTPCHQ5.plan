@@ -122,29 +122,6 @@ SCAN(1) on default.orders
   => in schema: {(9) default.orders.o_clerk (TEXT), default.orders.o_comment (TEXT), default.orders.o_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), default.orders.o_orderpriority (TEXT), default.orders.o_orderstatus (TEXT), default.orders.o_shippriority (INT4), default.orders.o_totalprice (FLOAT8)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
-=======================================================
-
-[Incoming]
-[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
-[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.orders.o_orderkey (INT4), num=32)
-
-[Outgoing]
-[q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.lineitem.l_suppkey (INT4), num=32)
-
-JOIN(16)(INNER)
-  => Join Cond: default.lineitem.l_orderkey (INT4) = default.orders.o_orderkey (INT4)
-  => target list: ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)
-  => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)}
-  => in schema: {(6) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4), default.orders.o_orderkey (INT4)}
-   SCAN(23) on eb_0000000000000_0000_000002
-     => out schema: {(1) default.orders.o_orderkey (INT4)}
-     => in schema: {(1) default.orders.o_orderkey (INT4)}
-   SCAN(22) on eb_0000000000000_0000_000001
-     => out schema: {(5) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4)}
-     => in schema: {(5) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4)}
-
-=======================================================
 Block Id: eb_0000000000000_0000_000004 [LEAF]
 =======================================================
 
@@ -167,6 +144,29 @@ SCAN(0) on default.customer
   => target list: default.customer.c_nationkey (INT4)
   => out schema: {(1) default.customer.c_nationkey (INT4)}
   => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.orders.o_orderkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.lineitem.l_suppkey (INT4), num=32)
+
+JOIN(16)(INNER)
+  => Join Cond: default.lineitem.l_orderkey (INT4) = default.orders.o_orderkey (INT4)
+  => target list: ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)
+  => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)}
+  => in schema: {(6) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4), default.orders.o_orderkey (INT4)}
+   SCAN(23) on eb_0000000000000_0000_000002
+     => out schema: {(1) default.orders.o_orderkey (INT4)}
+     => in schema: {(1) default.orders.o_orderkey (INT4)}
+   SCAN(22) on eb_0000000000000_0000_000001
+     => out schema: {(5) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4)}
+     => in schema: {(5) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000006 [INTERMEDIATE]
@@ -192,29 +192,6 @@ JOIN(17)(INNER)
      => in schema: {(2) default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000007 [INTERMEDIATE]
-=======================================================
-
-[Incoming]
-[q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.lineitem.l_suppkey (INT4), num=32)
-[q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.supplier.s_suppkey (INT4), num=32)
-
-[Outgoing]
-[q_0000000000000_0000] 7 => 11 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
-
-JOIN(18)(INNER)
-  => Join Cond: default.lineitem.l_suppkey (INT4) = default.supplier.s_suppkey (INT4)
-  => target list: ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)
-  => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)}
-  => in schema: {(6) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-   SCAN(27) on eb_0000000000000_0000_000006
-     => out schema: {(2) default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-     => in schema: {(2) default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-   SCAN(26) on eb_0000000000000_0000_000003
-     => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)}
-     => in schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)}
-
-=======================================================
 Block Id: eb_0000000000000_0000_000008 [LEAF]
 =======================================================
 
@@ -238,6 +215,29 @@ SCAN(5) on default.region
   => target list: default.region.r_regionkey (INT4)
   => out schema: {(1) default.region.r_regionkey (INT4)}
   => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.lineitem.l_suppkey (INT4), num=32)
+[q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.supplier.s_suppkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 7 => 11 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
+
+JOIN(18)(INNER)
+  => Join Cond: default.lineitem.l_suppkey (INT4) = default.supplier.s_suppkey (INT4)
+  => target list: ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)
+  => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)}
+  => in schema: {(6) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+   SCAN(27) on eb_0000000000000_0000_000006
+     => out schema: {(2) default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+     => in schema: {(2) default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+   SCAN(26) on eb_0000000000000_0000_000003
+     => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)}
+     => in schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000010 [INTERMEDIATE]
