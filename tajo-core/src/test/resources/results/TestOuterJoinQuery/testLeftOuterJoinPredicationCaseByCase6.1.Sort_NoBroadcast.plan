@@ -1,0 +1,132 @@
+explain
+-------------------------------
+SELECTION(5)
+  => Search Cond: default.t3.id (INT4) > 2
+   JOIN(9)(LEFT_OUTER)
+     => Join Cond: default.t1.id (INT4) = default.t3.id (INT4)
+     => target list: default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4), default.t3.id (INT4)
+     => out schema: {(4) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4), default.t3.id (INT4)}
+     => in schema: {(4) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4), default.t3.id (INT4)}
+      SCAN(3) on default.jointable13 as t3
+        => target list: default.t3.id (INT4)
+        => out schema: {(1) default.t3.id (INT4)}
+        => in schema: {(2) default.t3.id (INT4), default.t3.name (TEXT)}
+      JOIN(8)(LEFT_OUTER)
+        => Join Cond: default.t1.id (INT4) = default.t2.id (INT4)
+        => target list: default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)
+        => out schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+        => in schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+         SCAN(1) on default.jointable12 as t2
+           => target list: default.t2.id (INT4)
+           => out schema: {(1) default.t2.id (INT4)}
+           => in schema: {(2) default.t2.id (INT4), default.t2.name (TEXT)}
+         SCAN(0) on default.jointable11 as t1
+           => target list: default.t1.id (INT4), default.t1.name (TEXT)
+           => out schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+           => in schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000006
+   |-eb_0000000000000_0000_000005
+      |-eb_0000000000000_0000_000004
+      |-eb_0000000000000_0000_000003
+         |-eb_0000000000000_0000_000002
+         |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+5: eb_0000000000000_0000_000005
+6: eb_0000000000000_0000_000006
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.t1.id (INT4), num=32)
+
+SCAN(0) on default.jointable11 as t1
+  => target list: default.t1.id (INT4), default.t1.name (TEXT)
+  => out schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+  => in schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.t2.id (INT4), num=32)
+
+SCAN(1) on default.jointable12 as t2
+  => target list: default.t2.id (INT4)
+  => out schema: {(1) default.t2.id (INT4)}
+  => in schema: {(2) default.t2.id (INT4), default.t2.name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.t1.id (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.t2.id (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.t1.id (INT4), num=32)
+
+JOIN(8)(LEFT_OUTER)
+  => Join Cond: default.t1.id (INT4) = default.t2.id (INT4)
+  => target list: default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)
+  => out schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+  => in schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+   SCAN(12) on eb_0000000000000_0000_000002
+     => out schema: {(1) default.t2.id (INT4)}
+     => in schema: {(1) default.t2.id (INT4)}
+   SCAN(11) on eb_0000000000000_0000_000001
+     => out schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+     => in schema: {(2) default.t1.id (INT4), default.t1.name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.t3.id (INT4), num=32)
+
+SCAN(3) on default.jointable13 as t3
+  => target list: default.t3.id (INT4)
+  => out schema: {(1) default.t3.id (INT4)}
+  => in schema: {(2) default.t3.id (INT4), default.t3.name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.t1.id (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.t3.id (INT4), num=32)
+
+SELECTION(5)
+  => Search Cond: default.t3.id (INT4) > 2
+   JOIN(9)(LEFT_OUTER)
+     => Join Cond: default.t1.id (INT4) = default.t3.id (INT4)
+     => target list: default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4), default.t3.id (INT4)
+     => out schema: {(4) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4), default.t3.id (INT4)}
+     => in schema: {(4) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4), default.t3.id (INT4)}
+      SCAN(14) on eb_0000000000000_0000_000004
+        => out schema: {(1) default.t3.id (INT4)}
+        => in schema: {(1) default.t3.id (INT4)}
+      SCAN(13) on eb_0000000000000_0000_000003
+        => out schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+        => in schema: {(3) default.t1.id (INT4), default.t1.name (TEXT), default.t2.id (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [TERMINAL]
+=======================================================

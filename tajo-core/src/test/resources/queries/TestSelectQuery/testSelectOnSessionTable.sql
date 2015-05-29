@@ -1,0 +1,1 @@
+select * from information_schema.session where name = 'CURRENT_DATABASE';

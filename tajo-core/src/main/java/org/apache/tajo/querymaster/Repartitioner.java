@@ -91,8 +91,8 @@ public class Repartitioner {
     for (int i = 0; i < scans.length; i++) {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
-        FileStorageManager storageManager =
-            (FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+        FileTablespace storageManager =
+            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
 
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         if (execBlock.getUnionScanMap() != null && !execBlock.getUnionScanMap().isEmpty()) {
@@ -112,13 +112,13 @@ public class Repartitioner {
           throw new IOException(e);
         }
 
-        StorageManager storageManager =
+        Tablespace tablespace =
             TableSpaceManager.getStorageManager(stage.getContext().getConf(), tableDesc.getMeta().getStoreType());
 
-        // if table has no data, storageManager will return empty FileFragment.
+        // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        List<Fragment> fileFragments = storageManager.getSplits(scans[i].getCanonicalName(), tableDesc);
+        List<Fragment> fileFragments = tablespace.getSplits(scans[i].getCanonicalName(), tableDesc);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
@@ -407,8 +407,8 @@ public class Repartitioner {
         Path[] partitionScanPaths = null;
         TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
-          FileStorageManager storageManager =
-              (FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+          FileTablespace storageManager =
+              (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
 
           PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
           partitionScanPaths = partitionScan.getInputPaths();
@@ -416,9 +416,9 @@ public class Repartitioner {
           getFragmentsFromPartitionedTable(storageManager, eachScan, tableDesc);
           partitionScan.setInputPaths(partitionScanPaths);
         } else {
-          StorageManager storageManager = TableSpaceManager.getStorageManager(stage.getContext().getConf(),
+          Tablespace tablespace = TableSpaceManager.getStorageManager(stage.getContext().getConf(),
               tableDesc.getMeta().getStoreType());
-          Collection<Fragment> scanFragments = storageManager.getSplits(eachScan.getCanonicalName(),
+          Collection<Fragment> scanFragments = tablespace.getSplits(eachScan.getCanonicalName(),
               tableDesc, eachScan);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
@@ -488,7 +488,7 @@ public class Repartitioner {
   /**
    * It creates a number of fragments for all partitions.
    */
-  public static List<Fragment> getFragmentsFromPartitionedTable(FileStorageManager sm,
+  public static List<Fragment> getFragmentsFromPartitionedTable(FileTablespace sm,
                                                                           ScanNode scan,
                                                                           TableDesc table) throws IOException {
     if (!(scan instanceof PartitionedTableScanNode)) {
@@ -535,14 +535,14 @@ public class Repartitioner {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
         partitionScanPaths = partitionScan.getInputPaths();
         // set null to inputPaths in getFragmentsFromPartitionedTable()
-        FileStorageManager storageManager =
-            (FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+        FileTablespace storageManager =
+            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
         scanFragments = getFragmentsFromPartitionedTable(storageManager, scan, desc);
       } else {
-        StorageManager storageManager =
+        Tablespace tablespace =
             TableSpaceManager.getStorageManager(stage.getContext().getConf(), desc.getMeta().getStoreType());
 
-        scanFragments = storageManager.getSplits(scan.getCanonicalName(), desc, scan);
+        scanFragments = tablespace.getSplits(scan.getCanonicalName(), desc, scan);
       }
 
       if (scanFragments != null) {
@@ -645,7 +645,7 @@ public class Repartitioner {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = ((FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
+    tablePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
         .getTablePath(scan.getTableName());
 
     ExecutionBlock sampleChildBlock = masterPlan.getChild(stage.getId(), 0);
@@ -811,7 +811,7 @@ public class Repartitioner {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = ((FileStorageManager) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
+    tablePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
         .getTablePath(scan.getTableName());
 
     Fragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});

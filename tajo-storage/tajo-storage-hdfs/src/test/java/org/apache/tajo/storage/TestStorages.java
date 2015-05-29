@@ -155,7 +155,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -210,7 +210,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -271,7 +271,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
     int tupleNum = 10000;
@@ -347,7 +347,7 @@ public class TestStorages {
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
@@ -425,7 +425,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
 
@@ -513,7 +513,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -583,7 +583,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -653,7 +653,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -727,7 +727,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -789,7 +789,7 @@ public class TestStorages {
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.init();
 
@@ -831,7 +831,7 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -921,7 +921,7 @@ public class TestStorages {
       conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
     }
 
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testMaxValue.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
 
@@ -977,7 +977,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 
@@ -1041,7 +1041,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "test_storetype_oversize.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 

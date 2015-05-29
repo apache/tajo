@@ -19,7 +19,10 @@
 package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.commons.logging.Log;
@@ -33,10 +36,12 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,37 +50,94 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TableSpaceManager {
   private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
-  private static final JSONParser parser;
+  private static JSONParser parser;
+  private static JSONObject config;
 
-  static  {
+  static {
     instance = new TableSpaceManager();
 
-    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
+    String json = null;
     try {
-      parser.parse(FileUtil.readTextFileFromResource("storage-site.json"));
-    } catch (Throwable t) {
-      LOG.fatal(t);
+      json = FileUtil.readTextFileFromResource("storage-default.json");
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+    loadJson(json);
   }
-
-  /**
+    /**
    * Singleton instance
    */
   private static final TableSpaceManager instance;
   /**
    * Cache of all tablespace handlers
    */
-  protected static final Map<URI, Class<? extends TableSpace>> TABLE_SPACES = Maps.newConcurrentMap();
+  protected static final Map<URI, Class<? extends Tablespace>> TABLE_SPACES = Maps.newConcurrentMap();
+  protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
 
-  private TableSpaceManager() {}
+  TableSpaceManager(String json) {
+    loadJson(json);
+  }
 
-  public static TableSpace get(URI uri) throws IOException {
+  private TableSpaceManager() {
 
-    if (TABLE_SPACES.containsKey(uri)) {
+  }
 
-    } else {
+  private static void loadJson(String json) {
+    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
+
+    try {
+      config = (JSONObject) parser.parse(json);
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
+
+    loadStorages(config);
+  }
+
+  public static final String STORAGES = "storages";
+  public static final String HANDLER = "handler";
+  public static final String DEFAULT_FORMAT = "default-format";
+
+  private static void loadStorages(JSONObject root) {
+    JSONObject spaces = (JSONObject) config.get(STORAGES);
+    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
+      String storageType = entry.getKey();
+      JSONObject storageDesc = (JSONObject) entry.getValue();
+      String handlerClass = (String) storageDesc.get(HANDLER);
+      String defaultFormat = (String) storageDesc.get(DEFAULT_FORMAT);
+
+      Class<? extends Tablespace> clazz = null;
+      try {
+        clazz = (Class<? extends Tablespace>) Class.forName(handlerClass);
+      } catch (ClassNotFoundException e) {
+        LOG.warn(handlerClass + " Not Found. This handler is ignored.");
+        continue;
+      }
+
+      //TABLE_SPACE_HANDLERS.put(storageType, clazz);
+    }
+  }
+
+  private void loadSpaces(String json) {
+    JSONObject spaces = (JSONObject) config.get("spaces");
+    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
 
     }
+  }
+
+  private void loadFormats(String json) {
+    JSONObject spaces = (JSONObject) config.get("formats");
+    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
+
+    }
+  }
+
+  public Iterable<String> getSupportSchemes() {
+    return TABLE_SPACE_HANDLERS.keySet();
+  }
+
+  public static Optional<Tablespace> get() {
+    return Optional.absent();
   }
 
   /**
@@ -102,10 +164,10 @@ public class TableSpaceManager {
       Path.class
   };
   /**
-   * Cache of StorageManager.
+   * Cache of Tablespace.
    * Key is manager key(warehouse path) + store type
    */
-  private static final Map<String, StorageManager> storageManagers = Maps.newHashMap();
+  private static final Map<String, Tablespace> storageManagers = Maps.newHashMap();
   /**
    * Cache of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
@@ -124,13 +186,13 @@ public class TableSpaceManager {
   }
 
   /**
-   * Close StorageManager
+   * Close Tablespace
    * @throws java.io.IOException
    */
   public static void shutdown() throws IOException {
     synchronized(storageManagers) {
-      for (StorageManager eachStorageManager: storageManagers.values()) {
-        eachStorageManager.close();
+      for (Tablespace eachTablespace : storageManagers.values()) {
+        eachTablespace.close();
       }
     }
     clearCache();
@@ -143,19 +205,19 @@ public class TableSpaceManager {
    * @return
    * @throws IOException
    */
-  public static StorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
+  public static Tablespace getFileStorageManager(TajoConf tajoConf) throws IOException {
     return getStorageManager(tajoConf, "CSV");
   }
 
   /**
-   * Returns the proper StorageManager instance according to the storeType.
+   * Returns the proper Tablespace instance according to the storeType.
    *
    * @param tajoConf Tajo system property.
    * @param storeType Storage type
    * @return
    * @throws IOException
    */
-  public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
+  public static Tablespace getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
       return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
@@ -165,7 +227,7 @@ public class TableSpaceManager {
   }
 
   /**
-   * Returns the proper StorageManager instance according to the storeType
+   * Returns the proper Tablespace instance according to the storeType
    *
    * @param tajoConf Tajo system property.
    * @param storeType Storage type
@@ -173,7 +235,7 @@ public class TableSpaceManager {
    * @return
    * @throws IOException
    */
-  private static synchronized StorageManager getStorageManager (
+  private static synchronized Tablespace getStorageManager (
       TajoConf tajoConf, String storeType, String managerKey) throws IOException {
 
     String typeName;
@@ -185,19 +247,19 @@ public class TableSpaceManager {
 
     synchronized (storageManagers) {
       String storeKey = typeName + "_" + managerKey;
-      StorageManager manager = storageManagers.get(storeKey);
+      Tablespace manager = storageManagers.get(storeKey);
 
       if (manager == null) {
-        Class<? extends StorageManager> storageManagerClass =
-            tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, StorageManager.class);
+        Class<? extends Tablespace> storageManagerClass =
+            tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, Tablespace.class);
 
         if (storageManagerClass == null) {
           throw new IOException("Unknown Storage Type: " + typeName);
         }
 
         try {
-          Constructor<? extends StorageManager> constructor =
-              (Constructor<? extends StorageManager>) CONSTRUCTOR_CACHE.get(storageManagerClass);
+          Constructor<? extends Tablespace> constructor =
+              (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(storageManagerClass);
           if (constructor == null) {
             constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{String.class});
             constructor.setAccessible(true);
