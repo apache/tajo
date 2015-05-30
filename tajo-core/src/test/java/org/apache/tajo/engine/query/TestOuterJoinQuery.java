@@ -220,7 +220,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
           "from jointable11 t1\n" +
@@ -269,7 +269,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
           "from jointable11 t1\n" +
@@ -285,7 +285,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
           "from jointable11 t1\n" +
@@ -301,7 +301,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
           "from jointable11 t1\n" +
@@ -335,7 +335,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id\n" +
           "from jointable11 t1\n" +
@@ -349,7 +349,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
@@ -364,7 +364,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
@@ -383,7 +383,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id\n" +
@@ -398,8 +398,8 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
-//  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t3.id, t4.id\n" +
           "from jointable11 t1\n" +

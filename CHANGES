@@ -27,10 +27,24 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1624: Add managed table or external description in Table management 
+    section. (hyunsik)
+
+    TAJO-1626: JdbcConnection::setAutoCommit() should not throw an exception.
+    (hyunsik)
+
+    TAJO-1130: Concurrent execution of independent execution blocks.
+    (Contributed by navis, Committed by jihoon)
+
+    TAJO-1618: [Rest API] queries/{queryId} should set default print type.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1553: Improve broadcast join planning. (jihoon)
+
     TAJO-1577: Add test cases to verify join plans. (jihoon)
 
     TAJO-1607: Tajo Rest Cache-Id should be bigger than zero. (Contributed by 
-    DaeMyoung Kang, Committed by hyunsik)
+    DaeMyung Kang, Committed by hyunsik)
 
     TAJO-1603: Refactor StorageManager. (hyunsik)
 
@@ -139,6 +153,14 @@ Release 0.11.0 - unreleased
     TAJO-1608: Fix test failure in index_support branch. (jihoon)
 
     TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
+    TAJO-1630: Test failure after TAJO-1130. (jihoon)
+
+    TAJO-1623: INSERT INTO with wrong target columns causes NPE. (hyunsik)
+
+    TAJO-1621: Compilation error with hadoop 2.7.0. (jinho)
+
+    TAJO-1619: JDBC program is stuck after closing. (jihoon)
 
     TAJO-1620: random() in an SQL should generate RANDOM numbers.
     (Contributed by Jongyoung Park, Committed by jihoon)
@@ -311,6 +333,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1599: Implement NodeResourceManager and Status updater. (jinho)
 
     TAJO-1613: Rename StorageManager to Tablespace. (hyunsik)
 

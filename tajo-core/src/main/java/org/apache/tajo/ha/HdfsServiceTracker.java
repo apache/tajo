@@ -350,6 +350,13 @@ public class HdfsServiceTracker extends HAServiceTracker {
     @Override
     public void run() {
       while (!stopped && !Thread.currentThread().isInterrupted()) {
+        try {
+          Thread.sleep(monitorInterval);
+        } catch (InterruptedException e) {
+          LOG.info("PingChecker interrupted. - masterName:" + masterName);
+          break;
+        }
+
         synchronized (HdfsServiceTracker.this) {
           try {
             if (!currentActiveMaster.equals(masterName)) {
@@ -370,12 +377,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
           } catch (Exception e) {
             e.printStackTrace();
           }
-        }
-        try {
-          Thread.sleep(monitorInterval);
-        } catch (InterruptedException e) {
-          LOG.info("PingChecker interrupted. - masterName:" + masterName);
-          break;
         }
       }
     }

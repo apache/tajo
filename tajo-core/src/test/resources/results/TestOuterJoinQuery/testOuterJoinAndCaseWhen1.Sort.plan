@@ -27,31 +27,31 @@ SORT(5)
 explain
 -------------------------------
 -------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000005)
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000007)
 -------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000005
-   |-eb_0000000000000_0000_000004
-      |-eb_0000000000000_0000_000003
+|-eb_0000000000000_0000_000007
+   |-eb_0000000000000_0000_000006
+      |-eb_0000000000000_0000_000005
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000003
-2: eb_0000000000000_0000_000004
-3: eb_0000000000000_0000_000005
+1: eb_0000000000000_0000_000005
+2: eb_0000000000000_0000_000006
+3: eb_0000000000000_0000_000007
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [LEAF]
+Block Id: eb_0000000000000_0000_000005 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.a.id (INT4), default.a.name (TEXT), num=32)
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.id (INT4), default.a.name (TEXT), num=32)
 
 [Enforcers]
  0: type=Broadcast, tables=default.b
  1: type=Broadcast, tables=default.c
 
-SORT(11)
+SORT(15)
   => Sort Keys: default.a.id (INT4) (asc),default.a.name (TEXT) (asc)
    JOIN(9)(LEFT_OUTER)
      => Join Cond: default.b.id (INT4) = default.c.id (INT4)
@@ -77,21 +77,21 @@ SORT(11)
            => in schema: {(4) default.a.id (INT4), default.a.name (TEXT), default.a.score (FLOAT4), default.a.type (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000004 [ROOT]
+Block Id: eb_0000000000000_0000_000006 [ROOT]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.a.id (INT4), default.a.name (TEXT), num=32)
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.id (INT4), default.a.name (TEXT), num=32)
 
 [Enforcers]
- 0: sorted input=eb_0000000000000_0000_000003
+ 0: sorted input=eb_0000000000000_0000_000005
 
 SORT(5)
   => Sort Keys: default.a.id (INT4) (asc),default.a.name (TEXT) (asc)
-   SCAN(12) on eb_0000000000000_0000_000003
+   SCAN(16) on eb_0000000000000_0000_000005
      => out schema: {(6) c1 (TEXT), c2 (TEXT), default.a.id (INT4), default.a.name (TEXT), id2 (INT4), name2 (TEXT)}
      => in schema: {(6) c1 (TEXT), c2 (TEXT), default.a.id (INT4), default.a.name (TEXT), id2 (INT4), name2 (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000005 [TERMINAL]
+Block Id: eb_0000000000000_0000_000007 [TERMINAL]
 =======================================================
