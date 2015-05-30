@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
@@ -64,9 +63,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         graphContext.setMostLeftVertex(newVertex);
       }
 
-      Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
-      Set<JoinEdge> willBeAdded = TUtil.newHashSet();
-
       /*
        * Once a best pair is chosen, some existing join edges should be removed and new join edges should be added.
        *
@@ -76,24 +72,13 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
        * The chosen best pair will be regarded as a join vertex again.
        * So, the join edges which share any vertexes with the best pair should be updated, too.
        */
+      Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
+      Set<JoinEdge> willBeAdded = TUtil.newHashSet();
 
       // Find every join edges which should be updated.
       prepareGraphUpdate(graphContext, joinGraph, bestPair, newVertex, willBeAdded, willBeRemoved);
 
-      for (JoinEdge edge : willBeRemoved) {
-        joinGraph.removeEdge(edge.getLeftVertex(), edge.getRightVertex());
-        graphContext.addCandidateJoinConditions(edge.getJoinQual());
-      }
-
-      for (JoinEdge edge : willBeAdded) {
-        joinGraph.addEdge(edge.getLeftVertex(), edge.getRightVertex(), edge);
-        graphContext.removeCandidateJoinConditions(edge.getJoinQual());
-        graphContext.removeCandidateJoinFilters(edge.getJoinQual());
-      }
-
-      // Join quals involved by the best pair should be removed.
-      graphContext.removeCandidateJoinConditions(bestPair.getJoinQual());
-      graphContext.removeCandidateJoinFilters(bestPair.getJoinQual());
+      updateGraph(graphContext, joinGraph, bestPair, willBeAdded, willBeRemoved);
 
       vertexes.remove(bestPair.getLeftVertex());
       vertexes.remove(bestPair.getRightVertex());
@@ -104,6 +89,24 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     // all generated nodes should be registered to corresponding blocks
     block.registerNode(joinTree);
     return new FoundJoinOrder(joinTree, getCost(joinTree));
+  }
+
+  private void updateGraph(JoinGraphContext context, JoinGraph graph, JoinEdge bestPair,
+                           Set<JoinEdge> willBeAdded, Set<JoinEdge> willBeRemoved) {
+    for (JoinEdge edge : willBeRemoved) {
+      graph.removeEdge(edge.getLeftVertex(), edge.getRightVertex());
+      context.addCandidateJoinConditions(edge.getJoinQual());
+    }
+
+    for (JoinEdge edge : willBeAdded) {
+      graph.addEdge(edge.getLeftVertex(), edge.getRightVertex(), edge);
+      context.removeCandidateJoinConditions(edge.getJoinQual());
+      context.removeCandidateJoinFilters(edge.getJoinQual());
+    }
+
+    // Join quals involved by the best pair should be removed.
+    context.removeCandidateJoinConditions(bestPair.getJoinQual());
+    context.removeCandidateJoinFilters(bestPair.getJoinQual());
   }
 
   private void prepareGraphUpdate(JoinGraphContext context, JoinGraph graph, JoinEdge bestPair,
@@ -126,7 +129,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
                                   Set<JoinEdge> willBeAdded, Set<JoinEdge> willBeRemoved) {
     if (edges != null) {
       for (JoinEdge edge : edges) {
-        if (!JoinOrderingUtil.isEqualsOrSymmetric(vertex.getJoinEdge(), edge)) {
+        if (!JoinOrderingUtil.isEqualsOrCommutative(vertex.getJoinEdge(), edge)) {
           if (isLeftVertex) {
             willBeAdded.add(context.getCachedOrNewJoinEdge(edge.getJoinSpec(), vertex, edge.getRightVertex()));
           } else {
@@ -169,11 +172,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
         // The found join edge may not have join quals even though they can be evaluated during join.
         // So, possible join quals should be added to the join node before estimating its cost.
-//        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
-//            graphContext.getCandidateJoinConditions(), foundJoin, true);
-//        additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
-//            graphContext.getCandidateJoinFilters(), foundJoin, false));
-//        foundJoin = JoinOrderingUtil.addPredicates(foundJoin, additionalPredicates);
         JoinOrderingUtil.updateQualIfNecessary(graphContext, foundJoin);
         double cost = getCost(foundJoin);
 
@@ -298,6 +296,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       return null;
   }
 
+  // We assume that every operation has same cost.
+  // COMPUTATION_FACTOR is used to give the larger cost for longer plans.
+  // TODO: more accurate cost estimation is required.
+  private static final double COMPUTATION_FACTOR = 1.1;
+
   /**
    * Getting a cost of one join
    * @param joinEdge
@@ -345,7 +348,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           getCost(joinEdge.getRightVertex()), 2);
     }
 
-    return cost;
+    return cost * COMPUTATION_FACTOR;
   }
 
   public static double getCost(JoinVertex joinVertex) {
@@ -416,6 +419,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       break;
     }
 
-    return cost;
+    return cost * COMPUTATION_FACTOR;
   }
 }

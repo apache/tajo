@@ -69,19 +69,10 @@ public class JoinOrderingUtil {
     return true;
   }
 
-  public static JoinEdge addPredicates(JoinEdge edge, Set<EvalNode> predicates) {
-    if (!predicates.isEmpty()) {
-      if (edge.getJoinType() == JoinType.CROSS) {
-        edge.getJoinSpec().setType(JoinType.INNER);
-      }
-      edge.addJoinPredicates(predicates);
-    }
-    return edge;
-  }
-
   public static boolean isAssociativeJoin(JoinGraphContext context, JoinEdge leftEdge, JoinEdge rightEdge) {
     if (isAssociativeJoinType(leftEdge.getJoinType(), rightEdge.getJoinType())) {
-      // There will be more quals which can be evaluated at input edges.
+
+      // NOTE: There will be more quals which are able to be evaluated at input join edges.
       // In this case, the input edges are not associative to evaluate quals at proper join edges.
 
       // Create a temporal left-deep join node to find the potentially evaluatable quals.
@@ -246,10 +237,15 @@ public class JoinOrderingUtil {
 
   /**
    * Find all interchangeable vertexes from the given vertex.
-   * A vertex is interchangeable with the given vertex if they are reachable.
+   * Join edges between relations are found at runtime.
    *
-   * @param context
-   * @param from
+   * <H3>Vertex interchange rules</H3>
+   * - A vertex is interchangeable with the start vertex if it is reachable.
+   * - A vertex is reachable from the start vertex if it is able to replace another vertex which is connected to the start vertex.
+   * - A vertex is able to replace another vertex if they are connected without violating join commutativity or join associativity.
+   *
+   * @param context join graph context
+   * @param from start vertex
    * @return
    */
   public static Set<JoinVertex> getAllInterchangeableVertexes(JoinGraphContext context, JoinVertex from) {
@@ -266,8 +262,6 @@ public class JoinOrderingUtil {
       for (JoinEdge candidateEdge : candidateEdges) {
         // Evaluatable quals must be added to check the associativity of join edges.
         candidateEdge = updateQualIfNecessary(context, candidateEdge);
-//        if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
-//            && !founds.contains(candidateEdge.getRightVertex())) {
         if (founds.contains(candidateEdge.getRightVertex())) {
           List<JoinEdge> rightEdgesOfCandidate = context.getJoinGraph().getOutgoingEdges(candidateEdge.getRightVertex());
           boolean reacheable = true;
@@ -295,7 +289,7 @@ public class JoinOrderingUtil {
     }
   }
 
-  public static boolean isEqualsOrSymmetric(JoinEdge edge1, JoinEdge edge2) {
+  public static boolean isEqualsOrCommutative(JoinEdge edge1, JoinEdge edge2) {
     if (edge1.equals(edge2) || isCommutative(edge1, edge2)) {
       return true;
     }
@@ -335,7 +329,7 @@ public class JoinOrderingUtil {
     if (candidateEdges != null) {
       for (JoinEdge candidateEdge : candidateEdges) {
         candidateEdge = updateQualIfNecessary(context, candidateEdge);
-        if (!isEqualsOrSymmetric(edge, candidateEdge) &&
+        if (!isEqualsOrCommutative(edge, candidateEdge) &&
             JoinOrderingUtil.isAssociativeJoin(context, edge, candidateEdge)) {
           associativeEdges.add(candidateEdge);
         }

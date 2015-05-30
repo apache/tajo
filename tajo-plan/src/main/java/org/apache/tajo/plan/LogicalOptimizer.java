@@ -98,7 +98,6 @@ public class LogicalOptimizer {
     } else {
       LOG.info("Skip join order optimization");
     }
-    // TODO: filter push down
     rulesAfterToJoinOpt.rewrite(context, plan);
     return plan.getRootBlock().getRoot();
   }
@@ -121,8 +120,6 @@ public class LogicalOptimizer {
       LogicalNode newNode = handleRemainingFiltersIfNecessary(joinGraphContext, plan, block, newJoinNode);
 
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
-
-      // TODO: collect all join predicates and set them at the top join node (?)
 
       JoinTargetCollector collector = new JoinTargetCollector();
       Set<Target> targets = new LinkedHashSet<Target>();
