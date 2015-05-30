@@ -16,15 +16,15 @@ SORT(7)
            => target list: default.jointable12.id (INT4)
            => out schema: {(1) default.jointable12.id (INT4)}
            => in schema: {(2) default.jointable12.id (INT4), default.lineitem.l_orderkey (INT4)}
+            SCAN(2) on default.lineitem
+              => target list: default.lineitem.l_orderkey (INT4)
+              => out schema: {(1) default.lineitem.l_orderkey (INT4)}
+              => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
             SCAN(1) on default.jointable12
               => filter: default.jointable12.id (INT4) > 10
               => target list: default.jointable12.id (INT4)
               => out schema: {(1) default.jointable12.id (INT4)}
               => in schema: {(2) default.jointable12.id (INT4), default.jointable12.name (TEXT)}
-            SCAN(2) on default.lineitem
-              => target list: default.lineitem.l_orderkey (INT4)
-              => out schema: {(1) default.lineitem.l_orderkey (INT4)}
-              => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
       SCAN(0) on default.jointable11 as a
         => target list: default.a.id (INT4)
         => out schema: {(1) default.a.id (INT4)}
@@ -58,19 +58,7 @@ Block Id: eb_0000000000000_0000_000002 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
-
-SCAN(2) on default.lineitem
-  => target list: default.lineitem.l_orderkey (INT4)
-  => out schema: {(1) default.lineitem.l_orderkey (INT4)}
-  => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
-
-=======================================================
-Block Id: eb_0000000000000_0000_000003 [LEAF]
-=======================================================
-
-[Outgoing]
-[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.jointable12.id (INT4), num=32)
+[q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.jointable12.id (INT4), num=32)
 
 SCAN(1) on default.jointable12
   => filter: default.jointable12.id (INT4) > 10
@@ -79,12 +67,24 @@ SCAN(1) on default.jointable12
   => in schema: {(2) default.jointable12.id (INT4), default.jointable12.name (TEXT)}
 
 =======================================================
+Block Id: eb_0000000000000_0000_000003 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
+
+SCAN(2) on default.lineitem
+  => target list: default.lineitem.l_orderkey (INT4)
+  => out schema: {(1) default.lineitem.l_orderkey (INT4)}
+  => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+
+=======================================================
 Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
-[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.jointable12.id (INT4), num=32)
+[q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.jointable12.id (INT4), num=32)
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.b.id (INT4), num=32)
@@ -103,11 +103,11 @@ TABLE_SUBQUERY(5) as default.b
         => out schema: {(1) default.jointable12.id (INT4)}
         => in schema: {(2) default.jointable12.id (INT4), default.lineitem.l_orderkey (INT4)}
          SCAN(14) on eb_0000000000000_0000_000003
-           => out schema: {(1) default.jointable12.id (INT4)}
-           => in schema: {(1) default.jointable12.id (INT4)}
-         SCAN(13) on eb_0000000000000_0000_000002
            => out schema: {(1) default.lineitem.l_orderkey (INT4)}
            => in schema: {(1) default.lineitem.l_orderkey (INT4)}
+         SCAN(13) on eb_0000000000000_0000_000002
+           => out schema: {(1) default.jointable12.id (INT4)}
+           => in schema: {(1) default.jointable12.id (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000001 [LEAF]

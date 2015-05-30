@@ -56,11 +56,11 @@ public class ExplainPlanPreprocessorForTest {
      * So, they have different pids for each query execution.
      * JoinPidCollector and JoinPidReseter reset the pids of join nodes.
      */
-    collectorContext.reset();
-    joinPidCollector.visit(collectorContext, plan, plan.getRootBlock());
+//    collectorContext.reset();
+//    joinPidCollector.visit(collectorContext, plan, plan.getRootBlock());
 
-    resetContext.reset(collectorContext.joinPids);
-    joinPidReseter.visit(resetContext, plan, plan.getRootBlock());
+//    resetContext.reset(collectorContext.joinPids);
+//    joinPidReseter.visit(resetContext, plan, plan.getRootBlock());
   }
 
   private static class PlanShapeFixerContext {
@@ -150,17 +150,17 @@ public class ExplainPlanPreprocessorForTest {
       int rightChildNum = context.childNumbers.pop();
       int leftChildNum = context.childNumbers.pop();
 
-      if (PlannerUtil.isCommutativeJoin(node.getJoinType())) {
-
-        if (leftChildNum < rightChildNum) {
-          swapChildren(node);
-        } else if (leftChildNum == rightChildNum) {
-          if (node.getLeftChild().getOutSchema().toString().compareTo(node.getRightChild().getOutSchema().toString()) <
-              0) {
-            swapChildren(node);
-          }
-        }
-      }
+//      if (PlannerUtil.isCommutativeJoin(node.getJoinType())) {
+//
+//        if (leftChildNum < rightChildNum) {
+//          swapChildren(node);
+//        } else if (leftChildNum == rightChildNum) {
+//          if (node.getLeftChild().getOutSchema().toString().compareTo(node.getRightChild().getOutSchema().toString()) <
+//              0) {
+//            swapChildren(node);
+//          }
+//        }
+//      }
 
       if (node.hasTargets()) {
         node.setTargets(sortTargets(node.getTargets()));

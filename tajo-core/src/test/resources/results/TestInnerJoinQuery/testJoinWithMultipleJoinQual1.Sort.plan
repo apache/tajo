@@ -8,19 +8,6 @@ SORT(10)
      => out schema: {(8) default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)}
      => in schema: {(12) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
       JOIN(15)(INNER)
-        => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
-        => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-        => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-        => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4)}
-         SCAN(1) on default.region as r
-           => target list: default.r.r_regionkey (INT4)
-           => out schema: {(1) default.r.r_regionkey (INT4)}
-           => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
-         SCAN(0) on default.nation as n
-           => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-           => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-           => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-      JOIN(14)(INNER)
         => Join Cond: default.p.p_partkey (INT4) = default.ps.ps_partkey (INT4)
         => target list: default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)
         => out schema: {(9) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
@@ -42,6 +29,19 @@ SORT(10)
               => target list: default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)
               => out schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
               => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
+      JOIN(14)(INNER)
+        => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
+        => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+        => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+        => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4)}
+         SCAN(1) on default.region as r
+           => target list: default.r.r_regionkey (INT4)
+           => out schema: {(1) default.r.r_regionkey (INT4)}
+           => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+         SCAN(0) on default.nation as n
+           => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+           => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+           => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -66,10 +66,10 @@ Block Id: eb_0000000000000_0000_000009 [LEAF]
 [q_0000000000000_0000] 9 => 10 (type=RANGE_SHUFFLE, key=default.n.n_name (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_name (TEXT), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.ps
- 1: type=Broadcast, tables=default.p
- 2: type=Broadcast, tables=default.s
- 3: type=Broadcast, tables=default.r
+ 0: type=Broadcast, tables=default.r
+ 1: type=Broadcast, tables=default.ps
+ 2: type=Broadcast, tables=default.p
+ 3: type=Broadcast, tables=default.s
 
 SORT(26)
   => Sort Keys: default.s.s_acctbal (FLOAT8) (asc),default.s.s_name (TEXT) (asc),default.n.n_name (TEXT) (asc),default.p.p_partkey (INT4) (asc)
@@ -79,19 +79,6 @@ SORT(26)
      => out schema: {(8) default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)}
      => in schema: {(12) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
       JOIN(15)(INNER)
-        => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
-        => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-        => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-        => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4)}
-         SCAN(1) on default.region as r
-           => target list: default.r.r_regionkey (INT4)
-           => out schema: {(1) default.r.r_regionkey (INT4)}
-           => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
-         SCAN(0) on default.nation as n
-           => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-           => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-           => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-      JOIN(14)(INNER)
         => Join Cond: default.p.p_partkey (INT4) = default.ps.ps_partkey (INT4)
         => target list: default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)
         => out schema: {(9) default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
@@ -113,6 +100,19 @@ SORT(26)
               => target list: default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)
               => out schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
               => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
+      JOIN(14)(INNER)
+        => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
+        => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+        => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+        => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4)}
+         SCAN(1) on default.region as r
+           => target list: default.r.r_regionkey (INT4)
+           => out schema: {(1) default.r.r_regionkey (INT4)}
+           => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+         SCAN(0) on default.nation as n
+           => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+           => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+           => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000010 [ROOT]
