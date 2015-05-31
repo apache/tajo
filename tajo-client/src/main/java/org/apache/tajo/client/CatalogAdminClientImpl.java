@@ -30,6 +30,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
 import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
 import java.net.URI;
@@ -151,8 +152,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     if (databaseName != null) {
       builder.setValue(databaseName);
     }
-    ClientProtos.GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
-    return res.getTablesList();
+    PrimitiveProtos.StringListProto res = tajoMasterService.getTableList(null, builder.build());
+    return res.getValuesList();
   }
 
   @Override

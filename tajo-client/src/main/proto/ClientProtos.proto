@@ -196,10 +196,6 @@ message GetClusterInfoResponse {
   repeated WorkerResourceInfo workerList = 1;
 }
 
-message GetTableListResponse {
-  repeated string tables = 1;
-}
-
 message CreateTableRequest {
   optional SessionIdProto sessionId = 1;
   required string name = 2;

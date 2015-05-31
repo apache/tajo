@@ -56,6 +56,7 @@ import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.NoSuchSessionVariableException;
@@ -718,7 +719,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public PrimitiveProtos.StringListProto getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
+    public StringListProto getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
         request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getId());
@@ -755,7 +756,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetTableListResponse getTableList(RpcController controller,
+    public StringListProto getTableList(RpcController controller,
                                              SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
@@ -766,8 +767,8 @@ public class TajoMasterClientService extends AbstractService {
           databaseName = session.getCurrentDatabase();
         }
         Collection<String> tableNames = catalog.getAllTableNames(databaseName);
-        GetTableListResponse.Builder builder = GetTableListResponse.newBuilder();
-        builder.addAllTables(tableNames);
+        StringListProto.Builder builder = StringListProto.newBuilder();
+        builder.addAllValues(tableNames);
         return builder.build();
       } catch (Throwable t) {
         throw new ServiceException(t);
