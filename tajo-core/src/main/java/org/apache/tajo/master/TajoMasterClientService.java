@@ -375,12 +375,12 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryListResponse getRunningQueryList(RpcController controller, GetQueryListRequest request)
+    public GetQueryListResponse getRunningQueryList(RpcController controller, TajoIdProtos.SessionIdProto request)
 
         throws ServiceException {
 
       try {
-        context.getSessionManager().touch(request.getSessionId().getId());
+        context.getSessionManager().touch(request.getId());
         GetQueryListResponse.Builder builder= GetQueryListResponse.newBuilder();
 
         Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
@@ -412,11 +412,11 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryListResponse getFinishedQueryList(RpcController controller, GetQueryListRequest request)
+    public GetQueryListResponse getFinishedQueryList(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
 
       try {
-        context.getSessionManager().touch(request.getSessionId().getId());
+        context.getSessionManager().touch(request.getId());
         GetQueryListResponse.Builder builder = GetQueryListResponse.newBuilder();
 
         Collection<QueryInfo> queries

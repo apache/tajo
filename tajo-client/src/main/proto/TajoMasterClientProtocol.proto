@@ -46,8 +46,8 @@ service TajoMasterClientProtocolService {
 
   // Query And Resource Management APIs
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc getRunningQueryList(GetQueryListRequest) returns (GetQueryListResponse);
-  rpc getFinishedQueryList(GetQueryListRequest) returns (GetQueryListResponse);
+  rpc getRunningQueryList(SessionIdProto) returns (GetQueryListResponse);
+  rpc getFinishedQueryList(SessionIdProto) returns (GetQueryListResponse);
   rpc killQuery(QueryIdRequest) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
   rpc closeNonForwardQuery(QueryIdRequest) returns (BoolProto);
