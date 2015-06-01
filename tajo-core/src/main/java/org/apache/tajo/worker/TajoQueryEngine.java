@@ -24,7 +24,6 @@ import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.storage.StorageManager;
 
 import java.io.IOException;
 

@@ -23,6 +23,7 @@ import com.google.protobuf.Message;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
@@ -53,9 +54,18 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
     switch (column.getDataType().getType()) {
       case BOOLEAN:
       case BIT:
+        bytes = tuple.getBytes(index);
+        length = bytes.length;
+        out.write(bytes, 0, length);
+				break;
+
       case CHAR:
         bytes = tuple.getBytes(index);
         length = bytes.length;
+        if (length > column.getDataType().getLength()) {
+          throw new ValueTooLongForTypeCharactersException(column.getDataType().getLength());
+        }
+
         out.write(bytes, 0, length);
         break;
       case INT2:

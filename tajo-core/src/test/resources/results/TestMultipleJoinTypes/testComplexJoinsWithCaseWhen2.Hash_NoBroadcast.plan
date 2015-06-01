@@ -1,0 +1,165 @@
+explain
+-------------------------------
+SORT(7)
+  => Sort Keys: default.region.r_name (TEXT) (asc),s1 (TEXT) (asc)
+   JOIN(11)(INNER)
+     => Join Cond: default.t.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+     => target list: default.region.r_name (TEXT), s1 (TEXT)
+     => out schema: {(2) default.region.r_name (TEXT), s1 (TEXT)}
+     => in schema: {(4) default.region.r_name (TEXT), default.region.r_regionkey (INT4), default.t.n_regionkey (INT4), s1 (TEXT)}
+      SCAN(0) on default.region
+        => target list: default.region.r_name (TEXT), default.region.r_regionkey (INT4)
+        => out schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+        => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      TABLE_SUBQUERY(5) as default.t
+        => Targets: CASE WHEN default.t.s_name (TEXT) IS NULL THEN N/O ELSE default.t.s_name (TEXT) END as s1, default.t.n_regionkey (INT4)
+        => out schema: {(2) default.t.n_regionkey (INT4), s1 (TEXT)}
+        => in  schema: {(11) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.s_acctbal (FLOAT8), default.t.s_address (TEXT), default.t.s_comment (TEXT), default.t.s_name (TEXT), default.t.s_nationkey (INT4), default.t.s_phone (TEXT), default.t.s_suppkey (INT4)}
+         JOIN(10)(LEFT_OUTER)
+           => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
+           => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
+           => out schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+           => in schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+            SCAN(2) on default.supplier
+              => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
+              => out schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+              => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+            SCAN(1) on default.nation
+              => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+              => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+              => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000007)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000007
+   |-eb_0000000000000_0000_000006
+      |-eb_0000000000000_0000_000005
+         |-eb_0000000000000_0000_000004
+         |-eb_0000000000000_0000_000003
+            |-eb_0000000000000_0000_000002
+            |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+5: eb_0000000000000_0000_000005
+6: eb_0000000000000_0000_000006
+7: eb_0000000000000_0000_000007
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.nation.n_nationkey (INT4), num=32)
+
+SCAN(1) on default.nation
+  => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+  => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+  => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
+
+SCAN(2) on default.supplier
+  => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
+  => out schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+  => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.nation.n_nationkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.t.n_regionkey (INT4), num=32)
+
+TABLE_SUBQUERY(5) as default.t
+  => Targets: CASE WHEN default.t.s_name (TEXT) IS NULL THEN N/O ELSE default.t.s_name (TEXT) END as s1, default.t.n_regionkey (INT4)
+  => out schema: {(2) s1 (TEXT), default.t.n_regionkey (INT4)}
+  => in  schema: {(11) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.s_acctbal (FLOAT8), default.t.s_address (TEXT), default.t.s_comment (TEXT), default.t.s_name (TEXT), default.t.s_nationkey (INT4), default.t.s_phone (TEXT), default.t.s_suppkey (INT4)}
+   PROJECTION(4)
+     => Targets: default.nation.n_nationkey (INT4), default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.nation.n_comment (TEXT), default.supplier.s_suppkey (INT4), default.supplier.s_name (TEXT), default.supplier.s_address (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_comment (TEXT)
+     => out schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+     => in  schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+      JOIN(10)(LEFT_OUTER)
+        => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
+        => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
+        => out schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+        => in schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+         SCAN(14) on eb_0000000000000_0000_000002
+           => out schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+           => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+         SCAN(13) on eb_0000000000000_0000_000001
+           => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+           => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+SCAN(0) on default.region
+  => target list: default.region.r_name (TEXT), default.region.r_regionkey (INT4)
+  => out schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+  => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.t.n_regionkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.region.r_name (TEXT), s1 (TEXT), num=32)
+
+SORT(17)
+  => Sort Keys: default.region.r_name (TEXT) (asc),s1 (TEXT) (asc)
+   JOIN(11)(INNER)
+     => Join Cond: default.t.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+     => target list: default.region.r_name (TEXT), s1 (TEXT)
+     => out schema: {(2) default.region.r_name (TEXT), s1 (TEXT)}
+     => in schema: {(4) default.region.r_name (TEXT), default.region.r_regionkey (INT4), default.t.n_regionkey (INT4), s1 (TEXT)}
+      SCAN(16) on eb_0000000000000_0000_000004
+        => out schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+        => in schema: {(2) default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(15) on eb_0000000000000_0000_000003
+        => out schema: {(2) s1 (TEXT), default.t.n_regionkey (INT4)}
+        => in schema: {(2) s1 (TEXT), default.t.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.region.r_name (TEXT), s1 (TEXT), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000005
+
+SORT(7)
+  => Sort Keys: default.region.r_name (TEXT) (asc),s1 (TEXT) (asc)
+   SCAN(18) on eb_0000000000000_0000_000005
+     => out schema: {(2) default.region.r_name (TEXT), s1 (TEXT)}
+     => in schema: {(2) default.region.r_name (TEXT), s1 (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [TERMINAL]
+=======================================================

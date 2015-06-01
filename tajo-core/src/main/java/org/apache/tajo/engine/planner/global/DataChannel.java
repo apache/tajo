@@ -23,7 +23,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -40,7 +40,7 @@ public class DataChannel {
 
   private Schema schema;
 
-  private StoreType storeType = StoreType.RAW;
+  private String storeType = "RAW";
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
     this.srcId = srcId;
@@ -99,6 +99,10 @@ public class DataChannel {
     return shuffleType;
   }
 
+  public boolean needShuffle() {
+    return shuffleType != ShuffleType.NONE_SHUFFLE;
+  }
+
   public TransmitType getTransmitType() {
     return this.transmitType;
   }
@@ -144,11 +148,11 @@ public class DataChannel {
     return this.storeType != null;
   }
 
-  public void setStoreType(StoreType storeType) {
+  public void setStoreType(String storeType) {
     this.storeType = storeType;
   }
 
-  public StoreType getStoreType() {
+  public String getStoreType() {
     return storeType;
   }
 
@@ -193,7 +197,7 @@ public class DataChannel {
     sb.append(" (type=").append(shuffleType);
     if (hasShuffleKeys()) {
       sb.append(", key=");
-      sb.append(TUtil.arrayToString(shuffleKeys));
+      sb.append(StringUtils.join(shuffleKeys));
       sb.append(", num=").append(numOutputs);
     }
     sb.append(")");

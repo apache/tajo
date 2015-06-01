@@ -216,17 +216,17 @@ message PartitionTableScanSpec {
 }
 
 message PersistentStoreNode {
-  required int32 childSeq = 1;
-  required StoreType storageType = 2;
+  optional int32 childSeq = 1; // CreateTableNode may not have any children. This should be improved at TAJO-1589.
+  required string storageType = 2;
   required KeyValueSetProto tableProperties = 3;
 }
 
-message StoreTableNodeSpec { // required PersistentStoreSpec
+message StoreTableNodeSpec { // required PersistentStoreNode
   optional string tableName = 1; // 'INSERT INTO LOCATION' does not require 'table name'.
   optional PartitionMethodProto partitionMethod = 2;
 }
 
-message InsertNodeSpec { // required PersistentStoreSpec and StoreTableSpec
+message InsertNodeSpec { // required PersistentStoreNode and StoreTableSpec
   required bool overwrite = 1;
   required SchemaProto tableSchema = 2;
   optional SchemaProto targetSchema = 4;
@@ -234,7 +234,7 @@ message InsertNodeSpec { // required PersistentStoreSpec and StoreTableSpec
   optional string path = 5;
 }
 
-message CreateTableNodeSpec { // required PersistentStoreSpec and StoreTableNodeSpec
+message CreateTableNodeSpec { // required PersistentStoreNode and StoreTableNodeSpec
   required SchemaProto schema = 1;
   required bool external = 2;
   required bool ifNotExists = 3;
@@ -424,8 +424,8 @@ message FunctionEval {
 }
 
 message AggFunctionEvalSpec { // requires FunctionEval
-  required bool intermediatePhase = 1;
-  required bool finalPhase = 2;
+  required bool firstPhase = 1;
+  required bool lastPhase = 2;
   optional string alias = 3;
 }
 

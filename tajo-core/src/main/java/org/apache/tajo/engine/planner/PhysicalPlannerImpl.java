@@ -30,12 +30,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
@@ -48,6 +46,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAg
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -55,6 +54,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.IndexUtil;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -251,7 +251,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       FragmentProto[] fragmentProtos = ctx.getTables(tableId);
       List<Fragment> fragments = FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
       for (Fragment frag : fragments) {
-        size += StorageManager.getFragmentLength(ctx.getConf(), frag);
+        size += Tablespace.getFragmentLength(ctx.getConf(), frag);
       }
     }
     return size;
@@ -275,7 +275,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main maemory.",
         context.getTaskId().toString(),
         (left ? "Left" : "Right"),
-        TUtil.arrayToString(lineage),
+        StringUtils.join(lineage),
         FileUtil.humanReadableByteCount(volume, false),
         (inMemoryInnerJoinFlag ? "" : "not ")));
     return inMemoryInnerJoinFlag;
@@ -398,18 +398,18 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       larger = right;
       LOG.info(String.format("[%s] Left relations %s (%s) is smaller than Right relations %s (%s).",
           context.getTaskId().toString(),
-          TUtil.arrayToString(leftLineage),
+          StringUtils.join(leftLineage),
           FileUtil.humanReadableByteCount(leftSize, false),
-          TUtil.arrayToString(rightLineage),
+          StringUtils.join(rightLineage),
           FileUtil.humanReadableByteCount(rightSize, false)));
     } else {
       smaller = right;
       larger = left;
       LOG.info(String.format("[%s] Right relations %s (%s) is smaller than Left relations %s (%s).",
           context.getTaskId().toString(),
-          TUtil.arrayToString(rightLineage),
+          StringUtils.join(rightLineage),
           FileUtil.humanReadableByteCount(rightSize, false),
-          TUtil.arrayToString(leftLineage),
+          StringUtils.join(leftLineage),
           FileUtil.humanReadableByteCount(leftSize, false)));
     }
 
@@ -465,14 +465,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         case IN_MEMORY_HASH_JOIN:
           LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
           return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
-        case NESTED_LOOP_JOIN:
-          //the right operand is too large, so we opt for NL implementation of left outer join
-          LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Nested Loop Join].");
-          return new NLLeftOuterJoinExec(context, plan, leftExec, rightExec);
+        case MERGE_JOIN:
+          //the right operand is too large, so we opt for merge join implementation
+          LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Merge Join].");
+          return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
         default:
           LOG.error("Invalid Left Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
-          return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
+          return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
       }
     } else {
       return createBestLeftOuterJoinPlan(context, plan, leftExec, rightExec);
@@ -499,9 +499,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
     }
     else {
-      //the right operand is too large, so we opt for NL implementation of left outer join
-      LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Nested Loop Join].");
-      return new NLLeftOuterJoinExec(context, plan, leftExec, rightExec);
+      //the right operand is too large, so we opt for merge join implementation
+      LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Merge Join].");
+      return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
     }
   }
 
@@ -565,7 +565,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return createRightOuterMergeJoinPlan(context, plan, leftExec, rightExec);
         default:
           LOG.error("Invalid Right Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback merge join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
           return createRightOuterMergeJoinPlan(context, plan, leftExec, rightExec);
       }
     } else {
@@ -588,7 +588,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
         default:
           LOG.error("Invalid Full Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback merge join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
           return createFullOuterMergeJoinPlan(context, plan, leftExec, rightExec);
       }
     } else {
@@ -858,7 +858,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     } else if (storeTableNode.getType() == NodeType.CREATE_TABLE) {
       int i = 0;
       for (int j = 0; j < partitionKeyColumns.length; j++) {
-        int id = storeTableNode.getOutSchema().getColumns().size() + j;
+        int id = storeTableNode.getOutSchema().getRootColumns().size() + j;
         Column column = storeTableNode.getInSchema().getColumn(id);
         sortSpecs[i++] = new SortSpec(column, true, false);
       }
@@ -924,7 +924,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         if (broadcastFlag) {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = TUtil.newList();
-          FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
+          FileTablespace fileStorageManager = (FileTablespace) TableSpaceManager.getFileStorageManager(ctx.getConf());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
           }
@@ -1002,7 +1002,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     sortNode.setInSchema(subOp.getSchema());
     sortNode.setOutSchema(subOp.getSchema());
     ExternalSortExec sortExec = new ExternalSortExec(ctx, sortNode, subOp);
-    LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+    LOG.info("The planner chooses [Sort Aggregation] in (" + StringUtils.join(sortSpecs) + ")");
     return new SortAggregateExec(ctx, groupbyNode, sortExec);
   }
 
@@ -1043,7 +1043,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       sortNode.setInSchema(subOp.getSchema());
       sortNode.setOutSchema(subOp.getSchema());
       child = new ExternalSortExec(context, sortNode, subOp);
-      LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+      LOG.info("The planner chooses [Sort Aggregation] in (" + StringUtils.join(sortSpecs) + ")");
     }
 
     return new WindowAggExec(context, windowAggNode, child);
@@ -1188,7 +1188,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(ctx.getConf());
     Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),

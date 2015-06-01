@@ -29,12 +29,15 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
-import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.BaseTupleComparator;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 
@@ -77,7 +80,7 @@ public class PhysicalPlanUtil {
     //In the case of partitioned table, we should return same partition key data files.
     int partitionDepth = 0;
     if (tableDesc.hasPartition()) {
-      partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
+      partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns().size();
     }
 
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
@@ -138,7 +141,7 @@ public class PhysicalPlanUtil {
                                          int currentDepth, int maxDepth) throws IOException {
     // Intermediate directory
     if (fs.isDirectory(path)) {
-      FileStatus[] files = fs.listStatus(path, FileStorageManager.hiddenFileFilter);
+      FileStatus[] files = fs.listStatus(path, FileTablespace.hiddenFileFilter);
       if (files != null && files.length > 0) {
 
         for (FileStatus eachFile : files) {
@@ -205,20 +208,15 @@ public class PhysicalPlanUtil {
    * @param nullChar A character for NULL representation
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
-    switch (meta.getStoreType()) {
-      case CSV:
-        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
-        break;
-      case TEXTFILE:
-        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
-        break;
-      case RCFILE:
-        meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
-        break;
-      case SEQUENCEFILE:
-        meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
-        break;
-      default: // nothing to do
+    String storeType = meta.getStoreType();
+    if (storeType.equalsIgnoreCase("CSV")) {
+      meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+    } else if (storeType.equalsIgnoreCase("TEXT")) {
+      meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+    } else if (storeType.equalsIgnoreCase("RCFILE")) {
+      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
     }
   }
 
@@ -229,17 +227,17 @@ public class PhysicalPlanUtil {
    * @return True if TableMeta contains NULL char property according to file format
    */
   public static boolean containsNullChar(TableMeta meta) {
-    switch (meta.getStoreType()) {
-      case CSV:
-        return meta.containsOption(StorageConstants.TEXT_NULL);
-      case TEXTFILE:
-        return meta.containsOption(StorageConstants.TEXT_NULL);
-      case RCFILE:
-        return meta.containsOption(StorageConstants.RCFILE_NULL);
-      case SEQUENCEFILE:
-        return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
-      default: // nothing to do
-        return false;
+    String storeType = meta.getStoreType();
+    if (storeType.equalsIgnoreCase("CSV")) {
+      return meta.containsOption(StorageConstants.TEXT_NULL);
+    } else if (storeType.equalsIgnoreCase("TEXT")) {
+      return meta.containsOption(StorageConstants.TEXT_NULL);
+    } else if (storeType.equalsIgnoreCase("RCFILE")) {
+      return meta.containsOption(StorageConstants.RCFILE_NULL);
+    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+      return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+    } else {
+      return false;
     }
   }
 

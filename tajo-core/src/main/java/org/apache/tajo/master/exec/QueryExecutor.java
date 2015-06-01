@@ -415,7 +415,7 @@ public class QueryExecutor {
       List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();
       CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
           .setTableName(nodeUniqName)
-          .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(CatalogProtos.StoreType.CSV).build())
+          .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType("CSV").build())
           .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
           .setStats(stats.getProto())
           .build();
@@ -436,9 +436,9 @@ public class QueryExecutor {
                                       SubmitQueryResponse.Builder responseBuilder) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    CatalogProtos.StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      StorageManager sm = StorageManager.getStorageManager(context.getConf(), storeType);
+      Tablespace sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty();
       if (!storageProperty.isSupportsInsertInto()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
@@ -474,9 +474,9 @@ public class QueryExecutor {
   public static MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
       throws Exception {
 
-    CatalogProtos.StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      StorageManager sm = StorageManager.getStorageManager(planner.getConf(), storeType);
+      Tablespace sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty();
       if (storageProperty.isSortedInsert()) {
         String tableName = PlannerUtil.getStoreTableName(plan);
@@ -496,7 +496,7 @@ public class QueryExecutor {
     }
 
     MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
-    planner.build(masterPlan);
+    planner.build(context, masterPlan);
 
     return masterPlan;
   }

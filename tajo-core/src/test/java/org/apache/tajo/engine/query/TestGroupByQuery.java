@@ -523,13 +523,13 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         "a|\\N|"
     };
 
-    TajoTestingCluster.createTable("table11", schema, tableOptions, data);
+    TajoTestingCluster.createTable("testDistinctAggregationCaseByCase4".toLowerCase(), schema, tableOptions, data);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table11 PURGE").close();
+    executeString("DROP TABLE testDistinctAggregationCaseByCase4 PURGE").close();
   }
 
   @Test
@@ -612,62 +612,62 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupByWithNullData5() throws Exception {
-    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
-    assertTableExists("table1");
+    executeString("CREATE TABLE testGroupByWithNullData5 (age INT4, point FLOAT4);").close();
+    assertTableExists("testGroupByWithNullData5".toLowerCase());
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table1");
+    executeString("DROP TABLE testGroupByWithNullData5");
   }
 
   @Test
   public final void testGroupByWithNullData6() throws Exception {
-    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
-    assertTableExists("table1");
+    executeString("CREATE TABLE testGroupByWithNullData6 (age INT4, point FLOAT4);").close();
+    assertTableExists("testGroupByWithNullData6".toLowerCase());
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table1");
+    executeString("DROP TABLE testGroupByWithNullData6");
   }
 
   @Test
   public final void testGroupByWithNullData7() throws Exception {
-    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
-    assertTableExists("table1");
+    executeString("CREATE TABLE testGroupByWithNullData7 (age INT4, point FLOAT4);").close();
+    assertTableExists("testGroupByWithNullData7".toLowerCase());
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table1");
+    executeString("DROP TABLE testGroupByWithNullData7");
   }
 
   @Test
   public final void testGroupByWithNullData8() throws Exception {
-    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
-    assertTableExists("table1");
+    executeString("CREATE TABLE testGroupByWithNullData8 (age INT4, point FLOAT4);").close();
+    assertTableExists("testGroupByWithNullData8".toLowerCase());
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table1");
+    executeString("DROP TABLE testGroupByWithNullData8");
   }
 
   @Test
   public final void testGroupByWithNullData9() throws Exception {
-    executeString("CREATE TABLE table1 (age INT4, point FLOAT4);").close();
-    assertTableExists("table1");
+    executeString("CREATE TABLE testGroupByWithNullData9 (age INT4, point FLOAT4);").close();
+    assertTableExists("testGroupByWithNullData9".toLowerCase());
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table1");
+    executeString("DROP TABLE testGroupByWithNullData9");
   }
 
   @Test
@@ -809,6 +809,58 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testGroupbyWithPythonFunc2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testPythonUdaf() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testPythonUdaf2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testPythonUdaf3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
+//  @Test
+  public final void testPythonUdafWithHaving() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testPythonUdafWithNullData() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
+//  @Test
+  public final void testComplexTargetWithPythonUdaf() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
+//  @Test
+  public final void testDistinctPythonUdafWithUnion1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

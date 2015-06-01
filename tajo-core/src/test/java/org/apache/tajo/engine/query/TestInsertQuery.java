@@ -39,7 +39,6 @@ import java.sql.ResultSet;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestInsertQuery extends QueryTestCaseBase {
@@ -816,5 +815,68 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     assertNotNull(resultDatas);
     assertEquals(expected, resultDatas);
+  }
+
+  @Test
+  public final void testInsertWithDifferentColumnOrder() throws Exception {
+    ResultSet res = executeFile("nation_diff_col_order.ddl");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "nation_diff"));
+
+    try {
+      res = executeFile("testInsertWithDifferentColumnOrder.sql");
+      res.close();
+
+      res = executeString("select * from nation_diff");
+      assertResultSet(res);
+    } finally {
+      executeString("drop table nation_diff purge;");
+    }
+  }
+
+  @Test
+  public final void testFixedCharSelectWithNoLength() throws Exception {
+    ResultSet res = executeFile("test1_nolength_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "test1"));
+
+    res = executeFile("testInsertIntoSelectWithFixedSizeCharWithNoLength.sql");
+    res.close();
+
+    //remove \0
+    String resultDatas = getTableFileContents("test1").replaceAll("\0","");
+    String expected = "a\n";
+
+    assertNotNull(resultDatas);
+    assertEquals(expected.length(), resultDatas.length());
+    assertEquals(expected, resultDatas);
+    executeString("DROP TABLE test1 PURGE");
+  }
+
+  @Test
+  public final void testFixedCharSelect() throws Exception {
+    ResultSet res = executeFile("test1_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "test1"));
+
+    res = executeFile("testInsertIntoSelectWithFixedSizeChar.sql");
+    res.close();
+
+    //remove \0
+    String resultDatas = getTableFileContents("test1").replaceAll("\0","");
+    String expected = "a\n" +
+      "abc\n" +
+      "abcde\n";
+
+    assertNotNull(resultDatas);
+    assertEquals(expected.length(), resultDatas.length());
+    assertEquals(expected, resultDatas);
+    executeString("DROP TABLE test1 PURGE");
   }
 }

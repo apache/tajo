@@ -61,6 +61,11 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
+  public void put(int fieldId, Tuple tuple) {
+    this.put(fieldId, tuple.asDatum(fieldId));
+  }
+
+  @Override
   public void clear() {
     values.clear();
   }
@@ -68,6 +73,13 @@ public class MetaDataTuple implements Tuple {
   @Override
   public void put(int fieldId, Datum value) {
     values.set(fieldId, value);
+  }
+
+  @Override
+  public void put(Datum[] values) {
+    for (int i = 0; i < values.length; i++) {
+      this.values.set(i, values[i]);
+    }
   }
 
   @Override

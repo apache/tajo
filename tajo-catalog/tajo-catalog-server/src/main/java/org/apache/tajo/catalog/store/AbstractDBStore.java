@@ -764,7 +764,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setString(2, tableName);
         pstmt.setString(3, TableType.EXTERNAL_TABLE.name());
         pstmt.setString(4, table.getPath());
-        pstmt.setString(5, CatalogUtil.getStoreTypeString(table.getMeta().getStoreType()));
+        pstmt.setString(5, table.getMeta().getStoreType());
         pstmt.executeUpdate();
         pstmt.close();
       } else {
@@ -778,7 +778,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setInt(1, dbid);
         pstmt.setString(2, tableName);
         pstmt.setString(3, TableType.BASE_TABLE.name());
-        pstmt.setString(4, CatalogUtil.getStoreTypeString(table.getMeta().getStoreType()));
+        pstmt.setString(4, table.getMeta().getStoreType());
         pstmt.executeUpdate();
         pstmt.close();
       }
@@ -1567,7 +1567,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     CatalogProtos.TableDescProto.Builder tableBuilder = null;
-    StoreType storeType;
+    String storeType;
 
     try {
       tableBuilder = CatalogProtos.TableDescProto.newBuilder();
@@ -1609,7 +1609,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         tableBuilder.setPath(res.getString(4).trim());
       }
 
-      storeType = CatalogUtil.getStoreType(res.getString(5).trim());
+      storeType = res.getString(5).trim();
 
       res.close();
       pstmt.close();

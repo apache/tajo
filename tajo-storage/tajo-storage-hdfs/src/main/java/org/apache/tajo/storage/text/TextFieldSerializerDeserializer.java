@@ -29,10 +29,11 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.Bytes;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
@@ -96,7 +97,12 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         length = trueBytes.length;
         break;
       case CHAR:
-        byte[] pad = new byte[dataType.getLength() - tuple.size(columnIndex)];
+        int size = dataType.getLength() - tuple.size(columnIndex);
+        if (size < 0){
+          throw new ValueTooLongForTypeCharactersException(dataType.getLength());
+        }
+
+        byte[] pad = new byte[size];
         bytes = tuple.getBytes(columnIndex);
         out.write(bytes);
         out.write(pad);

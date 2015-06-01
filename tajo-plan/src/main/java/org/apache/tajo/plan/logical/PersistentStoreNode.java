@@ -25,26 +25,24 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-
 
 /**
  * <code>PersistentStoreNode</code> an expression for a persistent data store step.
  * This includes some basic information for materializing data.
  */
 public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
-  @Expose protected StoreType storageType = StoreType.CSV;
+  @Expose protected String storageType = "CSV";
   @Expose protected KeyValueSet options = new KeyValueSet();
 
   protected PersistentStoreNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
   }
 
-  public void setStorageType(StoreType storageType) {
+  public void setStorageType(String storageType) {
     this.storageType = storageType;
   }
 
-  public StoreType getStorageType() {
+  public String getStorageType() {
     return this.storageType;
   }
 

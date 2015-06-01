@@ -26,7 +26,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -66,7 +65,7 @@ public class TestBSTIndexExec {
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private FileStorageManager sm;
+  private FileTablespace sm;
   private Schema idxSchema;
   private BaseTupleComparator comp;
   private BSTIndex.BSTIndexWriter writer;
@@ -91,7 +90,7 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     idxPath = new Path(workDir, "test.idx");
 
@@ -112,7 +111,7 @@ public class TestBSTIndexExec {
     writer.open();
     long offset;
 
-    meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    meta = CatalogUtil.newTableMeta("CSV");
     tablePath = StorageUtil.concatPath(workDir, "employee", "table.csv");
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());
@@ -163,7 +162,7 @@ public class TestBSTIndexExec {
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
-    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);

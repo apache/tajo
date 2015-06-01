@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
 
@@ -74,7 +75,12 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         length = trueBytes.length;
         break;
       case CHAR:
-        byte[] pad = new byte[col.getDataType().getLength() - tuple.size(index)];
+        int size = col.getDataType().getLength() - tuple.size(index);
+        if (size < 0){
+          throw new ValueTooLongForTypeCharactersException(col.getDataType().getLength());
+        }
+
+        byte[] pad = new byte[size];
         bytes = tuple.getTextBytes(index);
         out.write(bytes);
         out.write(pad);

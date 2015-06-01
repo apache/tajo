@@ -41,16 +41,16 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
   private TableProto proto = TableProto.getDefaultInstance();
   private boolean viaProto = false;
 
-	@Expose protected StoreType storeType;
+	@Expose protected String storeType;
 	@Expose protected KeyValueSet options;
 	
 	private TableMeta() {
 	  builder = TableProto.newBuilder();
 	}
 	
-	public TableMeta(StoreType type, KeyValueSet options) {
+	public TableMeta(String storeType, KeyValueSet options) {
 	  this();
-    this.storeType = type;
+    this.storeType = storeType;
     this.options = new KeyValueSet(options);
   }
 	
@@ -59,7 +59,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
     viaProto = true;
 	}
 	
-	public StoreType getStoreType() {
+	public String getStoreType() {
     TableProtoOrBuilder p = viaProto ? proto : builder;
     if (this.storeType != null) {
       return storeType;
@@ -136,8 +136,10 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	public boolean equals(Object object) {
 		if(object instanceof TableMeta) {
 			TableMeta other = (TableMeta) object;
-			
-			return this.getProto().equals(other.getProto());
+
+			boolean eq = this.getStoreType().equals(other.getStoreType());
+			eq = eq && this.getOptions().equals(other.getOptions());
+			return eq;
 		}
 		
 		return false;		

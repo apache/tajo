@@ -29,7 +29,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -37,8 +36,9 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TableSpaceManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,12 +54,12 @@ public class DDLExecutor {
 
   private final TajoMaster.MasterContext context;
   private final CatalogService catalog;
-  private final StorageManager storageManager;
+  private final Tablespace tablespace;
 
   public DDLExecutor(TajoMaster.MasterContext context) {
     this.context = context;
     this.catalog = context.getCatalog();
-    this.storageManager = context.getStorageManager();
+    this.tablespace = context.getStorageManager();
   }
 
   public boolean execute(QueryContext queryContext, LogicalPlan plan) throws IOException {
@@ -210,7 +210,7 @@ public class DDLExecutor {
         createTable.getPartitionMethod(), ifNotExists);
   }
 
-  public TableDesc createTable(QueryContext queryContext, String tableName, CatalogProtos.StoreType storeType,
+  public TableDesc createTable(QueryContext queryContext, String tableName, String storeType,
                                Schema schema, TableMeta meta, Path path, boolean isExternal,
                                PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
     String databaseName;
@@ -243,7 +243,7 @@ public class DDLExecutor {
       desc.setPartitionMethod(partitionDesc);
     }
 
-    StorageManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
+    TableSpaceManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
 
     if (catalog.createTable(desc)) {
       LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
@@ -290,7 +290,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        StorageManager.getStorageManager(queryContext.getConf(),
+        TableSpaceManager.getStorageManager(queryContext.getConf(),
             tableDesc.getMeta().getStoreType()).purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());

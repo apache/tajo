@@ -28,11 +28,11 @@
   <!-- Storage Manager Configuration -->
   <property>
     <name>tajo.storage.manager.hdfs.class</name>
-    <value>org.apache.tajo.storage.FileStorageManager</value>
+    <value>org.apache.tajo.storage.FileTablespace</value>
   </property>
   <property>
     <name>tajo.storage.manager.hbase.class</name>
-    <value>org.apache.tajo.storage.hbase.HBaseStorageManager</value>
+    <value>org.apache.tajo.storage.hbase.HBaseTablespace</value>
   </property>
 
   <!--- Registered Scanner Handler -->

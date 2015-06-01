@@ -77,6 +77,29 @@ public class BaseServiceTracker implements ServiceTracker {
   }
 
   @Override
+  public int getState(String masterName, TajoConf conf) throws ServiceTrackerException {
+    String masterAddress = getMasterAddress();
+
+    if (masterAddress.equals(masterName)) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  @Override
+  public int formatHA(TajoConf conf) throws ServiceTrackerException {
+    throw new ServiceTrackerException("Cannot format HA directories on non-HA mode");
+  }
+
+  @Override
+  public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
+    List<String> list = TUtil.newList();
+    list.add(getMasterAddress());
+    return list;
+  }
+
+  @Override
   public void register() throws IOException {
   }
 
@@ -85,7 +108,7 @@ public class BaseServiceTracker implements ServiceTracker {
   }
 
   @Override
-  public boolean isActiveStatus() {
+  public boolean isActiveMaster() {
     return true;
   }
 
@@ -94,4 +117,10 @@ public class BaseServiceTracker implements ServiceTracker {
     return tajoMasterInfos;
   }
 
+  private String getMasterAddress() {
+    String masterAddress = tajoMasterInfo.getTajoMasterAddress().getAddress().getHostAddress() + ":" + tajoMasterInfo
+      .getTajoMasterAddress().getPort();
+
+    return masterAddress;
+  }
 }

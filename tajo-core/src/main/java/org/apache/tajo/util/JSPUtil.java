@@ -197,7 +197,7 @@ public class JSPUtil {
     ServiceTracker haService = context.getHAService();
     String activeLabel = "";
     if (haService != null) {
-      if (haService.isActiveStatus()) {
+      if (haService.isActiveMaster()) {
         activeLabel = "<font color='#1e90ff'>(active)</font>";
       } else {
         activeLabel = "<font color='#1e90ff'>(backup)</font>";
@@ -309,20 +309,6 @@ public class JSPUtil {
     } else {
       return 0;
     }
-  }
-
-  public static void sortFunctionDesc(List<FunctionDesc> functions) {
-    Collections.sort(functions, new java.util.Comparator<FunctionDesc>() {
-      @Override
-      public int compare(FunctionDesc f1, FunctionDesc f2) {
-        int nameCompared = f1.getFunctionName().compareTo(f2.getFunctionName());
-        if(nameCompared != 0) {
-          return nameCompared;
-        } else {
-          return f1.getReturnType().getType().compareTo(f2.getReturnType().getType());
-        }
-      }
-    });
   }
 
   static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.#");

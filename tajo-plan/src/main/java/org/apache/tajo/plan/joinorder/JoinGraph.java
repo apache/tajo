@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.NamedExprsManager;
@@ -33,7 +34,6 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.RelationNode;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -111,8 +111,8 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
           new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getRightChild()));
 
       addEdge(
-          TUtil.collectionToString(leftNodeRelationName, ", "),
-          TUtil.collectionToString(rightNodeRelationName, ", "),
+          StringUtils.join(leftNodeRelationName, ", "),
+          StringUtils.join(rightNodeRelationName, ", "),
           edge);
 
       Set<EvalNode> allInOneCnf = new HashSet<EvalNode>();

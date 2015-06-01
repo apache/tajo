@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.Tuple;
 import parquet.hadoop.api.WriteSupport;
 import parquet.io.api.Binary;
@@ -130,6 +131,12 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         recordConsumer.addDouble(tuple.getFloat8(index));
         break;
       case CHAR:
+        if (tuple.size(index) > column.getDataType().getLength()) {
+          throw new ValueTooLongForTypeCharactersException(column.getDataType().getLength());
+        }
+
+        recordConsumer.addBinary(Binary.fromByteArray(tuple.getTextBytes(index)));
+        break;
       case TEXT:
         recordConsumer.addBinary(Binary.fromByteArray(tuple.getBytes(index)));
         break;

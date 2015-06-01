@@ -27,7 +27,6 @@ import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -66,10 +65,10 @@ public class TestRowFile {
     schema.addColumn("age", Type.INT8);
     schema.addColumn("description", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
+    TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
 
-    FileStorageManager sm =
-        (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    FileTablespace sm =
+        (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");
@@ -110,7 +109,7 @@ public class TestRowFile {
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;

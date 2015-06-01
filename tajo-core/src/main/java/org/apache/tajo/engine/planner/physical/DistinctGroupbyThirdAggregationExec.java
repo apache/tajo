@@ -110,7 +110,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
 
     int index = 0;
-    for (Column eachOutputColumn: outSchema.getColumns()) {
+    for (Column eachOutputColumn: outSchema.getRootColumns()) {
       // If column is avg aggregation function, outschema's column type is float
       // but groupbyResultTupleIndex's column type is protobuf
 
@@ -253,7 +253,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       if (aggrFunctions != null) {
         for (AggregationFunctionCallEval eachFunction: aggrFunctions) {
           eachFunction.bind(context.getEvalContext(), inSchema);
-          eachFunction.setFinalPhase();
+          eachFunction.setLastPhase();
         }
       }
       newFunctionContext();

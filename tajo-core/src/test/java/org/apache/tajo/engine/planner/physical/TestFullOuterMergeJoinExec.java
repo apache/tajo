@@ -24,7 +24,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -108,9 +107,9 @@ public class TestFullOuterMergeJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
     Path dep3Path = new Path(testDir, "dep3.csv");
-    Appender appender1 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender1 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
     VTuple tuple = new VTuple(dep3Schema.size());
@@ -147,9 +146,9 @@ public class TestFullOuterMergeJoinExec {
     dep4Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep4Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta dep4Meta = CatalogUtil.newTableMeta("CSV");
     Path dep4Path = new Path(testDir, "dep4.csv");
-    Appender appender4 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender4 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
     VTuple tuple4 = new VTuple(dep4Schema.size());
@@ -179,9 +178,9 @@ public class TestFullOuterMergeJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
     Path job3Path = new Path(testDir, "job3.csv");
-    Appender appender2 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender2 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
     VTuple tuple2 = new VTuple(job3Schema.size());
@@ -219,9 +218,9 @@ public class TestFullOuterMergeJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
     Path emp3Path = new Path(testDir, "emp3.csv");
-    Appender appender3 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender3 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
     VTuple tuple3 = new VTuple(emp3Schema.size());
@@ -272,9 +271,9 @@ public class TestFullOuterMergeJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
     Path phone3Path = new Path(testDir, "phone3.csv");
-    Appender appender5 = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender5 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(phone3Meta, phone3Schema, phone3Path);
     appender5.init();
     appender5.flush();
@@ -317,9 +316,9 @@ public class TestFullOuterMergeJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
     FileFragment[] emp3Frags =
-        FileStorageManager.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
     FileFragment[] dep3Frags =
-        FileStorageManager.splitNG(conf, DEP3_NAME, dep3.getMeta(), new Path(dep3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, DEP3_NAME, dep3.getMeta(), new Path(dep3.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testFullOuterMergeJoin0");
@@ -354,9 +353,9 @@ public class TestFullOuterMergeJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
     FileFragment[] emp3Frags =
-        FileStorageManager.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
     FileFragment[] job3Frags =
-        FileStorageManager.splitNG(conf, JOB3_NAME, job3.getMeta(), new Path(job3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, JOB3_NAME, job3.getMeta(), new Path(job3.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testFullOuterMergeJoin1");
@@ -391,9 +390,9 @@ public class TestFullOuterMergeJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
     FileFragment[] emp3Frags =
-        FileStorageManager.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
     FileFragment[] job3Frags =
-        FileStorageManager.splitNG(conf, JOB3_NAME, job3.getMeta(), new Path(job3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, JOB3_NAME, job3.getMeta(), new Path(job3.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testFullOuterMergeJoin2");
@@ -429,9 +428,9 @@ public class TestFullOuterMergeJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
     FileFragment[] emp3Frags =
-        FileStorageManager.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
     FileFragment[] dep4Frags =
-        FileStorageManager.splitNG(conf, DEP4_NAME, dep4.getMeta(), new Path(dep4.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, DEP4_NAME, dep4.getMeta(), new Path(dep4.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(emp3Frags, dep4Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testFullOuterMergeJoin3");
@@ -469,10 +468,10 @@ public class TestFullOuterMergeJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
     FileFragment[] emp3Frags =
-        FileStorageManager.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
     FileFragment[] phone3Frags =
-        FileStorageManager.splitNG(conf, PHONE3_NAME, phone3.getMeta(), new Path(phone3.getPath()),
-        Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, PHONE3_NAME, phone3.getMeta(), new Path(phone3.getPath()),
+            Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(emp3Frags, phone3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testFullOuterMergeJoin4");
@@ -508,10 +507,10 @@ public class TestFullOuterMergeJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
     FileFragment[] emp3Frags =
-        FileStorageManager.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(), new Path(emp3.getPath()), Integer.MAX_VALUE);
     FileFragment[] phone3Frags =
-        FileStorageManager.splitNG(conf, PHONE3_NAME, phone3.getMeta(), new Path(phone3.getPath()),
-        Integer.MAX_VALUE);
+        FileTablespace.splitNG(conf, PHONE3_NAME, phone3.getMeta(), new Path(phone3.getPath()),
+            Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(phone3Frags,emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testFullOuterMergeJoin5");

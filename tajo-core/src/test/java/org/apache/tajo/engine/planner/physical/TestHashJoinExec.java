@@ -25,7 +25,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -84,9 +83,9 @@ public class TestHashJoinExec {
     employeeSchema.addColumn("memid", Type.INT4);
     employeeSchema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     VTuple tuple = new VTuple(employeeSchema.size());
@@ -107,9 +106,9 @@ public class TestHashJoinExec {
     peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -151,9 +150,9 @@ public class TestHashJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.IN_MEMORY_HASH_JOIN);
 
-    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(),
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(),
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
         new Path(people.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
@@ -194,9 +193,9 @@ public class TestHashJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.IN_MEMORY_HASH_JOIN);
 
-    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(),
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
         new Path(people.getPath()), Integer.MAX_VALUE);
-    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(),
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 

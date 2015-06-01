@@ -34,10 +34,7 @@ import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
-import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -168,7 +165,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
     }
 
-    appender = ((FileStorageManager)StorageManager.getFileStorageManager(context.getConf()))
+    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(context.getConf()))
         .getAppender(meta, outSchema, actualFilePath);
 
     appender.enableStats();

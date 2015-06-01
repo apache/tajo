@@ -137,6 +137,16 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   @Override
+  public void put(int fieldId, Tuple tuple) {
+    throw new UnsupportedException("UnSafeTuple does not support put(int, Tuple).");
+  }
+
+  @Override
+  public void put(Datum[] values) {
+    throw new UnsupportedException("UnSafeTuple does not support put(Datum[]).");
+  }
+
+  @Override
   public Datum asDatum(int fieldId) {
     if (isBlankOrNull(fieldId)) {
       return NullDatum.get();

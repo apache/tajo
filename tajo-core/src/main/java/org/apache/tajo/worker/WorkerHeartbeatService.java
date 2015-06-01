@@ -47,6 +47,7 @@ import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.NodeHeartbeat;
 /**
  * It periodically sends heartbeat to {@link org.apache.tajo.master.rm.TajoResourceTracker} via asynchronous rpc.
  */
+@Deprecated
 public class WorkerHeartbeatService extends AbstractService {
   /** class logger */
   private final static Log LOG = LogFactory.getLog(WorkerHeartbeatService.class);
@@ -74,12 +75,12 @@ public class WorkerHeartbeatService extends AbstractService {
     this.systemConf = (TajoConf) conf;
 
     this.connectionManager = RpcClientManager.getInstance();
+    thread = new WorkerHeartbeatThread();
     super.serviceInit(conf);
   }
 
   @Override
   public void serviceStart() throws Exception {
-    thread = new WorkerHeartbeatThread();
     thread.start();
     super.serviceStart();
   }

@@ -29,7 +29,6 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.builtin.SumInt;
@@ -40,10 +39,10 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -85,7 +84,7 @@ public class TestPlannerUtil {
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV");
     TableDesc people = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
@@ -93,13 +92,13 @@ public class TestPlannerUtil {
 
     TableDesc student =
         new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV,
+            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "CSV",
             new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score =
         new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV,
+            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "CSV",
             new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 

@@ -26,6 +26,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -106,6 +107,20 @@ public class MasterPlan {
 
   public ExecutionBlock getExecBlock(ExecutionBlockId execBlockId) {
     return execBlockMap.get(execBlockId);
+  }
+
+  public void removeExecBlock(ExecutionBlockId execBlockId) throws IllegalStateException {
+    List<DataChannel> channels = getIncomingChannels(execBlockId);
+    if (channels != null && channels.size() > 0) {
+      throw new IllegalStateException("Cannot remove execution blocks because some other execution blocks are connected");
+    }
+
+    channels = getOutgoingChannels(execBlockId);
+    if (channels != null && channels.size() > 0) {
+      throw new IllegalStateException("Cannot remove execution blocks because some other execution blocks are connected");
+    }
+
+    execBlockMap.remove(execBlockId);
   }
 
   public void addConnect(DataChannel dataChannel) {
@@ -204,6 +219,10 @@ public class MasterPlan {
     return getChild(executionBlock.getId(), idx);
   }
 
+  public void accept(ExecutionBlockId v, DirectedGraphVisitor<ExecutionBlockId> visitor) {
+    execBlockGraph.accept(v, visitor);
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -218,15 +237,13 @@ public class MasterPlan {
     sb.append("Order of Execution\n");
     sb.append("-------------------------------------------------------------------------------");
     int order = 1;
-    while (executionOrderCursor.hasNext()) {
-      ExecutionBlock currentEB = executionOrderCursor.nextBlock();
+    for (ExecutionBlock currentEB : executionOrderCursor) {
       sb.append("\n").append(order).append(": ").append(currentEB.getId());
       order++;
     }
     sb.append("\n-------------------------------------------------------------------------------\n");
 
-    while(cursor.hasNext()) {
-      ExecutionBlock block = cursor.nextBlock();
+    for (ExecutionBlock block : executionOrderCursor) {
 
       boolean terminal = false;
       sb.append("\n");

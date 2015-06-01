@@ -89,7 +89,7 @@ public class TupleUtil {
     }
 
     int i = 0;
-    for (Column col : sortSchema.getColumns()) {
+    for (Column col : sortSchema.getRootColumns()) {
       ColumnStats columnStat = statMap.get(col);
       if (columnStat == null) {
         continue;
@@ -121,7 +121,7 @@ public class TupleUtil {
       statSet.put(stat.getColumn(), stat);
     }
 
-    for (Column col : target.getColumns()) {
+    for (Column col : target.getRootColumns()) {
       Preconditions.checkState(statSet.containsKey(col),
           "ERROR: Invalid Column Stats (column stats: " + colStats + ", there exists not target " + col);
     }
@@ -134,7 +134,7 @@ public class TupleUtil {
     // In outer join, empty table could be searched.
     // As a result, min value and max value would be null.
     // So, we should put NullDatum for this case.
-    for (Column col : target.getColumns()) {
+    for (Column col : target.getRootColumns()) {
       if (sortSpecs[sortSpecIndex].isAscending()) {
         if (statSet.get(col).getMinValue() != null)
           startTuple.put(i, statSet.get(col).getMinValue());
@@ -169,7 +169,7 @@ public class TupleUtil {
         else
           endTuple.put(i, DatumFactory.createNullDatum());
       }
-      if (target.getColumns().size() == sortSpecs.length) {
+      if (target.getRootColumns().size() == sortSpecs.length) {
         // Not composite column sort
         sortSpecIndex++;
       }

@@ -25,7 +25,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -85,9 +84,9 @@ public class TestProgressExternalSortExec {
     schema.addColumn("empid", TajoDataTypes.Type.INT4);
     schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.RAW);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("RAW");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
@@ -135,7 +134,7 @@ public class TestProgressExternalSortExec {
   }
 
   private void testProgress(int sortBufferBytesNum) throws Exception {
-    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employee.getMeta(),
+    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),

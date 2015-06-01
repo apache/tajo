@@ -31,8 +31,14 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="org.apache.tajo.service.ServiceTracker" %>
+<%@ page import="java.net.InetSocketAddress" %>
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
+
+  String[] masterName = master.getMasterName().split(":");
+  InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
+  String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
+
   CatalogService catalog = master.getCatalog();
 
   String catalogType = request.getParameter("type");
@@ -63,7 +69,7 @@
   ServiceTracker haService = master.getContext().getHAService();
   String activeLabel = "";
   if (haService != null) {
-    if (haService.isActiveStatus()) {
+    if (haService.isActiveMaster()) {
       activeLabel = "<font color='#1e90ff'>(active)</font>";
     } else {
       activeLabel = "<font color='#1e90ff'>(backup)</font>";
@@ -81,7 +87,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=activeLabel%></h2>
   <hr/>
   <h3>Catalog</h3>
   <div>
@@ -143,7 +149,7 @@
           <div style='margin-top:5px'>
 <%
     if(tableDesc != null) {
-      List<Column> columns = tableDesc.getSchema().getColumns();
+      List<Column> columns = tableDesc.getSchema().getRootColumns();
       out.write("<table border='1' class='border_table'><tr><th>No</th><th>Column name</th><th>Type</th></tr>");
       int columnIndex = 1;
       for(Column eachColumn: columns) {
@@ -155,7 +161,7 @@
 
       if (tableDesc.getPartitionMethod() != null) {
         PartitionMethodDesc partition = tableDesc.getPartitionMethod();
-        List<Column> partitionColumns = partition.getExpressionSchema().getColumns();
+        List<Column> partitionColumns = partition.getExpressionSchema().getRootColumns();
         String partitionColumnStr = "";
         String prefix = "";
         for (Column eachColumn: partitionColumns) {

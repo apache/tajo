@@ -22,9 +22,6 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.rpc.NettyClientBase;
-
-import java.io.IOException;
 
 /**
  * This class provides a catalog service interface in
@@ -34,20 +31,12 @@ public class LocalCatalogWrapper extends AbstractCatalogClient {
   private CatalogServer catalog;
   private CatalogProtocol.CatalogProtocolService.BlockingInterface stub;
 
-  public LocalCatalogWrapper(final TajoConf conf) throws IOException {
-    super(conf, null);
-    this.catalog = new CatalogServer();
-    this.catalog.init(conf);
-    this.catalog.start();
-    this.stub = catalog.getHandler();
-  }
-
   public LocalCatalogWrapper(final CatalogServer server) {
     this(server, server.getConf());
   }
 
   public LocalCatalogWrapper(final CatalogServer server, final TajoConf conf) {
-    super(conf, null);
+    super(conf);
     this.catalog = server;
     this.stub = server.getHandler();
   }
@@ -57,7 +46,12 @@ public class LocalCatalogWrapper extends AbstractCatalogClient {
   }
 
   @Override
-  CatalogProtocol.CatalogProtocolService.BlockingInterface getStub(NettyClientBase client) {
+  CatalogProtocol.CatalogProtocolService.BlockingInterface getStub() {
     return stub;
+  }
+
+  @Override
+  public void close() {
+    //nothing to do
   }
 }

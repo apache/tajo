@@ -27,7 +27,7 @@ import org.apache.tajo.util.datetime.TimeMeta;
 /* This class doesn’t have content datum. if selected column is zero, this is useful
 *  e.g. select count(*) from table
 * */
-public class EmptyTuple implements Tuple, Cloneable {
+public class EmptyTuple extends NullTuple {
 
   private static EmptyTuple tuple;
   private static Datum[] EMPTY_VALUES = new Datum[0];
@@ -41,6 +41,7 @@ public class EmptyTuple implements Tuple, Cloneable {
   }
 
   private EmptyTuple() {
+    super(0);
   }
 
   @Override
@@ -171,12 +172,12 @@ public class EmptyTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public Tuple clone() throws CloneNotSupportedException {
-    throw new CloneNotSupportedException();
+  public Datum[] getValues() {
+    return EMPTY_VALUES;
   }
 
   @Override
-  public Datum[] getValues() {
-    return EMPTY_VALUES;
+  public Tuple clone() throws CloneNotSupportedException {
+    return this;
   }
 }

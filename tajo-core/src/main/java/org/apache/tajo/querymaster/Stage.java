@@ -34,7 +34,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -60,8 +59,9 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
@@ -712,7 +712,7 @@ public class Stage implements EventHandler<StageEvent> {
    */
   private void finalizeStats() {
     TableStats[] statsArray;
-    if (block.hasUnion()) {
+    if (block.isUnionOnly()) {
       statsArray = computeStatFromUnionBlock(this);
     } else {
       statsArray = computeStatFromTasks();
@@ -721,10 +721,10 @@ public class Stage implements EventHandler<StageEvent> {
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
 
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
-    StoreType storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+    String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
     if (storeType == null) {
       // get default or store type
-      storeType = StoreType.CSV;
+      storeType = "CSV";
     }
 
     schema = channel.getSchema();
@@ -784,7 +784,7 @@ public class Stage implements EventHandler<StageEvent> {
 
       try {
         // Union operator does not require actual query processing. It is performed logically.
-        if (execBlock.hasUnion()) {
+        if (execBlock.isUnionOnly()) {
           // Though union operator does not be processed at all, but it should handle the completion event.
           stage.complete();
           state = StageState.SUCCEEDED;
@@ -883,7 +883,7 @@ public class Stage implements EventHandler<StageEvent> {
       }
 
       // We assume this execution block the first stage of join if two or more tables are included in this block,
-      if (parent != null && parent.getScanNodes().length >= 2) {
+      if (parent != null && (parent.getNonBroadcastRelNum()) >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer
@@ -990,6 +990,7 @@ public class Stage implements EventHandler<StageEvent> {
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock execBlock = stage.getBlock();
       if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
+        // Some execution blocks can have broadcast table even though they don't have any join nodes
         scheduleFragmentsForLeafQuery(stage);
       } else if (execBlock.getScanNodes().length > 1) { // Case 2: Join
         Repartitioner.scheduleFragmentsForJoinQuery(stage.schedulerContext, stage);
@@ -1089,13 +1090,13 @@ public class Stage implements EventHandler<StageEvent> {
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        FileStorageManager storageManager =
-            (FileStorageManager)StorageManager.getFileStorageManager(stage.getContext().getConf());
+        FileTablespace storageManager =
+            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
         fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
-        StorageManager storageManager =
-            StorageManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
-        fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
+        Tablespace tablespace =
+            TableSpaceManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
+        fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan);
       }
 
       Stage.scheduleFragments(stage, fragments);

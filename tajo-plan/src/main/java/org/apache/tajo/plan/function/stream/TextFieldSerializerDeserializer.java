@@ -23,12 +23,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.NumberUtil;
 
@@ -60,11 +61,10 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   }
 
   @Override
-  public int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars)
+  public int serialize(OutputStream out, Datum datum, TajoDataTypes.DataType dataType, byte[] nullChars)
       throws IOException {
     byte[] bytes;
     int length = 0;
-    TajoDataTypes.DataType dataType = col.getDataType();
 
     if (datum == null || datum instanceof NullDatum) {
       switch (dataType.getType()) {
@@ -85,7 +85,12 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         length = trueBytes.length;
         break;
       case CHAR:
-        byte[] pad = new byte[dataType.getLength() - datum.size()];
+        int size = dataType.getLength() - datum.size();
+        if (size < 0){
+          throw new ValueTooLongForTypeCharactersException(dataType.getLength());
+        }
+
+        byte[] pad = new byte[size];
         bytes = datum.asTextBytes();
         out.write(bytes);
         out.write(pad);
@@ -139,7 +144,8 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case ANY:
         AnyDatum anyDatum = (AnyDatum) datum;
-        length = serialize(out, anyDatum.getActual(), new Column("any", anyDatum.getActual().type()), 0, nullChars);
+        length = serialize(out, anyDatum.getActual(), CatalogUtil.newSimpleDataType(anyDatum.getActual().type()),
+            nullChars);
         break;
       default:
         throw new UnsupportedException(dataType.getType().name());
@@ -148,9 +154,9 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   }
 
   @Override
-  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars) throws IOException {
+  public Datum deserialize(ByteBuf buf, TajoDataTypes.DataType dataType, ByteBuf nullChars) throws IOException {
     Datum datum;
-    TajoDataTypes.Type type = col.getDataType().getType();
+    TajoDataTypes.Type type = dataType.getType();
     boolean nullField;
     if (type == TajoDataTypes.Type.TEXT || type == TajoDataTypes.Type.CHAR) {
       nullField = isNullText(buf, nullChars);
@@ -224,7 +230,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
               decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case PROTOBUF: {
-          ProtobufDatumFactory factory = ProtobufDatumFactory.get(col.getDataType());
+          ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
           Message.Builder builder = factory.newBuilder();
           try {
             byte[] bytes = new byte[buf.readableBytes()];

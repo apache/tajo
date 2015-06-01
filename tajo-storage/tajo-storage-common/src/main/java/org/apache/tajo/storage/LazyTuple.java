@@ -81,6 +81,11 @@ public class LazyTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public void put(int fieldId, Tuple tuple) {
+    this.put(fieldId, tuple.asDatum(fieldId));
+  }
+
+  @Override
   public void clear() {
     for (int i = 0; i < values.length; i++) {
       values[i] = null;
@@ -95,6 +100,11 @@ public class LazyTuple implements Tuple, Cloneable {
   public void put(int fieldId, Datum value) {
     values[fieldId] = value;
     textBytes[fieldId] = null;
+  }
+
+  @Override
+  public void put(Datum[] values) {
+    System.arraycopy(values, 0, this.values, 0, this.values.length);
   }
 
   @Override

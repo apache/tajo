@@ -34,7 +34,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
@@ -186,24 +185,35 @@ public class EvalNodeDeserializer {
               evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
             }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
-            AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {
               AggregationFunctionCallEval aggFunc =
-                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), params);
 
               PlanProto.AggFunctionEvalSpec aggFunctionProto = protoNode.getAggFunction();
-              aggFunc.setIntermediatePhase(aggFunctionProto.getIntermediatePhase());
-              aggFunc.setFinalPhase(aggFunctionProto.getFinalPhase());
+              if (aggFunctionProto.getFirstPhase() && aggFunctionProto.getLastPhase()) {
+                aggFunc.setFirstAndLastPhase();
+              } else if (aggFunctionProto.getFirstPhase()) {
+                aggFunc.setFirstPhase();
+              } else if (aggFunctionProto.getLastPhase()) {
+                aggFunc.setLastPhase();
+              } else {
+                aggFunc.setIntermediatePhase();
+              }
               if (aggFunctionProto.hasAlias()) {
                 aggFunc.setAlias(aggFunctionProto.getAlias());
               }
               current = aggFunc;
 
+              if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
+                evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc,
+                    aggFunc.isFirstPhase()  , aggFunc.isLastPhase()));
+              }
+
             } else {
               WinFunctionEvalSpec windowFuncProto = protoNode.getWinFunction();
 
               WindowFunctionEval winFunc =
-                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params,
+                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), params,
                       convertWindowFrame(windowFuncProto.getWindowFrame()));
 
               if (windowFuncProto.getSortSpecCount() > 0) {

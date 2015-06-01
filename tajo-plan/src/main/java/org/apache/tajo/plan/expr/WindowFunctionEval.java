@@ -18,27 +18,26 @@
 
 package org.apache.tajo.plan.expr;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+
+import java.util.Arrays;
 
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
   @Expose private SortSpec [] sortSpecs;
   @Expose WindowSpec.WindowFrame windowFrame;
 
-  public WindowFunctionEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs,
+  public WindowFunctionEval(FunctionDesc desc, EvalNode[] givenArgs,
                             WindowSpec.WindowFrame windowFrame) {
-    super(EvalType.WINDOW_FUNCTION, desc, instance, givenArgs);
+    super(EvalType.WINDOW_FUNCTION, desc, givenArgs);
     this.windowFrame = windowFrame;
   }
 
@@ -60,15 +59,15 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
 
   @Override
   protected void mergeParam(FunctionContext context, Tuple params) {
-    instance.eval(context, params);
+    functionInvoke.eval(context, params);
   }
 
   @Override
   public Datum terminate(FunctionContext context) {
-    if (!isBinded) {
+    if (!isBound) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
-    return instance.terminate(context);
+    return functionInvoke.terminate(context);
   }
 
   @Override
@@ -122,7 +121,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     sb.append(funcDesc.getFunctionName()).append("(").append(isDistinct() ? " distinct" : "").append(sb)
         .append(")");
     if (hasSortSpecs()) {
-      sb.append("ORDER BY ").append(TUtil.arrayToString(sortSpecs));
+      sb.append("ORDER BY ").append(StringUtils.join(sortSpecs));
     }
     return sb.toString();
   }

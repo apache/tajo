@@ -264,8 +264,8 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.createTable(new TableDesc(qualifiedTableName, inputSchema,
-          CatalogProtos.StoreType.CSV, new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
+      cat.createTable(new TableDesc(qualifiedTableName, inputSchema,"CSV",
+          new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
     }
 
     Target [] targets;

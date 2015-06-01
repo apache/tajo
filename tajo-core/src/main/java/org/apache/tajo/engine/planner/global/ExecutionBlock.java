@@ -17,6 +17,7 @@ package org.apache.tajo.engine.planner.global;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -39,8 +40,56 @@ public class ExecutionBlock {
 
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
+  private boolean isUnionOnly;
 
-  private Set<String> broadcasted = new HashSet<String>();
+  private Map<String, ScanNode> broadcastRelations = TUtil.newHashMap();
+
+  /*
+   * An execution block is null-supplying or preserved-row when its output is used as an input for outer join.
+   * These properties are decided based on the type of parent execution block's outer join.
+   * Here are brief descriptions for these properties.
+   *
+   * 1) left outer join
+   *
+   *              parent eb
+   *         -------------------
+   *         | left outer join |
+   *         -------------------
+   *           /              \
+   *   left child eb     right child eb
+   * ----------------- ------------------
+   * | preserved-row | | null-supplying |
+   * ----------------- ------------------
+   *
+   * 2) right outer join
+   *
+   *               parent eb
+   *         --------------------
+   *         | right outer join |
+   *         --------------------
+   *           /              \
+   *   left child eb     right child eb
+   * ------------------ -----------------
+   * | null-supplying | | preserved-row |
+   * ------------------ -----------------
+   *
+   * 3) full outer join
+   *
+   *               parent eb
+   *         -------------------
+   *         | full outer join |
+   *         -------------------
+   *           /              \
+   *   left child eb      right child eb
+   * ------------------ ------------------
+   * | null-supplying | | preserved-row  |
+   * | preserved-row  | | null-supplying |
+   * ------------------ ------------------
+   *
+   * The null-supplying and preserved-row properties are used to find which relations will be broadcasted.
+   */
+  protected boolean nullSuppllying = false;
+  protected boolean preservedRow = false;
 
   public ExecutionBlock(ExecutionBlockId executionBlockId) {
     this.executionBlockId = executionBlockId;
@@ -53,6 +102,7 @@ public class ExecutionBlock {
   public void setPlan(LogicalNode plan) {
     hasJoinPlan = false;
     hasUnionPlan = false;
+    isUnionOnly = true;
     this.scanlist.clear();
     this.plan = plan;
 
@@ -65,6 +115,12 @@ public class ExecutionBlock {
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);
+      // TODO: the below code should be improved to handle every case
+      if (isUnionOnly && node.getType() != NodeType.ROOT && node.getType() != NodeType.TABLE_SUBQUERY &&
+          node.getType() != NodeType.SCAN && node.getType() != NodeType.PARTITIONS_SCAN &&
+          node.getType() != NodeType.UNION && node.getType() != NodeType.PROJECTION) {
+        isUnionOnly = false;
+      }
       if (node instanceof UnaryNode) {
         UnaryNode unary = (UnaryNode) node;
         s.add(s.size(), unary.getChild());
@@ -85,6 +141,9 @@ public class ExecutionBlock {
       } else if (node instanceof StoreTableNode) {
         store = (StoreTableNode)node;
       }
+    }
+    if (!hasUnionPlan) {
+      isUnionOnly = false;
     }
   }
 
@@ -108,6 +167,16 @@ public class ExecutionBlock {
     return store;
   }
 
+  public int getNonBroadcastRelNum() {
+    int nonBroadcastRelNum = 0;
+    for (ScanNode scanNode : scanlist) {
+      if (!broadcastRelations.containsKey(scanNode.getCanonicalName())) {
+        nonBroadcastRelNum++;
+      }
+    }
+    return nonBroadcastRelNum;
+  }
+
   public ScanNode [] getScanNodes() {
     return this.scanlist.toArray(new ScanNode[scanlist.size()]);
   }
@@ -120,25 +189,49 @@ public class ExecutionBlock {
     return hasUnionPlan;
   }
 
-  public void addBroadcastTable(String tableName) {
-    broadcasted.add(tableName);
-    enforcer.addBroadcast(tableName);
+  public boolean isUnionOnly() {
+    return isUnionOnly;
   }
 
-  public void removeBroadcastTable(String tableName) {
-    broadcasted.remove(tableName);
-    enforcer.removeBroadcast(tableName);
+  public void addBroadcastRelation(ScanNode relationNode) {
+    broadcastRelations.put(relationNode.getCanonicalName(), relationNode);
+    enforcer.addBroadcast(relationNode.getCanonicalName());
   }
 
-  public boolean isBroadcastTable(String tableName) {
-    return broadcasted.contains(tableName);
+  public void removeBroadcastRelation(ScanNode relationNode) {
+    broadcastRelations.remove(relationNode.getCanonicalName());
+    enforcer.removeBroadcast(relationNode.getCanonicalName());
   }
 
-  public Collection<String> getBroadcastTables() {
-    return broadcasted;
+  public boolean isBroadcastRelation(ScanNode relationNode) {
+    return broadcastRelations.containsKey(relationNode.getCanonicalName());
+  }
+
+  public boolean hasBroadcastRelation() {
+    return broadcastRelations.size() > 0;
+  }
+
+  public Collection<ScanNode> getBroadcastRelations() {
+    return broadcastRelations.values();
   }
 
   public String toString() {
     return executionBlockId.toString();
+  }
+
+  public void setNullSuppllying() {
+    nullSuppllying = true;
+  }
+
+  public void setPreservedRow() {
+    preservedRow = true;
+  }
+
+  public boolean isNullSuppllying() {
+    return nullSuppllying;
+  }
+
+  public boolean isPreservedRow() {
+    return preservedRow;
   }
 }

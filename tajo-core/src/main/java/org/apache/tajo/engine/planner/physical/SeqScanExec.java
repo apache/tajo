@@ -138,6 +138,8 @@ public class SeqScanExec extends ScanExec {
   public void init() throws IOException {
     Schema projected;
 
+    // in the case where projected column or expression are given
+    // the target can be an empty list.
     if (plan.hasTargets()) {
       projected = new Schema();
       Set<Column> columnSet = new HashSet<Column>();
@@ -150,12 +152,15 @@ public class SeqScanExec extends ScanExec {
         columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
       }
 
-      for (Column column : inSchema.getColumns()) {
+      for (Column column : inSchema.getAllColumns()) {
         if (columnSet.contains(column)) {
           projected.addColumn(column);
         }
       }
+
     } else {
+      // no any projected columns, meaning that all columns should be projected.
+      // TODO - this implicit rule makes code readability bad. So, we should remove it later
       projected = outSchema;
     }
 
@@ -163,7 +168,11 @@ public class SeqScanExec extends ScanExec {
     super.init();
 
     if (plan.hasQual()) {
-      qual.bind(context.getEvalContext(), inSchema);
+      if (scanner.isProjectable()) {
+        qual.bind(context.getEvalContext(), projected);
+      } else {
+        qual.bind(context.getEvalContext(), inSchema);
+      }
     }
   }
 
@@ -175,7 +184,7 @@ public class SeqScanExec extends ScanExec {
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    
     TableMeta meta;
     try {
       meta = (TableMeta) plan.getTableDesc().getMeta().clone();
@@ -186,18 +195,30 @@ public class SeqScanExec extends ScanExec {
     // set system default properties
     PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
 
+    // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
             FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        StorageManager storageManager = StorageManager.getStorageManager(
+        Tablespace tablespace = TableSpaceManager.getStorageManager(
             context.getConf(), plan.getTableDesc().getMeta().getStoreType());
-        this.scanner = storageManager.getScanner(meta,
+        this.scanner = tablespace.getScanner(meta,
             plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();
+
+      // See Scanner.isProjectable() method Depending on the result of isProjectable(),
+      // the width of retrieved tuple is changed.
+      //
+      // If TRUE, the retrieved tuple will contain only projected fields.
+      // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
+      if (scanner.isProjectable()) {
+        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
+      } else {
+        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+      }
     }
   }
 
@@ -248,9 +269,6 @@ public class SeqScanExec extends ScanExec {
       }
     }
     scanner = null;
-    plan = null;
-    qual = null;
-    projector = null;
   }
 
   @Override

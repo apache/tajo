@@ -1,0 +1,76 @@
+explain
+-------------------------------
+SORT(2)
+  => Sort Keys: len (INT4) (asc),default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc)
+   JOIN(6)(CROSS)
+     => target list: ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)
+     => out schema: {(13) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+     => in schema: {(13) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+      SCAN(1) on default.region
+        => target list: default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), length(default.region.r_comment (TEXT)) as len
+        => out schema: {(4) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+        => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(0) on default.customer
+        => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.customer.c_custkey (INT4) * 10 as ?multiply
+        => out schema: {(9) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+        => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000005)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000005
+   |-eb_0000000000000_0000_000004
+      |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000004
+3: eb_0000000000000_0000_000005
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.region
+
+SORT(10)
+  => Sort Keys: len (INT4) (asc),default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc)
+   JOIN(6)(CROSS)
+     => target list: ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)
+     => out schema: {(13) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+     => in schema: {(13) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+      SCAN(1) on default.region
+        => target list: default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), length(default.region.r_comment (TEXT)) as len
+        => out schema: {(4) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+        => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(0) on default.customer
+        => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.customer.c_custkey (INT4) * 10 as ?multiply
+        => out schema: {(9) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+        => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000003
+
+SORT(2)
+  => Sort Keys: len (INT4) (asc),default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc)
+   SCAN(11) on eb_0000000000000_0000_000003
+     => out schema: {(13) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+     => in schema: {(13) ?multiply (INT4), default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4), len (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [TERMINAL]
+=======================================================

@@ -264,7 +264,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema1,
-        new TableMeta(StoreType.CSV, new KeyValueSet()),
+        new TableMeta("CSV", new KeyValueSet()),
         path.toUri(), true);
     return table;
   }
@@ -317,7 +317,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema,
-        new TableMeta(StoreType.CSV, new KeyValueSet()),
+        new TableMeta("CSV", new KeyValueSet()),
         path.toUri(), true);
     
     assertTrue(catalog.createTable(table));
@@ -331,7 +331,7 @@ public class TestCatalog {
     table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema,
-        new TableMeta(StoreType.CSV, new KeyValueSet()),
+        new TableMeta("CSV", new KeyValueSet()),
         path.toUri(), true);
     
     assertTrue(catalog.createTable(table));
@@ -421,7 +421,7 @@ public class TestCatalog {
     TableDesc meta = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
         schema1,
-        StoreType.CSV,
+        "CSV",
         new KeyValueSet(),
         path.toUri());
 
@@ -441,7 +441,7 @@ public class TestCatalog {
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
         schema,
-        StoreType.CSV,
+        "CSV",
         new KeyValueSet(),
         path.toUri());
 
@@ -561,7 +561,7 @@ public class TestCatalog {
 
     String tableName = "indexed";
 
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV");
     return new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), schema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
@@ -732,7 +732,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
 
 
     Schema partSchema = new Schema();
@@ -772,7 +772,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -810,7 +810,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -847,7 +847,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -884,7 +884,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV, opts);
+    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -999,7 +999,7 @@ public class TestCatalog {
     TableDesc setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
     KeyValueSet options = new KeyValueSet();
     options.set("timezone", "GMT+9");   // Seoul, Korea
-    setPropertyDesc.setMeta(new TableMeta(StoreType.CSV, options));
+    setPropertyDesc.setMeta(new TableMeta("CSV", options));
     String prevTimeZone = setPropertyDesc.getMeta().getOption("timezone");
     String newTimeZone = "GMT-7";       // Silicon Valley, California
     catalog.alterTable(createMockAlterTableSetProperty(newTimeZone));

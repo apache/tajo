@@ -4,6 +4,11 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1537: Implement a virtual table for sessions. 
+    (Contributed by Yongjin Choi, Committed by hyunsik)
+
+    TAJO-1562: Python UDAF support. (jihoon)
+
     TAJO-1344: Python UDF support. (jihoon)
 
     TAJO-923: Add VAR_SAMP and VAR_POP window functions. 
@@ -21,6 +26,45 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1624: Add managed table or external description in Table management 
+    section. (hyunsik)
+
+    TAJO-1626: JdbcConnection::setAutoCommit() should not throw an exception.
+    (hyunsik)
+
+    TAJO-1130: Concurrent execution of independent execution blocks.
+    (Contributed by navis, Committed by jihoon)
+
+    TAJO-1618: [Rest API] queries/{queryId} should set default print type.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1553: Improve broadcast join planning. (jihoon)
+
+    TAJO-1577: Add test cases to verify join plans. (jihoon)
+
+    TAJO-1607: Tajo Rest Cache-Id should be bigger than zero. (Contributed by 
+    DaeMyung Kang, Committed by hyunsik)
+
+    TAJO-1603: Refactor StorageManager. (hyunsik)
+
+    TAJO-1542: Refactoring of HashJoinExecs. (Contributed by Navis, Committed by 
+    hyunsik)
+
+    TAJO-1591: Change StoreType represented as Enum to String type. (hyunsik)
+
+    TAJO-1452: Improve function listing order (Contributed Dongjoon Hyun, 
+    Committed by hyunsik)
+
+    TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() 
+    eliminates an important kind of information. 
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
+    TAJO-1408: Make IntermediateEntryProto more compact. 
+    (Contributed by navis, Committed by hyunsik)
+
+    TAJO-1584: Remove QueryMaster client sharing in TajoMaster and TajoWorker.
+    (jinho)
 
     TAJO-1563: Improve RPC error handling. (jinho)
 
@@ -105,6 +149,37 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1630: Test failure after TAJO-1130. (jihoon)
+
+    TAJO-1623: INSERT INTO with wrong target columns causes NPE. (hyunsik)
+
+    TAJO-1621: Compilation error with hadoop 2.7.0. (jinho)
+
+    TAJO-1619: JDBC program is stuck after closing. (jihoon)
+
+    TAJO-1620: random() in an SQL should generate RANDOM numbers.
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
+    TAJO-1558: HBASE_LIB/hbase-server-*.jar should be included in the CLASSPATH.
+    (Contributed by Jongyoung Park, Committed by jaehwa)
+
+    TAJO-1605: Fix master build failure on jdk 1.6. (jinho)
+
+    TAJO-1485: Datum 'Char' returned only 1byte.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1586: TajoMaster HA startup failure on Yarn. (jaehwa)
+
+    TAJO-1598: TableMeta should change equals mechanism.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1593: Add missing stop condition to Taskrunner. (jinho)
+
+    TAJO-1556: "insert into select" with reordered column list does not work.
+    (Contributed by Yongjin Choi, Committed by jihoon)
+
+    TAJO-1534: DelimitedTextFile return null instead of a NullDatum. (jinho)
 
     TAJO-1574: Fix NPE on natural join.
     (Contributed by Dongjoon Hyun, Committed by jihoon)
@@ -212,6 +287,10 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1583: Remove ServerCallable in RPC client. (jinho)
+
+    TAJO-1587: Upgrade java version to 1.7 for Travis CI. (jihoon)
+
     TAJO-1559: Fix data model description (tinyint, smallint).
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
@@ -250,6 +329,13 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1599: Implement NodeResourceManager and Status updater. (jinho)
+
+    TAJO-1613: Rename StorageManager to Tablespace. (hyunsik)
+
+    TAJO-1359: Add nested field projector and language extension to project 
+    nested record. (hyunsik)
 
     TAJO-1529: Implement json_extract_path_text(string, string) function.
     (jinho)

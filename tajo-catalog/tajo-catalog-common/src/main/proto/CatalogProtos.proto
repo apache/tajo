@@ -80,7 +80,7 @@ message FragmentProto {
 }
 
 message TableProto {
-  required StoreType storeType = 1;
+  required string storeType = 1;
   optional KeyValueSetProto params = 2;
 }
 
@@ -428,4 +428,5 @@ message StaticMethodInvocationDescProto {
 message PythonInvocationDescProto {
   required string funcName = 1;
   required string filePath = 2;
+  required bool isScalarFunction = 3;
 }

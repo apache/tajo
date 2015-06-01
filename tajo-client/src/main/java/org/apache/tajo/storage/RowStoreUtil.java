@@ -25,6 +25,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.util.BitArray;
 
 import java.nio.ByteBuffer;
@@ -36,7 +37,7 @@ public class RowStoreUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
     int[] targetIds = new int[outSchema.size()];
     int i = 0;
-    for (Column target : outSchema.getColumns()) {
+    for (Column target : outSchema.getRootColumns()) {
       targetIds[i] = inSchema.getColumnId(target.getQualifiedName());
       i++;
     }
@@ -92,8 +93,9 @@ public class RowStoreUtil {
             break;
 
           case CHAR:
-            byte c = bb.get();
-            tuple.put(i, DatumFactory.createChar(c));
+            byte [] _str = new byte[type.getLength()];
+            bb.get(_str);
+            tuple.put(i, DatumFactory.createChar(_str));
             break;
 
           case INT2:
@@ -189,12 +191,22 @@ public class RowStoreUtil {
           case NULL_TYPE: nullFlags.set(i); break;
           case BOOLEAN: bb.put(tuple.getByte(i)); break;
           case BIT: bb.put(tuple.getByte(i)); break;
-          case CHAR: bb.put(tuple.getByte(i)); break;
           case INT2: bb.putShort(tuple.getInt2(i)); break;
           case INT4: bb.putInt(tuple.getInt4(i)); break;
           case INT8: bb.putLong(tuple.getInt8(i)); break;
           case FLOAT4: bb.putFloat(tuple.getFloat4(i)); break;
           case FLOAT8: bb.putDouble(tuple.getFloat8(i)); break;
+          case CHAR:
+            int charSize = col.getDataType().getLength();
+            byte [] _char = new byte[charSize];
+            byte [] src = tuple.getBytes(i);
+            if (charSize < src.length) {
+              throw new ValueTooLongForTypeCharactersException(charSize);
+            }
+
+            System.arraycopy(src, 0, _char, 0, src.length);
+            bb.put(_char);
+            break;
           case TEXT:
             byte [] _string = tuple.getBytes(i);
             bb.putInt(_string.length);
@@ -251,7 +263,11 @@ public class RowStoreUtil {
         switch (col.getDataType().getType()) {
           case BOOLEAN:
           case BIT:
-          case CHAR: size += 1; break;
+            size += 1;
+            break;
+          case CHAR:
+            size += col.getDataType().getLength();
+            break;
           case INT2: size += 2; break;
           case DATE:
           case INT4:

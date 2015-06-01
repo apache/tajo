@@ -36,7 +36,6 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
@@ -56,9 +55,10 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -308,7 +308,7 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public synchronized void startQuery() {
-    StorageManager sm = null;
+    Tablespace sm = null;
     LogicalPlan plan = null;
     try {
       if (query != null) {
@@ -322,9 +322,9 @@ public class QueryMasterTask extends CompositeService {
       jsonExpr = null; // remove the possible OOM
       plan = planner.createPlan(queryContext, expr);
 
-      StoreType storeType = PlannerUtil.getStoreType(plan);
+      String storeType = PlannerUtil.getStoreType(plan);
       if (storeType != null) {
-        sm = StorageManager.getStorageManager(systemConf, storeType);
+        sm = TableSpaceManager.getStorageManager(systemConf, storeType);
         StorageProperty storageProperty = sm.getStorageProperty();
         if (storageProperty.isSortedInsert()) {
           String tableName = PlannerUtil.getStoreTableName(plan);
@@ -363,7 +363,7 @@ public class QueryMasterTask extends CompositeService {
         }
       }
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
-      queryMasterContext.getGlobalPlanner().build(masterPlan);
+      queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);

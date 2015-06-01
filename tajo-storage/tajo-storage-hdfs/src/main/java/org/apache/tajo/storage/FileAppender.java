@@ -57,7 +57,7 @@ public abstract class FileAppender implements Appender {
           throw new IllegalArgumentException("Configuration must be an instance of TajoConf");
         }
 
-        this.path = ((FileStorageManager)StorageManager.getFileStorageManager((TajoConf) conf))
+        this.path = ((FileTablespace) TableSpaceManager.getFileStorageManager((TajoConf) conf))
             .getAppenderFilePath(taskAttemptId, workDir);
       } else {
         this.path = workDir;

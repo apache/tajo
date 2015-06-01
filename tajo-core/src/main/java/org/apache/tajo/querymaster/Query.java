@@ -36,18 +36,18 @@ import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
+import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
@@ -64,12 +64,13 @@ public class Query implements EventHandler<QueryEvent> {
   // Facilities for Query
   private final TajoConf systemConf;
   private final Clock clock;
-  private String queryStr;
-  private Map<ExecutionBlockId, Stage> stages;
+  private final String queryStr;
+  private final Map<ExecutionBlockId, Stage> stages;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
   QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
+  private ExecutionQueue execution;
 
   // Query Status
   private final QueryId id;
@@ -78,7 +79,7 @@ public class Query implements EventHandler<QueryEvent> {
   private long finishTime;
   private TableDesc resultDesc;
   private int completedStagesCount = 0;
-  private int successedStagesCount = 0;
+  private int succeededStagesCount = 0;
   private int killedStagesCount = 0;
   private int failedStagesCount = 0;
   private int erroredStagesCount = 0;
@@ -94,7 +95,7 @@ public class Query implements EventHandler<QueryEvent> {
   private QueryState queryState;
 
   // Transition Handler
-  private static final SingleArcTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
+  private static final InternalErrorTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
   private static final DiagnosticsUpdateTransition DIAGNOSTIC_UPDATE_TRANSITION = new DiagnosticsUpdateTransition();
   private static final StageCompletedTransition STAGE_COMPLETED_TRANSITION = new StageCompletedTransition();
   private static final QueryCompletedTransition QUERY_COMPLETED_TRANSITION = new QueryCompletedTransition();
@@ -214,14 +215,12 @@ public class Query implements EventHandler<QueryEvent> {
     StringBuilder sb = new StringBuilder("\n=======================================================");
     sb.append("\nThe order of execution: \n");
     int order = 1;
-    while (cursor.hasNext()) {
-      ExecutionBlock currentEB = cursor.nextBlock();
+    for (ExecutionBlock currentEB : cursor) {
       sb.append("\n").append(order).append(": ").append(currentEB.getId());
       order++;
     }
     sb.append("\n=======================================================");
     LOG.info(sb);
-    cursor.reset();
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
@@ -382,6 +381,14 @@ public class Query implements EventHandler<QueryEvent> {
     return cursor;
   }
 
+  public ExecutionQueue newExecutionQueue() {
+    return execution = cursor.newCursor();
+  }
+
+  public ExecutionQueue getExecutionQueue() {
+    return execution;
+  }
+
   public static class StartTransition
       implements SingleArcTransition<Query, QueryEvent> {
 
@@ -389,12 +396,15 @@ public class Query implements EventHandler<QueryEvent> {
     public void transition(Query query, QueryEvent queryEvent) {
 
       query.setStartTime();
-      Stage stage = new Stage(query.context, query.getPlan(),
-          query.getExecutionBlockCursor().nextBlock());
-      stage.setPriority(query.priority--);
-      query.addStage(stage);
-      stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
-      LOG.debug("Schedule unit plan: \n" + stage.getBlock().getPlan());
+      ExecutionQueue executionQueue = query.newExecutionQueue();
+      for (ExecutionBlock executionBlock : executionQueue.first()) {
+        Stage stage = new Stage(query.context, query.getPlan(), executionBlock);
+        stage.setPriority(query.priority--);
+        query.addStage(stage);
+
+        stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
+        LOG.debug("Schedule unit plan: \n" + stage.getBlock().getPlan());
+      }
     }
   }
 
@@ -420,11 +430,11 @@ public class Query implements EventHandler<QueryEvent> {
       if (finalState != QueryState.QUERY_SUCCEEDED) {
         Stage lastStage = query.getStage(stageEvent.getExecutionBlockId());
         if (lastStage != null && lastStage.getTableMeta() != null) {
-          StoreType storeType = lastStage.getTableMeta().getStoreType();
+          String storeType = lastStage.getTableMeta().getStoreType();
           if (storeType != null) {
             LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
             try {
-              StorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
+              TableSpaceManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
             } catch (IOException e) {
               LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
             }
@@ -439,13 +449,13 @@ public class Query implements EventHandler<QueryEvent> {
 
     private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
       Stage lastStage = query.getStage(event.getExecutionBlockId());
-      StoreType storeType = lastStage.getTableMeta().getStoreType();
+      String storeType = lastStage.getTableMeta().getStoreType();
       try {
         LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
         CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
         TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
 
-        Path finalOutputDir = StorageManager.getStorageManager(query.systemConf, storeType)
+        Path finalOutputDir = TableSpaceManager.getStorageManager(query.systemConf, storeType)
             .commitOutputData(query.context.getQueryContext(),
                 lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
 
@@ -617,25 +627,31 @@ public class Query implements EventHandler<QueryEvent> {
 
   public static class StageCompletedTransition implements SingleArcTransition<Query, QueryEvent> {
 
-    private boolean hasNext(Query query) {
-      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
-      ExecutionBlock nextBlock = cursor.peek();
-      return !query.getPlan().isTerminal(nextBlock);
-    }
-
-    private void executeNextBlock(Query query) {
-      ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
-      ExecutionBlock nextBlock = cursor.nextBlock();
-      Stage nextStage = new Stage(query.context, query.getPlan(), nextBlock);
-      nextStage.setPriority(query.priority--);
-      query.addStage(nextStage);
-      nextStage.getEventHandler().handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
-
-      LOG.info("Scheduling Stage:" + nextStage.getId());
-      if(LOG.isDebugEnabled()) {
-        LOG.debug("Scheduling Stage's Priority: " + nextStage.getPriority());
-        LOG.debug("Scheduling Stage's Plan: \n" + nextStage.getBlock().getPlan());
+    // return true for terminal
+    private synchronized boolean executeNextBlock(Query query, ExecutionBlockId blockId) {
+      ExecutionQueue cursor = query.getExecutionQueue();
+      ExecutionBlock[] nextBlocks = cursor.next(blockId);
+      if (nextBlocks == null || nextBlocks.length == 0) {
+        return nextBlocks == null;
       }
+      boolean terminal = true;
+      for (ExecutionBlock nextBlock : nextBlocks) {
+        if (query.getPlan().isTerminal(nextBlock)) {
+          continue;
+        }
+        Stage nextStage = new Stage(query.context, query.getPlan(), nextBlock);
+        nextStage.setPriority(query.priority--);
+        query.addStage(nextStage);
+        nextStage.getEventHandler().handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
+
+        LOG.info("Scheduling Stage:" + nextStage.getId());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Scheduling Stage's Priority: " + nextStage.getPriority());
+          LOG.debug("Scheduling Stage's Plan: \n" + nextStage.getBlock().getPlan());
+        }
+        terminal = false;
+      }
+      return terminal;
     }
 
     @Override
@@ -648,7 +664,7 @@ public class Query implements EventHandler<QueryEvent> {
         StageCompletedEvent castEvent = (StageCompletedEvent) event;
 
         if (castEvent.getState() == StageState.SUCCEEDED) {
-          query.successedStagesCount++;
+          query.succeededStagesCount++;
         } else if (castEvent.getState() == StageState.KILLED) {
           query.killedStagesCount++;
         } else if (castEvent.getState() == StageState.FAILED) {
@@ -664,11 +680,11 @@ public class Query implements EventHandler<QueryEvent> {
         // if a stage is succeeded and a query is running
         if (castEvent.getState() == StageState.SUCCEEDED &&  // latest stage succeeded
             query.getSynchronizedState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
-            hasNext(query)) {                                   // there remains at least one stage.
-          executeNextBlock(query);
-        } else { // if a query is completed due to finished, kill, failure, or error
-          query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+            !executeNextBlock(query, castEvent.getExecutionBlockId())) {
+          return;
         }
+         // if a query is completed due to finished, kill, failure, or error
+        query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));

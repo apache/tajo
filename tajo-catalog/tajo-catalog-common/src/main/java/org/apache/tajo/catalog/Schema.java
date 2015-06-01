@@ -32,6 +32,7 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -135,7 +136,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @param qualifier The qualifier
    */
   public void setQualifier(String qualifier) {
-    List<Column> columns = getColumns();
+    // only change root fields, and must keep each nested field simple name
+    List<Column> columns = getRootColumns();
 
     fields.clear();
     fieldsByQualifiedName.clear();
@@ -157,13 +159,19 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public Column getColumn(Column column) {
+    int idx = getIndex(column);
+    return idx >= 0 ? fields.get(idx) : null;
+  }
+
+  public int getIndex(Column column) {
     if (!contains(column)) {
-      return null;
+      return -1;
     }
+
     if (column.hasQualifier()) {
-      return fields.get(fieldsByQualifiedName.get(column.getQualifiedName()));
+      return fieldsByQualifiedName.get(column.getQualifiedName());
     } else {
-      return fields.get(fieldsByName.get(column.getSimpleName()).get(0));
+      return fieldsByName.get(column.getSimpleName()).get(0);
     }
   }
 
@@ -174,14 +182,39 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @return The column matched to a given column name.
    */
   public Column getColumn(String name) {
-    String [] parts = name.split("\\.");
-    // Some of the string can includes database name and table name and column name.
-    // For example, it can be 'default.table1.id'.
-    // Therefore, spilt string array length can be 3.
-    if (parts.length >= 2) {
-      return getColumnByQName(name);
+
+    if (NestedPathUtil.isPath(name)) {
+
+      // TODO - to be refactored
+      if (fieldsByQualifiedName.containsKey(name)) {
+        Column flattenColumn = fields.get(fieldsByQualifiedName.get(name));
+        if (flattenColumn != null) {
+          return flattenColumn;
+        }
+      }
+
+      String [] paths = name.split(NestedPathUtil.PATH_DELIMITER);
+      Column column = getColumn(paths[0]);
+      if (column == null) {
+        return null;
+      }
+      Column actualColumn = NestedPathUtil.lookupPath(column, paths);
+
+      Column columnPath = new Column(
+          column.getQualifiedName() + NestedPathUtil.makePath(paths, 1),
+          actualColumn.typeDesc);
+
+      return columnPath;
     } else {
-      return getColumnByName(name);
+      String[] parts = name.split("\\.");
+      // Some of the string can includes database name and table name and column name.
+      // For example, it can be 'default.table1.id'.
+      // Therefore, spilt string array length can be 3.
+      if (parts.length >= 2) {
+        return getColumnByQName(name);
+      } else {
+        return getColumnByName(name);
+      }
     }
   }
 
@@ -262,12 +295,46 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
     return -1;
   }
-	
-	public List<Column> getColumns() {
+
+  /**
+   * Get root columns, meaning all columns except for nested fields.
+   *
+   * @return A list of root columns
+   */
+	public List<Column> getRootColumns() {
 		return ImmutableList.copyOf(fields);
 	}
 
+  /**
+   * Get all columns, including all nested fields
+   *
+   * @return A list of all columns
+   */
+  public List<Column> getAllColumns() {
+    final List<Column> columnList = TUtil.newList();
+
+    SchemaUtil.visitSchema(this, new ColumnVisitor() {
+      @Override
+      public void visit(int depth, List<String> path, Column column) {
+        if (path.size() > 0) {
+          String parentPath = StringUtils.join(path, NestedPathUtil.PATH_DELIMITER);
+          String currentPath = parentPath + NestedPathUtil.PATH_DELIMITER + column.getSimpleName();
+          columnList.add(new Column(currentPath, column.getTypeDesc()));
+        } else {
+          columnList.add(column);
+        }
+      }
+    });
+
+    return columnList;
+  }
+
   public boolean contains(String name) {
+    // TODO - It's a hack
+    if (NestedPathUtil.isPath(name)) {
+      return (getColumn(name) != null);
+    }
+
     if (fieldsByQualifiedName.containsKey(name)) {
       return true;
     }
@@ -282,6 +349,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public boolean contains(Column column) {
+    // TODO - It's a hack
+    if (NestedPathUtil.isPath(column.getQualifiedName())) {
+      return (getColumn(column.getQualifiedName()) != null);
+    }
+
     if (column.hasQualifier()) {
       return fieldsByQualifiedName.containsKey(column.getQualifiedName());
     } else {
@@ -308,7 +380,40 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public boolean containsAll(Collection<Column> columns) {
-    return fields.containsAll(columns);
+    boolean containFlag = true;
+
+    for (Column c :columns) {
+      if (NestedPathUtil.isPath(c.getSimpleName())) {
+        if (contains(c.getQualifiedName())) {
+          containFlag &= true;
+        } else {
+          String[] paths = c.getQualifiedName().split("/");
+          boolean existRootPath = contains(paths[0]);
+          boolean existLeafPath = getColumn(c.getSimpleName()) != null;
+          containFlag &= existRootPath && existLeafPath;
+        }
+      } else {
+        containFlag &= fields.contains(c);
+      }
+    }
+
+    return containFlag;
+  }
+
+  /**
+   * Return TRUE if any column in <code>columns</code> is included in this schema.
+   *
+   * @param columns Columns to be checked
+   * @return true if any column in <code>columns</code> is included in this schema.
+   *         Otherwise, false.
+   */
+  public boolean containsAny(Collection<Column> columns) {
+    for (Column column : columns) {
+      if (contains(column)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public synchronized Schema addColumn(String name, TypeDesc typeDesc) {
@@ -345,7 +450,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 	
 	public synchronized void addColumns(Schema schema) {
-    for(Column column : schema.getColumns()) {
+    for(Column column : schema.getRootColumns()) {
       addColumn(column);
     }
   }
@@ -390,7 +495,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
 
     @Override
-    public void visit(int depth, Column column) {
+    public void visit(int depth, List<String> path, Column column) {
 
       if (column.getDataType().getType() == Type.RECORD) {
         DataType.Builder updatedType = DataType.newBuilder(column.getDataType());

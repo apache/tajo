@@ -35,7 +35,6 @@ import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLSyntaxError;
@@ -54,7 +53,8 @@ import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
@@ -68,7 +68,7 @@ public class GlobalEngine extends AbstractService {
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
   private final MasterContext context;
-  private final StorageManager sm;
+  private final Tablespace sm;
 
   private SQLAnalyzer analyzer;
   private CatalogService catalog;
@@ -293,7 +293,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   private void verifyInsertTableSchema(QueryContext queryContext, VerificationState state, LogicalPlan plan) {
-    StoreType storeType = PlannerUtil.getStoreType(plan);
+    String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
       if (rootNode.getChild().getType() == NodeType.INSERT) {
@@ -302,7 +302,7 @@ public class GlobalEngine extends AbstractService {
           InsertNode iNode = rootNode.getChild();
           Schema outSchema = iNode.getChild().getOutSchema();
 
-          StorageManager.getStorageManager(queryContext.getConf(), storeType)
+          TableSpaceManager.getStorageManager(queryContext.getConf(), storeType)
               .verifyInsertTableSchema(tableDesc, outSchema);
         } catch (Throwable t) {
           state.addVerification(t.getMessage());

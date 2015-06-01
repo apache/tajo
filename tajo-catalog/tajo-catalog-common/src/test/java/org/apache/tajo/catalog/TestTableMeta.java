@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ public class TestTableMeta {
   
   @Before
   public void setUp() {
-    meta = CatalogUtil.newTableMeta(StoreType.CSV);
+    meta = CatalogUtil.newTableMeta("CSV");
   }
   
   @Test
@@ -40,7 +41,7 @@ public class TestTableMeta {
     Schema schema1 = new Schema();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta1 = CatalogUtil.newTableMeta("CSV");
     
     TableMeta meta2 = new TableMeta(meta1.getProto());
     assertEquals(meta1, meta2);
@@ -51,7 +52,7 @@ public class TestTableMeta {
     Schema schema1 = new Schema();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta1 = CatalogUtil.newTableMeta("CSV");
     
     TableMeta meta2 = (TableMeta) meta1.clone();
     assertEquals(meta1.getStoreType(), meta2.getStoreType());
@@ -63,7 +64,7 @@ public class TestTableMeta {
     Schema schema1 = new Schema();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta1 = CatalogUtil.newTableMeta("CSV");
     
     TableMeta meta2 = (TableMeta) meta1.clone();
     
@@ -72,7 +73,7 @@ public class TestTableMeta {
   
   @Test
   public void testGetStorageType() {
-    assertEquals(StoreType.CSV, meta.getStoreType());
+    assertEquals("CSV", meta.getStoreType());
   }
   
   @Test
@@ -80,12 +81,38 @@ public class TestTableMeta {
     Schema schema2 = new Schema();
     schema2.addColumn("name", Type.BLOB);
     schema2.addColumn("addr", Type.TEXT);
-    TableMeta meta2 = CatalogUtil.newTableMeta(StoreType.CSV);
+    TableMeta meta2 = CatalogUtil.newTableMeta("CSV");
 
 
     assertTrue(meta.equals(meta2));
     assertNotSame(meta, meta2);
   }
+
+	@Test
+	public void testEqualsObject2() {
+		//This testcases should insert more 2 items into one slot.
+		//HashMap's default slot count is 16
+		//so max_count is 17
+
+		int MAX_COUNT = 17;
+
+		TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV.toString());
+		for (int i = 0; i < MAX_COUNT; i++) {
+			meta1.putOption("key"+i, "value"+i);
+		}
+
+		PrimitiveProtos.KeyValueSetProto.Builder optionBuilder = PrimitiveProtos.KeyValueSetProto.newBuilder();
+		for (int i = 1; i <= MAX_COUNT; i++) {
+			PrimitiveProtos.KeyValueProto.Builder keyValueBuilder = PrimitiveProtos.KeyValueProto.newBuilder();
+			keyValueBuilder.setKey("key"+(MAX_COUNT-i)).setValue("value"+(MAX_COUNT-i));
+			optionBuilder.addKeyval(keyValueBuilder);
+		}
+		TableProto.Builder builder = TableProto.newBuilder();
+		builder.setStoreType(StoreType.CSV.toString());
+		builder.setParams(optionBuilder);
+		TableMeta meta2 = new TableMeta(builder.build());
+		assertTrue(meta1.equals(meta2));
+	}
   
   @Test
   public void testGetProto() {

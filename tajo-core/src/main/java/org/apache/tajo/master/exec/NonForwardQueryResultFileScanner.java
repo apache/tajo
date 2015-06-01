@@ -33,11 +33,8 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.StringUtils;
@@ -81,15 +78,15 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   /**
    * Set partition path and depth if ScanNode's qualification exists
    *
-   * @param storageManager target storage manager to be set with partition info
+   * @param tablespace target storage manager to be set with partition info
    */
-  private void setPartition(StorageManager storageManager) {
+  private void setPartition(Tablespace tablespace) {
     if (tableDesc.isExternal() && tableDesc.hasPartition() && scanNode.getQual() != null &&
-        storageManager instanceof FileStorageManager) {
+        tablespace instanceof FileTablespace) {
       StringBuffer path = new StringBuffer();
       int depth = 0;
       if (tableDesc.hasPartition()) {
-        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           String partitionValue = EvalTreeUtil.getPartitionValue(scanNode.getQual(), c.getSimpleName());
           if (partitionValue == null)
             break;
@@ -97,17 +94,17 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           depth++;
         }
       }
-      ((FileStorageManager)storageManager).setPartitionPath(path.toString());
-      ((FileStorageManager)storageManager).setCurrentDepth(depth);
+      ((FileTablespace) tablespace).setPartitionPath(path.toString());
+      ((FileTablespace) tablespace).setCurrentDepth(depth);
       scanNode.setQual(null);
     }
   }
 
   private void initSeqScanExec() throws IOException {
-    StorageManager storageManager = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
+    Tablespace tablespace = TableSpaceManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
     List<Fragment> fragments = null;
-    setPartition(storageManager);
-    fragments = storageManager.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
+    setPartition(tablespace);
+    fragments = tablespace.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
 
     if (fragments != null && !fragments.isEmpty()) {
       FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[] {}));
