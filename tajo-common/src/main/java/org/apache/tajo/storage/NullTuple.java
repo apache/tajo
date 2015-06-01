@@ -71,7 +71,7 @@ public class NullTuple implements Tuple, Cloneable {
 
   @Override
   public Datum asDatum(int fieldId) {
-    return null;
+    return NullDatum.get();
   }
 
   @Override
