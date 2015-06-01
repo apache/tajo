@@ -87,8 +87,8 @@ public class FileTablespace extends Tablespace {
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileTablespace(String storeType) {
-    super(storeType, null);
+  public FileTablespace() {
+    super();
   }
 
   @Override
@@ -818,7 +818,7 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public StorageProperty getStorageProperty() {
+  public StorageProperty getStorageProperty(String storeType) {
     StorageProperty storageProperty = new StorageProperty();
     storageProperty.setSortedInsert(false);
     if (storeType.equalsIgnoreCase("RAW")) {

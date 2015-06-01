@@ -58,10 +58,8 @@ public abstract class Tablespace {
   };
 
   protected TajoConf conf;
-  protected String storeType;
 
-  public Tablespace(String storageType, URI uri) {
-    this.storeType = storageType;
+  public Tablespace() {
   }
 
   /**
@@ -117,7 +115,7 @@ public abstract class Tablespace {
    * It returns the storage property.
    * @return The storage property
    */
-  public abstract StorageProperty getStorageProperty();
+  public abstract StorageProperty getStorageProperty(String storeType);
 
   /**
    * Release storage manager resource
@@ -159,14 +157,6 @@ public abstract class Tablespace {
    * @param node The child node of the root node.
    * @throws java.io.IOException
    */
-
-  /**
-   * Returns the current storage type.
-   * @return
-   */
-  public String getStoreType() {
-    return storeType;
-  }
 
   /**
    * Initialize Tablespace instance. It should be called before using.

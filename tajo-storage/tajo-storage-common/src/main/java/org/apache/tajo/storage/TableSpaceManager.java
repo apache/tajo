@@ -21,7 +21,6 @@ package org.apache.tajo.storage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
-import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
@@ -36,12 +35,10 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,11 +47,34 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TableSpaceManager {
   private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
-  private static JSONParser parser;
-  private static JSONObject config;
+
+  private TajoConf systemConf;
+  private JSONParser parser;
+  private JSONObject config;
 
   static {
-    instance = new TableSpaceManager();
+    //instance = new TableSpaceManager();
+  }
+    /**
+   * Singleton instance
+   */
+  //private static final TableSpaceManager instance;
+  /**
+   * Cache of all tablespace handlers
+   */
+  protected final Map<String, URI> SPACES_URIS_MAP = Maps.newConcurrentMap();
+  protected final Map<URI, Tablespace> TABLE_SPACES = Maps.newConcurrentMap();
+  protected final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
+
+  TableSpaceManager(String json) {
+    systemConf = new TajoConf();
+
+    loadJson(json);
+    loadStorages(config);
+  }
+
+  private TableSpaceManager() {
+    systemConf = new TajoConf();
 
     String json = null;
     try {
@@ -63,26 +83,11 @@ public class TableSpaceManager {
       throw new RuntimeException(e);
     }
     loadJson(json);
-  }
-    /**
-   * Singleton instance
-   */
-  private static final TableSpaceManager instance;
-  /**
-   * Cache of all tablespace handlers
-   */
-  protected static final Map<URI, Class<? extends Tablespace>> TABLE_SPACES = Maps.newConcurrentMap();
-  protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
-
-  TableSpaceManager(String json) {
-    loadJson(json);
+    loadStorages(config);
+    loadSpaces(config);
   }
 
-  private TableSpaceManager() {
-
-  }
-
-  private static void loadJson(String json) {
+  private void loadJson(String json) {
     parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
 
     try {
@@ -90,21 +95,21 @@ public class TableSpaceManager {
     } catch (ParseException e) {
       throw new RuntimeException(e);
     }
-
-    loadStorages(config);
   }
 
-  public static final String STORAGES = "storages";
-  public static final String HANDLER = "handler";
-  public static final String DEFAULT_FORMAT = "default-format";
+  public static final String KEY_STORAGES = "storages"; // storages
+  public static final String KEY_STORAGE_HANDLER = "handler"; // storages/?/handler
+  public static final String KEY_STORAGE_DEFAULT_FORMAT = "default-format"; // storages/?/default-format
 
-  private static void loadStorages(JSONObject root) {
-    JSONObject spaces = (JSONObject) config.get(STORAGES);
+  public static final String KEY_SPACES = "spaces";
+
+  private void loadStorages(JSONObject root) {
+    JSONObject spaces = (JSONObject) root.get(KEY_STORAGES);
     for (Map.Entry<String, Object> entry : spaces.entrySet()) {
       String storageType = entry.getKey();
       JSONObject storageDesc = (JSONObject) entry.getValue();
-      String handlerClass = (String) storageDesc.get(HANDLER);
-      String defaultFormat = (String) storageDesc.get(DEFAULT_FORMAT);
+      String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
+      String defaultFormat = (String) storageDesc.get(KEY_STORAGE_DEFAULT_FORMAT);
 
       Class<? extends Tablespace> clazz = null;
       try {
@@ -114,14 +119,48 @@ public class TableSpaceManager {
         continue;
       }
 
-      //TABLE_SPACE_HANDLERS.put(storageType, clazz);
+      TABLE_SPACE_HANDLERS.put(storageType, clazz);
     }
   }
 
-  private void loadSpaces(String json) {
-    JSONObject spaces = (JSONObject) config.get("spaces");
+  private void loadSpaces(JSONObject root) {
+    CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
+
+    JSONObject spaces = (JSONObject) root.get(KEY_SPACES);
     for (Map.Entry<String, Object> entry : spaces.entrySet()) {
 
+      String spaceName = entry.getKey();
+      JSONObject spaceJson = (JSONObject) entry.getValue();
+      URI spaceUri = URI.create(spaceJson.getAsString("uri"));
+
+      Tablespace tableSpace = null;
+
+      Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(spaceUri.getScheme());
+
+      if (clazz == null) {
+        throw new RuntimeException("There is no tablespace for " + spaceUri);
+      }
+
+      try {
+        Constructor<? extends Tablespace> constructor =
+            (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(clazz);
+        if (constructor == null) {
+          constructor = clazz.getDeclaredConstructor(new Class<?>[]{});
+          constructor.setAccessible(true);
+          CONSTRUCTOR_CACHE.put(clazz, constructor);
+        }
+        tableSpace = constructor.newInstance(new Object[]{});
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      try {
+        tableSpace.init(systemConf);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+      SPACES_URIS_MAP.put(spaceName, spaceUri);
+      TABLE_SPACES.put(spaceUri, tableSpace);
     }
   }
 
@@ -172,7 +211,7 @@ public class TableSpaceManager {
    * Cache of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
    */
-  protected static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = new ConcurrentHashMap<Class<?>, Constructor<?>>();
+  protected static Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
 
   /**
    * Clear all class cache
@@ -220,9 +259,9 @@ public class TableSpaceManager {
   public static Tablespace getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
-      return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
+      return getStorageManager(tajoConf, fileSystem.getUri(), storeType);
     } else {
-      return getStorageManager(tajoConf, storeType, null);
+      return getStorageManager(tajoConf, null, storeType);
     }
   }
 
@@ -230,13 +269,13 @@ public class TableSpaceManager {
    * Returns the proper Tablespace instance according to the storeType
    *
    * @param tajoConf Tajo system property.
+   * @param uri Key that can identify each storage manager(may be a path)
    * @param storeType Storage type
-   * @param managerKey Key that can identify each storage manager(may be a path)
    * @return
    * @throws IOException
    */
-  private static synchronized Tablespace getStorageManager (
-      TajoConf tajoConf, String storeType, String managerKey) throws IOException {
+  public static synchronized Tablespace getStorageManager(
+      TajoConf tajoConf, URI uri, String storeType) throws IOException {
 
     String typeName;
     if (storeType.equalsIgnoreCase("HBASE")) {
@@ -246,7 +285,7 @@ public class TableSpaceManager {
     }
 
     synchronized (storageManagers) {
-      String storeKey = typeName + "_" + managerKey;
+      String storeKey = typeName + "_" + uri.toString();
       Tablespace manager = storageManagers.get(storeKey);
 
       if (manager == null) {
@@ -261,11 +300,11 @@ public class TableSpaceManager {
           Constructor<? extends Tablespace> constructor =
               (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(storageManagerClass);
           if (constructor == null) {
-            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{String.class});
+            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{});
             constructor.setAccessible(true);
             CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
           }
-          manager = constructor.newInstance(new Object[]{storeType});
+          manager = constructor.newInstance(new Object[]{});
         } catch (Exception e) {
           throw new RuntimeException(e);
         }

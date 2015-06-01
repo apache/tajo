@@ -70,8 +70,8 @@ public class HBaseTablespace extends Tablespace {
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
-  public HBaseTablespace(String storeType) {
-    super(storeType, null);
+  public HBaseTablespace() {
+    super();
   }
 
   @Override
@@ -302,6 +302,7 @@ public class HBaseTablespace extends Tablespace {
     Configuration hbaseConf = (conf == null) ? HBaseConfiguration.create() : HBaseConfiguration.create(conf);
 
     String zkQuorum = hbaseConf.get(HConstants.ZOOKEEPER_QUORUM);
+
     if (tableMeta.containsOption(HBaseStorageConstants.META_ZK_QUORUM_KEY)) {
       zkQuorum = tableMeta.getOption(HBaseStorageConstants.META_ZK_QUORUM_KEY, "");
       hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, zkQuorum);
@@ -1088,7 +1089,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public StorageProperty getStorageProperty() {
+  public StorageProperty getStorageProperty(String storeType) {
     StorageProperty storageProperty = new StorageProperty();
     storageProperty.setSortedInsert(true);
     storageProperty.setSupportsInsertInto(true);
@@ -1112,6 +1113,7 @@ public class HBaseTablespace extends Tablespace {
       if (cNode.isExternal()) {
         return;
       }
+
       TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
       HBaseAdmin hAdmin =  new HBaseAdmin(getHBaseConfiguration(conf, tableMeta));
 

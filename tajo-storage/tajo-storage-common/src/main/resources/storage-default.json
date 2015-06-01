@@ -1,6 +1,6 @@
 {
   "spaces": {
-    "file": {
+    "default": {
       "uri": "file:///",
       "configs": [
         {"x": "y"},

@@ -325,7 +325,7 @@ public class QueryMasterTask extends CompositeService {
       String storeType = PlannerUtil.getStoreType(plan);
       if (storeType != null) {
         sm = TableSpaceManager.getStorageManager(systemConf, storeType);
-        StorageProperty storageProperty = sm.getStorageProperty();
+        StorageProperty storageProperty = sm.getStorageProperty(storeType);
         if (storageProperty.isSortedInsert()) {
           String tableName = PlannerUtil.getStoreTableName(plan);
           LogicalRootNode rootNode = plan.getRootBlock().getRoot();

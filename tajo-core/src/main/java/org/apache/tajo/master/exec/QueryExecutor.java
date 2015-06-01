@@ -43,24 +43,27 @@ import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
-import org.apache.tajo.master.*;
+import org.apache.tajo.master.QueryInfo;
+import org.apache.tajo.master.QueryManager;
+import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
-import org.apache.tajo.plan.expr.EvalContext;
-import org.apache.tajo.plan.expr.GeneralFunctionEval;
-import org.apache.tajo.plan.function.python.PythonScriptEngine;
-import org.apache.tajo.plan.function.python.TajoScriptEngine;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
-import org.apache.tajo.querymaster.*;
-import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.GeneralFunctionEval;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
+import org.apache.tajo.querymaster.Query;
+import org.apache.tajo.querymaster.QueryMasterTask;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -439,7 +442,7 @@ public class QueryExecutor {
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       Tablespace sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
-      StorageProperty storageProperty = sm.getStorageProperty();
+      StorageProperty storageProperty = sm.getStorageProperty(storeType);
       if (!storageProperty.isSupportsInsertInto()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
       }
@@ -477,7 +480,7 @@ public class QueryExecutor {
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       Tablespace sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
-      StorageProperty storageProperty = sm.getStorageProperty();
+      StorageProperty storageProperty = sm.getStorageProperty(storeType);
       if (storageProperty.isSortedInsert()) {
         String tableName = PlannerUtil.getStoreTableName(plan);
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();

@@ -138,11 +138,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateNotExistsExternalHBaseTable() throws Exception {
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text)" +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b'," +
+        " '%s' = '%s')", HConstants.ZOOKEEPER_QUORUM, hostName + ":" + zkPort);
     try {
-      executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
-          "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b', " +
-          "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-          "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+      executeString(sql).close();
       fail("External table should be a existed table.");
     } catch (Exception e) {
       assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
