@@ -36,6 +36,9 @@ import org.apache.tajo.worker.event.*;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * A TaskManager is responsible for managing executionBlock resource and tasks.
+ * */
 public class TaskManager extends AbstractService implements EventHandler<TaskManagerEvent> {
   private static final Log LOG = LogFactory.getLog(TaskManager.class);
 

@@ -43,6 +43,9 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * TaskExecutor uses a number of threads equal to the number of slots available for running tasks on the Worker
+ */
 public class TaskExecutor extends AbstractService implements EventHandler<TaskExecutorEvent> {
   private static final Log LOG = LogFactory.getLog(TaskExecutor.class);
 
