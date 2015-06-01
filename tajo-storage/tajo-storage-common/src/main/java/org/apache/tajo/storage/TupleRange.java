@@ -22,17 +22,15 @@ import com.google.common.base.Objects;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 
-import java.util.Comparator;
-
 /**
  * It represents a pair of start and end tuples.
  */
 public class TupleRange implements Comparable<TupleRange>, Cloneable {
-  private VTuple start;
-  private VTuple end;
+  private Tuple start;
+  private Tuple end;
   private final TupleComparator comp;
 
-  public TupleRange(final SortSpec[] sortSpecs, final VTuple start, final VTuple end) {
+  public TupleRange(final SortSpec[] sortSpecs, final Tuple start, final Tuple end) {
     this.comp = new BaseTupleComparator(sortSpecsToSchema(sortSpecs), sortSpecs);
     // if there is only one value, start == end
     this.start = start;
@@ -48,19 +46,19 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
     return schema;
   }
 
-  public void setStart(VTuple tuple) {
+  public void setStart(Tuple tuple) {
     this.start = tuple;
   }
 
-  public final VTuple getStart() {
+  public final Tuple getStart() {
     return this.start;
   }
 
-  public void setEnd(VTuple tuple) {
+  public void setEnd(Tuple tuple) {
     this.end = tuple;
   }
 
-  public final VTuple getEnd() {
+  public final Tuple getEnd() {
     return this.end;
   }
 

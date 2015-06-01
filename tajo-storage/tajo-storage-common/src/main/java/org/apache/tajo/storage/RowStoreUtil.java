@@ -44,7 +44,7 @@ public class RowStoreUtil {
     return targetIds;
   }
 
-  public static Tuple project(Tuple in, VTuple out, int[] targetIds) {
+  public static Tuple project(Tuple in, Tuple out, int[] targetIds) {
     out.clear();
     for (int idx = 0; idx < targetIds.length; idx++) {
       out.put(idx, in.asDatum(targetIds[idx]));

@@ -378,13 +378,13 @@ public class TestUniformRangePartition {
     result[10] = "DB";
     result[11] = "DC";
 
-    VTuple end = partitioner.increment(s, BigInteger.valueOf(1), 1);
-    assertEquals("A", end.get(0).asChars());
-    assertEquals("B", end.get(1).asChars());
+    Tuple end = partitioner.increment(s, BigInteger.valueOf(1), 1);
+    assertEquals("A", end.getText(0));
+    assertEquals("B", end.getText(1));
     for (int i = 2; i < 11; i++ ) {
       end = partitioner.increment(end, BigInteger.valueOf(1), 1);
-      assertEquals(result[i].charAt(0), end.get(0).asChars().charAt(0));
-      assertEquals(result[i].charAt(1), end.get(1).asChars().charAt(0));
+      assertEquals(result[i].charAt(0), end.getText(0).charAt(0));
+      assertEquals(result[i].charAt(1), end.getText(1).charAt(0));
     }
   }
 
@@ -425,12 +425,12 @@ public class TestUniformRangePartition {
     result[10] = "DB";
     result[11] = "DC";
 
-    VTuple end = partitioner.increment(s, BigInteger.valueOf(6), 1);
-    assertEquals("C", end.get(0).asChars());
-    assertEquals("A", end.get(1).asChars());
+    Tuple end = partitioner.increment(s, BigInteger.valueOf(6), 1);
+    assertEquals("C", end.getText(0));
+    assertEquals("A", end.getText(1));
     end = partitioner.increment(end, BigInteger.valueOf(5), 1);
-    assertEquals("D", end.get(0).asChars());
-    assertEquals("C", end.get(1).asChars());
+    assertEquals("D", end.getText(0));
+    assertEquals("C", end.getText(1));
   }
 
   /**

@@ -128,14 +128,14 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
 
     BigInteger term = x.divide(BigDecimal.valueOf(partNum), RoundingMode.CEILING).toBigInteger();
     BigInteger reminder = reverseCardsForDigit[0];
-    VTuple last = mergedRange.getStart();
+    Tuple last = mergedRange.getStart();
     TupleRange tupleRange;
 
     while(reminder.compareTo(BigInteger.ZERO) > 0) {
       if (reminder.compareTo(term) <= 0) { // final one is inclusive
         tupleRange = new TupleRange(sortSpecs, last, mergedRange.getEnd());
       } else {
-        VTuple next = increment(last, term, variableId);
+        Tuple next = increment(last, term, variableId);
         tupleRange = new TupleRange(sortSpecs, last, next);
       }
 
@@ -420,7 +420,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
    * @param interval
    * @return
    */
-  public VTuple increment(final Tuple last, BigInteger interval, final int baseDigit) {
+  public Tuple increment(final Tuple last, BigInteger interval, final int baseDigit) {
     BigInteger [] incs = new BigInteger[last.size()];
     boolean [] overflowFlag = new boolean[last.size()];
     BigInteger [] result;

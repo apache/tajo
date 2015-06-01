@@ -90,17 +90,6 @@ public class CSVLineDeserializer extends TextLineDeserializer {
         fieldLength = end - start - delimiterCompensation;
       }
 
-//      if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
-//        lineBuf.setIndex(start, start + fieldLength);
-//        try {
-//        Datum datum = fieldSerDer.deserialize(currentTarget, lineBuf, nullChars);
-//        output.put(currentIndex, datum);
-//        } catch (Exception e) {
-//          output.put(, NullDatum.get());
-//        }
-//        currentTarget++;
-//      }
-
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
         try {

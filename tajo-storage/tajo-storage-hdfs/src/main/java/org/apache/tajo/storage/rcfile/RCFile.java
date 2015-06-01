@@ -1716,11 +1716,7 @@ public class RCFile {
         } else {
           colAdvanceRow(j, col);
 
-//<<<<<<< HEAD
           Datum datum = serde.deserialize(actualColumnIdx,
-//=======
-//          Datum datum = serde.deserialize(schema.getColumn(actualColumnIdx),
-//>>>>>>> 03294e1453586f64fe96458461f149851b443b42
               currentValue.loadedColumnsValueBuffer[j].getData(), col.rowReadIndex, col.prvLength, nullChars);
           tuple.put(j, datum);
           col.rowReadIndex += col.prvLength;

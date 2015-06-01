@@ -1005,7 +1005,7 @@ public class HBaseTablespace extends Tablespace {
         List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
 
         TupleComparator comparator = new BaseTupleComparator(inputSchema, sortSpecs);
-        VTuple previousTuple = dataRange.getStart();
+        Tuple previousTuple = dataRange.getStart();
 
         for (byte[] eachEndKey : endKeys) {
           VTuple endTuple = new VTuple(sortSpecs.length);

@@ -297,17 +297,6 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
-//<<<<<<< HEAD
-//      if (storeType == StoreType.RCFILE
-//          || storeType == StoreType.CSV
-//          || storeType == StoreType.PARQUET
-//          || storeType == StoreType.SEQUENCEFILE
-//          || storeType == StoreType.AVRO) {
-//        assertTrue(tuple.isBlankOrNull(0));
-//      }
-//      assertTrue(tupleCnt + 2 == tuple.getInt8(1));
-//      assertTrue(tupleCnt + 3 == tuple.getFloat4(2));
-//=======
       verifyProjectedFields(scanner.isProjectable(), tuple, tupleCnt);
       tupleCnt++;
     }
