@@ -105,9 +105,9 @@ public class CSVLineDeserializer extends TextLineDeserializer {
         lineBuf.setIndex(start, start + fieldLength);
         try {
           Datum datum = fieldSerDer.deserialize(currentIndex, lineBuf, nullChars);
-          output.put(currentIndex, datum);
+          output.put(currentTarget, datum);
         } catch (Exception e) {
-          output.put(currentIndex, NullDatum.get());
+          output.put(currentTarget, NullDatum.get());
         }
         currentTarget++;
       }
