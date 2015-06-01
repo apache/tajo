@@ -217,7 +217,7 @@ public class HistoryWriter extends AbstractService {
     public void run() {
       LOG.info("HistoryWriter_" + processName + " started.");
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
-      while (!stopped.get()) {
+      while (!stopped.get() && !Thread.interrupted()) {
         List<WriterFuture<WriterHolder>> histories = Lists.newArrayList();
 
         try {

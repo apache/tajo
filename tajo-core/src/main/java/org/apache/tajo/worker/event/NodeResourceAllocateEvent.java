@@ -24,7 +24,7 @@ import com.google.protobuf.RpcCallback;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationRequestProto;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationResponseProto;
 
-public class NodeResourceAllocateEvent extends NodeResourceManagerEvent {
+public class NodeResourceAllocateEvent extends NodeResourceEvent {
 
   private BatchAllocationRequestProto request;
   private RpcCallback<BatchAllocationResponseProto> callback;

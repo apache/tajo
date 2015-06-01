@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Deprecated
 public class TaskRunnerManager extends CompositeService implements EventHandler<TaskRunnerEvent> {
   private static final Log LOG = LogFactory.getLog(TaskRunnerManager.class);
 
@@ -154,14 +155,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
 
       if(context == null){
         try {
-          context = new ExecutionBlockContext(getTajoConf(),
-              getWorkerContext(),
-              this,
-              startEvent.getQueryContext(),
-              startEvent.getPlan(),
-              startEvent.getExecutionBlockId(),
-              startEvent.getQueryMaster(),
-              startEvent.getShuffleType());
+          context = new ExecutionBlockContext(getWorkerContext(), this, startEvent.getRequest());
           context.init();
         } catch (Throwable e) {
           LOG.fatal(e.getMessage(), e);
@@ -170,7 +164,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
         executionBlockContextMap.put(event.getExecutionBlockId(), context);
       }
 
-      TaskRunner taskRunner = new TaskRunner(context, startEvent.getContainerId());
+      TaskRunner taskRunner = new TaskRunner(context, startEvent.getRequest().getContainerId());
       LOG.info("Start TaskRunner:" + taskRunner.getId());
       taskRunnerMap.put(taskRunner.getId(), taskRunner);
       taskRunnerHistoryMap.put(taskRunner.getId(), taskRunner.getHistory());

@@ -18,17 +18,20 @@
 
 package org.apache.tajo.worker.event;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
-public class NodeResourceManagerEvent extends AbstractEvent<NodeResourceManagerEvent.EventType> {
-  public enum EventType {
-    ALLOCATE,
-    DEALLOCATE
+public class ExecutionBlockStopEvent extends TaskManagerEvent {
+  private TajoWorkerProtocol.ExecutionBlockListProto cleanupList;
+
+  public ExecutionBlockStopEvent(TajoIdProtos.ExecutionBlockIdProto executionBlockId,
+                                 TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+    super(EventType.EB_STOP, new ExecutionBlockId(executionBlockId));
+    this.cleanupList = cleanupList;
   }
 
-  public NodeResourceManagerEvent(EventType eventType) {
-    super(eventType);
+  public TajoWorkerProtocol.ExecutionBlockListProto getCleanupList() {
+    return cleanupList;
   }
 }
