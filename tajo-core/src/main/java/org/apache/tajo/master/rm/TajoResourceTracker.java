@@ -188,7 +188,9 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   public void nodeHeartbeat(RpcController controller, TajoResourceTrackerProtocol.NodeHeartbeatRequestProto request,
                             RpcCallback<TajoResourceTrackerProtocol.NodeHeartbeatResponseProto> done) {
     //TODO implement with ResourceManager for scheduler
-    throw new RuntimeException(new ServiceException(new NotImplementedException().getMessage()));
+    TajoResourceTrackerProtocol.NodeHeartbeatResponseProto.Builder
+        response = TajoResourceTrackerProtocol.NodeHeartbeatResponseProto.newBuilder();
+    done.run(response.setCommand(TajoResourceTrackerProtocol.ResponseCommand.NORMAL).build());
   }
 
   private Worker createWorkerResource(NodeHeartbeat request) {

@@ -70,7 +70,7 @@ public class TestTaskExecutor {
   private TaskExecutor taskExecutor;
   private AsyncDispatcher dispatcher;
   private AsyncDispatcher taskDispatcher;
-  private WorkerConnectionInfo worker;
+  private TajoWorker.WorkerContext workerContext;
 
   private CompositeService service;
   private TajoConf conf;
@@ -84,11 +84,20 @@ public class TestTaskExecutor {
     dispatcher = new AsyncDispatcher();
     taskDispatcher = new AsyncDispatcher();
 
-    final TajoWorker.WorkerContext workerContext = new MockWorkerContext() {
+    workerContext = new MockWorkerContext() {
+      WorkerConnectionInfo workerConnectionInfo;
 
       @Override
       public TajoConf getConf() {
         return conf;
+      }
+
+      @Override
+      public WorkerConnectionInfo getConnectionInfo() {
+        if (workerConnectionInfo == null) {
+          workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+        }
+        return workerConnectionInfo;
       }
     };
 
@@ -97,8 +106,7 @@ public class TestTaskExecutor {
     taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext, dispatcher.getEventHandler());
     taskExecutor = new TaskExecutor(barrier, taskManager, dispatcher.getEventHandler());
     resourceManager = new MockNodeResourceManager(resourceManagerBarrier, dispatcher, taskDispatcher.getEventHandler());
-    worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), worker, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext, resourceManager);
 
     service = new CompositeService("MockService") {
       @Override
@@ -139,8 +147,9 @@ public class TestTaskExecutor {
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
     ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(worker.getProto())
-        .setNodeId(worker.getHost()+":" + worker.getQueryMasterPort())
+        .setQueryMaster(workerContext.getConnectionInfo().getProto())
+        .setNodeId(workerContext.getConnectionInfo().getHost() + ":"
+            + workerContext.getConnectionInfo().getQueryMasterPort())
         .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")
@@ -178,8 +187,9 @@ public class TestTaskExecutor {
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
     ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(worker.getProto())
-        .setNodeId(worker.getHost()+":" + worker.getQueryMasterPort())
+        .setQueryMaster(workerContext.getConnectionInfo().getProto())
+        .setNodeId(workerContext.getConnectionInfo().getHost()+":"
+            + workerContext.getConnectionInfo().getQueryMasterPort())
         .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")

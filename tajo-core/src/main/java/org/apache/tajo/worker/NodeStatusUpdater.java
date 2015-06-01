@@ -57,16 +57,16 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private volatile boolean isStopped;
   private volatile long heartBeatInterval;
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
-  private final WorkerConnectionInfo connectionInfo;
+  private final TajoWorker.WorkerContext workerContext;
   private final NodeResourceManager nodeResourceManager;
   private AsyncRpcClient rmClient;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingLimit;
 
-  public NodeStatusUpdater(WorkerConnectionInfo connectionInfo, NodeResourceManager resourceManager) {
+  public NodeStatusUpdater(TajoWorker.WorkerContext workerContext, NodeResourceManager resourceManager) {
     super(NodeStatusUpdater.class.getSimpleName());
-    this.connectionInfo = connectionInfo;
+    this.workerContext = workerContext;
     this.nodeResourceManager = resourceManager;
   }
 
@@ -99,7 +99,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     this.isStopped = true;
 
     synchronized (updaterThread) {
-      updaterThread.notifyAll();
+      updaterThread.interrupt();
+      updaterThread.join();
     }
     super.serviceStop();
     LOG.info("NodeStatusUpdater stopped.");
@@ -121,13 +122,13 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private NodeHeartbeatRequestProto createResourceReport(NodeResource resource) {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setAvailableResource(resource.getProto());
-    requestProto.setWorkerId(connectionInfo.getId());
+    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
     return requestProto.build();
   }
 
   private NodeHeartbeatRequestProto createHeartBeatReport() {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setWorkerId(connectionInfo.getId());
+    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
     return requestProto.build();
   }
 
@@ -135,8 +136,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setTotalResource(nodeResourceManager.getTotalResource().getProto());
     requestProto.setAvailableResource(nodeResourceManager.getAvailableResource().getProto());
-    requestProto.setWorkerId(connectionInfo.getId());
-    requestProto.setConnectionInfo(connectionInfo.getProto());
+    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
+    requestProto.setConnectionInfo(workerContext.getConnectionInfo().getProto());
 
     //TODO set node status to requestProto.setStatus()
     return requestProto.build();

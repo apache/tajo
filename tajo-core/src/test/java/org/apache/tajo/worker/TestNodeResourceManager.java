@@ -50,11 +50,11 @@ public class TestNodeResourceManager {
   private TaskExecutor taskExecutor;
   private AsyncDispatcher dispatcher;
   private AsyncDispatcher taskDispatcher;
+  private TajoWorker.WorkerContext workerContext;
 
   private CompositeService service;
   private int taskMemory;
   private TajoConf conf;
-  private WorkerConnectionInfo worker;
 
   @Before
   public void setup() {
@@ -71,19 +71,26 @@ public class TestNodeResourceManager {
     dispatcher = new AsyncDispatcher();
     taskDispatcher = new AsyncDispatcher();
 
-    final TajoWorker.WorkerContext workerContext = new MockWorkerContext() {
-
+    workerContext = new MockWorkerContext() {
+      WorkerConnectionInfo workerConnectionInfo;
       @Override
       public TajoConf getConf() {
         return conf;
+      }
+
+      @Override
+      public WorkerConnectionInfo getConnectionInfo() {
+        if (workerConnectionInfo == null) {
+          workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+        }
+        return workerConnectionInfo;
       }
     };
 
     taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext, dispatcher.getEventHandler());
     taskExecutor = new MockTaskExecutor(new Semaphore(0), taskManager, dispatcher.getEventHandler());
     resourceManager = new MockNodeResourceManager(new Semaphore(0), dispatcher, taskDispatcher.getEventHandler());
-    worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), worker, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext, resourceManager);
 
     service = new CompositeService("MockService") {
       @Override
@@ -195,8 +202,9 @@ public class TestNodeResourceManager {
     TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
         ebRequestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
     ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(worker.getProto())
-        .setNodeId(worker.getHost()+":" + worker.getQueryMasterPort())
+        .setQueryMaster(workerContext.getConnectionInfo().getProto())
+        .setNodeId(workerContext.getConnectionInfo().getHost() + ":" +
+            workerContext.getConnectionInfo().getQueryMasterPort())
         .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")
