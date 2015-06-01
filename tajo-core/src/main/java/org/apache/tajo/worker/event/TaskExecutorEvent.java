@@ -22,6 +22,8 @@ import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.TaskAttemptId;
 
 public class TaskExecutorEvent extends AbstractEvent<TaskExecutorEvent.EventType> {
+
+  // producer: NodeResourceManager, consumer: TaskExecutorEvent
   public enum EventType {
     START,
     KILL,

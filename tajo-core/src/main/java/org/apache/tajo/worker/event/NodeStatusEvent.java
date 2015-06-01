@@ -23,8 +23,11 @@ import org.apache.tajo.resource.NodeResource;
 
 public class NodeStatusEvent extends AbstractEvent<NodeStatusEvent.EventType> {
 
+  // consumer: NodeStatusUpdater
   public enum EventType {
+    // producer: NodeResourceManager
     REPORT_RESOURCE,
+    // producer: TaskManager
     FLUSH_REPORTS
   }
 

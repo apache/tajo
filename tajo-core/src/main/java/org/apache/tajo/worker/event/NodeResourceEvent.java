@@ -21,8 +21,11 @@ package org.apache.tajo.worker.event;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 
 public class NodeResourceEvent extends AbstractEvent<NodeResourceEvent.EventType> {
+  //consumer: NodeResourceManager
   public enum EventType {
+    // producer: TajoWorkerManagerService
     ALLOCATE,
+    // producer: TaskExecutor
     DEALLOCATE
   }
 

@@ -23,6 +23,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 
 public class TaskManagerEvent extends AbstractEvent<TaskManagerEvent.EventType> {
+  // producer: NodeResourceManager, consumer: TaskManager
   public enum EventType {
     EB_START,
     EB_STOP
