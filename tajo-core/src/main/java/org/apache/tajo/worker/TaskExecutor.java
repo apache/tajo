@@ -85,7 +85,8 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
     this.threadPool = Executors.newFixedThreadPool(nThreads,
         new ThreadFactoryBuilder().setNameFormat("Task executor #%d").build());
 
-    int maxFetcherThreads = tajoConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
+    //TODO move to tajoConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
+    int maxFetcherThreads = Runtime.getRuntime().availableProcessors() * 2;
     this.fetcherExecutor = new ThreadPoolExecutor(Math.min(nThreads, maxFetcherThreads),
         maxFetcherThreads,
         60L, TimeUnit.SECONDS,
