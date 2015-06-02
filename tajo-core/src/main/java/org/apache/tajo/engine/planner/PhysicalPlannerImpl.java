@@ -924,7 +924,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         if (broadcastFlag) {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = TUtil.newList();
-          FileTablespace fileStorageManager = (FileTablespace) TableSpaceManager.getFileStorageManager(ctx.getConf());
+          FileTablespace fileStorageManager = (FileTablespace) OldStorageManager.getFileStorageManager(ctx.getConf());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
           }
@@ -1188,7 +1188,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(ctx.getConf());
+    FileTablespace sm = (FileTablespace) OldStorageManager.getFileStorageManager(ctx.getConf());
     Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),

@@ -90,7 +90,7 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
+    sm = TableSpaceManager.getDefault();
 
     idxPath = new Path(workDir, "test.idx");
 

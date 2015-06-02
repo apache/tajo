@@ -90,7 +90,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(context.getConf()))
+      appender = ((FileTablespace) OldStorageManager.getFileStorageManager(context.getConf()))
           .getAppender(meta, appenderSchema, lastFileName);
 
       if (suffixId > 0) {
@@ -98,7 +98,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
             "The remain output will be written into " + lastFileName.toString());
       }
     } else {
-      appender = TableSpaceManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
+      appender = OldStorageManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
           context.getQueryContext(),
           context.getTaskId(), meta, appenderSchema, context.getQueryContext().getStagingDir());
     }

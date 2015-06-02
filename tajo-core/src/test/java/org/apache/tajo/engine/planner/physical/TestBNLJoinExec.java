@@ -86,7 +86,7 @@ public class TestBNLJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getDefault())
         .getAppender(employeeMeta, schema, employeePath);
     appender.init();
     Tuple tuple = new VTuple(schema.size());
@@ -108,7 +108,7 @@ public class TestBNLJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    appender = ((FileTablespace) TableSpaceManager.getDefault())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());

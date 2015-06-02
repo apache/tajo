@@ -36,9 +36,10 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.OldStorageManager;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.TableSpaceManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -243,7 +244,7 @@ public class DDLExecutor {
       desc.setPartitionMethod(partitionDesc);
     }
 
-    TableSpaceManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
+    TableSpaceManager.get(desc.getPath()).get().createTable(desc, ifNotExists);
 
     if (catalog.createTable(desc)) {
       LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
@@ -290,7 +291,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        TableSpaceManager.getStorageManager(queryContext.getConf(),
+        OldStorageManager.getStorageManager(queryContext.getConf(),
             tableDesc.getMeta().getStoreType()).purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());

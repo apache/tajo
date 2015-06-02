@@ -54,7 +54,7 @@ import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
@@ -302,7 +302,7 @@ public class GlobalEngine extends AbstractService {
           InsertNode iNode = rootNode.getChild();
           Schema outSchema = iNode.getChild().getOutSchema();
 
-          TableSpaceManager.getStorageManager(queryContext.getConf(), storeType)
+          OldStorageManager.getStorageManager(queryContext.getConf(), storeType)
               .verifyInsertTableSchema(tableDesc, outSchema);
         } catch (Throwable t) {
           state.addVerification(t.getMessage());

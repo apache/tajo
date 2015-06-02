@@ -60,8 +60,8 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
@@ -1091,11 +1091,11 @@ public class Stage implements EventHandler<StageEvent> {
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
         FileTablespace storageManager =
-            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+            (FileTablespace) OldStorageManager.getFileStorageManager(stage.getContext().getConf());
         fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
         Tablespace tablespace =
-            TableSpaceManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
+            OldStorageManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
         fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan);
       }
 

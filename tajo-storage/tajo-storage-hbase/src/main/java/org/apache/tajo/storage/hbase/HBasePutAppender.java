@@ -28,7 +28,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class HBasePutAppender extends AbstractHBaseAppender {
     super.init();
 
     Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(conf, meta);
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager((TajoConf) conf, "HBASE"))
+    HConnection hconn = ((HBaseTablespace) OldStorageManager.getStorageManager((TajoConf) conf, "HBASE"))
         .getConnection(hbaseConf);
     htable = hconn.getTable(columnMapping.getHbaseTableName());
     htable.setAutoFlushTo(false);

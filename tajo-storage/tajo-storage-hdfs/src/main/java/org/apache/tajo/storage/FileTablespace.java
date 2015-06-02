@@ -42,11 +42,19 @@ import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.net.URI;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileTablespace extends Tablespace {
+
+  public static final PathFilter hiddenFileFilter = new PathFilter() {
+    public boolean accept(Path p) {
+      String name = p.getName();
+      return !name.startsWith("_") && !name.startsWith(".");
+    }
+  };
   private final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
@@ -87,18 +95,30 @@ public class FileTablespace extends Tablespace {
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileTablespace() {
-    super();
+  public FileTablespace(String spaceName, URI uri) {
+    super(spaceName, uri);
   }
 
   @Override
   protected void storageInit() throws IOException {
-    this.tableBaseDir = TajoConf.getWarehouseDir(conf);
+    this.tableBaseDir = new Path(uri);
     this.fs = tableBaseDir.getFileSystem(conf);
     this.blocksMetadataEnabled = conf.getBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
         DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
     if (!this.blocksMetadataEnabled)
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
+  }
+
+  @Override
+  public void setConfig(String name, String value) {
+    conf.set(name, value);
+  }
+
+  @Override
+  public void setConfigs(Map<String, String> configs) {
+    for (Map.Entry<String, String> c : configs.entrySet()) {
+      conf.set(c.getKey(), c.getValue());
+    }
   }
 
   public Scanner getFileScanner(TableMeta meta, Schema schema, Path path)
@@ -314,7 +334,6 @@ public class FileTablespace extends Tablespace {
     for (int i = 0; i < dirs.length; ++i) {
       Path p = dirs[i];
 
-      FileSystem fs = p.getFileSystem(conf);
       FileStatus[] matches = fs.globStatus(p, inputFilter);
       if (matches == null) {
         errors.add(new IOException("Input path does not exist: " + p));
@@ -323,8 +342,7 @@ public class FileTablespace extends Tablespace {
       } else {
         for (FileStatus globStat : matches) {
           if (globStat.isDirectory()) {
-            for (FileStatus stat : fs.listStatus(globStat.getPath(),
-                inputFilter)) {
+            for (FileStatus stat : fs.listStatus(globStat.getPath(), inputFilter)) {
               result.add(stat);
             }
           } else {
@@ -492,8 +510,6 @@ public class FileTablespace extends Tablespace {
     List<BlockLocation> blockLocations = Lists.newArrayList();
 
     for (Path p : inputs) {
-      FileSystem fs = p.getFileSystem(conf);
-
       ArrayList<FileStatus> files = Lists.newArrayList();
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
@@ -586,7 +602,7 @@ public class FileTablespace extends Tablespace {
       return;
     }
 
-    DistributedFileSystem fs = (DistributedFileSystem)DistributedFileSystem.get(conf);
+    DistributedFileSystem fs = (DistributedFileSystem) this.fs;
     int lsLimit = conf.getInt(DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
     int blockLocationIdx = 0;
 
@@ -768,7 +784,7 @@ public class FileTablespace extends Tablespace {
     // Intermediate directory
     if (fs.isDirectory(path)) {
 
-      FileStatus[] files = fs.listStatus(path, Tablespace.hiddenFileFilter);
+      FileStatus[] files = fs.listStatus(path, hiddenFileFilter);
 
       if (files != null && files.length > 0) {
 
@@ -949,7 +965,7 @@ public class FileTablespace extends Tablespace {
               if (fs.exists(finalOutputDir)) {
                 fs.mkdirs(oldTableDir);
 
-                for (FileStatus status : fs.listStatus(finalOutputDir, Tablespace.hiddenFileFilter)) {
+                for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
                   fs.rename(status.getPath(), oldTableDir);
                 }
 
@@ -971,7 +987,7 @@ public class FileTablespace extends Tablespace {
               if (movedToOldTable && !committed) {
 
                 // if commit is failed, recover the old data
-                for (FileStatus status : fs.listStatus(finalOutputDir, Tablespace.hiddenFileFilter)) {
+                for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
                   fs.delete(status.getPath(), true);
                 }
 
@@ -1223,5 +1239,9 @@ public class FileTablespace extends Tablespace {
     }
 
     return retValue;
+  }
+
+  public String toString() {
+    return name + "=" + uri.toString();
   }
 }

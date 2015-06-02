@@ -1,14 +1,8 @@
 {
   "spaces": {
-    "default": {
-      "uri": "file:///",
-      "configs": [
-        {"x": "y"},
-        {"x": "y"}
-      ]
-    },
-    "hbase_test": {
-      "uri": "hbase:zk:///x1.com:2181,x2.com:2181/"
+    "local": {
+      "default": true,
+      "uri": "file:///"
     }
   },
 

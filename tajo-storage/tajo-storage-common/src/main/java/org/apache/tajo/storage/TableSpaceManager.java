@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -26,21 +26,14 @@ import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * It handles available table spaces and cache TableSpace instances.
@@ -48,23 +41,39 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TableSpaceManager {
   private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
 
-  private TajoConf systemConf;
-  private JSONParser parser;
-  private JSONObject config;
+  /** default tablespace name */
+  public static final String DEFAULT_SPACE_NAME = "default";
+
+  private static TajoConf systemConf;
+  private static JSONParser parser;
+  private static JSONObject config;
+
+  /**
+   * Cache of all tablespace handlers
+   */
+  protected static final Map<String, URI> SPACES_URIS_MAP;
+  protected static final Map<URI, Tablespace> TABLE_SPACES;
+  protected static final Map<Class<?>, Constructor<?>> CONSTRUCTORS;
+  protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS;
+  public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
 
   static {
-    //instance = new TableSpaceManager();
+    systemConf = new TajoConf();
+
+    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
+
+    SPACES_URIS_MAP = Maps.newConcurrentMap();
+    TABLE_SPACES = Maps.newConcurrentMap();
+    CONSTRUCTORS = Maps.newConcurrentMap();
+    TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
+
+    instance = new TableSpaceManager();
   }
     /**
    * Singleton instance
    */
-  //private static final TableSpaceManager instance;
-  /**
-   * Cache of all tablespace handlers
-   */
-  protected final Map<String, URI> SPACES_URIS_MAP = Maps.newConcurrentMap();
-  protected final Map<URI, Tablespace> TABLE_SPACES = Maps.newConcurrentMap();
-  protected final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
+  private static final TableSpaceManager instance;
+
 
   TableSpaceManager(String json) {
     systemConf = new TajoConf();
@@ -88,8 +97,6 @@ public class TableSpaceManager {
   }
 
   private void loadJson(String json) {
-    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
-
     try {
       config = (JSONObject) parser.parse(json);
     } catch (ParseException e) {
@@ -123,45 +130,82 @@ public class TableSpaceManager {
     }
   }
 
-  private void loadSpaces(JSONObject root) {
-    CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
+  private static Tablespace newTableSpace(String spaceName, URI uri) {
+    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
 
+    if (clazz == null) {
+      LOG.warn("There is no tablespace for " + uri.toString());
+    }
+
+    try {
+      Constructor<? extends Tablespace> constructor =
+          (Constructor<? extends Tablespace>) CONSTRUCTORS.get(clazz);
+
+      if (constructor == null) {
+        constructor = clazz.getDeclaredConstructor(TABLESPACE_PARAM);
+        constructor.setAccessible(true);
+        CONSTRUCTORS.put(clazz, constructor);
+      }
+
+      return constructor.newInstance(new Object[]{spaceName, uri});
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void loadSpaces(JSONObject root) {
     JSONObject spaces = (JSONObject) root.get(KEY_SPACES);
     for (Map.Entry<String, Object> entry : spaces.entrySet()) {
-
-      String spaceName = entry.getKey();
-      JSONObject spaceJson = (JSONObject) entry.getValue();
-      URI spaceUri = URI.create(spaceJson.getAsString("uri"));
-
-      Tablespace tableSpace = null;
-
-      Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(spaceUri.getScheme());
-
-      if (clazz == null) {
-        throw new RuntimeException("There is no tablespace for " + spaceUri);
-      }
-
-      try {
-        Constructor<? extends Tablespace> constructor =
-            (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(clazz);
-        if (constructor == null) {
-          constructor = clazz.getDeclaredConstructor(new Class<?>[]{});
-          constructor.setAccessible(true);
-          CONSTRUCTOR_CACHE.put(clazz, constructor);
-        }
-        tableSpace = constructor.newInstance(new Object[]{});
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      try {
-        tableSpace.init(systemConf);
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-
-      SPACES_URIS_MAP.put(spaceName, spaceUri);
-      TABLE_SPACES.put(spaceUri, tableSpace);
+      loadTableSpace(entry.getKey(), (JSONObject) entry.getValue());
     }
+  }
+
+  public static void loadTableSpace(String spaceName, JSONObject spaceDesc) {
+    boolean defaultSpace = Boolean.parseBoolean(spaceDesc.getAsString("default"));
+    URI spaceUri = URI.create(spaceDesc.getAsString("uri"));
+
+    if (defaultSpace) {
+      addTableSpace(DEFAULT_SPACE_NAME, spaceUri);
+    }
+    addTableSpace(spaceName, spaceUri);
+  }
+
+  public static void addTableSpace(String spaceName, URI uri) {
+    addTableSpace(spaceName, uri, null);
+  }
+
+  public static void addTableSpace(String spaceName, URI uri, @Nullable Map<String, String> configs) {
+    Tablespace tableSpace = newTableSpace(spaceName, uri);
+    try {
+      tableSpace.init(systemConf);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    if (configs != null) {
+      tableSpace.setConfigs(configs);
+    }
+
+    addTableSpace(tableSpace);
+  }
+
+  public static void addTableSpace(Tablespace space) {
+    if (SPACES_URIS_MAP.containsKey(space.getName())) {
+      if (SPACES_URIS_MAP.get(space.getName()).equals(space.getUri())) {
+        return;
+      } else {
+        throw new RuntimeException("Name of Tablespace must be unique.");
+      }
+    }
+
+    SPACES_URIS_MAP.put(space.getName(), space.getUri());
+    TABLE_SPACES.put(space.getUri(), space);
+  }
+
+  @VisibleForTesting
+  public static void addTableSpaceForTest(Tablespace space) {
+    SPACES_URIS_MAP.put(space.getName(), space.getUri());
+    TABLE_SPACES.put(space.getUri(), space);
   }
 
   private void loadFormats(String json) {
@@ -175,219 +219,30 @@ public class TableSpaceManager {
     return TABLE_SPACE_HANDLERS.keySet();
   }
 
-  public static Optional<Tablespace> get() {
+  public static <T extends Tablespace> Optional<T> get(URI uri) {
+    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.entrySet()) {
+      if (entry.getKey().toString().startsWith(uri.toString())) {
+        return (Optional<T>) Optional.of(entry.getValue());
+      }
+    }
     return Optional.absent();
   }
 
   /**
-   * Cache of scanner handlers for each storage type.
-   */
-  protected static final Map<String, Class<? extends Scanner>> SCANNER_HANDLER_CACHE
-      = new ConcurrentHashMap<String, Class<? extends Scanner>>();
-  /**
-   * Cache of appender handlers for each storage type.
-   */
-  protected static final Map<String, Class<? extends Appender>> APPENDER_HANDLER_CACHE
-      = new ConcurrentHashMap<String, Class<? extends Appender>>();
-  private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
-      Configuration.class,
-      Schema.class,
-      TableMeta.class,
-      Fragment.class
-  };
-  private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
-      Configuration.class,
-      TaskAttemptId.class,
-      Schema.class,
-      TableMeta.class,
-      Path.class
-  };
-  /**
-   * Cache of Tablespace.
-   * Key is manager key(warehouse path) + store type
-   */
-  private static final Map<String, Tablespace> storageManagers = Maps.newHashMap();
-  /**
-   * Cache of constructors for each class. Pins the classes so they
-   * can't be garbage collected until ReflectionUtils can be collected.
-   */
-  protected static Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
-
-  /**
-   * Clear all class cache
-   */
-  @VisibleForTesting
-  protected synchronized static void clearCache() {
-    CONSTRUCTOR_CACHE.clear();
-    SCANNER_HANDLER_CACHE.clear();
-    APPENDER_HANDLER_CACHE.clear();
-    storageManagers.clear();
-  }
-
-  /**
-   * Close Tablespace
-   * @throws java.io.IOException
-   */
-  public static void shutdown() throws IOException {
-    synchronized(storageManagers) {
-      for (Tablespace eachTablespace : storageManagers.values()) {
-        eachTablespace.close();
-      }
-    }
-    clearCache();
-  }
-
-  /**
-   * Returns FileStorageManager instance.
+   * It returns the default tablespace. This method ensures that it always return the tablespace.
    *
-   * @param tajoConf Tajo system property.
    * @return
-   * @throws IOException
    */
-  public static Tablespace getFileStorageManager(TajoConf tajoConf) throws IOException {
-    return getStorageManager(tajoConf, "CSV");
+  public static <T extends Tablespace> T getDefault() {
+    return (T) getByName(DEFAULT_SPACE_NAME).get();
   }
 
-  /**
-   * Returns the proper Tablespace instance according to the storeType.
-   *
-   * @param tajoConf Tajo system property.
-   * @param storeType Storage type
-   * @return
-   * @throws IOException
-   */
-  public static Tablespace getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
-    FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
-    if (fileSystem != null) {
-      return getStorageManager(tajoConf, fileSystem.getUri(), storeType);
+  public static <T extends Tablespace> Optional<T> getByName(String name) {
+    URI uri = SPACES_URIS_MAP.get(name);
+    if (uri != null) {
+      return (Optional<T>) Optional.of(TABLE_SPACES.get(uri));
     } else {
-      return getStorageManager(tajoConf, null, storeType);
+      return Optional.absent();
     }
-  }
-
-  /**
-   * Returns the proper Tablespace instance according to the storeType
-   *
-   * @param tajoConf Tajo system property.
-   * @param uri Key that can identify each storage manager(may be a path)
-   * @param storeType Storage type
-   * @return
-   * @throws IOException
-   */
-  public static synchronized Tablespace getStorageManager(
-      TajoConf tajoConf, URI uri, String storeType) throws IOException {
-
-    String typeName;
-    if (storeType.equalsIgnoreCase("HBASE")) {
-      typeName = "hbase";
-    } else {
-      typeName = "hdfs";
-    }
-
-    synchronized (storageManagers) {
-      String storeKey = typeName + "_" + uri.toString();
-      Tablespace manager = storageManagers.get(storeKey);
-
-      if (manager == null) {
-        Class<? extends Tablespace> storageManagerClass =
-            tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, Tablespace.class);
-
-        if (storageManagerClass == null) {
-          throw new IOException("Unknown Storage Type: " + typeName);
-        }
-
-        try {
-          Constructor<? extends Tablespace> constructor =
-              (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(storageManagerClass);
-          if (constructor == null) {
-            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{});
-            constructor.setAccessible(true);
-            CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
-          }
-          manager = constructor.newInstance(new Object[]{});
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-        manager.init(tajoConf);
-        storageManagers.put(storeKey, manager);
-      }
-
-      return manager;
-    }
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param conf The system property
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
-   * @param target The output schema
-   * @return Scanner instance
-   * @throws IOException
-   */
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
-    return (SeekableScanner)getStorageManager(conf, meta.getStoreType()).getScanner(meta, schema, fragment, target);
-  }
-
-  /**
-   * Creates a scanner instance.
-   *
-   * @param theClass Concrete class of scanner
-   * @param conf System property
-   * @param schema Input schema
-   * @param meta Table meta data
-   * @param fragment The fragment for scanning
-   * @param <T>
-   * @return The scanner instance
-   */
-  public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, Schema schema, TableMeta meta,
-                                         Fragment fragment) {
-    T result;
-    try {
-      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
-      if (meth == null) {
-        meth = theClass.getDeclaredConstructor(DEFAULT_SCANNER_PARAMS);
-        meth.setAccessible(true);
-        CONSTRUCTOR_CACHE.put(theClass, meth);
-      }
-      result = meth.newInstance(new Object[]{conf, schema, meta, fragment});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    return result;
-  }
-
-  /**
-   * Creates a scanner instance.
-   *
-   * @param theClass Concrete class of scanner
-   * @param conf System property
-   * @param taskAttemptId Task id
-   * @param meta Table meta data
-   * @param schema Input schema
-   * @param workDir Working directory
-   * @param <T>
-   * @return The scanner instance
-   */
-  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TaskAttemptId taskAttemptId,
-                                          TableMeta meta, Schema schema, Path workDir) {
-    T result;
-    try {
-      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
-      if (meth == null) {
-        meth = theClass.getDeclaredConstructor(DEFAULT_APPENDER_PARAMS);
-        meth.setAccessible(true);
-        CONSTRUCTOR_CACHE.put(theClass, meth);
-      }
-      result = meth.newInstance(new Object[]{conf, taskAttemptId, schema, meta, workDir});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    return result;
   }
 }

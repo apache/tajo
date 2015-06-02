@@ -161,7 +161,7 @@ public class Task {
         this.sortComp = new BaseTupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
-      Path outFilePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(systemConf))
+      Path outFilePath = ((FileTablespace) TableSpaceManager.getDefault())
           .getAppenderFilePath(taskId, queryContext.getStagingDir());
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);

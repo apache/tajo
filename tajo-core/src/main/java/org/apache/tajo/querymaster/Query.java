@@ -46,8 +46,8 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
@@ -434,7 +434,7 @@ public class Query implements EventHandler<QueryEvent> {
           if (storeType != null) {
             LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
             try {
-              TableSpaceManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
+              OldStorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
             } catch (IOException e) {
               LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
             }
@@ -455,7 +455,7 @@ public class Query implements EventHandler<QueryEvent> {
         CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
         TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
 
-        Path finalOutputDir = TableSpaceManager.getStorageManager(query.systemConf, storeType)
+        Path finalOutputDir = OldStorageManager.getStorageManager(query.systemConf, storeType)
             .commitOutputData(query.context.getQueryContext(),
                 lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
 

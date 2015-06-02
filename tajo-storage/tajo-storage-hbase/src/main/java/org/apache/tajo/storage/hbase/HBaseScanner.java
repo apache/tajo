@@ -181,7 +181,7 @@ public class HBaseScanner implements Scanner {
     }
 
     if (htable == null) {
-      HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
+      HConnection hconn = ((HBaseTablespace) OldStorageManager.getStorageManager(conf, "HBASE"))
           .getConnection(hbaseConf);
       htable = hconn.getTable(fragment.getHbaseTableName());
     }

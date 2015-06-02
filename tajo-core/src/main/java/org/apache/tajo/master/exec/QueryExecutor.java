@@ -441,7 +441,7 @@ public class QueryExecutor {
 
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      Tablespace sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
+      Tablespace sm = OldStorageManager.getStorageManager(context.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty(storeType);
       if (!storageProperty.isSupportsInsertInto()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
@@ -479,7 +479,7 @@ public class QueryExecutor {
 
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      Tablespace sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
+      Tablespace sm = OldStorageManager.getStorageManager(planner.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty(storeType);
       if (storageProperty.isSortedInsert()) {
         String tableName = PlannerUtil.getStoreTableName(plan);

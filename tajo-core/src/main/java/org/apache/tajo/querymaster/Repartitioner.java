@@ -36,7 +36,6 @@ import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
-import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
@@ -92,8 +91,7 @@ public class Repartitioner {
     for (int i = 0; i < scans.length; i++) {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
-        FileTablespace storageManager =
-            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+        FileTablespace storageManager = TableSpaceManager.getDefault();
 
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         if (execBlock.getUnionScanMap() != null && !execBlock.getUnionScanMap().isEmpty()) {
@@ -114,7 +112,7 @@ public class Repartitioner {
         }
 
         Tablespace tablespace =
-            TableSpaceManager.getStorageManager(stage.getContext().getConf(), tableDesc.getMeta().getStoreType());
+            OldStorageManager.getStorageManager(stage.getContext().getConf(), tableDesc.getMeta().getStoreType());
 
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
@@ -382,7 +380,7 @@ public class Repartitioner {
         TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
           FileTablespace storageManager =
-              (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+              (FileTablespace) OldStorageManager.getFileStorageManager(stage.getContext().getConf());
 
           PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
           partitionScanPaths = partitionScan.getInputPaths();
@@ -390,7 +388,7 @@ public class Repartitioner {
           getFragmentsFromPartitionedTable(storageManager, eachScan, tableDesc);
           partitionScan.setInputPaths(partitionScanPaths);
         } else {
-          Tablespace tablespace = TableSpaceManager.getStorageManager(stage.getContext().getConf(),
+          Tablespace tablespace = OldStorageManager.getStorageManager(stage.getContext().getConf(),
               tableDesc.getMeta().getStoreType());
           Collection<Fragment> scanFragments = tablespace.getSplits(eachScan.getCanonicalName(),
               tableDesc, eachScan);
@@ -510,11 +508,11 @@ public class Repartitioner {
         partitionScanPaths = partitionScan.getInputPaths();
         // set null to inputPaths in getFragmentsFromPartitionedTable()
         FileTablespace storageManager =
-            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+            (FileTablespace) OldStorageManager.getFileStorageManager(stage.getContext().getConf());
         scanFragments = getFragmentsFromPartitionedTable(storageManager, scan, desc);
       } else {
         Tablespace tablespace =
-            TableSpaceManager.getStorageManager(stage.getContext().getConf(), desc.getMeta().getStoreType());
+            OldStorageManager.getStorageManager(stage.getContext().getConf(), desc.getMeta().getStoreType());
 
         scanFragments = tablespace.getSplits(scan.getCanonicalName(), desc, scan);
       }
@@ -619,8 +617,7 @@ public class Repartitioner {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
-        .getTablePath(scan.getTableName());
+    tablePath = ((FileTablespace) TableSpaceManager.getDefault()).getTablePath(scan.getTableName());
 
     ExecutionBlock sampleChildBlock = masterPlan.getChild(stage.getId(), 0);
     SortNode sortNode = PlannerUtil.findTopNode(sampleChildBlock.getPlan(), NodeType.SORT);
@@ -648,7 +645,7 @@ public class Repartitioner {
         throw new IOException("Can't get table meta data from catalog: " +
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
-      ranges = TableSpaceManager.getStorageManager(stage.getContext().getConf(), storeType)
+      ranges = OldStorageManager.getStorageManager(stage.getContext().getConf(), storeType)
           .getInsertSortRanges(stage.getContext().getQueryContext(), tableDesc,
               sortNode.getInSchema(), sortSpecs,
               mergedRange);
@@ -785,8 +782,7 @@ public class Repartitioner {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
-        .getTablePath(scan.getTableName());
+    tablePath = ((FileTablespace) TableSpaceManager.getDefault()).getTablePath(scan.getTableName());
 
     Fragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
     List<Fragment> fragments = new ArrayList<Fragment>();

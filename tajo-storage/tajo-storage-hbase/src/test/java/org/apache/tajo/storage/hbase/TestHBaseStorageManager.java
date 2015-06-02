@@ -25,17 +25,29 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.Pair;
 import org.junit.Test;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestHBaseStorageManager {
+
+  @Test
+  public void testTablespaceHandler() throws Exception {
+    assertTrue((TableSpaceManager.getByName("default").get()) instanceof HBaseTablespace);
+    assertTrue((TableSpaceManager.getByName("hbase-cluster1").get()) instanceof HBaseTablespace);
+    assertTrue((TableSpaceManager.get(URI.create("hbase:zk:///x1.com:2181,x2.com:2181/")).get())
+        instanceof HBaseTablespace);
+  }
+
   @Test
   public void testGetIndexPredications() throws Exception {
     Column rowkeyColumn = new Column("rk", Type.TEXT);
@@ -46,8 +58,7 @@ public class TestHBaseStorageManager {
     EvalNode evalNodeA = new BinaryEval(EvalType.AND, evalNode1, evalNode2);
     scanNode.setQual(evalNodeA);
 
-    HBaseTablespace storageManager =
-        (HBaseTablespace) TableSpaceManager.getStorageManager(new TajoConf(), "HBASE");
+    HBaseTablespace storageManager = (HBaseTablespace) TableSpaceManager.getByName("default").get();
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());

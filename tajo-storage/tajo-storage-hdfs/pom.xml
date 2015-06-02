@@ -74,6 +74,8 @@
         <configuration>
           <excludes>
             <exclude>src/test/resources/dataset/**</exclude>
+            <exclude>src/main/resources/*.json</exclude>
+            <exclude>src/test/resources/*.json</exclude>
           </excludes>
         </configuration>
       </plugin>

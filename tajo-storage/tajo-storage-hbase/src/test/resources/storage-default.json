@@ -1,13 +1,7 @@
 {
   "spaces": {
-    "default": {
-      "uri": "file:///",
-      "configs": [
-        {"x": "y"},
-        {"x": "y"}
-      ]
-    },
-    "hbase_test": {
+    "hbase-cluster1": {
+      "default": true,
       "uri": "hbase:zk:///x1.com:2181,x2.com:2181/"
     }
   },

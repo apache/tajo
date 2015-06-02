@@ -41,6 +41,7 @@ import org.apache.tajo.storage.fragment.FragmentConvertor;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Tablespace manages the functions of storing and reading data.
@@ -50,16 +51,14 @@ import java.util.List;
  */
 public abstract class Tablespace {
 
-  public static final PathFilter hiddenFileFilter = new PathFilter() {
-    public boolean accept(Path p) {
-      String name = p.getName();
-      return !name.startsWith("_") && !name.startsWith(".");
-    }
-  };
+  protected final String name;
+  protected final URI uri;
 
   protected TajoConf conf;
 
-  public Tablespace() {
+  public Tablespace(String name, URI uri) {
+    this.name = name;
+    this.uri = uri;
   }
 
   /**
@@ -67,6 +66,18 @@ public abstract class Tablespace {
    * @throws java.io.IOException
    */
   protected abstract void storageInit() throws IOException;
+
+  public String getName() {
+    return name;
+  }
+
+  public URI getUri() {
+    return uri;
+  }
+
+  public abstract void setConfig(String name, String value);
+
+  public abstract void setConfigs(Map<String, String> configs);
 
   /**
    * This method is called after executing "CREATE TABLE" statement.
@@ -165,7 +176,7 @@ public abstract class Tablespace {
    * @throws java.io.IOException
    */
   public void init(TajoConf tajoConf) throws IOException {
-    this.conf = tajoConf;
+    this.conf = new TajoConf(tajoConf);
     storageInit();
   }
 
@@ -230,7 +241,7 @@ public abstract class Tablespace {
     Scanner scanner;
 
     Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
-    scanner = TableSpaceManager.newScannerInstance(scannerClass, conf, schema, meta, fragment);
+    scanner = OldStorageManager.newScannerInstance(scannerClass, conf, schema, meta, fragment);
     scanner.setTarget(target.toArray());
 
     return scanner;
@@ -254,18 +265,18 @@ public abstract class Tablespace {
     Class<? extends Appender> appenderClass;
 
     String handlerName = meta.getStoreType().toLowerCase();
-    appenderClass = TableSpaceManager.APPENDER_HANDLER_CACHE.get(handlerName);
+    appenderClass = OldStorageManager.APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
           String.format("tajo.storage.appender-handler.%s.class", handlerName), null, Appender.class);
-      TableSpaceManager.APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
+      OldStorageManager.APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
     }
 
     if (appenderClass == null) {
       throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
 
-    appender = TableSpaceManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
+    appender = OldStorageManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
 
     return appender;
   }
@@ -279,11 +290,11 @@ public abstract class Tablespace {
    */
   public Class<? extends Scanner> getScannerClass(String storeType) throws IOException {
     String handlerName = storeType.toLowerCase();
-    Class<? extends Scanner> scannerClass = TableSpaceManager.SCANNER_HANDLER_CACHE.get(handlerName);
+    Class<? extends Scanner> scannerClass = OldStorageManager.SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
           String.format("tajo.storage.scanner-handler.%s.class", handlerName), null, Scanner.class);
-      TableSpaceManager.SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
+      OldStorageManager.SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
     }
 
     if (scannerClass == null) {

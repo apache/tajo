@@ -58,7 +58,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -324,7 +324,7 @@ public class QueryMasterTask extends CompositeService {
 
       String storeType = PlannerUtil.getStoreType(plan);
       if (storeType != null) {
-        sm = TableSpaceManager.getStorageManager(systemConf, storeType);
+        sm = OldStorageManager.getStorageManager(systemConf, storeType);
         StorageProperty storageProperty = sm.getStorageProperty(storeType);
         if (storageProperty.isSortedInsert()) {
           String tableName = PlannerUtil.getStoreTableName(plan);

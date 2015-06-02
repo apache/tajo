@@ -105,8 +105,7 @@ public class TestLeftOuterHashJoinExec {
 
     TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
     Path dep3Path = new Path(testDir, "dep3.csv");
-    Appender appender1 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
-        .getAppender(dep3Meta, dep3Schema, dep3Path);
+    Appender appender1 = ((FileTablespace) TableSpaceManager.getDefault()).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
     Tuple tuple = new VTuple(dep3Schema.size());
     for (int i = 0; i < 10; i++) {
@@ -135,7 +134,7 @@ public class TestLeftOuterHashJoinExec {
 
     TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
     Path job3Path = new Path(testDir, "job3.csv");
-    Appender appender2 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender2 = ((FileTablespace) TableSpaceManager.getDefault())
         .getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
     Tuple tuple2 = new VTuple(job3Schema.size());
@@ -175,7 +174,7 @@ public class TestLeftOuterHashJoinExec {
 
     TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
     Path emp3Path = new Path(testDir, "emp3.csv");
-    Appender appender3 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender3 = ((FileTablespace) TableSpaceManager.getDefault())
         .getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
     Tuple tuple3 = new VTuple(emp3Schema.size());
@@ -228,7 +227,7 @@ public class TestLeftOuterHashJoinExec {
 
     TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
     Path phone3Path = new Path(testDir, "phone3.csv");
-    Appender appender5 = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender5 = ((FileTablespace) TableSpaceManager.getDefault())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
     appender5.init();
     

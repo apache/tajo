@@ -38,7 +38,7 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
@@ -206,7 +206,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
+    HConnection hconn = ((HBaseTablespace) OldStorageManager.getStorageManager(conf, "HBASE"))
         .getConnection(testingCluster.getHBaseUtil().getConf());
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -245,7 +245,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
+    HConnection hconn = ((HBaseTablespace) OldStorageManager.getStorageManager(conf, "HBASE"))
         .getConnection(testingCluster.getHBaseUtil().getConf());
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -298,7 +298,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
+    HConnection hconn = ((HBaseTablespace) OldStorageManager.getStorageManager(conf, "HBASE"))
         .getConnection(testingCluster.getHBaseUtil().getConf());
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -335,7 +335,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
+    HConnection hconn = ((HBaseTablespace) OldStorageManager.getStorageManager(conf, "HBASE"))
         .getConnection(testingCluster.getHBaseUtil().getConf());
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -470,7 +470,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeEq = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
         new ConstEval(new TextDatum("021")));
     scanNode.setQual(evalNodeEq);
-    Tablespace tablespace = TableSpaceManager.getStorageManager(conf, "HBASE");
+    Tablespace tablespace = OldStorageManager.getStorageManager(conf, "HBASE");
     List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));

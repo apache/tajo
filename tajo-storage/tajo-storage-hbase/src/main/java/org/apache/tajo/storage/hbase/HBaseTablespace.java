@@ -60,6 +60,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -70,12 +71,21 @@ public class HBaseTablespace extends Tablespace {
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
-  public HBaseTablespace() {
-    super();
+  public HBaseTablespace(String spaceName, URI uri) {
+    super(spaceName, uri);
   }
 
   @Override
   public void storageInit() throws IOException {
+  }
+
+  @Override
+  public void setConfig(String name, String value) {
+  }
+
+  @Override
+  public void setConfigs(Map<String, String> configs) {
+
   }
 
   @Override

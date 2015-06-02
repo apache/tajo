@@ -82,7 +82,7 @@ public class TestExternalSortExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getDefault())
         .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
