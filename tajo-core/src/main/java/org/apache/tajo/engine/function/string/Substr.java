@@ -56,39 +56,28 @@ public class Substr extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    Datum fromDatum = params.get(1);
-    Datum countDatum = params.size() > 2 ? params.get(2) : null;
-
-    if(valueDatum instanceof NullDatum || fromDatum instanceof NullDatum || countDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
+    }
+    if (params.size() > 2 && params.isBlankOrNull(2)) {
       return NullDatum.get();
     }
 
-    String value = valueDatum.asChars();
-    int from = fromDatum.asInt4();
-    int strLength = value.length();
-    int count;
+    String value = params.getText(0);
+    int start = params.getInt4(1) - 1;
 
-    if (countDatum == null) {
-      count = strLength;
-    } else {
-      count = (countDatum.asInt4() + from) - 1;
+    int from = Math.max(0, start);
+    int length = params.size() > 2 ? params.getInt4(2) : -1;
+
+    int to = value.length();
+    if (length >= 0) {
+      to = Math.min(start + length, to);
     }
 
-    if (count > strLength) {
-      count = strLength;
-    }
-
-    if (from < 1) {
-      from = 0;
-    } else {
-      from --;
-    }
-
-    if (from >= count) {
+    if (from >= to) {
       return DatumFactory.createText("");
     }
 
-    return DatumFactory.createText(value.substring(from, count));
+    return DatumFactory.createText(value.substring(from, to));
   }
 }

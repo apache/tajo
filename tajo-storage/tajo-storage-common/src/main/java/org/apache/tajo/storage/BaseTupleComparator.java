@@ -110,8 +110,8 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
   @Override
   public int compare(Tuple tuple1, Tuple tuple2) {
     for (int i = 0; i < sortKeyIds.length; i++) {
-      left = tuple1.get(sortKeyIds[i]);
-      right = tuple2.get(sortKeyIds[i]);
+      left = tuple1.asDatum(sortKeyIds[i]);
+      right = tuple2.asDatum(sortKeyIds[i]);
 
       if (left.isNull() || right.isNull()) {
         if (!left.equals(right)) {

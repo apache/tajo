@@ -287,6 +287,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis, 
+    Committed by jihoon)
+
     TAJO-1583: Remove ServerCallable in RPC client. (jinho)
 
     TAJO-1587: Upgrade java version to 1.7 for Travis CI. (jihoon)

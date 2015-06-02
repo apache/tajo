@@ -53,8 +53,8 @@ public class AddDays extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum dateDatum = params.get(0);
-    long val = params.get(1).asInt8();
+    Datum dateDatum = params.asDatum(0);
+    long val = params.getInt8(1);
     if (val >= 0) {
       return dateDatum.plus(new IntervalDatum(val * IntervalDatum.DAY_MILLIS));
     } else {

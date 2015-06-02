@@ -52,9 +52,10 @@ public class InitCap extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    return DatumFactory.createText(WordUtils.capitalizeFully(datum.asChars()));
+    return DatumFactory.createText(WordUtils.capitalizeFully(params.getText(0)));
   }
 }

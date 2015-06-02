@@ -120,7 +120,7 @@ public class TestTimestampDatum {
   public final void testTimeZone() {
     TimestampDatum datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2014, 5, 1, 15, 20, 30, 0));
     assertEquals("2014-05-01 15:20:30", datum.asChars());
-    assertEquals("2014-05-02 00:20:30+09", datum.asChars(TimeZone.getTimeZone("GMT+9"), true));
+    assertEquals("2014-05-02 00:20:30+09", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("GMT+9"), true));
   }
 
   @Test

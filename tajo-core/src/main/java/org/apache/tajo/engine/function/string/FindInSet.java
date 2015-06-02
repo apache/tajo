@@ -59,32 +59,29 @@ public class FindInSet extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum finding = params.get(0);
-    Datum textArray = params.get(1);
-
-    if (finding instanceof NullDatum || textArray instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    byte[] searchBytes = finding.asByteArray();
+    byte[] searchBytes = params.getBytes(0);
 
     //  Returns 0 if the first argument has any commas.
-    for (int i = 0; i < finding.size(); i++) {
-      if (searchBytes[i] == ',') {
+    for (byte searchByte : searchBytes) {
+      if (searchByte == ',') {
         return DatumFactory.createInt4(0);
       }
     }
 
-    byte[] arrayData = textArray.asByteArray();
-    int findingLength = finding.size();
+    byte[] arrayData = params.getBytes(1);
+    int findingLength = searchBytes.length;
 
     int posInTextArray = 0;
     int curLengthOfCandidate = 0;
     boolean matching = true;
 
-    for (int i = 0; i < textArray.size(); i++) {
+    for (byte abyte : arrayData) {
 
-      if (arrayData[i] == ',') {
+      if (abyte == ',') {
         posInTextArray++;
         if (matching && curLengthOfCandidate == findingLength) {
           return DatumFactory.createInt4(posInTextArray);
@@ -94,7 +91,7 @@ public class FindInSet extends GeneralFunction {
         }
       } else {
         if (curLengthOfCandidate + 1 <= findingLength) {
-          if (!matching || searchBytes[curLengthOfCandidate] != arrayData[i]) {
+          if (!matching || searchBytes[curLengthOfCandidate] != abyte) {
             matching = false;
           }
         } else {

@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -80,39 +79,33 @@ public class RegexpReplace extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum thisValue = params.get(0);
-    Datum thisPattern = params.get(1);
-    Datum thisReplacement = params.get(2);
-    boolean nullResult = isAlwaysNull
-        || thisValue instanceof NullDatum
-        || thisReplacement instanceof NullDatum
-        || thisPattern instanceof NullDatum;
-
-    Pattern thisCompiled;
-    if (!nullResult) {
-      if (compiled != null) {
-        thisCompiled = compiled;
-      } else {
-        thisCompiled = Pattern.compile(thisPattern.asChars());
-
-        // if a regular expression pattern is a constant,
-        // it will be reused in every call
-        if (isPatternConstant) {
-          compiled = thisCompiled;
-        }
-      }
-
-      Matcher matcher = thisCompiled.matcher(thisValue.asChars());
-      String replacement = thisReplacement.asChars();
-      StringBuffer sb = new StringBuffer();
-      while (matcher.find()) {
-        matcher.appendReplacement(sb, replacement);
-      }
-      matcher.appendTail(sb);
-
-      return DatumFactory.createText(sb.toString());
-    } else {
+    if (isAlwaysNull || params.isBlankOrNull(0) || params.isBlankOrNull(1) || params.isBlankOrNull(2)) {
       return NullDatum.get();
     }
+
+    String value = params.getText(0);
+    String replacement = params.getText(2);
+
+    Pattern thisCompiled;
+    if (compiled != null) {
+      thisCompiled = compiled;
+    } else {
+      thisCompiled = Pattern.compile(params.getText(1));
+
+      // if a regular expression pattern is a constant,
+      // it will be reused in every call
+      if (isPatternConstant) {
+        compiled = thisCompiled;
+      }
+    }
+
+    Matcher matcher = thisCompiled.matcher(value);
+    StringBuffer sb = new StringBuffer();
+    while (matcher.find()) {
+      matcher.appendReplacement(sb, replacement);
+    }
+    matcher.appendTail(sb);
+
+    return DatumFactory.createText(sb.toString());
   }
 }

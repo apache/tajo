@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -56,11 +55,11 @@ public class Concat extends GeneralFunction {
     StringBuilder result = new StringBuilder();
 
     int paramSize = params.size();
-    for(int i = 0 ; i < paramSize; i++) {
-      Datum tmpDatum = params.get(i);
-      if(tmpDatum instanceof NullDatum)
+    for (int i = 0; i < paramSize; i++) {
+      if (params.isBlankOrNull(i)) {
         continue;
-      result.append(tmpDatum.asChars());
+      }
+      result.append(params.getText(i));
     }
     return DatumFactory.createText(result.toString());
   }

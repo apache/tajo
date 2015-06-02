@@ -882,7 +882,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       time = DateTimeUtil.toTime(times[0], times[1], times[2], 0);
     }
     TimeDatum timeDatum = new TimeDatum(time);
-    TimeMeta tm = timeDatum.toTimeMeta();
+    TimeMeta tm = timeDatum.asTimeMeta();
 
     if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
       TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));

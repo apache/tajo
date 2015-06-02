@@ -64,15 +64,13 @@ public class Right extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
+    }
 
-    Datum sizeDatum = params.get(1);
-    if(sizeDatum instanceof NullDatum) return NullDatum.get();
-
-    String data = datum.asChars();
+    String data = params.getText(0);
     int length = data.length();
-    int size = sizeDatum.asInt4();
+    int size = params.getInt4(1);
 
     size = getSize(length, size);
     if (size == 0) {

@@ -20,13 +20,13 @@ package org.apache.tajo.storage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 
 /**
  * This class is not thread-safe.
@@ -34,8 +34,8 @@ import org.apache.tajo.datum.NullDatum;
 public class TableStatistics {
   private static final Log LOG = LogFactory.getLog(TableStatistics.class);
   private Schema schema;
-  private Tuple minValues;
-  private Tuple maxValues;
+  private VTuple minValues;
+  private VTuple maxValues;
   private long [] numNulls;
   private long numRows = 0;
   private long numBytes = 0;
@@ -81,12 +81,17 @@ public class TableStatistics {
     return this.numBytes;
   }
 
-  public void analyzeField(int idx, Datum datum) {
-    if (datum instanceof NullDatum) {
+  public void analyzeNull(int idx) {
+    numNulls[idx]++;
+  }
+
+  public void analyzeField(int idx, Tuple tuple) {
+    if (tuple.isBlankOrNull(idx)) {
       numNulls[idx]++;
       return;
     }
 
+    Datum datum = tuple.asDatum(idx);
     if (comparable[idx]) {
       if (!maxValues.contains(idx) ||
           maxValues.get(idx).compareTo(datum) < 0) {
@@ -102,21 +107,21 @@ public class TableStatistics {
   public TableStats getTableStat() {
     TableStats stat = new TableStats();
 
-    ColumnStats columnStats;
     for (int i = 0; i < schema.size(); i++) {
-      columnStats = new ColumnStats(schema.getColumn(i));
+      Column column = schema.getColumn(i);
+      ColumnStats columnStats = new ColumnStats(column);
       columnStats.setNumNulls(numNulls[i]);
-      if (minValues.get(i) == null || schema.getColumn(i).getDataType().getType() == minValues.get(i).type()) {
+      if (minValues.isBlank(i) || column.getDataType().getType() == minValues.type(i)) {
         columnStats.setMinValue(minValues.get(i));
       } else {
-        LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
-            ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
+        LOG.warn("Wrong statistics column type (" + minValues.type(i) +
+            ", expected=" + column.getDataType().getType() + ")");
       }
-      if (maxValues.get(i) == null || schema.getColumn(i).getDataType().getType() == maxValues.get(i).type()) {
+      if (minValues.isBlank(i) || column.getDataType().getType() == maxValues.type(i)) {
         columnStats.setMaxValue(maxValues.get(i));
       } else {
-        LOG.warn("Wrong statistics column type (" + maxValues.get(i).type() +
-            ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
+        LOG.warn("Wrong statistics column type (" + maxValues.type(i) +
+            ", expected=" + column.getDataType().getType() + ")");
       }
       stat.addColumnStat(columnStats);
     }

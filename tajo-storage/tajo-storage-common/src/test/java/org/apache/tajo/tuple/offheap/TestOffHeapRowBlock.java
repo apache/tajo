@@ -497,79 +497,79 @@ public class TestOffHeapRowBlock {
 
   public static void validateNullity(int j, Tuple tuple) {
     if (j == 0) {
-      tuple.isNull(0);
+      tuple.isBlankOrNull(0);
     } else {
       assertTrue((j % 1 == 0) == tuple.getBool(0));
     }
 
     if (j % 1 == 0) {
-      tuple.isNull(1);
+      tuple.isBlankOrNull(1);
     } else {
       assertTrue(1 == tuple.getInt2(1));
     }
 
     if (j % 2 == 0) {
-      tuple.isNull(2);
+      tuple.isBlankOrNull(2);
     } else {
       assertEquals(j, tuple.getInt4(2));
     }
 
     if (j % 3 == 0) {
-      tuple.isNull(3);
+      tuple.isBlankOrNull(3);
     } else {
       assertEquals(j, tuple.getInt8(3));
     }
 
     if (j % 4 == 0) {
-      tuple.isNull(4);
+      tuple.isBlankOrNull(4);
     } else {
       assertTrue(j == tuple.getFloat4(4));
     }
 
     if (j % 5 == 0) {
-      tuple.isNull(5);
+      tuple.isBlankOrNull(5);
     } else {
       assertTrue(j == tuple.getFloat8(5));
     }
 
     if (j % 6 == 0) {
-      tuple.isNull(6);
+      tuple.isBlankOrNull(6);
     } else {
       assertEquals(new String(UNICODE_FIELD_PREFIX + j), tuple.getText(6));
     }
 
     if (j % 7 == 0) {
-      tuple.isNull(7);
+      tuple.isBlankOrNull(7);
     } else {
       assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, tuple.getInt8(7));
     }
 
     if (j % 8 == 0) {
-      tuple.isNull(8);
+      tuple.isBlankOrNull(8);
     } else {
       assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, tuple.getInt4(8));
     }
 
     if (j % 9 == 0) {
-      tuple.isNull(9);
+      tuple.isBlankOrNull(9);
     } else {
       assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
     }
 
     if (j % 10 == 0) {
-      tuple.isNull(10);
+      tuple.isBlankOrNull(10);
     } else {
       assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
     }
 
     if (j % 11 == 0) {
-      tuple.isNull(11);
+      tuple.isBlankOrNull(11);
     } else {
       assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
     }
 
     if (j % 12 == 0) {
-      tuple.isNull(12);
+      tuple.isBlankOrNull(12);
     } else {
       assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
     }

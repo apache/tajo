@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
@@ -72,11 +71,10 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
       sb.delete(0, sb.length());
       if (keyIds != null) {
         for(int i = 0; i < keyIds.length; i++) {
-          Datum datum = tuple.get(keyIds[i]);
           if(i > 0)
             sb.append("/");
           sb.append(keyNames[i]).append("=");
-          sb.append(StringUtils.escapePathName(datum.asChars()));
+          sb.append(StringUtils.escapePathName(tuple.getText(keyIds[i])));
         }
       }
 

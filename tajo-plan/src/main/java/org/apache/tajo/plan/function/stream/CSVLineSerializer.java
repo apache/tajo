@@ -56,7 +56,17 @@ public class CSVLineSerializer extends TextLineSerializer {
     int writtenBytes = 0;
 
     for (int i = 0; i < input.size(); i++) {
-      writtenBytes += serializeDatum(out, input.get(i), schema.getColumn(i).getDataType());
+      Datum datum = input.asDatum(i);
+      String typeStr;
+      if (datum.type() == TajoDataTypes.Type.ANY) {
+        typeStr = getTypeString(((AnyDatum)datum).getActual());
+      } else {
+        typeStr = getTypeString(datum);
+      }
+      out.write(typeStr.getBytes());
+      out.write(PARAM_DELIM.getBytes());
+
+      writtenBytes += serde.serialize(out, datum, schema.getColumn(i).getDataType(), nullChars);
 
       if (input.size() - 1 > i) {
         out.write(delimiter);
