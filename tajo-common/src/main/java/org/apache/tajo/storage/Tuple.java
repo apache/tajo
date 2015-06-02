@@ -36,7 +36,7 @@ public interface Tuple extends Cloneable {
 
   void put(int fieldId, Datum value);
 
-	void put(Datum[] values);
+  void put(Datum[] values);
 
   void clear();
 

@@ -35,6 +35,8 @@ public class NullTuple implements Tuple, Cloneable {
     return new NullTuple(size);
   }
 
+  private static final byte[] NULL_TEXT_BYTES = new byte[0];
+
   private final int size;
 
   NullTuple(int size) {
@@ -125,7 +127,7 @@ public class NullTuple implements Tuple, Cloneable {
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    return new byte[0];
+    return NULL_TEXT_BYTES;
   }
 
   @Override
@@ -180,7 +182,7 @@ public class NullTuple implements Tuple, Cloneable {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return new NullTuple(size);
+    return this;
   }
 
   @Override

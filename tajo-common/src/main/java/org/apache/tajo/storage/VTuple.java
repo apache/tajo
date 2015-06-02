@@ -31,12 +31,12 @@ import java.net.InetAddress;
 import java.util.Arrays;
 
 public class VTuple implements Tuple, Cloneable {
-	@Expose public Datum [] values;
-	@Expose private long offset;
-	
-	public VTuple(int size) {
-		values = new Datum[size];
-	}
+  @Expose public Datum [] values;
+  @Expose private long offset;
+
+  public VTuple(int size) {
+    values = new Datum[size];
+  }
 
   public VTuple(Tuple tuple) {
     this.values = tuple.getValues().clone();
@@ -47,14 +47,14 @@ public class VTuple implements Tuple, Cloneable {
     this.values = Arrays.copyOf(datum, datum.length);
   }
 
-	@Override
-	public int size() {	
-		return values.length;
-	}
-	
-	public boolean contains(int fieldId) {
-		return values[fieldId] != null;
-	}
+  @Override
+  public int size() {
+    return values.length;
+  }
+
+  public boolean contains(int fieldId) {
+    return values[fieldId] != null;
+  }
 
   @Override
   public boolean isBlank(int fieldid) {
@@ -77,13 +77,13 @@ public class VTuple implements Tuple, Cloneable {
       values[i] = null;
     }
   }
-	
-	//////////////////////////////////////////////////////
-	// Setter
-	//////////////////////////////////////////////////////	
-	public void put(int fieldId, Datum value) {
-		values[fieldId] = value;
-	}
+
+  //////////////////////////////////////////////////////
+  // Setter
+  //////////////////////////////////////////////////////
+  public void put(int fieldId, Datum value) {
+    values[fieldId] = value;
+  }
 
   @Override
   public Datum asDatum(int fieldId) {
@@ -102,32 +102,32 @@ public class VTuple implements Tuple, Cloneable {
 
   public void put(Datum [] values) {
     System.arraycopy(values, 0, this.values, 0, values.length);
-	}
+  }
 
-	//////////////////////////////////////////////////////
-	// Getter
-	//////////////////////////////////////////////////////
-	public Datum get(int fieldId) {
-		return this.values[fieldId];
-	}
-	
-	public void setOffset(long offset) {
-	  this.offset = offset;
-	}
-	
-	public long getOffset() {
-	  return this.offset;
-	}
-	
-	@Override
-	public boolean getBool(int fieldId) {
-		return values[fieldId].asBool();
-	}
+  //////////////////////////////////////////////////////
+  // Getter
+  //////////////////////////////////////////////////////
+  public Datum get(int fieldId) {
+    return this.values[fieldId];
+  }
+
+  public void setOffset(long offset) {
+    this.offset = offset;
+  }
+
+  public long getOffset() {
+    return this.offset;
+  }
 
   @Override
-	public byte getByte(int fieldId) {
-		return values[fieldId].asByte();
-	}
+  public boolean getBool(int fieldId) {
+    return values[fieldId].asBool();
+  }
+
+  @Override
+  public byte getByte(int fieldId) {
+    return values[fieldId].asByte();
+  }
 
   @Override
   public char getChar(int fieldId) {
@@ -135,9 +135,9 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
-	public byte [] getBytes(int fieldId) {
-		return values[fieldId].asByteArray();
-	}
+  public byte [] getBytes(int fieldId) {
+    return values[fieldId].asByteArray();
+  }
 
   @Override
   public byte[] getTextBytes(int fieldId) {
@@ -145,50 +145,50 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
-	public short getInt2(int fieldId) {
-		return values[fieldId].asInt2();
-	}
+  public short getInt2(int fieldId) {
+    return values[fieldId].asInt2();
+  }
 
   @Override
-	public int getInt4(int fieldId) {
-		return values[fieldId].asInt4();
-	}
+  public int getInt4(int fieldId) {
+    return values[fieldId].asInt4();
+  }
 
   @Override
-	public long getInt8(int fieldId) {
-		return values[fieldId].asInt8();
-	}
+  public long getInt8(int fieldId) {
+    return values[fieldId].asInt8();
+  }
 
   @Override
-	public float getFloat4(int fieldId) {
-		return values[fieldId].asFloat4();
-	}
+  public float getFloat4(int fieldId) {
+    return values[fieldId].asFloat4();
+  }
 
   @Override
-	public double getFloat8(int fieldId) {
-		return values[fieldId].asFloat8();
-	}
+  public double getFloat8(int fieldId) {
+    return values[fieldId].asFloat8();
+  }
 
-	public Inet4Datum getIPv4(int fieldId) {
-		return (Inet4Datum) values[fieldId];
-	}
+  public Inet4Datum getIPv4(int fieldId) {
+    return (Inet4Datum) values[fieldId];
+  }
 
-	public byte [] getIPv4Bytes(int fieldId) {
-		return values[fieldId].asByteArray();
-	}
+  public byte [] getIPv4Bytes(int fieldId) {
+    return values[fieldId].asByteArray();
+  }
 
-	public InetAddress getIPv6(int fieldId) {
-		throw new UnimplementedException("IPv6 is unsupported yet");
-	}
+  public InetAddress getIPv6(int fieldId) {
+    throw new UnimplementedException("IPv6 is unsupported yet");
+  }
 
-	public byte[] getIPv6Bytes(int fieldId) {
-	  throw new UnimplementedException("IPv6 is unsupported yet");
-	}
+  public byte[] getIPv6Bytes(int fieldId) {
+    throw new UnimplementedException("IPv6 is unsupported yet");
+  }
 
   @Override
-	public String getText(int fieldId) {
-		return values[fieldId].asChars();
-	}
+  public String getText(int fieldId) {
+    return values[fieldId].asChars();
+  }
 
   @Override
   public TimeMeta getTimeDate(int fieldId) {
@@ -221,13 +221,13 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public String toString() {
-		return toDisplayString(getValues());
-	}
+    return toDisplayString(getValues());
+  }
 
-	@Override
-	public int hashCode() {
-	  return Arrays.hashCode(values);
-	}
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(values);
+  }
 
   @Override
   public Datum[] getValues() {
