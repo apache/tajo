@@ -64,13 +64,13 @@ public class JoinTupleComparator implements Comparator<Tuple> {
       if (outerTuple == null) {
         outer = NullDatum.get();
       } else {
-        outer = outerTuple.get(outerSortKeyIds[i]);
+        outer = outerTuple.asDatum(outerSortKeyIds[i]);
       }
 
       if (innerTuple == null) {
         inner = NullDatum.get();
       } else {
-        inner = innerTuple.get(innerSortKeyIds[i]);
+        inner = innerTuple.asDatum(innerSortKeyIds[i]);
       }
 
       if (outer instanceof NullDatum || inner instanceof NullDatum) {

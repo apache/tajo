@@ -151,11 +151,10 @@ public abstract class AbstractHBaseAppender implements Appender {
     if (rowkeyColumnIndexes.length > 1) {
       bout.reset();
       for (int i = 0; i < rowkeyColumnIndexes.length; i++) {
-        datum = tuple.get(rowkeyColumnIndexes[i]);
         if (isBinaryColumns[rowkeyColumnIndexes[i]]) {
-          rowkey = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(rowkeyColumnIndexes[i]), datum);
+          rowkey = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(rowkeyColumnIndexes[i]), tuple, i);
         } else {
-          rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(rowkeyColumnIndexes[i]), datum);
+          rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(rowkeyColumnIndexes[i]), tuple, i);
         }
         bout.write(rowkey);
         if (i < rowkeyColumnIndexes.length - 1) {
@@ -165,11 +164,10 @@ public abstract class AbstractHBaseAppender implements Appender {
       rowkey = bout.toByteArray();
     } else {
       int index = rowkeyColumnIndexes[0];
-      datum = tuple.get(index);
       if (isBinaryColumns[index]) {
-        rowkey = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(index), datum);
+        rowkey = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(index), tuple, index);
       } else {
-        rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(index), datum);
+        rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(index), tuple, index);
       }
     }
 
@@ -182,12 +180,11 @@ public abstract class AbstractHBaseAppender implements Appender {
       if (isRowKeyMappings[i]) {
         continue;
       }
-      Datum datum = tuple.get(i);
       byte[] value;
       if (isBinaryColumns[i]) {
-        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), datum);
+        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), tuple, i);
       } else {
-        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
+        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), tuple, i);
       }
 
       if (isColumnKeys[i]) {

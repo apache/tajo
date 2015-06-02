@@ -52,19 +52,12 @@ public class StrPos extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
-
-    Datum substringDatum = params.get(1);
-    if(substringDatum instanceof NullDatum) {
-      return NullDatum.get();
-    }
-
-    String value = valueDatum.asChars();
-    String substring = substringDatum.asChars();
-    if(substring.length() == 0) {
+    String value = params.getText(0);
+    String substring = params.getText(1);
+    if (substring.length() == 0) {
       return DatumFactory.createInt4(1);
     }
 

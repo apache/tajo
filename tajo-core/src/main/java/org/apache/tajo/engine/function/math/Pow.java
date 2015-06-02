@@ -54,12 +54,10 @@ public class Pow extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum value1Datum = params.get(0);
-    Datum value2Datum = params.get(1);
-    if(value1Datum instanceof NullDatum || value2Datum instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createFloat8(Math.pow(value1Datum.asFloat8(), value2Datum.asFloat8()));
+    return DatumFactory.createFloat8(Math.pow(params.getFloat8(0), params.getFloat8(1)));
   }
 }

@@ -126,8 +126,8 @@ public class TupleUtil {
           "ERROR: Invalid Column Stats (column stats: " + colStats + ", there exists not target " + col);
     }
 
-    Tuple startTuple = new VTuple(target.size());
-    Tuple endTuple = new VTuple(target.size());
+    VTuple startTuple = new VTuple(target.size());
+    VTuple endTuple = new VTuple(target.size());
     int i = 0;
     int sortSpecIndex = 0;
 

@@ -87,7 +87,7 @@ public class TestHashSemiJoinExec {
     Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeSchema.size());
+    VTuple tuple = new VTuple(employeeSchema.size());
 
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] {
@@ -205,10 +205,10 @@ public class TestHashSemiJoinExec {
     // expect result without duplicated tuples.
     while ((tuple = exec.next()) != null) {
       count++;
-      assertEquals(i, tuple.get(0).asInt4());
-      assertEquals(i, tuple.get(1).asInt4());
-      assertEquals("dept_" + i, tuple.get(2).asChars());
-      assertEquals(10 + i, tuple.get(3).asInt4());
+      assertTrue(i == tuple.getInt4(0));
+      assertTrue(i == tuple.getInt4(1));
+      assertTrue(("dept_" + i).equals(tuple.getText(2)));
+      assertTrue(10 + i == tuple.getInt4(3));
 
       i += 2;
     }

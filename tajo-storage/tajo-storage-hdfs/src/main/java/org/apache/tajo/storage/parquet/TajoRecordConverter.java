@@ -158,7 +158,7 @@ public class TajoRecordConverter extends GroupConverter {
       final int projectionIndex = projectionMap[i];
       Column column = tajoReadSchema.getColumn(projectionIndex);
       if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE
-          || currentTuple.get(i) == null) {
+          || currentTuple.isBlankOrNull(i)) {
         set(projectionIndex, NullDatum.get());
       }
     }

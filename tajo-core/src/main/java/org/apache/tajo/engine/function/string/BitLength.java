@@ -50,9 +50,9 @@ public class BitLength extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
-
-    return DatumFactory.createInt4(datum.asByteArray().length*8);
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
+    return DatumFactory.createInt4(params.getBytes(0).length * 8);
   }
 }

@@ -56,7 +56,7 @@ public class JsonLineSerializer extends TextLineSerializer {
     JSONObject jsonObject = new JSONObject();
 
     for (int i = 0; i < columnNum; i++) {
-      if (input.isNull(i)) {
+      if (input.isBlankOrNull(i)) {
         continue;
       }
 

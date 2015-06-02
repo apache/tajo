@@ -71,6 +71,7 @@ public class TestLazyTuple {
     sb.append(NullDatum.get());
     textRow = BytesUtils.splitPreserveAllTokens(sb.toString().getBytes(), '|', 13);
     serde = new TextSerializerDeserializer();
+    serde.init(schema);
   }
 
   @Test
@@ -191,31 +192,6 @@ public class TestLazyTuple {
     t4.put(4, DatumFactory.createInt4(2));
 
     assertNotSame(t1.hashCode(), t4.hashCode());
-  }
-
-  @Test
-  public void testPutTuple() {
-    int colNum = schema.size();
-    LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
-
-    t1.put(0, DatumFactory.createInt4(1));
-    t1.put(1, DatumFactory.createInt4(2));
-    t1.put(2, DatumFactory.createInt4(3));
-
-
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", TajoDataTypes.Type.INT8);
-    schema2.addColumn("col2", TajoDataTypes.Type.INT8);
-
-    LazyTuple t2 = new LazyTuple(schema2, new byte[schema2.size()][], -1);
-    t2.put(0, DatumFactory.createInt4(4));
-    t2.put(1, DatumFactory.createInt4(5));
-
-    t1.put(3, t2);
-
-    for (int i = 0; i < 5; i++) {
-      assertEquals(i + 1, t1.get(i).asInt4());
-    }
   }
 
   @Test

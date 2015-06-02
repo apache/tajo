@@ -24,7 +24,6 @@ import com.sun.tools.javac.util.Convert;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
@@ -70,21 +69,18 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     // filling pure ascii flags
     isPureAscii = new boolean[sortSpecs.length];
     for (int i = 0; i < sortSpecs.length; i++) {
-      Datum startValue = entireRange.getStart().get(i);
-      Datum endValue = entireRange.getEnd().get(i);
-      isPureAscii[i] = StringUtils.isPureAscii(startValue.asChars()) && StringUtils.isPureAscii(endValue.asChars());
-      beginNulls[i] = startValue.isNull();
-      endNulls[i] = endValue.isNull();
+      String startValue = entireRange.getStart().getText(i);
+      String endValue = entireRange.getEnd().getText(i);
+      isPureAscii[i] = StringUtils.isPureAscii(startValue) && StringUtils.isPureAscii(endValue);
+      beginNulls[i] = entireRange.getStart().isBlankOrNull(i);
+      endNulls[i] = entireRange.getEnd().isBlankOrNull(i);
     }
 
     colCards = new BigInteger[sortSpecs.length];
     normalize(sortSpecs, this.mergedRange);
 
     for (int i = 0; i < sortSpecs.length; i++) {
-      Datum startValue = entireRange.getStart().get(i);
-      Datum endValue = entireRange.getEnd().get(i);
-
-      colCards[i] =  computeCardinality(sortSpecs[i].getSortKey().getDataType(), startValue, endValue,
+      colCards[i] =  computeCardinality(sortSpecs[i].getSortKey().getDataType(), entireRange, i,
           inclusive, sortSpecs[i].isAscending());
     }
 
@@ -177,13 +173,13 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         if (isPureAscii[i]) {
           byte[] startBytes;
           byte[] endBytes;
-          if (range.getStart().isNull(i)) {
+          if (range.getStart().isBlankOrNull(i)) {
             startBytes = BigInteger.ZERO.toByteArray();
           } else {
             startBytes = range.getStart().getBytes(i);
           }
 
-          if (range.getEnd().isNull(i)) {
+          if (range.getEnd().isBlankOrNull(i)) {
             endBytes = BigInteger.ZERO.toByteArray();
           } else {
             endBytes = range.getEnd().getBytes(i);
@@ -196,13 +192,13 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         } else {
           char[] startChars;
           char[] endChars;
-          if (range.getStart().isNull(i)) {
+          if (range.getStart().isBlankOrNull(i)) {
             startChars = new char[] {0};
           } else {
             startChars = range.getStart().getUnicodeChars(i);
           }
 
-          if (range.getEnd().isNull(i)) {
+          if (range.getEnd().isBlankOrNull(i)) {
             endChars = new char[] {0};
           } else {
             endChars = range.getEnd().getUnicodeChars(i);
@@ -220,12 +216,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
   *  Check whether an overflow occurs or not.
    *
    * @param colId The column id to be checked
-   * @param last
+   * @param tuple
    * @param inc
    * @param sortSpecs
    * @return
    */
-  public boolean isOverflow(int colId, Datum last, BigInteger inc, SortSpec [] sortSpecs) {
+  public boolean isOverflow(int colId, Tuple tuple, int i, BigInteger inc, SortSpec [] sortSpecs) {
     Column column = sortSpecs[colId].getSortKey();
     BigDecimal incDecimal = new BigDecimal(inc);
     BigDecimal candidate;
@@ -234,74 +230,74 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     switch (column.getDataType().getType()) {
       case BIT: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(last.asByte()));
-          return new BigDecimal(mergedRange.getEnd().get(colId).asByte()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal(tuple.getByte(i)));
+          return new BigDecimal(mergedRange.getEnd().getByte(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal(last.asByte()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().get(colId).asByte())) < 0;
+          candidate = new BigDecimal(tuple.getByte(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().getByte(colId))) < 0;
         }
       }
       case CHAR: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal((int)last.asChar()));
-          return new BigDecimal((int) mergedRange.getEnd().get(colId).asChar()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal((int)tuple.getChar(i)));
+          return new BigDecimal((int) mergedRange.getEnd().getChar(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal((int)last.asChar()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal((int) mergedRange.getEnd().get(colId).asChar())) < 0;
+          candidate = new BigDecimal((int)tuple.getChar(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal((int) mergedRange.getEnd().getChar(colId))) < 0;
         }
       }
       case INT2: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(last.asInt2()));
-          return new BigDecimal(mergedRange.getEnd().get(colId).asInt2()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal(tuple.getInt2(i)));
+          return new BigDecimal(mergedRange.getEnd().getInt2(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal(last.asInt2()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().get(colId).asInt2())) < 0;
+          candidate = new BigDecimal(tuple.getInt2(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().getInt2(colId))) < 0;
         }
       }
       case DATE:
       case INT4: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(last.asInt4()));
-          return new BigDecimal(mergedRange.getEnd().get(colId).asInt4()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal(tuple.getInt4(i)));
+          return new BigDecimal(mergedRange.getEnd().getInt4(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal(last.asInt4()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().get(colId).asInt4())) < 0;
+          candidate = new BigDecimal(tuple.getInt4(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().getInt4(colId))) < 0;
         }
       }
       case TIME:
       case TIMESTAMP:
       case INT8: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(last.asInt8()));
-          return new BigDecimal(mergedRange.getEnd().get(colId).asInt8()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal(tuple.getInt8(i)));
+          return new BigDecimal(mergedRange.getEnd().getInt8(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal(last.asInt8()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().get(colId).asInt8())) < 0;
+          candidate = new BigDecimal(tuple.getInt8(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().getInt8(colId))) < 0;
         }
       }
       case FLOAT4: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(last.asFloat4()));
-          return new BigDecimal(mergedRange.getEnd().get(colId).asFloat4()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal(tuple.getFloat4(i)));
+          return new BigDecimal(mergedRange.getEnd().getFloat4(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal(last.asFloat4()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().get(colId).asFloat4())) < 0;
+          candidate = new BigDecimal(tuple.getFloat4(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().getFloat4(colId))) < 0;
         }
       }
       case FLOAT8: {
         if (sortSpecs[colId].isAscending()) {
-          candidate = incDecimal.add(new BigDecimal(last.asFloat8()));
-          return new BigDecimal(mergedRange.getEnd().get(colId).asFloat8()).compareTo(candidate) < 0;
+          candidate = incDecimal.add(new BigDecimal(tuple.getFloat8(i)));
+          return new BigDecimal(mergedRange.getEnd().getFloat8(colId)).compareTo(candidate) < 0;
         } else {
-          candidate = new BigDecimal(last.asFloat8()).subtract(incDecimal);
-          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().get(colId).asFloat8())) < 0;
+          candidate = new BigDecimal(tuple.getFloat8(i)).subtract(incDecimal);
+          return candidate.compareTo(new BigDecimal(mergedRange.getEnd().getFloat8(colId))) < 0;
         }
 
       }
       case TEXT: {
         if (isPureAscii[colId]) {
-          byte[] lastBytes = last.asByteArray();
+          byte[] lastBytes = tuple.getBytes(i);
           byte[] endBytes = mergedRange.getEnd().getBytes(colId);
 
           Preconditions.checkState(lastBytes.length == endBytes.length);
@@ -314,7 +310,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
             return candidate.compareTo(new BigDecimal(new BigInteger(endBytes))) < 0;
           }
         } else {
-          char[] lastChars = last.asUnicodeChars();
+          char[] lastChars = tuple.getUnicodeChars(i);
           char[] endChars = mergedRange.getEnd().getUnicodeChars(colId);
 
           Preconditions.checkState(lastChars.length == endChars.length);
@@ -335,45 +331,45 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
         int candidateIntVal;
         byte[] candidateBytesVal = new byte[4];
         if (sortSpecs[colId].isAscending()) {
-          candidateIntVal = incDecimal.intValue() + last.asInt4();
-          if (candidateIntVal - incDecimal.intValue() != last.asInt4()) {
+          candidateIntVal = incDecimal.intValue() + tuple.getInt4(i);
+          if (candidateIntVal - incDecimal.intValue() != tuple.getInt4(i)) {
             return true;
           }
           Bytes.putInt(candidateBytesVal, 0, candidateIntVal);
-          return Bytes.compareTo(mergedRange.getEnd().get(colId).asByteArray(), candidateBytesVal) < 0;
+          return Bytes.compareTo(mergedRange.getEnd().getBytes(colId), candidateBytesVal) < 0;
         } else {
-          candidateIntVal = last.asInt4() - incDecimal.intValue();
-          if (candidateIntVal + incDecimal.intValue() != last.asInt4()) {
+          candidateIntVal = tuple.getInt4(i) - incDecimal.intValue();
+          if (candidateIntVal + incDecimal.intValue() != tuple.getInt4(i)) {
             return true;
           }
           Bytes.putInt(candidateBytesVal, 0, candidateIntVal);
-          return Bytes.compareTo(candidateBytesVal, mergedRange.getEnd().get(colId).asByteArray()) < 0;
+          return Bytes.compareTo(candidateBytesVal, mergedRange.getEnd().getBytes(colId)) < 0;
         }
       }
     }
     return overflow;
   }
 
-  public long incrementAndGetReminder(int colId, Datum last, long inc) {
+  private long incrementAndGetReminder(int colId, Tuple last, long inc) {
     Column column = sortSpecs[colId].getSortKey();
     long reminder = 0;
     switch (column.getDataType().getType()) {
       case BIT: {
-        long candidate = last.asByte() + inc;
-        byte end = mergedRange.getEnd().get(colId).asByte();
+        long candidate = last.getByte(colId) + inc;
+        byte end = mergedRange.getEnd().getByte(colId);
         reminder = candidate - end;
         break;
       }
       case CHAR: {
-        long candidate = last.asChar() + inc;
-        char end = mergedRange.getEnd().get(colId).asChar();
+        long candidate = last.getChar(colId) + inc;
+        char end = mergedRange.getEnd().getChar(colId);
         reminder = candidate - end;
         break;
       }
       case DATE:
       case INT4: {
-        int candidate = (int) (last.asInt4() + inc);
-        int end = mergedRange.getEnd().get(colId).asInt4();
+        int candidate = (int) (last.getInt4(colId) + inc);
+        int end = mergedRange.getEnd().getInt4(colId);
         reminder = candidate - end;
         break;
       }
@@ -381,26 +377,26 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       case TIMESTAMP:
       case INT8:
       case INET4: {
-        long candidate = last.asInt8() + inc;
-        long end = mergedRange.getEnd().get(colId).asInt8();
+        long candidate = last.getInt8(colId) + inc;
+        long end = mergedRange.getEnd().getInt8(colId);
         reminder = candidate - end;
         break;
       }
       case FLOAT4: {
-        float candidate = last.asFloat4() + inc;
-        float end = mergedRange.getEnd().get(colId).asFloat4();
+        float candidate = last.getFloat4(colId) + inc;
+        float end = mergedRange.getEnd().getFloat4(colId);
         reminder = (long) (candidate - end);
         break;
       }
       case FLOAT8: {
-        double candidate = last.asFloat8() + inc;
-        double end = mergedRange.getEnd().get(colId).asFloat8();
+        double candidate = last.getFloat8(colId) + inc;
+        double end = mergedRange.getEnd().getFloat8(colId);
         reminder = (long) Math.ceil(candidate - end);
         break;
       }
       case TEXT: {
-        byte [] lastBytes = last.asByteArray();
-        byte [] endBytes = mergedRange.getEnd().get(colId).asByteArray();
+        byte [] lastBytes = last.getBytes(colId);
+        byte [] endBytes = mergedRange.getEnd().getBytes(colId);
 
         Preconditions.checkState(lastBytes.length == endBytes.length);
 
@@ -447,12 +443,12 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
     int finalId = baseDigit;
     incs[finalId] = value;
     for (int i = finalId; i >= 0; i--) {
-      if (isOverflow(i, last.get(i), incs[i], sortSpecs)) {
+      if (isOverflow(i, last, i, incs[i], sortSpecs)) {
         if (i == 0) {
           throw new RangeOverflowException(mergedRange, last, incs[i].longValue(), sortSpecs[i].isAscending());
         }
         // increment some volume of the serialized one-dimension key space
-        long rem = incrementAndGetReminder(i, last.get(i), value.longValue());
+        long rem = incrementAndGetReminder(i, last, value.longValue());
         incs[i] = BigInteger.valueOf(rem);
         incs[i - 1] = incs[i-1].add(BigInteger.ONE);
         overflowFlag[i] = true;
@@ -470,107 +466,107 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       }
     }
 
-    Tuple end = new VTuple(sortSpecs.length);
+    VTuple end = new VTuple(sortSpecs.length);
     Column column;
     for (int i = 0; i < last.size(); i++) {
       column = sortSpecs[i].getSortKey();
       switch (column.getDataType().getType()) {
         case CHAR:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createChar((char) (mergedRange.getStart().get(i).asChar() + incs[i].longValue())));
+            end.put(i, DatumFactory.createChar((char) (mergedRange.getStart().getChar(i) + incs[i].longValue())));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createChar((char) (last.get(i).asChar() + incs[i].longValue())));
+              end.put(i, DatumFactory.createChar((char) (last.getChar(i) + incs[i].longValue())));
             } else {
-              end.put(i, DatumFactory.createChar((char) (last.get(i).asChar() - incs[i].longValue())));
+              end.put(i, DatumFactory.createChar((char) (last.getChar(i) - incs[i].longValue())));
             }
           }
           break;
         case BIT:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createBit(
-                (byte) (mergedRange.getStart().get(i).asByte() + incs[i].longValue())));
+                (byte) (mergedRange.getStart().getByte(i) + incs[i].longValue())));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createBit((byte) (last.get(i).asByte() + incs[i].longValue())));
+              end.put(i, DatumFactory.createBit((byte) (last.getByte(i) + incs[i].longValue())));
             } else {
-              end.put(i, DatumFactory.createBit((byte) (last.get(i).asByte() - incs[i].longValue())));
+              end.put(i, DatumFactory.createBit((byte) (last.getByte(i) - incs[i].longValue())));
             }
           }
           break;
         case INT2:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createInt2(
-                (short) (mergedRange.getStart().get(i).asInt2() + incs[i].longValue())));
+                (short) (mergedRange.getStart().getInt2(i) + incs[i].longValue())));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createInt2((short) (last.get(i).asInt2() + incs[i].longValue())));
+              end.put(i, DatumFactory.createInt2((short) (last.getInt2(i) + incs[i].longValue())));
             } else {
-              end.put(i, DatumFactory.createInt2((short) (last.get(i).asInt2() - incs[i].longValue())));
+              end.put(i, DatumFactory.createInt2((short) (last.getInt2(i) - incs[i].longValue())));
             }
           }
           break;
         case INT4:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createInt4(
-                (int) (mergedRange.getStart().get(i).asInt4() + incs[i].longValue())));
+                (int) (mergedRange.getStart().getInt4(i) + incs[i].longValue())));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createInt4((int) (last.get(i).asInt4() + incs[i].longValue())));
+              end.put(i, DatumFactory.createInt4((int) (last.getInt4(i) + incs[i].longValue())));
             } else {
-              end.put(i, DatumFactory.createInt4((int) (last.get(i).asInt4() - incs[i].longValue())));
+              end.put(i, DatumFactory.createInt4((int) (last.getInt4(i) - incs[i].longValue())));
             }
           }
           break;
         case INT8:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createInt8(
-                mergedRange.getStart().get(i).asInt8() + incs[i].longValue()));
+                mergedRange.getStart().getInt8(i) + incs[i].longValue()));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createInt8(last.get(i).asInt8() + incs[i].longValue()));
+              end.put(i, DatumFactory.createInt8(last.getInt8(i) + incs[i].longValue()));
             } else {
-              end.put(i, DatumFactory.createInt8(last.get(i).asInt8() - incs[i].longValue()));
+              end.put(i, DatumFactory.createInt8(last.getInt8(i) - incs[i].longValue()));
             }
           }
           break;
         case FLOAT4:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createFloat4(
-                mergedRange.getStart().get(i).asFloat4() + incs[i].longValue()));
+                mergedRange.getStart().getFloat4(i) + incs[i].longValue()));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createFloat4(last.get(i).asFloat4() + incs[i].longValue()));
+              end.put(i, DatumFactory.createFloat4(last.getFloat4(i) + incs[i].longValue()));
             } else {
-              end.put(i, DatumFactory.createFloat4(last.get(i).asFloat4() - incs[i].longValue()));
+              end.put(i, DatumFactory.createFloat4(last.getFloat4(i) - incs[i].longValue()));
             }
           }
           break;
         case FLOAT8:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createFloat8(
-                mergedRange.getStart().get(i).asFloat8() + incs[i].longValue()));
+                mergedRange.getStart().getFloat8(i) + incs[i].longValue()));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createFloat8(last.get(i).asFloat8() + incs[i].longValue()));
+              end.put(i, DatumFactory.createFloat8(last.getFloat8(i) + incs[i].longValue()));
             } else {
-              end.put(i, DatumFactory.createFloat8(last.get(i).asFloat8() - incs[i].longValue()));
+              end.put(i, DatumFactory.createFloat8(last.getFloat8(i) - incs[i].longValue()));
             }
           }
           break;
         case TEXT:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createText(((char) (mergedRange.getStart().get(i).asChars().charAt(0)
+            end.put(i, DatumFactory.createText(((char) (mergedRange.getStart().getText(i).charAt(0)
                 + incs[i].longValue())) + ""));
           } else {
             BigInteger lastBigInt;
-            if (last.isNull(i)) {
+            if (last.isBlankOrNull(i)) {
               lastBigInt = BigInteger.valueOf(0);
               end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
             } else {
 
               if (isPureAscii[i]) {
-                lastBigInt = new BigInteger(last.get(i).asByteArray());
+                lastBigInt = new BigInteger(last.getBytes(i));
                 if (sortSpecs[i].isAscending()) {
                   end.put(i, DatumFactory.createText(lastBigInt.add(incs[i]).toByteArray()));
                 } else {
@@ -633,52 +629,52 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           break;
         case DATE:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createDate((int) (mergedRange.getStart().get(i).asInt4() + incs[i].longValue())));
+            end.put(i, DatumFactory.createDate((int) (mergedRange.getStart().getInt4(i) + incs[i].longValue())));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createDate((int) (last.get(i).asInt4() + incs[i].longValue())));
+              end.put(i, DatumFactory.createDate((int) (last.getInt4(i) + incs[i].longValue())));
             } else {
-              end.put(i, DatumFactory.createDate((int) (last.get(i).asInt4() - incs[i].longValue())));
+              end.put(i, DatumFactory.createDate((int) (last.getInt4(i) - incs[i].longValue())));
             }
           }
           break;
         case TIME:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createTime(mergedRange.getStart().get(i).asInt8() + incs[i].longValue()));
+            end.put(i, DatumFactory.createTime(mergedRange.getStart().getInt8(i) + incs[i].longValue()));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createTime(last.get(i).asInt8() + incs[i].longValue()));
+              end.put(i, DatumFactory.createTime(last.getInt8(i) + incs[i].longValue()));
             } else {
-              end.put(i, DatumFactory.createTime(last.get(i).asInt8() - incs[i].longValue()));
+              end.put(i, DatumFactory.createTime(last.getInt8(i) - incs[i].longValue()));
             }
           }
           break;
         case TIMESTAMP:
           if (overflowFlag[i]) {
             end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(
-                mergedRange.getStart().get(i).asInt8() + incs[i].longValue()));
+                mergedRange.getStart().getInt8(i) + incs[i].longValue()));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.get(i).asInt8() + incs[i].longValue()));
+              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.getInt8(i) + incs[i].longValue()));
             } else {
-              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.get(i).asInt8() - incs[i].longValue()));
+              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.getInt8(i) - incs[i].longValue()));
             }
           }
           break;
         case INET4:
           byte[] ipBytes;
           if (overflowFlag[i]) {
-            ipBytes = mergedRange.getStart().get(i).asByteArray();
+            ipBytes = mergedRange.getStart().getBytes(i);
             assert ipBytes.length == 4;
             end.put(i, DatumFactory.createInet4(ipBytes));
           } else {
             if (sortSpecs[i].isAscending()) {
-              int lastVal = last.get(i).asInt4() + incs[i].intValue();
+              int lastVal = last.getInt4(i) + incs[i].intValue();
               ipBytes = new byte[4];
               Bytes.putInt(ipBytes, 0, lastVal);
               end.put(i, DatumFactory.createInet4(ipBytes));
             } else {
-              int lastVal = last.get(i).asInt4() - incs[i].intValue();
+              int lastVal = last.getInt4(i) - incs[i].intValue();
               ipBytes = new byte[4];
               Bytes.putInt(ipBytes, 0, lastVal);
               end.put(i, DatumFactory.createInet4(ipBytes));

@@ -52,7 +52,7 @@ public class HashAggregateExec extends AggregationExec {
       keyTuple = new VTuple(groupingKeyIds.length);
       // build one key tuple
       for(int i = 0; i < groupingKeyIds.length; i++) {
-        keyTuple.put(i, tuple.get(groupingKeyIds[i]));
+        keyTuple.put(i, tuple.asDatum(groupingKeyIds[i]));
       }
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
@@ -98,7 +98,7 @@ public class HashAggregateExec extends AggregationExec {
 
       int tupleIdx = 0;
       for (; tupleIdx < groupingKeyNum; tupleIdx++) {
-        tuple.put(tupleIdx, keyTuple.get(tupleIdx));
+        tuple.put(tupleIdx, keyTuple.asDatum(tupleIdx));
       }
       for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
         tuple.put(tupleIdx, aggFunctions[funcIdx].terminate(contexts[funcIdx]));

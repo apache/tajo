@@ -433,7 +433,7 @@ public class DatumFactory {
         case TIMESTAMP: {
           TimestampDatum timestampDatum = (TimestampDatum)operandDatum;
           if (tz != null) {
-            return DatumFactory.createText(timestampDatum.asChars(tz, false));
+            return DatumFactory.createText(TimestampDatum.asChars(operandDatum.asTimeMeta(), tz, false));
           } else {
             return DatumFactory.createText(timestampDatum.asChars());
           }
@@ -441,7 +441,7 @@ public class DatumFactory {
         case TIME: {
           TimeDatum timeDatum = (TimeDatum)operandDatum;
           if (tz != null) {
-            return DatumFactory.createText(timeDatum.asChars(tz, false));
+            return DatumFactory.createText(TimeDatum.asChars(operandDatum.asTimeMeta(), tz, false));
           } else {
             return DatumFactory.createText(timeDatum.asChars());
           }

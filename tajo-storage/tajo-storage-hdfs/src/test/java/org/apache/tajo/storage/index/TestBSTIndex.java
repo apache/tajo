@@ -135,8 +135,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(1));
-      keyTuple.put(1, tuple.get(2));
+      keyTuple.put(0, tuple.asDatum(1));
+      keyTuple.put(1, tuple.asDatum(2));
       creater.write(keyTuple, offset);
     }
 
@@ -156,8 +156,8 @@ public class TestBSTIndex {
       long offsets = reader.find(tuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(1).asInt8()) + "]", (i) == (tuple.get(1).asInt8()));
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(2).asFloat8()) + "]", (i) == (tuple.get(2).asFloat8()));
+      assertTrue("seek check [" + (i) + " ," + (tuple.getInt8(1)) + "]", (i) == (tuple.getInt8(1)));
+      assertTrue("seek check [" + (i) + " ," + (tuple.getFloat8(2)) + "]", (i) == (tuple.getFloat8(2)));
 
       offsets = reader.next();
       if (offsets == -1) {
@@ -165,8 +165,8 @@ public class TestBSTIndex {
       }
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(0).asInt4()));
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(1).asInt8()));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.getInt4(0)));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.getInt8(1)));
     }
     reader.close();
     scanner.close();
@@ -235,8 +235,8 @@ public class TestBSTIndex {
       long offsets = reader.find(tuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(1).asInt8()));
-      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(2).asFloat8()));
+      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.getInt8(1)));
+      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.getFloat8(2)));
 
       offsets = reader.next();
       if (offsets == -1) {
@@ -244,8 +244,8 @@ public class TestBSTIndex {
       }
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(0).asInt4()));
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(1).asInt8()));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.getInt4(0)));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.getInt8(1)));
     }
     reader.close();
     scanner.close();
@@ -300,8 +300,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(1));
-      keyTuple.put(1, tuple.get(2));
+      keyTuple.put(0, tuple.asDatum(1));
+      keyTuple.put(1, tuple.asDatum(2));
       creater.write(keyTuple, offset);
     }
 
@@ -371,8 +371,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(0));
-      keyTuple.put(1, tuple.get(1));
+      keyTuple.put(0, tuple.asDatum(0));
+      keyTuple.put(1, tuple.asDatum(1));
       creater.write(keyTuple, offset);
     }
 
@@ -395,8 +395,8 @@ public class TestBSTIndex {
       scanner.seek(offsets);
       result = scanner.next();
       assertTrue("[seek check " + (i + 1) + " ]",
-          (i + 1) == (result.get(0).asInt4()));
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (result.get(1).asInt8()));
+          (i + 1) == (result.getInt4(0)));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (result.getInt8(1)));
 
       offsets = reader.next();
       if (offsets == -1) {
@@ -404,8 +404,8 @@ public class TestBSTIndex {
       }
       scanner.seek(offsets);
       result = scanner.next();
-      assertTrue("[seek check " + (i + 2) + " ]", (i + 2) == (result.get(0).asInt8()));
-      assertTrue("[seek check " + (i + 2) + " ]", (i + 2) == (result.get(1).asFloat8()));
+      assertTrue("[seek check " + (i + 2) + " ]", (i + 2) == (result.getInt8(0)));
+      assertTrue("[seek check " + (i + 2) + " ]", (i + 2) == (result.getFloat8(1)));
     }
     reader.close();
     scanner.close();
@@ -462,8 +462,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(0));
-      keyTuple.put(1, tuple.get(1));
+      keyTuple.put(0, tuple.asDatum(0));
+      keyTuple.put(1, tuple.asDatum(1));
       creater.write(keyTuple, offset);
     }
 
@@ -485,8 +485,8 @@ public class TestBSTIndex {
       long offsets = reader.find(keyTuple, true);
       scanner.seek(offsets);
       result = scanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (result.get(0).asInt4()));
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (result.get(1).asInt8()));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (result.getInt4(0)));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (result.getInt8(1)));
     }
     scanner.close();
   }
@@ -541,8 +541,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(1));
-      keyTuple.put(1, tuple.get(2));
+      keyTuple.put(0, tuple.asDatum(1));
+      keyTuple.put(1, tuple.asDatum(2));
       creater.write(keyTuple, offset);
     }
 
@@ -568,8 +568,8 @@ public class TestBSTIndex {
     assertTrue(offset >= 0);
     scanner.seek(offset);
     tuple = scanner.next();
-    assertEquals(5, tuple.get(1).asInt4());
-    assertEquals(5l, tuple.get(2).asInt8());
+    assertEquals(5, tuple.getInt4(1));
+    assertEquals(5l, tuple.getInt8(2));
     reader.close();
     scanner.close();
   }
@@ -624,8 +624,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(0));
-      keyTuple.put(1, tuple.get(1));
+      keyTuple.put(0, tuple.asDatum(0));
+      keyTuple.put(1, tuple.asDatum(1));
       creater.write(keyTuple, offset);
     }
 
@@ -638,12 +638,12 @@ public class TestBSTIndex {
     reader.open();
 
     Tuple min = reader.getFirstKey();
-    assertEquals(5, min.get(0).asInt4());
-    assertEquals(5l, min.get(0).asInt8());
+    assertEquals(5, min.getInt4(0));
+    assertEquals(5l, min.getInt8(0));
 
     Tuple max = reader.getLastKey();
-    assertEquals(TUPLE_NUM - 1, max.get(0).asInt4());
-    assertEquals(TUPLE_NUM - 1, max.get(0).asInt8());
+    assertEquals(TUPLE_NUM - 1, max.getInt4(0));
+    assertEquals(TUPLE_NUM - 1, max.getInt8(0));
     reader.close();
   }
 
@@ -729,8 +729,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(0));
-      keyTuple.put(1, tuple.get(1));
+      keyTuple.put(0, tuple.asDatum(0));
+      keyTuple.put(1, tuple.asDatum(1));
       creater.write(keyTuple, offset);
     }
 
@@ -810,8 +810,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(1));
-      keyTuple.put(1, tuple.get(2));
+      keyTuple.put(0, tuple.asDatum(1));
+      keyTuple.put(1, tuple.asDatum(2));
       creater.write(keyTuple, offset);
     }
 
@@ -833,8 +833,8 @@ public class TestBSTIndex {
       long offsets = reader.find(tuple);
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(1).asInt8()) + "]", (i) == (tuple.get(1).asInt8()));
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(2).asFloat8()) + "]", (i) == (tuple.get(2).asFloat8()));
+      assertTrue("seek check [" + (i) + " ," + (tuple.getInt8(1)) + "]", (i) == (tuple.getInt8(1)));
+      assertTrue("seek check [" + (i) + " ," + (tuple.getFloat8(2)) + "]", (i) == (tuple.getFloat8(2)));
 
       offsets = reader.next();
       if (offsets == -1) {
@@ -842,8 +842,8 @@ public class TestBSTIndex {
       }
       scanner.seek(offsets);
       tuple = scanner.next();
-      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (tuple.get(0).asInt4()));
-      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (tuple.get(1).asInt8()));
+      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (tuple.getInt4(0)));
+      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (tuple.getInt8(1)));
     }
     reader.close();
     scanner.close();
@@ -900,8 +900,8 @@ public class TestBSTIndex {
       tuple = scanner.next();
       if (tuple == null) break;
 
-      keyTuple.put(0, tuple.get(0));
-      keyTuple.put(1, tuple.get(1));
+      keyTuple.put(0, tuple.asDatum(0));
+      keyTuple.put(1, tuple.asDatum(1));
       creater.write(keyTuple, offset);
     }
 
@@ -929,8 +929,8 @@ public class TestBSTIndex {
       scanner.seek(offsets);
       result = scanner.next();
       assertTrue("[seek check " + (i - 1) + " ]",
-          (i - 1) == (result.get(0).asInt4()));
-      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (result.get(1).asInt8()));
+          (i - 1) == (result.getInt4(0)));
+      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (result.getInt8(1)));
 
       offsets = reader.next();
       if (offsets == -1) {
@@ -938,8 +938,8 @@ public class TestBSTIndex {
       }
       scanner.seek(offsets);
       result = scanner.next();
-      assertTrue("[seek check " + (i - 2) + " ]", (i - 2) == (result.get(0).asInt8()));
-      assertTrue("[seek check " + (i - 2) + " ]", (i - 2) == (result.get(1).asFloat8()));
+      assertTrue("[seek check " + (i - 2) + " ]", (i - 2) == (result.getInt8(0)));
+      assertTrue("[seek check " + (i - 2) + " ]", (i - 2) == (result.getFloat8(1)));
     }
     reader.close();
     scanner.close();

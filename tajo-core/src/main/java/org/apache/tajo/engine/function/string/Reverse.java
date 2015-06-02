@@ -50,9 +50,10 @@ public class Reverse extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    return DatumFactory.createText(new StringBuffer(datum.asChars()).reverse().toString());
+    return DatumFactory.createText(new StringBuffer(params.getText(0)).reverse().toString());
   }
 }

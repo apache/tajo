@@ -74,12 +74,12 @@ public class Digest extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    Datum typeDatum = params.get(1);
-    if(datum instanceof NullDatum || typeDatum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
+    }
 
     try {
-        return DatumFactory.createText(digest(datum.asByteArray(), typeDatum.asChars()));
+        return DatumFactory.createText(digest(params.getBytes(0), params.getText(1)));
     } catch (NoSuchAlgorithmException e){
         return NullDatum.get();
     }

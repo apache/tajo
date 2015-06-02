@@ -65,21 +65,13 @@ public class DatePartFromTimestamp extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum target = params.get(0);
-    TimestampDatum timestamp;
 
-    if(target instanceof NullDatum || params.get(1) instanceof NullDatum) {
-      return NullDatum.get();
-    }
-
-    if(params.get(1) instanceof TimestampDatum) {
-      timestamp = (TimestampDatum)(params.get(1));
-    } else {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1) || params.type(1) != TIMESTAMP) {
       return NullDatum.get();
     }
 
     if (extractor == null) {
-      String extractType = target.asChars().toLowerCase();
+      String extractType = params.getText(0).toLowerCase();
 
       if (extractType.equals("century")) {
         extractor = new CenturyExtractorFromTimestamp();
@@ -128,7 +120,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
       }
     }
 
-    TimeMeta tm = timestamp.toTimeMeta();
+    TimeMeta tm = params.getTimeDate(1);
     DateTimeUtil.toUserTimezone(tm, timezone);
 
     return extractor.extract(tm);

@@ -30,7 +30,6 @@ import org.apache.hadoop.io.SequenceFile.Metadata;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -646,8 +645,12 @@ public class RCFile {
         valLenBuffer = new NonSyncByteArrayOutputStream();
       }
 
-      public int append(Column column, Datum datum) throws IOException {
-        int currentLen = serde.serialize(column, datum, columnValBuffer, nullChars);
+      public int append(NullDatum nill) {
+        return nullChars.length;
+      }
+
+      public int append(Tuple tuple, int i) throws IOException {
+        int currentLen = serde.serialize(i, tuple, columnValBuffer, nullChars);
         columnValueLength += currentLen;
         uncompressedColumnValueLength += currentLen;
 
@@ -765,6 +768,7 @@ public class RCFile {
           BinarySerializerDeserializer.class.getName());
       try {
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+        serde.init(schema);
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -892,20 +896,19 @@ public class RCFile {
       int size = schema.size();
 
       for (int i = 0; i < size; i++) {
-        Datum datum = tuple.get(i);
-        int length = columnBuffers[i].append(schema.getColumn(i), datum);
+        int length = columnBuffers[i].append(tuple, i);
         columnBufferSize += length;
         if (isShuffle) {
           // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, datum);
+          stats.analyzeField(i, tuple);
         }
       }
 
       if (size < columnNumber) {
         for (int i = size; i < columnNumber; i++) {
-          columnBuffers[i].append(schema.getColumn(i), NullDatum.get());
+          columnBuffers[i].append(NullDatum.get());
           if (isShuffle) {
-            stats.analyzeField(i, NullDatum.get());
+            stats.analyzeNull(i);
           }
         }
       }
@@ -1377,6 +1380,7 @@ public class RCFile {
           serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
         }
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+        serde.init(schema);
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -1712,7 +1716,7 @@ public class RCFile {
         } else {
           colAdvanceRow(j, col);
 
-          Datum datum = serde.deserialize(schema.getColumn(actualColumnIdx),
+          Datum datum = serde.deserialize(actualColumnIdx,
               currentValue.loadedColumnsValueBuffer[j].getData(), col.rowReadIndex, col.prvLength, nullChars);
           tuple.put(j, datum);
           col.rowReadIndex += col.prvLength;
