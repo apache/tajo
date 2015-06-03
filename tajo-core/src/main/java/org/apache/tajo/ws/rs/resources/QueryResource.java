@@ -18,10 +18,14 @@
 
 package org.apache.tajo.ws.rs.resources;
 
+import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInProgress;
@@ -34,6 +38,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
+import org.apache.tajo.ws.rs.responses.GetDirectQueryResultResponse;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -288,7 +293,23 @@ public class QueryResource {
             .path(QueryResource.class)
             .path(QueryResource.class, "getQuery")
             .build(databaseName, new QueryId(response.getQueryId()).toString());
-        return Response.created(queryURI).build();
+
+        if (response.hasResultSet() == false) {
+          return Response.created(queryURI).build();
+        } else {
+          GetDirectQueryResultResponse directResponse = new GetDirectQueryResultResponse();
+          Schema schema = new Schema(response.getResultSet().getSchema());
+          directResponse.setSchema(schema);
+          directResponse.setResultCode(response.getResultCode());
+
+          List<String> tuples = Lists.newArrayListWithCapacity(response.getSerializedSize());
+          for (ByteString tuple: response.getResultSet().getSerializedTuplesList()) {
+            tuples.add(Base64.encodeBase64String(tuple.toByteArray()));
+          }
+
+          directResponse.setSerializedTupes(tuples);
+          return Response.status(Status.OK).entity(directResponse).build();
+				}
       }
     }
   }
