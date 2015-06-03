@@ -90,7 +90,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
-    VTuple keyTuple;
+    Tuple keyTuple;
     Tuple prevKeyTuple = null;
     long offset;
 
