@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
@@ -30,9 +31,6 @@ import org.apache.tajo.util.BitArray;
 
 import java.nio.ByteBuffer;
 
-/**
- * It is a copy from tajo-storage-common module.
- */
 public class RowStoreUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
     int[] targetIds = new int[outSchema.size()];
@@ -43,6 +41,14 @@ public class RowStoreUtil {
     }
 
     return targetIds;
+  }
+
+  public static Tuple project(Tuple in, Tuple out, int[] targetIds) {
+    out.clear();
+    for (int idx = 0; idx < targetIds.length; idx++) {
+      out.put(idx, in.asDatum(targetIds[idx]));
+    }
+    return out;
   }
 
   public static RowStoreEncoder createEncoder(Schema schema) {
@@ -69,7 +75,7 @@ public class RowStoreUtil {
     public Tuple toTuple(byte [] bytes) {
       nullFlags.clear();
       ByteBuffer bb = ByteBuffer.wrap(bytes);
-      VTuple tuple = new VTuple(schema.size());
+      Tuple tuple = new VTuple(schema.size());
       Column col;
       TajoDataTypes.DataType type;
 
@@ -116,7 +122,7 @@ public class RowStoreUtil {
             tuple.put(i, DatumFactory.createFromInt8(type, l));
             break;
 
-        case INTERVAL:
+          case INTERVAL:
             int month  = bb.getInt();
             long milliseconds  = bb.getLong();
             tuple.put(i, new IntervalDatum(month, milliseconds));
@@ -174,7 +180,8 @@ public class RowStoreUtil {
       nullFlags = new BitArray(schema.size());
       headerSize = nullFlags.bytesLength();
     }
-    public byte [] toBytes(Tuple tuple) {
+
+    public byte[] toBytes(Tuple tuple) {
       nullFlags.clear();
       int size = estimateTupleDataSize(tuple);
       ByteBuffer bb = ByteBuffer.allocate(size + headerSize);
@@ -188,14 +195,15 @@ public class RowStoreUtil {
 
         col = schema.getColumn(i);
         switch (col.getDataType().getType()) {
-          case NULL_TYPE: nullFlags.set(i); break;
-          case BOOLEAN: bb.put(tuple.getByte(i)); break;
-          case BIT: bb.put(tuple.getByte(i)); break;
-          case INT2: bb.putShort(tuple.getInt2(i)); break;
-          case INT4: bb.putInt(tuple.getInt4(i)); break;
-          case INT8: bb.putLong(tuple.getInt8(i)); break;
-          case FLOAT4: bb.putFloat(tuple.getFloat4(i)); break;
-          case FLOAT8: bb.putDouble(tuple.getFloat8(i)); break;
+          case NULL_TYPE:
+            nullFlags.set(i);
+            break;
+          case BOOLEAN:
+            bb.put(tuple.getByte(i));
+            break;
+          case BIT:
+            bb.put(tuple.getByte(i));
+            break;
           case CHAR:
             int charSize = col.getDataType().getLength();
             byte [] _char = new byte[charSize];
@@ -207,12 +215,29 @@ public class RowStoreUtil {
             System.arraycopy(src, 0, _char, 0, src.length);
             bb.put(_char);
             break;
+          case INT2:
+            bb.putShort(tuple.getInt2(i));
+            break;
+          case INT4:
+            bb.putInt(tuple.getInt4(i));
+            break;
+          case INT8:
+            bb.putLong(tuple.getInt8(i));
+            break;
+          case FLOAT4:
+            bb.putFloat(tuple.getFloat4(i));
+            break;
+          case FLOAT8:
+            bb.putDouble(tuple.getFloat8(i));
+            break;
           case TEXT:
-            byte [] _string = tuple.getBytes(i);
+            byte[] _string = tuple.getBytes(i);
             bb.putInt(_string.length);
             bb.put(_string);
             break;
-          case DATE: bb.putInt(tuple.getInt4(i)); break;
+          case DATE:
+            bb.putInt(tuple.getInt4(i));
+            break;
           case TIME:
           case TIMESTAMP:
             bb.putLong(tuple.getInt8(i));
@@ -223,15 +248,17 @@ public class RowStoreUtil {
             bb.putLong(interval.getMilliSeconds());
             break;
           case BLOB:
-            byte [] bytes = tuple.getBytes(i);
+            byte[] bytes = tuple.getBytes(i);
             bb.putInt(bytes.length);
             bb.put(bytes);
             break;
           case INET4:
-            byte [] ipBytes = tuple.getBytes(i);
+            byte[] ipBytes = tuple.getBytes(i);
             bb.put(ipBytes);
             break;
-          case INET6: bb.put(tuple.getBytes(i)); break;
+          case INET6:
+            bb.put(tuple.getBytes(i));
+            break;
           default:
             throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
         }
@@ -244,7 +271,7 @@ public class RowStoreUtil {
 
       bb.position(finalPosition);
       bb.flip();
-      byte [] buf = new byte [bb.limit()];
+      byte[] buf = new byte[bb.limit()];
       bb.get(buf);
       return buf;
     }
@@ -268,19 +295,31 @@ public class RowStoreUtil {
           case CHAR:
             size += col.getDataType().getLength();
             break;
-          case INT2: size += 2; break;
+          case INT2:
+            size += 2;
+            break;
           case DATE:
           case INT4:
-          case FLOAT4: size += 4; break;
+          case FLOAT4:
+            size += 4;
+            break;
           case TIME:
           case TIMESTAMP:
           case INT8:
-          case FLOAT8: size += 8; break;
-          case INTERVAL: size += 12; break;
+          case FLOAT8:
+            size += 8;
+            break;
+          case INTERVAL:
+            size += 12;
+            break;
           case TEXT:
-          case BLOB: size += (4 + tuple.getBytes(i).length); break;
+          case BLOB:
+            size += (4 + tuple.getBytes(i).length);
+            break;
           case INET4:
-          case INET6: size += tuple.getBytes(i).length; break;
+          case INET6:
+            size += tuple.getBytes(i).length;
+            break;
           default:
             throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
         }

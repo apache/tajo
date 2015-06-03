@@ -76,7 +76,7 @@ public class RowStoreUtil {
     public Tuple toTuple(byte [] bytes) {
       nullFlags.clear();
       ByteBuffer bb = ByteBuffer.wrap(bytes);
-      VTuple tuple = new VTuple(schema.size());
+      Tuple tuple = new VTuple(schema.size());
       Column col;
       TajoDataTypes.DataType type;
 
