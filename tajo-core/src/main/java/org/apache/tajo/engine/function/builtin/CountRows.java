@@ -60,7 +60,7 @@ public class CountRows extends AggFunction<Datum> {
 
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
-    ((CountRowContext) ctx).count += part.get(0).asInt8();
+    ((CountRowContext) ctx).count += part.getInt8(0);
   }
 
   @Override

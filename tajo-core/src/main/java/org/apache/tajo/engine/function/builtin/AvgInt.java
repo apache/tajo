@@ -45,9 +45,8 @@ public class AvgInt extends AvgLong {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    Datum datum = params.get(0);
-    if (datum.isNotNull()) {
-      avgCtx.sum += datum.asInt4();
+    if (!params.isBlankOrNull(0)) {
+      avgCtx.sum += params.getInt4(0);
       avgCtx.count++;
     }
   }

@@ -84,7 +84,7 @@ public class TestSortExec {
     Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(rnd.nextInt(5)),
@@ -128,7 +128,7 @@ public class TestSortExec {
     Datum curVal;
     exec.init();
     while ((tuple = exec.next()) != null) {
-      curVal = tuple.get(0);
+      curVal = tuple.asDatum(0);
       if (preVal != null) {
         assertTrue(preVal.lessThanEqual(curVal).asBool());
       }
@@ -149,9 +149,9 @@ public class TestSortExec {
     schema.addColumn("l_orderkey", Type.INT8);
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
-    Tuple s = new VTuple(1);
+    VTuple s = new VTuple(1);
     s.put(0, DatumFactory.createInt8(0));
-    Tuple e = new VTuple(1);
+    VTuple e = new VTuple(1);
     e.put(0, DatumFactory.createInt8(6000000000l));
     TupleRange expected = new TupleRange(sortSpecs, s, e);
     RangePartitionAlgorithm partitioner

@@ -48,7 +48,7 @@ public final class Rank extends WindowAggFunc {
 
   public static boolean checkIfDistinctValue(RankContext context, Tuple params) {
     for (int i = 0; i < context.latest.length; i++) {
-      if (!context.latest[i].equalsTo(params.get(i)).isTrue()) {
+      if (!context.latest[i].equalsTo(params.asDatum(i)).isTrue()) {
         return true;
       }
     }

@@ -51,9 +51,10 @@ public class CharLength extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    return DatumFactory.createInt4(datum.asChars().length());
+    return DatumFactory.createInt4(params.getText(0).length());
   }
 }

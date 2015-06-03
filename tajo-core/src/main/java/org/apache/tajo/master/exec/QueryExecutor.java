@@ -277,7 +277,7 @@ public class QueryExecutor {
     try {
       // start script executor
       startScriptExecutors(queryContext, evalContext, targets);
-      final Tuple outTuple = new VTuple(targets.length);
+      final VTuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
         eval.bind(evalContext, null);

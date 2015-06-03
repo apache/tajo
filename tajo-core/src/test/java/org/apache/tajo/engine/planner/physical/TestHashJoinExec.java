@@ -88,7 +88,7 @@ public class TestHashJoinExec {
     Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
-    Tuple tuple = new VTuple(employeeSchema.size());
+    VTuple tuple = new VTuple(employeeSchema.size());
     for (int i = 0; i < 10; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createInt4(i), DatumFactory.createInt4(10 + i),
@@ -173,10 +173,10 @@ public class TestHashJoinExec {
     exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
-      assertTrue(i == tuple.get(0).asInt4());
-      assertTrue(i == tuple.get(1).asInt4());
-      assertTrue(("dept_" + i).equals(tuple.get(2).asChars()));
-      assertTrue(10 + i == tuple.get(3).asInt4());
+      assertTrue(i == tuple.getInt4(0));
+      assertTrue(i == tuple.getInt4(1));
+      assertTrue(("dept_" + i).equals(tuple.getText(2)));
+      assertTrue(10 + i == tuple.getInt4(3));
 
       i += 2;
     }

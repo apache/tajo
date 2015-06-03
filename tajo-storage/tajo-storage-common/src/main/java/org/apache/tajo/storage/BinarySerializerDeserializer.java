@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.Message;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.util.Bytes;
@@ -33,50 +34,58 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
 
   static final byte[] INVALID_UTF__SINGLE_BYTE = {(byte) Integer.parseInt("10111111", 2)};
 
+  private Schema schema;
+
   @Override
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters)
+  public void init(Schema schema) {
+    this.schema = schema;
+  }
+
+  @Override
+  public int serialize(int index, Tuple tuple, OutputStream out, byte[] nullCharacters)
       throws IOException {
-    byte[] bytes;
-    int length = 0;
-    if (datum == null || datum instanceof NullDatum) {
+    if (tuple.isBlankOrNull(index)) {
       return 0;
     }
 
-    switch (col.getDataType().getType()) {
+    byte[] bytes;
+    int length = 0;
+    Column column = schema.getColumn(index);
+    switch (column.getDataType().getType()) {
       case BOOLEAN:
       case BIT:
-        bytes = datum.asByteArray();
+        bytes = tuple.getBytes(index);
         length = bytes.length;
         out.write(bytes, 0, length);
 				break;
 
       case CHAR:
-        bytes = datum.asByteArray();
+        bytes = tuple.getBytes(index);
         length = bytes.length;
-        if (length > col.getDataType().getLength()) {
-          throw new ValueTooLongForTypeCharactersException(col.getDataType().getLength());
+        if (length > column.getDataType().getLength()) {
+          throw new ValueTooLongForTypeCharactersException(column.getDataType().getLength());
         }
 
         out.write(bytes, 0, length);
         break;
       case INT2:
-        length = writeShort(out, datum.asInt2());
+        length = writeShort(out, tuple.getInt2(index));
         break;
       case INT4:
-        length = writeVLong(out, datum.asInt4());
+        length = writeVLong(out, tuple.getInt4(index));
         break;
       case INT8:
-        length = writeVLong(out, datum.asInt8());
+        length = writeVLong(out, tuple.getInt8(index));
         break;
       case FLOAT4:
-        length = writeFloat(out, datum.asFloat4());
+        length = writeFloat(out, tuple.getFloat4(index));
         break;
       case FLOAT8:
-        length = writeDouble(out, datum.asFloat8());
+        length = writeDouble(out, tuple.getFloat8(index));
         break;
       case TEXT: {
-        bytes = datum.asTextBytes();
-        length = datum.size();
+        bytes = tuple.getTextBytes(index);
+        length = bytes.length;
         if (length == 0) {
           bytes = INVALID_UTF__SINGLE_BYTE;
           length = INVALID_UTF__SINGLE_BYTE.length;
@@ -87,12 +96,12 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
       case BLOB:
       case INET4:
       case INET6:
-        bytes = datum.asByteArray();
+        bytes = tuple.getBytes(index);
         length = bytes.length;
         out.write(bytes, 0, length);
         break;
       case PROTOBUF:
-        ProtobufDatum protobufDatum = (ProtobufDatum) datum;
+        ProtobufDatum protobufDatum = (ProtobufDatum) tuple.getProtobufDatum(index);
         bytes = protobufDatum.asByteArray();
         length = bytes.length;
         out.write(bytes, 0, length);
@@ -106,11 +115,12 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
   }
 
   @Override
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException {
+  public Datum deserialize(int index, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException {
     if (length == 0) return NullDatum.get();
 
     Datum datum;
-    switch (col.getDataType().getType()) {
+    Column column = schema.getColumn(index);
+    switch (column.getDataType().getType()) {
       case BOOLEAN:
         datum = DatumFactory.createBool(bytes[offset]);
         break;
@@ -150,7 +160,7 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
         break;
       }
       case PROTOBUF: {
-        ProtobufDatumFactory factory = ProtobufDatumFactory.get(col.getDataType().getCode());
+        ProtobufDatumFactory factory = ProtobufDatumFactory.get(column.getDataType().getCode());
         Message.Builder builder = factory.newBuilder();
         builder.mergeFrom(bytes, offset, length);
         datum = factory.createDatum(builder);

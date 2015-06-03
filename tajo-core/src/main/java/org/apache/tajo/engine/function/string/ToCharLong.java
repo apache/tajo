@@ -48,8 +48,8 @@ public class ToCharLong extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     if (df == null) {
-      df = new DecimalFormat(params.get(1).asChars());
+      df = new DecimalFormat(params.getText(1));
     }
-    return new TextDatum(df.format(params.get(0).asInt8()));
+    return new TextDatum(df.format(params.getInt8(0)));
   }
 }

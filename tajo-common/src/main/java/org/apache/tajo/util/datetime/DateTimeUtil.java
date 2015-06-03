@@ -2170,13 +2170,17 @@ public class DateTimeUtil {
   }
 
   public static TimeMeta getUTCDateTime(Int8Datum int8Datum){
-    long usecs = int8Datum.asInt8()%DateTimeConstants.USECS_PER_MSEC;
-    long julianTimestamp = javaTimeToJulianTime(int8Datum.asInt8()/DateTimeConstants.USECS_PER_MSEC);
+    return getUTCDateTime(int8Datum.asInt8());
+  }
+
+  public static TimeMeta getUTCDateTime(long time) {
+    long usecs = time % DateTimeConstants.USECS_PER_MSEC;
+    long julianTimestamp = javaTimeToJulianTime(time / DateTimeConstants.USECS_PER_MSEC);
     TimeMeta tm = new TimeMeta();
-    
+
     julianTimestamp += usecs;
     toJulianTimeMeta(julianTimestamp, tm);
     return tm;
   }
-  
+
 }

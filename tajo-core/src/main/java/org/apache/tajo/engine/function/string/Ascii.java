@@ -54,10 +54,11 @@ public class Ascii extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if (datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    byte[] bytes = datum.asByteArray();
+    byte[] bytes = params.getBytes(0);
     if (bytes.length > 0) {
       return DatumFactory.createInt4(bytes[0]);
     } else {
