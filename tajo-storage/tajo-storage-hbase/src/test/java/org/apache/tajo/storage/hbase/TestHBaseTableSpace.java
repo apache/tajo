@@ -38,7 +38,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TestHBaseStorageManager {
+public class TestHBaseTableSpace {
+
+  @Test
+  public void testExtractQuorum() {
+    assertEquals("host1:2171", HBaseTablespace.extractQuorum(URI.create("hbase:zk://host1:2171")));
+    assertEquals("host1:2171", HBaseTablespace.extractQuorum(URI.create("hbase:zk://host1:2171/table1")));
+    assertEquals("host1:2171,host2:2172",
+        HBaseTablespace.extractQuorum(URI.create("hbase:zk://host1:2171,host2:2172/table1")));
+  }
 
   @Test
   public void testTablespaceHandler() throws Exception {

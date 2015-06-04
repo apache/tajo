@@ -29,7 +29,6 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
@@ -518,7 +517,7 @@ public class TestLogicalPlanner {
     }
 
     for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
-      if (!entry.getValue().booleanValue()) {
+      if (!entry.getValue()) {
         Preconditions.checkArgument(false,
             "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
       }
@@ -559,7 +558,7 @@ public class TestLogicalPlanner {
     }
 
     for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
-      if (!entry.getValue().booleanValue()) {
+      if (!entry.getValue()) {
         Preconditions.checkArgument(false,
             "SelectionQual not found. -> required JoinQual:" + entry.getKey().toJson());
       }
@@ -605,7 +604,7 @@ public class TestLogicalPlanner {
     }
 
     for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
-      if (!entry.getValue().booleanValue()) {
+      if (!entry.getValue()) {
         Preconditions.checkArgument(false,
             "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
       }
@@ -675,14 +674,14 @@ public class TestLogicalPlanner {
 
 
     for (Map.Entry<BinaryEval, Boolean> entry : joinQualMap.entrySet()) {
-      if (!entry.getValue().booleanValue()) {
+      if (!entry.getValue()) {
         Preconditions.checkArgument(false,
             "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
       }
     }
 
     for (Map.Entry<BinaryEval, Boolean> entry : scanMap.entrySet()) {
-      if (!entry.getValue().booleanValue()) {
+      if (!entry.getValue()) {
         Preconditions.checkArgument(false,
             "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
       }
@@ -980,7 +979,7 @@ public class TestLogicalPlanner {
     assertEquals("score", def.getColumn(3).getSimpleName());
     assertEquals(Type.FLOAT4, def.getColumn(3).getDataType().getType());
     assertTrue("CSV".equalsIgnoreCase(createTable.getStorageType()));
-    assertEquals("/tmp/data", createTable.getPath().toString());
+    assertEquals("/tmp/data", createTable.getUri().toString());
     assertTrue(createTable.hasOptions());
     assertEquals("|", createTable.getOptions().get("csv.delimiter"));
   }

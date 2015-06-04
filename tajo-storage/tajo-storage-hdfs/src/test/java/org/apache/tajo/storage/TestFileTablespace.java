@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -38,22 +39,23 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
 
-public class TestFileStorageManager {
+public class TestFileTablespace {
 	private TajoConf conf;
-	private static String TEST_PATH = "target/test-data/TestFileStorageManager";
+	private static String TEST_PATH = "target/test-data/TestFileTablespace";
   private Path testDir;
-  private FileSystem fs;
+  private FileSystem localFs;
 
 	@Before
 	public void setUp() throws Exception {
 		conf = new TajoConf();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    fs = testDir.getFileSystem(conf);
+    localFs = testDir.getFileSystem(conf);
 	}
 
 	@After
@@ -79,9 +81,9 @@ public class TestFileStorageManager {
 		}
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
-    fs.mkdirs(path.getParent());
+    localFs.mkdirs(path.getParent());
     FileTablespace fileStorageManager = (FileTablespace) TableSpaceManager.getByName("local").get();
-    assertEquals(fs.getUri(), fileStorageManager.getFileSystem().getUri());
+    assertEquals(localFs.getUri(), fileStorageManager.getFileSystem().getUri());
 
 		Appender appender = fileStorageManager.getAppender(meta, schema, path);
     appender.init();
@@ -127,9 +129,8 @@ public class TestFileStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileTablespace space = new FileTablespace(TableSpaceManager.DEFAULT_SPACE_NAME, fs.getUri());
+      FileTablespace space = new FileTablespace("testGetSplit", fs.getUri());
       space.init(new TajoConf(conf));
-      TableSpaceManager.addTableSpaceForTest(space);
       assertEquals(fs.getUri(), space.getUri());
 
       Schema schema = new Schema();
@@ -184,9 +185,8 @@ public class TestFileStorageManager {
       }
       assertTrue(fs.exists(tablePath));
 
-      FileTablespace sm = new FileTablespace(TableSpaceManager.DEFAULT_SPACE_NAME, fs.getUri());
+      FileTablespace sm = new FileTablespace("testGetSplitWithBlockStorageLocationsBatching", fs.getUri());
       sm.init(new TajoConf(conf));
-      TableSpaceManager.addTableSpaceForTest(sm);
 
       assertEquals(fs.getUri(), sm.getUri());
 
@@ -210,30 +210,41 @@ public class TestFileStorageManager {
   }
 
   @Test
-  public void testStoreType() throws Exception {
+  public void testGetFileTablespace() throws Exception {
     final Configuration hdfsConf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
     hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     hdfsConf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
     hdfsConf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
 
-    final MiniDFSCluster cluster = new MiniDFSCluster.Builder(hdfsConf)
-        .numDataNodes(2).build();
+    final MiniDFSCluster cluster =
+        new MiniDFSCluster.Builder(hdfsConf).numDataNodes(2).build();
     cluster.waitClusterUp();
+    URI uri = URI.create(cluster.getFileSystem().getUri() + "/tajo");
 
-    TajoConf tajoConf = new TajoConf(hdfsConf);
-    tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
-
+    Optional<Tablespace> existingTs = Optional.absent();
     try {
       /* Local FileSystem */
-      FileTablespace sm = (FileTablespace) OldStorageManager.getStorageManager(conf, "CSV");
-      assertEquals(fs.getUri(), sm.getFileSystem().getUri());
+      FileTablespace space = (FileTablespace) TableSpaceManager.getByName("local").get();
+      assertEquals(localFs.getUri(), space.getFileSystem().getUri());
+
+      FileTablespace distTablespace = new FileTablespace("testGetFileTablespace", uri);
+      distTablespace.init(conf);
+      existingTs = TableSpaceManager.addTableSpaceForTest(distTablespace);
 
       /* Distributed FileSystem */
-      sm = (FileTablespace) OldStorageManager.getStorageManager(tajoConf, "CSV");
-      assertNotEquals(fs.getUri(), sm.getFileSystem().getUri());
-      assertEquals(cluster.getFileSystem().getUri(), sm.getFileSystem().getUri());
+      space = (FileTablespace) TableSpaceManager.get(uri).get();
+      assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
+
+      space = (FileTablespace) TableSpaceManager.getByName("testGetFileTablespace").get();
+      assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
+
     } finally {
+
+      if (existingTs.isPresent()) {
+        TableSpaceManager.addTableSpaceForTest(existingTs.get());
+      }
+
       cluster.shutdown(true);
     }
   }

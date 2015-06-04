@@ -334,7 +334,7 @@ public class QueryExecutor {
   private void insertNonFromQuery(QueryContext queryContext,
                                   InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder)
       throws Exception {
-    String nodeUniqName = insertNode.getTableName() == null ? insertNode.getPath().getName() : insertNode.getTableName();
+    String nodeUniqName = insertNode.getTableName() == null ? new Path(insertNode.getPath()).getName() : insertNode.getTableName();
     String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
     FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
@@ -347,7 +347,7 @@ public class QueryExecutor {
       tableDesc = this.catalog.getTableDesc(insertNode.getTableName());
       finalOutputDir = new Path(tableDesc.getPath());
     } else {
-      finalOutputDir = insertNode.getPath();
+      finalOutputDir = new Path(insertNode.getPath());
     }
 
     TaskAttemptContext taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
@@ -439,14 +439,16 @@ public class QueryExecutor {
                                       SubmitQueryResponse.Builder responseBuilder) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    String storeType = PlannerUtil.getStoreType(plan);
-    if (storeType != null) {
-      Tablespace sm = OldStorageManager.getStorageManager(context.getConf(), storeType);
-      StorageProperty storageProperty = sm.getStorageProperty(storeType);
-      if (!storageProperty.isSupportsInsertInto()) {
+    TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
+    if (tableDesc != null) {
+      Tablespace space = TableSpaceManager.get(tableDesc.getPath()).get();
+      StorageProperty storageProperty = space.getProperty();
+
+      if (!storageProperty.isInsertable()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
       }
-      sm.beforeInsertOrCATS(rootNode.getChild());
+
+      space.prepareTable(rootNode.getChild());
     }
     context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
     hookManager.doHooks(queryContext, plan);
@@ -474,22 +476,18 @@ public class QueryExecutor {
     }
   }
 
-  public static MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
+  public MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
       throws Exception {
 
-    String storeType = PlannerUtil.getStoreType(plan);
-    if (storeType != null) {
-      Tablespace sm = OldStorageManager.getStorageManager(planner.getConf(), storeType);
-      StorageProperty storageProperty = sm.getStorageProperty(storeType);
-      if (storageProperty.isSortedInsert()) {
-        String tableName = PlannerUtil.getStoreTableName(plan);
-        LogicalRootNode rootNode = plan.getRootBlock().getRoot();
-        TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
-        if (tableDesc == null) {
-          throw new VerifyException("Can't get table meta data from catalog: " + tableName);
-        }
-        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
-            context, tableDesc);
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
+
+    if (tableDesc != null) {
+      Tablespace space = TableSpaceManager.get(tableDesc.getPath()).get();
+      FormatProperty format = space.getFormatProperty(tableDesc.getMeta().getStoreType());
+
+      if (format.sortedInsertRequired()) {
+        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = space.getRewriteRules(context, tableDesc);
         if (storageSpecifiedRewriteRules != null) {
           for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
             eachRule.rewrite(context, plan);

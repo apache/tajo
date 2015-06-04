@@ -26,7 +26,9 @@ import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
 
 import javax.annotation.Nullable;
@@ -34,25 +36,30 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * It handles available table spaces and cache TableSpace instances.
+ *
+ * Default tablespace must be a filesystem-based one.
+ * HDFS and S3 can be a default tablespace if a Tajo cluster is in fully distributed mode.
+ * Local file system can be a default tablespace if a Tajo cluster runs on a single machine.
  */
 public class TableSpaceManager {
   private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
 
   /** default tablespace name */
-  public static final String DEFAULT_SPACE_NAME = "default";
+  public static final String DEFAULT_TABLESPACE_NAME = "default";
 
   private static TajoConf systemConf;
   private static JSONParser parser;
   private static JSONObject config;
 
-  /**
-   * Cache of all tablespace handlers
-   */
+
+  // The relation ship among name, URI, Tablespaces must be kept 1:1:1.
   protected static final Map<String, URI> SPACES_URIS_MAP;
   protected static final Map<URI, Tablespace> TABLE_SPACES;
+
   protected static final Map<Class<?>, Constructor<?>> CONSTRUCTORS;
   protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS;
   public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
@@ -94,6 +101,22 @@ public class TableSpaceManager {
     loadJson(json);
     loadStorages(config);
     loadSpaces(config);
+  }
+
+  /**
+   * Return length of the fragment.
+   * In the UNKNOWN_LENGTH case get FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH from the configuration.
+   *
+   * @param conf Tajo system property
+   * @param fragment Fragment
+   * @return
+   */
+  public static long guessFragmentVolume(TajoConf conf, Fragment fragment) {
+    if (fragment.getLength() == TajoConstants.UNKNOWN_LENGTH) {
+      return conf.getLongVar(TajoConf.ConfVars.FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH);
+    } else {
+      return fragment.getLength();
+    }
   }
 
   private void loadJson(String json) {
@@ -165,7 +188,7 @@ public class TableSpaceManager {
     URI spaceUri = URI.create(spaceDesc.getAsString("uri"));
 
     if (defaultSpace) {
-      addTableSpace(DEFAULT_SPACE_NAME, spaceUri);
+      addTableSpace(DEFAULT_TABLESPACE_NAME, spaceUri);
     }
     addTableSpace(spaceName, spaceUri);
   }
@@ -174,7 +197,7 @@ public class TableSpaceManager {
     addTableSpace(spaceName, uri, null);
   }
 
-  public static void addTableSpace(String spaceName, URI uri, @Nullable Map<String, String> configs) {
+  private static void addTableSpace(String spaceName, URI uri, @Nullable Map<String, String> configs) {
     Tablespace tableSpace = newTableSpace(spaceName, uri);
     try {
       tableSpace.init(systemConf);
@@ -185,27 +208,49 @@ public class TableSpaceManager {
     if (configs != null) {
       tableSpace.setConfigs(configs);
     }
+    addTableSpaceInternal(tableSpace);
 
-    addTableSpace(tableSpace);
+    // If the arbitrary path is allowed, root uri is also added as a tablespace
+    if (tableSpace.getProperty().isArbitraryPathAllowed()) {
+      URI rootUri = tableSpace.getRootUri();
+      if (!TABLE_SPACES.containsKey(rootUri)) {
+        String tmpName = UUID.randomUUID().toString();
+        addTableSpace(tmpName, rootUri, configs);
+      }
+    }
   }
 
-  public static void addTableSpace(Tablespace space) {
-    if (SPACES_URIS_MAP.containsKey(space.getName())) {
-      if (SPACES_URIS_MAP.get(space.getName()).equals(space.getUri())) {
-        return;
-      } else {
-        throw new RuntimeException("Name of Tablespace must be unique.");
-      }
+  private static void addTableSpaceInternal(Tablespace space) {
+    // It is a device to keep the relationship among name, URI, and tablespace 1:1:1.
+
+    boolean nameExist = SPACES_URIS_MAP.containsKey(space.getName());
+    boolean uriExist = TABLE_SPACES.containsKey(space.uri);
+
+    boolean mismatch = nameExist && !SPACES_URIS_MAP.get(space.getName()).equals(space.getUri());
+    mismatch = mismatch || uriExist && TABLE_SPACES.get(space.uri).equals(space);
+
+    if (mismatch) {
+      throw new RuntimeException("Name or URI of Tablespace must be unique.");
     }
 
     SPACES_URIS_MAP.put(space.getName(), space.getUri());
+    // We must guarantee that the same uri results in the same tablespace instance.
     TABLE_SPACES.put(space.getUri(), space);
   }
 
   @VisibleForTesting
-  public static void addTableSpaceForTest(Tablespace space) {
-    SPACES_URIS_MAP.put(space.getName(), space.getUri());
-    TABLE_SPACES.put(space.getUri(), space);
+  public static Optional<Tablespace> addTableSpaceForTest(Tablespace space) {
+    Tablespace existing = null;
+    synchronized (SPACES_URIS_MAP) {
+      // Remove existing one
+      SPACES_URIS_MAP.remove(space.getName());
+      existing = TABLE_SPACES.remove(space.getUri());
+
+      // Add anotherone for test
+      addTableSpace(space.name, space.uri);
+    }
+    // if there is an existing one, return it.
+    return Optional.fromNullable(existing);
   }
 
   private void loadFormats(String json) {
@@ -219,13 +264,25 @@ public class TableSpaceManager {
     return TABLE_SPACE_HANDLERS.keySet();
   }
 
-  public static <T extends Tablespace> Optional<T> get(URI uri) {
+  public static <T extends Tablespace> Optional<T> get(String uri) {
+    Tablespace lastFound = null;
     for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.entrySet()) {
-      if (entry.getKey().toString().startsWith(uri.toString())) {
-        return (Optional<T>) Optional.of(entry.getValue());
+      if (uri.startsWith(entry.getKey().toString())) {
+        if (lastFound == null || lastFound.getUri().toString().length() < uri.toString().length()) {
+          lastFound = entry.getValue();
+        }
       }
     }
-    return Optional.absent();
+
+    if (lastFound != null) {
+      return (Optional<T>) Optional.of(lastFound);
+    } else {
+      return Optional.absent();
+    }
+  }
+
+  public static <T extends Tablespace> Optional<T> get(URI uri) {
+    return get(uri.toString());
   }
 
   /**
@@ -234,7 +291,7 @@ public class TableSpaceManager {
    * @return
    */
   public static <T extends Tablespace> T getDefault() {
-    return (T) getByName(DEFAULT_SPACE_NAME).get();
+    return (T) getByName(DEFAULT_TABLESPACE_NAME).get();
   }
 
   public static <T extends Tablespace> Optional<T> getByName(String name) {

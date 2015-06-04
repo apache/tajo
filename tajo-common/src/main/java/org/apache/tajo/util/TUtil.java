@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -254,6 +255,22 @@ public class TUtil {
     }
 
     return array;
+  }
+
+  /**
+   * Return value or throw IllegalStateException
+   *
+   * @param optional Some value which can be nullable
+   * @param message Error message thrown if the value is absent.
+   * @param <T> Return type
+   * @return Return value
+   */
+  public static <T> T ensurePresent(Optional<T> optional, String message) {
+    if (optional.isPresent()) {
+      return optional.get();
+    } else {
+      throw new IllegalStateException(message);
+    }
   }
 
   /**

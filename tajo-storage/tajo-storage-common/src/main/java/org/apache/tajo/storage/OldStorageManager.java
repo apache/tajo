@@ -108,17 +108,6 @@ public class OldStorageManager {
   }
 
   /**
-   * Returns FileStorageManager instance.
-   *
-   * @param tajoConf Tajo system property.
-   * @return
-   * @throws IOException
-   */
-  public static Tablespace getFileStorageManager(TajoConf tajoConf) throws IOException {
-    return getStorageManager(tajoConf, "CSV");
-  }
-
-  /**
    * Returns the proper Tablespace instance according to the storeType.
    *
    * @param tajoConf Tajo system property.

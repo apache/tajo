@@ -84,7 +84,7 @@ public class TestHashSemiJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     Tuple tuple = new VTuple(employeeSchema.size());
@@ -110,7 +110,7 @@ public class TestHashSemiJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileTablespace) TableSpaceManager.getDefault())
+    appender = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -177,8 +177,8 @@ public class TestHashSemiJoinExec {
       MergeJoinExec join = (MergeJoinExec) exec;
       ExternalSortExec sortLeftChild = (ExternalSortExec) join.getLeftChild();
       ExternalSortExec sortRightChild = (ExternalSortExec) join.getRightChild();
-      SeqScanExec scanLeftChild = (SeqScanExec) sortLeftChild.getChild();
-      SeqScanExec scanRightChild = (SeqScanExec) sortRightChild.getChild();
+      SeqScanExec scanLeftChild = sortLeftChild.getChild();
+      SeqScanExec scanRightChild = sortRightChild.getChild();
 
       // 'people' should be outer table. So, the below code guarantees that people becomes the outer table.
       if (scanLeftChild.getTableName().equals("default.people")) {

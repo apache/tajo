@@ -264,7 +264,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
         }
         Path dataPath = new Path(table.getPath().toString(), fileIndex + ".csv");
         fileIndex++;
-        appender = ((FileTablespace) TableSpaceManager.getDefault())
+        appender = ((FileTablespace) ((FileTablespace)TableSpaceManager.getByName("local").get()))
             .getAppender(tableMeta, schema, dataPath);
         appender.init();
       }

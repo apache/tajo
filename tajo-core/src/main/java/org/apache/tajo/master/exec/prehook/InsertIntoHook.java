@@ -24,6 +24,8 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.NodeType;
 
+import java.net.URI;
+
 public class InsertIntoHook implements DistributedQueryHook {
 
   @Override
@@ -42,13 +44,13 @@ public class InsertIntoHook implements DistributedQueryHook {
     Path outputPath;
     if (insertNode.hasTargetTable()) { // INSERT INTO [TB_NAME]
       queryContext.setOutputTable(insertNode.getTableName());
-      queryContext.setOutputPath(insertNode.getPath());
+      queryContext.setOutputPath(new Path(insertNode.getPath()));
       if (insertNode.hasPartition()) {
         queryContext.setPartitionMethod(insertNode.getPartitionMethod());
       }
     } else { // INSERT INTO LOCATION ...
       // When INSERT INTO LOCATION, must not set output table.
-      outputPath = insertNode.getPath();
+      outputPath = new Path(insertNode.getPath());
       queryContext.setFileOutput();
       queryContext.setOutputPath(outputPath);
     }

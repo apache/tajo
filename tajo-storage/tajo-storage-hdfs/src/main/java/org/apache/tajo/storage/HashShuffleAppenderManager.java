@@ -82,8 +82,9 @@ public class HashShuffleAppenderManager {
         if (!fs.exists(dataFile.getParent())) {
           fs.mkdirs(dataFile.getParent());
         }
-        FileAppender appender = (FileAppender)((FileTablespace) OldStorageManager.getFileStorageManager(tajoConf))
-            .getAppender(meta, outSchema, dataFile);
+
+        FileTablespace space = (FileTablespace) TableSpaceManager.get(dataFile.toUri()).get();
+        FileAppender appender = (FileAppender) space.getAppender(meta, outSchema, dataFile);
         appender.enableStats();
         appender.init();
 

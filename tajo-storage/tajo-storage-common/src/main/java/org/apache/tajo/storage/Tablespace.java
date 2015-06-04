@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -40,8 +41,10 @@ import org.apache.tajo.storage.fragment.FragmentConvertor;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tablespace manages the functions of storing and reading data.
@@ -59,6 +62,10 @@ public abstract class Tablespace {
   public Tablespace(String name, URI uri) {
     this.name = name;
     this.uri = uri;
+  }
+
+  public Set<String> getDependencies() {
+    return Collections.emptySet();
   }
 
   /**
@@ -79,24 +86,31 @@ public abstract class Tablespace {
 
   public abstract void setConfigs(Map<String, String> configs);
 
-  /**
-   * This method is called after executing "CREATE TABLE" statement.
-   * If a storage is a file based storage, a storage manager may create directory.
-   *
-   * @param tableDesc Table description which is created.
-   * @param ifNotExists Creates the table only when the table does not exist.
-   * @throws java.io.IOException
-   */
-  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
+  public String toString() {
+    return name + "=" + uri.toString();
+  }
+
+  public abstract long getTableVolume(URI uri) throws IOException;
 
   /**
-   * This method is called after executing "DROP TABLE" statement with the 'PURGE' option
-   * which is the option to delete all the data.
+   * if {@link StorageProperty#isArbitraryPathAllowed} is true,
+   * the storage allows arbitrary path accesses. In this case, the storage must provide the root URI.
    *
-   * @param tableDesc
-   * @throws java.io.IOException
+   * @see {@link StorageProperty#isArbitraryPathAllowed}
+   * @return Root URI
    */
-  public abstract void purgeTable(TableDesc tableDesc) throws IOException;
+  public URI getRootUri() {
+    throw new UnsupportedException(
+        String.format("Tablespace '%s' does not allow the use of artibrary paths", uri.toString()));
+  }
+
+  /**
+   * Get Table URI
+   *
+   * @param tableName
+   * @return
+   */
+  public abstract URI getTableUri(String databaseName, String tableName);
 
   /**
    * Returns the splits that will serve as input for the scan tasks. The
@@ -126,7 +140,9 @@ public abstract class Tablespace {
    * It returns the storage property.
    * @return The storage property
    */
-  public abstract StorageProperty getStorageProperty(String storeType);
+  public abstract StorageProperty getProperty();
+
+  public abstract FormatProperty getFormatProperty(String dataFormat);
 
   /**
    * Release storage manager resource
@@ -147,19 +163,8 @@ public abstract class Tablespace {
    * @throws java.io.IOException
    */
   public abstract TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
-                                                   Schema inputSchema, SortSpec[] sortSpecs,
+                                                   Schema inputSchema, SortSpec [] sortSpecs,
                                                    TupleRange dataRange) throws IOException;
-
-  /**
-   * This method is called before executing 'INSERT' or 'CREATE TABLE as SELECT'.
-   * In general Tajo creates the target table after finishing the final sub-query of CATS.
-   * But In the special cases, such as HBase INSERT or CAST query uses the target table information.
-   * That kind of the storage should implements the logic related to creating table in this method.
-   *
-   * @param node The child node of the root node.
-   * @throws java.io.IOException
-   */
-  public abstract void beforeInsertOrCATS(LogicalNode node) throws IOException;
 
   /**
    * It is called when the query failed.
@@ -305,31 +310,13 @@ public abstract class Tablespace {
   }
 
   /**
-   * Return length of the fragment.
-   * In the UNKNOWN_LENGTH case get FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH from the configuration.
-   *
-   * @param conf Tajo system property
-   * @param fragment Fragment
-   * @return
-   */
-  public static long getFragmentLength(TajoConf conf, Fragment fragment) {
-    if (fragment.getLength() == TajoConstants.UNKNOWN_LENGTH) {
-      return conf.getLongVar(ConfVars.FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH);
-    } else {
-      return fragment.getLength();
-    }
-  }
-
-  public abstract void rollbackOutputCommit(LogicalNode node) throws IOException;
-
-  /**
    * It is called after making logical plan. Storage manager should verify the schema for inserting.
    *
    * @param tableDesc The table description of insert target.
    * @param outSchema  The output schema of select query for inserting.
    * @throws java.io.IOException
    */
-  public abstract void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException;
+  public abstract void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException;
 
   /**
    * Returns the list of storage specified rewrite rules.
@@ -340,8 +327,42 @@ public abstract class Tablespace {
    * @return The list of storage specified rewrite rules
    * @throws java.io.IOException
    */
-  public abstract List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
-      throws IOException;
+  public abstract List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext,
+      TableDesc tableDesc) throws IOException;
+
+  ////////////////////////////////////////////////////////////////////////////
+  // Table Lifecycle Section
+  ////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * This method is called after executing "CREATE TABLE" statement.
+   * If a storage is a file based storage, a storage manager may create directory.
+   *
+   * @param tableDesc Table description which is created.
+   * @param ifNotExists Creates the table only when the table does not exist.
+   * @throws java.io.IOException
+   */
+  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
+
+  /**
+   * This method is called after executing "DROP TABLE" statement with the 'PURGE' option
+   * which is the option to delete all the data.
+   *
+   * @param tableDesc
+   * @throws java.io.IOException
+   */
+  public abstract void purgeTable(TableDesc tableDesc) throws IOException;
+
+  /**
+   * This method is called before executing 'INSERT' or 'CREATE TABLE as SELECT'.
+   * In general Tajo creates the target table after finishing the final sub-query of CATS.
+   * But In the special cases, such as HBase INSERT or CAST query uses the target table information.
+   * That kind of the storage should implements the logic related to creating table in this method.
+   *
+   * @param node The child node of the root node.
+   * @throws java.io.IOException
+   */
+  public abstract void prepareTable(LogicalNode node) throws IOException;
 
   /**
    * Finalizes result data. Tajo stores result data in the staging directory.
@@ -356,7 +377,20 @@ public abstract class Tablespace {
    * @return Saved path
    * @throws java.io.IOException
    */
-  public abstract Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
-                               LogicalPlan plan, Schema schema,
-                               TableDesc tableDesc) throws IOException;
+  public abstract Path commitTable(OverridableConf queryContext,
+                                   ExecutionBlockId finalEbId,
+                                   LogicalPlan plan, Schema schema,
+                                   TableDesc tableDesc) throws IOException;
+
+  public abstract void rollbackTable(LogicalNode node) throws IOException;
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Tablespace) {
+      Tablespace other = (Tablespace) obj;
+      return name.equals(other.name) && uri.equals(other.uri);
+    } else {
+      return false;
+    }
+  }
 }

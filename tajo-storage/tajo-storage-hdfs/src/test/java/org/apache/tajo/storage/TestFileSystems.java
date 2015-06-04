@@ -57,7 +57,7 @@ public class TestFileSystems {
   public TestFileSystems(FileSystem fs) throws IOException {
     this.fs = fs;
     this.conf = new TajoConf(fs.getConf());
-    sm = TableSpaceManager.getDefault();
+    sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     testDir = getTestDir(this.fs, TEST_PATH);
   }
 

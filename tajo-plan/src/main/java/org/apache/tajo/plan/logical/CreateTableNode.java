@@ -26,9 +26,12 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
+
 public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Expose private Schema schema;
-  @Expose private Path path;
+  @Expose private String tableSpaceName;
+  @Expose private URI uri;
   @Expose private boolean external;
   @Expose private boolean ifNotExists;
 
@@ -59,16 +62,29 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     }
   }
 
-  public boolean hasPath() {
-    return this.path != null;
+  public boolean hasTableSpaceName() {
+    return tableSpaceName != null;
   }
 
-  public void setPath(Path path) {
-    this.path = path;
+  public String getTableSpaceName() {
+    return tableSpaceName;
+  }
+
+  public void setTableSpaceName(String tableSpaceName) {
+    this.tableSpaceName = tableSpaceName;
+  }
+
+
+  public boolean hasPath() {
+    return this.uri != null;
+  }
+
+  public void setUri(URI uri) {
+    this.uri = uri;
   }
   
-  public Path getPath() {
-    return this.path;
+  public URI getUri() {
+    return this.uri;
   }
 
   public boolean isExternal() {
@@ -97,7 +113,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   }
 
   public int hashCode() {
-    return super.hashCode() ^ Objects.hashCode(schema, path, external, ifNotExists) * 31;
+    return super.hashCode() ^ Objects.hashCode(schema, uri, external, ifNotExists) * 31;
   }
   
   @Override
@@ -107,7 +123,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
       boolean eq = super.equals(other);
       eq &= this.schema.equals(other.schema);
       eq &= this.external == other.external;
-      eq &= TUtil.checkEquals(path, other.path);
+      eq &= TUtil.checkEquals(uri, other.uri);
       eq &= ifNotExists == other.ifNotExists;;
       return eq;
     } else {
@@ -122,7 +138,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     createTableNode.schema = (Schema) schema.clone();
     createTableNode.storageType = storageType;
     createTableNode.external = external;
-    createTableNode.path = path != null ? new Path(path.toString()) : null;
+    createTableNode.uri = uri != null ? uri : null;
     createTableNode.options = (KeyValueSet) (options != null ? options.clone() : null);
     createTableNode.ifNotExists = ifNotExists;
     return createTableNode;

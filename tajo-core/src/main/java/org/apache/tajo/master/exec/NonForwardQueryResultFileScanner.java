@@ -81,6 +81,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
    * @param tablespace target storage manager to be set with partition info
    */
   private void setPartition(Tablespace tablespace) {
+
     if (tableDesc.isExternal() && tableDesc.hasPartition() && scanNode.getQual() != null &&
         tablespace instanceof FileTablespace) {
       StringBuffer path = new StringBuffer();
@@ -101,7 +102,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   }
 
   private void initSeqScanExec() throws IOException {
-    Tablespace tablespace = OldStorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
+    Tablespace tablespace = TableSpaceManager.get(tableDesc.getPath()).get();
     List<Fragment> fragments = null;
     setPartition(tablespace);
     fragments = tablespace.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);

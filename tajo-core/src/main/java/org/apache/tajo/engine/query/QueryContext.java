@@ -28,6 +28,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.session.Session;
 
+import java.net.URI;
+
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 /**
@@ -61,6 +63,24 @@ public class QueryContext extends OverridableConf {
 
   public String getUser() {
     return get(SessionVars.USERNAME);
+  }
+
+  public void setDefaultSpaceUri(URI uri) {
+    put(QueryVars.DEFAULT_SPACE_URI, uri.toString());
+  }
+
+  public URI getDefaultSpaceUri() {
+    String strVal = get(QueryVars.DEFAULT_SPACE_URI, "");
+    return strVal != null && !strVal.isEmpty() ? URI.create(strVal) : null;
+  }
+
+  public void setDefaultSpaceRootUri(URI uri) {
+    put(QueryVars.DEFAULT_SPACE_ROOT_URI, uri.toString());
+  }
+
+  public URI getDefaultSpaceRootUri() {
+    String strVal = get(QueryVars.DEFAULT_SPACE_ROOT_URI, "");
+    return strVal != null && !strVal.isEmpty() ? URI.create(strVal) : null;
   }
 
   public void setStagingDir(Path path) {
@@ -97,9 +117,9 @@ public class QueryContext extends OverridableConf {
     }
   }
 
-  public Path getOutputPath() {
+  public URI getOutputPath() {
     String strVal = get(QueryVars.OUTPUT_TABLE_PATH);
-    return strVal != null ? new Path(strVal) : null;
+    return strVal != null ? URI.create(strVal) : null;
   }
 
   public boolean hasPartition() {

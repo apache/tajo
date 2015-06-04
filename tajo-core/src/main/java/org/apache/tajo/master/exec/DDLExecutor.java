@@ -42,6 +42,7 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,12 +56,10 @@ public class DDLExecutor {
 
   private final TajoMaster.MasterContext context;
   private final CatalogService catalog;
-  private final Tablespace tablespace;
 
   public DDLExecutor(TajoMaster.MasterContext context) {
     this.context = context;
     this.catalog = context.getCatalog();
-    this.tablespace = context.getStorageManager();
   }
 
   public boolean execute(QueryContext queryContext, LogicalPlan plan) throws IOException {
@@ -206,14 +205,28 @@ public class DDLExecutor {
       Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     }
 
-    return createTable(queryContext, createTable.getTableName(), createTable.getStorageType(),
-        createTable.getTableSchema(), meta, createTable.getPath(), createTable.isExternal(),
-        createTable.getPartitionMethod(), ifNotExists);
+    return createTable(
+        queryContext,
+        createTable.getTableName(),
+        createTable.getTableSpaceName(),
+        createTable.getStorageType(),createTable.getTableSchema(),
+        meta,
+        createTable.getUri(),
+        createTable.isExternal(),
+        createTable.getPartitionMethod(),
+        ifNotExists);
   }
 
-  public TableDesc createTable(QueryContext queryContext, String tableName, String storeType,
-                               Schema schema, TableMeta meta, Path path, boolean isExternal,
-                               PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
+  public TableDesc createTable(QueryContext queryContext,
+                               String tableName,
+                               @Nullable String tableSpaceName,
+                               @Nullable String storeType,
+                               Schema schema,
+                               TableMeta meta,
+                               @Nullable URI uri,
+                               boolean isExternal,
+                               @Nullable PartitionMethodDesc partitionDesc,
+                               boolean ifNotExists) throws IOException {
     String databaseName;
     String simpleTableName;
     if (CatalogUtil.isFQTableName(tableName)) {
@@ -233,18 +246,28 @@ public class DDLExecutor {
         LOG.info("relation \"" + qualifiedName + "\" is already exists." );
         return catalog.getTableDesc(databaseName, simpleTableName);
       } else {
-        throw new AlreadyExistsTableException(CatalogUtil.buildFQName(databaseName, tableName));
+        throw new AlreadyExistsTableException(qualifiedName);
       }
     }
 
-    TableDesc desc = new TableDesc(CatalogUtil.buildFQName(databaseName, simpleTableName),
-        schema, meta, (path != null ? path.toUri(): null), isExternal);
+    Tablespace tableSpace;
+    if (tableSpaceName != null) {
+      tableSpace = TableSpaceManager.getByName(tableSpaceName).get();
+    } else if (uri != null) {
+      tableSpace = TableSpaceManager.get(uri).get();
+    } else {
+      tableSpace = TableSpaceManager.getDefault();
+    }
+
+    TableDesc desc;
+    URI tableUri = isExternal ? uri : tableSpace.getTableUri(databaseName, simpleTableName);
+    desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal);
 
     if (partitionDesc != null) {
       desc.setPartitionMethod(partitionDesc);
     }
 
-    TableSpaceManager.get(desc.getPath()).get().createTable(desc, ifNotExists);
+    tableSpace.createTable(desc, ifNotExists);
 
     if (catalog.createTable(desc)) {
       LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
@@ -291,8 +314,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        OldStorageManager.getStorageManager(queryContext.getConf(),
-            tableDesc.getMeta().getStoreType()).purgeTable(tableDesc);
+        TableSpaceManager.get(tableDesc.getPath()).get().purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
       }

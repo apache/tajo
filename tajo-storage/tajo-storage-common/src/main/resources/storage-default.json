@@ -1,11 +1,8 @@
 {
   "spaces": {
-    "default": {
-      "uri": "file:///",
-      "configs": [
-        {"x": "y"},
-        {"x": "y"}
-      ]
+    "local": {
+      "default": true,
+      "uri": "file:/"
     }
   },
 
@@ -25,57 +22,6 @@
     "hbase": {
       "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
       "default-format": "hbase"
-    }
-  },
-
-  "formats": {
-
-    "avro": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.AvroHandler"
-    },
-    "csv": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.CSVHandler"
-    },
-    "text": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.TextHandler"
-    },
-    "parquet": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.ParquetHandler"
-    },
-    "raw": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.RawHandler"
-    },
-    "rcfile": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.RCFileHandler"
-    },
-    "row": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.RowHandler"
-    },
-    "sequencefile": {
-      "storage-support": ["hdfs", "file", "s3"],
-      "handler": "org.apache.tajo.storage.SeqFileHandler"
-    },
-
-
-    "hbase": {
-      "storage-support": ["hbase"],
-      "handler": "org.apache.tajo.storage.HbaseHandler"
-    },
-    "kyro": {
-      "storage-support": ["hbase"],
-      "handler": "org.apache.tajo.storage.KyroHandler"
-    },
-
-    "rowstore": {
-      "storage-support": ["jdbc"],
-      "handler": "org.apache.tajo.storage.RowStoreHandler"
     }
   }
 }

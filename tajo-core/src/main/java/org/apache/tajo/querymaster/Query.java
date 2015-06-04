@@ -46,8 +46,9 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
@@ -427,40 +428,60 @@ public class Query implements EventHandler<QueryEvent> {
       } else {
         finalState = QueryState.QUERY_ERROR;
       }
+
+      // When a query is failed
       if (finalState != QueryState.QUERY_SUCCEEDED) {
         Stage lastStage = query.getStage(stageEvent.getExecutionBlockId());
-        if (lastStage != null && lastStage.getTableMeta() != null) {
-          String storeType = lastStage.getTableMeta().getStoreType();
-          if (storeType != null) {
-            LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
-            try {
-              OldStorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
-            } catch (IOException e) {
-              LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
-            }
-          }
-        }
+        handleQueryFailure(query, lastStage);
       }
+
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
       query.setFinishTime();
 
       return finalState;
     }
 
+    // handle query failures
+    private void handleQueryFailure(Query query, Stage lastStage) {
+      QueryContext context = query.context.getQueryContext();
+
+      if (lastStage != null && context.hasOutputPath()) {
+        Tablespace space = TableSpaceManager.get(context.getOutputPath()).get();
+        try {
+          LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
+          space.rollbackTable(rootNode.getChild());
+        } catch (IOException e) {
+          LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
+        }
+      }
+    }
+
     private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
       Stage lastStage = query.getStage(event.getExecutionBlockId());
-      String storeType = lastStage.getTableMeta().getStoreType();
+
       try {
+
         LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
         CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
         TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
 
-        Path finalOutputDir = OldStorageManager.getStorageManager(query.systemConf, storeType)
-            .commitOutputData(query.context.getQueryContext(),
-                lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
+        QueryContext queryContext = query.context.getQueryContext();
+
+        // If there is not tabledesc, it is a select query without insert or ctas.
+        // In this case, we should use default tablespace.
+        Tablespace space = queryContext.hasOutputPath() ?
+            TableSpaceManager.get(queryContext.getOutputPath()).get() : TableSpaceManager.getDefault();
+
+        Path finalOutputDir = space.commitTable(
+            query.context.getQueryContext(),
+            lastStage.getId(),
+            lastStage.getMasterPlan().getLogicalPlan(),
+            lastStage.getSchema(),
+            tableDesc);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
+
       } catch (Exception e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;

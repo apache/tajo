@@ -30,13 +30,13 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
@@ -55,6 +55,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
@@ -1345,7 +1346,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private void updatePhysicalInfo(TableDesc desc) {
-    if (desc.getPath() != null && desc.getMeta().getStoreType() != "SYSTEM") {
+    if (desc.getPath() != null &&
+        desc.getMeta().getStoreType() != "SYSTEM" && PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
       try {
         Path path = new Path(desc.getPath());
         FileSystem fs = path.getFileSystem(new Configuration());
@@ -1689,7 +1691,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setInSchema(childSchema);
     insertNode.setOutSchema(childSchema);
     insertNode.setTableSchema(childSchema);
-    insertNode.setTargetLocation(new Path(expr.getLocation()));
+
+    // Rewrite
+    URI targetUri = URI.create(expr.getLocation());
+    if (targetUri.getScheme() == null) {
+      targetUri = URI.create(context.getQueryContext().get(QueryVars.DEFAULT_SPACE_ROOT_URI) + "/" + targetUri);
+    }
+    insertNode.setTargetLocation(targetUri);
 
     if (expr.hasStorageType()) {
       insertNode.setStorageType(expr.getStorageType());
@@ -1742,7 +1750,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     createTableNode.setExternal(parentTableDesc.isExternal());
     if(parentTableDesc.isExternal()) {
-      createTableNode.setPath(new Path(parentTableDesc.getPath()));
+      createTableNode.setUri(parentTableDesc.getPath());
     }
     return createTableNode;
   }
@@ -1762,8 +1770,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getTableName()));
     }
     // This is CREATE TABLE <tablename> LIKE <parentTable>
-    if(expr.getLikeParentTableName() != null)
+    if(expr.getLikeParentTableName() != null) {
       return handleCreateTableLike(context, expr, createTableNode);
+    }
+
+    if (expr.hasTableSpaceName()) {
+      createTableNode.setTableSpaceName(expr.getTableSpaceName());
+    }
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(expr.getStorageType());
@@ -1851,7 +1864,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
 
       if (expr.hasLocation()) {
-        createTableNode.setPath(new Path(expr.getLocation()));
+        createTableNode.setUri(URI.create(expr.getLocation()));
       }
 
       return createTableNode;

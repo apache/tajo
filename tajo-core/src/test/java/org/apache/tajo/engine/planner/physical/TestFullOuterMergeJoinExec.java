@@ -109,7 +109,7 @@ public class TestFullOuterMergeJoinExec {
 
     TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
     Path dep3Path = new Path(testDir, "dep3.csv");
-    Appender appender1 = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender1 = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
     Tuple tuple = new VTuple(dep3Schema.size());
@@ -148,7 +148,7 @@ public class TestFullOuterMergeJoinExec {
 
     TableMeta dep4Meta = CatalogUtil.newTableMeta("CSV");
     Path dep4Path = new Path(testDir, "dep4.csv");
-    Appender appender4 = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender4 = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
     Tuple tuple4 = new VTuple(dep4Schema.size());
@@ -180,7 +180,7 @@ public class TestFullOuterMergeJoinExec {
 
     TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
     Path job3Path = new Path(testDir, "job3.csv");
-    Appender appender2 = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender2 = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
     Tuple tuple2 = new VTuple(job3Schema.size());
@@ -220,7 +220,7 @@ public class TestFullOuterMergeJoinExec {
 
     TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
     Path emp3Path = new Path(testDir, "emp3.csv");
-    Appender appender3 = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender3 = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
     Tuple tuple3 = new VTuple(emp3Schema.size());
@@ -273,7 +273,7 @@ public class TestFullOuterMergeJoinExec {
 
     TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
     Path phone3Path = new Path(testDir, "phone3.csv");
-    Appender appender5 = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender5 = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
     appender5.init();
     appender5.flush();

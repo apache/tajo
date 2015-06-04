@@ -47,6 +47,9 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT;
+
 public class FileTablespace extends Tablespace {
 
   public static final PathFilter hiddenFileFilter = new PathFilter() {
@@ -91,7 +94,7 @@ public class FileTablespace extends Tablespace {
       };
 
   protected FileSystem fs;
-  protected Path tableBaseDir;
+  protected Path basePath;
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
@@ -101,12 +104,16 @@ public class FileTablespace extends Tablespace {
 
   @Override
   protected void storageInit() throws IOException {
-    this.tableBaseDir = new Path(uri);
-    this.fs = tableBaseDir.getFileSystem(conf);
-    this.blocksMetadataEnabled = conf.getBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
-        DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
-    if (!this.blocksMetadataEnabled)
+    this.basePath = new Path(uri);
+    this.fs = basePath.getFileSystem(conf);
+    this.conf.set(DFSConfigKeys.FS_DEFAULT_NAME_KEY, fs.getUri().toString());
+
+    this.blocksMetadataEnabled =
+        conf.getBoolean(DFS_HDFS_BLOCKS_METADATA_ENABLED, DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
+
+    if (!this.blocksMetadataEnabled) {
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
+    }
   }
 
   @Override
@@ -121,9 +128,20 @@ public class FileTablespace extends Tablespace {
     }
   }
 
+  @Override
+  public long getTableVolume(URI uri) throws IOException {
+    Path path = new Path(uri);
+    ContentSummary summary = fs.getContentSummary(path);
+    return summary.getLength();
+  }
+
+  @Override
+  public URI getRootUri() {
+    return fs.getUri();
+  }
+
   public Scanner getFileScanner(TableMeta meta, Schema schema, Path path)
       throws IOException {
-    FileSystem fs = path.getFileSystem(conf);
     FileStatus status = fs.getFileStatus(path);
     return getFileScanner(meta, schema, path, status);
   }
@@ -148,8 +166,9 @@ public class FileTablespace extends Tablespace {
     return fileSystem.exists(path);
   }
 
-  public Path getTablePath(String tableName) {
-    return new Path(tableBaseDir, tableName);
+  @Override
+  public URI getTableUri(String databaseName, String tableName) {
+    return StorageUtil.concatPath(basePath, databaseName, tableName).toUri();
   }
 
   private String partitionPath = "";
@@ -174,12 +193,12 @@ public class FileTablespace extends Tablespace {
   }
 
   public FileFragment[] split(String tableName) throws IOException {
-    Path tablePath = new Path(tableBaseDir, tableName);
+    Path tablePath = new Path(basePath, tableName);
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }
 
   public FileFragment[] split(String tableName, long fragmentSize) throws IOException {
-    Path tablePath = new Path(tableBaseDir, tableName);
+    Path tablePath = new Path(basePath, tableName);
     return split(tableName, tablePath, fragmentSize);
   }
 
@@ -656,7 +675,7 @@ public class FileTablespace extends Tablespace {
       String simpleTableName = splitted[1];
 
       // create a table directory (i.e., ${WAREHOUSE_DIR}/${DATABASE_NAME}/${TABLE_NAME} )
-      Path tablePath = StorageUtil.concatPath(tableBaseDir, databaseName, simpleTableName);
+      Path tablePath = StorageUtil.concatPath(basePath, databaseName, simpleTableName);
       tableDesc.setPath(tablePath.toUri());
     } else {
       Preconditions.checkState(tableDesc.getPath() != null, "ERROR: LOCATION must be given.");
@@ -833,17 +852,22 @@ public class FileTablespace extends Tablespace {
     }
   }
 
-  @Override
-  public StorageProperty getStorageProperty(String storeType) {
-    StorageProperty storageProperty = new StorageProperty();
-    storageProperty.setSortedInsert(false);
-    if (storeType.equalsIgnoreCase("RAW")) {
-      storageProperty.setSupportsInsertInto(false);
-    } else {
-      storageProperty.setSupportsInsertInto(true);
-    }
+  private static final StorageProperty FileStorageProperties = new StorageProperty(true, true, true, true);
+  private static final FormatProperty GeneralFileProperties = new FormatProperty(false);
+  private static final FormatProperty HFileProperties = new FormatProperty(true);
 
-    return storageProperty;
+  @Override
+  public StorageProperty getProperty() {
+    return FileStorageProperties;
+  }
+
+  @Override
+  public FormatProperty getFormatProperty(String format) {
+    if (format.equalsIgnoreCase("hbase")) {
+      return HFileProperties;
+    } else {
+      return GeneralFileProperties;
+    }
   }
 
   @Override
@@ -851,15 +875,15 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public void beforeInsertOrCATS(LogicalNode node) throws IOException {
+  public void prepareTable(LogicalNode node) throws IOException {
   }
 
   @Override
-  public void rollbackOutputCommit(LogicalNode node) throws IOException {
+  public void rollbackTable(LogicalNode node) throws IOException {
   }
 
   @Override
-  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException {
   }
 
   @Override
@@ -869,8 +893,8 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
-                               Schema schema, TableDesc tableDesc) throws IOException {
+  public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
+                          Schema schema, TableDesc tableDesc) throws IOException {
     return commitOutputData(queryContext, true);
   }
 
@@ -1239,9 +1263,5 @@ public class FileTablespace extends Tablespace {
     }
 
     return retValue;
-  }
-
-  public String toString() {
-    return name + "=" + uri.toString();
   }
 }

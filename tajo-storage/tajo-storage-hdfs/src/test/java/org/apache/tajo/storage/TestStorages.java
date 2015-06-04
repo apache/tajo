@@ -155,7 +155,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileTablespace sm = TableSpaceManager.getDefault();
+      FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -210,7 +210,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileTablespace sm = TableSpaceManager.getDefault();
+      FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -271,7 +271,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
     int tupleNum = 10000;
@@ -347,7 +347,7 @@ public class TestStorages {
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
@@ -425,7 +425,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
 
@@ -469,7 +469,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TableSpaceManager.getDefault().getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getByName("local").get().getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -513,7 +513,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -545,7 +545,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TableSpaceManager.getDefault().getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getByName("local").get().getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -583,7 +583,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -615,7 +615,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TableSpaceManager.getDefault().getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getByName("local").get().getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -653,7 +653,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -685,7 +685,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TableSpaceManager.getDefault().getScanner(meta, schema, fragment);
+    Scanner scanner =  TableSpaceManager.getByName("local").get().getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -727,7 +727,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -759,7 +759,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TableSpaceManager.getDefault().getScanner(meta, schema, fragment);
+    Scanner scanner = TableSpaceManager.getByName("local").get().getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -789,7 +789,7 @@ public class TestStorages {
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
-      FileTablespace sm = TableSpaceManager.getDefault();
+      FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.init();
 
@@ -805,7 +805,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = TableSpaceManager.getDefault().getScanner(meta, schema, fragment);
+      Scanner scanner = TableSpaceManager.getByName("local").get().getScanner(meta, schema, fragment);
       scanner.init();
 
       Tuple retrieved;
@@ -831,7 +831,7 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -873,7 +873,7 @@ public class TestStorages {
     long readBytes = 0;
     long readRows = 0;
     for (long offset : offsets) {
-      scanner = TableSpaceManager.getDefault().getScanner(meta, schema,
+      scanner = TableSpaceManager.getByName("local").get().getScanner(meta, schema,
 	        new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
       scanner.init();
 
@@ -921,7 +921,7 @@ public class TestStorages {
       conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
     }
 
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Path tablePath = new Path(testDir, "testMaxValue.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
 
@@ -977,7 +977,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 
@@ -1003,7 +1003,7 @@ public class TestStorages {
     inSchema.addColumn("col5", Type.INT8);
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TableSpaceManager.getDefault().getScanner(meta, inSchema, fragment);
+    Scanner scanner = TableSpaceManager.getByName("local").get().getScanner(meta, inSchema, fragment);
 
     Schema target = new Schema();
 
@@ -1041,7 +1041,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "test_storetype_oversize.data");
-    FileTablespace sm = TableSpaceManager.getDefault();
+    FileTablespace sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 

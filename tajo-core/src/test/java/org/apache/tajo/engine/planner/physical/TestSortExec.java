@@ -69,7 +69,7 @@ public class TestSortExec {
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = TableSpaceManager.getDefault();
+    sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);
@@ -81,7 +81,7 @@ public class TestSortExec {
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
-    Appender appender = ((FileTablespace) TableSpaceManager.getDefault())
+    Appender appender = ((FileTablespace) TableSpaceManager.getByName("local").get())
         .getAppender(employeeMeta, schema, tablePath);
     appender.init();
     Tuple tuple = new VTuple(schema.size());

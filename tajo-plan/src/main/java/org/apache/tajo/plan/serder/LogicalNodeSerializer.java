@@ -494,7 +494,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     createTableBuilder.setSchema(node.getTableSchema().getProto());
     createTableBuilder.setExternal(node.isExternal());
     if (node.isExternal() && node.hasPath()) {
-      createTableBuilder.setPath(node.getPath().toString());
+      createTableBuilder.setPath(node.getUri().toString());
     }
     createTableBuilder.setIfNotExists(node.isIfNotExists());
 
