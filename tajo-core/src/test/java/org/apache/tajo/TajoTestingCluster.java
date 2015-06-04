@@ -346,10 +346,9 @@ public class TajoTestingCluster {
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
     if (!local) {
-      c.setVar(ConfVars.ROOT_DIR,
-          getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
+      c.setVar(ConfVars.ROOT_DIR, getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
     } else {
-      c.setVar(ConfVars.ROOT_DIR, testBuildDir.getAbsolutePath() + "/tajo");
+      c.setVar(ConfVars.ROOT_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo");
     }
 
     FileTablespace defaultTableSpace =
@@ -523,6 +522,7 @@ public class TajoTestingCluster {
       LOG.info("Using passed path: " + clusterTestBuildDir);
     }
 
+    LocalFileSystem localFs = LocalFileSystem.getLocal(conf);
     startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, true);
   }
 

@@ -211,7 +211,12 @@ public class TajoMaster extends CompositeService {
       throw e;
     }
 
-    super.serviceInit(systemConf);
+    try {
+      super.serviceInit(systemConf);
+    } catch (Throwable t) {
+      t.printStackTrace();
+      System.exit(1);
+    }
     LOG.info("Tajo Master is initialized.");
   }
 

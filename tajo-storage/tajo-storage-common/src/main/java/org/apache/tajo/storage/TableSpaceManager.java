@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -51,29 +52,21 @@ public class TableSpaceManager {
   /** default tablespace name */
   public static final String DEFAULT_TABLESPACE_NAME = "default";
 
-  private static TajoConf systemConf;
-  private static JSONParser parser;
+  private static final TajoConf systemConf = new TajoConf();
+  private static final JSONParser parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
   private static JSONObject config;
 
 
   // The relation ship among name, URI, Tablespaces must be kept 1:1:1.
-  protected static final Map<String, URI> SPACES_URIS_MAP;
-  protected static final Map<URI, Tablespace> TABLE_SPACES;
+  protected final static Map<String, URI> SPACES_URIS_MAP = Maps.newConcurrentMap();
+  protected final static Map<URI, Tablespace> TABLE_SPACES = Maps.newConcurrentMap();
 
-  protected static final Map<Class<?>, Constructor<?>> CONSTRUCTORS;
-  protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS;
+  protected final static Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newConcurrentMap();
+  protected final static Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
+
   public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
 
   static {
-    systemConf = new TajoConf();
-
-    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
-
-    SPACES_URIS_MAP = Maps.newConcurrentMap();
-    TABLE_SPACES = Maps.newConcurrentMap();
-    CONSTRUCTORS = Maps.newConcurrentMap();
-    TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
-
     instance = new TableSpaceManager();
   }
     /**
@@ -81,18 +74,16 @@ public class TableSpaceManager {
    */
   private static final TableSpaceManager instance;
 
-
   TableSpaceManager(String json) {
-    systemConf = new TajoConf();
-
     loadJson(json);
     loadStorages(config);
+
+    loadSpaces(config);
+    addLocalFsTablespace();
   }
 
   private TableSpaceManager() {
-    systemConf = new TajoConf();
-
-    String json = null;
+    String json;
     try {
       json = FileUtil.readTextFileFromResource("storage-default.json");
     } catch (IOException e) {
@@ -101,6 +92,17 @@ public class TableSpaceManager {
     loadJson(json);
     loadStorages(config);
     loadSpaces(config);
+
+    addLocalFsTablespace();
+  }
+
+  private void addLocalFsTablespace() {
+    if (!(TABLE_SPACES.containsKey("file:/") ||
+        !TABLE_SPACES.containsKey("file://") ||
+        !TABLE_SPACES.containsKey("file:///"))) {
+      String tmpName = UUID.randomUUID().toString();
+      addTableSpace(tmpName, URI.create("file:/"));
+    }
   }
 
   /**
@@ -154,6 +156,7 @@ public class TableSpaceManager {
   }
 
   private static Tablespace newTableSpace(String spaceName, URI uri) {
+    Preconditions.checkNotNull(uri.getScheme(), "URI must include scheme, but it was " + uri);
     Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
 
     if (clazz == null) {
@@ -292,6 +295,12 @@ public class TableSpaceManager {
    */
   public static <T extends Tablespace> T getDefault() {
     return (T) getByName(DEFAULT_TABLESPACE_NAME).get();
+  }
+
+  private static final URI LOCAL_FS = URI.create("file:/");
+
+  public static <T extends Tablespace> T getLocalFs(String name) {
+    return (T) get(LOCAL_FS).get();
   }
 
   public static <T extends Tablespace> Optional<T> getByName(String name) {

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.tablespace;
+package org.apache.tajo.storage.hbase;
 
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;

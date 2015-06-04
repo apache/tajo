@@ -52,7 +52,6 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.tablespace.SortedInsertRewriter;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.Pair;

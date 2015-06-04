@@ -66,7 +66,7 @@ public class TestResultSet {
   public static void setup() throws Exception {
     util = TpchTestBase.getInstance().getTestingCluster();
     conf = util.getConfiguration();
-    sm = ((FileTablespace)TableSpaceManager.getByName("local").get());
+    sm = TableSpaceManager.getDefault();
 
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
