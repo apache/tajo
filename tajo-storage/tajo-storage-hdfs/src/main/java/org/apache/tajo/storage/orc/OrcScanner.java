@@ -85,6 +85,16 @@ public class OrcScanner extends FileScanner {
   private FileSystem fs;
   private FSDataInputStream fis;
 
+  private static class ColumnInfo {
+    TajoDataTypes.Type type;
+    int id;
+  }
+
+  /**
+   * Temporary array for caching column info
+   */
+  private ColumnInfo [] targetColInfo;
+
   @Override
   public void init() throws IOException {
     OrcReader orcReader;
@@ -113,16 +123,23 @@ public class OrcScanner extends FileScanner {
         Integer.parseInt(meta.getOption(StorageConstants.ORC_MAX_MERGE_DISTANCE,
           StorageConstants.DEFAULT_ORC_MAX_MERGE_DISTANCE)));
 
-    // creating vectors for buffering
-    vectors = new Vector[schema.size()];
-    for (int i=0; i<schema.size(); i++) {
-      vectors[i] = createOrcVector(schema.getColumn(i).getDataType().getType());
+    targetColInfo = new ColumnInfo[targets.length];
+    for (int i=0; i<targets.length; i++) {
+      ColumnInfo cinfo = new ColumnInfo();
+      cinfo.type = targets[i].getDataType().getType();
+      cinfo.id = schema.getColumnId(targets[i].getQualifiedName());
+      targetColInfo[i] = cinfo;
     }
 
-    // TODO: it can be projectable
+    // creating vectors for buffering
+    vectors = new Vector[targetColInfo.length];
+    for (int i=0; i<targetColInfo.length; i++) {
+      vectors[i] = createOrcVector(targetColInfo[i].type);
+    }
+
     Set<Integer> columnSet = new HashSet<Integer>();
-    for (int i=0; i<schema.size(); i++) {
-      columnSet.add(i);
+    for (ColumnInfo colInfo: targetColInfo) {
+      columnSet.add(colInfo.id);
     }
 
     orcReader = new OrcReader(orcDataSource, new OrcMetadataReader());
@@ -152,11 +169,10 @@ public class OrcScanner extends FileScanner {
       }
     }
 
-    int columnSize = schema.size();
-    Tuple tuple = new VTuple(columnSize);
+    Tuple tuple = new VTuple(schema.size());
 
-    for (int i=0; i<columnSize; i++) {
-      tuple.put(i, createValueDatum(vectors[i], schema.getColumn(i).getDataType().getType()));
+    for (int i=0; i<targetColInfo.length; i++) {
+      tuple.put(targetColInfo[i].id, createValueDatum(vectors[i], targetColInfo[i].type));
     }
 
     currentPosInBatch++;
@@ -212,10 +228,8 @@ public class OrcScanner extends FileScanner {
   private void getNextBatch() throws IOException {
     batchSize = recordReader.nextBatch();
 
-    int columnSize = schema.size();
-
-    for (int i=0; i<columnSize; i++) {
-      recordReader.readVector(i, vectors[i]);
+    for (int i=0; i<targetColInfo.length; i++) {
+      recordReader.readVector(targetColInfo[i].id, vectors[i]);
     }
 
     currentPosInBatch = 0;
@@ -239,7 +253,7 @@ public class OrcScanner extends FileScanner {
 
   @Override
   public boolean isProjectable() {
-    return false;
+    return true;
   }
 
   @Override
