@@ -491,6 +491,9 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = buildStoreTableNodeSpec(node);
 
     PlanProto.CreateTableNodeSpec.Builder createTableBuilder = PlanProto.CreateTableNodeSpec.newBuilder();
+    if (node.hasTableSpaceName()) {
+      createTableBuilder.setTablespaceName(node.getTableSpaceName());
+    }
     createTableBuilder.setExternal(node.isExternal());
     createTableBuilder.setIfNotExists(node.isIfNotExists());
 

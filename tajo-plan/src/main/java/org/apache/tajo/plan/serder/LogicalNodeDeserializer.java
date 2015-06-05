@@ -479,11 +479,14 @@ public class LogicalNodeDeserializer {
     }
 
     createTable.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
+
+    if (createTableNodeSpec.hasTablespaceName()) {
+     createTable.setTableSpaceName(createTableNodeSpec.getTablespaceName());
+    }
     createTable.setExternal(createTableNodeSpec.getExternal());
     if (createTableNodeSpec.getExternal() && storeTableNodeSpec.hasUri()) {
       createTable.setUri(URI.create(storeTableNodeSpec.getUri()));
     }
-
     createTable.setIfNotExists(createTableNodeSpec.getIfNotExists());
 
     return createTable;

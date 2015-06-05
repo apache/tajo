@@ -109,10 +109,8 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     CreateTableNode createTableNode = (CreateTableNode) super.clone();
-    createTableNode.tableName = tableName;
-    createTableNode.storageType = storageType;
+    createTableNode.tableSpaceName = tableSpaceName;
     createTableNode.external = external;
-    createTableNode.options = (KeyValueSet) (options != null ? options.clone() : null);
     createTableNode.ifNotExists = ifNotExists;
     return createTableNode;
   }
