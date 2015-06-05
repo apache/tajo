@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.TimestampDatum;
@@ -66,7 +67,7 @@ public class TestOrcScanner {
 
     Configuration conf = new TajoConf();
 
-    TableMeta meta = new TableMeta("ORC", new KeyValueSet());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORCFILE, new KeyValueSet());
 
     Fragment fragment = getFileFragment(conf, "u_data_20.orc");
 
