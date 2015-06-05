@@ -1175,7 +1175,7 @@ public class TestLogicalPlanner {
     assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertFalse(insertNode.isOverwrite());
-    assertTrue(insertNode.hasPath());
+    assertTrue(insertNode.hasUri());
   }
 
   @Test
@@ -1203,7 +1203,7 @@ public class TestLogicalPlanner {
     assertEquals(1, plan.getQueryBlocks().size());
     InsertNode insertNode = getInsertNode(plan);
     assertTrue(insertNode.isOverwrite());
-    assertTrue(insertNode.hasPath());
+    assertTrue(insertNode.hasUri());
   }
 
   @Test

@@ -334,7 +334,7 @@ public class QueryExecutor {
   private void insertNonFromQuery(QueryContext queryContext,
                                   InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder)
       throws Exception {
-    String nodeUniqName = insertNode.getTableName() == null ? new Path(insertNode.getPath()).getName() : insertNode.getTableName();
+    String nodeUniqName = insertNode.getTableName() == null ? new Path(insertNode.getUri()).getName() : insertNode.getTableName();
     String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
     FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
@@ -347,7 +347,7 @@ public class QueryExecutor {
       tableDesc = this.catalog.getTableDesc(insertNode.getTableName());
       finalOutputDir = new Path(tableDesc.getPath());
     } else {
-      finalOutputDir = new Path(insertNode.getPath());
+      finalOutputDir = new Path(insertNode.getUri());
     }
 
     TaskAttemptContext taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);

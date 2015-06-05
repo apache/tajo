@@ -38,7 +38,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.*;
 
 public class PlannerUtil {
@@ -932,7 +931,7 @@ public class PlannerUtil {
         }
       }
     } else {
-      if (insertNode.getPath() != null) {
+      if (insertNode.getUri() != null) {
         //insert ... location
         return createTableDesc(insertNode);
       }
@@ -967,7 +966,7 @@ public class PlannerUtil {
             insertNode.getTableName(),
             insertNode.getTableSchema(),
             meta,
-            insertNode.getPath() != null ? insertNode.getPath() : null);
+            insertNode.getUri() != null ? insertNode.getUri() : null);
 
     if (insertNode.hasPartition()) {
       tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());

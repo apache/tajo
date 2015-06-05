@@ -20,7 +20,6 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.PlanString;
@@ -29,14 +28,12 @@ import org.apache.tajo.util.TUtil;
 import java.net.URI;
 
 public class InsertNode extends StoreTableNode implements Cloneable {
+  /** Overwrite or just insert */
   @Expose private boolean overwrite;
-  @Expose private Schema tableSchema;
-
   /** a target schema of a target table */
   @Expose private Schema targetSchema;
   /** a output schema of select clause */
   @Expose private Schema projectedSchema;
-  @Expose private URI uri;
 
   public InsertNode(int pid) {
     super(pid, NodeType.INSERT);
@@ -60,10 +57,6 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     }
   }
 
-  public void setTargetLocation(URI uri) {
-    this.uri = uri;
-  }
-
   public void setSubQuery(LogicalNode subQuery) {
     this.setChild(subQuery);
     this.setInSchema(subQuery.getOutSchema());
@@ -76,14 +69,6 @@ public class InsertNode extends StoreTableNode implements Cloneable {
 
   public void setOverwrite(boolean overwrite) {
     this.overwrite = overwrite;
-  }
-
-  public Schema getTableSchema() {
-    return tableSchema;
-  }
-
-  public void setTableSchema(Schema tableSchema) {
-    this.tableSchema = tableSchema;
   }
 
   public boolean hasTargetSchema() {
@@ -110,22 +95,6 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     this.projectedSchema = projected;
   }
 
-  public boolean hasPath() {
-    return this.uri != null;
-  }
-
-  public void setUri(URI uri) {
-    this.uri = uri;
-  }
-  
-  public URI getPath() {
-    return this.uri;
-  }
-
-  public boolean hasStorageType() {
-    return this.storageType != null;
-  }
-  
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -144,9 +113,8 @@ public class InsertNode extends StoreTableNode implements Cloneable {
       InsertNode other = (InsertNode) obj;
       boolean eq = super.equals(other);
       eq &= this.overwrite == other.overwrite;
-      eq &= TUtil.checkEquals(this.tableSchema, other.tableSchema);
       eq &= TUtil.checkEquals(this.targetSchema, other.targetSchema);
-      eq &= TUtil.checkEquals(uri, other.uri);
+      eq &= TUtil.checkEquals(this.projectedSchema, other.projectedSchema);
       return eq;
     } else {
       return false;
@@ -159,6 +127,7 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     insertNode.overwrite = overwrite;
     insertNode.tableSchema = new Schema(tableSchema);
     insertNode.targetSchema = targetSchema != null ? new Schema(targetSchema) : null;
+    insertNode.projectedSchema = projectedSchema != null ? new Schema(projectedSchema) : null;
     insertNode.uri = uri != null ? uri : null;
     return insertNode;
   }
@@ -168,7 +137,7 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     if (hasTargetTable()) {
       sb.append(",table=").append(tableName);
     }
-    if (hasPath()) {
+    if (hasUri()) {
       sb.append(", location=").append(uri);
     }
     sb.append(")");

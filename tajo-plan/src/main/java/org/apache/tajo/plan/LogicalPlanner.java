@@ -1697,7 +1697,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     if (targetUri.getScheme() == null) {
       targetUri = URI.create(context.getQueryContext().get(QueryVars.DEFAULT_SPACE_ROOT_URI) + "/" + targetUri);
     }
-    insertNode.setTargetLocation(targetUri);
+    insertNode.setUri(targetUri);
 
     if (expr.hasStorageType()) {
       insertNode.setStorageType(expr.getStorageType());

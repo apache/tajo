@@ -202,7 +202,7 @@ public class DDLExecutor {
     }
 
     if(PlannerUtil.isFileStorageType(createTable.getStorageType()) && createTable.isExternal()){
-      Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
+      Preconditions.checkState(createTable.hasUri(), "ERROR: LOCATION must be given.");
     }
 
     return createTable(

@@ -478,11 +478,12 @@ public class LogicalNodeDeserializer {
       createTable.setPartitionMethod(new PartitionMethodDesc(storeTableNodeSpec.getPartitionMethod()));
     }
 
-    createTable.setTableSchema(convertSchema(createTableNodeSpec.getSchema()));
+    createTable.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
     createTable.setExternal(createTableNodeSpec.getExternal());
-    if (createTableNodeSpec.getExternal() && createTableNodeSpec.hasPath()) {
-      createTable.setUri(URI.create(createTableNodeSpec.getPath()));
+    if (createTableNodeSpec.getExternal() && storeTableNodeSpec.hasUri()) {
+      createTable.setUri(URI.create(storeTableNodeSpec.getUri()));
     }
+
     createTable.setIfNotExists(createTableNodeSpec.getIfNotExists());
 
     return createTable;
@@ -513,16 +514,14 @@ public class LogicalNodeDeserializer {
     }
 
     insertNode.setOverwrite(insertNodeSpec.getOverwrite());
-    insertNode.setTableSchema(convertSchema(insertNodeSpec.getTableSchema()));
+    insertNode.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
     if (insertNodeSpec.hasTargetSchema()) {
       insertNode.setTargetSchema(convertSchema(insertNodeSpec.getTargetSchema()));
     }
     if (insertNodeSpec.hasProjectedSchema()) {
       insertNode.setProjectedSchema(convertSchema(insertNodeSpec.getProjectedSchema()));
     }
-    if (insertNodeSpec.hasPath()) {
-      insertNode.setUri(URI.create(insertNodeSpec.getPath()));
-    }
+    insertNode.setUri(URI.create(storeTableNodeSpec.getUri()));
 
     return insertNode;
   }
