@@ -1188,6 +1188,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
       if (htable != null) {
         htable.close();
       }
+
+      // TODO - rollback should support its corresponding hbase table
+      HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
+      if (hAdmin.tableExists("hbase_table")) {
+        hAdmin.disableTable("hbase_table");
+        hAdmin.deleteTable("hbase_table");
+      }
     }
   }
 
@@ -1207,8 +1214,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      executeString("insert into hbase_mapped_table " +
-          "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem ").close();
+      executeString(
+          "insert into hbase_mapped_table " +
+          "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem"
+      ).close();
 
       htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 

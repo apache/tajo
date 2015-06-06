@@ -441,7 +441,15 @@ public class QueryExecutor {
 
     TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
     if (tableDesc != null) {
-      Tablespace space = TableSpaceManager.get(tableDesc.getPath()).get();
+
+      Tablespace space = null;
+      if (tableDesc.getMeta().getStoreType().equalsIgnoreCase("hbase")) {
+        space = TableSpaceManager.getAnyByScheme("hbase").get();
+      } else if (tableDesc.hasPath()) {
+        space = TableSpaceManager.get(tableDesc.getPath()).get();
+      } else {
+        space = TableSpaceManager.getDefault();
+      }
       StorageProperty storageProperty = space.getProperty();
 
       if (!storageProperty.isInsertable()) {
@@ -487,6 +495,7 @@ public class QueryExecutor {
       FormatProperty format = space.getFormatProperty(tableDesc.getMeta().getStoreType());
 
       if (format.sortedInsertRequired()) {
+        space = TableSpaceManager.getAnyByScheme(tableDesc.getMeta().getStoreType()).get();
         List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = space.getRewriteRules(context, tableDesc);
         if (storageSpecifiedRewriteRules != null) {
           for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {

@@ -911,6 +911,10 @@ public class PlannerUtil {
   }
 
   public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.ROOT) {
+      node = ((LogicalRootNode)node).getChild();
+    }
+
     if (node.getType() == NodeType.CREATE_TABLE) {
       return createTableDesc((CreateTableNode)node);
     }

@@ -53,8 +53,8 @@ public class TableSpaceManager {
   public static final String DEFAULT_TABLESPACE_NAME = "default";
 
   private static final TajoConf systemConf = new TajoConf();
-  private static final JSONParser parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
-  private static JSONObject config;
+  private static final JSONParser parser =
+      new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
 
 
   // The relation ship among name, URI, Tablespaces must be kept 1:1:1.
@@ -75,10 +75,9 @@ public class TableSpaceManager {
   private static final TableSpaceManager instance;
 
   TableSpaceManager(String json) {
-    loadJson(json);
-    loadStorages(config);
-
-    loadSpaces(config);
+    JSONObject rootObject = parseJson(json);
+    loadStorages(rootObject);
+    loadSpaces(rootObject);
     addLocalFsTablespace();
   }
 
@@ -89,9 +88,9 @@ public class TableSpaceManager {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    loadJson(json);
-    loadStorages(config);
-    loadSpaces(config);
+    JSONObject rootObject = parseJson(json);
+    loadStorages(rootObject);
+    loadSpaces(rootObject);
 
     addLocalFsTablespace();
   }
@@ -121,9 +120,9 @@ public class TableSpaceManager {
     }
   }
 
-  private void loadJson(String json) {
+  private static JSONObject parseJson(String json) {
     try {
-      config = (JSONObject) parser.parse(json);
+      return (JSONObject) parser.parse(json);
     } catch (ParseException e) {
       throw new RuntimeException(e);
     }
@@ -256,8 +255,8 @@ public class TableSpaceManager {
     return Optional.fromNullable(existing);
   }
 
-  private void loadFormats(String json) {
-    JSONObject spaces = (JSONObject) config.get("formats");
+  private void loadFormats(JSONObject root) {
+    JSONObject spaces = (JSONObject) root.get("formats");
     for (Map.Entry<String, Object> entry : spaces.entrySet()) {
 
     }
@@ -285,7 +284,7 @@ public class TableSpaceManager {
   }
 
   public static <T extends Tablespace> Optional<T> get(URI uri) {
-    return get(uri.toString());
+    return (Optional<T>) get(uri.toString());
   }
 
   /**
@@ -303,12 +302,23 @@ public class TableSpaceManager {
     return (T) get(LOCAL_FS).get();
   }
 
-  public static <T extends Tablespace> Optional<T> getByName(String name) {
+  public static Optional<? extends Tablespace> getByName(String name) {
     URI uri = SPACES_URIS_MAP.get(name);
     if (uri != null) {
-      return (Optional<T>) Optional.of(TABLE_SPACES.get(uri));
+      return Optional.of(TABLE_SPACES.get(uri));
     } else {
       return Optional.absent();
     }
+  }
+
+  public static Optional<? extends Tablespace> getAnyByScheme(String scheme) {
+    for (Map.Entry<URI, Tablespace> entry : TABLE_SPACES.entrySet()) {
+      String uriScheme = entry.getKey().getScheme();
+      if (uriScheme != null && uriScheme.equalsIgnoreCase(scheme)) {
+        return Optional.of(entry.getValue());
+      }
+    }
+
+    return Optional.absent();
   }
 }

@@ -324,7 +324,6 @@ public class QueryMasterTask extends CompositeService {
       space = queryContext.hasOutputPath() ?
           TableSpaceManager.get(queryContext.getOutputPath()).get() : TableSpaceManager.getDefault();
 
-
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
       TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
       if (tableDesc != null) {
@@ -335,6 +334,9 @@ public class QueryMasterTask extends CompositeService {
             if (tableDesc == null) {
               throw new VerifyException("Can't get table meta data from catalog: " + tableName);
             }
+
+            space = TableSpaceManager.getAnyByScheme(tableDesc.getMeta().getStoreType()).get();
+
             List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = space.getRewriteRules(
                 getQueryTaskContext().getQueryContext(), tableDesc);
             if (storageSpecifiedRewriteRules != null) {

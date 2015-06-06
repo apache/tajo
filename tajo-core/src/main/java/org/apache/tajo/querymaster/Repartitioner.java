@@ -645,7 +645,7 @@ public class Repartitioner {
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
 
-      Tablespace space = TableSpaceManager.get(tableDesc.getPath()).get();
+      Tablespace space = TableSpaceManager.getAnyByScheme(storeType).get();
       ranges = space.getInsertSortRanges(
           stage.getContext().getQueryContext(),
           tableDesc,

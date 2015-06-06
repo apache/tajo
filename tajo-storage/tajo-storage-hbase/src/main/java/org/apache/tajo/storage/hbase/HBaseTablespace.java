@@ -960,7 +960,7 @@ public class HBaseTablespace extends Tablespace {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
-    Preconditions.checkArgument(tableDesc.getName() != null && tableDesc.hasPath());
+    //Preconditions.checkArgument(tableDesc.getName() != null && !tableDesc.hasPath());
 
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);

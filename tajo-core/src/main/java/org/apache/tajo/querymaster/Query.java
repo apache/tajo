@@ -469,8 +469,13 @@ public class Query implements EventHandler<QueryEvent> {
 
         // If there is not tabledesc, it is a select query without insert or ctas.
         // In this case, we should use default tablespace.
-        Tablespace space = queryContext.hasOutputPath() ?
-            TableSpaceManager.get(queryContext.getOutputPath()).get() : TableSpaceManager.getDefault();
+        Tablespace space;
+        if (tableDesc != null && tableDesc.getMeta().getStoreType().equalsIgnoreCase("hbase")) {
+          space = TableSpaceManager.getAnyByScheme("hbase").get();
+        } else {
+          space = queryContext.hasOutputPath() ?
+              TableSpaceManager.get(queryContext.getOutputPath()).get() : TableSpaceManager.getDefault();
+        }
 
         Path finalOutputDir = space.commitTable(
             query.context.getQueryContext(),
