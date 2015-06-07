@@ -351,11 +351,14 @@ public class TajoTestingCluster {
       c.setVar(ConfVars.ROOT_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo");
     }
 
-    FileTablespace defaultTableSpace =
-        new FileTablespace(TableSpaceManager.DEFAULT_TABLESPACE_NAME, TajoConf.getWarehouseDir(c).toUri());
-    defaultTableSpace.init(conf);
+    // Do not need for local file system
+    if (!local) {
+      FileTablespace defaultTableSpace =
+          new FileTablespace(TableSpaceManager.DEFAULT_TABLESPACE_NAME, TajoConf.getWarehouseDir(c).toUri());
+      defaultTableSpace.init(conf);
 
-    TableSpaceManager.addTableSpaceForTest(defaultTableSpace);
+      TableSpaceManager.addTableSpaceForTest(defaultTableSpace);
+    }
 
     setupCatalogForTesting(c, testBuildDir);
 
@@ -522,7 +525,6 @@ public class TajoTestingCluster {
       LOG.info("Using passed path: " + clusterTestBuildDir);
     }
 
-    LocalFileSystem localFs = LocalFileSystem.getLocal(conf);
     startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, true);
   }
 
