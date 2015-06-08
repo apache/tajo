@@ -19,6 +19,7 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
+import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.tajo.*;
@@ -33,16 +34,25 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.session.Session;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.history.HistoryReader;
+import org.apache.tajo.util.history.HistoryWriter;
+import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.worker.ExecutionBlockContext;
-import org.apache.tajo.worker.Task;
+import org.apache.tajo.worker.LegacyTaskImpl;
+import org.apache.tajo.worker.TajoWorker;
+import org.apache.tajo.worker.TaskRunnerManager;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -230,7 +240,7 @@ public class TestKillQuery {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId eid = QueryIdFactory.newExecutionBlockId(qid, 1);
     TaskId tid = QueryIdFactory.newTaskId(eid);
-    TajoConf conf = new TajoConf();
+    final TajoConf conf = new TajoConf();
     TaskRequestImpl taskRequest = new TaskRequestImpl();
 
     taskRequest.set(null, new ArrayList<CatalogProtos.FragmentProto>(),
@@ -238,18 +248,37 @@ public class TestKillQuery {
     taskRequest.setInterQuery();
     TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
 
-    ExecutionBlockContext context =
-        new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null, null);
+    WorkerConnectionInfo queryMaster = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+    TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
+        requestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
 
-    org.apache.tajo.worker.Task task = new Task("test", CommonTestingUtil.getTestDir(), attemptId,
+    requestProto.setExecutionBlockId(eid.getProto())
+        .setQueryMaster(queryMaster.getProto())
+        .setNodeId(queryMaster.getHost()+":" + queryMaster.getQueryMasterPort())
+        .setContainerId("test")
+        .setQueryContext(new QueryContext(conf).getProto())
+        .setPlanJson("test")
+        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
+
+    TajoWorker.WorkerContext workerContext = new MockWorkerContext() {
+      @Override
+      public TajoConf getConf() {
+        return conf;
+      }
+    };
+
+    ExecutionBlockContext context =
+        new ExecutionBlockContext(workerContext, null, requestProto.build());
+
+    org.apache.tajo.worker.Task task = new LegacyTaskImpl("test", CommonTestingUtil.getTestDir(), attemptId,
         conf, context, taskRequest);
     task.kill();
-    assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+    assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     try {
       task.run();
-      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     } catch (Exception e) {
-      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     }
   }
 
@@ -269,6 +298,96 @@ public class TestKillQuery {
         latch.countDown();
       }
       super.dispatch(event);
+    }
+  }
+
+  abstract class MockWorkerContext implements TajoWorker.WorkerContext {
+
+    @Override
+    public QueryMaster getQueryMaster() {
+      return null;
+    }
+
+    public abstract TajoConf getConf();
+
+    @Override
+    public ServiceTracker getServiceTracker() {
+      return null;
+    }
+
+    @Override
+    public QueryMasterManagerService getQueryMasterManagerService() {
+      return null;
+    }
+
+    @Override
+    public TaskRunnerManager getTaskRunnerManager() {
+      return null;
+    }
+
+    @Override
+    public CatalogService getCatalog() {
+      return null;
+    }
+
+    @Override
+    public WorkerConnectionInfo getConnectionInfo() {
+      return null;
+    }
+
+    @Override
+    public String getWorkerName() {
+      return null;
+    }
+
+    @Override
+    public LocalDirAllocator getLocalDirAllocator() {
+      return null;
+    }
+
+    @Override
+    public QueryCoordinatorProtocol.ClusterResourceSummary getClusterResource() {
+      return null;
+    }
+
+    @Override
+    public TajoSystemMetrics getWorkerSystemMetrics() {
+      return null;
+    }
+
+    @Override
+    public HashShuffleAppenderManager getHashShuffleAppenderManager() {
+      return null;
+    }
+
+    @Override
+    public HistoryWriter getTaskHistoryWriter() {
+      return null;
+    }
+
+    @Override
+    public HistoryReader getHistoryReader() {
+      return null;
+    }
+
+    @Override
+    public void cleanup(String strPath) {
+
+    }
+
+    @Override
+    public void cleanupTemporalDirectories() {
+
+    }
+
+    @Override
+    public void setClusterResource(QueryCoordinatorProtocol.ClusterResourceSummary clusterResource) {
+
+    }
+
+    @Override
+    public void setNumClusterNodes(int numClusterNodes) {
+
     }
   }
 }
