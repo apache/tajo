@@ -333,6 +333,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1615: Implement TaskManager. (jinho)
+
     TAJO-1599: Implement NodeResourceManager and Status updater. (jinho)
 
     TAJO-1613: Rename StorageManager to Tablespace. (hyunsik)

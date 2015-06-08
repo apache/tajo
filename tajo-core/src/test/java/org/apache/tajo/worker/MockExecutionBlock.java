@@ -16,14 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker.event;
+package org.apache.tajo.worker;
 
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
-@Deprecated
-public class TaskRunnerStopEvent extends TaskRunnerEvent {
+import java.io.IOException;
 
-  public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {
-    super(EventType.STOP, executionBlockId);
+public class MockExecutionBlock extends ExecutionBlockContext {
+
+  public MockExecutionBlock(TajoWorker.WorkerContext workerContext,
+                            TajoWorkerProtocol.RunExecutionBlockRequestProto request) throws IOException {
+    super(workerContext, null, request);
+  }
+
+  @Override
+  public void init() throws Throwable {
+    //skip
+  }
+
+  @Override
+  public void fatalError(TaskAttemptId taskAttemptId, String message) {
+
   }
 }

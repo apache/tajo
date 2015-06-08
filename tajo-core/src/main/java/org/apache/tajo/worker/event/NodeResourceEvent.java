@@ -18,12 +18,18 @@
 
 package org.apache.tajo.worker.event;
 
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.hadoop.yarn.event.AbstractEvent;
 
-@Deprecated
-public class TaskRunnerStopEvent extends TaskRunnerEvent {
+public class NodeResourceEvent extends AbstractEvent<NodeResourceEvent.EventType> {
+  //consumer: NodeResourceManager
+  public enum EventType {
+    // producer: TajoWorkerManagerService
+    ALLOCATE,
+    // producer: TaskExecutor
+    DEALLOCATE
+  }
 
-  public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {
-    super(EventType.STOP, executionBlockId);
+  public NodeResourceEvent(EventType eventType) {
+    super(eventType);
   }
 }
