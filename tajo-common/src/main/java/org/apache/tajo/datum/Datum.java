@@ -26,6 +26,7 @@ import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -102,12 +103,17 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     throw new InvalidCastException(type, Type.TEXT);
   }
 
+  // todo remove this
   public char [] asUnicodeChars() {
     throw new InvalidCastException(type, Type.TEXT);
   }
 
   public byte[] asTextBytes() {
     return asChars().getBytes();
+  }
+
+  public TimeMeta asTimeMeta() {
+    throw new InvalidCastException(type, Type.INT8);
   }
 
   public boolean isNumeric() {
@@ -133,6 +139,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
 
   public abstract int size();
 
+  // belows should be extracted out of datum
   public Datum and(Datum datum) {
     throw new InvalidOperationException(datum.type);
   }

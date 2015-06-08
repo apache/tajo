@@ -55,18 +55,12 @@ public class Mod extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum value1Datum = params.get(0);
-    if(value1Datum instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    Datum value2Datum = params.get(1);
-    if(value2Datum instanceof NullDatum) {
-      return NullDatum.get();
-    }
-
-    long value1 = value1Datum.asInt8();
-    long value2 = value2Datum.asInt8();
+    long value1 = params.getInt8(0);
+    long value2 = params.getInt8(1);
 
     if (value2 == 0) {
       return NullDatum.get();

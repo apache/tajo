@@ -77,8 +77,7 @@ public class TestJsonSerDe {
     assertNull(scanner.next());
     scanner.close();
 
-    Tuple baseTuple = new VTuple(11);
-    baseTuple.put(new Datum[] {
+    Tuple baseTuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),                  // 0
         DatumFactory.createChar("hyunsik"),             // 1
         DatumFactory.createInt2((short) 17),            // 2

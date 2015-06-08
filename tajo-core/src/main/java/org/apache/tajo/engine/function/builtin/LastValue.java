@@ -40,9 +40,8 @@ public abstract class LastValue extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     LastValueContext lastValueCtx = (LastValueContext) ctx;
-    Datum datum = params.get(0);
-    if ( datum.isNotNull() ) {
-      lastValueCtx.last = datum;
+    if (!params.isBlankOrNull(0)) {
+      lastValueCtx.last = params.asDatum(0);
     }
   }
 

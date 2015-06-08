@@ -231,12 +231,12 @@ public class IntervalDatum extends Datum {
         return new IntervalDatum(months + other.months, milliseconds + other.milliseconds);
       case DATE: {
         DateDatum dateDatum = (DateDatum) datum;
-        TimeMeta tm = dateDatum.toTimeMeta();
+        TimeMeta tm = dateDatum.asTimeMeta();
         tm.plusInterval(months, milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {
-        TimeMeta tm = ((TimeDatum) datum).toTimeMeta();
+        TimeMeta tm = datum.asTimeMeta();
         tm.plusInterval(months, milliseconds);
         return new TimeDatum(DateTimeUtil.toTime(tm));
       }
@@ -303,7 +303,7 @@ public class IntervalDatum extends Datum {
 
   private IntervalDatum createIntervalDatum(double monthValue, double millisValue) {
     int month = (int)(monthValue);
-    return new IntervalDatum(month, Math.round((monthValue - (double)month) * (double)MONTH_MILLIS + (double)millisValue));
+    return new IntervalDatum(month, Math.round((monthValue - (double)month) * (double)MONTH_MILLIS + millisValue));
   }
 
   @Override

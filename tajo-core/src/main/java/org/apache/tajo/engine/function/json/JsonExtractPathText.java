@@ -67,19 +67,16 @@ public class JsonExtractPathText extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum json = params.get(0);
-    Datum xPath = params.get(1);
-
-    if (json instanceof NullDatum || xPath instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
     // default is JsonSmartMappingProvider
     try {
 
-      JSONObject object = (JSONObject) parser.parse(json.asTextBytes());
+      JSONObject object = (JSONObject) parser.parse(params.getBytes(0));
       if (jsonPath == null) {
-        jsonPath = JsonPath.compile(xPath.asChars());
+        jsonPath = JsonPath.compile(params.getText(1));
       }
       return DatumFactory.createText(jsonPath.read(object).toString());
     } catch (Exception e) {

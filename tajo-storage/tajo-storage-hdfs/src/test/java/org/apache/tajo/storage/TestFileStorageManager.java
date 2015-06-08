@@ -69,10 +69,9 @@ public class TestFileStorageManager {
 
 		TableMeta meta = CatalogUtil.newTableMeta("CSV");
 		
-		Tuple[] tuples = new Tuple[4];
+		VTuple[] tuples = new VTuple[4];
 		for(int i=0; i < tuples.length; i++) {
-		  tuples[i] = new VTuple(3);
-		  tuples[i].put(new Datum[] {
+		  tuples[i] = new VTuple(new Datum[] {
           DatumFactory.createInt4(i),
 		      DatumFactory.createInt4(i + 32),
 		      DatumFactory.createText("name" + i)});

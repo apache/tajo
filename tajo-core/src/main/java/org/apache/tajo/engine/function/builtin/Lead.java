@@ -45,19 +45,19 @@ public abstract class Lead extends AggFunction<Datum> {
       if (params.size() == 1) {
         leadCtx.leadNum = 1;
       } else {
-        leadCtx.leadNum = params.get(1).asInt4();
+        leadCtx.leadNum = params.getInt4(1);
       }
     }
 
     if (leadCtx.leadNum > 0) {
       leadCtx.leadNum --;
     } else {
-      leadCtx.leadBuffer.add(params.get(0));
+      leadCtx.leadBuffer.add(params.asDatum(0));
     }
 
     if (leadCtx.defaultDatum == null) {
       if (params.size() == 3) {
-        leadCtx.defaultDatum = params.get(2);
+        leadCtx.defaultDatum = params.asDatum(2);
       } else {
         leadCtx.defaultDatum = NullDatum.get();
       }

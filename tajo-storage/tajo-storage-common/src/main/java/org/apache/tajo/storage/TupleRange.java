@@ -22,8 +22,6 @@ import com.google.common.base.Objects;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 
-import java.util.Comparator;
-
 /**
  * It represents a pair of start and end tuples.
  */

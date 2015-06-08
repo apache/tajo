@@ -297,7 +297,8 @@ public class TaskAttemptContext {
   public Path getWorkDir() {
     return this.workDir;
   }
-  
+
+  //TODO change to getTaskAttemptId()
   public TaskAttemptId getTaskId() {
     return this.taskId;
   }

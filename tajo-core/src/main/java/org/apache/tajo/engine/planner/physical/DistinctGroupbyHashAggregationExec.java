@@ -236,10 +236,10 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
               // set group key tuple
               // Because each hashAggregator has different number of tuples,
               // sometimes getting group key from each hashAggregator will be null value.
-              mergedTuple.put(mergeTupleIndex, distinctGroupingKey.get(mergeTupleIndex));
+              mergedTuple.put(mergeTupleIndex, distinctGroupingKey.asDatum(mergeTupleIndex));
             } else {
               if (tuples[i] != null) {
-                mergedTuple.put(mergeTupleIndex, tuples[i].get(j));
+                mergedTuple.put(mergeTupleIndex, tuples[i].asDatum(j));
               } else {
                 mergedTuple.put(mergeTupleIndex, NullDatum.get());
               }
@@ -388,12 +388,12 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     public void compute(Tuple tuple) throws IOException {
       Tuple outerKeyTuple = new VTuple(distinctGroupingKeyIds.length);
       for (int i = 0; i < distinctGroupingKeyIds.length; i++) {
-        outerKeyTuple.put(i, tuple.get(distinctGroupingKeyIds[i]));
+        outerKeyTuple.put(i, tuple.asDatum(distinctGroupingKeyIds[i]));
       }
 
       Tuple keyTuple = new VTuple(groupingKeyIds.length);
       for (int i = 0; i < groupingKeyIds.length; i++) {
-        keyTuple.put(i, tuple.get(groupingKeyIds[i]));
+        keyTuple.put(i, tuple.asDatum(groupingKeyIds[i]));
       }
 
       Map<Tuple, FunctionContext[]> distinctEntry = hashTable.get(outerKeyTuple);
@@ -428,7 +428,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
         Tuple groupbyKey = entry.getKey();
         int index = 0;
         for (; index < groupbyKey.size(); index++) {
-          tuple.put(index, groupbyKey.get(index));
+          tuple.put(index, groupbyKey.asDatum(index));
         }
 
         FunctionContext[] contexts = entry.getValue();

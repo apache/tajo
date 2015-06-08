@@ -61,12 +61,10 @@ public class Repeat extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
+    }
 
-    Datum countDatum = params.get(1);
-    if(countDatum instanceof NullDatum) return NullDatum.get();
-
-    return DatumFactory.createText(repeat(datum.asChars(), countDatum.asInt4()));
+    return DatumFactory.createText(repeat(params.getText(0), params.getInt4(1)));
   }
 }

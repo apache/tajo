@@ -52,14 +52,15 @@ public class Md5 extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
     try {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        return DatumFactory.createText(new String(Hex.encodeHex(md.digest(datum.asByteArray()))));
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      return DatumFactory.createText(new String(Hex.encodeHex(md.digest(params.getBytes(0)))));
     } catch (NoSuchAlgorithmException e){
-        return NullDatum.get();
+      return NullDatum.get();
     }
   }
 }

@@ -100,7 +100,7 @@ public class TestTupleSorter {
         Tuple tuple = Iterators.get(iterator, LENGTH / result1.length - 1);
         StringBuilder builder = new StringBuilder();
         for (int keyIndex : keyIndices) {
-          builder.append(tuple.get(keyIndex).asChars());
+          builder.append(tuple.getText(keyIndex));
         }
         result1[i] = builder.toString();
       }
@@ -117,7 +117,7 @@ public class TestTupleSorter {
         Tuple tuple = Iterators.get(iterator, LENGTH / result2.length - 1);
         StringBuilder builder = new StringBuilder();
         for (int keyIndex : keyIndices) {
-          builder.append(tuple.get(keyIndex).asChars());
+          builder.append(tuple.getText(keyIndex));
         }
         result2[i] = builder.toString();
       }

@@ -18,62 +18,71 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 public interface Tuple extends Cloneable {
-  
-	int size();
-	
-	boolean contains(int fieldid);
 
-  boolean isNull(int fieldid);
+  int size();
 
-  @SuppressWarnings("unused")
-  boolean isNotNull(int fieldid);
-	
-	void clear();
-	
-	void put(int fieldId, Datum value);
+  boolean contains(int fieldid);
 
-  void put(int fieldId, Datum[] values);
+  boolean isBlank(int fieldid);
+
+  boolean isBlankOrNull(int fieldid);
 
   void put(int fieldId, Tuple tuple);
-	
-	void put(Datum[] values);
-	
 
-	Datum get(int fieldId);
-	void setOffset(long offset);
-	
-	long getOffset();
+  void put(int fieldId, Datum value);
 
-	boolean getBool(int fieldId);
+  void put(Datum[] values);
 
-	byte getByte(int fieldId);
+  void clear();
+
+  Datum asDatum(int fieldId);
+
+  TajoDataTypes.Type type(int fieldId);
+
+  int size(int fieldId);
+
+  void setOffset(long offset);
+
+  long getOffset();
+
+  boolean getBool(int fieldId);
+
+  byte getByte(int fieldId);
 
   char getChar(int fieldId);
-	
-	byte [] getBytes(int fieldId);
-	
-	short getInt2(int fieldId);
-	
-	int getInt4(int fieldId);
-	
-	long getInt8(int fieldId);
-	
-	float getFloat4(int fieldId);
-	
-	double getFloat8(int fieldId);
-	
-	String getText(int fieldId);
+
+  byte[] getBytes(int fieldId);
+
+  byte[] getTextBytes(int fieldId);
+
+  short getInt2(int fieldId);
+
+  int getInt4(int fieldId);
+
+  long getInt8(int fieldId);
+
+  float getFloat4(int fieldId);
+
+  double getFloat8(int fieldId);
+
+  String getText(int fieldId);
+
+  TimeMeta getTimeDate(int fieldId);
 
   Datum getProtobufDatum(int fieldId);
 
   Datum getInterval(int fieldId);
 
+  // todo remove this
   char [] getUnicodeChars(int fieldId);
 
   Tuple clone() throws CloneNotSupportedException;
 
+  // todo remove this
   Datum[] getValues();
 }

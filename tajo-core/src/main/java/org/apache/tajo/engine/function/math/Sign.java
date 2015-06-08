@@ -54,11 +54,10 @@ public class Sign extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createFloat8(Math.signum(valueDatum.asFloat8()));
+    return DatumFactory.createFloat8(Math.signum(params.getFloat8(0)));
   }
 }
