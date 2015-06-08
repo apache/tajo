@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Objects;
+import org.apache.tajo.conf.TajoConf;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -266,5 +267,14 @@ public class TUtil {
     final StackTraceElement[] ste = Thread.currentThread().getStackTrace();
     StackTraceElement element = ste[2 + depth];
     return element.getClassName() + ":" + element.getMethodName() + "(" + element.getLineNumber() +")";
+  }
+
+  public static <T> T checkTypeAndGet(Object instance, Class<T> type) {
+    if (!type.isInstance(instance)) {
+      throw new IllegalArgumentException(instance.getClass().getSimpleName()
+          + " must be a " + type.getSimpleName() + " type");
+
+    }
+    return (T) instance;
   }
 }

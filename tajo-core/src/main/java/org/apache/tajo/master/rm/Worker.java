@@ -18,13 +18,19 @@
 
 package org.apache.tajo.master.rm;
 
+import io.netty.util.internal.PlatformDependent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.resource.NodeResources;
+import org.apache.tajo.util.TUtil;
 
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -34,17 +40,34 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   /** class logger */
   private static final Log LOG = LogFactory.getLog(Worker.class);
 
-  private final ReentrantReadWriteLock.ReadLock readLock;
-  private final ReentrantReadWriteLock.WriteLock writeLock;
-
-  /** context of {@link org.apache.tajo.master.rm.TajoWorkerResourceManager} */
+  /** context of {@link TajoResourceManager} */
   private final TajoRMContext rmContext;
 
   /** last heartbeat time */
-  private long lastHeartbeatTime;
+  private volatile long lastHeartbeatTime;
+
+  private volatile int numRunningTasks;
+
+  private volatile int numRunningQueryMaster;
+
+  private static AtomicLongFieldUpdater HEARTBEAT_TIME_UPDATER;
+  private static AtomicIntegerFieldUpdater RUNNING_TASK_UPDATER;
+  private static AtomicIntegerFieldUpdater RUNNING_QM_UPDATER;
+
+  static {
+    HEARTBEAT_TIME_UPDATER = PlatformDependent.newAtomicLongFieldUpdater(Worker.class, "lastHeartbeatTime");
+    if (HEARTBEAT_TIME_UPDATER == null) {
+      HEARTBEAT_TIME_UPDATER = AtomicLongFieldUpdater.newUpdater(NodeResource.class, "lastHeartbeatTime");
+      RUNNING_TASK_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "numRunningTasks");
+      RUNNING_QM_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "numRunningQueryMaster");
+    } else {
+      RUNNING_TASK_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "numRunningTasks");
+      RUNNING_QM_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "numRunningQueryMaster");
+    }
+  }
 
   /** Resource capability */
-  private final WorkerResource resource;
+  private final NodeResource resource;
 
   /** Worker connection information */
   private WorkerConnectionInfo connectionInfo;
@@ -91,16 +114,12 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   private final StateMachine<WorkerState, WorkerEventType, WorkerEvent> stateMachine =
       stateMachineFactory.make(this, WorkerState.NEW);
 
-  public Worker(TajoRMContext rmContext, WorkerResource resource, WorkerConnectionInfo connectionInfo) {
+  public Worker(TajoRMContext rmContext, NodeResource resource, WorkerConnectionInfo connectionInfo) {
     this.rmContext = rmContext;
 
     this.connectionInfo = connectionInfo;
     this.lastHeartbeatTime = System.currentTimeMillis();
     this.resource = resource;
-
-    ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    this.readLock = lock.readLock();
-    this.writeLock = lock.writeLock();
   }
 
   public int getWorkerId() {
@@ -112,23 +131,19 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   }
 
   public void setLastHeartbeatTime(long lastheartbeatReportTime) {
-    this.writeLock.lock();
+    HEARTBEAT_TIME_UPDATER.lazySet(this, lastheartbeatReportTime);
+  }
 
-    try {
-      this.lastHeartbeatTime = lastheartbeatReportTime;
-    } finally {
-      this.writeLock.unlock();
-    }
+  public void setNumRunningQueryMaster(int numRunningQueryMaster) {
+    RUNNING_QM_UPDATER.lazySet(this, numRunningQueryMaster);
+  }
+
+  public void setNumRunningTasks(int numRunningTasks) {
+    RUNNING_TASK_UPDATER.lazySet(this, numRunningTasks);
   }
 
   public long getLastHeartbeatTime() {
-    this.readLock.lock();
-
-    try {
-      return this.lastHeartbeatTime;
-    } finally {
-      this.readLock.unlock();
-    }
+    return this.lastHeartbeatTime;
   }
 
   /**
@@ -136,20 +151,14 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
    * @return the current state of worker
    */
   public WorkerState getState() {
-    this.readLock.lock();
-
-    try {
-      return this.stateMachine.getCurrentState();
-    } finally {
-      this.readLock.unlock();
-    }
+    return this.stateMachine.getCurrentState();
   }
 
   /**
    *
    * @return the current resource capability of worker
    */
-  public WorkerResource getResource() {
+  public NodeResource getResource() {
     return this.resource;
   }
 
@@ -171,19 +180,17 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     if (lastHeartbeatTime != worker.lastHeartbeatTime) return false;
     if (connectionInfo != null ? !connectionInfo.equals(worker.connectionInfo) : worker.connectionInfo != null)
       return false;
-    if (readLock != null ? !readLock.equals(worker.readLock) : worker.readLock != null) return false;
+
     if (resource != null ? !resource.equals(worker.resource) : worker.resource != null) return false;
     if (rmContext != null ? !rmContext.equals(worker.rmContext) : worker.rmContext != null) return false;
     if (stateMachine != null ? !stateMachine.equals(worker.stateMachine) : worker.stateMachine != null) return false;
-    if (writeLock != null ? !writeLock.equals(worker.writeLock) : worker.writeLock != null) return false;
 
     return true;
   }
 
   @Override
   public int hashCode() {
-    int result = readLock != null ? readLock.hashCode() : 0;
-    result = 31 * result + (writeLock != null ? writeLock.hashCode() : 0);
+    int result = 0;
     result = 31 * result + (rmContext != null ? rmContext.hashCode() : 0);
     result = 31 * result + (int) (lastHeartbeatTime ^ (lastHeartbeatTime >>> 32));
     result = 31 * result + (resource != null ? resource.hashCode() : 0);
@@ -206,10 +213,8 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
 
     @Override
     public WorkerState transition(Worker worker, WorkerEvent event) {
-      if (!(event instanceof WorkerStatusEvent)) {
-        throw new IllegalArgumentException("event should be a WorkerStatusEvent type.");
-      }
-      WorkerStatusEvent statusEvent = (WorkerStatusEvent) event;
+
+      WorkerStatusEvent statusEvent = TUtil.checkTypeAndGet(event, WorkerStatusEvent.class);
       worker.updateStatus(statusEvent);
 
       return WorkerState.RUNNING;
@@ -217,17 +222,10 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   }
 
   private void updateStatus(WorkerStatusEvent statusEvent) {
-    this.writeLock.lock();
-
-    try {
-      lastHeartbeatTime = System.currentTimeMillis();
-      resource.setNumRunningTasks(statusEvent.getRunningTaskNum());
-      resource.setMaxHeap(statusEvent.maxHeap());
-      resource.setFreeHeap(statusEvent.getFreeHeap());
-      resource.setTotalHeap(statusEvent.getTotalHeap());
-    } finally {
-      this.writeLock.unlock();
-    }
+    setLastHeartbeatTime(System.currentTimeMillis());
+    setNumRunningTasks(statusEvent.getRunningTaskNum());
+    setNumRunningQueryMaster(statusEvent.getRunningQMNum());
+    NodeResources.update(resource, statusEvent.getResource());
   }
 
   public static class DeactivateNodeTransition implements SingleArcTransition<Worker, WorkerEvent> {
@@ -265,26 +263,19 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   @Override
   public void handle(WorkerEvent event) {
     LOG.debug("Processing " + event.getWorkerId() + " of type " + event.getType());
+    WorkerState oldState = getState();
     try {
-      writeLock.lock();
-      WorkerState oldState = getState();
-      try {
-        stateMachine.doTransition(event.getType(), event);
-      } catch (InvalidStateTransitonException e) {
-        LOG.error("Can't handle this event at current state"
-            + ", eventType:" + event.getType().name()
-            + ", oldState:" + oldState.name()
-            + ", nextState:" + getState().name()
-            , e);
-        LOG.error("Invalid event " + event.getType() + " on Worker  " + getWorkerId());
-      }
-      if (oldState != getState()) {
-        LOG.info(getWorkerId() + " Node Transitioned from " + oldState + " to " + getState());
-      }
+      stateMachine.doTransition(event.getType(), event);
+    } catch (InvalidStateTransitonException e) {
+      LOG.error("Can't handle this event at current state"
+          + ", eventType:" + event.getType().name()
+          + ", oldState:" + oldState.name()
+          + ", nextState:" + getState().name()
+          , e);
+      LOG.error("Invalid event " + event.getType() + " on Worker  " + getWorkerId());
     }
-
-    finally {
-      writeLock.unlock();
+    if (oldState != getState()) {
+      LOG.info(getWorkerId() + " Node Transitioned from " + oldState + " to " + getState());
     }
   }
 }

@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
 import org.apache.tajo.master.scheduler.SimpleFifoScheduler;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
@@ -178,12 +179,13 @@ public class QueryManager extends CompositeService {
     QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql,
         jsonExpr, plan);
 
-    synchronized (submittedQueries) {
-      queryInProgress.getQueryInfo().setQueryMaster("");
-      submittedQueries.put(queryInProgress.getQueryId(), queryInProgress);
-    }
+    queryInProgress.getQueryInfo().setQueryMaster("");
+    submittedQueries.put(queryInProgress.getQueryId(), queryInProgress);
 
-    scheduler.addQuery(queryInProgress);
+    //scheduler.addQuery(queryInProgress);
+    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo(queryInProgress.getQueryId(), 1,
+        queryInProgress.getQueryInfo().getStartTime());
+    masterContext.getResourceManager().submitQuery(querySchedulingInfo);
     return queryInProgress.getQueryInfo();
   }
 
@@ -191,13 +193,8 @@ public class QueryManager extends CompositeService {
 
     QueryInProgress queryInProgress;
 
-    synchronized (submittedQueries) {
-      queryInProgress = submittedQueries.remove(queryId);
-    }
-
-    synchronized (runningQueries) {
-      runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
-    }
+    queryInProgress = submittedQueries.remove(queryId);
+    runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
 
     if (queryInProgress.startQueryMaster()) {
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,

@@ -20,16 +20,16 @@ package org.apache.tajo.master.rm;
 
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
@@ -37,8 +37,7 @@ import org.apache.tajo.util.ProtoUtil;
 import java.io.IOError;
 import java.net.InetSocketAddress;
 
-import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.NodeHeartbeat;
-import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService;
+import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
 
 /**
  * It receives pings that workers periodically send. The ping messages contains the worker resources and their statuses.
@@ -59,8 +58,8 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   /** Class logger */
   private Log LOG = LogFactory.getLog(TajoResourceTracker.class);
 
-  private final WorkerResourceManager manager;
-  /** the context of TajoWorkerResourceManager */
+  private final TajoResourceManager manager;
+  /** the context of TajoResourceManager */
   private final TajoRMContext rmContext;
   /** Liveliness monitor which checks ping expiry times of workers */
   private final WorkerLivelinessMonitor workerLivelinessMonitor;
@@ -70,7 +69,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   /** The bind address of RPC server of worker resource tracker */
   private InetSocketAddress bindAddress;
 
-  public TajoResourceTracker(WorkerResourceManager manager, WorkerLivelinessMonitor workerLivelinessMonitor) {
+  public TajoResourceTracker(TajoResourceManager manager, WorkerLivelinessMonitor workerLivelinessMonitor) {
     super(TajoResourceTracker.class.getSimpleName());
     this.manager = manager;
     this.rmContext = manager.getRMContext();
@@ -117,10 +116,10 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   private static final TajoHeartbeatResponse.Builder builder =
       TajoHeartbeatResponse.newBuilder().setHeartbeatResult(ProtoUtil.TRUE);
 
-  private static WorkerStatusEvent createStatusEvent(int workerId, NodeHeartbeat heartbeat) {
+  private static WorkerStatusEvent createStatusEvent(int workerId, NodeHeartbeatRequestProto heartbeat) {
     return new WorkerStatusEvent(
         workerId,
-        heartbeat.getServerStatus().getRunningTaskNum(),
+        heartbeat.ggetServerStatus().getRunningTaskNum(),
         heartbeat.getServerStatus().getJvmHeap().getMaxHeap(),
         heartbeat.getServerStatus().getJvmHeap().getFreeHeap(),
         heartbeat.getServerStatus().getJvmHeap().getTotalHeap());
@@ -129,17 +128,20 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   @Override
   public void heartbeat(
       RpcController controller,
-      NodeHeartbeat heartbeat,
-      RpcCallback<TajoHeartbeatResponse> done) {
+      NodeHeartbeatRequestProto heartbeat,
+      RpcCallback<NodeHeartbeatResponseProto> done) {
 
     try {
       // get a workerId from the heartbeat
-      int workerId = heartbeat.getConnectionInfo().getId();
+      int workerId = heartbeat.getWorkerId();
 
       if(rmContext.getWorkers().containsKey(workerId)) { // if worker is running
 
-        // status update
-        rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(workerId, heartbeat));
+        if (heartbeat.hasAvailableResource()) {
+          // status update
+          rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(heartbeat));
+        }
+
         // refresh ping
         workerLivelinessMonitor.receivedPing(workerId);
 
@@ -185,7 +187,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   }
 
   @Override
-  public void nodeHeartbeat(RpcController controller, TajoResourceTrackerProtocol.NodeHeartbeatRequestProto request,
+  public void nodeHeartbeat(RpcController controller, NodeHeartbeatRequestProto request,
                             RpcCallback<TajoResourceTrackerProtocol.NodeHeartbeatResponseProto> done) {
     //TODO implement with ResourceManager for scheduler
     TajoResourceTrackerProtocol.NodeHeartbeatResponseProto.Builder

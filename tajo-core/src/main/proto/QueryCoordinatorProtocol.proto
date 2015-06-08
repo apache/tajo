@@ -60,6 +60,7 @@ message ServerStatusProto {
     required JvmHeap jvmHeap = 6;
 }
 
+//deplecated
 message TajoHeartbeat {
   required WorkerConnectionInfoProto connectionInfo = 1;
   optional QueryIdProto queryId = 2;
@@ -68,7 +69,7 @@ message TajoHeartbeat {
   optional string statusMessage = 5;
   optional float queryProgress = 6;
 }
-
+//deplecated
 message TajoHeartbeatResponse {
   message ResponseCommand {
       required string command = 1;
@@ -90,33 +91,12 @@ message ClusterResourceSummary {
   required int32 totalAvailableMemoryMB = 7;
 }
 
-enum ResourceRequestPriority {
-    MEMORY = 1;
-    DISK = 2;
+enum ResourceType {
+    LEAF = 1;
+    INTERMEDIATE = 2;
+    QUERYMASTER = 3;
 }
 
-message WorkerResourceAllocationRequest {
-    required QueryIdProto queryId = 1;
-    required ResourceRequestPriority resourceRequestPriority = 2;
-
-    required int32 numContainers = 3;
-
-    required int32 maxMemoryMBPerContainer = 4;
-    required int32 minMemoryMBPerContainer = 5;
-
-    required float maxDiskSlotPerContainer = 6;
-    required float minDiskSlotPerContainer = 7;
-}
-
-message WorkerResourceProto {
-    required WorkerConnectionInfoProto connectionInfo = 1;
-    required int32 memoryMB = 2 ;
-    required float diskSlots = 3;
-}
-
-message WorkerResourcesRequest {
-    repeated WorkerResourceProto workerResources = 1;
-}
 
 message WorkerResourceReleaseRequest {
     required ExecutionBlockIdProto executionBlockId = 1;
@@ -136,9 +116,31 @@ message WorkerResourceAllocationResponse {
     repeated WorkerAllocatedResource workerAllocatedResource = 2;
 }
 
+///////////////////
+message AllocationResourceProto {
+    required int32 workerId = 1;
+    required NodeResourceProto resource = 2;
+}
+
+message NodeResourceRequestProto {
+    optional string queue = 1;
+    required string userId = 2;
+    required ResourceType type = 3;
+    required int32 priority = 4;
+    required QueryIdProto queryId = 5;
+    required int32 numContainers = 6;
+    required NodeResourceProto allocation = 7;
+    repeated int32 candidateNodes = 8;
+}
+
+message NodeResourceResponseProto {
+    required QueryIdProto queryId = 1;
+    repeated AllocationResourceProto resource = 2;
+}
+///////////////////
 service QueryCoordinatorProtocolService {
   rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
-  rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
+  rpc allocateNodeResources(NodeResourceRequestProto) returns (NodeResourceResponseProto);
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
-  rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
+  rpc getAllWorkerResource(NullProto) returns (NodeResourceProto);
 }

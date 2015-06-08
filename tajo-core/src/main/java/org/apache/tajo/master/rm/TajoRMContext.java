@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * It's a worker resource manager context. It contains all context data about TajoWorkerResourceManager.
+ * It's a worker resource manager context. It contains all context data about TajoResourceManager.
  */
 public class TajoRMContext {
 

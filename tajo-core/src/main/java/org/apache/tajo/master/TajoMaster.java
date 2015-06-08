@@ -39,7 +39,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.master.rm.TajoWorkerResourceManager;
+import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
@@ -121,7 +121,7 @@ public class TajoMaster extends CompositeService {
   private QueryCoordinatorService tajoMasterService;
   private SessionManager sessionManager;
 
-  private WorkerResourceManager resourceManager;
+  private TajoResourceManager resourceManager;
   //Web Server
   private StaticHttpServer webServer;
   private TajoRestService restServer;
@@ -230,9 +230,9 @@ public class TajoMaster extends CompositeService {
 
   private void initResourceManager() throws Exception {
     Class<WorkerResourceManager>  resourceManagerClass = (Class<WorkerResourceManager>)
-        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoWorkerResourceManager.class);
+        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoResourceManager.class);
     Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
-    resourceManager = constructor.newInstance(context);
+    resourceManager = new TajoResourceManager(context);
     addIfService(resourceManager);
   }
 
@@ -457,7 +457,7 @@ public class TajoMaster extends CompositeService {
       return queryManager;
     }
 
-    public WorkerResourceManager getResourceManager() {
+    public TajoResourceManager getResourceManager() {
       return resourceManager;
     }
 

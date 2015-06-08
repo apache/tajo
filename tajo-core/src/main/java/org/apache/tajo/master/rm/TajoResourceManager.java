@@ -34,13 +34,20 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.QueryInProgress;
+import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
+import org.apache.tajo.master.scheduler.SimpleScheduler;
+import org.apache.tajo.master.scheduler.TajoScheduler;
+import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.rpc.CancelableRpcCallback;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.ApplicationIdUtils;
 import org.apache.tajo.util.BasicFuture;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -52,9 +59,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * It manages all resources of tajo workers.
  */
-public class TajoWorkerResourceManager extends CompositeService implements WorkerResourceManager {
+public class TajoResourceManager extends CompositeService {
   /** class logger */
-  private static final Log LOG = LogFactory.getLog(TajoWorkerResourceManager.class);
+  private static final Log LOG = LogFactory.getLog(TajoResourceManager.class);
 
   static AtomicInteger containerIdSeq = new AtomicInteger(0);
 
@@ -79,6 +86,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
   private TajoConf systemConf;
+  private TajoScheduler scheduler;
 
   private ConcurrentMap<ContainerProtocol.TajoContainerIdProto, AllocatedWorkerResource> allocatedResourceMap = Maps
     .newConcurrentMap();
@@ -86,19 +94,18 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
   /** It receives status messages from workers and their resources. */
   private TajoResourceTracker resourceTracker;
 
-  public TajoWorkerResourceManager(TajoMaster.MasterContext masterContext) {
-    super(TajoWorkerResourceManager.class.getSimpleName());
+  public TajoResourceManager(TajoMaster.MasterContext masterContext) {
+    super(TajoResourceManager.class.getSimpleName());
     this.masterContext = masterContext;
   }
 
-  public TajoWorkerResourceManager(TajoConf systemConf) {
-    super(TajoWorkerResourceManager.class.getSimpleName());
+  public TajoResourceManager(TajoConf systemConf) {
+    super(TajoResourceManager.class.getSimpleName());
   }
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    Preconditions.checkArgument(conf instanceof TajoConf);
-    this.systemConf = (TajoConf) conf;
+    this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
 
     AsyncDispatcher dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
@@ -119,6 +126,9 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     resourceTracker = new TajoResourceTracker(this, workerLivelinessMonitor);
     addIfService(resourceTracker);
 
+    //TODO configuable
+    scheduler = new SimpleScheduler(rmContext);
+    addIfService(scheduler);
     super.serviceInit(systemConf);
   }
 
@@ -145,26 +155,25 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     }
   }
 
-  @Override
+  @Deprecated
   public Map<Integer, Worker> getWorkers() {
     return ImmutableMap.copyOf(rmContext.getWorkers());
   }
-
-  @Override
+  @Deprecated
   public Map<Integer, Worker> getInactiveWorkers() {
     return ImmutableMap.copyOf(rmContext.getInactiveWorkers());
   }
-
+  @Deprecated
   public Collection<Integer> getQueryMasters() {
     return Collections.unmodifiableSet(rmContext.getQueryMasterWorker());
   }
 
   @Override
   public void serviceStop() throws Exception {
-    if(stopped.get()) {
+    if(stopped.getAndSet(true)) {
       return;
     }
-    stopped.set(true);
+
     if(workerResourceAllocator != null) {
       workerResourceAllocator.interrupt();
     }
@@ -176,7 +185,6 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
    *
    * @return The prefix of queryId. It is generated when a TajoMaster starts up.
    */
-  @Override
   public String getSeedQueryId() throws IOException {
     return queryIdSeed;
   }
@@ -186,31 +194,41 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     return resourceTracker;
   }
 
-  private WorkerResourceAllocationRequest createQMResourceRequest(QueryId queryId) {
-    float queryMasterDefaultDiskSlot = masterContext.getConf().getFloatVar(
-      TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT);
+  public TajoScheduler getScheduler() {
+    return scheduler;
+  }
+
+  private QueryCoordinatorProtocol.NodeResourceRequestProto createQMResourceRequest(QueryInfo queryInfo) {
     int queryMasterDefaultMemoryMB = masterContext.getConf().getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MEMORY_MB);
 
-    WorkerResourceAllocationRequest.Builder builder = WorkerResourceAllocationRequest.newBuilder();
-    builder.setQueryId(queryId.getProto());
-    builder.setMaxMemoryMBPerContainer(queryMasterDefaultMemoryMB);
-    builder.setMinMemoryMBPerContainer(queryMasterDefaultMemoryMB);
-    builder.setMaxDiskSlotPerContainer(queryMasterDefaultDiskSlot);
-    builder.setMinDiskSlotPerContainer(queryMasterDefaultDiskSlot);
-    builder.setResourceRequestPriority(ResourceRequestPriority.MEMORY);
-    builder.setNumContainers(1);
+    QueryCoordinatorProtocol.NodeResourceRequestProto.Builder builder = QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
+    builder.setQueryId(queryInfo.getQueryId().getProto())
+        .setAllocation(NodeResources.createResource(queryMasterDefaultMemoryMB).getProto())
+        .setType(QueryCoordinatorProtocol.ResourceType.QUERYMASTER)
+        .setPriority(1)
+        .setNumContainers(1)
+        .setUserId(queryInfo.getQueryContext().getUser());
+        //TODO .setQueue(queryInfo.getQueue());
     return builder.build();
   }
 
-  @Override
-  public WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress) {
+  /**
+   * Submit a query to scheduler
+   *
+   * @param queryInProgress QueryInProgress
+   * @return boolean
+   */
+  public boolean submitQuery(QuerySchedulingInfo schedulingInfo) {
 
     // 3 seconds, by default
     long timeout = masterContext.getConf().getTimeVar(
         TajoConf.ConfVars.TAJO_QUERYMASTER_ALLOCATION_TIMEOUT, TimeUnit.MILLISECONDS);
 
     // Create a resource request for a query master
-    WorkerResourceAllocationRequest qmResourceRequest = createQMResourceRequest(queryInProgress.getQueryId());
+
+    List<AllocationResourceProto> allocation =
+        scheduler.submitQuery(schedulingInfo.getQueryId(), createQMResourceRequest(queryInProgress.getQueryInfo()));
+
 
     // call future for async call
     final CancelableRpcCallback<WorkerResourceAllocationResponse> callFuture =
@@ -314,7 +332,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
               ", liveWorkers=" + rmContext.getWorkers().size());
           }
 
-          // TajoWorkerResourceManager can't return allocated disk slots occasionally.
+          // TajoResourceManager can't return allocated disk slots occasionally.
           // Because the rest resource request can remains after QueryMaster stops.
           // Thus we need to find whether QueryId stopped or not.
           if (!rmContext.getStoppedQueryIds().contains(resourceRequest.queryId)) {

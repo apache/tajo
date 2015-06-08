@@ -18,37 +18,33 @@
 
 package org.apache.tajo.master.rm;
 
+import org.apache.tajo.resource.NodeResource;
+
 /**
  * {@link TajoResourceTracker} produces this event, and its destination is
  * {@link org.apache.tajo.master.rm.Worker.StatusUpdateTransition} of {@link Worker}.
  */
 public class WorkerStatusEvent extends WorkerEvent {
   private final int runningTaskNum;
-  private final long maxHeap;
-  private final long freeHeap;
-  private final long totalHeap;
+  private final int runningQMNum;
+  private final NodeResource resource;
 
-  public WorkerStatusEvent(int workerId, int runningTaskNum, long maxHeap, long freeHeap, long totalHeap) {
+  public WorkerStatusEvent(int workerId, int runningTaskNum, int runningQMNum, NodeResource resource) {
     super(workerId, WorkerEventType.STATE_UPDATE);
     this.runningTaskNum = runningTaskNum;
-    this.maxHeap = maxHeap;
-    this.freeHeap = freeHeap;
-    this.totalHeap = totalHeap;
+    this.runningQMNum = runningQMNum;
+    this.resource = resource;
   }
 
   public int getRunningTaskNum() {
     return runningTaskNum;
   }
 
-  public long maxHeap() {
-    return maxHeap;
+  public int getRunningQMNum() {
+    return runningQMNum;
   }
 
-  public long getFreeHeap() {
-    return freeHeap;
-  }
-
-  public long getTotalHeap() {
-    return totalHeap;
+  public NodeResource getResource() {
+    return resource;
   }
 }

@@ -30,6 +30,7 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
+import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.rpc.*;
@@ -131,8 +132,9 @@ public class QueryInProgress {
     }
     try {
       LOG.info("Initializing QueryInProgress for QueryID=" + queryId);
-      WorkerResourceManager resourceManager = masterContext.getResourceManager();
-      WorkerAllocatedResource resource = resourceManager.allocateQueryMaster(this);
+      TajoResourceManager resourceManager = masterContext.getResourceManager();
+      resourceManager.getScheduler().getq
+      //WorkerAllocatedResource resource = resourceManager.allocateQueryMaster(this);
 
       // if no resource to allocate a query master
       if(resource == null) {

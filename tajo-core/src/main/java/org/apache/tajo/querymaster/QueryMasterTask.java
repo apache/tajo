@@ -43,7 +43,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoContainerProxy;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.rm.TajoWorkerResourceManager;
+import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -146,7 +146,7 @@ public class QueryMasterTask extends CompositeService {
       queryTaskContext = new QueryMasterTaskContext();
       String resourceManagerClassName = systemConf.getVar(TajoConf.ConfVars.RESOURCE_MANAGER_CLASS);
 
-      if(resourceManagerClassName.indexOf(TajoWorkerResourceManager.class.getName()) >= 0) {
+      if(resourceManagerClassName.indexOf(TajoResourceManager.class.getName()) >= 0) {
         resourceAllocator = new TajoResourceAllocator(queryTaskContext);
       } else {
         throw new UnimplementedException(resourceManagerClassName + " is not supported yet");

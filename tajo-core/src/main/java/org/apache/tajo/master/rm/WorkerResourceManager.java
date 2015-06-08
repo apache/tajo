@@ -24,7 +24,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourceAllocationRequest;
 import org.apache.tajo.master.QueryInProgress;
 
 import java.io.IOException;
@@ -54,7 +53,7 @@ public interface WorkerResourceManager extends Service {
    * @param request Request description
    * @param rpcCallBack Callback function
    */
-  public void allocateWorkerResources(WorkerResourceAllocationRequest request,
+  public void allocateWorkerResources(QueryCoordinatorProtocol.NodeResourceRequestProto request,
       RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> rpcCallBack);
 
   /**
