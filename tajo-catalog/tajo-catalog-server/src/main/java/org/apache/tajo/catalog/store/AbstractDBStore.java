@@ -80,6 +80,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogSchemaManager.isInitialized(getConnection());
   }
 
+  protected boolean catalogAlreadyExists() throws CatalogException {
+    return catalogSchemaManager.catalogAlreadyExists(getConnection());
+  }
+
   protected void createBaseTable() throws CatalogException {
     createDatabaseDependants();
     
@@ -142,22 +146,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     
     try {
-      if (isInitialized()) {
-        LOG.info("The base tables of CatalogServer already is initialized.");
+      if (catalogAlreadyExists()) {
+        LOG.info("The meta table of CatalogServer already is created.");
         verifySchemaVersion();
       } else {
-        try {
-          createBaseTable();
-          LOG.info("The base tables of CatalogServer are created.");
-        } catch (CatalogException ce) {
+        if (isInitialized()) {
+          LOG.info("The base tables of CatalogServer already is initialized.");
+          verifySchemaVersion();
+        } else {
           try {
-            dropBaseTable();
-          } catch (Throwable t) {
-            LOG.error(t, t);
+            createBaseTable();
+            LOG.info("The base tables of CatalogServer are created.");
+          } catch (CatalogException ce) {
+            try {
+              dropBaseTable();
+            } catch (Throwable t) {
+              LOG.error(t, t);
+            }
+            throw ce;
           }
-          throw ce;
         }
-      }
+     }
     } catch (Exception se) {
       throw new CatalogException("Cannot initialize the persistent storage of Catalog", se);
     }

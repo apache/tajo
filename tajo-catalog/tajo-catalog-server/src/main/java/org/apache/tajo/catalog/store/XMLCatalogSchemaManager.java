@@ -51,6 +51,7 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.store.object.*;
@@ -342,6 +343,16 @@ public class XMLCatalogSchemaManager {
     }
 
     CatalogUtil.closeQuietly(stmt);
+  }
+
+  public boolean catalogAlreadyExists(Connection conn) throws CatalogException {
+    boolean result = false;
+    try {
+      result = checkExistence(conn, DatabaseObjectType.TABLE, CatalogConstants.TB_META);
+    } catch (SQLException e) {
+      throw new CatalogException(e.getMessage(), e);
+    }
+    return result;
   }
 
   public boolean isInitialized(Connection conn) throws CatalogException {
