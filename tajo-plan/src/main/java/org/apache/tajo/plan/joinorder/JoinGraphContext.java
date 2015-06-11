@@ -36,25 +36,53 @@ public class JoinGraphContext {
   private Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>(); // Join
   private Set<EvalNode> candidateJoinConditions = TUtil.newHashSet(); // predicates from the on clause
   private Set<EvalNode> candidateJoinFilters = TUtil.newHashSet();    // predicates from the where clause
+  private Set<EvalNode> evaluatedJoinConditions = TUtil.newHashSet(); // predicates from the on clause
+  private Set<EvalNode> evaluatedJoinFilters = TUtil.newHashSet();    // predicates from the where clause
 
   public JoinGraph getJoinGraph() {
     return joinGraph;
   }
 
   public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
-    candidateJoinConditions.addAll(candidates);
+    for (EvalNode eachCandidate : candidates) {
+      if (!evaluatedJoinConditions.contains(eachCandidate)) {
+        candidateJoinConditions.add(eachCandidate);
+      }
+    }
   }
 
   public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
-    candidateJoinFilters.addAll(candidates);
+    for (EvalNode eachCandidate : candidates) {
+      if (!evaluatedJoinFilters.contains(eachCandidate)) {
+        candidateJoinFilters.add(eachCandidate);
+      }
+    }
   }
 
   public void removeCandidateJoinConditions(Collection<EvalNode> willBeRemoved) {
-    candidateJoinConditions.removeAll(willBeRemoved);
+    candidateJoinConditions.remove(willBeRemoved);
   }
 
   public void removeCandidateJoinFilters(Collection<EvalNode> willBeRemoved) {
-    candidateJoinFilters.removeAll(willBeRemoved);
+    candidateJoinFilters.remove(willBeRemoved);
+  }
+
+  public void markAsEvaluatedJoinConditions(Collection<EvalNode> willBeMarked) {
+    for (EvalNode eachEval : willBeMarked) {
+      if (candidateJoinConditions.contains(eachEval)) {
+        candidateJoinConditions.remove(eachEval);
+        evaluatedJoinConditions.add(eachEval);
+      }
+    }
+  }
+
+  public void markAsEvaluatedJoinFilters(Collection<EvalNode> willBeMarked) {
+    for (EvalNode eachEval : willBeMarked) {
+      if (candidateJoinFilters.contains(eachEval)) {
+        candidateJoinFilters.remove(eachEval);
+        evaluatedJoinFilters.add(eachEval);
+      }
+    }
   }
 
   public Set<EvalNode> getCandidateJoinConditions() {
@@ -63,6 +91,14 @@ public class JoinGraphContext {
 
   public Set<EvalNode> getCandidateJoinFilters() {
     return candidateJoinFilters;
+  }
+
+  public Set<EvalNode> getEvaluatedJoinConditions() {
+    return evaluatedJoinConditions;
+  }
+
+  public Set<EvalNode> getEvaluatedJoinFilters() {
+    return evaluatedJoinFilters;
   }
 
   public JoinVertex getMostLeftVertex() {

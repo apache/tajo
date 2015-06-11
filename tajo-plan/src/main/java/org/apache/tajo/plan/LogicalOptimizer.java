@@ -42,9 +42,7 @@ import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 import static org.apache.tajo.plan.LogicalPlan.BlockEdge;
 import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.getCost;
@@ -143,25 +141,39 @@ public class LogicalOptimizer {
                                                                LogicalPlan plan,
                                                                LogicalPlan.QueryBlock block,
                                                                JoinNode newJoinNode) {
-    if (!joinGraphContext.getCandidateJoinFilters().isEmpty()) {
-      Set<EvalNode> remainings = joinGraphContext.getCandidateJoinFilters();
+    // Gather filters from remaining join edges
+    Collection<JoinEdge> joinEdges = joinGraphContext.getJoinGraph().getEdgesAll();
+    Collection<EvalNode> markAsEvaluated = new HashSet<EvalNode>(joinGraphContext.getEvaluatedJoinConditions());
+    markAsEvaluated.addAll(joinGraphContext.getEvaluatedJoinFilters());
+    Set<EvalNode> remainingQuals = new HashSet<EvalNode>(joinGraphContext.getCandidateJoinFilters());
+    for (JoinEdge eachEdge : joinEdges) {
+      for (EvalNode eachQual : eachEdge.getJoinQual()) {
+        if (!markAsEvaluated.contains(eachQual)) {
+          remainingQuals.add(eachQual);
+        }
+      }
+    }
+
+    if (!remainingQuals.isEmpty()) {
       LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
       if (topParent.getType() == NodeType.SELECTION) {
         SelectionNode topParentSelect = (SelectionNode) topParent;
         Set<EvalNode> filters = TUtil.newHashSet();
         filters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual())));
-        filters.addAll(remainings);
+        filters.addAll(remainingQuals);
         topParentSelect.setQual(AlgebraicUtil.createSingletonExprFromCNF(
             filters.toArray(new EvalNode[filters.size()])));
         return newJoinNode;
       } else {
         SelectionNode newSelection = plan.createNode(SelectionNode.class);
         newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
-            remainings.toArray(new EvalNode[remainings.size()])));
+            remainingQuals.toArray(new EvalNode[remainingQuals.size()])));
         newSelection.setChild(newJoinNode);
         return newSelection;
       }
     }
+
+
     return newJoinNode;
   }
 
@@ -260,14 +272,14 @@ public class LogicalOptimizer {
           true));
       joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), edge,
           false));
-      context.removeCandidateJoinConditions(joinConditions);
-      context.removeCandidateJoinFilters(joinConditions);
+      context.markAsEvaluatedJoinConditions(joinConditions);
+      context.markAsEvaluatedJoinFilters(joinConditions);
       edge.addJoinPredicates(joinConditions);
       if (edge.getJoinType() == JoinType.INNER && edge.getJoinQual().isEmpty()) {
         edge.getJoinSpec().setType(JoinType.CROSS);
       }
 
-      if (PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
+      if (PlannerUtil.isSymmetricJoin(edge.getJoinType())) {
         JoinEdge commutativeEdge = context.getCachedOrNewJoinEdge(edge.getJoinSpec(), edge.getRightVertex(),
             edge.getLeftVertex());
         commutativeEdge.addJoinPredicates(joinConditions);

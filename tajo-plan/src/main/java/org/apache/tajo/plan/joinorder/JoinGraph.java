@@ -20,6 +20,7 @@ package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinSpec;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;
 
 /**
@@ -27,9 +28,16 @@ import org.apache.tajo.util.graph.SimpleUndirectedGraph;
  */
 public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
+  private boolean isSymmetricJoinOnly = true;
+
   public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) throws PlanningException {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
+    isSymmetricJoinOnly = PlannerUtil.isSymmetricJoin(edge.getJoinType());
     this.addEdge(left, right, edge);
     return edge;
+  }
+
+  public boolean isSymmetricJoinOnly() {
+    return isSymmetricJoinOnly;
   }
 }

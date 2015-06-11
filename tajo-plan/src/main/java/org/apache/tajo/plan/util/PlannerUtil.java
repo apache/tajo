@@ -774,7 +774,7 @@ public class PlannerUtil {
     }
   }
 
-  public static boolean isCommutativeJoin(JoinType joinType) {
+  public static boolean isSymmetricJoin(JoinType joinType) {
     // Full outer join is also commutative.
     return joinType == JoinType.INNER || joinType == JoinType.CROSS || joinType == JoinType.FULL_OUTER;
   }

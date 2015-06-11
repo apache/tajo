@@ -262,15 +262,15 @@ public class JoinOrderingUtil {
       for (JoinEdge candidateEdge : candidateEdges) {
         // Evaluatable quals must be added to check the associativity of join edges.
         candidateEdge = updateQualIfNecessary(context, candidateEdge);
-        if (founds.contains(candidateEdge.getRightVertex())) {
+        if (!founds.contains(candidateEdge.getRightVertex())) {
           List<JoinEdge> rightEdgesOfCandidate = context.getJoinGraph().getOutgoingEdges(candidateEdge.getRightVertex());
-          boolean reacheable = true;
+          boolean reacheable = false;
           if (rightEdgesOfCandidate != null) {
+            reacheable = true;
             for (JoinEdge rightEdgeOfCandidate : rightEdgesOfCandidate) {
               // Evaluatable quals must be added to check the associativity of join edges.
               rightEdgeOfCandidate = updateQualIfNecessary(context, rightEdgeOfCandidate);
-              if (!isCommutative(candidateEdge, rightEdgeOfCandidate) &&
-                  !JoinOrderingUtil.isAssociativeJoin(context, candidateEdge, rightEdgeOfCandidate)) {
+              if (!isAssociativeJoin(context, candidateEdge, rightEdgeOfCandidate)) {
                 reacheable = false;
                 break;
               }
@@ -281,35 +281,33 @@ public class JoinOrderingUtil {
           }
         }
       }
-      if (foundAtThis.size() > 0) {
-        for (JoinVertex v : foundAtThis) {
-          getAllInterchangeableVertexes(founds, context, v);
-        }
+      for (JoinVertex v : foundAtThis) {
+        getAllInterchangeableVertexes(founds, context, v);
       }
     }
   }
 
-  public static boolean isEqualsOrCommutative(JoinEdge edge1, JoinEdge edge2) {
-    if (edge1.equals(edge2) || isCommutative(edge1, edge2)) {
+  public static boolean isEqualsOrSymmetric(JoinEdge edge1, JoinEdge edge2) {
+    if (edge1.equals(edge2) || isSymmetric(edge1, edge2)) {
       return true;
     }
     return false;
   }
 
-  public static boolean isCommutative(JoinEdge edge1, JoinEdge edge2) {
+  public static boolean isSymmetric(JoinEdge edge1, JoinEdge edge2) {
     if (edge1.getLeftVertex().equals(edge2.getRightVertex()) &&
         edge1.getRightVertex().equals(edge2.getLeftVertex()) &&
         edge1.getJoinSpec().equals(edge2.getJoinSpec()) &&
-        PlannerUtil.isCommutativeJoin(edge1.getJoinType())) {
+        PlannerUtil.isSymmetricJoin(edge1.getJoinType())) {
       return true;
     }
     return false;
   }
 
   public static JoinEdge updateQualIfNecessary(JoinGraphContext context, JoinEdge edge) {
-    Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
+    Set<EvalNode> additionalPredicates = findJoinConditionForJoinVertex(
         context.getCandidateJoinConditions(), edge, true);
-    additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
+    additionalPredicates.addAll(findJoinConditionForJoinVertex(
         context.getCandidateJoinFilters(), edge, false));
     edge.addJoinPredicates(additionalPredicates);
     return edge;
@@ -329,8 +327,8 @@ public class JoinOrderingUtil {
     if (candidateEdges != null) {
       for (JoinEdge candidateEdge : candidateEdges) {
         candidateEdge = updateQualIfNecessary(context, candidateEdge);
-        if (!isEqualsOrCommutative(edge, candidateEdge) &&
-            JoinOrderingUtil.isAssociativeJoin(context, edge, candidateEdge)) {
+        if (!isEqualsOrSymmetric(edge, candidateEdge) &&
+            isAssociativeJoin(context, edge, candidateEdge)) {
           associativeEdges.add(candidateEdge);
         }
       }

@@ -84,7 +84,7 @@ public class JoinedRelationsVertex implements JoinVertex {
 
     JoinNode joinNode = plan.createNode(JoinNode.class);
 
-    if (PlannerUtil.isCommutativeJoin(joinEdge.getJoinType())) {
+    if (PlannerUtil.isSymmetricJoin(joinEdge.getJoinType())) {
       // if only one operator is relation
       if ((leftChild instanceof RelationNode) && !(rightChild instanceof RelationNode)) {
         // for left deep

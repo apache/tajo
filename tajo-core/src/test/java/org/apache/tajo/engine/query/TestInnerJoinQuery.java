@@ -64,7 +64,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
     runSimpleTests();
