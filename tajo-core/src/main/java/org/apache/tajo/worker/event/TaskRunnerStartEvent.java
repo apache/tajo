@@ -20,48 +20,20 @@ package org.apache.tajo.worker.event;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto;
-
+@Deprecated
 public class TaskRunnerStartEvent extends TaskRunnerEvent {
 
-  private final QueryContext queryContext;
-  private final WorkerConnectionInfo queryMaster;
-  private final String containerId;
-  private final String plan;
-  private final PlanProto.ShuffleType shuffleType;
+  private final TajoWorkerProtocol.RunExecutionBlockRequestProto request;
 
-  public TaskRunnerStartEvent(WorkerConnectionInfo queryMaster,
-                              ExecutionBlockId executionBlockId,
-                              String containerId,
-                              QueryContext context,
-                              String plan,
-                              PlanProto.ShuffleType shuffleType) {
-    super(EventType.START, executionBlockId);
-    this.queryMaster = queryMaster;
-    this.containerId = containerId;
-    this.queryContext = context;
-    this.plan = plan;
-    this.shuffleType = shuffleType;
+  public TaskRunnerStartEvent(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+    super(EventType.START, new ExecutionBlockId(request.getExecutionBlockId()));
+    this.request = request;
   }
 
-  public WorkerConnectionInfo getQueryMaster() {
-    return queryMaster;
-  }
-
-  public String getContainerId() {
-    return containerId;
-  }
-
-  public QueryContext getQueryContext() {
-    return queryContext;
-  }
-
-  public String getPlan() {
-    return plan;
-  }
-
-  public PlanProto.ShuffleType getShuffleType() {
-    return shuffleType;
+  public TajoWorkerProtocol.RunExecutionBlockRequestProto getRequest() {
+    return request;
   }
 }

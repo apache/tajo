@@ -60,14 +60,11 @@ public class ToTimestampText extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    if(params.isNull(0) || params.isNull(1)) {
+    if(params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    TextDatum dateTimeTextDatum = (TextDatum) params.get(0);
-    TextDatum patternDatum = (TextDatum) params.get(1);
-
-    TimeMeta tm = DateTimeFormat.parseDateTime(dateTimeTextDatum.asChars(), patternDatum.asChars());
+    TimeMeta tm = DateTimeFormat.parseDateTime(params.getText(0), params.getText(1));
     DateTimeUtil.toUTCTimezone(tm, timezone);
 
     return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));

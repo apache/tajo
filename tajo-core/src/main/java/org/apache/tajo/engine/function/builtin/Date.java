@@ -53,7 +53,7 @@ public class Date extends GeneralFunction {
   public Int8Datum eval(Tuple params) {
     try {
       return DatumFactory.createInt8(new SimpleDateFormat(dateFormat)
-          .parse(params.get(0).asChars()).getTime());
+          .parse(params.getText(0)).getTime());
     } catch (ParseException e) {
       LOG.error(e);
       return null;

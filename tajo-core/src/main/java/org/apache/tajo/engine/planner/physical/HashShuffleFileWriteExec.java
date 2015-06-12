@@ -86,7 +86,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     HashShuffleAppender appender = appenderMap.get(partId);
     if (appender == null) {
       appender = hashShuffleAppenderManager.getAppender(context.getConf(),
-          context.getQueryId().getTaskId().getExecutionBlockId(), partId, meta, outSchema);
+          context.getTaskId().getTaskId().getExecutionBlockId(), partId, meta, outSchema);
       appenderMap.put(partId, appender);
     }
     return appender;

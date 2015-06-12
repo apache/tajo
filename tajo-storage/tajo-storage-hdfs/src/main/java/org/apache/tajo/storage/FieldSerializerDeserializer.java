@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.text.TextLineParsingError;
 
@@ -29,9 +30,11 @@ import java.io.OutputStream;
 
 public interface FieldSerializerDeserializer {
 
-  public int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars) throws IOException;
+  void init(Schema schema);
 
-  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars)
+  int serialize(int columnIndex, Tuple datum, OutputStream out, byte[] nullChars) throws IOException;
+
+  Datum deserialize(int columnIndex, ByteBuf buf, ByteBuf nullChars)
       throws IOException, TextLineParsingError;
 
 }

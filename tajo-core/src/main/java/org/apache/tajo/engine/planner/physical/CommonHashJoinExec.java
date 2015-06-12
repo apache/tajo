@@ -122,7 +122,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       Tuple keyTuple = new VTuple(joinKeyPairs.size());
       for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(rightKeyList[i]));
+        keyTuple.put(i, tuple.asDatum(rightKeyList[i]));
       }
 
       /*
@@ -154,7 +154,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected Tuple toKey(final Tuple outerTuple) {
     for (int i = 0; i < leftKeyList.length; i++) {
-      keyTuple.put(i, outerTuple.get(leftKeyList[i]));
+      keyTuple.put(i, outerTuple.asDatum(leftKeyList[i]));
     }
     return keyTuple;
   }

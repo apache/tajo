@@ -108,7 +108,7 @@ public class ParquetAppender extends FileAppender {
   public void addTuple(Tuple tuple) throws IOException {
     if (enabledStats) {
       for (int i = 0; i < schema.size(); ++i) {
-        stats.analyzeField(i, tuple.get(i));
+        stats.analyzeField(i, tuple);
       }
     }
     writer.write(tuple);

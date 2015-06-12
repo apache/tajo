@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -30,6 +31,7 @@ import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.UnsafeUtil;
 
+import org.apache.tajo.util.datetime.TimeMeta;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -61,6 +63,16 @@ public abstract class UnSafeTuple implements Tuple {
   @Override
   public int size() {
     return types.length;
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+    return types[fieldId].getType();
+  }
+
+  @Override
+  public int size(int fieldId) {
+    return UNSAFE.getInt(getFieldAddr(fieldId));
   }
 
   public ByteBuffer nioBuffer() {
@@ -105,13 +117,13 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   @Override
-  public boolean isNull(int fieldid) {
+  public boolean isBlank(int fieldid) {
     return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
-  public boolean isNotNull(int fieldid) {
-    return getFieldOffset(fieldid) > OffHeapRowBlock.NULL_FIELD_OFFSET;
+  public boolean isBlankOrNull(int fieldid) {
+    return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
@@ -125,23 +137,18 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   @Override
-  public void put(int fieldId, Datum[] values) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Datum []).");
-  }
-
-  @Override
   public void put(int fieldId, Tuple tuple) {
     throw new UnsupportedException("UnSafeTuple does not support put(int, Tuple).");
   }
 
   @Override
   public void put(Datum[] values) {
-    throw new UnsupportedException("UnSafeTuple does not support put(Datum []).");
+    throw new UnsupportedException("UnSafeTuple does not support put(Datum[]).");
   }
 
   @Override
-  public Datum get(int fieldId) {
-    if (isNull(fieldId)) {
+  public Datum asDatum(int fieldId) {
+    if (isBlankOrNull(fieldId)) {
       return NullDatum.get();
     }
 
@@ -214,6 +221,17 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   @Override
+  public byte[] getTextBytes(int fieldId) {
+    long pos = getFieldAddr(fieldId);
+    int len = UNSAFE.getInt(pos);
+    pos += SizeOf.SIZE_OF_INT;
+
+    byte[] bytes = new byte[len];
+    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
+    return bytes;
+  }
+
+  @Override
   public short getInt2(int fieldId) {
     long addr = getFieldAddr(fieldId);
     return UNSAFE.getShort(addr);
@@ -241,13 +259,7 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public String getText(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
-
-    byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
-    return new String(bytes);
+    return new String(getTextBytes(fieldId));
   }
 
   public IntervalDatum getInterval(int fieldId) {
@@ -285,6 +297,11 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   @Override
+  public TimeMeta getTimeDate(int fieldId) {
+    return null;
+  }
+
+  @Override
   public Tuple clone() throws CloneNotSupportedException {
     return toHeapTuple();
   }
@@ -294,7 +311,7 @@ public abstract class UnSafeTuple implements Tuple {
     Datum [] datums = new Datum[size()];
     for (int i = 0; i < size(); i++) {
       if (contains(i)) {
-        datums[i] = get(i);
+        datums[i] = asDatum(i);
       } else {
         datums[i] = NullDatum.get();
       }

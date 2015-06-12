@@ -39,9 +39,9 @@ public class MockNodeStatusUpdater extends NodeStatusUpdater {
   private Map<Integer, NodeResource> resources = Maps.newHashMap();
   private MockResourceTracker resourceTracker;
 
-  public MockNodeStatusUpdater(CountDownLatch barrier, WorkerConnectionInfo connectionInfo,
+  public MockNodeStatusUpdater(CountDownLatch barrier, TajoWorker.WorkerContext workerContext,
                                NodeResourceManager resourceManager) {
-    super(connectionInfo, resourceManager);
+    super(workerContext, resourceManager);
     this.barrier = barrier;
     this.resourceTracker = new MockResourceTracker();
   }

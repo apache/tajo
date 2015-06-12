@@ -68,12 +68,11 @@ public class HBasePutAppender extends AbstractHBaseAppender {
       if (isRowKeyMappings[i]) {
         continue;
       }
-      Datum datum = tuple.get(i);
       byte[] value;
       if (isBinaryColumns[i]) {
-        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), datum);
+        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), tuple, i);
       } else {
-        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
+        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), tuple, i);
       }
 
       if (isColumnKeys[i]) {

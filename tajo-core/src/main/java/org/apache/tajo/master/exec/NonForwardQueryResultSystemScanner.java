@@ -23,7 +23,6 @@ import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.*;
@@ -52,7 +51,6 @@ import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.session.InvalidSessionException;
-import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -62,7 +60,10 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Stack;
 
 public class NonForwardQueryResultSystemScanner implements NonForwardQueryResultScanner {
   
@@ -149,7 +150,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(tablespaces.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (TablespaceProto tablespace: tablespaces) {
       aTuple = new VTuple(outSchema.size());
       
@@ -184,7 +185,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(databases.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (DatabaseProto database: databases) {
       aTuple = new VTuple(outSchema.size());
       
@@ -214,7 +215,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(tables.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (TableDescriptorProto table: tables) {
       aTuple = new VTuple(outSchema.size());
       
@@ -298,7 +299,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(indexList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (IndexProto index: indexList) {
       aTuple = new VTuple(outSchema.size());
       
@@ -337,7 +338,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(optionList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (TableOptionProto option: optionList) {
       aTuple = new VTuple(outSchema.size());
       
@@ -364,7 +365,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(statList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (TableStatsProto stat: statList) {
       aTuple = new VTuple(outSchema.size());
       
@@ -391,7 +392,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = new ArrayList<Tuple>(partitionList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
-    
+
     for (TablePartitionProto partition: partitionList) {
       aTuple = new VTuple(outSchema.size());
       

@@ -112,7 +112,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIME:
         if (hasTimezone) {
-          bytes = ((TimeDatum) datum).asChars(timezone, true).getBytes();
+          bytes = ((TimeDatum) datum).toString(timezone, true).getBytes();
         } else {
           bytes = datum.asTextBytes();
         }
@@ -121,7 +121,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIMESTAMP:
         if (hasTimezone) {
-          bytes = ((TimestampDatum) datum).asChars(timezone, true).getBytes();
+          bytes = ((TimestampDatum) datum).toString(timezone, true).getBytes();
         } else {
           bytes = datum.asTextBytes();
         }

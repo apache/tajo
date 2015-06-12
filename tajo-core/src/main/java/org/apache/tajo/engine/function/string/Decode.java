@@ -56,18 +56,17 @@ public class Decode extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    Datum formatType = params.get(1);
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
+      return NullDatum.get();
+    }
+    String formatType = params.getText(1).toLowerCase();
     String decodedBase64Text="";
     String decodedHexString="";
 
-    if(datum instanceof NullDatum) return NullDatum.get();
-    if(formatType instanceof NullDatum) return NullDatum.get();
-
-    if(formatType.asChars().toLowerCase().equals("base64")) {
+    if (formatType.equals("base64")) {
       try {
         // Base64
-        decodedBase64Text = new String(Base64.decodeBase64(datum.asChars().getBytes()));
+        decodedBase64Text = new String(Base64.decodeBase64(params.getTextBytes(0)));
       }
       catch (Exception e) {
         return NullDatum.get();
@@ -75,10 +74,10 @@ public class Decode extends GeneralFunction {
 
       return DatumFactory.createText(StringEscapeUtils.escapeJava(decodedBase64Text));
     }
-    else if(formatType.asChars().toLowerCase().equals("hex")) {
+    else if (formatType.equals("hex")) {
       try {
         // Hex
-        decodedHexString = HexStringConverter.getInstance().decodeHex(datum.asChars());
+        decodedHexString = HexStringConverter.getInstance().decodeHex(params.getText(0));
       }
       catch (Exception e) {
         return NullDatum.get();

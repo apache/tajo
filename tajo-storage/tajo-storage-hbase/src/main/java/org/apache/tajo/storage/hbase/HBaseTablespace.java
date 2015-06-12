@@ -1024,7 +1024,7 @@ public class HBaseTablespace extends Tablespace {
         Tuple previousTuple = dataRange.getStart();
 
         for (byte[] eachEndKey : endKeys) {
-          Tuple endTuple = new VTuple(sortSpecs.length);
+          VTuple endTuple = new VTuple(sortSpecs.length);
           byte[][] rowKeyFields;
           if (sortSpecs.length > 1) {
             byte[][] splitValues = BytesUtils.splitPreserveAllTokens(

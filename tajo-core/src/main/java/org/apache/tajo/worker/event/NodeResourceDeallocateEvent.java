@@ -21,7 +21,7 @@ package org.apache.tajo.worker.event;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.resource.NodeResource;
 
-public class NodeResourceDeallocateEvent extends NodeResourceManagerEvent {
+public class NodeResourceDeallocateEvent extends NodeResourceEvent {
 
   private NodeResource resource;
 

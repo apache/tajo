@@ -41,7 +41,7 @@ public class HashPartitioner extends Partitioner {
 
     // build one key tuple
     for (int i = 0; i < partitionKeyIds.length; i++) {
-      keyTuple.put(i, tuple.get(partitionKeyIds[i]));
+      keyTuple.put(i, tuple.asDatum(partitionKeyIds[i]));
     }
     return (keyTuple.hashCode() & Integer.MAX_VALUE) % numPartitions;
   }

@@ -44,7 +44,7 @@ public class TestDelimitedTextFile {
 
   private static Schema schema = new Schema();
 
-  private static Tuple baseTuple = new VTuple(10);
+  private static Tuple baseTuple;
 
   static {
     schema.addColumn("col1", Type.BOOLEAN);
@@ -58,7 +58,7 @@ public class TestDelimitedTextFile {
     schema.addColumn("col9", Type.BLOB);
     schema.addColumn("col10", Type.INET4);
 
-    baseTuple.put(new Datum[] {
+    baseTuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),                // 0
         DatumFactory.createChar("hyunsik"),           // 1
         DatumFactory.createInt2((short) 17),          // 2

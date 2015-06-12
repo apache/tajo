@@ -50,9 +50,10 @@ public class Upper extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    return DatumFactory.createText(datum.asChars().toUpperCase());
+    return DatumFactory.createText(params.getText(0).toUpperCase());
   }
 }

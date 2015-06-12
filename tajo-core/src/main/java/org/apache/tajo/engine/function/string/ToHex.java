@@ -65,12 +65,11 @@ public class ToHex extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    String ret = new String(Hex.encodeHex(datum.asByteArray()));
+    String ret = new String(Hex.encodeHex(params.getBytes(0)));
     return DatumFactory.createText(trimZero(ret));
   }
 }

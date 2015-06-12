@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -61,7 +60,7 @@ public class SortAggregateExec extends AggregationExec {
       // get a key tuple
       currentKey = new VTuple(groupingKeyIds.length);
       for(int i = 0; i < groupingKeyIds.length; i++) {
-        currentKey.put(i, tuple.get(groupingKeyIds[i]));
+        currentKey.put(i, tuple.asDatum(groupingKeyIds[i]));
       }
 
       /** Aggregation State */
@@ -72,7 +71,7 @@ public class SortAggregateExec extends AggregationExec {
 
             // Merge when aggregator doesn't receive NullDatum
             if (!(groupingKeyNum == 0 && aggFunctionsNum == tuple.size()
-                && tuple.get(i) == NullDatum.get())) {
+                && tuple.isBlankOrNull(i))) {
               aggFunctions[i].merge(contexts[i], tuple);
             }
           }
@@ -90,7 +89,7 @@ public class SortAggregateExec extends AggregationExec {
         int tupleIdx = 0;
 
         for(; tupleIdx < groupingKeyNum; tupleIdx++) {
-          outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+          outputTuple.put(tupleIdx, lastKey.asDatum(tupleIdx));
         }
         for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
           outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
@@ -114,7 +113,7 @@ public class SortAggregateExec extends AggregationExec {
       outputTuple = new VTuple(outSchema.size());
       int tupleIdx = 0;
       for(; tupleIdx < groupingKeyNum; tupleIdx++) {
-        outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+        outputTuple.put(tupleIdx, lastKey.asDatum(tupleIdx));
       }
       for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
         outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));

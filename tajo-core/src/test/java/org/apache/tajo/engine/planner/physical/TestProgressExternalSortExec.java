@@ -90,7 +90,7 @@ public class TestProgressExternalSortExec {
         .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(rnd.nextInt(50)),

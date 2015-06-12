@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
@@ -90,6 +91,40 @@ public class HBaseBinarySerializerDeserializer {
         break;
       case TEXT:
         bytes = Bytes.toBytes(datum.asChars());
+        break;
+      default:
+        bytes = null;
+        break;
+    }
+
+    return bytes;
+  }
+
+  public static byte[] serialize(Column col, Tuple tuple, int index) throws IOException {
+    if (tuple.isBlankOrNull(index)) {
+      return null;
+    }
+
+    byte[] bytes;
+    switch (col.getDataType().getType()) {
+      case INT1:
+      case INT2:
+        bytes = Bytes.toBytes(tuple.getInt2(index));
+        break;
+      case INT4:
+        bytes = Bytes.toBytes(tuple.getInt4(index));
+        break;
+      case INT8:
+        bytes = Bytes.toBytes(tuple.getInt8(index));
+        break;
+      case FLOAT4:
+        bytes = Bytes.toBytes(tuple.getFloat4(index));
+        break;
+      case FLOAT8:
+        bytes = Bytes.toBytes(tuple.getFloat8(index));
+        break;
+      case TEXT:
+        bytes = Bytes.toBytes(tuple.getText(index));
         break;
       default:
         bytes = null;

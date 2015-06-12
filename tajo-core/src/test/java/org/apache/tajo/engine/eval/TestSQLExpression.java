@@ -861,7 +861,7 @@ public class TestSQLExpression extends ExprTestBase {
     int unixtime = 1389071574; // (int) (System.currentTimeMillis() / 1000);
     TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
     testSimpleEval(context, String.format("select to_timestamp(CAST(split_part('%d.999', '.', 1) as INT8));", unixtime),
-        new String[] {expected.asChars(tz, false)});
+        new String[] {TimestampDatum.asChars(expected.asTimeMeta(), tz, false)});
   }
 
   @Test
@@ -887,10 +887,11 @@ public class TestSQLExpression extends ExprTestBase {
 
     testEval(queryContext, schema, "table1", "1980-04-01 01:50:01,234",
         "select col1::timestamp as t1, col2::float from table1 where t1 = '1980-04-01 01:50:01'::timestamp",
-        new String[]{timestamp.asChars(tz, false), "234.0"}
+        new String[]{TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false), "234.0"}
     );
 
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{timestamp.asChars(tz, false)});
+    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{
+        TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false)});
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String[]{"1980-04-01 01:50:01"});
 
     testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String[]{"100000"});

@@ -118,10 +118,10 @@ public class TestBSTIndexExec {
 
     FileAppender appender = (FileAppender)sm.getAppender(meta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 10000; i++) {
       
-      Tuple key = new VTuple(this.idxSchema.size());
+      VTuple key = new VTuple(this.idxSchema.size());
       int rndKey = rnd.nextInt(250);
       if(this.randomValues.containsKey(rndKey)) {
         int t = this.randomValues.remove(rndKey) + 1;

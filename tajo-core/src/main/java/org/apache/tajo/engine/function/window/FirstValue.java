@@ -38,10 +38,10 @@ public abstract class FirstValue extends WindowAggFunc<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     FirstValueContext firstValueCtx = (FirstValueContext)ctx;
-    if(firstValueCtx.isSet == false) {
+    if(!firstValueCtx.isSet) {
       firstValueCtx.isSet = true;
-      if (params.get(0).isNotNull()) {
-        firstValueCtx.first = params.get(0);
+      if (!params.isBlankOrNull(0)) {
+        firstValueCtx.first = params.asDatum(0);
       }
     }
   }
