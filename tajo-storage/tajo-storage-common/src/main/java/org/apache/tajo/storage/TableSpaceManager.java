@@ -70,29 +70,14 @@ public class TableSpaceManager {
   static {
     instance = new TableSpaceManager();
   }
-    /**
+  /**
    * Singleton instance
    */
   private static final TableSpaceManager instance;
 
-  TableSpaceManager(String json) {
-    JSONObject rootObject = parseJson(json);
-    loadStorages(rootObject);
-    loadSpaces(rootObject);
-    addLocalFsTablespace();
-  }
-
   private TableSpaceManager() {
-    String json;
-    try {
-      json = FileUtil.readTextFileFromResource("storage-default.json");
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    JSONObject rootObject = parseJson(json);
-    loadStorages(rootObject);
-    loadSpaces(rootObject);
-
+    initForDefaultConfig(); // loading storage-default.json
+    initSiteConfig();       // storage-site.json will override the configs of storage-default.json
     addLocalFsTablespace();
   }
 
@@ -101,12 +86,19 @@ public class TableSpaceManager {
 
   private void initForDefaultConfig() {
     JSONObject json = loadFromConfig(DEFAULT_CONFIG_FILE);
+    if (json == null) {
+      throw new IllegalStateException("There is no " + SITE_CONFIG_FILE);
+    }
     applyConfig(json, false);
   }
 
   private void initSiteConfig() {
     JSONObject json = loadFromConfig(SITE_CONFIG_FILE);
-    applyConfig(json, true);
+
+    // if there is no storage-site.json file, nothing happen.
+    if (json != null) {
+      applyConfig(json, true);
+    }
   }
 
   private void applyConfig(JSONObject json, boolean override) {
@@ -204,7 +196,12 @@ public class TableSpaceManager {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    return parseJson(json);
+
+    if (json != null) {
+      return parseJson(json);
+    } else {
+      return null;
+    }
   }
 
   private void addLocalFsTablespace() {
@@ -212,7 +209,7 @@ public class TableSpaceManager {
         !TABLE_SPACES.containsKey("file://") ||
         !TABLE_SPACES.containsKey("file:///"))) {
       String tmpName = UUID.randomUUID().toString();
-      addTableSpace(tmpName, URI.create("file:/"));
+      registerTableSpace(tmpName, URI.create("file:/"), null, false);
     }
   }
 
@@ -246,26 +243,6 @@ public class TableSpaceManager {
 
   public static final String KEY_SPACES = "spaces";
 
-  private void loadStorages(JSONObject root) {
-    JSONObject spaces = (JSONObject) root.get(KEY_STORAGES);
-    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
-      String storageType = entry.getKey();
-      JSONObject storageDesc = (JSONObject) entry.getValue();
-      String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
-      String defaultFormat = (String) storageDesc.get(KEY_STORAGE_DEFAULT_FORMAT);
-
-      Class<? extends Tablespace> clazz = null;
-      try {
-        clazz = (Class<? extends Tablespace>) Class.forName(handlerClass);
-      } catch (ClassNotFoundException e) {
-        LOG.warn(handlerClass + " Not Found. This handler is ignored.");
-        continue;
-      }
-
-      TABLE_SPACE_HANDLERS.put(storageType, clazz);
-    }
-  }
-
   private static Tablespace newTableSpace(String spaceName, URI uri) {
     Preconditions.checkNotNull(uri.getScheme(), "URI must include scheme, but it was " + uri);
     Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
@@ -290,68 +267,6 @@ public class TableSpaceManager {
     }
   }
 
-  private void loadSpaces(JSONObject root) {
-    JSONObject spaces = (JSONObject) root.get(KEY_SPACES);
-    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
-      loadTableSpace(entry.getKey(), (JSONObject) entry.getValue());
-    }
-  }
-
-  public static void loadTableSpace(String spaceName, JSONObject spaceDesc) {
-    boolean defaultSpace = Boolean.parseBoolean(spaceDesc.getAsString("default"));
-    URI spaceUri = URI.create(spaceDesc.getAsString("uri"));
-
-    if (defaultSpace) {
-      addTableSpace(DEFAULT_TABLESPACE_NAME, spaceUri);
-    }
-    addTableSpace(spaceName, spaceUri);
-  }
-
-  public static void addTableSpace(String spaceName, URI uri) {
-    addTableSpace(spaceName, uri, null);
-  }
-
-  private static void addTableSpace(String spaceName, URI uri, @Nullable Map<String, String> configs) {
-    Tablespace tableSpace = newTableSpace(spaceName, uri);
-    try {
-      tableSpace.init(systemConf);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    if (configs != null) {
-      tableSpace.setConfigs(configs);
-    }
-    addTableSpaceInternal(tableSpace);
-
-    // If the arbitrary path is allowed, root uri is also added as a tablespace
-    if (tableSpace.getProperty().isArbitraryPathAllowed()) {
-      URI rootUri = tableSpace.getRootUri();
-      if (!TABLE_SPACES.containsKey(rootUri)) {
-        String tmpName = UUID.randomUUID().toString();
-        addTableSpace(tmpName, rootUri, configs);
-      }
-    }
-  }
-
-  private static void addTableSpaceInternal(Tablespace space) {
-    // It is a device to keep the relationship among name, URI, and tablespace 1:1:1.
-
-    boolean nameExist = SPACES_URIS_MAP.containsKey(space.getName());
-    boolean uriExist = TABLE_SPACES.containsKey(space.uri);
-
-    boolean mismatch = nameExist && !SPACES_URIS_MAP.get(space.getName()).equals(space.getUri());
-    mismatch = mismatch || uriExist && TABLE_SPACES.get(space.uri).equals(space);
-
-    if (mismatch) {
-      throw new RuntimeException("Name or URI of Tablespace must be unique.");
-    }
-
-    SPACES_URIS_MAP.put(space.getName(), space.getUri());
-    // We must guarantee that the same uri results in the same tablespace instance.
-    TABLE_SPACES.put(space.getUri(), space);
-  }
-
   @VisibleForTesting
   public static Optional<Tablespace> addTableSpaceForTest(Tablespace space) {
     Tablespace existing = null;
@@ -361,17 +276,10 @@ public class TableSpaceManager {
       existing = TABLE_SPACES.remove(space.getUri());
 
       // Add anotherone for test
-      addTableSpace(space.name, space.uri);
+      registerTableSpace(space.name, space.uri, null, true);
     }
     // if there is an existing one, return it.
     return Optional.fromNullable(existing);
-  }
-
-  private void loadFormats(JSONObject root) {
-    JSONObject spaces = (JSONObject) root.get("formats");
-    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
-
-    }
   }
 
   public Iterable<String> getSupportSchemes() {

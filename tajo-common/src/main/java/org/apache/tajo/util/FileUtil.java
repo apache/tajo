@@ -87,8 +87,20 @@ public class FileUtil {
     return ClassLoader.getSystemResource(resource);
   }
 
+  /**
+   * It returns a string from a text file found in classpath.
+   *
+   * @param resource Resource file name
+   * @return String contents if exists. Otherwise, it will return null.
+   * @throws IOException
+   */
   public static String readTextFileFromResource(String resource) throws IOException {
-    return readTextFromStream(ClassLoader.getSystemResourceAsStream(resource));
+    InputStream stream = ClassLoader.getSystemResourceAsStream(resource);
+    if (stream != null) {
+      return readTextFromStream(stream);
+    } else {
+      return null;
+    }
   }
 
   public static String readTextFromStream(InputStream inputStream)
