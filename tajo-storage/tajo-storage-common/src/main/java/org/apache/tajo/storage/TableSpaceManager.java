@@ -31,6 +31,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.Pair;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -93,6 +94,117 @@ public class TableSpaceManager {
     loadSpaces(rootObject);
 
     addLocalFsTablespace();
+  }
+
+  public static final String DEFAULT_CONFIG_FILE = "storage-default.json";
+  public static final String SITE_CONFIG_FILE = "storage-site.json";
+
+  private void initForDefaultConfig() {
+    JSONObject json = loadFromConfig(DEFAULT_CONFIG_FILE);
+    applyConfig(json, false);
+  }
+
+  private void initSiteConfig() {
+    JSONObject json = loadFromConfig(SITE_CONFIG_FILE);
+    applyConfig(json, true);
+  }
+
+  private void applyConfig(JSONObject json, boolean override) {
+    applyStorages(json);
+    applySpaces(json, override);
+  }
+
+  private void applyStorages(JSONObject json) {
+    JSONObject spaces = (JSONObject) json.get(KEY_STORAGES);
+
+    Pair<String, Class<? extends Tablespace>> pair = null;
+    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
+
+      try {
+        pair = extractStorage(entry);
+      } catch (ClassNotFoundException e) {
+        LOG.warn(e);
+        continue;
+      }
+
+      TABLE_SPACE_HANDLERS.put(pair.getFirst(), pair.getSecond());
+    }
+  }
+
+  private Pair<String, Class<? extends Tablespace>> extractStorage(Map.Entry<String, Object> entry)
+      throws ClassNotFoundException {
+
+    String storageType = entry.getKey();
+    JSONObject storageDesc = (JSONObject) entry.getValue();
+    String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
+
+    return new Pair<String, Class<? extends Tablespace>>(
+        storageType,(Class<? extends Tablespace>) Class.forName(handlerClass));
+  }
+
+  private void applySpaces(JSONObject json, boolean override) {
+    JSONObject spaces = (JSONObject) json.get(KEY_SPACES);
+    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
+      AddTableSpace(entry.getKey(), (JSONObject) entry.getValue(), override);
+    }
+  }
+
+  public static void AddTableSpace(String spaceName, JSONObject spaceDesc, boolean override) {
+    boolean defaultSpace = Boolean.parseBoolean(spaceDesc.getAsString("default"));
+    URI spaceUri = URI.create(spaceDesc.getAsString("uri"));
+
+    if (defaultSpace) {
+      registerTableSpace(DEFAULT_TABLESPACE_NAME, spaceUri, spaceDesc, override);
+    }
+    registerTableSpace(spaceName, spaceUri, spaceDesc, override);
+  }
+
+  private static void registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc, boolean override) {
+    Tablespace tableSpace = newTableSpace(spaceName, uri);
+    try {
+      tableSpace.init(systemConf);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    putTablespace(tableSpace, override);
+
+    // If the arbitrary path is allowed, root uri is also added as a tablespace
+    if (tableSpace.getProperty().isArbitraryPathAllowed()) {
+      URI rootUri = tableSpace.getRootUri();
+      if (!TABLE_SPACES.containsKey(rootUri)) {
+        String tmpName = UUID.randomUUID().toString();
+        registerTableSpace(tmpName, rootUri, spaceDesc, override);
+      }
+    }
+  }
+
+  private static void putTablespace(Tablespace space, boolean override) {
+    // It is a device to keep the relationship among name, URI, and tablespace 1:1:1.
+
+    boolean nameExist = SPACES_URIS_MAP.containsKey(space.getName());
+    boolean uriExist = TABLE_SPACES.containsKey(space.uri);
+
+    boolean mismatch = nameExist && !SPACES_URIS_MAP.get(space.getName()).equals(space.getUri());
+    mismatch = mismatch || uriExist && TABLE_SPACES.get(space.uri).equals(space);
+
+    if (!override && mismatch) {
+      throw new RuntimeException("Name or URI of Tablespace must be unique.");
+    }
+
+    SPACES_URIS_MAP.put(space.getName(), space.getUri());
+    // We must guarantee that the same uri results in the same tablespace instance.
+    TABLE_SPACES.put(space.getUri(), space);
+  }
+
+  private JSONObject loadFromConfig(String fileName) {
+    String json;
+    try {
+      json = FileUtil.readTextFileFromResource(fileName);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return parseJson(json);
   }
 
   private void addLocalFsTablespace() {
