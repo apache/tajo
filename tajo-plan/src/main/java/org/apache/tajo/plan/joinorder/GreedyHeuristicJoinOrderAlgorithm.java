@@ -212,12 +212,12 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     if (PlannerUtil.isSymmetricJoin(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
       double leftCost = getCost(edge.getLeftVertex());
       double rightCost = getCost(edge.getRightVertex());
-      if (leftCost > rightCost) {
+      if (leftCost < rightCost) {
         return new JoinEdge(edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
       } else if (leftCost == rightCost) {
         // compare the relation name to make the join order determinant
         if (StringUtils.join(edge.getLeftVertex().getRelations(), "").
-            compareTo(StringUtils.join(edge.getRightVertex().getRelations(), "")) > 0) {
+            compareTo(StringUtils.join(edge.getRightVertex().getRelations(), "")) < 0) {
           return new JoinEdge(edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
         }
       }
@@ -307,10 +307,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       return null;
   }
 
-  // We assume that every operation has same cost.
   // COMPUTATION_FACTOR is used to give the larger cost for longer plans.
+  // We assume that every operation has same cost.
   // TODO: more accurate cost estimation is required.
-  private static final double COMPUTATION_FACTOR = 1.1;
+  private static final double COMPUTATION_FACTOR = 1.5;
 
   /**
    * Getting a cost of one join
