@@ -27,6 +27,10 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1636: query rest api uri should change
+    from /databases/{database_name}/queies to /queries.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1624: Add managed table or external description in Table management 
     section. (hyunsik)
 
