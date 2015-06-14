@@ -306,8 +306,8 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public synchronized void startQuery() {
-    Tablespace space = null;
     LogicalPlan plan = null;
+    Tablespace space = null;
     try {
       if (query != null) {
         LOG.warn("Query already started");
@@ -320,9 +320,10 @@ public class QueryMasterTask extends CompositeService {
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       jsonExpr = null; // remove the possible OOM
+
       plan = planner.createPlan(queryContext, expr);
-      space = queryContext.hasOutputPath() ?
-          TableSpaceManager.get(queryContext.getOutputPath()).get() : TableSpaceManager.getDefault();
+      // when a given uri is null, TableSpaceManager.get will return the default tablespace.
+      space = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
 
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
       TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
@@ -427,20 +428,20 @@ public class QueryMasterTask extends CompositeService {
     // Create Output Directory
     ////////////////////////////////////////////
 
-    String outputPath = context.get(QueryVars.OUTPUT_TABLE_PATH, "");
+    String outputPath = context.get(QueryVars.OUTPUT_TABLE_URI, "");
 
     if (outputPath.isEmpty()) {
       stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-    } else {
 
+    } else {
       Optional<Tablespace> spaceResult = TableSpaceManager.get(outputPath);
       if (!spaceResult.isPresent()) {
         throw new IOException("No registered Tablespace for " + outputPath);
       }
-      Tablespace space = spaceResult.get();
 
+      Tablespace space = spaceResult.get();
       if (space.getProperty().isMovable()) {
-        stagingDir = StorageUtil.concatPath(context.getOutputPath().toString(), TMP_STAGING_DIR_PREFIX, queryId);
+        stagingDir = StorageUtil.concatPath(context.getOutputTableUri().toString(), TMP_STAGING_DIR_PREFIX, queryId);
       } else {
         stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
       }

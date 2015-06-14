@@ -919,8 +919,8 @@ public class FileTablespace extends Tablespace {
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
     Path finalOutputDir;
-    if (!queryContext.get(QueryVars.OUTPUT_TABLE_PATH, "").isEmpty()) {
-      finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_PATH));
+    if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()) {
+      finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
       try {
         FileSystem fs = stagingResultDir.getFileSystem(conf);
 

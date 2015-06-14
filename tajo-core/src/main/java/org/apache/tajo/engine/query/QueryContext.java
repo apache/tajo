@@ -107,18 +107,18 @@ public class QueryContext extends OverridableConf {
    *
    * @return
    */
-  public boolean hasOutputPath() {
-    return containsKey(QueryVars.OUTPUT_TABLE_PATH);
+  public boolean hasOutputTableUri() {
+    return containsKey(QueryVars.OUTPUT_TABLE_URI);
   }
 
   public void setOutputPath(URI uri) {
     if (uri != null) {
-      put(QueryVars.OUTPUT_TABLE_PATH, uri.toString());
+      put(QueryVars.OUTPUT_TABLE_URI, uri.toString());
     }
   }
 
-  public URI getOutputPath() {
-    String strVal = get(QueryVars.OUTPUT_TABLE_PATH);
+  public URI getOutputTableUri() {
+    String strVal = get(QueryVars.OUTPUT_TABLE_URI);
     return strVal != null ? URI.create(strVal) : null;
   }
 

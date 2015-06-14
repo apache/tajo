@@ -30,6 +30,7 @@ import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
@@ -445,8 +446,8 @@ public class Query implements EventHandler<QueryEvent> {
     private void handleQueryFailure(Query query, Stage lastStage) {
       QueryContext context = query.context.getQueryContext();
 
-      if (lastStage != null && context.hasOutputPath()) {
-        Tablespace space = TableSpaceManager.get(context.getOutputPath()).get();
+      if (lastStage != null && context.hasOutputTableUri()) {
+        Tablespace space = TableSpaceManager.get(context.getOutputTableUri()).get();
         try {
           LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
           space.rollbackTable(rootNode.getChild());
@@ -469,13 +470,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         // If there is not tabledesc, it is a select query without insert or ctas.
         // In this case, we should use default tablespace.
-        Tablespace space;
-        if (tableDesc != null && tableDesc.getMeta().getStoreType().equalsIgnoreCase("hbase")) {
-          space = TableSpaceManager.getAnyByScheme("hbase").get();
-        } else {
-          space = queryContext.hasOutputPath() ?
-              TableSpaceManager.get(queryContext.getOutputPath()).get() : TableSpaceManager.getDefault();
-        }
+        Tablespace space = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
 
         Path finalOutputDir = space.commitTable(
             query.context.getQueryContext(),

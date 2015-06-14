@@ -131,7 +131,7 @@ public class MergeScanner implements Scanner {
   private Scanner getNextScanner() throws IOException {
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = TableSpaceManager.get("file:/").get().getScanner(meta, schema, currentFragment, target);
+      currentScanner = TableSpaceManager.getLocalFs().getScanner(meta, schema, currentFragment, target);
       currentScanner.init();
       return currentScanner;
     } else {

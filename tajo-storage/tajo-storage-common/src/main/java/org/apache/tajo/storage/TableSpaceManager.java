@@ -290,7 +290,19 @@ public class TableSpaceManager implements StorageService {
     return TABLE_SPACE_HANDLERS.keySet();
   }
 
-  public static <T extends Tablespace> Optional<T> get(String uri) {
+  /**
+   * Get tablespace for the given URI. If uri is null, the default tablespace will be returned
+   *
+   * @param uri Table or Table Fragment URI.
+   * @param <T> Tablespace class type
+   * @return Tablespace. If uri is null, the default tablespace will be returned.
+   */
+  public static <T extends Tablespace> Optional<T> get(@Nullable String uri) {
+
+    if (uri == null || uri.isEmpty()) {
+      return (Optional<T>) Optional.of(getDefault());
+    }
+
     Tablespace lastOne = null;
 
     // Find the longest matched one. For example, assume that the caller tries to find /x/y/z, and
@@ -327,7 +339,7 @@ public class TableSpaceManager implements StorageService {
     return (T) getByName(DEFAULT_TABLESPACE_NAME).get();
   }
 
-  public static <T extends Tablespace> T getLocalFs(String name) {
+  public static <T extends Tablespace> T getLocalFs() {
     return (T) get(LOCAL_FS_URI).get();
   }
 

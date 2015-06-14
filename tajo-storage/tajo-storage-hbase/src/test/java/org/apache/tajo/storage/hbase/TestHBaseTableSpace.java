@@ -28,8 +28,10 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.Pair;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -39,6 +41,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestHBaseTableSpace {
+  @BeforeClass
+  public static void setUp() throws IOException {
+    String tableSpaceUri = "hbase:zk://host1:2171";
+    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
+    hBaseTablespace.init(new TajoConf());
+    TableSpaceManager.addTableSpaceForTest(hBaseTablespace);
+  }
 
   @Test
   public void testExtractQuorum() {
@@ -50,9 +59,8 @@ public class TestHBaseTableSpace {
 
   @Test
   public void testTablespaceHandler() throws Exception {
-    assertTrue((TableSpaceManager.getByName("default").get()) instanceof HBaseTablespace);
-    assertTrue((TableSpaceManager.getByName("hbase-cluster1").get()) instanceof HBaseTablespace);
-    assertTrue((TableSpaceManager.get(URI.create("hbase:zk:///x1.com:2181,x2.com:2181/")).get())
+    assertTrue((TableSpaceManager.getByName("cluster1").get()) instanceof HBaseTablespace);
+    assertTrue((TableSpaceManager.get(URI.create("hbase:zk://host1:2171")).get())
         instanceof HBaseTablespace);
   }
 
@@ -66,7 +74,7 @@ public class TestHBaseTableSpace {
     EvalNode evalNodeA = new BinaryEval(EvalType.AND, evalNode1, evalNode2);
     scanNode.setQual(evalNodeA);
 
-    HBaseTablespace storageManager = (HBaseTablespace) TableSpaceManager.getByName("default").get();
+    HBaseTablespace storageManager = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());
