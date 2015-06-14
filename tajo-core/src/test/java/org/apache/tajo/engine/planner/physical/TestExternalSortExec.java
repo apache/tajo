@@ -104,7 +104,7 @@ public class TestExternalSortExec {
     employee = new TableDesc("default.employee", schema, employeeMeta, employeePath.toUri());
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
   }
 
   @After

@@ -148,7 +148,7 @@ public class TestBSTIndexExec {
     catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf);
   }
 

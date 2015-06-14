@@ -26,6 +26,8 @@ import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.Tablespace;
 
 public class CreateTableHook implements DistributedQueryHook {
 
@@ -43,8 +45,10 @@ public class CreateTableHook implements DistributedQueryHook {
     String databaseName = splitted[0];
     String tableName = splitted[1];
     queryContext.setOutputTable(tableName);
-    queryContext.setOutputPath(
-        StorageUtil.concatPath(TajoConf.getWarehouseDir(queryContext.getConf()), databaseName, tableName));
+
+    Tablespace space = TableSpaceManager.get(createTableNode.getUri()).get();
+    queryContext.setOutputPath(space.getTableUri(databaseName, tableName));
+
     if(createTableNode.getPartitionMethod() != null) {
       queryContext.setPartitionMethod(createTableNode.getPartitionMethod());
     }

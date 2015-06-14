@@ -240,7 +240,7 @@ public class TestLeftOuterHashJoinExec {
 
 
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
     defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 

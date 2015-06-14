@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 
 /**
@@ -47,7 +48,7 @@ import java.util.UUID;
  * HDFS and S3 can be a default tablespace if a Tajo cluster is in fully distributed mode.
  * Local file system can be a default tablespace if a Tajo cluster runs on a single machine.
  */
-public class TableSpaceManager {
+public class TableSpaceManager implements StorageService {
   private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
 
   /** default tablespace name */
@@ -59,11 +60,11 @@ public class TableSpaceManager {
 
 
   // The relation ship among name, URI, Tablespaces must be kept 1:1:1.
-  protected final static Map<String, URI> SPACES_URIS_MAP = Maps.newConcurrentMap();
-  protected final static Map<URI, Tablespace> TABLE_SPACES = Maps.newConcurrentMap();
+  protected final static Map<String, URI> SPACES_URIS_MAP = Maps.newHashMap();
+  protected final static TreeMap<URI, Tablespace> TABLE_SPACES = Maps.newTreeMap();
 
-  protected final static Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newConcurrentMap();
-  protected final static Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newConcurrentMap();
+  protected final static Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newHashMap();
+  protected final static Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newHashMap();
 
   public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
 
@@ -79,6 +80,10 @@ public class TableSpaceManager {
     initForDefaultConfig(); // loading storage-default.json
     initSiteConfig();       // storage-site.json will override the configs of storage-default.json
     addLocalFsTablespace();
+  }
+
+  public static TableSpaceManager getInstance() {
+    return instance;
   }
 
   public static final String DEFAULT_CONFIG_FILE = "storage-default.json";
@@ -269,7 +274,7 @@ public class TableSpaceManager {
 
   @VisibleForTesting
   public static Optional<Tablespace> addTableSpaceForTest(Tablespace space) {
-    Tablespace existing = null;
+    Tablespace existing;
     synchronized (SPACES_URIS_MAP) {
       // Remove existing one
       SPACES_URIS_MAP.remove(space.getName());
@@ -288,7 +293,8 @@ public class TableSpaceManager {
 
   public static <T extends Tablespace> Optional<T> get(String uri) {
     Tablespace lastFound = null;
-    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.entrySet()) {
+
+    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.tailMap(URI.create(uri), true).entrySet()) {
       if (uri.startsWith(entry.getKey().toString())) {
         if (lastFound == null || lastFound.getUri().toString().length() < uri.toString().length()) {
           lastFound = entry.getValue();
@@ -340,5 +346,11 @@ public class TableSpaceManager {
     }
 
     return Optional.absent();
+  }
+
+  @Override
+  public URI getTableURI(@Nullable String spaceName, String databaseName, String tableName) {
+    Tablespace space = spaceName == null ? getDefault() : getByName(spaceName).get();
+    return space.getTableUri(databaseName, tableName);
   }
 }

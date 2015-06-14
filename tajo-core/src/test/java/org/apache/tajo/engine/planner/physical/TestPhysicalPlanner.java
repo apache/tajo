@@ -164,7 +164,7 @@ public class TestPhysicalPlanner {
     appender.close();
     catalog.createTable(score);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf);
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(conf);

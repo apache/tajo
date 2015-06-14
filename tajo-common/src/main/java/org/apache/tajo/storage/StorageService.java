@@ -16,30 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.exec.prehook;
+package org.apache.tajo.storage;
 
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.plan.LogicalPlan;
+import javax.annotation.Nullable;
+import java.net.URI;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class DistributedQueryHookManager {
-  private List<DistributedQueryHook> hooks = new ArrayList<DistributedQueryHook>();
-
-  public void addHook(DistributedQueryHook hook) {
-    hooks.add(hook);
-  }
-
-  public void doHooks(QueryContext queryContext, LogicalPlan plan) {
-    for (DistributedQueryHook hook : hooks) {
-      if (hook.isEligible(queryContext, plan)) {
-        try {
-          hook.hook(queryContext, plan);
-        } catch (Throwable t) {
-          throw new RuntimeException(t);
-        }
-      }
-    }
-  }
+public interface StorageService {
+  /**
+   * Get Table URI
+   *
+   * @param spaceName Tablespace name. If it is null, the default space will be used
+   * @param databaseName Database name
+   * @param tableName Table name
+   * @return Table URI
+   */
+  URI getTableURI(@Nullable String spaceName, String databaseName, String tableName);
 }

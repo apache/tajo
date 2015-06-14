@@ -50,6 +50,7 @@ import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
+import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -68,13 +69,17 @@ import static org.apache.tajo.plan.LogicalPlan.BlockType;
 public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContext, LogicalNode> {
   private static Log LOG = LogFactory.getLog(LogicalPlanner.class);
   private final CatalogService catalog;
+  private final StorageService storage;
+
   private final LogicalPlanPreprocessor preprocessor;
   private final EvalTreeOptimizer evalOptimizer;
   private final ExprAnnotator exprAnnotator;
   private final ExprNormalizer normalizer;
 
-  public LogicalPlanner(CatalogService catalog) {
+  public LogicalPlanner(CatalogService catalog, StorageService storage) {
     this.catalog = catalog;
+    this.storage = storage;
+
     this.exprAnnotator = new ExprAnnotator(catalog);
     this.preprocessor = new LogicalPlanPreprocessor(catalog, exprAnnotator);
     this.normalizer = new ExprNormalizer();
@@ -1778,13 +1783,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setTableSpaceName(expr.getTableSpaceName());
     }
 
+    createTableNode.setUri(getCreatedTableURI(context, expr));
+
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(expr.getStorageType());
     } else { // otherwise, default type
       createTableNode.setStorageType("CSV");
     }
-
-
 
     // Set default storage properties to table
     KeyValueSet properties = CatalogUtil.newPhysicalProperties(createTableNode.getStorageType());
@@ -1802,8 +1807,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     createTableNode.setOptions(properties);
 
-
-
     if (expr.hasPartition()) {
       if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
         createTableNode.setPartitionMethod(getPartitionMethod(context, expr.getTableName(), expr.getPartitionMethod()));
@@ -1819,6 +1822,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       stack.pop();
       createTableNode.setChild(subQuery);
       createTableNode.setInSchema(subQuery.getOutSchema());
+
+      createTableNode.setUri(storage.getTableURI(expr.getTableSpaceName(),
+          CatalogUtil.extractQualifier(expr.getTableName()),
+          CatalogUtil.extractSimpleName(expr.getTableName())));
 
       // If the table schema is defined
       // ex) CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
@@ -1863,11 +1870,23 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         createTableNode.setExternal(true);
       }
 
-      if (expr.hasLocation()) {
-        createTableNode.setUri(URI.create(expr.getLocation()));
-      }
-
       return createTableNode;
+    }
+  }
+
+  private URI getCreatedTableURI(PlanContext context, CreateTable createTable) {
+
+    if (createTable.hasLocation()) {
+      return URI.create(createTable.getLocation());
+    } else {
+
+      String tableName = createTable.getTableName();
+      String databaseName = CatalogUtil.isFQTableName(tableName) ?
+          CatalogUtil.extractQualifier(tableName) :
+          context.queryContext.get(SessionVars.CURRENT_DATABASE);
+
+      return storage.getTableURI(
+          createTable.getTableSpaceName(), databaseName, CatalogUtil.extractSimpleName(tableName));
     }
   }
 

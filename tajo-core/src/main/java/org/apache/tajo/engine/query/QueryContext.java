@@ -111,9 +111,9 @@ public class QueryContext extends OverridableConf {
     return containsKey(QueryVars.OUTPUT_TABLE_PATH);
   }
 
-  public void setOutputPath(Path path) {
-    if (path != null) {
-      put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+  public void setOutputPath(URI uri) {
+    if (uri != null) {
+      put(QueryVars.OUTPUT_TABLE_PATH, uri.toString());
     }
   }
 

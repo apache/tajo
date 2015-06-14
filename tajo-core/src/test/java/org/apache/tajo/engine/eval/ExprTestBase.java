@@ -50,6 +50,7 @@ import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.LazyTuple;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.BytesUtils;
@@ -103,7 +104,7 @@ public class ExprTestBase {
 
     analyzer = new SQLAnalyzer();
     preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
-    planner = new LogicalPlanner(cat);
+    planner = new LogicalPlanner(cat, TableSpaceManager.getInstance());
     optimizer = new LogicalOptimizer(util.getConfiguration());
     annotatedPlanVerifier = new LogicalPlanVerifier(util.getConfiguration(), cat);
   }

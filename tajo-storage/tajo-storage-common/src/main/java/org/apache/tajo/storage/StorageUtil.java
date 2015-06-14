@@ -82,7 +82,7 @@ public class StorageUtil extends StorageConstants {
         sb.append("/");
     }
     
-    return new Path(parent, sb.toString());
+    return new Path(parent + "/" + sb.toString());
   }
 
   static final String fileNamePatternV08 = "part-[0-9]*-[0-9]*";
