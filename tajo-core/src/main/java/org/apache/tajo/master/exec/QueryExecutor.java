@@ -166,14 +166,10 @@ public class QueryExecutor {
                           SubmitQueryResponse.Builder response)
       throws Exception {
     String explainStr;
-    explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
-    LOG.info("What1 \n" + explainStr);
     boolean isTest = queryContext.getBool(SessionVars.TEST_PLAN_SHAPE_FIX_ENABLED);
     if (isTest) {
       ExplainPlanPreprocessorForTest preprocessorForTest = new ExplainPlanPreprocessorForTest();
       preprocessorForTest.prepareTest(plan);
-      explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
-      LOG.info("What2 \n" + explainStr);
     }
 
     if (isGlobal) {
