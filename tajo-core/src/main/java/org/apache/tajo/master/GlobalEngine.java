@@ -302,7 +302,7 @@ public class GlobalEngine extends AbstractService {
           InsertNode iNode = rootNode.getChild();
           Schema outSchema = iNode.getChild().getOutSchema();
 
-          TableSpaceManager.get(tableDesc.getPath()).get().verifySchemaToWrite(tableDesc, outSchema);
+          TableSpaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
 
         } catch (Throwable t) {
           state.addVerification(t.getMessage());

@@ -271,9 +271,9 @@ public class TestLeftOuterHashJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.IN_MEMORY_HASH_JOIN);
 
     FileFragment[] dep3Frags = FileTablespace.splitNG(conf, DEP3_NAME, dep3.getMeta(),
-        new Path(dep3.getPath()), Integer.MAX_VALUE);
+        new Path(dep3.getUri()), Integer.MAX_VALUE);
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
-        new Path(emp3.getPath()), Integer.MAX_VALUE);
+        new Path(emp3.getUri()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(dep3Frags, emp3Frags);
 
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestLeftOuterHashJoinExec0");
@@ -301,9 +301,9 @@ public class TestLeftOuterHashJoinExec {
   @Test
   public final void testLeftOuter_HashJoinExec1() throws IOException, PlanningException {
     FileFragment[] job3Frags = FileTablespace.splitNG(conf, JOB3_NAME, job3.getMeta(),
-        new Path(job3.getPath()), Integer.MAX_VALUE);
+        new Path(job3.getUri()), Integer.MAX_VALUE);
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
-        new Path(emp3.getPath()), Integer.MAX_VALUE);
+        new Path(emp3.getUri()), Integer.MAX_VALUE);
 
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
@@ -335,9 +335,9 @@ public class TestLeftOuterHashJoinExec {
   public final void testLeftOuter_HashJoinExec2() throws IOException, PlanningException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
-        new Path(emp3.getPath()), Integer.MAX_VALUE);
+        new Path(emp3.getUri()), Integer.MAX_VALUE);
     FileFragment[] job3Frags = FileTablespace.splitNG(conf, JOB3_NAME, job3.getMeta(),
-        new Path(job3.getPath()), Integer.MAX_VALUE);
+        new Path(job3.getUri()), Integer.MAX_VALUE);
 
     FileFragment[] merged = TUtil.concat(emp3Frags, job3Frags);
 
@@ -371,9 +371,9 @@ public class TestLeftOuterHashJoinExec {
   public final void testLeftOuter_HashJoinExec3() throws IOException, PlanningException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
-        new Path(emp3.getPath()), Integer.MAX_VALUE);
+        new Path(emp3.getUri()), Integer.MAX_VALUE);
     FileFragment[] phone3Frags = FileTablespace.splitNG(conf, PHONE3_NAME, phone3.getMeta(),
-        new Path(phone3.getPath()), Integer.MAX_VALUE);
+        new Path(phone3.getUri()), Integer.MAX_VALUE);
 
     FileFragment[] merged = TUtil.concat(emp3Frags, phone3Frags);
 
@@ -406,9 +406,9 @@ public class TestLeftOuterHashJoinExec {
   public final void testLeftOuter_HashJoinExec4() throws IOException, PlanningException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, "default.emp3", emp3.getMeta(),
-        new Path(emp3.getPath()), Integer.MAX_VALUE);
+        new Path(emp3.getUri()), Integer.MAX_VALUE);
     FileFragment[] phone3Frags = FileTablespace.splitNG(conf, "default.phone3", phone3.getMeta(),
-        new Path(phone3.getPath()), Integer.MAX_VALUE);
+        new Path(phone3.getUri()), Integer.MAX_VALUE);
 
     FileFragment[] merged = TUtil.concat(phone3Frags, emp3Frags);
 

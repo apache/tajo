@@ -338,7 +338,7 @@ public class TestPlannerUtil {
 
     TableDesc tableDesc = new TableDesc();
     tableDesc.setName("Test");
-    tableDesc.setPath(path.toUri());
+    tableDesc.setUri(path.toUri());
 
     FileSystem fs = path.getFileSystem(util.getConfiguration());
 

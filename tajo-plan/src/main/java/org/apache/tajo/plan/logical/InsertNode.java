@@ -25,8 +25,6 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
-import java.net.URI;
-
 public class InsertNode extends StoreTableNode implements Cloneable {
   /** Overwrite or just insert */
   @Expose private boolean overwrite;
@@ -46,8 +44,8 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     } else {
       tableSchema = desc.getSchema();
     }
-    if (desc.getPath() != null) {
-      setUri(desc.getPath());
+    if (desc.getUri() != null) {
+      setUri(desc.getUri());
     }
     setOptions(desc.getMeta().getOptions());
     setStorageType(desc.getMeta().getStoreType());

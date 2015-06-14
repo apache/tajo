@@ -36,7 +36,6 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
@@ -314,7 +313,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        TableSpaceManager.get(tableDesc.getPath()).get().purgeTable(tableDesc);
+        TableSpaceManager.get(tableDesc.getUri()).get().purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
       }
@@ -353,7 +352,7 @@ public class DDLExecutor {
 
       Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
       TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
-      Path tablePath = new Path(tableDesc.getPath());
+      Path tablePath = new Path(tableDesc.getUri());
       if (tablePath.getParent() == null ||
           !tablePath.getParent().toUri().getPath().equals(warehousePath.toUri().getPath())) {
         throw new IOException("Can't truncate external table:" + eachTableName + ", data dir=" + tablePath +
@@ -363,7 +362,7 @@ public class DDLExecutor {
     }
 
     for (TableDesc eachTable: tableDescList) {
-      Path path = new Path(eachTable.getPath());
+      Path path = new Path(eachTable.getUri());
       LOG.info("Truncate table: " + eachTable.getName() + ", delete all data files in " + path);
       FileSystem fs = path.getFileSystem(context.getConf());
 

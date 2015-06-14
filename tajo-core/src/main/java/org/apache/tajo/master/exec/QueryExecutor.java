@@ -69,10 +69,8 @@ import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class QueryExecutor {
   private static final Log LOG = LogFactory.getLog(QueryExecutor.class);
@@ -348,7 +346,7 @@ public class QueryExecutor {
       Path finalOutputDir;
       if (insertNode.getTableName() != null) {
         tableDesc = this.catalog.getTableDesc(insertNode.getTableName());
-        finalOutputDir = new Path(tableDesc.getPath());
+        finalOutputDir = new Path(tableDesc.getUri());
       } else {
         finalOutputDir = new Path(insertNode.getUri());
       }
@@ -449,14 +447,7 @@ public class QueryExecutor {
     TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
     if (tableDesc != null) {
 
-      Tablespace space = null;
-      if (tableDesc.getMeta().getStoreType().equalsIgnoreCase("hbase")) {
-        space = TableSpaceManager.getAnyByScheme("hbase").get();
-      } else if (tableDesc.hasPath()) {
-        space = TableSpaceManager.get(tableDesc.getPath()).get();
-      } else {
-        space = TableSpaceManager.getDefault();
-      }
+      Tablespace space = TableSpaceManager.get(tableDesc.getUri()).get();
       StorageProperty storageProperty = space.getProperty();
 
       if (!storageProperty.isInsertable()) {
@@ -498,7 +489,7 @@ public class QueryExecutor {
     TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
 
     if (tableDesc != null) {
-      Tablespace space = TableSpaceManager.get(tableDesc.getPath()).get();
+      Tablespace space = TableSpaceManager.get(tableDesc.getUri()).get();
       FormatProperty format = space.getFormatProperty(tableDesc.getMeta().getStoreType());
 
       if (format.sortedInsertRequired()) {

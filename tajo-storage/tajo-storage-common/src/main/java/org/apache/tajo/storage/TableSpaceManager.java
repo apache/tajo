@@ -51,20 +51,23 @@ import java.util.UUID;
 public class TableSpaceManager implements StorageService {
   private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
 
+  public static final String DEFAULT_CONFIG_FILE = "storage-default.json";
+  public static final String SITE_CONFIG_FILE = "storage-site.json";
+
   /** default tablespace name */
   public static final String DEFAULT_TABLESPACE_NAME = "default";
 
-  private static final TajoConf systemConf = new TajoConf();
-  private static final JSONParser parser =
-      new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
+  private static final URI LOCAL_FS_URI = URI.create("file:/");
 
+  private final static TajoConf systemConf = new TajoConf();
+  private final static JSONParser parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
 
   // The relation ship among name, URI, Tablespaces must be kept 1:1:1.
-  protected final static Map<String, URI> SPACES_URIS_MAP = Maps.newHashMap();
-  protected final static TreeMap<URI, Tablespace> TABLE_SPACES = Maps.newTreeMap();
+  protected static final Map<String, URI> SPACES_URIS_MAP = Maps.newHashMap();
+  protected static final TreeMap<URI, Tablespace> TABLE_SPACES = Maps.newTreeMap();
 
-  protected final static Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newHashMap();
-  protected final static Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newHashMap();
+  protected static final Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newHashMap();
+  protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newHashMap();
 
   public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
 
@@ -82,12 +85,16 @@ public class TableSpaceManager implements StorageService {
     addLocalFsTablespace();
   }
 
+  private void addLocalFsTablespace() {
+    if (TABLE_SPACES.headMap(LOCAL_FS_URI, true).firstEntry() == null) {
+      String tmpName = UUID.randomUUID().toString();
+      registerTableSpace(tmpName, URI.create("file:/"), null, false);
+    }
+  }
+
   public static TableSpaceManager getInstance() {
     return instance;
   }
-
-  public static final String DEFAULT_CONFIG_FILE = "storage-default.json";
-  public static final String SITE_CONFIG_FILE = "storage-site.json";
 
   private void initForDefaultConfig() {
     JSONObject json = loadFromConfig(DEFAULT_CONFIG_FILE);
@@ -106,12 +113,35 @@ public class TableSpaceManager implements StorageService {
     }
   }
 
-  private void applyConfig(JSONObject json, boolean override) {
-    applyStorages(json);
-    applySpaces(json, override);
+  private JSONObject loadFromConfig(String fileName) {
+    String json;
+    try {
+      json = FileUtil.readTextFileFromResource(fileName);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    if (json != null) {
+      return parseJson(json);
+    } else {
+      return null;
+    }
   }
 
-  private void applyStorages(JSONObject json) {
+  private static JSONObject parseJson(String json) {
+    try {
+      return (JSONObject) parser.parse(json);
+    } catch (ParseException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void applyConfig(JSONObject json, boolean override) {
+    loadStorages(json);
+    loadTableSpaces(json, override);
+  }
+
+  private void loadStorages(JSONObject json) {
     JSONObject spaces = (JSONObject) json.get(KEY_STORAGES);
 
     Pair<String, Class<? extends Tablespace>> pair = null;
@@ -139,7 +169,7 @@ public class TableSpaceManager implements StorageService {
         storageType,(Class<? extends Tablespace>) Class.forName(handlerClass));
   }
 
-  private void applySpaces(JSONObject json, boolean override) {
+  private void loadTableSpaces(JSONObject json, boolean override) {
     JSONObject spaces = (JSONObject) json.get(KEY_SPACES);
     for (Map.Entry<String, Object> entry : spaces.entrySet()) {
       AddTableSpace(entry.getKey(), (JSONObject) entry.getValue(), override);
@@ -157,7 +187,8 @@ public class TableSpaceManager implements StorageService {
   }
 
   private static void registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc, boolean override) {
-    Tablespace tableSpace = newTableSpace(spaceName, uri);
+    Tablespace tableSpace = initializeTableSpace(spaceName, uri);
+
     try {
       tableSpace.init(systemConf);
     } catch (IOException e) {
@@ -194,30 +225,6 @@ public class TableSpaceManager implements StorageService {
     TABLE_SPACES.put(space.getUri(), space);
   }
 
-  private JSONObject loadFromConfig(String fileName) {
-    String json;
-    try {
-      json = FileUtil.readTextFileFromResource(fileName);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    if (json != null) {
-      return parseJson(json);
-    } else {
-      return null;
-    }
-  }
-
-  private void addLocalFsTablespace() {
-    if (!(TABLE_SPACES.containsKey("file:/") ||
-        !TABLE_SPACES.containsKey("file://") ||
-        !TABLE_SPACES.containsKey("file:///"))) {
-      String tmpName = UUID.randomUUID().toString();
-      registerTableSpace(tmpName, URI.create("file:/"), null, false);
-    }
-  }
-
   /**
    * Return length of the fragment.
    * In the UNKNOWN_LENGTH case get FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH from the configuration.
@@ -234,26 +241,18 @@ public class TableSpaceManager implements StorageService {
     }
   }
 
-  private static JSONObject parseJson(String json) {
-    try {
-      return (JSONObject) parser.parse(json);
-    } catch (ParseException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   public static final String KEY_STORAGES = "storages"; // storages
   public static final String KEY_STORAGE_HANDLER = "handler"; // storages/?/handler
   public static final String KEY_STORAGE_DEFAULT_FORMAT = "default-format"; // storages/?/default-format
 
   public static final String KEY_SPACES = "spaces";
 
-  private static Tablespace newTableSpace(String spaceName, URI uri) {
+  private static Tablespace initializeTableSpace(String spaceName, URI uri) {
     Preconditions.checkNotNull(uri.getScheme(), "URI must include scheme, but it was " + uri);
     Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
 
     if (clazz == null) {
-      LOG.warn("There is no tablespace for " + uri.toString());
+      throw new RuntimeException("There is no tablespace for " + uri.toString());
     }
 
     try {
@@ -292,25 +291,31 @@ public class TableSpaceManager implements StorageService {
   }
 
   public static <T extends Tablespace> Optional<T> get(String uri) {
-    Tablespace lastFound = null;
+    Tablespace lastOne = null;
 
-    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.tailMap(URI.create(uri), true).entrySet()) {
+    // Find the longest matched one. For example, assume that the caller tries to find /x/y/z, and
+    // there are /x and /x/y. In this case, /x/y will be chosen because it is more specific.
+    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.headMap(URI.create(uri), true).entrySet()) {
       if (uri.startsWith(entry.getKey().toString())) {
-        if (lastFound == null || lastFound.getUri().toString().length() < uri.toString().length()) {
-          lastFound = entry.getValue();
-        }
+        lastOne = entry.getValue();
       }
     }
-
-    if (lastFound != null) {
-      return (Optional<T>) Optional.of(lastFound);
-    } else {
-      return Optional.absent();
-    }
+    return (Optional<T>) Optional.fromNullable(lastOne);
   }
 
-  public static <T extends Tablespace> Optional<T> get(URI uri) {
-    return (Optional<T>) get(uri.toString());
+  /**
+   * Get tablespace for the given URI. If uri is null, the default tablespace will be returned
+   *
+   * @param uri Table or Table Fragment URI.
+   * @param <T> Tablespace class type
+   * @return Tablespace. If uri is null, the default tablespace will be returned.
+   */
+  public static <T extends Tablespace> Optional<T> get(@Nullable URI uri) {
+    if (uri == null) {
+      return (Optional<T>) Optional.of(getDefault());
+    } else {
+      return (Optional<T>) get(uri.toString());
+    }
   }
 
   /**
@@ -322,10 +327,8 @@ public class TableSpaceManager implements StorageService {
     return (T) getByName(DEFAULT_TABLESPACE_NAME).get();
   }
 
-  private static final URI LOCAL_FS = URI.create("file:/");
-
   public static <T extends Tablespace> T getLocalFs(String name) {
-    return (T) get(LOCAL_FS).get();
+    return (T) get(LOCAL_FS_URI).get();
   }
 
   public static Optional<? extends Tablespace> getByName(String name) {

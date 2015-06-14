@@ -664,7 +664,7 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
-    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getPath()));
+    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getUri()));
   }
 
   @Override
@@ -676,12 +676,12 @@ public class FileTablespace extends Tablespace {
 
       // create a table directory (i.e., ${WAREHOUSE_DIR}/${DATABASE_NAME}/${TABLE_NAME} )
       Path tablePath = StorageUtil.concatPath(basePath, databaseName, simpleTableName);
-      tableDesc.setPath(tablePath.toUri());
+      tableDesc.setUri(tablePath.toUri());
     } else {
-      Preconditions.checkState(tableDesc.getPath() != null, "ERROR: LOCATION must be given.");
+      Preconditions.checkState(tableDesc.getUri() != null, "ERROR: LOCATION must be given.");
     }
 
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
 
     FileSystem fs = path.getFileSystem(conf);
     TableStats stats = new TableStats();
@@ -714,7 +714,7 @@ public class FileTablespace extends Tablespace {
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException {
     try {
-      Path path = new Path(tableDesc.getPath());
+      Path path = new Path(tableDesc.getUri());
       FileSystem fs = path.getFileSystem(conf);
       LOG.info("Delete table data dir: " + path);
       fs.delete(path, true);
@@ -727,7 +727,7 @@ public class FileTablespace extends Tablespace {
   public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numResultFragments) throws IOException {
     // Listing table data file which is not empty.
     // If the table is a partitioned table, return file list which has same partition key.
-    Path tablePath = new Path(tableDesc.getPath());
+    Path tablePath = new Path(tableDesc.getUri());
     FileSystem fs = tablePath.getFileSystem(conf);
 
     //In the case of partitioned table, we should return same partition key data files.
@@ -739,7 +739,7 @@ public class FileTablespace extends Tablespace {
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
     if (fs.exists(tablePath)) {
       if (!partitionPath.isEmpty()) {
-        Path partPath = new Path(tableDesc.getPath() + partitionPath);
+        Path partPath = new Path(tableDesc.getUri() + partitionPath);
         if (fs.exists(partPath)) {
           getNonZeroLengthDataFiles(fs, partPath, nonZeroLengthFiles, currentPage, numResultFragments,
                   new AtomicInteger(0), tableDesc.hasPartition(), this.currentDepth, partitionDepth);

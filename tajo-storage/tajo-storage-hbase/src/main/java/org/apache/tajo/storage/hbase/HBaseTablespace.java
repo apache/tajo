@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.hbase;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -117,7 +116,7 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
-    createTable(tableDesc.getPath(), tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.isExternal(), ifNotExists);
+    createTable(tableDesc.getUri(), tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.isExternal(), ifNotExists);
     TableStats stats = new TableStats();
     stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
     tableDesc.setStats(stats);
@@ -430,7 +429,7 @@ public class HBaseTablespace extends Tablespace {
         }
         List<Fragment> fragments = new ArrayList<Fragment>(1);
         Fragment fragment = new HBaseFragment(
-            tableDesc.getPath(),
+            tableDesc.getUri(),
             fragmentId, htable.getName().getNameAsString(),
             HConstants.EMPTY_BYTE_ARRAY,
             HConstants.EMPTY_BYTE_ARRAY,
@@ -508,7 +507,7 @@ public class HBaseTablespace extends Tablespace {
                 prevFragment.setStopRow(fragmentStop);
               }
             } else {
-              HBaseFragment fragment = new HBaseFragment(tableDesc.getPath(),
+              HBaseFragment fragment = new HBaseFragment(tableDesc.getUri(),
                   fragmentId,
                   htable.getName().getNameAsString(),
                   fragmentStart,
@@ -612,7 +611,7 @@ public class HBaseTablespace extends Tablespace {
         }
 
         HBaseFragment fragment = new HBaseFragment(
-            tableDesc.getPath(),
+            tableDesc.getUri(),
             tableDesc.getName(),
             htable.getName().getNameAsString(),
             location.getRegionInfo().getStartKey(),
@@ -960,7 +959,6 @@ public class HBaseTablespace extends Tablespace {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
-    //Preconditions.checkArgument(tableDesc.getName() != null && !tableDesc.hasPath());
 
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
