@@ -405,9 +405,12 @@ public class QueryMasterTask extends CompositeService {
 
     String outputPath = context.get(QueryVars.OUTPUT_TABLE_URI, "");
 
+    // The fact that there is no output means that this query is neither CTAS or INSERT (OVERWRITE) INTO
+    // So, this query results won't be materialized as a part of a table.
+    // The result will be temporarily written in the staging directory.
     if (outputPath.isEmpty()) {
+      // for temporarily written in the storage directory
       stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-
     } else {
       Optional<Tablespace> spaceResult = TableSpaceManager.get(outputPath);
       if (!spaceResult.isPresent()) {
@@ -415,7 +418,8 @@ public class QueryMasterTask extends CompositeService {
       }
 
       Tablespace space = spaceResult.get();
-      if (space.getProperty().isMovable()) {
+      if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
+        // If this space allows move operation, the staging directory will be underneath the final output table uri.
         stagingDir = StorageUtil.concatPath(context.getOutputTableUri().toString(), TMP_STAGING_DIR_PREFIX, queryId);
       } else {
         stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);

@@ -65,7 +65,7 @@ public class TestLineReader {
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     Path tablePath = new Path(testDir, "line.data");
-    FileAppender appender = (FileAppender) TableSpaceManager.getByName("local").get().getAppender(
+    FileAppender appender = (FileAppender) TableSpaceManager.getLocalFs().getAppender(
         null, null, meta, schema, tablePath);
     appender.enableStats();
     appender.init();

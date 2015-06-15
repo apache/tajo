@@ -224,7 +224,7 @@ public class TestFileTablespace {
     Optional<Tablespace> existingTs = Optional.absent();
     try {
       /* Local FileSystem */
-      FileTablespace space = (FileTablespace) TableSpaceManager.getByName("local").get();
+      FileTablespace space = TableSpaceManager.getLocalFs();
       assertEquals(localFs.getUri(), space.getFileSystem().getUri());
 
       FileTablespace distTablespace = new FileTablespace("testGetFileTablespace", uri);

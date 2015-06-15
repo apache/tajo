@@ -140,6 +140,7 @@ public class GlobalEngine extends AbstractService {
   private QueryContext createQueryContext(Session session) {
     QueryContext newQueryContext =  new QueryContext(context.getConf(), session);
 
+    // Set default space uri and its root uri
     newQueryContext.setDefaultSpaceUri(TableSpaceManager.getDefault().getUri());
     newQueryContext.setDefaultSpaceRootUri(TableSpaceManager.getDefault().getRootUri());
 

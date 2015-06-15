@@ -25,7 +25,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.Pair;
 import org.junit.BeforeClass;

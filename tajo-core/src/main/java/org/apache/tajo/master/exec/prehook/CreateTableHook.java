@@ -19,13 +19,11 @@
 package org.apache.tajo.master.exec.prehook;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.Tablespace;
 
@@ -46,6 +44,7 @@ public class CreateTableHook implements DistributedQueryHook {
     String tableName = splitted[1];
     queryContext.setOutputTable(tableName);
 
+    // set the final output table uri
     Tablespace space = TableSpaceManager.get(createTableNode.getUri()).get();
     queryContext.setOutputPath(space.getTableUri(databaseName, tableName));
 

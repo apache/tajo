@@ -41,19 +41,19 @@ public class InsertIntoHook implements DistributedQueryHook {
     // It also remove data files if overwrite is true.
     if (insertNode.hasTargetTable()) { // INSERT INTO [TB_NAME]
       queryContext.setOutputTable(insertNode.getTableName());
-      queryContext.setOutputPath(insertNode.getUri());
       if (insertNode.hasPartition()) {
         queryContext.setPartitionMethod(insertNode.getPartitionMethod());
       }
     } else { // INSERT INTO LOCATION ...
       // When INSERT INTO LOCATION, must not set output table.
       queryContext.setFileOutput();
-      queryContext.setOutputPath(insertNode.getUri());
     }
+
+    // Set the final output table uri
+    queryContext.setOutputPath(insertNode.getUri());
 
     if (insertNode.isOverwrite()) {
       queryContext.setOutputOverwrite();
     }
-
   }
 }

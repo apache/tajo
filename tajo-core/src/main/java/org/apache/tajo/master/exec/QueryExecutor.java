@@ -431,7 +431,6 @@ public class QueryExecutor {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
     } catch (Throwable t) {
-      t.printStackTrace();
       throw new RuntimeException(t);
     }
   }

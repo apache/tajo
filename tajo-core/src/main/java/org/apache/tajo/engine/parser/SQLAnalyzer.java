@@ -1253,8 +1253,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createTable.setStorageType(storageType);
 
       if (checkIfExist(ctx.LOCATION())) {
-        String path = stripQuote(ctx.uri.getText());
-        createTable.setLocation(path);
+        String uri = stripQuote(ctx.uri.getText());
+        createTable.setLocation(uri);
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {

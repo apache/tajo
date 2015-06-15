@@ -98,7 +98,7 @@ public class TestPhysicalPlanner {
     util.startCatalogCluster();
     conf = util.getConfiguration();
     testDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestPhysicalPlanner");
-    sm = (FileTablespace) TableSpaceManager.getByName("local").get();
+    sm = TableSpaceManager.getLocalFs();
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
@@ -180,7 +180,7 @@ public class TestPhysicalPlanner {
 
     Schema scoreSchmea = score.getSchema();
     TableMeta scoreLargeMeta = CatalogUtil.newTableMeta("RAW", new KeyValueSet());
-    Appender appender =  ((FileTablespace) TableSpaceManager.getByName("local").get())
+    Appender appender =  ((FileTablespace) TableSpaceManager.getLocalFs())
         .getAppender(scoreLargeMeta, scoreSchmea, scoreLargePath);
     appender.enableStats();
     appender.init();
@@ -442,7 +442,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner =  ((FileTablespace) TableSpaceManager.getByName("local").get())
+    Scanner scanner =  ((FileTablespace) TableSpaceManager.getLocalFs())
         .getFileScanner(outputMeta, rootNode.getOutSchema(), ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
@@ -502,7 +502,7 @@ public class TestPhysicalPlanner {
     // checking the file contents
     long totalNum = 0;
     for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
-      Scanner scanner =  ((FileTablespace) TableSpaceManager.getByName("local").get()).getFileScanner(
+      Scanner scanner =  ((FileTablespace) TableSpaceManager.getLocalFs()).getFileScanner(
           CatalogUtil.newTableMeta("CSV"),
           rootNode.getOutSchema(),
           status.getPath());
@@ -539,7 +539,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = ((FileTablespace) TableSpaceManager.getByName("local").get()).getFileScanner(
+    Scanner scanner = ((FileTablespace) TableSpaceManager.getLocalFs()).getFileScanner(
         outputMeta, rootNode.getOutSchema(), ctx.getOutputPath());
     scanner.init();
     Tuple tuple;

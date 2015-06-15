@@ -33,6 +33,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This rewrite rule injects a sort operation to preserve the writing rows in
+ * an ascending order of HBase row keys, required by HFile.
+ */
 public class SortedInsertRewriter implements LogicalPlanRewriteRule {
 
   @Override

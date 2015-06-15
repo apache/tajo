@@ -56,7 +56,6 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
-import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -211,6 +210,8 @@ public class TajoMaster extends CompositeService {
       throw e;
     }
 
+    // Try to start up all services in TajoMaster.
+    // If anyone is failed, the master prints out the errors and immediately should shutdowns
     try {
       super.serviceInit(systemConf);
     } catch (Throwable t) {

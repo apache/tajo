@@ -1874,6 +1874,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
+  /**
+   * Return a table uri to be created
+   *
+   * @param context PlanContext
+   * @param createTable An algebral expression for create table
+   * @return a Table uri to be created on a given table space
+   */
   private URI getCreatedTableURI(PlanContext context, CreateTable createTable) {
 
     if (createTable.hasLocation()) {

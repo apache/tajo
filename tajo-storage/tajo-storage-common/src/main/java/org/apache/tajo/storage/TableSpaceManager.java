@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -41,6 +41,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import static org.apache.tajo.storage.StorageConstants.LOCAL_FS_URI;
+
 /**
  * It handles available table spaces and cache TableSpace instances.
  *
@@ -56,8 +58,6 @@ public class TableSpaceManager implements StorageService {
 
   /** default tablespace name */
   public static final String DEFAULT_TABLESPACE_NAME = "default";
-
-  private static final URI LOCAL_FS_URI = URI.create("file:/");
 
   private final static TajoConf systemConf = new TajoConf();
   private final static JSONParser parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
@@ -82,7 +82,7 @@ public class TableSpaceManager implements StorageService {
   private TableSpaceManager() {
     initForDefaultConfig(); // loading storage-default.json
     initSiteConfig();       // storage-site.json will override the configs of storage-default.json
-    addLocalFsTablespace();
+    addLocalFsTablespace(); // adding a tablespace using local file system by default
   }
 
   private void addLocalFsTablespace() {
