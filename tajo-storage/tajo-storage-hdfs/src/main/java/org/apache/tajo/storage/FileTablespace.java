@@ -892,9 +892,8 @@ public class FileTablespace extends Tablespace {
           boolean movedToOldTable = false;
           boolean committed = false;
           Path oldTableDir = new Path(stagingDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-          ContentSummary summary = fs.getContentSummary(stagingResultDir);
 
-          if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty() && summary.getFileCount() > 0L) {
+          if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
             // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
             // renaming directory.
             Map<Path, Path> renameDirs = TUtil.newHashMap();
