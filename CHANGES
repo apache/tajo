@@ -154,6 +154,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1634: REST API: fix error when offset is zero.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1630: Test failure after TAJO-1130. (jihoon)
 
     TAJO-1623: INSERT INTO with wrong target columns causes NPE. (hyunsik)

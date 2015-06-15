@@ -349,7 +349,7 @@ public class QueryResultResource {
     }
 
     private void skipOffsetRow(NonForwardQueryResultScanner queryResultScanner, int offset) throws IOException {
-      if (offset < 0) {
+      if (offset <= 0) {
         return;
       }
 
