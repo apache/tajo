@@ -42,13 +42,14 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
@@ -67,7 +68,14 @@ import java.util.*;
  */
 public class HBaseTablespace extends Tablespace {
   private static final Log LOG = LogFactory.getLog(HBaseTablespace.class);
+
+  public static final StorageProperty HBASE_STORAGE_PROPERTIES = new StorageProperty(false, true, true, false);
+
+  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true);
+
   private Configuration hbaseConf;
+
+  private final static SortedInsertRewriter REWRITE_RULE = new SortedInsertRewriter();
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
@@ -136,7 +144,7 @@ public class HBaseTablespace extends Tablespace {
       throw new IOException("Columns property has more entry than Tajo table columns");
     }
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
     int numRowKeys = 0;
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     for (int i = 0; i < isRowKeyMappings.length; i++) {
@@ -232,7 +240,7 @@ public class HBaseTablespace extends Tablespace {
       return null;
     }
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, meta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, meta.getOptions());
     boolean[] isBinaryColumns = columnMapping.getIsBinaryColumns();
     boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
 
@@ -348,7 +356,7 @@ public class HBaseTablespace extends Tablespace {
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
 
     HTableDescriptor hTableDescriptor = new HTableDescriptor(hTableName);
 
@@ -394,7 +402,7 @@ public class HBaseTablespace extends Tablespace {
    * @throws java.io.IOException
    */
   private Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     int[] rowKeyIndexes = columnMapping.getRowKeyFieldIndexes();
 
@@ -412,7 +420,7 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode) throws IOException {
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
 
     List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, scanNode);
     HTable htable = null;
@@ -1008,7 +1016,7 @@ public class HBaseTablespace extends Tablespace {
         sortKeyIndexes[i] = inputSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
       }
 
-      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
 
       HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
       try {
@@ -1076,34 +1084,12 @@ public class HBaseTablespace extends Tablespace {
     }
   }
 
-  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
-      throws IOException {
-    if ("false".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
-      List<LogicalPlanRewriteRule> rules = new ArrayList<LogicalPlanRewriteRule>();
-      rules.add(new SortedInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
-      return rules;
-    } else {
-      return null;
+  @Override
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
+    if (REWRITE_RULE.isEligible(context, plan)) {
+      REWRITE_RULE.rewrite(context, plan);
     }
   }
-
-  private Column[] getIndexColumns(TableDesc tableDesc) throws IOException {
-    List<Column> indexColumns = new ArrayList<Column>();
-
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
-
-    boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
-    for (int i = 0; i < isRowKeys.length; i++) {
-      if (isRowKeys[i]) {
-        indexColumns.add(tableDesc.getSchema().getColumn(i));
-      }
-    }
-
-    return indexColumns.toArray(new Column[]{});
-  }
-
-  public static final StorageProperty HBASE_STORAGE_PROPERTIES = new StorageProperty(false, true, true, false);
-  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true);
 
   @Override
   public StorageProperty getProperty() {

@@ -887,12 +887,6 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
-      throws IOException {
-    return null;
-  }
-
-  @Override
   public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
                           Schema schema, TableDesc tableDesc) throws IOException {
     return commitOutputData(queryContext, true);

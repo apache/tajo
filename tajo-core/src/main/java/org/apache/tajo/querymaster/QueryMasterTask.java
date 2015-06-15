@@ -52,9 +52,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.metrics.TajoMetrics;
@@ -322,34 +320,11 @@ public class QueryMasterTask extends CompositeService {
       jsonExpr = null; // remove the possible OOM
 
       plan = planner.createPlan(queryContext, expr);
+      optimizer.optimize(queryContext, plan);
+
       // when a given uri is null, TableSpaceManager.get will return the default tablespace.
       space = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
-
-      LogicalRootNode rootNode = plan.getRootBlock().getRoot();
-      TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
-      if (tableDesc != null) {
-        if (tableDesc != null) {
-          FormatProperty format = space.getFormatProperty(tableDesc.getMeta().getStoreType());
-          if (format.sortedInsertRequired()) {
-            String tableName = PlannerUtil.getStoreTableName(plan);
-            if (tableDesc == null) {
-              throw new VerifyException("Can't get table meta data from catalog: " + tableName);
-            }
-
-            space = TableSpaceManager.getAnyByScheme(tableDesc.getMeta().getStoreType()).get();
-
-            List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = space.getRewriteRules(
-                getQueryTaskContext().getQueryContext(), tableDesc);
-            if (storageSpecifiedRewriteRules != null) {
-              for (LogicalPlanRewriteRule eachRule : storageSpecifiedRewriteRules) {
-                optimizer.addRuleAfterToJoinOpt(eachRule);
-              }
-            }
-          }
-        }
-      }
-
-      optimizer.optimize(queryContext, plan);
+      space.rewritePlan(queryContext, plan);
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);

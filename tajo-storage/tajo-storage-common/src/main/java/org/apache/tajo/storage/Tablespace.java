@@ -19,10 +19,8 @@
 package org.apache.tajo.storage;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -30,9 +28,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
@@ -319,16 +317,11 @@ public abstract class Tablespace {
   public abstract void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException;
 
   /**
-   * Returns the list of storage specified rewrite rules.
-   * This values are used by LogicalOptimizer.
-   *
-   * @param queryContext The query property
-   * @param tableDesc The description of the target table.
-   * @return The list of storage specified rewrite rules
-   * @throws java.io.IOException
+   * Rewrite the logical plan. It is assumed that the final plan will be given in this method.
    */
-  public abstract List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext,
-      TableDesc tableDesc) throws IOException;
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
+    // nothing to do by default
+  }
 
   ////////////////////////////////////////////////////////////////////////////
   // Table Lifecycle Section

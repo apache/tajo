@@ -58,7 +58,6 @@ import org.apache.tajo.plan.expr.GeneralFunctionEval;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.querymaster.Query;
@@ -490,17 +489,7 @@ public class QueryExecutor {
 
     if (tableDesc != null) {
       Tablespace space = TableSpaceManager.get(tableDesc.getUri()).get();
-      FormatProperty format = space.getFormatProperty(tableDesc.getMeta().getStoreType());
-
-      if (format.sortedInsertRequired()) {
-        space = TableSpaceManager.getAnyByScheme(tableDesc.getMeta().getStoreType()).get();
-        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = space.getRewriteRules(context, tableDesc);
-        if (storageSpecifiedRewriteRules != null) {
-          for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
-            eachRule.rewrite(context, plan);
-          }
-        }
-      }
+      space.rewritePlan(context, plan);
     }
 
     MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
