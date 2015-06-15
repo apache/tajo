@@ -78,18 +78,13 @@ public class Locate extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum strDatum = params.get(0);
-    if(strDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
-    Datum substrDatum = params.get(1);
-    if (substrDatum instanceof NullDatum) {
-      return NullDatum.get();
-    }
-    
+
     int pos = 1;  // one-based index
     if (params.size() > 2) {
-      pos = params.get(2).asInt4();
+      pos = params.getInt4(2);
       if (pos < 0) {
         return DatumFactory.createInt4(0);  // negative value is not acceptable.
       }
@@ -98,8 +93,8 @@ public class Locate extends GeneralFunction {
       }
     }
     
-    String str = strDatum.asChars();
-    String substr = substrDatum.asChars();
+    String str = params.getText(0);
+    String substr = params.getText(1);
     
     return DatumFactory.createInt4(locate(str, substr, pos));
   }

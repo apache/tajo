@@ -27,7 +27,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.plan.expr.FunctionEval;
@@ -68,16 +67,15 @@ public class ToCharTimestamp extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    if(params.isNull(0) || params.isNull(1)) {
+    if(params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    TimestampDatum valueDatum = (TimestampDatum) params.get(0);
-    Datum pattern = params.get(1);
+    TimeMeta tm = params.getTimeDate(0);
+    String pattern = params.getText(1);
 
-    TimeMeta tm = valueDatum.toTimeMeta();
     DateTimeUtil.toUserTimezone(tm, timezone);
 
-    return DatumFactory.createText(DateTimeFormat.to_char(tm, pattern.asChars()));
+    return DatumFactory.createText(DateTimeFormat.to_char(tm, pattern));
   }
 }

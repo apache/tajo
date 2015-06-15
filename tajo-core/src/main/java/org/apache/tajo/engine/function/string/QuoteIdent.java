@@ -56,12 +56,10 @@ public class QuoteIdent extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-
-    if(datum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createText("\"" + datum.asChars() + "\"");
+    return DatumFactory.createText("\"" + params.getText(0) + "\"");
   }
 }

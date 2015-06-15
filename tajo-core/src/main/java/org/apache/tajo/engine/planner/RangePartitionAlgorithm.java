@@ -57,81 +57,83 @@ public abstract class RangePartitionAlgorithm {
    * It computes the value cardinality of a tuple range.
    *
    * @param dataType
-   * @param start
-   * @param end
+   * @param range
+   * @param i
    * @return
    */
-  public static BigInteger computeCardinality(DataType dataType, Datum start, Datum end,
+  public static BigInteger computeCardinality(DataType dataType, TupleRange range, int i,
                                               boolean inclusive, boolean isAscending) {
     BigInteger columnCard;
 
+    Tuple start = range.getStart();
+    Tuple end = range.getEnd();
     switch (dataType.getType()) {
       case BOOLEAN:
         columnCard = BigInteger.valueOf(2);
         break;
       case CHAR:
         if (isAscending) {
-          columnCard = BigInteger.valueOf((int)end.asChar() - (int)start.asChar());
+          columnCard = BigInteger.valueOf((int)end.getChar(i) - (int)start.getChar(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asChar() - end.asChar());
+          columnCard = BigInteger.valueOf(start.getChar(i) - end.getChar(i));
         }
         break;
       case BIT:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asByte() - start.asByte());
+          columnCard = BigInteger.valueOf(end.getByte(i) - start.getByte(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asByte() - end.asByte());
+          columnCard = BigInteger.valueOf(start.getByte(i) - end.getByte(i));
         }
         break;
       case INT2:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt2() - start.asInt2());
+          columnCard = BigInteger.valueOf(end.getInt2(i) - start.getInt2(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt2() - end.asInt2());
+          columnCard = BigInteger.valueOf(start.getInt2(i) - end.getInt2(i));
         }
         break;
       case INT4:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.getInt4(i) - start.getInt4(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.getInt4(i) - end.getInt4(i));
         }
         break;
     case INT8:
     case TIME:
     case TIMESTAMP:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt8() - start.asInt8());
+          columnCard = BigInteger.valueOf(end.getInt8(i) - start.getInt8(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt8() - end.asInt8());
+          columnCard = BigInteger.valueOf(start.getInt8(i) - end.getInt8(i));
         }
         break;
       case FLOAT4:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.getInt4(i) - start.getInt4(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.getInt4(i) - end.getInt4(i));
         }
         break;
       case FLOAT8:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt8() - start.asInt8());
+          columnCard = BigInteger.valueOf(end.getInt8(i) - start.getInt8(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt8() - end.asInt8());
+          columnCard = BigInteger.valueOf(start.getInt8(i) - end.getInt8(i));
         }
         break;
       case TEXT: {
-        boolean isPureAscii = StringUtils.isPureAscii(start.asChars()) && StringUtils.isPureAscii(end.asChars());
+        boolean isPureAscii = StringUtils.isPureAscii(start.getText(i)) && StringUtils.isPureAscii(end.getText(i));
 
         if (isPureAscii) {
           byte[] a;
           byte[] b;
           if (isAscending) {
-            a = start.asByteArray();
-            b = end.asByteArray();
+            a = start.getBytes(i);
+            b = end.getBytes(i);
           } else {
-            b = start.asByteArray();
-            a = end.asByteArray();
+            b = start.getBytes(i);
+            a = end.getBytes(i);
           }
 
           byte [][] padded = BytesUtils.padBytes(a, b);
@@ -148,11 +150,11 @@ public abstract class RangePartitionAlgorithm {
           char [] b;
 
           if (isAscending) {
-            a = start.asUnicodeChars();
-            b = end.asUnicodeChars();
+            a = start.getUnicodeChars(i);
+            b = end.getUnicodeChars(i);
           } else {
-            b = start.asUnicodeChars();
-            a = end.asUnicodeChars();
+            b = start.getUnicodeChars(i);
+            a = end.getUnicodeChars(i);
           }
 
           BigInteger startBI = UniformRangePartition.charsToBigInteger(a);
@@ -165,16 +167,16 @@ public abstract class RangePartitionAlgorithm {
       }
       case DATE:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.getInt4(i) - start.getInt4(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.getInt4(i) - end.getInt4(i));
         }
         break;
       case INET4:
         if (isAscending) {
-          columnCard = BigInteger.valueOf(end.asInt4() - start.asInt4());
+          columnCard = BigInteger.valueOf(end.getInt4(i) - start.getInt4(i));
         } else {
-          columnCard = BigInteger.valueOf(start.asInt4() - end.asInt4());
+          columnCard = BigInteger.valueOf(start.getInt4(i) - end.getInt4(i));
         }
         break;
       default:
@@ -189,13 +191,11 @@ public abstract class RangePartitionAlgorithm {
    * @return
    */
   public static BigInteger computeCardinalityForAllColumns(SortSpec[] sortSpecs, TupleRange range, boolean inclusive) {
-    Tuple start = range.getStart();
-    Tuple end = range.getEnd();
 
     BigInteger cardinality = BigInteger.ONE;
     BigInteger columnCard;
     for (int i = 0; i < sortSpecs.length; i++) {
-      columnCard = computeCardinality(sortSpecs[i].getSortKey().getDataType(), start.get(i), end.get(i), inclusive,
+      columnCard = computeCardinality(sortSpecs[i].getSortKey().getDataType(), range, i, inclusive,
           sortSpecs[i].isAscending());
 
       if (BigInteger.ZERO.compareTo(columnCard) < 0) {

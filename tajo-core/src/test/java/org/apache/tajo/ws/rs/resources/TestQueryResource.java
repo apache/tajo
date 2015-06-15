@@ -65,7 +65,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     sessionsURI = new URI(restServiceURI + "/sessions");
-    queriesURI = new URI(restServiceURI + "/databases/" + TajoConstants.DEFAULT_DATABASE_NAME + "/queries");
+    queriesURI = new URI(restServiceURI + "/queries");
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)

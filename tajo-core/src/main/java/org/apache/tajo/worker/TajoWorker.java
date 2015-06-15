@@ -163,7 +163,7 @@ public class TajoWorker extends CompositeService {
 
     serviceTracker = ServiceTrackerFactory.get(systemConf);
 
-    this.workerContext = new WorkerContext();
+    this.workerContext = new TajoWorkerContext();
     this.lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
     String resourceManagerClassName = systemConf.getVar(ConfVars.RESOURCE_MANAGER_CLASS);
@@ -386,7 +386,45 @@ public class TajoWorker extends CompositeService {
     LOG.info("TajoWorker main thread exiting");
   }
 
-  public class WorkerContext {
+  public interface WorkerContext {
+    QueryMaster getQueryMaster();
+
+    TajoConf getConf();
+
+    ServiceTracker getServiceTracker();
+
+    QueryMasterManagerService getQueryMasterManagerService();
+
+    TaskRunnerManager getTaskRunnerManager();
+
+    CatalogService getCatalog();
+
+    WorkerConnectionInfo getConnectionInfo();
+
+    String getWorkerName();
+
+    LocalDirAllocator getLocalDirAllocator();
+
+    ClusterResourceSummary getClusterResource();
+
+    TajoSystemMetrics getWorkerSystemMetrics();
+
+    HashShuffleAppenderManager getHashShuffleAppenderManager();
+
+    HistoryWriter getTaskHistoryWriter();
+
+    HistoryReader getHistoryReader();
+
+    void cleanup(String strPath);
+
+    void cleanupTemporalDirectories();
+
+    void setClusterResource(ClusterResourceSummary clusterResource);
+
+    void setNumClusterNodes(int numClusterNodes);
+  }
+
+  class TajoWorkerContext implements WorkerContext {
     public QueryMaster getQueryMaster() {
       if (queryMasterManagerService == null) {
         return null;
@@ -430,7 +468,7 @@ public class TajoWorker extends CompositeService {
       return lDirAllocator;
     }
 
-    protected void cleanup(String strPath) {
+    public void cleanup(String strPath) {
       if (deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -446,7 +484,7 @@ public class TajoWorker extends CompositeService {
       }
     }
 
-    protected void cleanupTemporalDirectories() {
+    public void cleanupTemporalDirectories() {
       if (deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -627,6 +665,7 @@ public class TajoWorker extends CompositeService {
   }
 
   public static void main(String[] args) throws Exception {
+    Thread.setDefaultUncaughtExceptionHandler(new TajoUncaughtExceptionHandler());
     StringUtils.startupShutdownMessage(TajoWorker.class, args, LOG);
 
     TajoConf tajoConf = new TajoConf();

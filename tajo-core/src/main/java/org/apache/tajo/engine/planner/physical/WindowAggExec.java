@@ -214,7 +214,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
         if (readTuple != null && hasPartitionKeys) { // get a key tuple
           currentKey = new VTuple(partitionKeyIds.length);
           for (int i = 0; i < partitionKeyIds.length; i++) {
-            currentKey.put(i, readTuple.get(partitionKeyIds[i]));
+            currentKey.put(i, readTuple.asDatum(partitionKeyIds[i]));
           }
         }
       }
@@ -273,7 +273,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
   private void preAccumulatingNextWindow(Tuple inTuple) {
     Tuple projectedTuple = new VTuple(outSchema.size());
     for(int idx = 0; idx < nonFunctionColumnNum; idx++) {
-      projectedTuple.put(idx, inTuple.get(nonFunctionColumns[idx]));
+      projectedTuple.put(idx, inTuple.asDatum(nonFunctionColumns[idx]));
     }
     nextAccumulatedProjected = Lists.newArrayList();
     nextAccumulatedProjected.add(projectedTuple);
@@ -291,10 +291,10 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
       Tuple projectedTuple = new VTuple(schemaForOrderBy.size());
       for (int c = 0; c < nonFunctionColumnNum; c++) {
-        projectedTuple.put(c, inTuple.get(nonFunctionColumns[c]));
+        projectedTuple.put(c, inTuple.asDatum(nonFunctionColumns[c]));
       }
       for (int c = 0; c < sortKeyColumns.length; c++) {
-        projectedTuple.put(outputColumnNum + c, inTuple.get(sortKeyColumns[c]));
+        projectedTuple.put(outputColumnNum + c, inTuple.asDatum(sortKeyColumns[c]));
       }
 
       evaluatedTuples.add(projectedTuple);

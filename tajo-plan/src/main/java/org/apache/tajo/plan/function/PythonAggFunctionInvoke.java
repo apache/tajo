@@ -105,7 +105,7 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
 
   @Override
   public void merge(FunctionContext context, Tuple params) {
-    if (params.get(0) instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return;
     }
 

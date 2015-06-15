@@ -127,8 +127,8 @@ public class TestRowFile {
       scanner = new RowFile.RowFileScanner(conf, schema, meta, fragment);
       scanner.init();
       while ((tuple=scanner.next()) != null) {
-        if (!idSet.remove(tuple.get(0).asInt4())) {
-          System.out.println("duplicated! " + tuple.get(0).asInt4());
+        if (!idSet.remove(tuple.getInt4(0))) {
+          System.out.println("duplicated! " + tuple.getInt4(0));
         }
         tupleCnt++;
       }
