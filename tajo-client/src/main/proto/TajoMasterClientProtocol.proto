@@ -46,8 +46,8 @@ service TajoMasterClientProtocolService {
 
   // Query And Resource Management APIs
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc getRunningQueryList(GetQueryListRequest) returns (GetQueryListResponse);
-  rpc getFinishedQueryList(GetQueryListRequest) returns (GetQueryListResponse);
+  rpc getRunningQueryList(SessionIdProto) returns (GetQueryListResponse);
+  rpc getFinishedQueryList(SessionIdProto) returns (GetQueryListResponse);
   rpc killQuery(QueryIdRequest) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
   rpc closeNonForwardQuery(QueryIdRequest) returns (BoolProto);
@@ -65,7 +65,7 @@ service TajoMasterClientProtocolService {
   rpc createExternalTable(CreateTableRequest) returns (TableResponse);
   rpc existTable(SessionedStringProto) returns (BoolProto);
   rpc dropTable(DropTableRequest) returns (BoolProto);
-  rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
-  rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
+  rpc getTableList(SessionedStringProto) returns (StringListProto);
+  rpc getTableDesc(SessionedStringProto) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
 }

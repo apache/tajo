@@ -57,7 +57,7 @@ message SessionUpdateResponse {
 
 message SessionedStringProto {
   optional SessionIdProto sessionId = 1;
-  required string value = 2;
+  optional string value = 2;
 }
 
 message ExplainQueryResponse {
@@ -194,20 +194,6 @@ message WorkerResourceInfo {
 
 message GetClusterInfoResponse {
   repeated WorkerResourceInfo workerList = 1;
-}
-
-message GetTableListRequest {
-  optional SessionIdProto sessionId = 1;
-  optional string databaseName = 2;
-}
-
-message GetTableListResponse {
-  repeated string tables = 1;
-}
-
-message GetTableDescRequest {
-  optional SessionIdProto sessionId = 1;
-  required string tableName = 2;
 }
 
 message CreateTableRequest {
