@@ -1823,10 +1823,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setChild(subQuery);
       createTableNode.setInSchema(subQuery.getOutSchema());
 
-      createTableNode.setUri(storage.getTableURI(expr.getTableSpaceName(),
-          CatalogUtil.extractQualifier(expr.getTableName()),
-          CatalogUtil.extractSimpleName(expr.getTableName())));
-
       // If the table schema is defined
       // ex) CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
       if (expr.hasTableElements()) {
@@ -1889,8 +1885,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       String tableName = createTable.getTableName();
       String databaseName = CatalogUtil.isFQTableName(tableName) ?
-          CatalogUtil.extractQualifier(tableName) :
-          context.queryContext.get(SessionVars.CURRENT_DATABASE);
+          CatalogUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
 
       return storage.getTableURI(
           createTable.getTableSpaceName(), databaseName, CatalogUtil.extractSimpleName(tableName));
