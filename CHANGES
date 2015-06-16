@@ -340,6 +340,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1616: Implement TablespaceManager to load Tablespaces. (hyunsik)
+
     TAJO-1615: Implement TaskManager. (jinho)
 
     TAJO-1599: Implement NodeResourceManager and Status updater. (jinho)
