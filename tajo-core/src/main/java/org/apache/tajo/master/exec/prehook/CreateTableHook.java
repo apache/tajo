@@ -45,8 +45,7 @@ public class CreateTableHook implements DistributedQueryHook {
     queryContext.setOutputTable(tableName);
 
     // set the final output table uri
-    Tablespace space = TableSpaceManager.get(createTableNode.getUri()).get();
-    queryContext.setOutputPath(space.getTableUri(databaseName, tableName));
+    queryContext.setOutputPath(createTableNode.getUri());
 
     if(createTableNode.getPartitionMethod() != null) {
       queryContext.setPartitionMethod(createTableNode.getPartitionMethod());

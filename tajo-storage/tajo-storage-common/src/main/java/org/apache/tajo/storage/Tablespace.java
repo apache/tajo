@@ -53,12 +53,18 @@ public abstract class Tablespace {
 
   protected final String name;
   protected final URI uri;
+  /** this space is visible or not. */
+  protected boolean visible = true;
 
   protected TajoConf conf;
 
   public Tablespace(String name, URI uri) {
     this.name = name;
     this.uri = uri;
+  }
+
+  public void setVisible(boolean visible) {
+    this.visible = visible;
   }
 
   public Set<String> getDependencies() {
@@ -77,6 +83,10 @@ public abstract class Tablespace {
 
   public URI getUri() {
     return uri;
+  }
+
+  public boolean isVisible() {
+    return visible;
   }
 
   public abstract void setConfig(String name, String value);

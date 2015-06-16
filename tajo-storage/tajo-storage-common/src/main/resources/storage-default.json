@@ -1,11 +1,4 @@
 {
-  "spaces": {
-    "local": {
-      "default": true,
-      "uri": "file:/"
-    }
-  },
-
   "storages": {
     "hdfs": {
       "handler": "org.apache.tajo.storage.FileTablespace",

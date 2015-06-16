@@ -27,6 +27,7 @@ import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -82,13 +83,19 @@ public class TableSpaceManager implements StorageService {
   private TableSpaceManager() {
     initForDefaultConfig(); // loading storage-default.json
     initSiteConfig();       // storage-site.json will override the configs of storage-default.json
+    addWarehouseAsSpace();  // adding a warehouse directory for a default tablespace
     addLocalFsTablespace(); // adding a tablespace using local file system by default
+  }
+
+  private void addWarehouseAsSpace() {
+    Path warehouseDir = TajoConf.getWarehouseDir(systemConf);
+    registerTableSpace(DEFAULT_TABLESPACE_NAME, warehouseDir.toUri(), null, true, false);
   }
 
   private void addLocalFsTablespace() {
     if (TABLE_SPACES.headMap(LOCAL_FS_URI, true).firstEntry() == null) {
       String tmpName = UUID.randomUUID().toString();
-      registerTableSpace(tmpName, URI.create("file:/"), null, false);
+      registerTableSpace(tmpName, LOCAL_FS_URI, null, false, false);
     }
   }
 
@@ -144,17 +151,19 @@ public class TableSpaceManager implements StorageService {
   private void loadStorages(JSONObject json) {
     JSONObject spaces = (JSONObject) json.get(KEY_STORAGES);
 
-    Pair<String, Class<? extends Tablespace>> pair = null;
-    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
+    if (spaces != null) {
+      Pair<String, Class<? extends Tablespace>> pair = null;
+      for (Map.Entry<String, Object> entry : spaces.entrySet()) {
 
-      try {
-        pair = extractStorage(entry);
-      } catch (ClassNotFoundException e) {
-        LOG.warn(e);
-        continue;
+        try {
+          pair = extractStorage(entry);
+        } catch (ClassNotFoundException e) {
+          LOG.warn(e);
+          continue;
+        }
+
+        TABLE_SPACE_HANDLERS.put(pair.getFirst(), pair.getSecond());
       }
-
-      TABLE_SPACE_HANDLERS.put(pair.getFirst(), pair.getSecond());
     }
   }
 
@@ -171,8 +180,11 @@ public class TableSpaceManager implements StorageService {
 
   private void loadTableSpaces(JSONObject json, boolean override) {
     JSONObject spaces = (JSONObject) json.get(KEY_SPACES);
-    for (Map.Entry<String, Object> entry : spaces.entrySet()) {
-      AddTableSpace(entry.getKey(), (JSONObject) entry.getValue(), override);
+
+    if (spaces != null) {
+      for (Map.Entry<String, Object> entry : spaces.entrySet()) {
+        AddTableSpace(entry.getKey(), (JSONObject) entry.getValue(), override);
+      }
     }
   }
 
@@ -181,13 +193,15 @@ public class TableSpaceManager implements StorageService {
     URI spaceUri = URI.create(spaceDesc.getAsString("uri"));
 
     if (defaultSpace) {
-      registerTableSpace(DEFAULT_TABLESPACE_NAME, spaceUri, spaceDesc, override);
+      registerTableSpace(DEFAULT_TABLESPACE_NAME, spaceUri, spaceDesc, true, override);
     }
-    registerTableSpace(spaceName, spaceUri, spaceDesc, override);
+    registerTableSpace(spaceName, spaceUri, spaceDesc, true, override);
   }
 
-  private static void registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc, boolean override) {
-    Tablespace tableSpace = initializeTableSpace(spaceName, uri);
+  private static void registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc,
+                                         boolean visible, boolean override) {
+    Tablespace tableSpace = initializeTableSpace(spaceName, uri, visible);
+    tableSpace.setVisible(visible);
 
     try {
       tableSpace.init(systemConf);
@@ -200,9 +214,10 @@ public class TableSpaceManager implements StorageService {
     // If the arbitrary path is allowed, root uri is also added as a tablespace
     if (tableSpace.getProperty().isArbitraryPathAllowed()) {
       URI rootUri = tableSpace.getRootUri();
-      if (!TABLE_SPACES.containsKey(rootUri)) {
+      // if there already exists or the rootUri is 'file:/', it won't overwrite the tablespace.
+      if (!TABLE_SPACES.containsKey(rootUri) && !rootUri.toString().startsWith(LOCAL_FS_URI.toString())) {
         String tmpName = UUID.randomUUID().toString();
-        registerTableSpace(tmpName, rootUri, spaceDesc, override);
+        registerTableSpace(tmpName, rootUri, spaceDesc, false, override);
       }
     }
   }
@@ -247,7 +262,7 @@ public class TableSpaceManager implements StorageService {
 
   public static final String KEY_SPACES = "spaces";
 
-  private static Tablespace initializeTableSpace(String spaceName, URI uri) {
+  private static Tablespace initializeTableSpace(String spaceName, URI uri, boolean visible) {
     Preconditions.checkNotNull(uri.getScheme(), "URI must include scheme, but it was " + uri);
     Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
 
@@ -280,7 +295,7 @@ public class TableSpaceManager implements StorageService {
       existing = TABLE_SPACES.remove(space.getUri());
 
       // Add anotherone for test
-      registerTableSpace(space.name, space.uri, null, true);
+      registerTableSpace(space.name, space.uri, null, true, true);
     }
     // if there is an existing one, return it.
     return Optional.fromNullable(existing);
@@ -367,5 +382,9 @@ public class TableSpaceManager implements StorageService {
   public URI getTableURI(@Nullable String spaceName, String databaseName, String tableName) {
     Tablespace space = spaceName == null ? getDefault() : getByName(spaceName).get();
     return space.getTableUri(databaseName, tableName);
+  }
+
+  public static Iterable<Tablespace> getAllTablespaces() {
+    return TABLE_SPACES.values();
   }
 }
