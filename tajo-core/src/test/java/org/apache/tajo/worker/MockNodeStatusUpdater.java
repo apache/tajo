@@ -39,9 +39,8 @@ public class MockNodeStatusUpdater extends NodeStatusUpdater {
   private Map<Integer, NodeResource> resources = Maps.newHashMap();
   private MockResourceTracker resourceTracker;
 
-  public MockNodeStatusUpdater(CountDownLatch barrier, TajoWorker.WorkerContext workerContext,
-                               NodeResourceManager resourceManager) {
-    super(workerContext, resourceManager);
+  public MockNodeStatusUpdater(CountDownLatch barrier, TajoWorker.WorkerContext workerContext) {
+    super(workerContext);
     this.barrier = barrier;
     this.resourceTracker = new MockResourceTracker();
   }
@@ -70,12 +69,6 @@ public class MockNodeStatusUpdater extends NodeStatusUpdater {
 
     protected NodeHeartbeatRequestProto getLastRequest() {
       return lastRequest;
-    }
-
-    @Override
-    public void heartbeat(RpcController controller, NodeHeartbeat request,
-                          RpcCallback<QueryCoordinatorProtocol.TajoHeartbeatResponse> done) {
-
     }
 
     @Override

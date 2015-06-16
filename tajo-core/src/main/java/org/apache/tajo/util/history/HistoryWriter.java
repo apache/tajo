@@ -32,6 +32,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.worker.TaskHistory;
+import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -144,6 +145,7 @@ public class HistoryWriter extends AbstractService {
       }
     };
     historyQueue.add(future);
+
     synchronized (writerThread) {
       writerThread.notifyAll();
     }
@@ -151,7 +153,7 @@ public class HistoryWriter extends AbstractService {
   }
 
   /* synchronously flush to history file */
-  public synchronized void appendAndSync(History history)
+  public void appendAndSync(History history)
       throws TimeoutException, InterruptedException, IOException {
 
     WriterFuture<WriterHolder> future = appendAndFlush(history);
@@ -267,24 +269,20 @@ public class HistoryWriter extends AbstractService {
     private int drainHistory(Collection<WriterFuture<WriterHolder>> buffer, int numElements,
                              long timeoutMillis) throws InterruptedException {
 
-      long deadline = System.currentTimeMillis() + timeoutMillis;
+      long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
       int added = 0;
       while (added < numElements) {
         added += historyQueue.drainTo(buffer, numElements - added);
         if (added < numElements) { // not enough elements immediately available; will have to wait
-          if (deadline <= System.currentTimeMillis()) {
-            break;
-          } else {
-            synchronized (writerThread) {
-              writerThread.wait(deadline - System.currentTimeMillis());
-              if (deadline > System.currentTimeMillis()) {
-                added += historyQueue.drainTo(buffer, numElements - added);
-                break;
-              }
-            }
+          WriterFuture<WriterHolder> e = historyQueue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
+          if (e == null) {
+            break; // we already waited enough, and there are no more elements in sight
           }
+          buffer.add(e);
+          added++;
         }
       }
+
       return added;
     }
 

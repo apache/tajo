@@ -93,6 +93,21 @@ public class TestTaskExecutor {
       }
 
       @Override
+      public TaskManager getTaskManager() {
+        return taskManager;
+      }
+
+      @Override
+      public org.apache.tajo.worker.TaskExecutor getTaskExecuor() {
+        return taskExecutor;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return resourceManager;
+      }
+
+      @Override
       public WorkerConnectionInfo getConnectionInfo() {
         if (workerConnectionInfo == null) {
           workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
@@ -103,10 +118,10 @@ public class TestTaskExecutor {
 
     barrier = new Semaphore(0);
     resourceManagerBarrier = new Semaphore(0);
-    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext, dispatcher.getEventHandler());
-    taskExecutor = new TaskExecutor(barrier, taskManager, dispatcher.getEventHandler());
-    resourceManager = new MockNodeResourceManager(resourceManagerBarrier, dispatcher, taskDispatcher.getEventHandler());
-    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext, resourceManager);
+    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext);
+    taskExecutor = new TaskExecutor(barrier, workerContext);
+    resourceManager = new MockNodeResourceManager(resourceManagerBarrier, dispatcher, workerContext);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext);
 
     service = new CompositeService("MockService") {
       @Override
@@ -141,16 +156,13 @@ public class TestTaskExecutor {
   public void testTaskRequest() throws Exception {
     int requestSize = 1;
 
-    RunExecutionBlockRequestProto.Builder
-        ebRequestProto = RunExecutionBlockRequestProto.newBuilder();
+    StartExecutionBlockRequestProto.Builder
+        ebRequestProto = StartExecutionBlockRequestProto.newBuilder();
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
     ebRequestProto.setExecutionBlockId(ebId.getProto())
         .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setNodeId(workerContext.getConnectionInfo().getHost() + ":"
-            + workerContext.getConnectionInfo().getQueryMasterPort())
-        .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")
         .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
@@ -181,16 +193,13 @@ public class TestTaskExecutor {
   public void testTaskException() throws Exception {
     int requestSize = 1;
 
-    RunExecutionBlockRequestProto.Builder
-        ebRequestProto = RunExecutionBlockRequestProto.newBuilder();
+    StartExecutionBlockRequestProto.Builder
+        ebRequestProto = StartExecutionBlockRequestProto.newBuilder();
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
     ebRequestProto.setExecutionBlockId(ebId.getProto())
         .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setNodeId(workerContext.getConnectionInfo().getHost()+":"
-            + workerContext.getConnectionInfo().getQueryMasterPort())
-        .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")
         .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
@@ -222,8 +231,8 @@ public class TestTaskExecutor {
     int completeTasks;
     AtomicBoolean throwException = new AtomicBoolean();
 
-    public TaskExecutor(Semaphore barrier, TaskManager taskManager, EventHandler rmEventHandler) {
-      super(barrier, taskManager, rmEventHandler);
+    public TaskExecutor(Semaphore barrier, TajoWorker.WorkerContext workerContext) {
+      super(barrier, workerContext);
     }
 
     @Override

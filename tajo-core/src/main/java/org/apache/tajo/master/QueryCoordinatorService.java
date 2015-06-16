@@ -23,13 +23,13 @@ import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.scheduler.event.ResourceReserveSchedulerEvent;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -37,7 +37,6 @@ import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.List;
 
 public class QueryCoordinatorService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(QueryCoordinatorService.class);
@@ -113,46 +112,25 @@ public class QueryCoordinatorService extends AbstractService {
         builder.setResponseCommand(command);
       }
 
-      builder.setClusterResourceSummary(context.getResourceManager().getClusterResourceSummary());
       done.run(builder.build());
     }
 
     @Override
-    public void allocateWorkerResources(
-        RpcController controller,
-        QueryCoordinatorProtocol.WorkerResourceAllocationRequest request,
-        RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> done) {
-      context.getResourceManager().allocateWorkerResources(request, done);
+    public void reserveNodeResources(RpcController controller, NodeResourceRequestProto request,
+                                     RpcCallback<NodeResourceResponseProto> done) {
+      Dispatcher dispatcher = context.getResourceManager().getRMContext().getDispatcher();
+      dispatcher.getEventHandler().handle(new ResourceReserveSchedulerEvent(request, done));
     }
 
     @Override
-    public void releaseWorkerResource(RpcController controller, WorkerResourceReleaseRequest request,
-                                           RpcCallback<PrimitiveProtos.BoolProto> done) {
-      List<ContainerProtocol.TajoContainerIdProto> containerIds = request.getContainerIdsList();
+    public void getAllWorkers(RpcController controller, PrimitiveProtos.NullProto request,
+                                     RpcCallback<WorkerConnectionsProto> done) {
 
-      for(ContainerProtocol.TajoContainerIdProto eachContainer: containerIds) {
-        context.getResourceManager().releaseWorkerResource(eachContainer);
-      }
-      done.run(BOOL_TRUE);
-    }
-
-    @Override
-    public void getAllWorkerResource(RpcController controller, PrimitiveProtos.NullProto request,
-                                     RpcCallback<WorkerResourcesRequest> done) {
-
-      WorkerResourcesRequest.Builder builder = WorkerResourcesRequest.newBuilder();
-      Collection<Worker> workers = context.getResourceManager().getWorkers().values();
+      WorkerConnectionsProto.Builder builder = WorkerConnectionsProto.newBuilder();
+      Collection<Worker> workers = context.getResourceManager().getRMContext().getWorkers().values();
 
       for(Worker worker: workers) {
-        WorkerResource resource = worker.getResource();
-
-        WorkerResourceProto.Builder workerResource = WorkerResourceProto.newBuilder();
-
-        workerResource.setConnectionInfo(worker.getConnectionInfo().getProto());
-        workerResource.setMemoryMB(resource.getMemoryMB());
-        workerResource.setDiskSlots(resource.getDiskSlots());
-
-        builder.addWorkerResources(workerResource);
+        builder.addWorker(worker.getConnectionInfo().getProto());
       }
       done.run(builder.build());
     }

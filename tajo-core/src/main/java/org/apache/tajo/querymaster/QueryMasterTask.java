@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -42,6 +43,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TajoContainerProxy;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.plan.LogicalOptimizer;
@@ -54,6 +56,8 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
+import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageProperty;
@@ -63,9 +67,12 @@ import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
+import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -104,7 +111,7 @@ public class QueryMasterTask extends CompositeService {
 
   private AtomicLong lastClientHeartbeat = new AtomicLong(-1);
 
-  private AbstractResourceAllocator resourceAllocator;
+//  private AbstractResourceAllocator resourceAllocator;
 
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
@@ -114,6 +121,8 @@ public class QueryMasterTask extends CompositeService {
 
   private final List<TajoWorkerProtocol.TaskFatalErrorReport> diagnostics =
       new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
+
+  private final ConcurrentMap<Integer, WorkerConnectionInfo> workerMap = Maps.newConcurrentMap();
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
                          QueryId queryId, Session session, QueryContext queryContext,
@@ -144,14 +153,7 @@ public class QueryMasterTask extends CompositeService {
 
     try {
       queryTaskContext = new QueryMasterTaskContext();
-      String resourceManagerClassName = systemConf.getVar(TajoConf.ConfVars.RESOURCE_MANAGER_CLASS);
 
-      if(resourceManagerClassName.indexOf(TajoResourceManager.class.getName()) >= 0) {
-        resourceAllocator = new TajoResourceAllocator(queryTaskContext);
-      } else {
-        throw new UnimplementedException(resourceManagerClassName + " is not supported yet");
-      }
-      addService(resourceAllocator);
       addService(dispatcher);
 
       dispatcher.register(StageEventType.class, new StageEventDispatcher());
@@ -179,6 +181,10 @@ public class QueryMasterTask extends CompositeService {
   @Override
   public void start() {
     startQuery();
+    List<TajoProtos.WorkerConnectionInfoProto> workersProto = queryMasterContext.getQueryMaster().getAllWorker();
+    for (TajoProtos.WorkerConnectionInfoProto worker : workersProto) {
+      workerMap.put(worker.getId(), new WorkerConnectionInfo(worker));
+    }
     super.start();
   }
 
@@ -191,11 +197,13 @@ public class QueryMasterTask extends CompositeService {
 
     LOG.info("Stopping QueryMasterTask:" + queryId);
 
-    try {
-      resourceAllocator.stop();
-    } catch (Throwable t) {
-      LOG.fatal(t.getMessage(), t);
-    }
+    getQueryTaskContext().getQueryMasterContext().getWorkerContext().
+        getNodeResourceManager().getDispatcher().getEventHandler().handle(new NodeResourceDeallocateEvent(NodeResources.createResource(512).getProto()));
+//    try {
+//      resourceAllocator.stop();
+//    } catch (Throwable t) {
+//      LOG.fatal(t.getMessage(), t);
+//    }
 
     if (queryMetrics != null) {
       queryMetrics.report(new MetricsConsoleReporter());
@@ -204,7 +212,7 @@ public class QueryMasterTask extends CompositeService {
     super.stop();
     LOG.info("Stopped QueryMasterTask:" + queryId);
   }
-
+  //FIXME remove
   public void handleTaskRequestEvent(TaskRequestEvent event) {
     ExecutionBlockId id = event.getExecutionBlockId();
     query.getStage(id).handleTaskRequestEvent(event);
@@ -271,10 +279,10 @@ public class QueryMasterTask extends CompositeService {
   private class LocalTaskEventHandler implements EventHandler<LocalTaskEvent> {
     @Override
     public void handle(LocalTaskEvent event) {
-      TajoContainerProxy proxy = (TajoContainerProxy) resourceAllocator.getContainers().get(event.getContainerId());
-      if (proxy != null) {
-        proxy.killTaskAttempt(event.getTaskAttemptId());
-      }
+//      TajoContainerProxy proxy = (TajoContainerProxy) resourceAllocator.getContainers().get(event.getContainerId());
+//      if (proxy != null) {
+//        proxy.killTaskAttempt(event.getTaskAttemptId());
+//      }
     }
   }
 
@@ -587,12 +595,16 @@ public class QueryMasterTask extends CompositeService {
       return query.getProgress();
     }
 
-    public AbstractResourceAllocator getResourceAllocator() {
-      return resourceAllocator;
-    }
+//    public AbstractResourceAllocator getResourceAllocator() {
+//      return resourceAllocator;
+//    }
 
     public TajoMetrics getQueryMetrics() {
       return queryMetrics;
+    }
+
+    public ConcurrentMap<Integer, WorkerConnectionInfo> getWorkerMap() {
+      return workerMap;
     }
   }
 }

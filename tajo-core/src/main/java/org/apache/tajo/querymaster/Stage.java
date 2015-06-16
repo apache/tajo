@@ -20,9 +20,11 @@ package org.apache.tajo.querymaster;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.Event;
@@ -52,6 +54,7 @@ import org.apache.tajo.master.LaunchTaskRunnersEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.TaskState;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.*;
@@ -59,6 +62,10 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TableSpaceManager;
@@ -70,6 +77,7 @@ import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -702,9 +710,45 @@ public class Stage implements EventHandler<StageEvent> {
     }
   }
 
+
+  //////////////FIXME
+  public void stopExecutionBlock(TajoWorkerProtocol.StopExecutionBlockRequestProto requestProto) {
+
+    for (WorkerConnectionInfo worker : getContext().getWorkerMap().values()) {
+      NettyClientBase tajoWorkerRpc = null;
+      try {
+        InetSocketAddress addr = new InetSocketAddress(worker.getHost(), worker.getPeerRpcPort());
+        tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
+        TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+
+        tajoWorkerRpcClient.stopExecutionBlock(null, requestProto, NullCallback.get(PrimitiveProtos.BoolProto.class));
+      } catch (Throwable e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+  }
+
   private void releaseContainers() {
     // If there are still live TaskRunners, try to kill the containers. and send the shuffle report request
-    eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), containers.values()));
+
+    //eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), containers.values()));
+    List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
+    if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
+      List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
+
+      for (ExecutionBlock executionBlock : childs) {
+        ebIds.add(executionBlock.getId().getProto());
+      }
+
+      //getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
+    }
+
+    TajoWorkerProtocol.StopExecutionBlockRequestProto.Builder stopRequest = TajoWorkerProtocol.StopExecutionBlockRequestProto.newBuilder();
+    TajoWorkerProtocol.ExecutionBlockListProto.Builder builder = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
+    builder.addAllExecutionBlockId(Lists.newArrayList(ebIds));
+    stopRequest.setChild(builder.build());
+    stopRequest.setExecutionBlockId(getId().getProto());
+    stopExecutionBlock(stopRequest.build());
   }
 
   /**
@@ -1048,16 +1092,21 @@ public class Stage implements EventHandler<StageEvent> {
     }
 
     public static void allocateContainers(Stage stage) {
-      ExecutionBlock execBlock = stage.getBlock();
+      stage.getEventHandler().handle(new StageContainerAllocationEvent(stage.getId(), new ArrayList<TajoContainer>()));
+      return;
+
+      /*ExecutionBlock execBlock = stage.getBlock();
 
       //TODO consider disk slot
       int requiredMemoryMBPerTask = 512;
 
-      int numRequest = stage.getContext().getResourceAllocator().calculateNumRequestContainers(
-          stage.getContext().getQueryMasterContext().getWorkerContext(),
-          stage.schedulerContext.getEstimatedTaskNum(),
-          requiredMemoryMBPerTask
-      );
+//      int numRequest = stage.getContext().getResourceAllocator().calculateNumRequestContainers(
+//          stage.getContext().getQueryMasterContext().getWorkerContext(),
+//          stage.schedulerContext.getEstimatedTaskNum(),
+//          requiredMemoryMBPerTask
+//      );
+
+      int numRequest = 0;
 
       final Resource resource = Records.newRecord(Resource.class);
 
@@ -1071,7 +1120,7 @@ public class Stage implements EventHandler<StageEvent> {
           new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
               stage.getId(), priority, resource, numRequest,
               stage.masterPlan.isLeaf(execBlock), 0.0f);
-      stage.eventHandler.handle(event);
+      stage.eventHandler.handle(event);*/
     }
 
     private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException {
@@ -1178,11 +1227,11 @@ public class Stage implements EventHandler<StageEvent> {
           stage.containers.put(cId, container);
         }
         LOG.info("Stage (" + stage.getId() + ") has " + stage.containers.size() + " containers!");
-        stage.eventHandler.handle(
-            new LaunchTaskRunnersEvent(stage.getId(), allocationEvent.getAllocatedContainer(),
-                stage.getContext().getQueryContext(),
-                CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
-        );
+//        stage.eventHandler.handle(
+//            new LaunchTaskRunnersEvent(stage.getId(), allocationEvent.getAllocatedContainer(),
+//                stage.getContext().getQueryContext(),
+//                CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
+//        );
 
         stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_START));
       } catch (Throwable t) {
@@ -1282,18 +1331,6 @@ public class Stage implements EventHandler<StageEvent> {
   private void cleanup() {
     stopScheduler();
     releaseContainers();
-
-    if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
-      List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
-      List<TajoIdProtos.ExecutionBlockIdProto> ebIds = Lists.newArrayList();
-
-      for (ExecutionBlock executionBlock : childs) {
-        ebIds.add(executionBlock.getId().getProto());
-      }
-
-      getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
-    }
-
     this.finalStageHistory = makeStageHistory();
     this.finalStageHistory.setTasks(makeTaskHistories());
   }

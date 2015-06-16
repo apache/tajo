@@ -28,17 +28,21 @@ import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
+import org.apache.tajo.worker.event.QMResourceAllocateEvent;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 
 public class QueryMasterManagerService extends CompositeService
     implements QueryMasterProtocol.QueryMasterProtocolService.Interface {
@@ -125,10 +129,10 @@ public class QueryMasterManagerService extends CompositeService
       if(queryMasterTask == null || queryMasterTask.isStopped()) {
         done.run(DefaultTaskScheduler.stopTaskRunnerReq);
       } else {
-        TajoContainerId cid =
-            queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
-        LOG.debug("getTask:" + cid + ", ebId:" + ebId);
-        queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(request.getWorkerId(), cid, ebId, done));
+//        TajoContainerId cid =
+//            queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
+//        LOG.debug("getTask:" + cid + ", ebId:" + ebId);
+//        queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(request.getWorkerId(), cid, ebId, done));
       }
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -233,5 +237,20 @@ public class QueryMasterManagerService extends CompositeService
             request.getQueryContext()), request.getExprInJson().getValue(),
         request.getLogicalPlanJson().getValue()));
     done.run(TajoWorker.NULL_PROTO);
+  }
+
+  @Override
+  public void startQueryMaster(RpcController controller,
+                               QueryCoordinatorProtocol.AllocationResourceProto request,
+                               RpcCallback<PrimitiveProtos.BoolProto> done) {
+    CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+    workerContext.getNodeResourceManager().handle(new QMResourceAllocateEvent(request, callFuture));
+
+    try {
+      done.run(callFuture.get());
+    } catch (Exception e) {
+      controller.setFailed(e.getMessage());
+      done.run(TajoWorker.FALSE_PROTO);
+    }
   }
 }

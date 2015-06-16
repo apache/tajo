@@ -38,8 +38,8 @@ public class MockNodeResourceManager extends NodeResourceManager {
   volatile boolean enableTaskHandlerEvent = true;
   private final Semaphore barrier;
 
-  public MockNodeResourceManager(Semaphore barrier, Dispatcher dispatcher, EventHandler taskEventHandler) {
-    super(dispatcher, taskEventHandler);
+  public MockNodeResourceManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
+    super(dispatcher, workerContext);
     this.barrier = barrier;
   }
 
@@ -50,7 +50,7 @@ public class MockNodeResourceManager extends NodeResourceManager {
   }
 
   @Override
-  protected void startExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+  protected void startExecutionBlock(TajoWorkerProtocol.StartExecutionBlockRequestProto request) {
     if(enableTaskHandlerEvent) {
       super.startExecutionBlock(request);
     }

@@ -30,14 +30,12 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.worker.event.TaskRunnerStartEvent;
-import org.apache.tajo.worker.event.TaskRunnerStopEvent;
+import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
+import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 
 import java.net.InetSocketAddress;
 
@@ -110,29 +108,39 @@ public class TajoWorkerManagerService extends CompositeService
   }
 
   @Override
-  public void startExecutionBlock(RpcController controller,
-                                    TajoWorkerProtocol.RunExecutionBlockRequestProto request,
-                                    RpcCallback<PrimitiveProtos.BoolProto> done) {
-    workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
-
-    try {
-      workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStartEvent(request));
-      done.run(TajoWorker.TRUE_PROTO);
-    } catch (Throwable t) {
-      LOG.error(t.getMessage(), t);
-      controller.setFailed(t.getMessage());
-      done.run(TajoWorker.FALSE_PROTO);
-    }
+  public void allocateTasks(RpcController controller,
+                            TajoWorkerProtocol.BatchAllocationRequestProto request,
+                            RpcCallback<TajoWorkerProtocol.BatchAllocationResponseProto> done) {
+    //LOG.info("Try to allocate Tasks : " + request.toString());
+    workerContext.getNodeResourceManager().getDispatcher().
+        getEventHandler().handle(new NodeResourceAllocateEvent(request, done));
   }
+
+//  @Override
+//  public void startExecutionBlock(RpcController controller,
+//                                    TajoWorkerProtocol.StartExecutionBlockRequestProto request,
+//                                    RpcCallback<PrimitiveProtos.BoolProto> done) {
+//    workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
+//
+//    try {
+//      workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new TaskRunnerStartEvent(request));
+//      done.run(TajoWorker.TRUE_PROTO);
+//    } catch (Throwable t) {
+//      LOG.error(t.getMessage(), t);
+//      controller.setFailed(t.getMessage());
+//      done.run(TajoWorker.FALSE_PROTO);
+//    }
+//  }
 
   @Override
   public void stopExecutionBlock(RpcController controller,
-                                 TajoIdProtos.ExecutionBlockIdProto requestProto,
+                                 TajoWorkerProtocol.StopExecutionBlockRequestProto requestProto,
                                  RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
-      workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStopEvent(
-          new ExecutionBlockId(requestProto)
-      ));
+
+      workerContext.getTaskManager().getDispatcher().getEventHandler().handle(
+          new ExecutionBlockStopEvent(requestProto.getExecutionBlockId(), requestProto.getChild()));
+
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -144,7 +152,8 @@ public class TajoWorkerManagerService extends CompositeService
   @Override
   public void killTaskAttempt(RpcController controller, TajoIdProtos.TaskAttemptIdProto request,
                               RpcCallback<PrimitiveProtos.BoolProto> done) {
-    Task task = workerContext.getTaskRunnerManager().getTaskByTaskAttemptId(new TaskAttemptId(request));
+    //TODO change to async ?
+    Task task = workerContext.getTaskManager().getTaskByTaskAttemptId(new TaskAttemptId(request));
     if(task != null) task.kill();
 
     done.run(TajoWorker.TRUE_PROTO);
@@ -157,6 +166,7 @@ public class TajoWorkerManagerService extends CompositeService
     done.run(TajoWorker.TRUE_PROTO);
   }
 
+  @Deprecated
   @Override
   public void cleanupExecutionBlocks(RpcController controller,
                                      TajoWorkerProtocol.ExecutionBlockListProto ebIds,

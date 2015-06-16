@@ -229,9 +229,6 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initResourceManager() throws Exception {
-    Class<WorkerResourceManager>  resourceManagerClass = (Class<WorkerResourceManager>)
-        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoResourceManager.class);
-    Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
     resourceManager = new TajoResourceManager(context);
     addIfService(resourceManager);
   }

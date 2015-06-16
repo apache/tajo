@@ -61,7 +61,7 @@ public class TajoContainerProxy extends ContainerProxy {
 
   @Override
   public synchronized void launch(ContainerLaunchContext containerLaunchContext) {
-    context.getResourceAllocator().addContainer(containerId, this);
+    //context.getResourceAllocator().addContainer(containerId, this);
 
     this.hostName = container.getNodeId().getHost();
     this.port = ((TajoWorkerContainer)container).getWorkerResource().getConnectionInfo().getPullServerPort();
@@ -104,19 +104,19 @@ public class TajoContainerProxy extends ContainerProxy {
       PlanProto.ShuffleType shuffleType =
           context.getQuery().getStage(executionBlockId).getDataChannel().getShuffleType();
 
-      TajoWorkerProtocol.RunExecutionBlockRequestProto request =
-          TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
-              .setExecutionBlockId(executionBlockId.getProto())
-              .setQueryMaster(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
-              .setNodeId(container.getNodeId().toString())
-              .setContainerId(container.getId().toString())
-              .setQueryOutputPath(context.getStagingDir().toString())
-              .setQueryContext(queryContext.getProto())
-              .setPlanJson(planJson)
-              .setShuffleType(shuffleType)
-              .build();
-
-      tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
+//      TajoWorkerProtocol.RunExecutionBlockRequestProto request =
+//          TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
+//              .setExecutionBlockId(executionBlockId.getProto())
+//              .setQueryMaster(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
+//              .setNodeId(container.getNodeId().toString())
+//              .setContainerId(container.getId().toString())
+//              .setQueryOutputPath(context.getStagingDir().toString())
+//              .setQueryContext(queryContext.getProto())
+//              .setPlanJson(planJson)
+//              .setShuffleType(shuffleType)
+//              .build();
+//
+//      tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
     }
@@ -136,7 +136,7 @@ public class TajoContainerProxy extends ContainerProxy {
     } else {
       try {
         releaseWorkerResource(context, executionBlockId, Arrays.asList(containerId));
-        context.getResourceAllocator().removeContainer(containerId);
+        //context.getResourceAllocator().removeContainer(containerId);
       } catch (Throwable t) {
         // ignore the cleanup failure
         String message = "cleanup failed for container "
@@ -166,12 +166,12 @@ public class TajoContainerProxy extends ContainerProxy {
     tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
 
     QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-    masterClientService.releaseWorkerResource(null,
-        QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
-            .setExecutionBlockId(executionBlockId.getProto())
-            .addAllContainerIds(containerIdProtos)
-            .build(),
-        NullCallback.get());
+//    masterClientService.releaseWorkerResource(null,
+//        QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
+//            .setExecutionBlockId(executionBlockId.getProto())
+//            .addAllContainerIds(containerIdProtos)
+//            .build(),
+//        NullCallback.get());
 
   }
 }

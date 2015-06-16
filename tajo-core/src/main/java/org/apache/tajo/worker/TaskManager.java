@@ -45,17 +45,15 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   private final TajoWorker.WorkerContext workerContext;
   private final Map<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
   private final Dispatcher dispatcher;
-  private final EventHandler rmEventHandler;
 
   private TajoConf tajoConf;
 
-  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, EventHandler rmEventHandler) {
+  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
     super(TaskManager.class.getName());
 
     this.dispatcher = dispatcher;
     this.workerContext = workerContext;
     this.executionBlockContextMap = Maps.newHashMap();
-    this.rmEventHandler = rmEventHandler;
   }
 
   @Override
@@ -87,9 +85,13 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     return workerContext;
   }
 
-  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+  public int getRunningTasks(){
+    return workerContext.getTaskExecuor().getRunningTasks();
+  }
+
+  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.StartExecutionBlockRequestProto request) {
     try {
-      ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), null, request);
+      ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), request);
 
       context.init();
       return context;
@@ -102,7 +104,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   protected void stopExecutionBlock(ExecutionBlockContext context,
                                     TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
 
-    if(context != null){
+    if (context != null) {
       try {
         context.getSharedResource().releaseBroadcastCache(context.getExecutionBlockId());
         context.sendShuffleReport();
@@ -135,12 +137,16 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
       if(!executionBlockContextMap.containsKey(event.getExecutionBlockId())) {
         ExecutionBlockContext context = createExecutionBlock(((ExecutionBlockStartEvent) event).getRequestProto());
         executionBlockContextMap.put(context.getExecutionBlockId(), context);
+        LOG.info("Running ExecutionBlocks: " + executionBlockContextMap.size()
+            + ", running tasks:" + getRunningTasks() + ", resource: "
+            + workerContext.getNodeResourceManager().getAvailableResource());
       } else {
         LOG.warn("Already initialized ExecutionBlock: " + event.getExecutionBlockId());
       }
     } else if (event instanceof ExecutionBlockStopEvent) {
       //receive event from QueryMaster
-      rmEventHandler.handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
+      workerContext.getNodeResourceManager().getDispatcher().getEventHandler()
+          .handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
       stopExecutionBlock(executionBlockContextMap.remove(event.getExecutionBlockId()),
           ((ExecutionBlockStopEvent) event).getCleanupList());
     }

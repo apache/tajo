@@ -23,21 +23,21 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerAllocatedResource;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.TajoResourceManager;
-import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
 
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +54,7 @@ public class QueryInProgress {
 
   private LogicalRootNode plan;
 
-  private AtomicBoolean querySubmitted = new AtomicBoolean(false);
+  private volatile boolean querySubmitted = false;
 
   private AtomicBoolean stopped = new AtomicBoolean(false);
 
@@ -65,6 +65,9 @@ public class QueryInProgress {
   private NettyClientBase queryMasterRpc;
 
   private QueryMasterProtocolService queryMasterRpcClient;
+
+  //FIXME
+  private QueryCoordinatorProtocol.AllocationResourceProto allocation;
 
   private final Lock readLock;
   private final Lock writeLock;
@@ -112,7 +115,7 @@ public class QueryInProgress {
     LOG.info("=========================================================");
     LOG.info("Stop query:" + queryId);
 
-    masterContext.getResourceManager().releaseQueryMaster(queryId);
+    masterContext.getResourceManager().getScheduler().stopQuery(queryId);
 
     RpcClientManager.cleanup(queryMasterRpc);
 
@@ -123,7 +126,7 @@ public class QueryInProgress {
     }
   }
 
-  public boolean startQueryMaster() {
+  public boolean startQueryMaster(QueryCoordinatorProtocol.AllocationResourceProto allocation) {
     try {
       writeLock.lockInterruptibly();
     } catch (Exception e) {
@@ -131,20 +134,29 @@ public class QueryInProgress {
       return false;
     }
     try {
-      LOG.info("Initializing QueryInProgress for QueryID=" + queryId);
+      this.allocation = allocation;
       TajoResourceManager resourceManager = masterContext.getResourceManager();
-      resourceManager.getScheduler().getq
-      //WorkerAllocatedResource resource = resourceManager.allocateQueryMaster(this);
+      WorkerConnectionInfo connectionInfo =
+          resourceManager.getRMContext().getWorkers().get(allocation.getWorkerId()).getConnectionInfo();
+      try {
+        if(queryMasterRpcClient == null) {
+          connectQueryMaster(connectionInfo);
+        }
 
-      // if no resource to allocate a query master
-      if(resource == null) {
-        throw new RuntimeException("No Available Resources for QueryMaster");
+        CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+        queryMasterRpcClient.startQueryMaster(callFuture.getController(), allocation, callFuture);
+
+        if(!callFuture.get().getValue()) return false;
+
+      } catch (ConnectException ce) {
+        return false;
       }
 
-      queryInfo.setQueryMaster(resource.getConnectionInfo().getHost());
-      queryInfo.setQueryMasterPort(resource.getConnectionInfo().getQueryMasterPort());
-      queryInfo.setQueryMasterclientPort(resource.getConnectionInfo().getClientPort());
-      queryInfo.setQueryMasterInfoPort(resource.getConnectionInfo().getHttpInfoPort());
+      LOG.info("Initializing QueryInProgress for QueryID=" + queryId);
+      queryInfo.setQueryMaster(connectionInfo.getHost());
+      queryInfo.setQueryMasterPort(connectionInfo.getQueryMasterPort());
+      queryInfo.setQueryMasterclientPort(connectionInfo.getClientPort());
+      queryInfo.setQueryMasterInfoPort(connectionInfo.getHttpInfoPort());
 
       return true;
     } catch (Exception e) {
@@ -155,31 +167,29 @@ public class QueryInProgress {
     }
   }
 
-  private void connectQueryMaster() throws Exception {
-    InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
-    LOG.info("Connect to QueryMaster:" + addr);
-
+  private void connectQueryMaster(WorkerConnectionInfo connectionInfo)
+      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
     RpcClientManager.cleanup(queryMasterRpc);
+
+    InetSocketAddress addr = NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getQueryMasterPort());
+    LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc = RpcClientManager.getInstance().newClient(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
-  public void submitQueryToMaster() {
-    if(querySubmitted.get()) {
-      return;
+  public boolean submitQueryToMaster() {
+    if(querySubmitted) {
+      return false;
     }
 
     try {
       writeLock.lockInterruptibly();
     } catch (Exception e) {
       LOG.error("Failed to lock by exception " + e.getMessage(), e);
-      return;
+      return false;
     }
 
     try {
-      if(queryMasterRpcClient == null) {
-        connectQueryMaster();
-      }
 
       LOG.info("Call executeQuery to :" +
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort() + "," + queryId);
@@ -195,14 +205,16 @@ public class QueryInProgress {
       queryMasterRpcClient.executeQuery(callFuture.getController(), builder.build(), callFuture);
       callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-      querySubmitted.set(true);
+      querySubmitted = true;
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_MASTER_LAUNCHED);
+      return true;
     } catch (Exception e) {
       LOG.error("Failed to submit query " + queryId + " to master by exception " + e, e);
       catchException(e.getMessage(), e);
     } finally {
       writeLock.unlock();
     }
+    return false;
   }
 
   public void catchException(String message, Throwable e) {
@@ -222,10 +234,6 @@ public class QueryInProgress {
     } finally {
       readLock.unlock();
     }
-  }
-
-  public boolean isStarted() {
-    return !stopped.get() && this.querySubmitted.get();
   }
 
   public void heartbeat(QueryInfo queryInfo) {

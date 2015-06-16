@@ -57,17 +57,20 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   static {
     HEARTBEAT_TIME_UPDATER = PlatformDependent.newAtomicLongFieldUpdater(Worker.class, "lastHeartbeatTime");
     if (HEARTBEAT_TIME_UPDATER == null) {
-      HEARTBEAT_TIME_UPDATER = AtomicLongFieldUpdater.newUpdater(NodeResource.class, "lastHeartbeatTime");
-      RUNNING_TASK_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "numRunningTasks");
-      RUNNING_QM_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "numRunningQueryMaster");
+      HEARTBEAT_TIME_UPDATER = AtomicLongFieldUpdater.newUpdater(Worker.class, "lastHeartbeatTime");
+      RUNNING_TASK_UPDATER = AtomicIntegerFieldUpdater.newUpdater(Worker.class, "numRunningTasks");
+      RUNNING_QM_UPDATER = AtomicIntegerFieldUpdater.newUpdater(Worker.class, "numRunningQueryMaster");
     } else {
-      RUNNING_TASK_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "numRunningTasks");
-      RUNNING_QM_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "numRunningQueryMaster");
+      RUNNING_TASK_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(Worker.class, "numRunningTasks");
+      RUNNING_QM_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(Worker.class, "numRunningQueryMaster");
     }
   }
 
-  /** Resource capability */
-  private final NodeResource resource;
+  /** Available resources on the node. */
+  private final NodeResource availableResource;
+
+  /** Total resources on the node. */
+  private final NodeResource totalResourceCapability;
 
   /** Worker connection information */
   private WorkerConnectionInfo connectionInfo;
@@ -114,12 +117,13 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   private final StateMachine<WorkerState, WorkerEventType, WorkerEvent> stateMachine =
       stateMachineFactory.make(this, WorkerState.NEW);
 
-  public Worker(TajoRMContext rmContext, NodeResource resource, WorkerConnectionInfo connectionInfo) {
+  public Worker(TajoRMContext rmContext, NodeResource totalResourceCapability, WorkerConnectionInfo connectionInfo) {
     this.rmContext = rmContext;
 
     this.connectionInfo = connectionInfo;
     this.lastHeartbeatTime = System.currentTimeMillis();
-    this.resource = resource;
+    this.totalResourceCapability = totalResourceCapability;
+    this.availableResource = NodeResources.clone(totalResourceCapability);
   }
 
   public int getWorkerId() {
@@ -138,8 +142,16 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     RUNNING_QM_UPDATER.lazySet(this, numRunningQueryMaster);
   }
 
+  public int getNumRunningQueryMaster() {
+    return numRunningQueryMaster;
+  }
+
   public void setNumRunningTasks(int numRunningTasks) {
     RUNNING_TASK_UPDATER.lazySet(this, numRunningTasks);
+  }
+
+  public int getNumRunningTasks() {
+    return numRunningTasks;
   }
 
   public long getLastHeartbeatTime() {
@@ -155,11 +167,21 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   }
 
   /**
+   * Get current resources on the node.
    *
-   * @return the current resource capability of worker
+   * @return current resources on the node.
    */
-  public NodeResource getResource() {
-    return this.resource;
+  public NodeResource getAvailableResource() {
+    return this.availableResource;
+  }
+
+  /**
+   * Get total resources on the node.
+   *
+   * @return total resources on the node.
+   */
+  public NodeResource getTotalResourceCapability() {
+    return totalResourceCapability;
   }
 
   @Override
@@ -177,25 +199,15 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
 
     Worker worker = (Worker) o;
 
-    if (lastHeartbeatTime != worker.lastHeartbeatTime) return false;
     if (connectionInfo != null ? !connectionInfo.equals(worker.connectionInfo) : worker.connectionInfo != null)
       return false;
-
-    if (resource != null ? !resource.equals(worker.resource) : worker.resource != null) return false;
-    if (rmContext != null ? !rmContext.equals(worker.rmContext) : worker.rmContext != null) return false;
-    if (stateMachine != null ? !stateMachine.equals(worker.stateMachine) : worker.stateMachine != null) return false;
-
     return true;
   }
 
   @Override
   public int hashCode() {
     int result = 0;
-    result = 31 * result + (rmContext != null ? rmContext.hashCode() : 0);
-    result = 31 * result + (int) (lastHeartbeatTime ^ (lastHeartbeatTime >>> 32));
-    result = 31 * result + (resource != null ? resource.hashCode() : 0);
     result = 31 * result + (connectionInfo != null ? connectionInfo.hashCode() : 0);
-    result = 31 * result + (stateMachine != null ? stateMachine.hashCode() : 0);
     return result;
   }
 
@@ -204,7 +216,7 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     public void transition(Worker worker, WorkerEvent workerEvent) {
 
       worker.rmContext.getQueryMasterWorker().add(worker.getWorkerId());
-      LOG.info("Worker with " + worker.getResource() + " is joined to Tajo cluster");
+      LOG.info("Worker with " + worker.getTotalResourceCapability() + " is joined to Tajo cluster");
     }
   }
 
@@ -225,7 +237,7 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     setLastHeartbeatTime(System.currentTimeMillis());
     setNumRunningTasks(statusEvent.getRunningTaskNum());
     setNumRunningQueryMaster(statusEvent.getRunningQMNum());
-    NodeResources.update(resource, statusEvent.getResource());
+    NodeResources.update(availableResource, statusEvent.getResource());
   }
 
   public static class DeactivateNodeTransition implements SingleArcTransition<Worker, WorkerEvent> {
@@ -248,11 +260,8 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
 
     @Override
     public void transition(Worker worker, WorkerEvent workerEvent) {
-      if (!(workerEvent instanceof WorkerReconnectEvent)) {
-        throw new IllegalArgumentException("workerEvent should be a WorkerReconnectEvent type.");
-      }
-      WorkerReconnectEvent castedEvent = (WorkerReconnectEvent) workerEvent;
 
+      WorkerReconnectEvent castedEvent = TUtil.checkTypeAndGet(workerEvent, WorkerReconnectEvent.class);
       Worker newWorker = castedEvent.getWorker();
       worker.rmContext.getWorkers().put(castedEvent.getWorkerId(), newWorker);
       worker.rmContext.getDispatcher().getEventHandler().handle(

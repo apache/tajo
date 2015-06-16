@@ -24,7 +24,9 @@ public class NodeResourceEvent extends AbstractEvent<NodeResourceEvent.EventType
   //consumer: NodeResourceManager
   public enum EventType {
     // producer: TajoWorkerManagerService
-    ALLOCATE,
+    TASK_ALLOCATE,
+    // producer: TajoWorkerManagerService
+    QM_ALLOCATE,
     // producer: TaskExecutor
     DEALLOCATE
   }

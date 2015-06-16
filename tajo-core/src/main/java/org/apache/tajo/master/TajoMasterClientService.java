@@ -648,27 +648,27 @@ public class TajoMasterClientService extends AbstractService {
 
         WorkerResourceInfo.Builder workerBuilder
           = WorkerResourceInfo.newBuilder();
-
-        for(Worker worker: workers.values()) {
-          WorkerResource workerResource = worker.getResource();
-
-          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
-          workerBuilder.setDiskSlots(workerResource.getDiskSlots());
-          workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
-          workerBuilder.setMemoryMB(workerResource.getMemoryMB());
-          workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
-          workerBuilder.setUsedMemoryMB(workerResource.getUsedMemoryMB());
-          workerBuilder.setUsedCpuCoreSlots(workerResource.getUsedCpuCoreSlots());
-          workerBuilder.setUsedDiskSlots(workerResource.getUsedDiskSlots());
-          workerBuilder.setWorkerStatus(worker.getState().toString());
-          workerBuilder.setMaxHeap(workerResource.getMaxHeap());
-          workerBuilder.setFreeHeap(workerResource.getFreeHeap());
-          workerBuilder.setTotalHeap(workerResource.getTotalHeap());
-          workerBuilder.setNumRunningTasks(workerResource.getNumRunningTasks());
-          workerBuilder.setNumQueryMasterTasks(workerResource.getNumQueryMasterTasks());
-
-          builder.addWorkerList(workerBuilder.build());
-        }
+        //FIXME
+//        for(Worker worker: workers.values()) {
+//          WorkerResource workerResource = worker.getAvailableResource();
+//
+//          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
+//          workerBuilder.setDiskSlots(workerResource.getDiskSlots());
+//          workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
+//          workerBuilder.setMemoryMB(workerResource.getMemoryMB());
+//          workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
+//          workerBuilder.setUsedMemoryMB(workerResource.getUsedMemoryMB());
+//          workerBuilder.setUsedCpuCoreSlots(workerResource.getUsedCpuCoreSlots());
+//          workerBuilder.setUsedDiskSlots(workerResource.getUsedDiskSlots());
+//          workerBuilder.setWorkerStatus(worker.getState().toString());
+//          workerBuilder.setMaxHeap(workerResource.getMaxHeap());
+//          workerBuilder.setFreeHeap(workerResource.getFreeHeap());
+//          workerBuilder.setTotalHeap(workerResource.getTotalHeap());
+//          workerBuilder.setNumRunningTasks(workerResource.getNumRunningTasks());
+//          workerBuilder.setNumQueryMasterTasks(workerResource.getNumQueryMasterTasks());
+//
+//          builder.addWorkerList(workerBuilder.build());
+//        }
 
         return builder.build();
       } catch (Throwable t) {

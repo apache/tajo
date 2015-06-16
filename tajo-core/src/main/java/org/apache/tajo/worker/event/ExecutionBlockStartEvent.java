@@ -22,14 +22,14 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 public class ExecutionBlockStartEvent extends TaskManagerEvent {
-  private TajoWorkerProtocol.RunExecutionBlockRequestProto requestProto;
+  private TajoWorkerProtocol.StartExecutionBlockRequestProto requestProto;
 
-  public ExecutionBlockStartEvent(TajoWorkerProtocol.RunExecutionBlockRequestProto requestProto) {
+  public ExecutionBlockStartEvent(TajoWorkerProtocol.StartExecutionBlockRequestProto requestProto) {
     super(EventType.EB_START, new ExecutionBlockId(requestProto.getExecutionBlockId()));
     this.requestProto = requestProto;
   }
 
-  public TajoWorkerProtocol.RunExecutionBlockRequestProto getRequestProto() {
+  public TajoWorkerProtocol.StartExecutionBlockRequestProto getRequestProto() {
     return requestProto;
   }
 }

@@ -79,6 +79,21 @@ public class TestNodeResourceManager {
       }
 
       @Override
+      public TaskManager getTaskManager() {
+        return taskManager;
+      }
+
+      @Override
+      public TaskExecutor getTaskExecuor() {
+        return taskExecutor;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return resourceManager;
+      }
+
+      @Override
       public WorkerConnectionInfo getConnectionInfo() {
         if (workerConnectionInfo == null) {
           workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
@@ -87,10 +102,10 @@ public class TestNodeResourceManager {
       }
     };
 
-    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext, dispatcher.getEventHandler());
-    taskExecutor = new MockTaskExecutor(new Semaphore(0), taskManager, dispatcher.getEventHandler());
-    resourceManager = new MockNodeResourceManager(new Semaphore(0), dispatcher, taskDispatcher.getEventHandler());
-    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext, resourceManager);
+    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext);
+    taskExecutor = new MockTaskExecutor(new Semaphore(0), workerContext);
+    resourceManager = new MockNodeResourceManager(new Semaphore(0), dispatcher, workerContext);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext);
 
     service = new CompositeService("MockService") {
       @Override
@@ -199,13 +214,10 @@ public class TestNodeResourceManager {
         totalTasks = MockNodeResourceManager.createTaskRequests(ebId, taskMemory, taskSize);
 
     // first request with starting ExecutionBlock
-    TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
+    TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
+        ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
     ebRequestProto.setExecutionBlockId(ebId.getProto())
         .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setNodeId(workerContext.getConnectionInfo().getHost() + ":" +
-            workerContext.getConnectionInfo().getQueryMasterPort())
-        .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")
         .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);

@@ -19,7 +19,6 @@
 package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -31,7 +30,6 @@ import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.worker.TaskRunner;
 import org.apache.tajo.worker.TaskRunnerHistory;
 
 import java.text.DecimalFormat;
@@ -66,14 +64,14 @@ public class JSPUtil {
     Collections.sort(tasks, new TaskHistoryComparator(sortField, "asc".equals(sortOrder)));
   }
 
-  public static void sortTaskRunner(List<TaskRunner> taskRunners) {
-    Collections.sort(taskRunners, new Comparator<TaskRunner>() {
-      @Override
-      public int compare(TaskRunner taskRunner, TaskRunner taskRunner2) {
-        return taskRunner.getId().compareTo(taskRunner2.getId());
-      }
-    });
-  }
+//  public static void sortTaskRunner(List<TaskRunner> taskRunners) {
+//    Collections.sort(taskRunners, new Comparator<TaskRunner>() {
+//      @Override
+//      public int compare(TaskRunner taskRunner, TaskRunner taskRunner2) {
+//        return taskRunner.getId().compareTo(taskRunner2.getId());
+//      }
+//    });
+//  }
 
   public static void sortTaskRunnerHistory(List<TaskRunnerHistory> histories) {
     Collections.sort(histories, new Comparator<TaskRunnerHistory>() {

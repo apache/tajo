@@ -36,17 +36,13 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
-import org.apache.tajo.master.scheduler.SimpleFifoScheduler;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.history.HistoryReader;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -60,8 +56,6 @@ public class QueryManager extends CompositeService {
   private final TajoMaster.MasterContext masterContext;
 
   private AsyncDispatcher dispatcher;
-
-  private SimpleFifoScheduler scheduler;
 
   private final Map<QueryId, QueryInProgress> submittedQueries = Maps.newConcurrentMap();
 
@@ -86,7 +80,6 @@ public class QueryManager extends CompositeService {
 
       this.dispatcher.register(QueryJobEvent.Type.class, new QueryJobManagerEventHandler());
 
-      this.scheduler = new SimpleFifoScheduler(this);
     } catch (Exception e) {
       LOG.error("Failed to init service " + getName() + " by exception " + e, e);
     }
@@ -101,13 +94,12 @@ public class QueryManager extends CompositeService {
         eachQueryInProgress.stopProgress();
       }
     }
-    this.scheduler.stop();
+
     super.serviceStop();
   }
 
   @Override
   public void serviceStart() throws Exception {
-    this.scheduler.start();
     super.serviceStart();
   }
 
@@ -172,6 +164,9 @@ public class QueryManager extends CompositeService {
     return queryInProgress.getQueryInfo();
   }
 
+  /**
+   * submit query to scheduler
+   */
   public QueryInfo scheduleQuery(Session session, QueryContext queryContext, String sql,
                                  String jsonExpr, LogicalRootNode plan)
       throws Exception {
@@ -182,28 +177,26 @@ public class QueryManager extends CompositeService {
     queryInProgress.getQueryInfo().setQueryMaster("");
     submittedQueries.put(queryInProgress.getQueryId(), queryInProgress);
 
-    //scheduler.addQuery(queryInProgress);
-    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo(queryInProgress.getQueryId(), 1,
-        queryInProgress.getQueryInfo().getStartTime());
+    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo("default", queryContext.getUser(),
+        queryInProgress.getQueryId(), 1, queryInProgress.getQueryInfo().getStartTime());
+
     masterContext.getResourceManager().submitQuery(querySchedulingInfo);
     return queryInProgress.getQueryInfo();
   }
 
-  public QueryInfo startQueryJob(QueryId queryId) throws Exception {
+  public boolean startQueryJob(QueryId queryId, QueryCoordinatorProtocol.AllocationResourceProto allocation) {
 
-    QueryInProgress queryInProgress;
-
-    queryInProgress = submittedQueries.remove(queryId);
-    runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
-
-    if (queryInProgress.startQueryMaster()) {
+    if (submittedQueries.get(queryId).startQueryMaster(allocation)) {
+      QueryInProgress queryInProgress = submittedQueries.remove(queryId);
+      runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
           queryInProgress.getQueryInfo()));
     } else {
-      masterContext.getQueryJobManager().stopQuery(queryInProgress.getQueryId());
+      //masterContext.getQueryJobManager().stopQuery(queryInProgress.getQueryId());
+      return false;
     }
 
-    return queryInProgress.getQueryInfo();
+    return true;
   }
 
   class QueryJobManagerEventHandler implements EventHandler<QueryJobEvent> {
@@ -221,7 +214,7 @@ public class QueryManager extends CompositeService {
         queryInProgress.submitQueryToMaster();
 
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
-        scheduler.removeQuery(queryInProgress.getQueryId());
+
         queryInProgress.kill();
         stopQuery(queryInProgress.getQueryId());
 

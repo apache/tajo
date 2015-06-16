@@ -184,16 +184,20 @@ message DataChannelProto {
   optional string storeType = 10;
 }
 
-message RunExecutionBlockRequestProto {
+message StartExecutionBlockRequestProto {
     required ExecutionBlockIdProto executionBlockId = 1;
     required WorkerConnectionInfoProto queryMaster = 2;
-    required string nodeId = 3;
-    required string containerId = 4;
-    optional string queryOutputPath = 5;
 
-    required KeyValueSetProto queryContext = 6;
-    required string planJson = 7;
-    required ShuffleType shuffleType = 8;
+    optional string queryOutputPath = 3;
+
+    required KeyValueSetProto queryContext = 4;
+    required string planJson = 5;
+    required ShuffleType shuffleType = 6;
+}
+
+message StopExecutionBlockRequestProto {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    optional ExecutionBlockListProto child = 2;
 }
 
 message ExecutionBlockListProto {
@@ -208,19 +212,20 @@ message TaskAllocationRequestProto {
 message BatchAllocationRequestProto {
     required ExecutionBlockIdProto executionBlockId = 1;
     repeated TaskAllocationRequestProto taskRequest = 2;
-    optional RunExecutionBlockRequestProto executionBlockRequest = 3;  //TODO should be refactored
+    optional StartExecutionBlockRequestProto executionBlockRequest = 3;
 }
 
 message BatchAllocationResponseProto {
-    repeated TaskAllocationRequestProto cancellationTask = 2;
+    repeated TaskAllocationRequestProto cancellationTask = 1;
 }
 
 service TajoWorkerProtocolService {
   rpc ping (TaskAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
-  rpc startExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
-  rpc stopExecutionBlock(ExecutionBlockIdProto) returns (BoolProto);
+  //rpc startExecutionBlock(StartExecutionBlockRequestProto) returns (BoolProto);
+  rpc allocateTasks(BatchAllocationRequestProto) returns (BatchAllocationResponseProto);
+  rpc stopExecutionBlock(StopExecutionBlockRequestProto) returns (BoolProto);
   rpc killTaskAttempt(TaskAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
   rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);

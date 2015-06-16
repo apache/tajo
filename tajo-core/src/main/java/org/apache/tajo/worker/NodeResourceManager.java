@@ -30,6 +30,7 @@ import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.storage.DiskUtil;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -38,15 +39,15 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private static final Log LOG = LogFactory.getLog(NodeResourceManager.class);
 
   private final Dispatcher dispatcher;
-  private final EventHandler taskEventHandler;
+  private final TajoWorker.WorkerContext workerContext;
   private NodeResource totalResource;
   private NodeResource availableResource;
   private TajoConf tajoConf;
 
-  public NodeResourceManager(Dispatcher dispatcher, EventHandler taskEventHandler) {
+  public NodeResourceManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
     super(NodeResourceManager.class.getName());
     this.dispatcher = dispatcher;
-    this.taskEventHandler = taskEventHandler;
+    this.workerContext = workerContext;
   }
 
   @Override
@@ -66,13 +67,23 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   @Override
   public void handle(NodeResourceEvent event) {
 
-    if (event instanceof NodeResourceAllocateEvent) {
+    if (event instanceof QMResourceAllocateEvent) {
+      // allocate query master resource
+      QMResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, QMResourceAllocateEvent.class);
+      NodeResource resource = new NodeResource(allocateEvent.getRequest().getResource());
+      if (allocate(resource)) {
+        allocateEvent.getCallback().run(TajoWorker.TRUE_PROTO);
+      } else {
+        allocateEvent.getCallback().run(TajoWorker.FALSE_PROTO);
+      }
+    } else if (event instanceof NodeResourceAllocateEvent) {
+      // allocate task resource
       NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
       BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
       for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
         NodeResource resource = new NodeResource(request.getResource());
         if (allocate(resource)) {
-          if(allocateEvent.getRequest().hasExecutionBlockRequest()){
+          if (allocateEvent.getRequest().hasExecutionBlockRequest()) {
             //send ExecutionBlock start event to TaskManager
             startExecutionBlock(allocateEvent.getRequest().getExecutionBlockRequest());
           }
@@ -96,7 +107,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     }
   }
 
-  protected Dispatcher getDispatcher() {
+  public Dispatcher getDispatcher() {
     return dispatcher;
   }
 
@@ -117,12 +128,12 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     return false;
   }
 
-  protected void startExecutionBlock(RunExecutionBlockRequestProto request) {
-    taskEventHandler.handle(new ExecutionBlockStartEvent(request));
+  protected void startExecutionBlock(StartExecutionBlockRequestProto request) {
+    workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new ExecutionBlockStartEvent(request));
   }
 
   protected void startTask(TaskRequestProto request, NodeResource resource) {
-    taskEventHandler.handle(new TaskStartEvent(request, resource));
+    workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new TaskStartEvent(request, resource));
   }
 
   private void release(NodeResource resource) {

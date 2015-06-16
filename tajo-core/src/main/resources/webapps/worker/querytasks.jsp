@@ -33,6 +33,7 @@
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.*" %>
 <%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.TajoProtos" %>
 
 <%
   String paramQueryId = request.getParameter("queryId");
@@ -60,13 +61,13 @@
   }
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
-  List<QueryCoordinatorProtocol.WorkerResourceProto> allWorkers = tajoWorker.getWorkerContext()
+  List<TajoProtos.WorkerConnectionInfoProto> allWorkers = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getAllWorker();
 
-  Map<Integer, QueryCoordinatorProtocol.WorkerResourceProto> workerMap = new HashMap<Integer, QueryCoordinatorProtocol.WorkerResourceProto>();
+  Map<Integer, TajoProtos.WorkerConnectionInfoProto> workerMap = new HashMap<Integer, TajoProtos.WorkerConnectionInfoProto>();
   if(allWorkers != null) {
-    for(QueryCoordinatorProtocol.WorkerResourceProto eachWorker: allWorkers) {
-      workerMap.put(eachWorker.getConnectionInfo().getId(), eachWorker);
+    for(TajoProtos.WorkerConnectionInfoProto eachWorker: allWorkers) {
+      workerMap.put(eachWorker.getId(), eachWorker);
     }
   }
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
@@ -230,13 +231,13 @@
 
     String taskHost = eachTask.getSucceededHost() == null ? "-" : eachTask.getSucceededHost();
     if(eachTask.getSucceededHost() != null) {
-        QueryCoordinatorProtocol.WorkerResourceProto worker =
+        TajoProtos.WorkerConnectionInfoProto worker =
                 workerMap.get(eachTask.getLastAttempt().getWorkerConnectionInfo().getId());
         if(worker != null) {
             TaskAttempt lastAttempt = eachTask.getLastAttempt();
             if(lastAttempt != null) {
               TaskAttemptId lastAttemptId = lastAttempt.getId();
-              taskHost = "<a href='http://" + eachTask.getSucceededHost() + ":" + worker.getConnectionInfo().getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + eachTask.getSucceededHost() + "</a>";
+              taskHost = "<a href='http://" + eachTask.getSucceededHost() + ":" + worker.getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + eachTask.getSucceededHost() + "</a>";
             }
         }
     }

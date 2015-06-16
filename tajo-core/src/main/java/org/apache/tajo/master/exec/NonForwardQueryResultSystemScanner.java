@@ -50,6 +50,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -423,7 +424,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   private Tuple getQueryMasterTuple(Schema outSchema, Worker aWorker) {
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple = new VTuple(outSchema.size());
-    WorkerResource aResource = aWorker.getResource();
+    NodeResource aResource = aWorker.getAvailableResource();
     
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
       Column column = columns.get(fieldId);
@@ -446,11 +447,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         aTuple.put(fieldId, DatumFactory.createText(aWorker.getState().toString()));
       } else if ("RUNNING".equalsIgnoreCase(aWorker.getState().toString())) {
         if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumQueryMasterTasks()));
-        } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
-        } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getNumRunningQueryMaster()));
         } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {
           if (aWorker.getLastHeartbeatTime() > 0) {
             aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
@@ -469,7 +466,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   private Tuple getWorkerTuple(Schema outSchema, Worker aWorker) {
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple = new VTuple(outSchema.size());
-    WorkerResource aResource = aWorker.getResource();
+    NodeResource aResource = aWorker.getAvailableResource();
     
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
       Column column = columns.get(fieldId);
@@ -492,21 +489,17 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         aTuple.put(fieldId, DatumFactory.createText(aWorker.getState().toString()));
       } else if ("RUNNING".equalsIgnoreCase(aWorker.getState().toString())) {
         if ("total_cpu".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getCpuCoreSlots()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getVirtualCores()));
         } else if ("used_mem".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getUsedMemoryMB()*1048576l));
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMemory() * 1048576l));
         } else if ("total_mem".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMemoryMB()*1048576l));
-        } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
-        } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
+          aTuple.put(fieldId, DatumFactory.createInt8(aWorker.getTotalResourceCapability().getMemory() * 1048576l));
         } else if ("used_diskslots".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getUsedDiskSlots()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getDisks()));
         } else if ("total_diskslots".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getDiskSlots()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getTotalResourceCapability().getDisks()));
         } else if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumRunningTasks()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getNumRunningTasks()));
         } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {
           if (aWorker.getLastHeartbeatTime() > 0) {
             aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));

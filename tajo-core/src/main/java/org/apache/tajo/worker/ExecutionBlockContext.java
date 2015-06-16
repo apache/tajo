@@ -60,7 +60,7 @@ public class ExecutionBlockContext {
   /** class logger */
   private static final Log LOG = LogFactory.getLog(ExecutionBlockContext.class);
 
-  private TaskRunnerManager manager;
+  protected AtomicInteger runningTasksNum = new AtomicInteger();
   protected AtomicInteger completedTasksNum = new AtomicInteger();
   protected AtomicInteger succeededTasksNum = new AtomicInteger();
   protected AtomicInteger killedTasksNum = new AtomicInteger();
@@ -100,9 +100,8 @@ public class ExecutionBlockContext {
 
   private final Map<TaskId, TaskHistory> taskHistories = Maps.newTreeMap();
 
-  public ExecutionBlockContext(TajoWorker.WorkerContext workerContext,
-                               TaskRunnerManager manager, RunExecutionBlockRequestProto request) throws IOException {
-    this.manager = manager;
+  public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, StartExecutionBlockRequestProto request)
+      throws IOException {
     this.executionBlockId = new ExecutionBlockId(request.getExecutionBlockId());
     this.connManager = RpcClientManager.getInstance();
     this.queryMaster = new WorkerConnectionInfo(request.getQueryMaster());
@@ -255,21 +254,6 @@ public class ExecutionBlockContext {
     return tasks.get(taskAttemptId);
   }
 
-  @Deprecated
-  public void stopTaskRunner(String id){
-    manager.stopTaskRunner(id);
-  }
-
-  @Deprecated
-  public TaskRunner getTaskRunner(String taskRunnerId){
-    return manager.getTaskRunner(taskRunnerId);
-  }
-
-  @Deprecated
-  public void addTaskHistory(String taskRunnerId, TaskAttemptId quAttemptId, TaskHistory taskHistory) {
-    histories.get(taskRunnerId).addTaskHistory(quAttemptId, taskHistory);
-  }
-
   public void addTaskHistory(TaskId taskId, TaskHistory taskHistory) {
     taskHistories.put(taskId, taskHistory);
   }
@@ -289,10 +273,10 @@ public class ExecutionBlockContext {
     getStub().fatalError(null, builder.build(), NullCallback.get());
   }
 
-  public TaskRunnerHistory createTaskRunnerHistory(TaskRunner runner){
-    histories.putIfAbsent(runner.getId(), new TaskRunnerHistory(runner.getContainerId(), executionBlockId));
-    return histories.get(runner.getId());
-  }
+//  public TaskRunnerHistory createTaskRunnerHistory(TaskRunner runner){
+//    histories.putIfAbsent(runner.getId(), new TaskRunnerHistory(runner.getContainerId(), executionBlockId));
+//    return histories.get(runner.getId());
+//  }
 
   public TajoWorker.WorkerContext getWorkerContext(){
     return workerContext;

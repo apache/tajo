@@ -18,15 +18,18 @@
 
 package org.apache.tajo.master.scheduler;
 
-import com.google.common.base.Objects;
 import org.apache.tajo.QueryId;
 
-public class QuerySchedulingInfo {
+public class QuerySchedulingInfo implements Comparable<QuerySchedulingInfo> {
+  private String queue;
+  private String user;
   private QueryId queryId;
-  private Integer priority;
-  private Long startTime;
+  private int priority;
+  private long startTime;
 
-  public QuerySchedulingInfo(QueryId queryId, Integer priority, Long startTime) {
+  public QuerySchedulingInfo(String queue, String user, QueryId queryId, int priority, long startTime) {
+    this.queue = queue;
+    this.user = user;
     this.queryId = queryId;
     this.priority = priority;
     this.startTime = startTime;
@@ -36,11 +39,11 @@ public class QuerySchedulingInfo {
     return queryId;
   }
 
-  public Integer getPriority() {
+  public int getPriority() {
     return priority;
   }
 
-  public Long getStartTime() {
+  public long getStartTime() {
     return startTime;
   }
 
@@ -48,8 +51,17 @@ public class QuerySchedulingInfo {
     return queryId.getId();
   }
 
+  public String getQueue() {
+    return queue;
+  }
+
+
   @Override
-  public int hashCode() {
-    return Objects.hashCode(startTime, getName(), priority);
+  public int compareTo(QuerySchedulingInfo o) {
+    int ret = Integer.compare(priority, o.priority);
+    if(ret == 0) {
+      ret = Long.compare(startTime, o.startTime);
+    }
+    return ret;
   }
 }

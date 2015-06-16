@@ -33,8 +33,10 @@ message NodeHeartbeatRequestProto {
   required int32 workerId = 1;
   optional NodeResourceProto totalResource = 2;
   optional NodeResourceProto availableResource = 3;
-  optional WorkerConnectionInfoProto connectionInfo = 4;
-  optional NodeStatusProto status = 5;
+  optional int32 runningTasks = 4;
+  optional int32 runningQueryMasters = 5;
+  optional WorkerConnectionInfoProto connectionInfo = 6;
+  optional NodeStatusProto status = 7;
 }
 
 message NodeHeartbeatResponseProto {

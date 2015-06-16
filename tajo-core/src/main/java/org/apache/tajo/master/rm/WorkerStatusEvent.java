@@ -27,13 +27,13 @@ import org.apache.tajo.resource.NodeResource;
 public class WorkerStatusEvent extends WorkerEvent {
   private final int runningTaskNum;
   private final int runningQMNum;
-  private final NodeResource resource;
+  private final NodeResource available;
 
-  public WorkerStatusEvent(int workerId, int runningTaskNum, int runningQMNum, NodeResource resource) {
+  public WorkerStatusEvent(int workerId, int runningTaskNum, int runningQMNum, NodeResource available) {
     super(workerId, WorkerEventType.STATE_UPDATE);
     this.runningTaskNum = runningTaskNum;
     this.runningQMNum = runningQMNum;
-    this.resource = resource;
+    this.available = available;
   }
 
   public int getRunningTaskNum() {
@@ -45,6 +45,6 @@ public class WorkerStatusEvent extends WorkerEvent {
   }
 
   public NodeResource getResource() {
-    return resource;
+    return available;
   }
 }

@@ -49,8 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TaskExecutor extends AbstractService implements EventHandler<TaskExecutorEvent> {
   private static final Log LOG = LogFactory.getLog(TaskExecutor.class);
 
-  private final TaskManager taskManager;
-  private final EventHandler rmEventHandler;
+  private final TajoWorker.WorkerContext workerContext;
   private final Map<TaskAttemptId, NodeResource> allocatedResourceMap;
   private final BlockingQueue<Task> taskQueue;
   private final AtomicInteger runningTasks;
@@ -59,10 +58,9 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   private TajoConf tajoConf;
   private volatile boolean isStopped;
 
-  public TaskExecutor(TaskManager taskManager, EventHandler rmEventHandler) {
+  public TaskExecutor(TajoWorker.WorkerContext workerContext) {
     super(TaskExecutor.class.getName());
-    this.taskManager = taskManager;
-    this.rmEventHandler = rmEventHandler;
+    this.workerContext = workerContext;
     this.allocatedResourceMap = Maps.newConcurrentMap();
     this.runningTasks = new AtomicInteger();
     this.taskQueue = new LinkedBlockingQueue<Task>();
@@ -75,7 +73,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
     }
 
     this.tajoConf = (TajoConf) conf;
-    this.taskManager.getDispatcher().register(TaskExecutorEvent.EventType.class, this);
+    this.workerContext.getTaskManager().getDispatcher().register(TaskExecutorEvent.EventType.class, this);
     super.serviceInit(conf);
   }
 
@@ -134,7 +132,8 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   @SuppressWarnings("unchecked")
   protected void stopTask(TaskAttemptId taskId) {
     runningTasks.decrementAndGet();
-    rmEventHandler.handle(new NodeResourceDeallocateEvent(allocatedResourceMap.remove(taskId)));
+    workerContext.getNodeResourceManager().getDispatcher().getEventHandler()
+        .handle(new NodeResourceDeallocateEvent(allocatedResourceMap.remove(taskId)));
   }
 
   protected ExecutorService getFetcherExecutor() {
@@ -164,7 +163,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
       TaskStartEvent startEvent = (TaskStartEvent) event;
       allocatedResourceMap.put(startEvent.getTaskId(), startEvent.getAllocatedResource());
 
-      ExecutionBlockContext context = taskManager.getExecutionBlockContext(
+      ExecutionBlockContext context = workerContext.getTaskManager().getExecutionBlockContext(
           startEvent.getTaskId().getTaskId().getExecutionBlockId());
 
       try {

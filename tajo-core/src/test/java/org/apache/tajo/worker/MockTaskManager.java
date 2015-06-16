@@ -31,13 +31,13 @@ public class MockTaskManager extends TaskManager {
 
   private final Semaphore barrier;
 
-  public MockTaskManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, EventHandler rmEventHandler) {
-    super(dispatcher, workerContext, rmEventHandler);
+  public MockTaskManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
+    super(dispatcher, workerContext);
     this.barrier = barrier;
   }
 
   @Override
-  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.StartExecutionBlockRequestProto request) {
     try {
       return new MockExecutionBlock(getWorkerContext(), request);
     } catch (IOException e) {

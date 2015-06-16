@@ -28,6 +28,7 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.resource.DefaultResourceCalculator;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.service.ServiceTracker;
@@ -58,16 +59,14 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private volatile long heartBeatInterval;
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
   private final TajoWorker.WorkerContext workerContext;
-  private final NodeResourceManager nodeResourceManager;
   private AsyncRpcClient rmClient;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingLimit;
 
-  public NodeStatusUpdater(TajoWorker.WorkerContext workerContext, NodeResourceManager resourceManager) {
+  public NodeStatusUpdater(TajoWorker.WorkerContext workerContext) {
     super(NodeStatusUpdater.class.getSimpleName());
     this.workerContext = workerContext;
-    this.nodeResourceManager = resourceManager;
   }
 
   @Override
@@ -78,7 +77,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     this.tajoConf = (TajoConf) conf;
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
     this.serviceTracker = ServiceTrackerFactory.get(tajoConf);
-    this.nodeResourceManager.getDispatcher().register(NodeStatusEvent.EventType.class, this);
+    this.workerContext.getNodeResourceManager().getDispatcher().register(NodeStatusEvent.EventType.class, this);
     this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
     super.serviceInit(conf);
@@ -87,7 +86,11 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   @Override
   public void serviceStart() throws Exception {
     // if resource changed over than 50%, send reports
-    this.queueingLimit = nodeResourceManager.getTotalResource().getVirtualCores() / 2;
+    DefaultResourceCalculator calculator = new DefaultResourceCalculator();
+    int maxContainer = calculator.computeAvailableContainers(workerContext.getNodeResourceManager().getTotalResource(),
+        NodeResource.createResource(512, 1, 1));
+    this.queueingLimit = (int) Math.ceil(maxContainer / 2);
+    LOG.info("Queueing limit:" + queueingLimit);
 
     updaterThread.start();
     super.serviceStart();
@@ -119,28 +122,26 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return queueingLimit;
   }
 
-  private NodeHeartbeatRequestProto createResourceReport(NodeResource resource) {
+  private NodeHeartbeatRequestProto.Builder createHeartBeatReport() {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setAvailableResource(resource.getProto());
     requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
-    return requestProto.build();
+    return requestProto;
   }
 
-  private NodeHeartbeatRequestProto createHeartBeatReport() {
-    NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
-    return requestProto.build();
+  private NodeHeartbeatRequestProto.Builder createResourceReport() {
+    NodeHeartbeatRequestProto.Builder requestProto = createHeartBeatReport();
+    requestProto.setAvailableResource(workerContext.getNodeResourceManager().getAvailableResource().getProto());
+    requestProto.setRunningTasks(workerContext.getTaskManager().getRunningTasks());
+    return requestProto;
   }
 
-  private NodeHeartbeatRequestProto createNodeStatusReport() {
-    NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setTotalResource(nodeResourceManager.getTotalResource().getProto());
-    requestProto.setAvailableResource(nodeResourceManager.getAvailableResource().getProto());
-    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
+  private NodeHeartbeatRequestProto.Builder createNodeStatusReport() {
+    NodeHeartbeatRequestProto.Builder requestProto = createResourceReport();
+    requestProto.setTotalResource(workerContext.getNodeResourceManager().getTotalResource().getProto());
     requestProto.setConnectionInfo(workerContext.getConnectionInfo().getProto());
 
     //TODO set node status to requestProto.setStatus()
-    return requestProto.build();
+    return requestProto;
   }
 
   protected TajoResourceTrackerProtocolService.Interface newStub()
@@ -226,21 +227,21 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
               if (!events.isEmpty()) {
                 // send current available resource;
-                lastResponse = sendHeartbeat(createResourceReport(nodeResourceManager.getAvailableResource()));
+                lastResponse = sendHeartbeat(createResourceReport().build());
               } else {
                 // send ping;
-                lastResponse = sendHeartbeat(createHeartBeatReport());
+                lastResponse = sendHeartbeat(createHeartBeatReport().build());
               }
 
             } else if (lastResponse.getCommand() == ResponseCommand.MEMBERSHIP) {
               // Membership changed
-              lastResponse = sendHeartbeat(createNodeStatusReport());
+              lastResponse = sendHeartbeat(createNodeStatusReport().build());
             } else if (lastResponse.getCommand() == ResponseCommand.ABORT_QUERY) {
               //TODO abort failure queries
             }
           } else {
             // Node registration on startup
-            lastResponse = sendHeartbeat(createNodeStatusReport());
+            lastResponse = sendHeartbeat(createNodeStatusReport().build());
           }
         } catch (NoSuchMethodException nsme) {
           LOG.fatal(nsme.getMessage(), nsme);

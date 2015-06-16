@@ -18,13 +18,9 @@
 
 package org.apache.tajo.master.rm;
 
-import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.service.Service;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
-import org.apache.tajo.master.QueryInProgress;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -42,8 +38,8 @@ public interface WorkerResourceManager extends Service {
    * @param queryInProgress QueryInProgress
    * @return A allocated container resource
    */
-  @Deprecated
-  public QueryCoordinatorProtocol.WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress);
+  //@Deprecated
+  //public QueryCoordinatorProtocol.WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress);
 
   /**
    * Request one or more resource containers. You can set the number of containers and resource capabilities, such as
@@ -53,8 +49,8 @@ public interface WorkerResourceManager extends Service {
    * @param request Request description
    * @param rpcCallBack Callback function
    */
-  public void allocateWorkerResources(QueryCoordinatorProtocol.NodeResourceRequestProto request,
-      RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> rpcCallBack);
+//  public void allocateWorkerResources(QueryCoordinatorProtocol.NodeResourceRequestProto request,
+//      RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> rpcCallBack);
 
   /**
    * Release a container
@@ -98,7 +94,7 @@ public interface WorkerResourceManager extends Service {
    *
    * @return The overall summary of cluster resources
    */
-  public ClusterResourceSummary getClusterResourceSummary();
+  //public ClusterResourceSummary getClusterResourceSummary();
 
   /**
    *

@@ -28,6 +28,7 @@ import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 import "TajoWorkerProtocol.proto";
 import "ContainerProtocol.proto";
+import "QueryCoordinatorProtocol.proto";
 
 package hadoop.yarn;
 
@@ -43,4 +44,5 @@ service QueryMasterProtocolService {
   //from TajoMaster's QueryJobManager
   rpc killQuery(QueryIdProto) returns (NullProto);
   rpc executeQuery(QueryExecutionRequestProto) returns (NullProto);
+  rpc startQueryMaster(AllocationResourceProto) returns (BoolProto);
 }

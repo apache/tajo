@@ -36,80 +36,80 @@ import java.sql.ResultSet;
 import static org.junit.Assert.*;
 
 public class TestFifoScheduler {
-  private static TajoTestingCluster cluster;
-  private static TajoConf conf;
-  private static TajoClient client;
-  private static String query =
-      "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
-
-  @BeforeClass
-  public static void setUp() throws Exception {
-    cluster = new TajoTestingCluster();
-    cluster.startMiniClusterInLocal(1);
-    conf = cluster.getConfiguration();
-    client = cluster.newTajoClient();
-    File file = TPCH.getDataFile("lineitem");
-    client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
-        + "using text location 'file://" + file.getAbsolutePath() + "'");
-    assertTrue(client.existTable("default.lineitem"));
-  }
-
-  @AfterClass
-  public static void tearDown() throws Exception {
-    if (client != null) client.close();
-    if (cluster != null) cluster.shutdownMiniCluster();
-  }
-
-  @Test
-  public final void testKillScheduledQuery() throws Exception {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery(query);
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery(query);
-    QueryId queryId = new QueryId(res.getQueryId());
-    QueryId queryId2 = new QueryId(res2.getQueryId());
-
-    cluster.waitForQuerySubmitted(queryId);
-    client.killQuery(queryId2);
-    assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId2).getState());
-  }
-
-  @Test
-  public final void testForwardedQuery() throws Exception {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery(query);
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select * from lineitem limit 1");
-    assertTrue(res.getIsForwarded());
-    assertFalse(res2.getIsForwarded());
-
-    QueryId queryId = new QueryId(res.getQueryId());
-    QueryId queryId2 = new QueryId(res2.getQueryId());
-    cluster.waitForQuerySubmitted(queryId);
-
-    assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId2).getState());
-    ResultSet resSet = TajoClientUtil.createResultSet(client, res2, 1);
-    assertNotNull(resSet);
-  }
-
-  @Test
-  public final void testScheduledQuery() throws Exception {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery(query);
-    ClientProtos.SubmitQueryResponse res3 = client.executeQuery(query);
-    ClientProtos.SubmitQueryResponse res4 = client.executeQuery(query);
-
-    QueryId queryId = new QueryId(res.getQueryId());
-    QueryId queryId2 = new QueryId(res2.getQueryId());
-    QueryId queryId3 = new QueryId(res3.getQueryId());
-    QueryId queryId4 = new QueryId(res4.getQueryId());
-
-    cluster.waitForQuerySubmitted(queryId);
-
-    assertFalse(TajoClientUtil.isQueryComplete(client.getQueryStatus(queryId).getState()));
-
-    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId2).getState());
-    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId3).getState());
-    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId4).getState());
-
-    client.killQuery(queryId4);
-    client.killQuery(queryId3);
-    client.killQuery(queryId2);
-  }
+//  private static TajoTestingCluster cluster;
+//  private static TajoConf conf;
+//  private static TajoClient client;
+//  private static String query =
+//      "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
+//
+//  @BeforeClass
+//  public static void setUp() throws Exception {
+//    cluster = new TajoTestingCluster();
+//    cluster.startMiniClusterInLocal(1);
+//    conf = cluster.getConfiguration();
+//    client = cluster.newTajoClient();
+//    File file = TPCH.getDataFile("lineitem");
+//    client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
+//        + "using text location 'file://" + file.getAbsolutePath() + "'");
+//    assertTrue(client.existTable("default.lineitem"));
+//  }
+//
+//  @AfterClass
+//  public static void tearDown() throws Exception {
+//    if (client != null) client.close();
+//    if (cluster != null) cluster.shutdownMiniCluster();
+//  }
+//
+//  @Test
+//  public final void testKillScheduledQuery() throws Exception {
+//    ClientProtos.SubmitQueryResponse res = client.executeQuery(query);
+//    ClientProtos.SubmitQueryResponse res2 = client.executeQuery(query);
+//    QueryId queryId = new QueryId(res.getQueryId());
+//    QueryId queryId2 = new QueryId(res2.getQueryId());
+//
+//    cluster.waitForQuerySubmitted(queryId);
+//    client.killQuery(queryId2);
+//    assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId2).getState());
+//  }
+//
+//  @Test
+//  public final void testForwardedQuery() throws Exception {
+//    ClientProtos.SubmitQueryResponse res = client.executeQuery(query);
+//    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select * from lineitem limit 1");
+//    assertTrue(res.getIsForwarded());
+//    assertFalse(res2.getIsForwarded());
+//
+//    QueryId queryId = new QueryId(res.getQueryId());
+//    QueryId queryId2 = new QueryId(res2.getQueryId());
+//    cluster.waitForQuerySubmitted(queryId);
+//
+//    assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId2).getState());
+//    ResultSet resSet = TajoClientUtil.createResultSet(client, res2, 1);
+//    assertNotNull(resSet);
+//  }
+//
+//  @Test
+//  public final void testScheduledQuery() throws Exception {
+//    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
+//    ClientProtos.SubmitQueryResponse res2 = client.executeQuery(query);
+//    ClientProtos.SubmitQueryResponse res3 = client.executeQuery(query);
+//    ClientProtos.SubmitQueryResponse res4 = client.executeQuery(query);
+//
+//    QueryId queryId = new QueryId(res.getQueryId());
+//    QueryId queryId2 = new QueryId(res2.getQueryId());
+//    QueryId queryId3 = new QueryId(res3.getQueryId());
+//    QueryId queryId4 = new QueryId(res4.getQueryId());
+//
+//    cluster.waitForQuerySubmitted(queryId);
+//
+//    assertFalse(TajoClientUtil.isQueryComplete(client.getQueryStatus(queryId).getState()));
+//
+//    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId2).getState());
+//    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId3).getState());
+//    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId4).getState());
+//
+//    client.killQuery(queryId4);
+//    client.killQuery(queryId3);
+//    client.killQuery(queryId2);
+//  }
 }

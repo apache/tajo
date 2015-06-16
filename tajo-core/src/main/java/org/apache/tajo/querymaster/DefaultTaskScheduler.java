@@ -29,25 +29,41 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.engine.query.TaskRequestImpl;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.ContainerProxy;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.master.container.TajoContainerIdPBImpl;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
+import org.apache.tajo.master.rm.TajoWorkerContainerId;
+import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.resource.NodeResources;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.util.ApplicationIdUtils;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.FetchImpl;
 
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -94,17 +110,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       public void run() {
 
         while(!stopEventHandling.get() && !Thread.currentThread().isInterrupted()) {
-          try {
-            synchronized (schedulingThread){
-              schedulingThread.wait(100);
-            }
-            schedule();
-          } catch (InterruptedException e) {
-            break;
-          } catch (Throwable e) {
-            LOG.fatal(e.getMessage(), e);
-            break;
-          }
+          schedule();
+//          try {
+//          } catch (InterruptedException e) {
+//            break;
+//          } catch (Throwable e) {
+//            LOG.fatal(e.getMessage(), e);
+//            break;
+//          }
         }
         LOG.info("TaskScheduler schedulingThread stopped");
       }
@@ -145,7 +158,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     // Return all of request callbacks instantly.
     if(taskRequests != null){
       for (TaskRequestEvent req : taskRequests.taskRequestQueue) {
-        req.getCallback().run(stopTaskRunnerReq);
+//        req.getCallback().run(stopTaskRunnerReq);
       }
     }
 
@@ -158,6 +171,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
+    handleTaskRequestEvent(null);
 
     if (taskRequests.size() > 0) {
       if (scheduledRequests.leafTaskNum() > 0) {
@@ -254,16 +268,56 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
 
-    taskRequests.handle(event);
+
+    NettyClientBase tmClient = null;
+    try {
+      ServiceTracker serviceTracker = context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
+      tmClient = RpcClientManager.getInstance().
+          getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+      QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+
+      CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
+      QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request = QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
+      request.setCapacity(NodeResources.createResource(512).getProto());
+      request.setNumContainers(scheduledObjectNum);
+      request.setPriority(1);
+      request.setQueryId(context.getMasterContext().getQueryId().getProto());
+      request.setQueue("default");
+      request.setType(QueryCoordinatorProtocol.ResourceType.LEAF);
+      request.setUserId("test");
+      request.setRunningTasks(0);
+      masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
+
+      QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
+
+      for (QueryCoordinatorProtocol.AllocationResourceProto proto : responseProto.getResourceList()) {
+
+        TaskRequestEvent taskRequestEvent = new TaskRequestEvent(proto.getWorkerId(), proto, context.getBlockId());
+        taskRequests.handle(taskRequestEvent);
+      }
+
+      if(responseProto.getResourceCount() == 0) {
+        synchronized (schedulingThread){
+          schedulingThread.wait(50);
+        }
+      } else {
+        LOG.info("Allocates :" + responseProto.getResourceCount());
+      }
+
+    } catch (Throwable e) {
+      LOG.error(e.getMessage(), e);
+    }
+
+
     int hosts = scheduledRequests.leafTaskHostMapping.size();
 
     // if available cluster resource are large then tasks, the scheduler thread are working immediately.
-    if(remainingScheduledObjectNum() > 0 &&
-        (remainingScheduledObjectNum() <= hosts || hosts <= taskRequests.size())){
-      synchronized (schedulingThread){
-        schedulingThread.notifyAll();
-      }
-    }
+//    if(remainingScheduledObjectNum() > 0 &&
+//        (remainingScheduledObjectNum() <= hosts || hosts <= taskRequests.size())){
+//      synchronized (schedulingThread){
+//        schedulingThread.notifyAll();
+//      }
+//    }
   }
 
   @Override
@@ -278,11 +332,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     @Override
     public void handle(TaskRequestEvent event) {
       if(LOG.isDebugEnabled()){
-        LOG.debug("TaskRequest: " + event.getContainerId() + "," + event.getExecutionBlockId());
+        LOG.debug("TaskRequest: " + event.getResponseProto().getWorkerId() + "," + event.getExecutionBlockId());
       }
 
       if(stopEventHandling.get()) {
-        event.getCallback().run(stopTaskRunnerReq);
+        //event.getCallback().run(stopTaskRunnerReq);
         return;
       }
       int qSize = taskRequestQueue.size();
@@ -594,6 +648,17 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
   }
 
+  public void cancel(TaskAttempt taskAttempt) {
+    List<DataLocation> locations = taskAttempt.getTask().getDataLocations();
+
+    for (DataLocation location : locations) {
+      HostVolumeMapping volumeMapping = scheduledRequests.leafTaskHostMapping.get(location.getHost());
+      volumeMapping.addTaskAttempt(location.getVolumeId(), taskAttempt);
+    }
+
+    scheduledRequests.leafTasks.add(taskAttempt.getId());
+  }
+
   private class ScheduledRequests {
     // two list leafTasks and nonLeafTasks keep all tasks to be scheduled. Even though some task is included in
     // leafTaskHostMapping or leafTasksRackMapping, some task T will not be sent to a task runner
@@ -757,16 +822,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
         // checking if this container is still alive.
         // If not, ignore the task request and stop the task runner
-        ContainerProxy container = context.getMasterContext().getResourceAllocator()
-            .getContainer(taskRequest.getContainerId());
-        if(container == null) {
-          taskRequest.getCallback().run(stopTaskRunnerReq);
+        WorkerConnectionInfo connectionInfo = context.getMasterContext().getWorkerMap().get(taskRequest.getWorkerId());
+        if(connectionInfo == null) {
+          //taskRequest.getCallback().run(stopTaskRunnerReq);
           continue;
         }
 
         // getting the hostname of requested node
-        WorkerConnectionInfo connectionInfo =
-            context.getMasterContext().getResourceAllocator().getWorkerConnectionInfo(taskRequest.getWorkerId());
         String host = connectionInfo.getHost();
 
         // if there are no worker matched to the hostname a task request
@@ -783,7 +845,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
 
-        TajoContainerId containerId = taskRequest.getContainerId();
+          TajoWorkerContainerId containerId = new TajoWorkerContainerId();
+
+          containerId.setApplicationAttemptId(
+              ApplicationIdUtils.createApplicationAttemptId(taskRequest.getExecutionBlockId().getQueryId()));
+          containerId.setId(0);
+
+
         LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
             "containerId=" + containerId);
 
@@ -807,7 +875,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             if(hostVolumeMapping.getRemoteConcurrency() > tailLimit){
               //release container
               hostVolumeMapping.decreaseConcurrency(containerId);
-              taskRequest.getCallback().run(stopTaskRunnerReq);
+              //taskRequest.getCallback().run(stopTaskRunnerReq);
               continue;
             }
           }
@@ -847,18 +915,65 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             taskAssign.setInterQuery();
           }
 
+          //taskRequest.getCallback().run(taskAssign.getProto());
+
+
+          TajoWorkerProtocol.BatchAllocationRequestProto.Builder requestProto = TajoWorkerProtocol.BatchAllocationRequestProto.newBuilder();
+          requestProto.addTaskRequest(TajoWorkerProtocol.TaskAllocationRequestProto.newBuilder()
+              .setResource(taskRequest.getResponseProto().getResource())
+              .setTaskRequest(taskAssign.getProto()).build());
+
+          requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
+          if(!ebMap.containsKey(taskRequest.getWorkerId())) {
+            // first request with starting ExecutionBlock
+            PlanProto.ShuffleType shuffleType =  stage.getDataChannel().getShuffleType();
+
+            TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
+                ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
+            ebRequestProto.setExecutionBlockId(taskRequest.getExecutionBlockId().getProto())
+                .setQueryMaster(connectionInfo.getProto())
+                .setQueryContext(context.getMasterContext().getQueryContext().getProto())
+                .setQueryOutputPath(context.getMasterContext().getStagingDir().toString())
+                .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
+                .setShuffleType(shuffleType);
+           requestProto.setExecutionBlockRequest(ebRequestProto.build());
+            ebMap.put(taskRequest.getWorkerId(), true);
+          }
+
+          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+
+          InetSocketAddress addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
+          AsyncRpcClient tajoWorkerRpc = null;
+          try {
+            tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
+            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+            tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
+            TajoWorkerProtocol.BatchAllocationResponseProto responseProto = callFuture.get();
+
+            for (TajoWorkerProtocol.TaskAllocationRequestProto proto : responseProto.getCancellationTaskList()) {
+              cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
+              LOG.warn("cancel" + proto.getTaskRequest());
+            }
+
+            if(responseProto.getCancellationTaskCount() > 0) {
+              continue;
+            }
+          } catch (Exception e) {
+            LOG.error(e);
+          }
+
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-              taskRequest.getContainerId(), connectionInfo));
+              containerId, connectionInfo));
           assignedRequest.add(attemptId);
 
           scheduledObjectNum--;
-          taskRequest.getCallback().run(taskAssign.getProto());
+
         } else {
           throw new RuntimeException("Illegal State!!!!!!!!!!!!!!!!!!!!!");
         }
       }
     }
-
+    Map<Integer, Boolean> ebMap = Maps.newHashMap();
     private boolean checkIfInterQuery(MasterPlan masterPlan, ExecutionBlock block) {
       if (masterPlan.isRoot(block)) {
         return false;
@@ -912,13 +1027,50 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             }
           }
 
-          WorkerConnectionInfo connectionInfo = context.getMasterContext().getResourceAllocator().
-              getWorkerConnectionInfo(taskRequest.getWorkerId());
+          WorkerConnectionInfo connectionInfo = context.getMasterContext().getWorkerMap().get(taskRequest.getWorkerId());
+
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-              taskRequest.getContainerId(), connectionInfo));
-          taskRequest.getCallback().run(taskAssign.getProto());
+              null, connectionInfo));
+          //taskRequest.getCallback().run(taskAssign.getProto());
           totalAssigned++;
           scheduledObjectNum--;
+
+          TajoWorkerProtocol.BatchAllocationRequestProto.Builder requestProto = TajoWorkerProtocol.BatchAllocationRequestProto.newBuilder();
+          requestProto.addTaskRequest(TajoWorkerProtocol.TaskAllocationRequestProto.newBuilder()
+              .setResource(taskRequest.getResponseProto().getResource())
+              .setTaskRequest(taskAssign.getProto()).build());
+
+          requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
+          if(!ebMap.containsKey(taskRequest.getWorkerId())) {
+            // first request with starting ExecutionBlock
+            PlanProto.ShuffleType shuffleType =  stage.getDataChannel().getShuffleType();
+
+            TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
+                ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
+            ebRequestProto.setExecutionBlockId(taskRequest.getExecutionBlockId().getProto())
+                .setQueryMaster(connectionInfo.getProto())
+                .setQueryContext(context.getMasterContext().getQueryContext().getProto())
+                .setQueryOutputPath(context.getMasterContext().getStagingDir().toString())
+                .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
+                .setShuffleType(shuffleType);
+            requestProto.setExecutionBlockRequest(ebRequestProto.build());
+            ebMap.put(taskRequest.getWorkerId(), true);
+          }
+
+          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+
+          InetSocketAddress addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
+          AsyncRpcClient tajoWorkerRpc = null;
+          try {
+            tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
+            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+            tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
+            TajoWorkerProtocol.BatchAllocationResponseProto responseProto = callFuture.get();
+            LOG.info(responseProto.getCancellationTaskCount());
+          } catch (Exception e) {
+            LOG.error(e);
+          }
+
         }
       }
     }

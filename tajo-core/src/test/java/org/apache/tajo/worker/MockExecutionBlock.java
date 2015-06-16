@@ -26,8 +26,8 @@ import java.io.IOException;
 public class MockExecutionBlock extends ExecutionBlockContext {
 
   public MockExecutionBlock(TajoWorker.WorkerContext workerContext,
-                            TajoWorkerProtocol.RunExecutionBlockRequestProto request) throws IOException {
-    super(workerContext, null, request);
+                            TajoWorkerProtocol.StartExecutionBlockRequestProto request) throws IOException {
+    super(workerContext, request);
   }
 
   @Override

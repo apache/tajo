@@ -36,6 +36,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.master.event.QueryStopEvent;
 import org.apache.tajo.rpc.*;
@@ -167,6 +168,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     LOG.info("QueryMaster stopped");
   }
 
+  //FIXME remove this
   protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
     StringBuilder cleanupMessage = new StringBuilder();
     String prefix = "";
@@ -176,15 +178,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
     LOG.info("cleanup executionBlocks: " + cleanupMessage);
     NettyClientBase rpc = null;
-    List<WorkerResourceProto> workers = getAllWorker();
+    List<TajoProtos.WorkerConnectionInfoProto> workers = getAllWorker();
     TajoWorkerProtocol.ExecutionBlockListProto.Builder builder = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
     builder.addAllExecutionBlockId(Lists.newArrayList(executionBlockIds));
     TajoWorkerProtocol.ExecutionBlockListProto executionBlockListProto = builder.build();
 
-    for (WorkerResourceProto worker : workers) {
+    for (TajoProtos.WorkerConnectionInfoProto worker : workers) {
       try {
-        TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
-        rpc = manager.getClient(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
+        rpc = manager.getClient(NetUtils.createSocketAddr(worker.getHost(), worker.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
@@ -196,15 +197,15 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
   }
 
+  //FIXME get workers to QueryMasterTask
   private void cleanup(QueryId queryId) {
     LOG.info("cleanup query resources : " + queryId);
     NettyClientBase rpc = null;
-    List<WorkerResourceProto> workers = getAllWorker();
+    List<TajoProtos.WorkerConnectionInfoProto> workers = getAllWorker();
 
-    for (WorkerResourceProto worker : workers) {
+    for (TajoProtos.WorkerConnectionInfoProto worker : workers) {
       try {
-        TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
-        rpc = manager.getClient(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
+        rpc = manager.getClient(NetUtils.createSocketAddr(worker.getHost(), worker.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
@@ -215,7 +216,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
   }
 
-  public List<WorkerResourceProto> getAllWorker() {
+  public List<TajoProtos.WorkerConnectionInfoProto> getAllWorker() {
 
     NettyClientBase rpc = null;
     try {
@@ -228,16 +229,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
       rpc = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
       QueryCoordinatorProtocolService masterService = rpc.getStub();
 
-      CallFuture<WorkerResourcesRequest> callBack = new CallFuture<WorkerResourcesRequest>();
-      masterService.getAllWorkerResource(callBack.getController(),
+      CallFuture<WorkerConnectionsProto> callBack = new CallFuture<WorkerConnectionsProto>();
+      masterService.getAllWorkers(callBack.getController(),
           PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
-      WorkerResourcesRequest workerResourcesRequest = callBack.get(2, TimeUnit.SECONDS);
-      return workerResourcesRequest.getWorkerResourcesList();
+      WorkerConnectionsProto connectionsProto =
+          callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      return connectionsProto.getWorkerList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
-    return new ArrayList<WorkerResourceProto>();
+    return new ArrayList<TajoProtos.WorkerConnectionInfoProto>();
   }
 
   @Override
@@ -357,8 +359,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
         QueryHistory queryHisory = query.getQueryHistory();
         if (queryHisory != null) {
           try {
+            long startTime = System.currentTimeMillis();
             query.context.getQueryMasterContext().getWorkerContext().
                 getTaskHistoryWriter().appendAndFlush(queryHisory);
+            LOG.info("QueryHistory write delay:" + (System.currentTimeMillis() - startTime));
           } catch (Throwable e) {
             LOG.warn(e, e);
           }

@@ -32,9 +32,9 @@ public class SchedulingAlgorithms  {
   public static class FifoComparator implements Comparator<QuerySchedulingInfo> {
     @Override
     public int compare(QuerySchedulingInfo q1, QuerySchedulingInfo q2) {
-      int res = q1.getPriority().compareTo(q2.getPriority());
+      int res = Integer.compare(q1.getPriority(), q2.getPriority());
       if (res == 0) {
-        res = (int) Math.signum(q1.getStartTime() - q2.getStartTime());
+        res = Long.compare(q1.getStartTime(), q2.getStartTime());
       }
       if (res == 0) {
         // In the rare case where jobs were submitted at the exact same time,

@@ -104,13 +104,13 @@ public class TestFetcher {
 
   @Test
   public void testAdjustFetchProcess() {
-    assertEquals(0.0f, LegacyTaskImpl.adjustFetchProcess(0, 0), 0);
-    assertEquals(0.0f, LegacyTaskImpl.adjustFetchProcess(10, 10), 0);
-    assertEquals(0.05f, LegacyTaskImpl.adjustFetchProcess(10, 9), 0);
-    assertEquals(0.1f, LegacyTaskImpl.adjustFetchProcess(10, 8), 0);
-    assertEquals(0.25f, LegacyTaskImpl.adjustFetchProcess(10, 5), 0);
-    assertEquals(0.45f, LegacyTaskImpl.adjustFetchProcess(10, 1), 0);
-    assertEquals(0.5f, LegacyTaskImpl.adjustFetchProcess(10, 0), 0);
+    assertEquals(0.0f, TaskImpl.adjustFetchProcess(0, 0), 0);
+    assertEquals(0.0f, TaskImpl.adjustFetchProcess(10, 10), 0);
+    assertEquals(0.05f, TaskImpl.adjustFetchProcess(10, 9), 0);
+    assertEquals(0.1f, TaskImpl.adjustFetchProcess(10, 8), 0);
+    assertEquals(0.25f, TaskImpl.adjustFetchProcess(10, 5), 0);
+    assertEquals(0.45f, TaskImpl.adjustFetchProcess(10, 1), 0);
+    assertEquals(0.5f, TaskImpl.adjustFetchProcess(10, 0), 0);
   }
 
   @Test

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
@@ -30,13 +32,18 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+
 import static org.junit.Assert.*;
 
 public class TestNodeStatusUpdater {
 
   private NodeResourceManager resourceManager;
   private MockNodeStatusUpdater statusUpdater;
+  private MockTaskManager taskManager;
   private AsyncDispatcher dispatcher;
+  private AsyncDispatcher taskDispatcher;
+  private CompositeService service;
   private TajoConf conf;
   private TajoWorker.WorkerContext workerContext;
 
@@ -54,6 +61,21 @@ public class TestNodeStatusUpdater {
       }
 
       @Override
+      public TaskManager getTaskManager() {
+        return taskManager;
+      }
+
+      @Override
+      public TaskExecutor getTaskExecuor() {
+        return null;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return resourceManager;
+      }
+
+      @Override
       public WorkerConnectionInfo getConnectionInfo() {
         if (workerConnectionInfo == null) {
           workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
@@ -64,25 +86,40 @@ public class TestNodeStatusUpdater {
 
     conf.setIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL, 1000);
     dispatcher = new AsyncDispatcher();
-    dispatcher.init(conf);
-    dispatcher.start();
+    resourceManager = new NodeResourceManager(dispatcher, workerContext);
+    taskDispatcher = new AsyncDispatcher();
+    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext) {
+      @Override
+      public int getRunningTasks() {
+        return 0;
+      }
+    };
 
-    resourceManager = new NodeResourceManager(dispatcher, null);
-    resourceManager.init(conf);
-    resourceManager.start();
+    service = new CompositeService("MockService") {
+      @Override
+      protected void serviceInit(Configuration conf) throws Exception {
+        addIfService(dispatcher);
+        addIfService(taskDispatcher);
+        addIfService(taskManager);
+        addIfService(resourceManager);
+        addIfService(statusUpdater);
+        super.serviceInit(conf);
+      }
+    };
+
+    service.init(conf);
+    service.start();
   }
 
   @After
   public void tearDown() {
-    resourceManager.stop();
-    if (statusUpdater != null) statusUpdater.stop();
-    dispatcher.stop();
+    service.stop();
   }
 
   @Test(timeout = 20000)
   public void testNodeMembership() throws Exception {
     CountDownLatch barrier = new CountDownLatch(1);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 
@@ -100,7 +137,7 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testPing() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 
@@ -117,7 +154,7 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 
@@ -132,7 +169,7 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testFlushResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 

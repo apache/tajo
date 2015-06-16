@@ -32,8 +32,8 @@ public class MockTaskExecutor extends TaskExecutor {
 
   protected final Semaphore barrier;
 
-  public MockTaskExecutor(Semaphore barrier, TaskManager taskManager, EventHandler rmEventHandler) {
-    super(taskManager, rmEventHandler);
+  public MockTaskExecutor(Semaphore barrier, TajoWorker.WorkerContext workerContext) {
+    super(workerContext);
     this.barrier = barrier;
   }
 

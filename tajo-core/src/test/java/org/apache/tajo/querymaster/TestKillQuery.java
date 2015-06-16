@@ -20,6 +20,7 @@ package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
 import org.apache.hadoop.fs.LocalDirAllocator;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.tajo.*;
@@ -49,10 +50,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
-import org.apache.tajo.worker.ExecutionBlockContext;
-import org.apache.tajo.worker.LegacyTaskImpl;
-import org.apache.tajo.worker.TajoWorker;
-import org.apache.tajo.worker.TaskRunnerManager;
+import org.apache.tajo.worker.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -243,19 +241,17 @@ public class TestKillQuery {
     final TajoConf conf = new TajoConf();
     TaskRequestImpl taskRequest = new TaskRequestImpl();
 
-    taskRequest.set(null, new ArrayList<CatalogProtos.FragmentProto>(),
+    TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
+    taskRequest.set(attemptId, new ArrayList<CatalogProtos.FragmentProto>(),
         null, false, PlanProto.LogicalNodeTree.newBuilder().build(), new QueryContext(conf), null, null);
     taskRequest.setInterQuery();
-    TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
 
     WorkerConnectionInfo queryMaster = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
-        requestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
+    TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
+        requestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
 
     requestProto.setExecutionBlockId(eid.getProto())
         .setQueryMaster(queryMaster.getProto())
-        .setNodeId(queryMaster.getHost()+":" + queryMaster.getQueryMasterPort())
-        .setContainerId("test")
         .setQueryContext(new QueryContext(conf).getProto())
         .setPlanJson("test")
         .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
@@ -265,13 +261,32 @@ public class TestKillQuery {
       public TajoConf getConf() {
         return conf;
       }
+
+      @Override
+      public TaskManager getTaskManager() {
+        return null;
+      }
+
+      @Override
+      public TaskExecutor getTaskExecuor() {
+        return null;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return null;
+      }
     };
 
     ExecutionBlockContext context =
-        new ExecutionBlockContext(workerContext, null, requestProto.build());
+        new ExecutionBlockContext(workerContext, requestProto.build()) {
+          @Override
+          public Path createBaseDir() throws IOException {
+            return new Path("test");
+          }
+        };
 
-    org.apache.tajo.worker.Task task = new LegacyTaskImpl("test", CommonTestingUtil.getTestDir(), attemptId,
-        conf, context, taskRequest);
+    org.apache.tajo.worker.Task task = new TaskImpl(taskRequest, context, null);
     task.kill();
     assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     try {
@@ -298,96 +313,6 @@ public class TestKillQuery {
         latch.countDown();
       }
       super.dispatch(event);
-    }
-  }
-
-  abstract class MockWorkerContext implements TajoWorker.WorkerContext {
-
-    @Override
-    public QueryMaster getQueryMaster() {
-      return null;
-    }
-
-    public abstract TajoConf getConf();
-
-    @Override
-    public ServiceTracker getServiceTracker() {
-      return null;
-    }
-
-    @Override
-    public QueryMasterManagerService getQueryMasterManagerService() {
-      return null;
-    }
-
-    @Override
-    public TaskRunnerManager getTaskRunnerManager() {
-      return null;
-    }
-
-    @Override
-    public CatalogService getCatalog() {
-      return null;
-    }
-
-    @Override
-    public WorkerConnectionInfo getConnectionInfo() {
-      return null;
-    }
-
-    @Override
-    public String getWorkerName() {
-      return null;
-    }
-
-    @Override
-    public LocalDirAllocator getLocalDirAllocator() {
-      return null;
-    }
-
-    @Override
-    public QueryCoordinatorProtocol.ClusterResourceSummary getClusterResource() {
-      return null;
-    }
-
-    @Override
-    public TajoSystemMetrics getWorkerSystemMetrics() {
-      return null;
-    }
-
-    @Override
-    public HashShuffleAppenderManager getHashShuffleAppenderManager() {
-      return null;
-    }
-
-    @Override
-    public HistoryWriter getTaskHistoryWriter() {
-      return null;
-    }
-
-    @Override
-    public HistoryReader getHistoryReader() {
-      return null;
-    }
-
-    @Override
-    public void cleanup(String strPath) {
-
-    }
-
-    @Override
-    public void cleanupTemporalDirectories() {
-
-    }
-
-    @Override
-    public void setClusterResource(QueryCoordinatorProtocol.ClusterResourceSummary clusterResource) {
-
-    }
-
-    @Override
-    public void setNumClusterNodes(int numClusterNodes) {
-
     }
   }
 }

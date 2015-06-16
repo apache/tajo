@@ -32,34 +32,6 @@ import "ContainerProtocol.proto";
 
 package hadoop.yarn;
 
-message ServerStatusProto {
-    message System {
-        required int32 availableProcessors = 1;
-        required int32 freeMemoryMB = 2;
-        required int32 maxMemoryMB = 3;
-        required int32 totalMemoryMB = 4;
-    }
-    message Disk {
-        required string absolutePath = 1;
-        required int64 totalSpace = 2;
-        required int64 freeSpace = 3;
-        required int64 usableSpace = 4;
-    }
-
-    message JvmHeap {
-        required int64 maxHeap = 1;
-        required int64 totalHeap = 2;
-        required int64 freeHeap = 3;
-    }
-
-    required System system = 1;
-    required float diskSlots = 2;
-    required int32 memoryResourceMB = 3;
-    repeated Disk disk = 4;
-    required int32 runningTaskNum = 5;
-    required JvmHeap jvmHeap = 6;
-}
-
 //deplecated
 message TajoHeartbeat {
   required WorkerConnectionInfoProto connectionInfo = 1;
@@ -76,19 +48,7 @@ message TajoHeartbeatResponse {
       repeated string params = 2;
   }
   required BoolProto heartbeatResult = 1;
-  required ClusterResourceSummary clusterResourceSummary = 2;
   optional ResponseCommand responseCommand = 3;
-}
-
-message ClusterResourceSummary {
-  required int32 numWorkers = 1;
-  required int32 totalDiskSlots = 2;
-  required int32 totalCpuCoreSlots = 3;
-  required int32 totalMemoryMB = 4;
-
-  required int32 totalAvailableDiskSlots = 5;
-  required int32 totalAvailableCpuCoreSlots = 6;
-  required int32 totalAvailableMemoryMB = 7;
 }
 
 enum ResourceType {
@@ -97,26 +57,10 @@ enum ResourceType {
     QUERYMASTER = 3;
 }
 
-
-message WorkerResourceReleaseRequest {
-    required ExecutionBlockIdProto executionBlockId = 1;
-    repeated TajoContainerIdProto containerIds = 2;
+message WorkerConnectionsProto {
+    repeated WorkerConnectionInfoProto worker = 1;
 }
 
-message WorkerAllocatedResource {
-    required TajoContainerIdProto containerId = 1;
-    required WorkerConnectionInfoProto connectionInfo = 2;
-
-    required int32 allocatedMemoryMB = 3;
-    required float allocatedDiskSlots = 4;
-}
-
-message WorkerResourceAllocationResponse {
-    required QueryIdProto queryId = 1;
-    repeated WorkerAllocatedResource workerAllocatedResource = 2;
-}
-
-///////////////////
 message AllocationResourceProto {
     required int32 workerId = 1;
     required NodeResourceProto resource = 2;
@@ -129,18 +73,18 @@ message NodeResourceRequestProto {
     required int32 priority = 4;
     required QueryIdProto queryId = 5;
     required int32 numContainers = 6;
-    required NodeResourceProto allocation = 7;
-    repeated int32 candidateNodes = 8;
+    required NodeResourceProto capacity = 7;
+    required int32 runningTasks = 8;
+    repeated int32 candidateNodes = 9;
 }
 
 message NodeResourceResponseProto {
     required QueryIdProto queryId = 1;
     repeated AllocationResourceProto resource = 2;
 }
-///////////////////
+
 service QueryCoordinatorProtocolService {
   rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
-  rpc allocateNodeResources(NodeResourceRequestProto) returns (NodeResourceResponseProto);
-  rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
-  rpc getAllWorkerResource(NullProto) returns (NodeResourceProto);
+  rpc reserveNodeResources(NodeResourceRequestProto) returns (NodeResourceResponseProto);
+  rpc getAllWorkers(NullProto) returns (WorkerConnectionsProto);
 }
