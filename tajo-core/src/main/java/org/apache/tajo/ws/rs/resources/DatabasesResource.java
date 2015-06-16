@@ -128,7 +128,7 @@ public class DatabasesResource {
       JerseyResourceDelegateContextKey<String> databaseNameKey =
         JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
-      
+
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
           new CreateNewDatabaseDelegate(),
           application,
