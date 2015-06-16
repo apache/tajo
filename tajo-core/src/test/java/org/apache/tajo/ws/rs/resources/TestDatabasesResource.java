@@ -18,29 +18,26 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
-import org.apache.tajo.ws.rs.requests.NewDatabaseRequest;
 import org.apache.tajo.ws.rs.responses.DatabaseInfoResponse;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.filter.LoggingFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -89,12 +86,11 @@ public class TestDatabasesResource extends QueryTestCaseBase {
   @Test
   public void testCreateDatabase() throws Exception {
     String databaseName = "TestDatabasesResource";
-    NewDatabaseRequest request = new NewDatabaseRequest();
-    
-    request.setDatabaseName(databaseName);
-    
-    Response response = restClient.target(databasesURI)
-        .request().post(Entity.entity(request, MediaType.APPLICATION_JSON));
+		URI datbaseCreateURI = new URI(restServiceURI + "/databases/" + databaseName);
+
+		Entity<Object> entity = Entity.entity(null, "application/x-ample");
+		Response response = restClient.target(datbaseCreateURI)
+        .request().post(entity);
     
     assertNotNull(response);
     assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
@@ -113,13 +109,14 @@ public class TestDatabasesResource extends QueryTestCaseBase {
   
   @Test
   public void testCreateDatabaseBadRequest() throws Exception {
-    NewDatabaseRequest request = new NewDatabaseRequest();
-    
+    URI datbaseCreateURI = new URI(restServiceURI + "/databases");
+		Entity<Object> entity = Entity.entity(null, "application/x-ample");
+
     Response response = restClient.target(databasesURI)
-        .request().post(Entity.entity(request, MediaType.APPLICATION_JSON));
+        .request().post(entity);
     
     assertNotNull(response);
-    assertEquals(Status.BAD_REQUEST.getStatusCode(), response.getStatus());
+    assertEquals(Status.METHOD_NOT_ALLOWED.getStatusCode(), response.getStatus());
   }
 
   @Test
@@ -148,12 +145,11 @@ public class TestDatabasesResource extends QueryTestCaseBase {
   @Test
   public void testDropDatabase() throws Exception {
     String databaseName = "TestDropDatabase";
-    NewDatabaseRequest request = new NewDatabaseRequest();
-    
-    request.setDatabaseName(databaseName);
-    
-    Response response = restClient.target(databasesURI)
-        .request().post(Entity.entity(request, MediaType.APPLICATION_JSON));
+		URI datbaseCreateURI = new URI(restServiceURI + "/databases/" + databaseName);
+
+		Entity<Object> entity = Entity.entity(null, "application/x-ample");
+		Response response = restClient.target(datbaseCreateURI)
+			.request().post(entity);
     
     assertNotNull(response);
     assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
