@@ -533,7 +533,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       // assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
-    verifyMaintainExistingData(res, tableName);
+    verifyKeptExistingData(res, tableName);
 
     // insert overwrite empty result to partitioned table
     res = executeString("insert overwrite into " + tableName
@@ -541,12 +541,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     verifyDirectoriesForThreeColumns(fs, path, 4);
-    verifyMaintainExistingData(res, tableName);
+    verifyKeptExistingData(res, tableName);
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
-  private final void verifyMaintainExistingData(ResultSet res, String tableName) throws Exception {
+  private final void verifyKeptExistingData(ResultSet res, String tableName) throws Exception {
     res = executeString("select * from " + tableName + " where col2 = 1");
     String resultSetData = resultSetToString(res);
     res.close();

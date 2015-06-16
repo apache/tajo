@@ -126,6 +126,9 @@ public enum SessionVars implements ConfigKey {
   NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
 
+  TABLE_PARTITION_KEPT_EXISTING_DATA_ENABLED(ConfVars.$TABLE_PARTITION_KEPT_EXISTING_DATA_ENABLED,
+    "When inserting empty data into a partitioned table, set to keep existing data.", DEFAULT),
+
   // Behavior Control ---------------------------------------------------------
   ARITHABORT(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT,
       "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),
