@@ -151,6 +151,8 @@
                       run mkdir -p share/jdbc-dist
                       run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}-jar-with-dependencies.jar ./share/jdbc-dist/tajo-jdbc-${project.version}.jar
 
+                      run mkdir -p extlib
+
                       if [ -f $ROOT/tajo-catalog/tajo-catalog-drivers/tajo-hive/target/lib/parquet-hive-bundle-*.jar ]
                       then
                       run cp -r $ROOT/tajo-catalog/tajo-catalog-drivers/tajo-hive/target/lib/parquet-hive-bundle-*.jar lib/
