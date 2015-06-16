@@ -31,30 +31,22 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoMemoryResultSet extends TajoResultSetBase {
-  private QueryId queryId;
   private List<ByteString> serializedTuples;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private RowStoreUtil.RowStoreDecoder decoder;
 
   public TajoMemoryResultSet(QueryId queryId, Schema schema, List<ByteString> serializedTuples, int maxRowNum,
                              Map<String, String> clientSideSessionVars) {
-    super(clientSideSessionVars);
-    this.queryId = queryId;
-    this.schema = schema;
+    super(queryId, schema, clientSideSessionVars);
     this.totalRow = maxRowNum;
     this.serializedTuples = serializedTuples;
     this.decoder = RowStoreUtil.createDecoder(schema);
-    init();
   }
 
   @Override
   protected void init() {
     cur = null;
     curRow = 0;
-  }
-
-  public QueryId getQueryId() {
-    return queryId;
   }
 
   @Override
