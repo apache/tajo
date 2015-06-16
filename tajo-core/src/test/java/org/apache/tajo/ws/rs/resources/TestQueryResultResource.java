@@ -249,14 +249,14 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertNotNull(queryResultSetResponse);
     String tajoDigest = queryResultSetResponse.getHeaderString(tajoDigestHeaderName);
-		int offset = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoOffsetHeaderName));
-		int count = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoCountHeaderName));
-		boolean eos = Boolean.valueOf(queryResultSetResponse.getHeaderString(tajoEOSHeaderName));
+    int offset = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoOffsetHeaderName));
+    int count = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoCountHeaderName));
+    boolean eos = Boolean.valueOf(queryResultSetResponse.getHeaderString(tajoEOSHeaderName));
 
-		assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
-		assertTrue(eos);
-		assertEquals(0, offset);
-		assertEquals(5, count);
+    assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
+    assertTrue(eos);
+    assertEquals(0, offset);
+    assertEquals(5, count);
 
     DataInputStream queryResultSetInputStream =
         new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
