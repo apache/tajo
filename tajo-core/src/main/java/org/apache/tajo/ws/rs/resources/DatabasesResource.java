@@ -116,7 +116,7 @@ public class DatabasesResource {
    * @return
    */
   @POST
-	@Path("/{databaseName}")
+  @Path("/{databaseName}")
   public Response createNewDatabase(@PathParam("databaseName") String databaseName) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a new database creation request");
@@ -125,9 +125,9 @@ public class DatabasesResource {
     Response response = null;
     try {
       initializeContext();
-			JerseyResourceDelegateContextKey<String> databaseNameKey =
-				JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-			context.put(databaseNameKey, databaseName);
+      JerseyResourceDelegateContextKey<String> databaseNameKey =
+        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
+      context.put(databaseNameKey, databaseName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
           new CreateNewDatabaseDelegate(),
@@ -147,9 +147,9 @@ public class DatabasesResource {
 
     @Override
     public Response run(JerseyResourceDelegateContext context) {
-			JerseyResourceDelegateContextKey<String> databaseNameKey =
-				JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-			String databaseName = context.get(databaseNameKey);
+      JerseyResourceDelegateContextKey<String> databaseNameKey =
+        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
+      String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
@@ -194,7 +194,7 @@ public class DatabasesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
+        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -216,7 +216,7 @@ public class DatabasesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> databaseNameKey =
           JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
