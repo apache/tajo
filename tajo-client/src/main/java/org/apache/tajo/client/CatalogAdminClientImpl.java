@@ -27,8 +27,10 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
 import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
 import java.net.URI;
@@ -145,13 +147,13 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetTableListRequest.Builder builder = ClientProtos.GetTableListRequest.newBuilder();
+    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
     builder.setSessionId(connection.sessionId);
     if (databaseName != null) {
-      builder.setDatabaseName(databaseName);
+      builder.setValue(databaseName);
     }
-    ClientProtos.GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
-    return res.getTablesList();
+    PrimitiveProtos.StringListProto res = tajoMasterService.getTableList(null, builder.build());
+    return res.getValuesList();
   }
 
   @Override
@@ -161,9 +163,9 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetTableDescRequest.Builder builder = ClientProtos.GetTableDescRequest.newBuilder();
+    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
     builder.setSessionId(connection.sessionId);
-    builder.setTableName(tableName);
+    builder.setValue(tableName);
     ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
     if (res.getResultCode() == ClientProtos.ResultCode.OK) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
