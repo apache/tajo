@@ -25,7 +25,6 @@ import org.apache.tajo.engine.parser.SQLParser.SqlContext;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -350,17 +349,23 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testCreateTablePartitionByColumn() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_partition_by_column.sql");
-    Expr expr = parseQuery(sql);
-    assertEquals(OpType.CreateTable, expr.getType());
-    CreateTable createTable = (CreateTable) expr;
-    assertTrue(createTable.hasPartition());
-    assertEquals(CreateTable.PartitionType.COLUMN, createTable.getPartitionMethod().getPartitionType());
-    CreateTable.ColumnPartition columnPartition = createTable.getPartitionMethod();
-    assertEquals(3, columnPartition.getColumns().length);
-    assertEquals("col3", columnPartition.getColumns()[0].getColumnName());
-    assertEquals("col4", columnPartition.getColumns()[1].getColumnName());
-    assertEquals("col5", columnPartition.getColumns()[2].getColumnName());
+    for (String[] source : new String[][]{
+        {"queries/default/create_table_partition_by_column_1.sql", "rcfile"}, 
+        {"queries/default/create_table_partition_by_column_2.sql", "textfile"}}) {
+      String sql = FileUtil.readTextFileFromResource(source[0]);
+      Expr expr = parseQuery(sql);
+      assertEquals(OpType.CreateTable, expr.getType());
+      CreateTable createTable = (CreateTable) expr;
+      assertTrue(createTable.hasPartition());
+      assertEquals(CreateTable.PartitionType.COLUMN, createTable.getPartitionMethod().getPartitionType());
+      CreateTable.ColumnPartition columnPartition = createTable.getPartitionMethod();
+      assertEquals(3, columnPartition.getColumns().length);
+      assertEquals("col3", columnPartition.getColumns()[0].getColumnName());
+      assertEquals("col4", columnPartition.getColumns()[1].getColumnName());
+      assertEquals("col5", columnPartition.getColumns()[2].getColumnName());
+      
+      assertEquals(source[1], createTable.getStorageType());
+    }
   }
 
   @Test

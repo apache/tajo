@@ -98,17 +98,18 @@ if_exists
   ;
 
 create_table_statement
-  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements USING storage_type=identifier
-    (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)?
-  | CREATE TABLE (if_not_exists)? table_name table_elements (USING storage_type=identifier)?
-    (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
-  | CREATE TABLE (if_not_exists)? table_name (USING storage_type=identifier)?
-    (param_clause)? (table_partitioning_clauses)? AS query_expression
+  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements table_miscs* (LOCATION path=Character_String_Literal)?
+  | CREATE TABLE (if_not_exists)? table_name table_elements table_miscs* (AS query_expression)?
+  | CREATE TABLE (if_not_exists)? table_name table_miscs* AS query_expression
   | CREATE TABLE (if_not_exists)? table_name LIKE like_table_name=table_name
   ;
 
 table_elements
   : LEFT_PAREN field_element (COMMA field_element)* RIGHT_PAREN
+  ;
+
+table_miscs
+  : USING storage_type=identifier | param_clause | table_partitioning_clauses 
   ;
 
 field_element
