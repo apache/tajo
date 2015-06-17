@@ -89,7 +89,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
       if (sql.contains("?")) {
         sql = updateSql(sql, parameters);
       }
-      return executeSQL(sql);
+      return (TajoResultSetBase) executeSQL(sql);
     } catch (Exception e) {
       throw new SQLException(e.getMessage(), e);
     }

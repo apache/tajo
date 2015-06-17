@@ -145,7 +145,7 @@ public class TajoStatement implements Statement {
     }
   }
 
-  protected TajoResultSetBase executeSQL(String sql) throws SQLException, ServiceException, IOException {
+  protected ResultSet executeSQL(String sql) throws SQLException, ServiceException, IOException {
     if (isSetVariableQuery(sql)) {
       return setSessionVariable(tajoClient, sql);
     }
@@ -201,7 +201,7 @@ public class TajoStatement implements Statement {
     return sql.trim().toLowerCase().startsWith("unset");
   }
 
-  private TajoResultSetBase setSessionVariable(TajoClient client, String sql) throws SQLException {
+  private ResultSet setSessionVariable(TajoClient client, String sql) throws SQLException {
     int index = sql.toLowerCase().indexOf("set");
     if (index < 0) {
       throw new SQLException("SET statement should be started 'SET' keyword: " + sql);
@@ -222,7 +222,7 @@ public class TajoStatement implements Statement {
     return TajoClientUtil.createNullResultSet();
   }
 
-  private TajoResultSetBase unSetSessionVariable(TajoClient client, String sql) throws SQLException {
+  private ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
     int index = sql.toLowerCase().indexOf("unset");
     if (index < 0) {
       throw new SQLException("UNSET statement should be started 'UNSET' keyword: " + sql);
