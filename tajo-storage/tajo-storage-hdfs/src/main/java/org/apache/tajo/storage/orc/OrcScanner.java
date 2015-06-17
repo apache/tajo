@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.orc;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -46,6 +48,7 @@ import java.util.Set;
  * OrcScanner for reading ORC files
  */
 public class OrcScanner extends FileScanner {
+  private static final Log LOG = LogFactory.getLog(OrcScanner.class);
   private OrcRecordReader recordReader;
   private Vector [] vectors;
   private int currentPosInBatch = 0;
@@ -143,7 +146,11 @@ public class OrcScanner extends FileScanner {
     // TODO: TimeZone should be from conf
     // TODO: it might be splittable
     recordReader = orcReader.createRecordReader(columnSet, OrcPredicate.TRUE,
-        0, orcDataSource.getSize(), DateTimeZone.getDefault());
+        fragment.getStartKey(), fragment.getLength(), DateTimeZone.getDefault());
+
+    LOG.debug("file fragment { path: " + fragment.getPath() +
+      ", start offset: " + fragment.getStartKey() +
+      ", length: " + fragment.getLength() + "}");
 
     getNextBatch();
   }
@@ -253,6 +260,6 @@ public class OrcScanner extends FileScanner {
 
   @Override
   public boolean isSplittable() {
-    return false;
+    return true;
   }
 }
