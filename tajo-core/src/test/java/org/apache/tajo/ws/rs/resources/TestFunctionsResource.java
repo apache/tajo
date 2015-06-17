@@ -18,13 +18,6 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.List;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.GenericType;
-
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -36,7 +29,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.GenericType;
+import java.net.URI;
+import java.util.List;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestFunctionsResource extends QueryTestCaseBase {
   
@@ -52,7 +52,7 @@ public class TestFunctionsResource extends QueryTestCaseBase {
   public void setUp() throws Exception {
     int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
-    functionsURI = new URI(restServiceURI + "/databases/" + TajoConstants.DEFAULT_DATABASE_NAME + "/functions");
+    functionsURI = new URI(restServiceURI + "/functions");
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
