@@ -396,7 +396,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
     @Override
     public void transition(TaskAttempt taskAttempt, TaskAttemptEvent event) {
-      taskAttempt.eventHandler.handle(new LocalTaskEvent(taskAttempt.getId(), taskAttempt.containerId,
+      taskAttempt.eventHandler.handle(new LocalTaskEvent(taskAttempt.getId(),
+          taskAttempt.getWorkerConnectionInfo().getId(),
           LocalTaskEventType.KILL));
     }
   }

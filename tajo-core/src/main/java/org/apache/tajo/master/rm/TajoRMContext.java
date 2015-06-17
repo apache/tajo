@@ -20,8 +20,6 @@ package org.apache.tajo.master.rm;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.yarn.event.Dispatcher;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.ipc.ContainerProtocol;
 
 import java.util.Collections;
 import java.util.Set;
@@ -41,15 +39,9 @@ public class TajoRMContext {
   /** map between workerIds and inactive workers */
   private final ConcurrentMap<Integer, Worker> inactiveWorkers = Maps.newConcurrentMap();
 
-  /** map between queryIds and query master ContainerId */
-  private final ConcurrentMap<QueryId, ContainerProtocol.TajoContainerIdProto> qmContainerMap = Maps
-    .newConcurrentMap();
-
   private final Set<Integer> liveQueryMasterWorkerResources =
       Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
-  private final Set<QueryId> stoppedQueryIds =
-      Collections.newSetFromMap(new ConcurrentHashMap<QueryId, Boolean>());
 
   public TajoRMContext(Dispatcher dispatcher) {
     this.rmDispatcher = dispatcher;
@@ -73,19 +65,7 @@ public class TajoRMContext {
     return inactiveWorkers;
   }
 
-  /**
-   *
-   * @return The Map for query master containers
-   */
-  public ConcurrentMap<QueryId, ContainerProtocol.TajoContainerIdProto> getQueryMasterContainer() {
-    return qmContainerMap;
-  }
-
   public Set<Integer> getQueryMasterWorker() {
     return liveQueryMasterWorkerResources;
-  }
-
-  public Set<QueryId> getStoppedQueryIds() {
-    return stoppedQueryIds;
   }
 }

@@ -31,7 +31,6 @@ import org.apache.tajo.util.TUtil;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * It contains resource and various information for a worker.
@@ -237,7 +236,11 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     setLastHeartbeatTime(System.currentTimeMillis());
     setNumRunningTasks(statusEvent.getRunningTaskNum());
     setNumRunningQueryMaster(statusEvent.getRunningQMNum());
-    NodeResources.update(availableResource, statusEvent.getResource());
+    NodeResources.update(availableResource, statusEvent.getAvailableResource());
+
+    if(statusEvent.getTotalResource() != null) {
+      NodeResources.update(totalResourceCapability, statusEvent.getTotalResource());
+    }
   }
 
   public static class DeactivateNodeTransition implements SingleArcTransition<Worker, WorkerEvent> {

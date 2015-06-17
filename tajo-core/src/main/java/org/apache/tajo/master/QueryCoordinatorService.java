@@ -58,30 +58,27 @@ public class QueryCoordinatorService extends AbstractService {
   }
 
   @Override
-  public void start() {
+  public void serviceStart() throws Exception {
     String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     int workerNum = conf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
-    try {
-      server = new AsyncRpcServer(QueryCoordinatorProtocol.class, masterHandler, initIsa, workerNum);
-    } catch (Exception e) {
-      LOG.error(e, e);
-    }
+
+    server = new AsyncRpcServer(QueryCoordinatorProtocol.class, masterHandler, initIsa, workerNum);
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
         NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterService at " + this.bindAddress);
-    super.start();
+    super.serviceStart();
   }
 
   @Override
-  public void stop() {
+  public void serviceStop() throws Exception {
     if(server != null) {
       server.shutdown();
       server = null;
     }
-    super.stop();
+    super.serviceStop();
   }
 
   public InetSocketAddress getBindAddress() {
@@ -96,17 +93,17 @@ public class QueryCoordinatorService extends AbstractService {
     @Override
     public void heartbeat(
         RpcController controller,
-        TajoHeartbeat request, RpcCallback<QueryCoordinatorProtocol.TajoHeartbeatResponse> done) {
+        TajoHeartbeat request, RpcCallback<TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
         LOG.debug("Received QueryHeartbeat:" + new WorkerConnectionInfo(request.getConnectionInfo()));
       }
 
-      QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
+      TajoHeartbeatResponse.ResponseCommand command;
 
       QueryManager queryManager = context.getQueryJobManager();
       command = queryManager.queryHeartbeat(request);
 
-      QueryCoordinatorProtocol.TajoHeartbeatResponse.Builder builder = QueryCoordinatorProtocol.TajoHeartbeatResponse.newBuilder();
+      TajoHeartbeatResponse.Builder builder = TajoHeartbeatResponse.newBuilder();
       builder.setHeartbeatResult(BOOL_TRUE);
       if(command != null) {
         builder.setResponseCommand(command);

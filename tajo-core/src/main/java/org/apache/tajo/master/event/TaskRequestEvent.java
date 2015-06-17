@@ -18,14 +18,10 @@
 
 package org.apache.tajo.master.event;
 
-import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
 import org.apache.tajo.master.event.TaskRequestEvent.TaskRequestEventType;
-import org.apache.tajo.master.container.TajoContainerId;
 
 public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
 

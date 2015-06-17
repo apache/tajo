@@ -39,6 +39,10 @@ public class QuerySchedulingInfo implements Comparable<QuerySchedulingInfo> {
     return queryId;
   }
 
+  public String getUser() {
+    return user;
+  }
+
   public int getPriority() {
     return priority;
   }

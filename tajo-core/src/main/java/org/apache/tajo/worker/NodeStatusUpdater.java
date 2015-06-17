@@ -27,10 +27,12 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.resource.DefaultResourceCalculator;
-import org.apache.tajo.resource.NodeResource;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.resource.NodeResources;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -42,7 +44,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
 
@@ -62,7 +63,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private AsyncRpcClient rmClient;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocolService.Interface resourceTracker;
-  private int queueingLimit;
+  private int queueingThreshold;
 
   public NodeStatusUpdater(TajoWorker.WorkerContext workerContext) {
     super(NodeStatusUpdater.class.getSimpleName());
@@ -88,9 +89,9 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     // if resource changed over than 50%, send reports
     DefaultResourceCalculator calculator = new DefaultResourceCalculator();
     int maxContainer = calculator.computeAvailableContainers(workerContext.getNodeResourceManager().getTotalResource(),
-        NodeResource.createResource(512, 1, 1));
-    this.queueingLimit = (int) Math.ceil(maxContainer / 2);
-    LOG.info("Queueing limit:" + queueingLimit);
+        NodeResources.createResource(tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY)));
+    this.queueingThreshold = (int) Math.ceil(maxContainer / 2);
+    LOG.info("Queueing threshold:" + queueingThreshold);
 
     updaterThread.start();
     super.serviceStart();
@@ -118,8 +119,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return heartBeatRequestQueue.size();
   }
 
-  public int getQueueingLimit() {
-    return queueingLimit;
+  public int getQueueingThreshold() {
+    return queueingThreshold;
   }
 
   private NodeHeartbeatRequestProto.Builder createHeartBeatReport() {
@@ -220,7 +221,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
               List<NodeStatusEvent> events = Lists.newArrayList();
               try {
                 /* batch update to ResourceTracker */
-                drain(events, Math.max(queueingLimit, 1), heartBeatInterval, TimeUnit.MILLISECONDS);
+                drain(events, Math.max(queueingThreshold, 1), heartBeatInterval, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
                 break;
               }

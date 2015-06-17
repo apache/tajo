@@ -19,7 +19,6 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
-import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.Event;
@@ -35,21 +34,18 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.event.QueryEvent;
+import org.apache.tajo.master.event.QueryEventType;
+import org.apache.tajo.master.event.StageEvent;
+import org.apache.tajo.master.event.StageEventType;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.serder.PlanProto;
-import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.history.HistoryReader;
-import org.apache.tajo.util.history.HistoryWriter;
-import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.worker.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -120,7 +116,7 @@ public class TestKillQuery {
 
     QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
     QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
-        queryId, session, defaultContext, expr.toJson(), dispatch);
+        queryId, session, defaultContext, expr.toJson(), NodeResources.createResource(512), dispatch);
 
     queryMasterTask.init(conf);
     queryMasterTask.getQueryTaskContext().getDispatcher().start();
@@ -184,7 +180,7 @@ public class TestKillQuery {
 
     QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
     QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
-        queryId, session, defaultContext, expr.toJson(), dispatch);
+        queryId, session, defaultContext, expr.toJson(), NodeResources.createResource(512), dispatch);
 
     queryMasterTask.init(conf);
     queryMasterTask.getQueryTaskContext().getDispatcher().start();
@@ -219,9 +215,6 @@ public class TestKillQuery {
 
     lastStage.getStateMachine().doTransition(StageEventType.SQ_KILL,
         new StageEvent(lastStage.getId(), StageEventType.SQ_KILL));
-
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_CONTAINER_ALLOCATED,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_CONTAINER_ALLOCATED));
 
     lastStage.getStateMachine().doTransition(StageEventType.SQ_SHUFFLE_REPORT,
         new StageEvent(lastStage.getId(), StageEventType.SQ_SHUFFLE_REPORT));

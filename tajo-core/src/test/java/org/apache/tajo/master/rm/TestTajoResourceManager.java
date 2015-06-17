@@ -47,7 +47,7 @@ public class TestTajoResourceManager {
     tajoConf = new org.apache.tajo.conf.TajoConf();
 
    // tajoConf.setFloatVar(TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT, 0.0f);
-    tajoConf.setIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MEMORY_MB, 512);
+    tajoConf.setIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY, 512);
     tajoConf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, "localhost:0");
     TajoResourceManager tajoResourceManager = new TajoResourceManager(tajoConf);
     tajoResourceManager.init(tajoConf);

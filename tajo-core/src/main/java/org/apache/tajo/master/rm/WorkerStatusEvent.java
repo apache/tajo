@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.rm;
 
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.resource.NodeResource;
 
 /**
@@ -28,12 +29,15 @@ public class WorkerStatusEvent extends WorkerEvent {
   private final int runningTaskNum;
   private final int runningQMNum;
   private final NodeResource available;
+  private final NodeResource total;
 
-  public WorkerStatusEvent(int workerId, int runningTaskNum, int runningQMNum, NodeResource available) {
+  public WorkerStatusEvent(int workerId, int runningTaskNum, int runningQMNum,
+                           NodeResource available, @Nullable NodeResource total) {
     super(workerId, WorkerEventType.STATE_UPDATE);
     this.runningTaskNum = runningTaskNum;
     this.runningQMNum = runningQMNum;
     this.available = available;
+    this.total = total;
   }
 
   public int getRunningTaskNum() {
@@ -44,7 +48,11 @@ public class WorkerStatusEvent extends WorkerEvent {
     return runningQMNum;
   }
 
-  public NodeResource getResource() {
+  public NodeResource getAvailableResource() {
     return available;
+  }
+
+  public NodeResource getTotalResource() {
+    return total;
   }
 }

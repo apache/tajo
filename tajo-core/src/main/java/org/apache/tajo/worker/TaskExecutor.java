@@ -25,18 +25,16 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.resource.NodeResource;
-import org.apache.tajo.resource.NodeResources;
-import org.apache.tajo.worker.event.*;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
+import org.apache.tajo.worker.event.TaskExecutorEvent;
+import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
 import java.util.Map;
@@ -68,11 +66,8 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
-    }
 
-    this.tajoConf = (TajoConf) conf;
+    this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     this.workerContext.getTaskManager().getDispatcher().register(TaskExecutorEvent.EventType.class, this);
     super.serviceInit(conf);
   }

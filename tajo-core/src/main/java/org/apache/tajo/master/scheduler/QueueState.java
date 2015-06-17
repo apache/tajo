@@ -16,22 +16,35 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.scheduler;
 
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.master.event.ContainerEvent.EventType;
+import org.apache.hadoop.classification.InterfaceAudience.Public;
+import org.apache.hadoop.classification.InterfaceStability.Stable;
+import org.apache.hadoop.yarn.api.ApplicationClientProtocol;
+import org.apache.hadoop.yarn.api.records.QueueInfo;
 
-public class ContainerEvent extends AbstractEvent<EventType> {
-  public enum EventType {
-    CONTAINER_LAUNCHED,
-    CONTAINER_STOPPED
-  }
-
-  private final ContainerId cId;
-
-  public ContainerEvent(EventType eventType, ContainerId cId) {
-    super(eventType);
-    this.cId = cId;
-  }
+/**
+ * State of a Queue.
+ * <p>
+ * A queue is in one of:
+ * <ul>
+ *   <li>{@link #RUNNING} - normal state.</li>
+ *   <li>{@link #STOPPED} - not accepting new application submissions.</li>
+ * </ul>
+ * 
+ * @see QueueInfo
+ * @see ApplicationClientProtocol#getQueueInfo(org.apache.hadoop.yarn.api.protocolrecords.GetQueueInfoRequest)
+ */
+@Public
+@Stable
+public enum QueueState {
+  /**
+   * Stopped - Not accepting submissions of new applications.
+   */
+  STOPPED,
+  
+  /**
+   * Running - normal operation.
+   */
+  RUNNING
 }

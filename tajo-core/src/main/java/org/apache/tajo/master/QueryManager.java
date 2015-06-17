@@ -89,10 +89,8 @@ public class QueryManager extends CompositeService {
 
   @Override
   public void serviceStop() throws Exception {
-    synchronized(runningQueries) {
-      for(QueryInProgress eachQueryInProgress: runningQueries.values()) {
-        eachQueryInProgress.stopProgress();
-      }
+    for(QueryInProgress eachQueryInProgress: runningQueries.values()) {
+      eachQueryInProgress.stopProgress();
     }
 
     super.serviceStop();
@@ -108,15 +106,11 @@ public class QueryManager extends CompositeService {
   }
 
   public Collection<QueryInProgress> getSubmittedQueries() {
-    synchronized (submittedQueries){
-      return Collections.unmodifiableCollection(submittedQueries.values());
-    }
+    return Collections.unmodifiableCollection(submittedQueries.values());
   }
 
   public Collection<QueryInProgress> getRunningQueries() {
-    synchronized (runningQueries){
-      return Collections.unmodifiableCollection(runningQueries.values());
-    }
+    return Collections.unmodifiableCollection(runningQueries.values());
   }
 
   public synchronized Collection<QueryInfo> getFinishedQueries() {
@@ -177,6 +171,7 @@ public class QueryManager extends CompositeService {
     queryInProgress.getQueryInfo().setQueryMaster("");
     submittedQueries.put(queryInProgress.getQueryId(), queryInProgress);
 
+    //TODO implement scheduler queue
     QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo("default", queryContext.getUser(),
         queryInProgress.getQueryId(), 1, queryInProgress.getQueryInfo().getStartTime());
 
@@ -184,19 +179,19 @@ public class QueryManager extends CompositeService {
     return queryInProgress.getQueryInfo();
   }
 
+  /**
+   * Can start query or not
+   */
   public boolean startQueryJob(QueryId queryId, QueryCoordinatorProtocol.AllocationResourceProto allocation) {
 
-    if (submittedQueries.get(queryId).startQueryMaster(allocation)) {
+    if (submittedQueries.get(queryId).allocateToQueryMaster(allocation)) {
       QueryInProgress queryInProgress = submittedQueries.remove(queryId);
       runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
           queryInProgress.getQueryInfo()));
-    } else {
-      //masterContext.getQueryJobManager().stopQuery(queryInProgress.getQueryId());
-      return false;
+      return true;
     }
-
-    return true;
+    return false;
   }
 
   class QueryJobManagerEventHandler implements EventHandler<QueryJobEvent> {
@@ -211,7 +206,7 @@ public class QueryManager extends CompositeService {
       }
 
       if (event.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
-        queryInProgress.submitQueryToMaster();
+        queryInProgress.submitToQueryMaster();
 
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
 
@@ -226,14 +221,10 @@ public class QueryManager extends CompositeService {
 
   public QueryInProgress getQueryInProgress(QueryId queryId) {
     QueryInProgress queryInProgress;
-    synchronized (submittedQueries) {
-      queryInProgress = submittedQueries.get(queryId);
-    }
+    queryInProgress = submittedQueries.get(queryId);
 
     if (queryInProgress == null) {
-      synchronized (runningQueries) {
-        queryInProgress = runningQueries.get(queryId);
-      }
+      queryInProgress = runningQueries.get(queryId);
     }
     return queryInProgress;
   }
@@ -243,13 +234,8 @@ public class QueryManager extends CompositeService {
     QueryInProgress queryInProgress = getQueryInProgress(queryId);
     if(queryInProgress != null) {
       queryInProgress.stopProgress();
-      synchronized(submittedQueries) {
-        submittedQueries.remove(queryId);
-      }
-
-      synchronized(runningQueries) {
-        runningQueries.remove(queryId);
-      }
+      submittedQueries.remove(queryId);
+      runningQueries.remove(queryId);
 
       QueryInfo queryInfo = queryInProgress.getQueryInfo();
       synchronized (historyCache) {

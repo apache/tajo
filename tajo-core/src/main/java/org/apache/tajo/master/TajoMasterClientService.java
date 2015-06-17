@@ -48,13 +48,11 @@ import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
 import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -96,32 +94,27 @@ public class TajoMasterClientService extends AbstractService {
   }
 
   @Override
-  public void start() {
+  public void serviceStart() throws Exception {
 
     // start the rpc server
     String confClientServiceAddr = conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     int workerNum = conf.getIntVar(ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
-    try {
-      server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa, workerNum);
-    } catch (Exception e) {
-      LOG.error(e);
-      throw new RuntimeException(e);
-    }
+    server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa, workerNum);
     server.start();
 
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    super.serviceStart();
     LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
-    super.start();
   }
 
   @Override
-  public void stop() {
+  public void serviceStop() throws Exception {
     if (server != null) {
       server.shutdown();
     }
-    super.stop();
+    super.serviceStop();
   }
 
   public InetSocketAddress getBindAddress() {
@@ -591,7 +584,7 @@ public class TajoMasterClientService extends AbstractService {
         QueryManager queryManager = context.getQueryJobManager();
         QueryInProgress queryInProgress = queryManager.getQueryInProgress(queryId);
 
-        QueryInfo queryInfo = null;
+        QueryInfo queryInfo;
         if (queryInProgress == null) {
           queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
         } else {
@@ -637,34 +630,23 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetClusterInfoResponse.Builder builder= GetClusterInfoResponse.newBuilder();
 
-        Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
+        List<Worker> workers = new ArrayList<Worker>(context.getResourceManager().getRMContext().getWorkers().values());
+        Collections.sort(workers);
 
-        List<Integer> wokerKeys = new ArrayList<Integer>(workers.keySet());
-        Collections.sort(wokerKeys);
+        WorkerResourceInfo.Builder workerBuilder = WorkerResourceInfo.newBuilder();
 
-        WorkerResourceInfo.Builder workerBuilder
-          = WorkerResourceInfo.newBuilder();
-        //FIXME
-//        for(Worker worker: workers.values()) {
-//          WorkerResource workerResource = worker.getAvailableResource();
-//
-//          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
-//          workerBuilder.setDiskSlots(workerResource.getDiskSlots());
-//          workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
-//          workerBuilder.setMemoryMB(workerResource.getMemoryMB());
-//          workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
-//          workerBuilder.setUsedMemoryMB(workerResource.getUsedMemoryMB());
-//          workerBuilder.setUsedCpuCoreSlots(workerResource.getUsedCpuCoreSlots());
-//          workerBuilder.setUsedDiskSlots(workerResource.getUsedDiskSlots());
-//          workerBuilder.setWorkerStatus(worker.getState().toString());
-//          workerBuilder.setMaxHeap(workerResource.getMaxHeap());
-//          workerBuilder.setFreeHeap(workerResource.getFreeHeap());
-//          workerBuilder.setTotalHeap(workerResource.getTotalHeap());
-//          workerBuilder.setNumRunningTasks(workerResource.getNumRunningTasks());
-//          workerBuilder.setNumQueryMasterTasks(workerResource.getNumQueryMasterTasks());
-//
-//          builder.addWorkerList(workerBuilder.build());
-//        }
+        for(Worker worker: workers) {
+          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
+          workerBuilder.setAvailableResource(worker.getAvailableResource().getProto());
+          workerBuilder.setTotalResource(worker.getTotalResourceCapability().getProto());
+
+          workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
+          workerBuilder.setWorkerStatus(worker.getState().toString());
+          workerBuilder.setNumRunningTasks(worker.getNumRunningTasks());
+          workerBuilder.setNumQueryMasterTasks(worker.getNumRunningQueryMaster());
+
+          builder.addWorkerList(workerBuilder.build());
+        }
 
         return builder.build();
       } catch (Throwable t) {

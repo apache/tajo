@@ -31,6 +31,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
 import java.io.IOException;
@@ -58,11 +59,8 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
-    }
 
-    this.tajoConf = (TajoConf)conf;
+    this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     dispatcher.register(TaskManagerEvent.EventType.class, this);
     super.serviceInit(conf);
   }

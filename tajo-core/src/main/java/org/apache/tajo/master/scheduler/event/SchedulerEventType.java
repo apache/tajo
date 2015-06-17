@@ -16,23 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.scheduler.event;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.container.TajoContainer;
+public enum SchedulerEventType {
 
-import java.util.List;
+  // Source: QM
+  RESOURCE_RESERVE,
 
-public class StageContainerAllocationEvent extends StageEvent {
-  private List<TajoContainer> allocatedContainer;
+  RESOURCE_UPDATE,
 
-  public StageContainerAllocationEvent(final ExecutionBlockId id,
-                                       List<TajoContainer> allocatedContainer) {
-    super(id, StageEventType.SQ_CONTAINER_ALLOCATED);
-    this.allocatedContainer = allocatedContainer;
-  }
-
-  public List<TajoContainer> getAllocatedContainer() {
-    return this.allocatedContainer;
-  }
+  // Source: MASTER
+  QM_SUBMIT,
+  QM_STOP
 }

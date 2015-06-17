@@ -24,7 +24,6 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 import org.junit.After;
@@ -159,7 +158,7 @@ public class TestNodeStatusUpdater {
     statusUpdater.start();
 
     assertEquals(0, statusUpdater.getQueueSize());
-    for (int i = 0; i < statusUpdater.getQueueingLimit(); i++) {
+    for (int i = 0; i < statusUpdater.getQueueingThreshold(); i++) {
       dispatcher.getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE));
     }
     barrier.await();

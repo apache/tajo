@@ -141,17 +141,18 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   }
 
   private NodeResource createWorkerResource(TajoConf conf) {
-    int memoryMb;
 
-    if (conf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
-      memoryMb = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
-    } else {
-      memoryMb = Math.min((int) (Runtime.getRuntime().maxMemory() / StorageUnit.MB),
-          conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB));
+    int memoryMb = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
+    if (!conf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+      // Set memory resource to max heap
+      int maxHeap = (int) (Runtime.getRuntime().maxMemory() / StorageUnit.MB);
+      if(maxHeap > memoryMb) {
+        memoryMb = maxHeap;
+      }
     }
 
     int vCores = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
-    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS_NUM);
+    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
 
     int dataNodeStorageSize = DiskUtil.getDataNodeStorageSize();
     if (conf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DFS_DIR_AWARE) && dataNodeStorageSize > 0) {

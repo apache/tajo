@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.scheduler.event;
 
-public enum ContainerAllocatorEventType {
-  // producer: TaskAttempt, consumer: ContainerAllocator
-  CONTAINER_REQ,
-  CONTAINER_DEALLOCATE,
-  CONTAINER_FAILED
+import org.apache.hadoop.yarn.event.AbstractEvent;
+
+public class SchedulerEvent extends AbstractEvent<SchedulerEventType> {
+  public SchedulerEvent(SchedulerEventType type) {
+    super(type);
+  }
 }

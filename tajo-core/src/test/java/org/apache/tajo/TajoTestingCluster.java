@@ -125,7 +125,7 @@ public class TajoTestingCluster {
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
 
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 3072);
-    conf.setFloat(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS.varname, 4.0f);
+    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 4);
 
 
     // Client API RPC
@@ -148,7 +148,6 @@ public class TajoTestingCluster {
 
     // Resource allocator
     conf.setIntVar(ConfVars.$QUERY_EXECUTE_PARALLEL_MAX, 10);
-    conf.setIntVar(ConfVars.YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM, 6);   // make twice of parallel_max
 
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);

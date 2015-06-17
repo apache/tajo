@@ -56,7 +56,7 @@ public class QueryInProgress {
 
   private volatile boolean querySubmitted = false;
 
-  private AtomicBoolean stopped = new AtomicBoolean(false);
+  private AtomicBoolean isStopped = new AtomicBoolean(false);
 
   private QueryInfo queryInfo;
 
@@ -66,8 +66,7 @@ public class QueryInProgress {
 
   private QueryMasterProtocolService queryMasterRpcClient;
 
-  //FIXME
-  private QueryCoordinatorProtocol.AllocationResourceProto allocation;
+  private QueryCoordinatorProtocol.AllocationResourceProto allocationResource;
 
   private final Lock readLock;
   private final Lock writeLock;
@@ -108,7 +107,7 @@ public class QueryInProgress {
   }
 
   public void stopProgress() {
-    if(stopped.getAndSet(true)) {
+    if(isStopped.getAndSet(true)) {
       return;
     }
 
@@ -126,7 +125,11 @@ public class QueryInProgress {
     }
   }
 
-  public boolean startQueryMaster(QueryCoordinatorProtocol.AllocationResourceProto allocation) {
+  /**
+   * Connect to QueryMaster and allocate QM resource.
+   * If there is no available resource, It returns false
+   */
+  protected boolean allocateToQueryMaster(QueryCoordinatorProtocol.AllocationResourceProto allocation) {
     try {
       writeLock.lockInterruptibly();
     } catch (Exception e) {
@@ -134,7 +137,6 @@ public class QueryInProgress {
       return false;
     }
     try {
-      this.allocation = allocation;
       TajoResourceManager resourceManager = masterContext.getResourceManager();
       WorkerConnectionInfo connectionInfo =
           resourceManager.getRMContext().getWorkers().get(allocation.getWorkerId()).getConnectionInfo();
@@ -144,7 +146,7 @@ public class QueryInProgress {
         }
 
         CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
-        queryMasterRpcClient.startQueryMaster(callFuture.getController(), allocation, callFuture);
+        queryMasterRpcClient.allocateQueryMaster(callFuture.getController(), allocation, callFuture);
 
         if(!callFuture.get().getValue()) return false;
 
@@ -153,10 +155,11 @@ public class QueryInProgress {
       }
 
       LOG.info("Initializing QueryInProgress for QueryID=" + queryId);
-      queryInfo.setQueryMaster(connectionInfo.getHost());
-      queryInfo.setQueryMasterPort(connectionInfo.getQueryMasterPort());
-      queryInfo.setQueryMasterclientPort(connectionInfo.getClientPort());
-      queryInfo.setQueryMasterInfoPort(connectionInfo.getHttpInfoPort());
+      this.allocationResource = allocation;
+      this.queryInfo.setQueryMaster(connectionInfo.getHost());
+      this.queryInfo.setQueryMasterPort(connectionInfo.getQueryMasterPort());
+      this.queryInfo.setQueryMasterclientPort(connectionInfo.getClientPort());
+      this.queryInfo.setQueryMasterInfoPort(connectionInfo.getHttpInfoPort());
 
       return true;
     } catch (Exception e) {
@@ -172,12 +175,12 @@ public class QueryInProgress {
     RpcClientManager.cleanup(queryMasterRpc);
 
     InetSocketAddress addr = NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getQueryMasterPort());
-    LOG.info("Connect to QueryMaster:" + addr);
+    LOG.info("Try to connect to QueryMaster:" + addr);
     queryMasterRpc = RpcClientManager.getInstance().newClient(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
-  public boolean submitQueryToMaster() {
+  public boolean submitToQueryMaster() {
     if(querySubmitted) {
       return false;
     }
@@ -199,7 +202,8 @@ public class QueryInProgress {
           .setQueryContext(queryInfo.getQueryContext().getProto())
           .setSession(session.getProto())
           .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
-          .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
+          .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build())
+          .setAllocation(allocationResource);
 
       CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
       queryMasterRpcClient.executeQuery(callFuture.getController(), builder.build(), callFuture);

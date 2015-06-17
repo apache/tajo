@@ -155,7 +155,10 @@ public class TajoConf extends Configuration {
     RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120 * 1000), // seconds
 
     // QueryMaster resource
-    TAJO_QUERYMASTER_MEMORY_MB("tajo.qm.resource.memory-mb", 512, Validators.min("64")),
+    TAJO_QUERYMASTER_MINIMUM_MEMORY("tajo.qm.resource.min.memory-mb", 500, Validators.min("64")),
+
+    // Worker task resource
+    TASK_RESOURCE_MINIMUM_MEMORY("tajo.task.resource.min.memory-mb", 500, Validators.min("64")),
 
     // Tajo Worker Service Addresses
     WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080", Validators.networkAddr()),
@@ -171,19 +174,14 @@ public class TajoConf extends Configuration {
     // Tajo Worker Resources
     WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores",
         Runtime.getRuntime().availableProcessors(), Validators.min("1")),
-    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024, Validators.min("64")),
-    @Deprecated
-    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1.0f),
-    WORKER_RESOURCE_AVAILABLE_DISKS_NUM("tajo.worker.resource.disks.num", 1, Validators.min("1")),
+    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1000, Validators.min("64")),
+
+    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1, Validators.min("1")),
+
     WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM("tajo.worker.resource.disk.parallel-execution.num", 2,
         Validators.min("1")),
-    WORKER_EXECUTION_MAX_SLOTS("tajo.worker.parallel-execution.max-num", 2),
-    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false, Validators.bool()),
 
-    // Tajo Worker Dedicated Resources
-    WORKER_RESOURCE_DEDICATED("tajo.worker.resource.dedicated", false, Validators.bool()),
-    WORKER_RESOURCE_DEDICATED_MEMORY_RATIO("tajo.worker.resource.dedicated-memory-ratio", 0.8f, 
-        Validators.range("0.0f", "1.0f")),
+    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false, Validators.bool()),
 
     // Tajo History
     WORKER_HISTORY_EXPIRE_PERIOD("tajo.worker.history.expire-interval-minutes", 60), // 1 hours
@@ -191,20 +189,12 @@ public class TajoConf extends Configuration {
 
     WORKER_HEARTBEAT_INTERVAL("tajo.worker.heartbeat.interval", 10 * 1000),  // 10 sec
 
-    // Resource Scheduler
+    //Default query scheduler
     RESOURCE_SCHEDULER_CLASS("tajo.resource.scheduler", "org.apache.tajo.master.scheduler.SimpleScheduler",
         Validators.groups(Validators.notNull(), Validators.clazz())),
 
     // Catalog
     CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005", Validators.networkAddr()),
-
-
-    // for Yarn Resource Manager ----------------------------------------------
-
-    /** how many launching TaskRunners in parallel */
-    @Deprecated
-    YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM("tajo.yarn-rm.parallel-task-runner-launcher-num",
-        Runtime.getRuntime().availableProcessors() * 2),
 
     // Query Configuration
     QUERY_SESSION_TIMEOUT("tajo.query.session.timeout-sec", 60, Validators.min("0")),
@@ -260,8 +250,6 @@ public class TajoConf extends Configuration {
         Runtime.getRuntime().availableProcessors() * 1),
 
     // Task Configuration -----------------------------------------------------
-    TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
-    TASK_DEFAULT_DISK("tajo.task.disk-slot.default", 0.5f),
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
 
     // Query and Optimization -------------------------------------------------

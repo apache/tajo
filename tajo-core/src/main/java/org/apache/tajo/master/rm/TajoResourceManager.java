@@ -29,14 +29,16 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.scheduler.AbstractQueryScheduler;
 import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
 import org.apache.tajo.master.scheduler.SimpleScheduler;
-import org.apache.tajo.master.scheduler.TajoScheduler;
 import org.apache.tajo.master.scheduler.event.SchedulerEventType;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 
 /**
  * It manages all resources of tajo workers.
@@ -57,7 +59,7 @@ public class TajoResourceManager extends CompositeService {
   private WorkerLivelinessMonitor workerLivelinessMonitor;
 
   private TajoConf systemConf;
-  private TajoScheduler scheduler;
+  private AbstractQueryScheduler scheduler;
 
   /** It receives status messages from workers and their resources. */
   private TajoResourceTracker resourceTracker;
@@ -67,6 +69,7 @@ public class TajoResourceManager extends CompositeService {
     this.masterContext = masterContext;
   }
 
+  @VisibleForTesting
   public TajoResourceManager(TajoConf systemConf) {
     super(TajoResourceManager.class.getSimpleName());
   }
@@ -154,7 +157,7 @@ public class TajoResourceManager extends CompositeService {
     return resourceTracker;
   }
 
-  public TajoScheduler getScheduler() {
+  public AbstractQueryScheduler getScheduler() {
     return scheduler;
   }
 

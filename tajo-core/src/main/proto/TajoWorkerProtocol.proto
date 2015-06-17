@@ -29,6 +29,7 @@ import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 import "Plan.proto";
 import "ContainerProtocol.proto";
+import "QueryCoordinatorProtocol.proto";
 
 package hadoop.yarn;
 
@@ -158,15 +159,9 @@ message QueryExecutionRequestProto {
     required QueryIdProto queryId = 1;
     required SessionProto session = 2;
     required KeyValueSetProto queryContext = 3;
-    required StringProto exprInJson = 5;
-    optional StringProto logicalPlanJson = 6;
-}
-
-// deprecated
-message GetTaskRequestProto {
-    required int32 workerId = 1;
-    required TajoContainerIdProto containerId = 2;
-    required ExecutionBlockIdProto executionBlockId = 3;
+    required StringProto exprInJson = 4;
+    optional StringProto logicalPlanJson = 5;
+    required AllocationResourceProto allocation = 6;
 }
 
 message DataChannelProto {
@@ -223,12 +218,10 @@ service TajoWorkerProtocolService {
   rpc ping (TaskAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
-  //rpc startExecutionBlock(StartExecutionBlockRequestProto) returns (BoolProto);
   rpc allocateTasks(BatchAllocationRequestProto) returns (BatchAllocationResponseProto);
   rpc stopExecutionBlock(StopExecutionBlockRequestProto) returns (BoolProto);
   rpc killTaskAttempt(TaskAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
-  rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
 }
 
 message EnforceProperty {

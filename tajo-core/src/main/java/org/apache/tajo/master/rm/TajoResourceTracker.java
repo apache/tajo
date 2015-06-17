@@ -32,8 +32,8 @@ import org.apache.tajo.master.scheduler.event.SchedulerEventType;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TUtil;
 
-import java.io.IOError;
 import java.net.InetSocketAddress;
 
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
@@ -77,20 +77,14 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
-    }
-    TajoConf systemConf = (TajoConf) conf;
+
+    TajoConf systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
 
     String confMasterServiceAddr = systemConf.getVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
 
-    try {
-      server = new AsyncRpcServer(TajoResourceTrackerProtocol.class, this, initIsa, 3);
-    } catch (Exception e) {
-      LOG.error(e);
-      throw new IOError(e);
-    }
+    int workerNum = systemConf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
+    server = new AsyncRpcServer(TajoResourceTrackerProtocol.class, this, initIsa, workerNum);
 
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
@@ -116,7 +110,8 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         heartbeat.getWorkerId(),
         heartbeat.getRunningTasks(),
         heartbeat.getRunningQueryMasters(),
-        new NodeResource(heartbeat.getAvailableResource()));
+        new NodeResource(heartbeat.getAvailableResource()),
+        heartbeat.hasTotalResource() ? new NodeResource(heartbeat.getTotalResource()) : null);
   }
 
   @Override
@@ -136,6 +131,8 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         if (heartbeat.hasAvailableResource()) {
           // status update
           rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(heartbeat));
+
+          //refresh scheduler resource
           rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
         }
 

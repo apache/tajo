@@ -68,7 +68,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
@@ -145,12 +144,9 @@ public class TajoWorker extends CompositeService {
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("conf should be a TajoConf type.");
-    }
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 
-    this.systemConf = (TajoConf)conf;
+    this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     RackResolver.init(systemConf);
 
     RpcClientManager rpcManager = RpcClientManager.getInstance();
