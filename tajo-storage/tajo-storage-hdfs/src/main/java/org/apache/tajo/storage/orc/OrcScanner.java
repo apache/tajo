@@ -35,7 +35,6 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import com.facebook.presto.orc.*;
-import com.facebook.presto.orc.metadata.ColumnStatistics;
 import com.facebook.presto.orc.metadata.OrcMetadataReader;
 import org.apache.tajo.storage.thirdparty.orc.HdfsOrcDataSource;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -43,7 +42,6 @@ import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -147,13 +145,8 @@ public class OrcScanner extends FileScanner {
     // TODO: make OrcPredicate useful
     // TODO: TimeZone should be from conf
     // TODO: it might be splittable
-    recordReader = orcReader.createRecordReader(columnSet, new OrcPredicate() {
-        @Override
-        public boolean matches(long numberOfRows, Map<Integer, ColumnStatistics> statisticsByColumnIndex) {
-          return true;
-        }
-      },
-      0, 1024, DateTimeZone.getDefault());
+    recordReader = orcReader.createRecordReader(columnSet, OrcPredicate.TRUE,
+        0, orcDataSource.getSize(), DateTimeZone.getDefault());
 
     getNextBatch();
   }
