@@ -67,7 +67,7 @@ public class TestOrcScanner {
 
     Configuration conf = new TajoConf();
 
-    TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORCFILE, new KeyValueSet());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
 
     Fragment fragment = getFileFragment(conf, "u_data_20.orc");
 
