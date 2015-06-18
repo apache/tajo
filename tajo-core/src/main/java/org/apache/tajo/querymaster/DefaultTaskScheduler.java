@@ -857,27 +857,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         TaskAttemptId attemptId = allocateLocalTask(host);
 
         if (attemptId == null) { // if a local task cannot be found
-          HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
-
-          if(hostVolumeMapping != null) {
-            if(!hostVolumeMapping.isRemote(attemptId)){
-              // assign to remote volume
-              int volumeId = hostVolumeMapping.getAssignedVolumeId(attemptId);
-              hostVolumeMapping.decreaseConcurrency(volumeId);
-              hostVolumeMapping.increaseConcurrency(HostVolumeMapping.REMOTE);
-            }
-            // this part is remote concurrency management of a tail tasks
-            int tailLimit = Math.max(remainingScheduledObjectNum() / (leafTaskHostMapping.size() * 2), 1);
-
-            if(hostVolumeMapping.getRemoteConcurrency() > tailLimit){
-              //release container
-              int volumeId = hostVolumeMapping.getAssignedVolumeId(attemptId);
-              hostVolumeMapping.decreaseConcurrency(volumeId);
-              //taskRequest.getCallback().run(stopTaskRunnerReq);
-              continue;
-            }
-          }
-
           //////////////////////////////////////////////////////////////////////
           // rack-local allocation
           //////////////////////////////////////////////////////////////////////
