@@ -35,6 +35,7 @@ import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.net.ConnectException;
@@ -57,7 +58,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private TajoConf tajoConf;
   private StatusUpdaterThread updaterThread;
   private volatile boolean isStopped;
-  private volatile long heartBeatInterval;
+  private int heartBeatInterval;
+  private int nextHeartBeatInterval;
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
   private final TajoWorker.WorkerContext workerContext;
   private AsyncRpcClient rmClient;
@@ -72,15 +74,14 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
-    }
-    this.tajoConf = (TajoConf) conf;
+
+    this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
     this.serviceTracker = ServiceTrackerFactory.get(tajoConf);
     this.workerContext.getNodeResourceManager().getDispatcher().register(NodeStatusEvent.EventType.class, this);
     this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
+
     super.serviceInit(conf);
   }
 
@@ -219,9 +220,16 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           if (lastResponse != null) {
             if (lastResponse.getCommand() == ResponseCommand.NORMAL) {
               List<NodeStatusEvent> events = Lists.newArrayList();
+
+              if(lastResponse.hasHeartBeatInterval()) {
+                nextHeartBeatInterval = lastResponse.getHeartBeatInterval();
+              } else {
+                nextHeartBeatInterval = heartBeatInterval;
+              }
+
               try {
                 /* batch update to ResourceTracker */
-                drain(events, Math.max(queueingThreshold, 1), heartBeatInterval, TimeUnit.MILLISECONDS);
+                drain(events, Math.max(queueingThreshold, 1), nextHeartBeatInterval, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
                 break;
               }
@@ -231,7 +239,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
                 lastResponse = sendHeartbeat(createResourceReport().build());
               } else {
                 // send ping;
-                lastResponse = sendHeartbeat(createHeartBeatReport().build());
+                lastResponse = sendHeartbeat(createResourceReport().build());
               }
 
             } else if (lastResponse.getCommand() == ResponseCommand.MEMBERSHIP) {
@@ -255,7 +263,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           if (!isStopped) {
             synchronized (updaterThread) {
               try {
-                updaterThread.wait(heartBeatInterval);
+                updaterThread.wait(nextHeartBeatInterval);
               } catch (InterruptedException ie) {
                 // Do Nothing
               }

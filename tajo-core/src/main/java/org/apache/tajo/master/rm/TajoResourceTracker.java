@@ -189,6 +189,9 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         }
       }
     } finally {
+      if(manager.getScheduler().getRunningQuery() > 0) {
+        response.setHeartBeatInterval(1000); //1 sec
+      }
       done.run(response.setCommand(responseCommand).build());
     }
   }

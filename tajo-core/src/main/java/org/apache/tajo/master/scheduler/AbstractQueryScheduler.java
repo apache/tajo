@@ -18,13 +18,8 @@
 
 package org.apache.tajo.master.scheduler;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.rm.TajoRMContext;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.resource.ResourceCalculator;
@@ -56,6 +51,8 @@ public abstract class AbstractQueryScheduler extends AbstractService implements 
   public NodeResource getMaximumResourceCapability() {
     return maxResource;
   }
+
+  public abstract int getRunningQuery();
 
   public abstract ResourceCalculator getResourceCalculator();
 

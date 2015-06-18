@@ -63,7 +63,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   private final Map<QueryId, Integer> assignedQueryMasterMap = Maps.newHashMap();
   private final ResourceCalculator resourceCalculator = new DefaultResourceCalculator();
 
-
+  private volatile int runningQuery;
   private final Thread queryProcessor;
   private QueueInfo queueInfo;
 
@@ -124,6 +124,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   protected void serviceStart() throws Exception {
     this.queryProcessor.start();
     super.serviceStart();
+  }
+
+  @Override
+  public int getRunningQuery() {
+    return assignedQueryMasterMap.size();
   }
 
   @Override

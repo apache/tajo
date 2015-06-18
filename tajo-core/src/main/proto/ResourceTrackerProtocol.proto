@@ -40,7 +40,8 @@ message NodeHeartbeatRequestProto {
 
 message NodeHeartbeatResponseProto {
   required ResponseCommand command = 1 [default = NORMAL];
-  repeated QueryIdProto queryId = 2;
+  optional int32 heartBeatInterval = 2;
+  repeated QueryIdProto queryId = 3;
 }
 
 enum ResponseCommand {
