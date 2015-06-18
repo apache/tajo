@@ -111,11 +111,11 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     return dispatcher;
   }
 
-  protected NodeResource getTotalResource() {
+  public NodeResource getTotalResource() {
     return totalResource;
   }
 
-  protected NodeResource getAvailableResource() {
+  public NodeResource getAvailableResource() {
     return availableResource;
   }
 

@@ -50,6 +50,8 @@
     <tr><td width='100'>MaxHeap: </td><td><%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
     <tr><td width='100'>TotalHeap: </td><td><%=Runtime.getRuntime().totalMemory()/1024/1024%> MB</td>
     <tr><td width='100'>FreeHeap: </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB</td>
+    <tr><td width='100'>Available Resource: </td><td><%= tajoWorker.getWorkerContext().getNodeResourceManager().getAvailableResource() %></td>
+    <tr><td width='100'>Running Tasks: </td><td><%= tajoWorker.getWorkerContext().getTaskManager().getRunningTasks() %></td>
     <tr><td width="100">Configuration:</td><td><a href='conf.jsp'>detail...</a></td></tr>
     <tr><td width="100">Environment:</td><td><a href='env.jsp'>detail...</a></td></tr>
     <tr><td width="100">Threads:</td><td><a href='thread.jsp'>thread dump...</a></tr>

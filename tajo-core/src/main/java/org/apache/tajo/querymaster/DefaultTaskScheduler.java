@@ -276,7 +276,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
       QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request = QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
       request.setCapacity(NodeResources.createResource(512).getProto());
-      request.setNumContainers(scheduledObjectNum);
+      request.setNumContainers(Math.max(remainingScheduledObjectNum(), 1));
       request.setPriority(stage.getPriority());
       request.setQueryId(context.getMasterContext().getQueryId().getProto());
       request.setQueue("default");
@@ -285,7 +285,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       request.setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount());
       request.addAllCandidateNodes(getWorkerIds(getLeafTaskHosts()));
       masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
-
+      LOG.info("request container:" + remainingScheduledObjectNum());
       QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
 
       for (QueryCoordinatorProtocol.AllocationResourceProto proto : responseProto.getResourceList()) {
