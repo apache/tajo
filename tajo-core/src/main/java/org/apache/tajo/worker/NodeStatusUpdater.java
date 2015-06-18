@@ -57,16 +57,16 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private volatile boolean isStopped;
   private volatile long heartBeatInterval;
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
-  private final WorkerConnectionInfo connectionInfo;
+  private final TajoWorker.WorkerContext workerContext;
   private final NodeResourceManager nodeResourceManager;
   private AsyncRpcClient rmClient;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingLimit;
 
-  public NodeStatusUpdater(WorkerConnectionInfo connectionInfo, NodeResourceManager resourceManager) {
+  public NodeStatusUpdater(TajoWorker.WorkerContext workerContext, NodeResourceManager resourceManager) {
     super(NodeStatusUpdater.class.getSimpleName());
-    this.connectionInfo = connectionInfo;
+    this.workerContext = workerContext;
     this.nodeResourceManager = resourceManager;
   }
 
@@ -99,7 +99,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     this.isStopped = true;
 
     synchronized (updaterThread) {
-      updaterThread.notifyAll();
+      updaterThread.interrupt();
+      updaterThread.join();
     }
     super.serviceStop();
     LOG.info("NodeStatusUpdater stopped.");
@@ -107,14 +108,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
   @Override
   public void handle(NodeStatusEvent event) {
-    switch (event.getType()) {
-      case REPORT_RESOURCE:
-        heartBeatRequestQueue.add(event); //batch report to ResourceTracker
-        break;
-      case FLUSH_REPORTS:
-        heartBeatRequestQueue.add(event); //flush report to ResourceTracker
-        break;
-    }
+    heartBeatRequestQueue.add(event);
   }
 
   public int getQueueSize() {
@@ -128,13 +122,13 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private NodeHeartbeatRequestProto createResourceReport(NodeResource resource) {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setAvailableResource(resource.getProto());
-    requestProto.setWorkerId(connectionInfo.getId());
+    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
     return requestProto.build();
   }
 
   private NodeHeartbeatRequestProto createHeartBeatReport() {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
-    requestProto.setWorkerId(connectionInfo.getId());
+    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
     return requestProto.build();
   }
 
@@ -142,8 +136,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setTotalResource(nodeResourceManager.getTotalResource().getProto());
     requestProto.setAvailableResource(nodeResourceManager.getAvailableResource().getProto());
-    requestProto.setWorkerId(connectionInfo.getId());
-    requestProto.setConnectionInfo(connectionInfo.getProto());
+    requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
+    requestProto.setConnectionInfo(workerContext.getConnectionInfo().getProto());
 
     //TODO set node status to requestProto.setStatus()
     return requestProto.build();
@@ -231,8 +225,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
               }
 
               if (!events.isEmpty()) {
-                // send last available resource;
-                lastResponse = sendHeartbeat(createResourceReport(events.get(events.size() - 1).getResource()));
+                // send current available resource;
+                lastResponse = sendHeartbeat(createResourceReport(nodeResourceManager.getAvailableResource()));
               } else {
                 // send ping;
                 lastResponse = sendHeartbeat(createHeartBeatReport());
@@ -250,10 +244,10 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           }
         } catch (NoSuchMethodException nsme) {
           LOG.fatal(nsme.getMessage(), nsme);
-          Runtime.getRuntime().halt(1);
+          Runtime.getRuntime().halt(-1);
         } catch (ClassNotFoundException cnfe) {
           LOG.fatal(cnfe.getMessage(), cnfe);
-          Runtime.getRuntime().halt(1);
+          Runtime.getRuntime().halt(-1);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
           if (!isStopped) {

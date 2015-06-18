@@ -19,11 +19,17 @@
 package org.apache.tajo.worker.event;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
-@Deprecated
-public class TaskRunnerStopEvent extends TaskRunnerEvent {
+public class ExecutionBlockStartEvent extends TaskManagerEvent {
+  private TajoWorkerProtocol.RunExecutionBlockRequestProto requestProto;
 
-  public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {
-    super(EventType.STOP, executionBlockId);
+  public ExecutionBlockStartEvent(TajoWorkerProtocol.RunExecutionBlockRequestProto requestProto) {
+    super(EventType.EB_START, new ExecutionBlockId(requestProto.getExecutionBlockId()));
+    this.requestProto = requestProto;
+  }
+
+  public TajoWorkerProtocol.RunExecutionBlockRequestProto getRequestProto() {
+    return requestProto;
   }
 }

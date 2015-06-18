@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Path("/databases/{databaseName}/queries")
+@Path("/queries")
 public class QueryResource {
 
   private static final Log LOG = LogFactory.getLog(QueryResource.class);
@@ -54,15 +54,11 @@ public class QueryResource {
   
   @Context
   Application application;
-  
-  @PathParam("databaseName")
-  String databaseName;
-  
+
   JerseyResourceDelegateContext context;
   
   protected static final String tajoSessionIdHeaderName = "X-Tajo-Session";
   
-  private static final String databaseNameKeyName = "databaseName";
   private static final String stateKeyName = "state";
   private static final String startTimeKeyName = "startTime";
   private static final String endTimeKeyName = "endTime";
@@ -70,7 +66,6 @@ public class QueryResource {
   private static final String submitQueryRequestKeyName = "submitQueryRequest";
   private static final String printTypeKeyName = "printType";
   private static final String queryIdKeyName = "queryId";
-
   private static final String defaultQueryInfoPrintType = "COMPLICATED";
 
   private void initializeContext() {
@@ -78,9 +73,6 @@ public class QueryResource {
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
         JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
-    JerseyResourceDelegateContextKey<String> databaseNameKey =
-        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-    context.put(databaseNameKey, databaseName);
   }
   
   @GET
@@ -218,9 +210,9 @@ public class QueryResource {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a submit query request.");
     }
-    
+
     Response response = null;
-    
+
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
@@ -229,21 +221,22 @@ public class QueryResource {
       JerseyResourceDelegateContextKey<SubmitQueryRequest> submitQueryRequestKey =
           JerseyResourceDelegateContextKey.valueOf(submitQueryRequestKeyName, SubmitQueryRequest.class);
       context.put(submitQueryRequestKey, request);
-      
+
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
           new SubmitQueryDelegate(),
           application,
           context,
           LOG);
+
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
-      
+
       response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
-    
+
     return response;
   }
-  
+
   private static class SubmitQueryDelegate implements JerseyResourceDelegate {
 
     @Override
@@ -254,20 +247,17 @@ public class QueryResource {
       JerseyResourceDelegateContextKey<SubmitQueryRequest> submitQueryRequestKey =
           JerseyResourceDelegateContextKey.valueOf(submitQueryRequestKeyName, SubmitQueryRequest.class);
       SubmitQueryRequest request = context.get(submitQueryRequestKey);
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
-      
+
       if (sessionId == null || sessionId.isEmpty()) {
         return ResourcesUtil.createBadRequestResponse(LOG, "Session Id is null or empty string.");
       }
       if (request == null || request.getQuery() == null || request.getQuery().isEmpty()) {
         return ResourcesUtil.createBadRequestResponse(LOG, "query is null or emptry string.");
       }
-      
+
       Session session;
       try {
         session = masterContext.getSessionManager().getSession(sessionId);
@@ -287,7 +277,7 @@ public class QueryResource {
         URI queryURI = uriInfo.getBaseUriBuilder()
             .path(QueryResource.class)
             .path(QueryResource.class, "getQuery")
-            .build(databaseName, new QueryId(response.getQueryId()).toString());
+            .build(new QueryId(response.getQueryId()).toString());
         return Response.created(queryURI).build();
       }
     }
@@ -422,13 +412,12 @@ public class QueryResource {
       return Response.ok().build();
     }
   }
-  
+
   @Path("/{queryId}/result")
   public QueryResultResource getQueryResult(@PathParam("queryId") String queryId) {
     QueryResultResource queryResultResource = new QueryResultResource();
     queryResultResource.setUriInfo(uriInfo);
     queryResultResource.setApplication(application);
-    queryResultResource.setDatabaseName(databaseName);
     queryResultResource.setQueryId(queryId);
     return queryResultResource;
   }

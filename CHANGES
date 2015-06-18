@@ -27,6 +27,10 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1636: query rest api uri should change
+    from /databases/{database_name}/queies to /queries.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1624: Add managed table or external description in Table management 
     section. (hyunsik)
 
@@ -149,6 +153,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1634: REST API: fix error when offset is zero.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
 
     TAJO-1630: Test failure after TAJO-1130. (jihoon)
 
@@ -332,6 +339,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1615: Implement TaskManager. (jinho)
 
     TAJO-1599: Implement NodeResourceManager and Status updater. (jinho)
 

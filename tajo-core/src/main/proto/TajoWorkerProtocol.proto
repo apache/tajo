@@ -208,6 +208,7 @@ message TaskAllocationRequestProto {
 message BatchAllocationRequestProto {
     required ExecutionBlockIdProto executionBlockId = 1;
     repeated TaskAllocationRequestProto taskRequest = 2;
+    optional RunExecutionBlockRequestProto executionBlockRequest = 3;  //TODO should be refactored
 }
 
 message BatchAllocationResponseProto {

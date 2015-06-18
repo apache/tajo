@@ -18,12 +18,27 @@
 
 package org.apache.tajo.worker.event;
 
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.resource.NodeResource;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
 
-@Deprecated
-public class TaskRunnerStopEvent extends TaskRunnerEvent {
+public class TaskStartEvent extends TaskExecutorEvent {
 
-  public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {
-    super(EventType.STOP, executionBlockId);
+  private NodeResource allocatedResource;
+  private TaskRequestProto taskRequest;
+
+  public TaskStartEvent(TaskRequestProto taskRequest,
+                        NodeResource allocatedResource) {
+    super(EventType.START, new TaskAttemptId(taskRequest.getId()));
+    this.taskRequest = taskRequest;
+    this.allocatedResource = allocatedResource;
+  }
+
+  public NodeResource getAllocatedResource() {
+    return allocatedResource;
+  }
+
+  public TaskRequestProto getTaskRequest() {
+    return taskRequest;
   }
 }
