@@ -485,6 +485,7 @@ public class TaskImpl implements Task {
     stopScriptExecutors();
   }
 
+  @Override
   public TaskHistory createTaskHistory() {
     TaskHistory taskHistory = null;
     try {
@@ -527,6 +528,10 @@ public class TaskImpl implements Task {
     }
 
     return taskHistory;
+  }
+
+  public List<Fetcher> getFetchers() {
+    return fetcherRunners;
   }
 
   public int hashCode() {

@@ -21,18 +21,15 @@
 
 <%@ page import="org.apache.hadoop.fs.FileSystem" %>
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
-<%@ page import="org.apache.tajo.ipc.QueryCoordinatorProtocol" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
-<%@ page import="org.apache.tajo.master.QueryInProgress" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.NetUtils" %>
 <%@ page import="org.apache.tajo.util.TUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.List" %>
-<%@ page import="java.util.Collection" %>
 <%@ page import="java.util.Date" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.net.InetSocketAddress" %>
@@ -59,13 +56,10 @@
   int runningQueryMasterTask = 0;
 
 
-  QueryCoordinatorProtocol.ClusterResourceSummary clusterResourceSummary =
-          master.getContext().getResourceManager().getClusterResourceSummary();
-
   for(Worker eachWorker: workers.values()) {
     numQueryMasters++;
     numLiveQueryMasters++;
-    runningQueryMasterTask += eachWorker.getResource().getNumQueryMasterTasks();
+    runningQueryMasterTask += eachWorker.getNumRunningQueryMaster();
     numWorkers++;
     numLiveWorkers++;
   }
@@ -142,7 +136,7 @@
 
   <h3>Cluster Summary</h3>
   <table width="100%" class="border_table" border="1">
-    <tr><th>Type</th><th>Total</th><th>Live</th><th>Dead</th><th>Running Master</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th></tr>
+    <tr><th>Type</th><th>Total</th><th>Live</th><th>Dead</th><th>Running Master</th><th>Available</th><th>Total</th></tr>
     <tr>
       <td><a href='cluster.jsp'>Query Master</a></td>
       <td align='right'><%=numQueryMasters%></td>
@@ -158,8 +152,8 @@
       <td align='right'><%=numLiveWorkers%></td>
       <td align='right'><%=numDeadWorkersHtml%></td>
       <td align='right'>-</td>
-      <td align='center'><%=clusterResourceSummary.getTotalMemoryMB() - clusterResourceSummary.getTotalAvailableMemoryMB()%>/<%=clusterResourceSummary.getTotalMemoryMB()%></td>
-      <td align='center'><%=clusterResourceSummary.getTotalDiskSlots() - clusterResourceSummary.getTotalAvailableDiskSlots()%>/<%=clusterResourceSummary.getTotalDiskSlots()%></td>
+      <td align='center'><%=master.getContext().getResourceManager().getScheduler().getClusterResource()%></td>
+      <td align='center'><%=master.getContext().getResourceManager().getScheduler().getMaximumResourceCapability()%></td>
     </tr>
 <%
     if (haService != null) {

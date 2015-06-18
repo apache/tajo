@@ -18,10 +18,13 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.Sets;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.master.event.TaskRequestEvent;
 import org.apache.tajo.master.event.TaskSchedulerEvent;
+
+import java.util.Set;
 
 
 public abstract class AbstractTaskScheduler extends AbstractService implements EventHandler<TaskSchedulerEvent> {
@@ -29,6 +32,7 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
   protected int hostLocalAssigned;
   protected int rackLocalAssigned;
   protected int totalAssigned;
+  protected Set<String> leafTaskHosts = Sets.newHashSet();
 
   /**
    * Construct the service.
@@ -52,5 +56,11 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
   }
 
   public abstract void handleTaskRequestEvent(TaskRequestEvent event);
+  public abstract void releseTaskAttempt(TaskAttempt taskAttempt);
   public abstract int remainingScheduledObjectNum();
+
+
+  public Set<String> getLeafTaskHosts(){
+    return leafTaskHosts;
+  }
 }

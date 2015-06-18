@@ -51,18 +51,17 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   private static final Log LOG = LogFactory.getLog(SimpleScheduler.class);
 
   private static final String DEFAULT_QUEUE_NAME = "default";
-
+  private static final Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 
   private volatile boolean isStopped = false;
   private final TajoMaster.MasterContext masterContext;
-  private final TajoRMContext rmContext;
 
+  private final TajoRMContext rmContext;
   private final BlockingQueue<QuerySchedulingInfo> queryQueue;
   private final Map<QueryId, QuerySchedulingInfo> pendingQueryMap = Maps.newHashMap();
-  private final Map<QueryId, Integer> assignedQueryMasterMap = Maps.newHashMap();
 
+  private final Map<QueryId, Integer> assignedQueryMasterMap = Maps.newHashMap();
   private final ResourceCalculator resourceCalculator = new DefaultResourceCalculator();
-  private static Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 
 
   private final Thread queryProcessor;
@@ -178,26 +177,45 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   public List<AllocationResourceProto>
   reserve(QueryId queryId, QueryCoordinatorProtocol.NodeResourceRequestProto request) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Request:" + request.toString() + "Cluster resource: " +  getClusterResource());
+      LOG.debug("Request:" + request.toString() + "Cluster resource: " + getClusterResource());
     }
 
-    List<AllocationResourceProto> reservedResources = Lists.newArrayList();
+    List<AllocationResourceProto> reservedResources;
     NodeResource capacity = new NodeResource(request.getCapacity());
     if (!NodeResources.fitsIn(capacity, getClusterResource())) {
-      return reservedResources;
+      return Lists.newArrayList();
     }
 
-    AllocationResourceProto.Builder resourceBuilder = AllocationResourceProto.newBuilder();
     LinkedList<Integer> workers = new LinkedList<Integer>();
 
     if (request.getCandidateNodesCount() > 0) {
       workers.addAll(request.getCandidateNodesList());
     }
 
-    int allocatedResources = 0;
     int requiredContainers = request.getNumContainers();
+    // reserve resource to the candidate workers for locality
+    reservedResources = reserveClusterResource(workers, capacity, requiredContainers);
 
-    // reserve resource in candidate workers
+    // reserve resource in random workers
+    if (reservedResources.size() < requiredContainers) {
+      LinkedList<Integer> randomWorkers = new LinkedList<Integer>(getRMContext().getWorkers().keySet());
+      randomWorkers.removeAll(workers);
+      Collections.shuffle(randomWorkers);
+
+      reservedResources.addAll(reserveClusterResource(
+          randomWorkers, capacity, requiredContainers - reservedResources.size()));
+    }
+
+    return reservedResources;
+  }
+
+  private List<AllocationResourceProto> reserveClusterResource(List<Integer> workers,
+                                                               NodeResource capacity, int requiredNum) {
+
+    List<AllocationResourceProto> reservedResources = Lists.newArrayList();
+    AllocationResourceProto.Builder resourceBuilder = AllocationResourceProto.newBuilder();
+    int allocatedResources = 0;
+
     while (workers.size() > 0) {
       Iterator<Integer> iter = workers.iterator();
       while (iter.hasNext()) {
@@ -222,41 +240,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           }
         }
 
-        if (allocatedResources >= requiredContainers) {
+        if (allocatedResources >= requiredNum) {
           return reservedResources;
         }
       }
     }
-
-    // reserve resource in random workers
-    if(allocatedResources == 0 || allocatedResources < requiredContainers) {
-      LinkedList<Integer> randomWorkers = new LinkedList<Integer>(getRMContext().getWorkers().keySet());
-      randomWorkers.removeAll(workers);
-      Collections.shuffle(randomWorkers);
-
-      for (int workerId : randomWorkers) {
-
-        Worker worker = getRMContext().getWorkers().get(workerId);
-        if (worker == null) {
-          LOG.warn("Can't found the worker :" + workerId);
-          continue;
-        } else {
-          if (NodeResources.fitsIn(capacity, worker.getAvailableResource())) {
-            NodeResources.subtractFrom(getClusterResource(), capacity);
-            NodeResources.subtractFrom(worker.getAvailableResource(), capacity);
-            allocatedResources++;
-            resourceBuilder.setResource(capacity.getProto());
-            resourceBuilder.setWorkerId(workerId);
-            reservedResources.add(resourceBuilder.build());
-          }
-        }
-
-        if (allocatedResources >= requiredContainers) {
-          break;
-        }
-      }
-    }
-
     return reservedResources;
   }
 

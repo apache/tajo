@@ -28,7 +28,6 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
-import "ContainerProtocol.proto";
 
 package hadoop.yarn;
 

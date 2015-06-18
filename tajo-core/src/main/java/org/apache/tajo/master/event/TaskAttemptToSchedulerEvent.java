@@ -22,7 +22,6 @@ import com.google.protobuf.RpcCallback;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.querymaster.TaskAttempt;
-import org.apache.tajo.master.container.TajoContainerId;
 
 public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
   private final TaskAttemptScheduleContext context;
@@ -44,7 +43,6 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
   }
 
   public static class TaskAttemptScheduleContext {
-    private TajoContainerId containerId;
     private String host;
     private RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback;
 
@@ -52,20 +50,10 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
 
     }
 
-    public TaskAttemptScheduleContext(TajoContainerId containerId,
-                                      String host,
+    public TaskAttemptScheduleContext(String host,
                                       RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
-      this.containerId = containerId;
       this.host = host;
       this.callback = callback;
-    }
-
-    public TajoContainerId getContainerId() {
-      return containerId;
-    }
-
-    public void setContainerId(TajoContainerId containerId) {
-      this.containerId = containerId;
     }
 
     public String getHost() {

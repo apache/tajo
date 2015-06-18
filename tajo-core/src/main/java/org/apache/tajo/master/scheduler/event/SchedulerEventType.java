@@ -20,12 +20,7 @@ package org.apache.tajo.master.scheduler.event;
 
 public enum SchedulerEventType {
 
-  // Source: QM
+  // consumer: Scheduler
   RESOURCE_RESERVE,
-
-  RESOURCE_UPDATE,
-
-  // Source: MASTER
-  QM_SUBMIT,
-  QM_STOP
+  RESOURCE_UPDATE
 }

@@ -32,31 +32,15 @@
 <%
     TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
-    String containerId = request.getParameter("containerId");
     String quAttemptId = request.getParameter("taskAttemptId");
     TaskAttemptId taskAttemptId = TajoIdUtils.parseTaskAttemptId(quAttemptId);
-    Task task = null;
-    TaskHistory taskHistory = null;
-    if(containerId == null || containerId.isEmpty() || "null".equals(containerId)) {
-        task = tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskByTaskAttemptId(taskAttemptId);
-        if (task != null) {
-            taskHistory = task.createTaskHistory();
-        } else {
-            taskHistory = tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskHistoryByTaskAttemptId(taskAttemptId);
-        }
+
+    TaskHistory taskHistory;
+    Task task = tajoWorker.getWorkerContext().getTaskManager().getTaskByTaskAttemptId(taskAttemptId);
+    if (task != null) {
+        taskHistory = task.createTaskHistory();
     } else {
-        TaskRunner runner = tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunner(containerId);
-        if(runner != null) {
-            task = runner.getContext().getTask(taskAttemptId);
-            if (task != null) {
-                taskHistory = task.createTaskHistory();
-            } else {
-                TaskRunnerHistory history = tajoWorker.getWorkerContext().getTaskRunnerManager().getExcutionBlockHistoryByTaskRunnerId(containerId);
-                if(history != null) {
-                    taskHistory = history.getTaskHistory(taskAttemptId);
-                }
-            }
-        }
+        taskHistory = tajoWorker.getWorkerContext().getTaskManager().getTaskHistory(taskAttemptId.getTaskId());
     }
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 %>

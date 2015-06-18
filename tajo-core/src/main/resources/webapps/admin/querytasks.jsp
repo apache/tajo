@@ -204,7 +204,7 @@
 %>
   <div align="right"># Tasks: <%=numOfTasks%> / # Pages: <%=totalPage%></div>
   <table border="1" width="100%" class="border_table">
-    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
+    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th>Retry</th><th><a href='<%=url%>host'>Host</a></th></tr>
 <%
   int rowNo = (currentPage - 1) * pageSize + 1;
   for (TaskHistory eachTask: tasks) {
@@ -226,12 +226,13 @@
 
 %>
     <tr>
-      <td><%=rowNo%></td>
+      <td align='center'><%=rowNo%></td>
       <td><a href="<%=taskDetailUrl%>"><%=eachTask.getId()%></a></td>
-      <td><%=eachTask.getState()%></td>
-      <td><%=JSPUtil.percentFormat(eachTask.getProgress())%>%</td>
-      <td><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
+      <td align='center'><%=eachTask.getState()%></td>
+      <td align='center'><%=JSPUtil.percentFormat(eachTask.getProgress())%>%</td>
+      <td align='center'><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
       <td align='right'><%=eachTask.getLaunchTime() == 0 ? "-" : eachTask.getRunningTime() + " ms"%></td>
+      <td align='center'><%=eachTask.getRetryCount()%></td>
       <td><%=taskHost%></td>
     </tr>
     <%

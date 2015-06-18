@@ -24,9 +24,7 @@
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
-<%@ page import="org.apache.tajo.worker.TaskRunner" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
 
 <%
@@ -117,30 +115,6 @@
         } //end of for
       } //end of if
     %>
-  </table>
-  <p/>
-  <hr/>
-<%
-  List<TaskRunner> taskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunners());
-  JSPUtil.sortTaskRunner(taskRunners);
-%>
-  <h3>Running Task Containers</h3>
-  <a href='taskcontainers.jsp'>[All Task Containers]</a>
-  <br/>
-  <table width="100%" border="1" class="border_table">
-    <tr><th>ContainerId</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
-    <%
-      for(TaskRunner eachTaskRunner: taskRunners) {
-    %>
-    <tr>
-      <td><a href="tasks.jsp?taskRunnerId=<%=eachTaskRunner.getId()%>"><%=eachTaskRunner.getId()%></a></td>
-      <td><%=df.format(eachTaskRunner.getStartTime())%></td>
-      <td><%=eachTaskRunner.getFinishTime() == 0 ? "-" : df.format(eachTaskRunner.getFinishTime())%></td>
-      <td><%=JSPUtil.getElapsedTime(eachTaskRunner.getStartTime(), eachTaskRunner.getFinishTime())%></td>
-      <td><%=eachTaskRunner.getServiceState()%></td>
-<%
-      }   //end of for
-%>
   </table>
 </div>
 </body>

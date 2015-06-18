@@ -24,7 +24,6 @@
 <%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TUtil" %>
@@ -56,7 +55,7 @@
   for(Worker eachWorker: workers.values()) {
     liveQueryMasters.add(eachWorker);
     liveWorkers.add(eachWorker);
-    runningQueryMasterTasks += eachWorker.getResource().getNumQueryMasterTasks();
+    runningQueryMasterTasks += eachWorker.getNumRunningQueryMaster();
   }
 
   for (Worker inactiveWorker : master.getContext().getResourceManager().getInactiveWorkers().values()) {
@@ -169,12 +168,11 @@
   } else {
 %>
   <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Running Query</th><th>Heap(free/total/max)</th><th>Heartbeat</th><th>Status</th></tr>
+    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Running Query</th><th>Heartbeat</th><th>Status</th></tr>
 
 <%
     int no = 1;
     for(Worker queryMaster: liveQueryMasters) {
-        WorkerResource resource = queryMaster.getResource();
         WorkerConnectionInfo connectionInfo = queryMaster.getConnectionInfo();
         String queryMasterHttp = "http://" + connectionInfo.getHost()
                 + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
@@ -183,8 +181,7 @@
         <td width='30' align='right'><%=no++%></td>
         <td><a href='<%=queryMasterHttp%>'><%=connectionInfo.getHost() + ":" + connectionInfo.getQueryMasterPort()%></a></td>
         <td width='100' align='center'><%=connectionInfo.getClientPort()%></td>
-        <td width='200' align='right'><%=resource.getNumQueryMasterTasks()%></td>
-        <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+        <td width='200' align='right'><%=queryMaster.getNumRunningQueryMaster()%></td>
         <td width='100' align='right'><%=JSPUtil.getElapsedTime(queryMaster.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
         <td width='100' align='center'><%=queryMaster.getState()%></td>
     </tr>
@@ -233,11 +230,10 @@
   } else {
 %>
   <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>Worker</th><th>PullServer<br/>Port</th><th>Running Tasks</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th><th>Heap<br/>(free/total/max)</th><th>Heartbeat</th><th>Status</th></tr>
+    <tr><th>No</th><th>Worker</th><th>PullServer<br/>Port</th><th>Running Tasks</th><th>Available</th><th>Total</th><th>Heartbeat</th><th>Status</th></tr>
 <%
     int no = 1;
     for(Worker worker: liveWorkers) {
-        WorkerResource resource = worker.getResource();
         WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
         String workerHttp = "http://" + connectionInfo.getHost() + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
 %>
@@ -245,10 +241,9 @@
         <td width='30' align='right'><%=no++%></td>
         <td><a href='<%=workerHttp%>'><%=connectionInfo.getHostAndPeerRpcPort()%></a></td>
         <td width='80' align='center'><%=connectionInfo.getPullServerPort()%></td>
-        <td width='100' align='right'><%=resource.getNumRunningTasks()%></td>
-        <td width='150' align='center'><%=resource.getUsedMemoryMB()%>/<%=resource.getMemoryMB()%></td>
-        <td width='100' align='center'><%=resource.getUsedDiskSlots()%>/<%=resource.getDiskSlots()%></td>
-        <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+        <td width='100' align='right'><%=worker.getNumRunningTasks()%></td>
+        <td width='150' align='center'><%=worker.getAvailableResource()%></td>
+        <td width='150' align='center'><%=worker.getTotalResourceCapability()%></td>
         <td width='100' align='right'><%=JSPUtil.getElapsedTime(worker.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
         <td width='100' align='center'><%=worker.getState()%></td>
     </tr>
@@ -277,7 +272,6 @@
 <%
       int no = 1;
       for(Worker worker: deadWorkers) {
-        WorkerResource resource = worker.getResource();
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>

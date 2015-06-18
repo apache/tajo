@@ -19,48 +19,32 @@
 package org.apache.tajo.worker;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.*;
-import org.apache.tajo.annotation.ThreadSafe;
-import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto;
-import org.apache.tajo.querymaster.QueryMaster;
-import org.apache.tajo.querymaster.QueryMasterManagerService;
-import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.history.HistoryReader;
-import org.apache.tajo.util.history.HistoryWriter;
-import org.apache.tajo.util.metrics.TajoSystemMetrics;
-import org.apache.tajo.worker.event.ExecutionBlockStartEvent;
-import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Queue;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestTaskExecutor {
 
@@ -332,6 +316,16 @@ public class TestTaskExecutor {
 
           builder.setInputStats(new TableStats().getProto());
           return builder.build();
+        }
+
+        @Override
+        public TaskHistory createTaskHistory() {
+          return null;
+        }
+
+        @Override
+        public List<Fetcher> getFetchers() {
+          return null;
         }
       };
     }

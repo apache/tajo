@@ -21,6 +21,7 @@ package org.apache.tajo.worker;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 import java.io.IOException;
+import java.util.List;
 
 public interface Task {
 
@@ -49,4 +50,8 @@ public interface Task {
   ExecutionBlockContext getExecutionBlockContext();
 
   TajoWorkerProtocol.TaskStatusProto getReport();
+
+  TaskHistory createTaskHistory();
+
+  List<Fetcher> getFetchers();
 }

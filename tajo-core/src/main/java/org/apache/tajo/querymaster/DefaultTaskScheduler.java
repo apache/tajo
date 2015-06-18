@@ -37,11 +37,9 @@ import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
-import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -54,7 +52,6 @@ import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.ApplicationIdUtils;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -147,13 +144,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     if (schedulingThread != null) {
       synchronized (schedulingThread) {
         schedulingThread.notifyAll();
-      }
-    }
-
-    // Return all of request callbacks instantly.
-    if(taskRequests != null){
-      for (TaskRequestEvent req : taskRequests.taskRequestQueue) {
-//        req.getCallback().run(stopTaskRunnerReq);
       }
     }
 
@@ -260,6 +250,18 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
   }
 
+  private List<Integer> getWorkerIds(Collection<String> hosts){
+    List<Integer> workerIds = Lists.newArrayList();
+    if(hosts.isEmpty()) return workerIds;
+
+    for (WorkerConnectionInfo worker : stage.getContext().getWorkerMap().values()) {
+      if(hosts.contains(worker.getHost())){
+        workerIds.add(worker.getId());
+      }
+    }
+    return workerIds;
+  }
+
   @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
 
@@ -275,12 +277,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request = QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
       request.setCapacity(NodeResources.createResource(512).getProto());
       request.setNumContainers(scheduledObjectNum);
-      request.setPriority(1);
+      request.setPriority(stage.getPriority());
       request.setQueryId(context.getMasterContext().getQueryId().getProto());
       request.setQueue("default");
       request.setType(QueryCoordinatorProtocol.ResourceType.LEAF);
       request.setUserId("test");
-      request.setRunningTasks(0);
+      request.setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount());
+      request.addAllCandidateNodes(getWorkerIds(getLeafTaskHosts()));
       masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
 
       QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
@@ -357,6 +360,17 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
   }
 
+  public void releseTaskAttempt(TaskAttempt taskAttempt) {
+    if (taskAttempt.isLeafTask() && taskAttempt.getWorkerConnectionInfo() != null) {
+
+      HostVolumeMapping mapping =
+          scheduledRequests.leafTaskHostMapping.get(taskAttempt.getWorkerConnectionInfo().getHost());
+      if (mapping != null) {
+        int volumeId = mapping.lastAssignedVolumeId.remove(taskAttempt.getId());
+        mapping.decreaseConcurrency(volumeId);
+      }
+    }
+  }
   /**
    * One worker can have multiple running task runners. <code>HostVolumeMapping</code>
    * describes various information for one worker, including :
@@ -391,8 +405,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private Map<Integer, LinkedHashSet<TaskAttempt>> unassignedTaskForEachVolume =
         Collections.synchronizedMap(new HashMap<Integer, LinkedHashSet<TaskAttempt>>());
     /** A value is last assigned volume id for each task runner */
-    private HashMap<TajoContainerId, Integer> lastAssignedVolumeId = new HashMap<TajoContainerId,
-      Integer>();
+    private HashMap<TaskAttemptId, Integer> lastAssignedVolumeId = Maps.newHashMap();
     /**
      * A key is disk volume id, and a value is the load of this volume.
      * This load is measured by counting how many number of tasks are running.
@@ -432,24 +445,18 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
      *  2. unknown block or Non-splittable task in host
      *  3. remote tasks. unassignedTaskForEachVolume is only contained local task. so it will be null
      */
-    public synchronized TaskAttemptId getLocalTask(TajoContainerId containerId) {
-      int volumeId;
+    public synchronized TaskAttemptId getLocalTask() {
+      int volumeId = getLowestVolumeId();
       TaskAttemptId taskAttemptId = null;
 
-      if (!lastAssignedVolumeId.containsKey(containerId)) {
-        volumeId = getLowestVolumeId();
-        increaseConcurrency(containerId, volumeId);
-      } else {
-        volumeId = lastAssignedVolumeId.get(containerId);
-      }
-
+      increaseConcurrency(volumeId);
       if (unassignedTaskForEachVolume.size() >  0) {
         int retry = unassignedTaskForEachVolume.size();
         do {
           //clean and get a remaining local task
           taskAttemptId = getAndRemove(volumeId);
           if(!unassignedTaskForEachVolume.containsKey(volumeId)) {
-            decreaseConcurrency(containerId);
+            decreaseConcurrency(volumeId);
             if (volumeId > REMOTE) {
               diskVolumeLoads.remove(volumeId);
             }
@@ -458,7 +465,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (taskAttemptId == null) {
             //reassign next volume
             volumeId = getLowestVolumeId();
-            increaseConcurrency(containerId, volumeId);
+            increaseConcurrency(volumeId);
             retry--;
           } else {
             break;
@@ -467,6 +474,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       } else {
         this.remainTasksNum.set(0);
       }
+
+      lastAssignedVolumeId.put(taskAttemptId, volumeId);
       return taskAttemptId;
     }
 
@@ -539,11 +548,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     /**
      * Increase the count of running tasks and disk loads for a certain task runner.
      *
-     * @param containerId The task runner identifier
      * @param volumeId Volume identifier
      * @return the volume load (i.e., how many running tasks use this volume)
      */
-    private synchronized int increaseConcurrency(TajoContainerId containerId, int volumeId) {
+    private synchronized int increaseConcurrency(int volumeId) {
 
       int concurrency = 1;
       if (diskVolumeLoads.containsKey(volumeId)) {
@@ -561,16 +569,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             + ", Remote Concurrency : " + concurrency);
       }
       diskVolumeLoads.put(volumeId, concurrency);
-      lastAssignedVolumeId.put(containerId, volumeId);
       return concurrency;
     }
 
     /**
      * Decrease the count of running tasks of a certain task runner
      */
-    private synchronized void decreaseConcurrency(TajoContainerId containerId){
-      Integer volumeId = lastAssignedVolumeId.get(containerId);
-      if(volumeId != null && diskVolumeLoads.containsKey(volumeId)){
+    private synchronized void decreaseConcurrency(int volumeId){
+      if(diskVolumeLoads.containsKey(volumeId)){
         Integer concurrency = diskVolumeLoads.get(volumeId);
         if(concurrency > 0){
           diskVolumeLoads.put(volumeId, concurrency - 1);
@@ -580,7 +586,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
       }
-      lastAssignedVolumeId.remove(containerId);
     }
 
     /**
@@ -606,12 +611,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
     }
 
-    public boolean isAssigned(TajoContainerId containerId){
-      return lastAssignedVolumeId.containsKey(containerId);
-    }
-
-    public boolean isRemote(TajoContainerId containerId){
-      Integer volumeId = lastAssignedVolumeId.get(containerId);
+    public boolean isRemote(TaskAttemptId taskAttemptId){
+      Integer volumeId = lastAssignedVolumeId.get(taskAttemptId);
       if(volumeId == null || volumeId > REMOTE){
         return false;
       } else {
@@ -641,6 +642,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     public String getRack() {
       return rack;
     }
+
+    public int getAssignedVolumeId(TaskAttemptId attemptId) {
+      return lastAssignedVolumeId.get(attemptId);
+    }
   }
 
   public void cancel(TaskAttempt taskAttempt) {
@@ -669,6 +674,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       for (DataLocation location : locations) {
         String host = location.getHost();
+        leafTaskHosts.add(host);
 
         HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
         if (hostVolumeMapping == null) {
@@ -712,12 +718,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
     public Set<TaskAttemptId> assignedRequest = new HashSet<TaskAttemptId>();
 
-    private TaskAttemptId allocateLocalTask(String host, TajoContainerId containerId){
+    private TaskAttemptId allocateLocalTask(String host){
       HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
 
       if (hostVolumeMapping != null) { //tajo host is located in hadoop datanode
         for (int i = 0; i < hostVolumeMapping.getRemainingLocalTaskSize(); i++) {
-          TaskAttemptId attemptId = hostVolumeMapping.getLocalTask(containerId);
+          TaskAttemptId attemptId = hostVolumeMapping.getLocalTask();
 
           if(attemptId == null) break;
           //find remaining local task
@@ -840,36 +846,33 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
 
-          TajoWorkerContainerId containerId = new TajoWorkerContainerId();
-
-          containerId.setApplicationAttemptId(
-              ApplicationIdUtils.createApplicationAttemptId(taskRequest.getExecutionBlockId().getQueryId()));
-          containerId.setId(0);
-
-
-        LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
-            "containerId=" + containerId);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
+              "worker=" + connectionInfo.getHostAndPeerRpcPort());
+        }
 
         //////////////////////////////////////////////////////////////////////
         // disk or host-local allocation
         //////////////////////////////////////////////////////////////////////
-        TaskAttemptId attemptId = allocateLocalTask(host, containerId);
+        TaskAttemptId attemptId = allocateLocalTask(host);
 
         if (attemptId == null) { // if a local task cannot be found
           HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
 
           if(hostVolumeMapping != null) {
-            if(!hostVolumeMapping.isRemote(containerId)){
+            if(!hostVolumeMapping.isRemote(attemptId)){
               // assign to remote volume
-              hostVolumeMapping.decreaseConcurrency(containerId);
-              hostVolumeMapping.increaseConcurrency(containerId, HostVolumeMapping.REMOTE);
+              int volumeId = hostVolumeMapping.getAssignedVolumeId(attemptId);
+              hostVolumeMapping.decreaseConcurrency(volumeId);
+              hostVolumeMapping.increaseConcurrency(HostVolumeMapping.REMOTE);
             }
             // this part is remote concurrency management of a tail tasks
             int tailLimit = Math.max(remainingScheduledObjectNum() / (leafTaskHostMapping.size() * 2), 1);
 
             if(hostVolumeMapping.getRemoteConcurrency() > tailLimit){
               //release container
-              hostVolumeMapping.decreaseConcurrency(containerId);
+              int volumeId = hostVolumeMapping.getAssignedVolumeId(attemptId);
+              hostVolumeMapping.decreaseConcurrency(volumeId);
               //taskRequest.getCallback().run(stopTaskRunnerReq);
               continue;
             }
@@ -960,8 +963,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             LOG.error(e);
           }
 
-          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-              containerId, connectionInfo));
+          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
           assignedRequest.add(attemptId);
 
           scheduledObjectNum--;
@@ -1069,8 +1071,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               continue;
             }
 
-            context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-                null, connectionInfo));
+            context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
             //taskRequest.getCallback().run(taskAssign.getProto());
             totalAssigned++;
             scheduledObjectNum--;

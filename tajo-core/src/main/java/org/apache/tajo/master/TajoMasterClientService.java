@@ -604,9 +604,6 @@ public class TajoMasterClientService extends AbstractService {
       return builder.build();
     }
 
-    /**
-     * It is invoked by TajoContainerProxy.
-     */
     @Override
     public BoolProto killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
       try {

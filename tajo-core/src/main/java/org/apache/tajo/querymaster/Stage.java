@@ -274,11 +274,11 @@ public class Stage implements EventHandler<StageEvent> {
   private final Lock readLock;
   private final Lock writeLock;
 
-  private int totalScheduledObjectsCount;
-  private int completedTaskCount = 0;
-  private int succeededObjectCount = 0;
-  private int killedObjectCount = 0;
-  private int failedObjectCount = 0;
+  private volatile int totalScheduledObjectsCount;
+  private volatile int completedTaskCount = 0;
+  private volatile int succeededObjectCount = 0;
+  private volatile int killedObjectCount = 0;
+  private volatile int failedObjectCount = 0;
   private TaskSchedulerContext schedulerContext;
   private List<IntermediateEntry> hashShuffleIntermediateEntries = Lists.newArrayList();
   private AtomicInteger completedShuffleTasks = new AtomicInteger(0);
@@ -1165,6 +1165,7 @@ public class Stage implements EventHandler<StageEvent> {
         stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
       } else {
         stage.completedTaskCount++;
+        stage.getTaskScheduler().releseTaskAttempt(task.getLastAttempt()); //FIXME
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
           stage.succeededObjectCount++;

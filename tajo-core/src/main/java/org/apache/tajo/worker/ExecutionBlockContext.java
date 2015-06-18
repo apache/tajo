@@ -95,9 +95,6 @@ public class ExecutionBlockContext {
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final ConcurrentMap<TaskAttemptId, Task> tasks = Maps.newConcurrentMap();
 
-  @Deprecated
-  private final ConcurrentMap<String, TaskRunnerHistory> histories = Maps.newConcurrentMap();
-
   private final Map<TaskId, TaskHistory> taskHistories = Maps.newTreeMap();
 
   public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, StartExecutionBlockRequestProto request)
@@ -272,11 +269,6 @@ public class ExecutionBlockContext {
 
     getStub().fatalError(null, builder.build(), NullCallback.get());
   }
-
-//  public TaskRunnerHistory createTaskRunnerHistory(TaskRunner runner){
-//    histories.putIfAbsent(runner.getId(), new TaskRunnerHistory(runner.getContainerId(), executionBlockId));
-//    return histories.get(runner.getId());
-//  }
 
   public TajoWorker.WorkerContext getWorkerContext(){
     return workerContext;

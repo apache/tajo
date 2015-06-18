@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -26,6 +25,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.worker.event.TaskExecutorEvent;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class MockTaskExecutor extends TaskExecutor {
@@ -135,6 +135,16 @@ public class MockTaskExecutor extends TaskExecutor {
 
       builder.setInputStats(new TableStats().getProto());
       return builder.build();
+      }
+
+      @Override
+      public TaskHistory createTaskHistory() {
+        return null;
+      }
+
+      @Override
+      public List<Fetcher> getFetchers() {
+        return null;
       }
     };
   }

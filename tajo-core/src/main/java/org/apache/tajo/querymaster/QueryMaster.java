@@ -297,10 +297,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
         QueryHistory queryHisory = query.getQueryHistory();
         if (queryHisory != null) {
           try {
-            long startTime = System.currentTimeMillis();
             query.context.getQueryMasterContext().getWorkerContext().
                 getTaskHistoryWriter().appendAndFlush(queryHisory);
-            LOG.info("QueryHistory write delay:" + (System.currentTimeMillis() - startTime));
           } catch (Throwable e) {
             LOG.warn(e, e);
           }

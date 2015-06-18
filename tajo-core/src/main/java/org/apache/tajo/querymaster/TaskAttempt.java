@@ -23,8 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
-import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
@@ -34,7 +34,6 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
-import org.apache.tajo.master.container.TajoContainerId;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -55,7 +54,6 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private final Task task;
   final EventHandler eventHandler;
 
-  private TajoContainerId containerId;
   private WorkerConnectionInfo workerConnectionInfo;
   private int expire;
 
@@ -214,10 +212,6 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     return this.workerConnectionInfo;
   }
 
-  public void setContainerId(TajoContainerId containerId) {
-    this.containerId = containerId;
-  }
-
   public synchronized void setExpireTime(int expire) {
     this.expire = expire;
   }
@@ -311,7 +305,6 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
         throw new IllegalArgumentException("event should be a TaskAttemptAssignedEvent type.");
       }
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
-      taskAttempt.containerId = castEvent.getContainerId();
       taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
       taskAttempt.eventHandler.handle(
           new TaskTAttemptEvent(taskAttempt.getId(),

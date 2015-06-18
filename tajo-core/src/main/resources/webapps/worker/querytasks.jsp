@@ -229,15 +229,15 @@
             "&page=" + currentPage + "&pageSize=" + pageSize +
             "&taskSeq=" + taskSeq + "&sort=" + sort + "&sortOrder=" + sortOrder;
 
-    String taskHost = eachTask.getSucceededHost() == null ? "-" : eachTask.getSucceededHost();
-    if(eachTask.getSucceededHost() != null) {
+    String taskHost = eachTask.getSucceededWorker() == null ? "-" : eachTask.getSucceededWorker().getHost();
+    if(eachTask.getSucceededWorker() != null) {
         TajoProtos.WorkerConnectionInfoProto worker =
                 workerMap.get(eachTask.getLastAttempt().getWorkerConnectionInfo().getId());
         if(worker != null) {
             TaskAttempt lastAttempt = eachTask.getLastAttempt();
             if(lastAttempt != null) {
               TaskAttemptId lastAttemptId = lastAttempt.getId();
-              taskHost = "<a href='http://" + eachTask.getSucceededHost() + ":" + worker.getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + eachTask.getSucceededHost() + "</a>";
+              taskHost = "<a href='http://" + eachTask.getSucceededWorker().getHost() + ":" + worker.getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + eachTask.getSucceededWorker().getHost() + "</a>";
             }
         }
     }
