@@ -110,8 +110,8 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       this.queueInfo.setCurrentCapacity(getResourceCalculator().ratio(clusterResource, maxResource));
     }
 
-    LOG.info("Scheduler resources \r current: " + getClusterResource()
-        + "\r maximum: " + getMaximumResourceCapability() + "\r queue: " + queueInfo);
+    LOG.info("Scheduler resources \n current: " + getClusterResource()
+        + "\n maximum: " + getMaximumResourceCapability() + "\n queue: " + queueInfo);
   }
 
   @Override

@@ -32,7 +32,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.worker.TaskHistory;
-import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -229,7 +228,7 @@ public class HistoryWriter extends AbstractService {
         }
 
         try {
-          if (!histories.isEmpty()) {
+          if (!stopped.get() && !histories.isEmpty()) {
             writeHistory(histories);
           } else {
             continue;
@@ -241,25 +240,23 @@ public class HistoryWriter extends AbstractService {
         //clean up history file
 
         // closing previous writer
-        synchronized (taskWriters) {
-          Calendar cal = Calendar.getInstance();
-          cal.add(Calendar.HOUR_OF_DAY, -2);
-          String closeTargetTime = df.format(cal.getTime());
-          List<String> closingTargets = new ArrayList<String>();
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.HOUR_OF_DAY, -2);
+        String closeTargetTime = df.format(cal.getTime());
+        List<String> closingTargets = new ArrayList<String>();
 
-          for (String eachWriterTime : taskWriters.keySet()) {
-            if (eachWriterTime.compareTo(closeTargetTime) <= 0) {
-              closingTargets.add(eachWriterTime);
-            }
+        for (String eachWriterTime : taskWriters.keySet()) {
+          if (eachWriterTime.compareTo(closeTargetTime) <= 0) {
+            closingTargets.add(eachWriterTime);
           }
+        }
 
-          for (String eachWriterTime : closingTargets) {
-            WriterHolder writerHolder;
-            writerHolder = taskWriters.remove(eachWriterTime);
-            if (writerHolder != null) {
-              LOG.info("Closing task history file: " + writerHolder.path);
-              IOUtils.cleanup(LOG, writerHolder);
-            }
+        for (String eachWriterTime : closingTargets) {
+          WriterHolder writerHolder;
+          writerHolder = taskWriters.remove(eachWriterTime);
+          if (writerHolder != null) {
+            LOG.info("Closing task history file: " + writerHolder.path);
+            IOUtils.cleanup(LOG, writerHolder);
           }
         }
       }
@@ -425,13 +422,11 @@ public class HistoryWriter extends AbstractService {
     }
 
     private void flushTaskHistories() {
-      synchronized (taskWriters) {
-        for (WriterHolder holder : taskWriters.values()) {
-          try {
-            holder.flush();
-          } catch (IOException e) {
-            LOG.warn(e, e);
-          }
+      for (WriterHolder holder : taskWriters.values()) {
+        try {
+          holder.flush();
+        } catch (IOException e) {
+          LOG.warn(e, e);
         }
       }
     }
