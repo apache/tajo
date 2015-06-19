@@ -18,17 +18,28 @@
 
 package org.apache.tajo.storage;
 
-public class StorageProperty {
-  private boolean movable;
-  private boolean writable;
-  private boolean insertable;
-  private boolean absolutePathAllowed;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.util.KeyValueSet;
 
-  public StorageProperty(boolean movable, boolean writable, boolean isInsertable, boolean absolutePathAllowed) {
+public class StorageProperty {
+  private final String defaultFormat;
+  private final boolean movable;
+  private final boolean writable;
+  private final boolean absolutePathAllowed;
+
+  public StorageProperty(String defaultFormat,
+                         boolean movable,
+                         boolean writable,
+                         boolean absolutePathAllowed) {
+
+    this.defaultFormat = defaultFormat;
     this.movable = movable;
     this.writable = writable;
-    this.insertable = isInsertable;
     this.absolutePathAllowed = absolutePathAllowed;
+  }
+
+  public String defaultFormat() {
+    return defaultFormat;
   }
 
   /**
@@ -50,18 +61,9 @@ public class StorageProperty {
   }
 
   /**
-   * this storage supports insert operation?
-   *
-   * @return true if insert operation is allowed.
-   */
-  public boolean isInsertable() {
-    return insertable;
-  }
-
-  /**
    * Does this storage allows the use of arbitrary absolute paths outside tablespace?
    *
-   * @return
+   * @return True if this storage allows accesses to artibrary paths.
    */
   public boolean isArbitraryPathAllowed() {
     return this.absolutePathAllowed;

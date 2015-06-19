@@ -149,7 +149,7 @@ public abstract class Tablespace {
    */
   public abstract StorageProperty getProperty();
 
-  public abstract FormatProperty getFormatProperty(String dataFormat);
+  public abstract FormatProperty getFormatProperty(TableMeta meta);
 
   /**
    * Release storage manager resource

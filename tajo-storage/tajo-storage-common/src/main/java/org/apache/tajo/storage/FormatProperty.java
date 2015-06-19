@@ -21,11 +21,25 @@ package org.apache.tajo.storage;
 public class FormatProperty {
   private boolean sortedInsertRequired;
 
-  public FormatProperty(boolean sortedInsertRequired) {
+  private boolean stagingSupport;
+
+  private boolean insertable;
+
+  public FormatProperty(boolean insertable, boolean sortedInsertRequired, boolean stagingSupport) {
+    this.insertable = insertable;
     this.sortedInsertRequired = sortedInsertRequired;
+    this.stagingSupport = stagingSupport;
+  }
+
+  public boolean isInsertable() {
+    return insertable;
   }
 
   public boolean sortedInsertRequired() {
     return sortedInsertRequired;
+  }
+
+  public boolean isStagingSupport() {
+    return stagingSupport;
   }
 }

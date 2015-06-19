@@ -31,6 +31,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -64,10 +65,12 @@ import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -337,18 +340,37 @@ public class QueryExecutor {
           insertNode.getTableName();
       String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
-      FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
-      Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), queryId.toString(), queryContext);
-      Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-
       TableDesc tableDesc = null;
-      Path finalOutputDir;
+      TableMeta tableMeta = null;
+      URI finalOutputUri;
+
       if (insertNode.getTableName() != null) {
         tableDesc = this.catalog.getTableDesc(insertNode.getTableName());
-        finalOutputDir = new Path(tableDesc.getUri());
+        finalOutputUri = tableDesc.getUri();
       } else {
-        finalOutputDir = new Path(insertNode.getUri());
+
+        finalOutputUri = insertNode.getUri();
       }
+
+      Tablespace space = TableSpaceManager.get(finalOutputUri).get();
+
+
+      if (tableDesc != null) {
+        tableMeta = tableDesc.getMeta();
+      } else {
+        tableMeta = new TableMeta(space.getProperty().defaultFormat(), new KeyValueSet());
+      }
+
+      FormatProperty formatProperty = space.getFormatProperty(tableMeta);
+
+      if (formatProperty.isStagingSupport()) {
+
+      }
+
+      Path finalOutputPath = new Path(finalOutputUri);
+
+      Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), queryId.toString(), queryContext);
+      Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
       TaskAttemptContext taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
       taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
@@ -362,6 +384,8 @@ public class QueryExecutor {
         exec.close();
       }
 
+      FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
+
       if (insertNode.isOverwrite()) { // INSERT OVERWRITE INTO
         // it moves the original table into the temporary location.
         // Then it moves the new result table into the original table location.
@@ -370,26 +394,26 @@ public class QueryExecutor {
         boolean committed = false;
         Path oldTableDir = new Path(stagingDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
         try {
-          if (fs.exists(finalOutputDir)) {
-            fs.rename(finalOutputDir, oldTableDir);
+          if (fs.exists(finalOutputPath)) {
+            fs.rename(finalOutputPath, oldTableDir);
             movedToOldTable = fs.exists(oldTableDir);
           } else { // if the parent does not exist, make its parent directory.
-            fs.mkdirs(finalOutputDir.getParent());
+            fs.mkdirs(finalOutputPath.getParent());
           }
-          fs.rename(stagingResultDir, finalOutputDir);
-          committed = fs.exists(finalOutputDir);
+          fs.rename(stagingResultDir, finalOutputPath);
+          committed = fs.exists(finalOutputPath);
         } catch (IOException ioe) {
           // recover the old table
           if (movedToOldTable && !committed) {
-            fs.rename(oldTableDir, finalOutputDir);
+            fs.rename(oldTableDir, finalOutputPath);
           }
         }
       } else {
         FileStatus[] files = fs.listStatus(stagingResultDir);
         for (FileStatus eachFile : files) {
-          Path targetFilePath = new Path(finalOutputDir, eachFile.getPath().getName());
+          Path targetFilePath = new Path(finalOutputPath, eachFile.getPath().getName());
           if (fs.exists(targetFilePath)) {
-            targetFilePath = new Path(finalOutputDir, eachFile.getPath().getName() + "_" + System.currentTimeMillis());
+            targetFilePath = new Path(finalOutputPath, eachFile.getPath().getName() + "_" + System.currentTimeMillis());
           }
           fs.rename(eachFile.getPath(), targetFilePath);
         }
@@ -397,7 +421,7 @@ public class QueryExecutor {
 
       if (insertNode.hasTargetTable()) {
         TableStats stats = tableDesc.getStats();
-        long volume = Query.getTableVolume(context.getConf(), finalOutputDir);
+        long volume = Query.getTableVolume(context.getConf(), finalOutputPath);
         stats.setNumBytes(volume);
         stats.setNumRows(1);
 
@@ -410,7 +434,7 @@ public class QueryExecutor {
         responseBuilder.setTableDesc(tableDesc.getProto());
       } else {
         TableStats stats = new TableStats();
-        long volume = Query.getTableVolume(context.getConf(), finalOutputDir);
+        long volume = Query.getTableVolume(context.getConf(), finalOutputPath);
         stats.setNumBytes(volume);
         stats.setNumRows(1);
 
@@ -446,9 +470,9 @@ public class QueryExecutor {
     if (tableDesc != null) {
 
       Tablespace space = TableSpaceManager.get(tableDesc.getUri()).get();
-      StorageProperty storageProperty = space.getProperty();
+      FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
 
-      if (!storageProperty.isInsertable()) {
+      if (!formatProperty.isInsertable()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
       }
 

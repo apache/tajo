@@ -851,9 +851,9 @@ public class FileTablespace extends Tablespace {
     }
   }
 
-  private static final StorageProperty FileStorageProperties = new StorageProperty(true, true, true, true);
-  private static final FormatProperty GeneralFileProperties = new FormatProperty(false);
-  private static final FormatProperty HFileProperties = new FormatProperty(true);
+  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
+  private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, false);
+  private static final FormatProperty HFileProperties = new FormatProperty(true, true, true);
 
   @Override
   public StorageProperty getProperty() {
@@ -861,8 +861,8 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public FormatProperty getFormatProperty(String format) {
-    if (format.equalsIgnoreCase("hbase")) {
+  public FormatProperty getFormatProperty(TableMeta meta) {
+    if (meta.getStoreType().equalsIgnoreCase("hbase")) {
       return HFileProperties;
     } else {
       return GeneralFileProperties;

@@ -682,6 +682,45 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
   }
 
+  //@Test
+  public void testInsertIntoWithNonFromClause() throws Exception {
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
+
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
+
+    executeString("insert into hbase_mapped_table select 'aaa', 'bbb', 'ccc', 4").close();
+
+    HTable htable = null;
+    ResultScanner scanner = null;
+    try {
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
+
+      Scan scan = new Scan();
+      scan.addFamily(Bytes.toBytes("col1"));
+      scan.addFamily(Bytes.toBytes("col2"));
+      scan.addFamily(Bytes.toBytes("col3"));
+      scanner = htable.getScanner(scan);
+
+      assertStrings(resultSetToString(scanner,
+          new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
+          new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
+          new boolean[]{false, false, false, true}, tableDesc.getSchema()));
+
+    } finally {
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
+
+      if (scanner != null) {
+        scanner.close();
+      }
+
+      if (htable != null) {
+        htable.close();
+      }
+    }
+  }
+
   @Test
   public void testInsertIntoMultiRegion() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
@@ -1301,10 +1340,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
   }
 
-  private String resultSetToString(ResultScanner scanner,
-                                   byte[][] cfNames, byte[][] qualifiers,
-                                   boolean[] binaries,
-                                   Schema schema) throws Exception {
+  private String resultSetToString(ResultScanner scanner, byte[][] cfNames, byte[][] qualifiers,
+                                   boolean [] binaries, Schema schema) throws Exception {
     StringBuilder sb = new StringBuilder();
     Result result = null;
     while ( (result = scanner.next()) != null ) {
