@@ -1165,7 +1165,7 @@ public class Stage implements EventHandler<StageEvent> {
         stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
       } else {
         stage.completedTaskCount++;
-        stage.getTaskScheduler().releseTaskAttempt(task.getLastAttempt()); //FIXME
+        stage.getTaskScheduler().releaseTaskAttempt(task.getLastAttempt()); //FIXME
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
           stage.succeededObjectCount++;

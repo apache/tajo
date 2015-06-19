@@ -56,7 +56,7 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
   }
 
   public abstract void handleTaskRequestEvent(TaskRequestEvent event);
-  public abstract void releseTaskAttempt(TaskAttempt taskAttempt);
+  public abstract void releaseTaskAttempt(TaskAttempt taskAttempt);
   public abstract int remainingScheduledObjectNum();
 
 

@@ -360,13 +360,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
   }
 
-  public void releseTaskAttempt(TaskAttempt taskAttempt) {
+  public void releaseTaskAttempt(TaskAttempt taskAttempt) {
     if (taskAttempt.isLeafTask() && taskAttempt.getWorkerConnectionInfo() != null) {
 
       HostVolumeMapping mapping =
           scheduledRequests.leafTaskHostMapping.get(taskAttempt.getWorkerConnectionInfo().getHost());
       if (mapping != null) {
-        int volumeId = mapping.lastAssignedVolumeId.remove(taskAttempt.getId());
+        Integer volumeId = mapping.lastAssignedVolumeId.remove(taskAttempt.getId());
         mapping.decreaseConcurrency(volumeId);
       }
     }
@@ -913,7 +913,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
                 ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
             ebRequestProto.setExecutionBlockId(taskRequest.getExecutionBlockId().getProto())
-                .setQueryMaster(connectionInfo.getProto())
+                .setQueryMaster(context.getMasterContext()
+                    .getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
                 .setQueryContext(context.getMasterContext().getQueryContext().getProto())
                 .setQueryOutputPath(context.getMasterContext().getStagingDir().toString())
                 .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
@@ -1032,7 +1033,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
                 ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
             ebRequestProto.setExecutionBlockId(taskRequest.getExecutionBlockId().getProto())
-                .setQueryMaster(connectionInfo.getProto())
+                .setQueryMaster(context.getMasterContext()
+                    .getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
                 .setQueryContext(context.getMasterContext().getQueryContext().getProto())
                 .setQueryOutputPath(context.getMasterContext().getStagingDir().toString())
                 .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
