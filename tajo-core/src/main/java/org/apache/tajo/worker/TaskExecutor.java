@@ -51,7 +51,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   private final Map<TaskAttemptId, NodeResource> allocatedResourceMap;
   private final BlockingQueue<Task> taskQueue;
   private final AtomicInteger runningTasks;
-  private ThreadPoolExecutor fetcherExecutor;
+  private ExecutorService fetcherThreadPool;
   private ExecutorService threadPool;
   private TajoConf tajoConf;
   private volatile boolean isStopped;
@@ -78,12 +78,9 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
     this.threadPool = Executors.newFixedThreadPool(nThreads,
         new ThreadFactoryBuilder().setNameFormat("Task executor #%d").build());
 
-    //TODO move to tajoConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
-    int maxFetcherThreads = Runtime.getRuntime().availableProcessors() * 2;
-    this.fetcherExecutor = new ThreadPoolExecutor(Math.min(nThreads, maxFetcherThreads),
-        maxFetcherThreads,
-        60L, TimeUnit.SECONDS,
-        new SynchronousQueue<Runnable>(true));
+    int maxFetcherThreads = tajoConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
+    this.fetcherThreadPool = Executors.newFixedThreadPool(nThreads,
+        new ThreadFactoryBuilder().setNameFormat("Fetcher executor #%d").build());
 
 
     for (int i = 0; i < nThreads; i++) {
@@ -99,7 +96,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
     isStopped = true;
 
     threadPool.shutdown();
-    fetcherExecutor.shutdown();
+    fetcherThreadPool.shutdown();
     super.serviceStop();
   }
 
@@ -132,7 +129,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   }
 
   protected ExecutorService getFetcherExecutor() {
-    return fetcherExecutor;
+    return fetcherThreadPool;
   }
 
 

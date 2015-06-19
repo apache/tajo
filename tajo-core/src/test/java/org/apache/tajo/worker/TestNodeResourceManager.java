@@ -234,6 +234,7 @@ public class TestNodeResourceManager {
 
     // start parallel request
     ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
+
     List<Future> futureList = Lists.newArrayList();
 
     long startTime = System.currentTimeMillis();

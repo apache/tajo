@@ -50,7 +50,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
   private static final Log LOG = LogFactory.getLog(SimpleScheduler.class);
 
-  private static final String DEFAULT_QUEUE_NAME = "default";
   private static final Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 
   private volatile boolean isStopped = false;
@@ -63,30 +62,20 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   private final Map<QueryId, Integer> assignedQueryMasterMap = Maps.newHashMap();
   private final ResourceCalculator resourceCalculator = new DefaultResourceCalculator();
 
-  private volatile int runningQuery;
   private final Thread queryProcessor;
-  private QueueInfo queueInfo;
-
   private TajoConf tajoConf;
 
   public SimpleScheduler(TajoMaster.MasterContext context) {
     super(SimpleScheduler.class.getName());
     this.masterContext = context;
     this.rmContext = context.getResourceManager().getRMContext();
-    this.queueInfo = new SimpleQueue();
     this.queryQueue = new PriorityBlockingQueue<QuerySchedulingInfo>(11, COMPARATOR);
     this.queryProcessor = new Thread(new QueryProcessor());
   }
 
   private void initScheduler(TajoConf conf) {
-    validateConf(conf);
     int minQMMem = conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
     this.minResource.setMemory(minQMMem).setVirtualCores(1);
-    this.queueInfo.setCapacity(1.0f);
-    this.queueInfo.setMaximumCapacity(queueInfo.getCapacity());
-    this.queueInfo.setMaximumQueryCapacity(0.3f); // maximum parall
-    this.queueInfo.setQueueState(QueueState.RUNNING);
-    this.queueInfo.setChildQueues(new ArrayList<QueueInfo>());
     updateResource();
     this.queryProcessor.setName("Query Processor");
   }
@@ -103,14 +92,8 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     NodeResources.update(maxResource, totalResource);
     NodeResources.update(clusterResource, resource);
 
-    if (getResourceCalculator().isInvalidDivisor(clusterResource)) {
-      this.queueInfo.setCurrentCapacity(0.0f);
-    } else {
-      this.queueInfo.setCurrentCapacity(getResourceCalculator().ratio(clusterResource, maxResource));
-    }
-
-    LOG.info("Scheduler resources \n current: " + getClusterResource()
-        + "\n maximum: " + getMaximumResourceCapability() + "\n queue: " + queueInfo);
+    LOG.info("Cluster Resource. available : " + getClusterResource()
+        + " maximum: " + getMaximumResourceCapability());
   }
 
   @Override
@@ -134,25 +117,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   @Override
   public ResourceCalculator getResourceCalculator() {
     return resourceCalculator;
-  }
-
-  private void validateConf(TajoConf conf) {
-    // validate scheduler memory allocation setting
-    int minMem = conf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
-    int minQMMem = conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
-    int maxMem = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
-
-    if (minMem <= 0 || minQMMem <= 0 || minMem + minQMMem > maxMem) {
-      throw new RuntimeException("Invalid resource scheduler memory"
-          + " allocation configuration"
-          + ", " + TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY.varname
-          + "=" + minMem
-          + ", " + TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY.varname
-          + "=" + minQMMem
-          + ", " + TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname
-          + "=" + maxMem + ", min and max should be greater than 0"
-          + ", max should be no smaller than min.");
-    }
   }
 
   private QueryCoordinatorProtocol.NodeResourceRequestProto createQMResourceRequest(QueryInfo queryInfo) {
@@ -208,9 +172,9 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           randomWorkers, capacity, requiredContainers - reservedResources.size()));
     }
 
-    LOG.info("Request: " + request.getCapacity() + ", containerNum:"+ request.getNumContainers()
-        + "Current cluster resource: " + getClusterResource());
     if (LOG.isDebugEnabled()) {
+      LOG.debug("Request: " + request.getCapacity() + ", containerNum:" + request.getNumContainers()
+          + "Current cluster resource: " + getClusterResource());
     }
     return reservedResources;
   }
@@ -259,6 +223,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   public void handle(SchedulerEvent event) {
     switch (event.getType()) {
       case RESOURCE_RESERVE:
+        //TODO should consider request priority
         reserveResource(TUtil.checkTypeAndGet(event, ResourceReserveSchedulerEvent.class));
         break;
       case RESOURCE_UPDATE:
@@ -327,14 +292,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           e.printStackTrace();
           break;
         }
-
-        //QueueInfo queueInfo = getQueueInfo(query.getQueue(), true, true);
-
+        //TODO get by assigned queue
         int maxAvailable = getResourceCalculator().computeAvailableContainers(
             getMaximumResourceCapability(), getMinimumResourceCapability());
 
-        // limit maximum running queries
-//        if ((assignedQueryMasterMap.size() / maxAvailable) > queueInfo.getCurrentCapacity()) {
+        // check maximum running queries
         if (assignedQueryMasterMap.size() * 2 > maxAvailable) {
           queryQueue.add(query);
           synchronized (this) {
@@ -379,90 +341,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
         }
         LOG.info("Running Queries: " + assignedQueryMasterMap.size());
       }
-    }
-  }
-
-  static class SimpleQueue extends QueueInfo {
-    private List<QueueInfo> childQueues;
-    private float capacity;
-    private float currentCapacity;
-    private float maximumCapacity;
-    private float maximumQueryCapacity;
-    private QueueState state;
-
-    @Override
-    public String getQueueName() {
-      return DEFAULT_QUEUE_NAME;
-    }
-
-    @Override
-    public void setQueueName(String queueName) {
-    }
-
-    @Override
-    public float getCapacity() {
-      return capacity;
-    }
-
-    @Override
-    public void setCapacity(float capacity) {
-      this.capacity = capacity;
-    }
-
-    @Override
-    public float getMaximumCapacity() {
-      return maximumCapacity;
-    }
-
-    @Override
-    public void setMaximumCapacity(float maximumCapacity) {
-      this.maximumCapacity = maximumCapacity;
-    }
-
-    @Override
-    public float getMaximumQueryCapacity() {
-      return maximumQueryCapacity;
-    }
-
-    @Override
-    public void setMaximumQueryCapacity(float maximumQueryCapacity) {
-      this.maximumQueryCapacity = maximumQueryCapacity;
-    }
-
-    @Override
-    public float getCurrentCapacity() {
-      return currentCapacity;
-    }
-
-    @Override
-    public void setCurrentCapacity(float currentCapacity) {
-      this.currentCapacity = currentCapacity;
-    }
-
-    @Override
-    public List<QueueInfo> getChildQueues() {
-      return childQueues;
-    }
-
-    @Override
-    public void setChildQueues(List<QueueInfo> childQueues) {
-       this.childQueues = childQueues;
-    }
-
-    @Override
-    public QueueState getQueueState() {
-      return state;
-    }
-
-    @Override
-    public void setQueueState(QueueState queueState) {
-      this.state = queueState;
-    }
-
-    @Override
-    public String toString() {
-      return String.format("Queue name: %s, state: %s, maximum: %f, current: %f",
-          getQueueName(), getQueueState(), getMaximumCapacity(), getCurrentCapacity());
     }
   }
 }

@@ -217,6 +217,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
     return queryMasterTasks.values();
   }
 
+  //This is not safe OOM
+  @Deprecated
   public Collection<QueryMasterTask> getFinishedQueryMasterTasks() {
     return finishedQueryMasterTasks.values();
   }

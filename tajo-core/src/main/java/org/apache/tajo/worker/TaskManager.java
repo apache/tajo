@@ -29,13 +29,16 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.util.TUtil;
-import org.apache.tajo.worker.event.*;
+import org.apache.tajo.worker.event.ExecutionBlockStartEvent;
+import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
+import org.apache.tajo.worker.event.NodeStatusEvent;
+import org.apache.tajo.worker.event.TaskManagerEvent;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A TaskManager is responsible for managing executionBlock resource and tasks.
@@ -47,8 +50,6 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   private final Map<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
   private final Dispatcher dispatcher;
 
-  private TajoConf tajoConf;
-
   public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
     super(TaskManager.class.getName());
 
@@ -59,8 +60,6 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-
-    this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     dispatcher.register(TaskManagerEvent.EventType.class, this);
     super.serviceInit(conf);
   }

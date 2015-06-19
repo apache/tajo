@@ -204,7 +204,8 @@ public class TajoConf extends Configuration {
     PULLSERVER_PORT("tajo.pullserver.port", 0, Validators.range("0", "65535")),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false, Validators.bool()),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
-    SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num", 2),
+    SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num",
+        Runtime.getRuntime().availableProcessors() * 2, Validators.min("1")),
     SHUFFLE_FETCHER_CHUNK_MAX_SIZE("tajo.shuffle.fetcher.chunk.max-size",  8192),
     SHUFFLE_FETCHER_READ_TIMEOUT("tajo.shuffle.fetcher.read.timeout-sec", 120),
     SHUFFLE_FETCHER_READ_RETRY_MAX_NUM("tajo.shuffle.fetcher.read.retry.max-num", 20),
@@ -317,7 +318,7 @@ public class TajoConf extends Configuration {
     $GROUPBY_MULTI_LEVEL_ENABLED("tajo.dist-query.groupby.multi-level-aggr", true),
 
     // WARN "tajo.yarn-rm.parallel-task-runner-launcher-num" should be set enough to avoid deadlock
-    $QUERY_EXECUTE_PARALLEL_MAX("tajo.query.execute.parallel.max", 1),
+    $QUERY_EXECUTE_PARALLEL_MAX("tajo.query.execute.parallel.max", 10),
 
     // for physical Executors
     $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200L),

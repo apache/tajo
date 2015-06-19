@@ -29,6 +29,7 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -266,6 +267,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   public void handleTaskRequestEvent(TaskRequestEvent event) {
 
     boolean isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
+    int taskMem = context.getMasterContext().getConf().getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
     NettyClientBase tmClient = null;
     try {
       ServiceTracker serviceTracker = context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
@@ -275,7 +277,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
       QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request = QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
-      request.setCapacity(NodeResources.createResource(1000, isLeaf ? 1 : 0).getProto());
+      request.setCapacity(NodeResources.createResource(taskMem, isLeaf ? 1 : 0).getProto());
       request.setNumContainers(Math.max(remainingScheduledObjectNum(), 1));
       request.setPriority(stage.getPriority());
       request.setQueryId(context.getMasterContext().getQueryId().getProto());

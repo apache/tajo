@@ -19,7 +19,6 @@
 package org.apache.tajo;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
 import org.apache.commons.lang.StringUtils;
@@ -40,7 +39,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
 import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
@@ -124,9 +122,8 @@ public class TajoTestingCluster {
     conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
 
-    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 3072);
-    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 4);
-
+    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2000);
+    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 2);
 
     // Client API RPC
     conf.setIntVar(ConfVars.RPC_CLIENT_WORKER_THREAD_NUM, 2);

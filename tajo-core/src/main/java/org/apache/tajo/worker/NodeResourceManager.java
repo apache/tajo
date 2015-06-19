@@ -43,6 +43,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private NodeResource totalResource;
   private NodeResource availableResource;
   private TajoConf tajoConf;
+  private boolean enableTest;
 
   public NodeResourceManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
     super(NodeResourceManager.class.getName());
@@ -52,14 +53,12 @@ public class NodeResourceManager extends AbstractService implements EventHandler
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
-    }
-    this.tajoConf = (TajoConf)conf;
+    this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     this.totalResource = createWorkerResource(tajoConf);
     this.availableResource = NodeResources.clone(totalResource);
     this.dispatcher.register(NodeResourceEvent.EventType.class, this);
-
+    validateConf(tajoConf);
+    this.enableTest = conf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE");
     super.serviceInit(conf);
     LOG.info("Initialized NodeResourceManager for " + totalResource);
   }
@@ -120,12 +119,17 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   }
 
   private boolean allocate(NodeResource resource) {
-    //TODO consider the jvm free memory
-    if (NodeResources.fitsIn(resource, availableResource)) {
+
+    if (NodeResources.fitsIn(resource, availableResource) && checkFreeHeapMemory(resource)) {
       NodeResources.subtractFrom(availableResource, resource);
       return true;
     }
     return false;
+  }
+
+  private boolean checkFreeHeapMemory(NodeResource resource) {
+    //TODO consider the jvm free memory
+    return true;
   }
 
   protected void startExecutionBlock(StartExecutionBlockRequestProto request) {
@@ -143,11 +147,12 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private NodeResource createWorkerResource(TajoConf conf) {
 
     int memoryMb = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
-    if (!conf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!enableTest) {
       // Set memory resource to max heap
       int maxHeap = (int) (Runtime.getRuntime().maxMemory() / StorageUnit.MB);
       if(maxHeap > memoryMb) {
         memoryMb = maxHeap;
+        conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB, memoryMb);
       }
     }
 
@@ -161,5 +166,24 @@ public class NodeResourceManager extends AbstractService implements EventHandler
 
     int diskParallels = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM);
     return NodeResource.createResource(memoryMb, disks * diskParallels, vCores);
+  }
+
+  private void validateConf(TajoConf conf) {
+    // validate node memory allocation setting
+    int minMem = conf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
+    int minQMMem = conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
+    int maxMem = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
+
+    if (minMem <= 0 || minQMMem <= 0 || minMem + minQMMem > maxMem) {
+      throw new RuntimeException("Invalid resource worker memory"
+          + " allocation configuration"
+          + ", " + TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY.varname
+          + "=" + minMem
+          + ", " + TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY.varname
+          + "=" + minQMMem
+          + ", " + TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname
+          + "=" + maxMem + ", min and max should be greater than 0"
+          + ", max should be no smaller than min.");
+    }
   }
 }
