@@ -18,33 +18,23 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
 
-@Path("/databases/{databaseName}/functions")
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+@Path("/functions")
 public class FunctionsResource {
   
   private static final Log LOG = LogFactory.getLog(TablesResource.class);
@@ -54,10 +44,7 @@ public class FunctionsResource {
   
   @Context
   Application application;
-  
-  @PathParam("databaseName")
-  String databaseName;
-  
+
   JerseyResourceDelegateContext context;
   
   private static final String databaseNameKeyName = "databaseName";
@@ -79,10 +66,6 @@ public class FunctionsResource {
     Response response = null;
     try {
       initializeContext();
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      context.put(databaseNameKey, databaseName);
-      
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
           new GetAllFunctionsDelegate(),
           application,
