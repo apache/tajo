@@ -265,7 +265,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void handleTaskRequestEvent(TaskRequestEvent event) {
 
-
+    boolean isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
     NettyClientBase tmClient = null;
     try {
       ServiceTracker serviceTracker = context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
@@ -275,12 +275,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
       QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request = QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
-      request.setCapacity(NodeResources.createResource(512).getProto());
+      request.setCapacity(NodeResources.createResource(1000, isLeaf ? 1 : 0).getProto());
       request.setNumContainers(Math.max(remainingScheduledObjectNum(), 1));
       request.setPriority(stage.getPriority());
       request.setQueryId(context.getMasterContext().getQueryId().getProto());
       request.setQueue("default");
-      request.setType(QueryCoordinatorProtocol.ResourceType.LEAF);
+      request.setType(isLeaf ? QueryCoordinatorProtocol.ResourceType.LEAF:
+          QueryCoordinatorProtocol.ResourceType.INTERMEDIATE);
       request.setUserId("test");
       request.setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount());
       request.addAllCandidateNodes(getWorkerIds(getLeafTaskHosts()));
@@ -365,9 +366,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       HostVolumeMapping mapping =
           scheduledRequests.leafTaskHostMapping.get(taskAttempt.getWorkerConnectionInfo().getHost());
-      if (mapping != null) {
-        Integer volumeId = mapping.lastAssignedVolumeId.remove(taskAttempt.getId());
-        mapping.decreaseConcurrency(volumeId);
+      if (mapping != null && mapping.lastAssignedVolumeId.containsKey(taskAttempt.getId())) {
+        mapping.decreaseConcurrency(mapping.lastAssignedVolumeId.remove(taskAttempt.getId()));
       }
     }
   }
