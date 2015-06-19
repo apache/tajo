@@ -10,7 +10,7 @@ Tajo supports various storage systems, such as HDFS, Amazon S3, Openstack Swift,
 Register custom storage
 =======================
 
-First of all, your storage implementation should be packed as a jar file. Then, please copy the jar file into ``tajo/lib`` directory. Next, you should copy ``conf/storage-site.json.template`` into ``conf/storage-site.json`` and modify the file like the below.
+First of all, your storage implementation should be packed as a jar file. Then, please copy the jar file into ``tajo/extlib`` directory. Next, you should copy ``conf/storage-site.json.template`` into ``conf/storage-site.json`` and modify the file like the below.
 
 Configuration
 =============
