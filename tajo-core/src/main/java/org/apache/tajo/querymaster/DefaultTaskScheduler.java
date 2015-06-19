@@ -296,7 +296,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       if(responseProto.getResourceCount() == 0) {
         synchronized (schedulingThread){
-          schedulingThread.wait(50);
+          schedulingThread.wait(100);
         }
       } else {
         LOG.info("Allocates :" + responseProto.getResourceCount());
@@ -649,14 +649,19 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
   public void cancel(TaskAttempt taskAttempt) {
-    List<DataLocation> locations = taskAttempt.getTask().getDataLocations();
 
-    for (DataLocation location : locations) {
-      HostVolumeMapping volumeMapping = scheduledRequests.leafTaskHostMapping.get(location.getHost());
-      volumeMapping.addTaskAttempt(location.getVolumeId(), taskAttempt);
+    if(taskAttempt.isLeafTask()) {
+      List<DataLocation> locations = taskAttempt.getTask().getDataLocations();
+
+      for (DataLocation location : locations) {
+        HostVolumeMapping volumeMapping = scheduledRequests.leafTaskHostMapping.get(location.getHost());
+        volumeMapping.addTaskAttempt(location.getVolumeId(), taskAttempt);
+      }
+
+      scheduledRequests.leafTasks.add(taskAttempt.getId());
+    } else {
+      scheduledRequests.nonLeafTasks.add(taskAttempt.getId());
     }
-
-    scheduledRequests.leafTasks.add(taskAttempt.getId());
   }
 
   private class ScheduledRequests {
@@ -932,14 +937,20 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               LOG.warn("cancel" + proto.getTaskRequest());
             }
 
-            if(!stage.getWorkerMap().containsKey(connectionInfo.getId())) {
-              stage.getWorkerMap().put(connectionInfo.getId(), addr);
-            }
             if(responseProto.getCancellationTaskCount() > 0) {
+              if(requestProto.hasExecutionBlockRequest()) {
+                ebMap.remove(taskRequest.getWorkerId());
+              }
               continue;
             }
+
           } catch (Exception e) {
             LOG.error(e);
+          }
+
+
+          if(!stage.getWorkerMap().containsKey(connectionInfo.getId())) {
+            stage.getWorkerMap().put(connectionInfo.getId(), addr);
           }
 
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
@@ -1042,14 +1053,16 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             TajoWorkerProtocol.BatchAllocationResponseProto responseProto = callFuture.get();
             LOG.info(responseProto.getCancellationTaskCount());
 
-            if(!stage.getWorkerMap().containsKey(connectionInfo.getId())) {
-              stage.getWorkerMap().put(connectionInfo.getId(), addr);
-            }
-
             if(responseProto.getCancellationTaskCount() > 0) {
+              if(requestProto.hasExecutionBlockRequest()) {
+                ebMap.remove(taskRequest.getWorkerId());
+              }
               continue;
             }
 
+            if(!stage.getWorkerMap().containsKey(connectionInfo.getId())) {
+              stage.getWorkerMap().put(connectionInfo.getId(), addr);
+            }
             context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
             //taskRequest.getCallback().run(taskAssign.getProto());
             totalAssigned++;

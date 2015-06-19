@@ -128,13 +128,11 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
 
       if(rmContext.getWorkers().containsKey(workerId)) { // if worker is running
 
-        if (heartbeat.hasAvailableResource()) {
-          // status update
-          rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(heartbeat));
+        // status update
+        rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(heartbeat));
 
-          //refresh scheduler resource
-          rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
-        }
+        //refresh scheduler resource
+        rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
 
         // refresh ping
         workerLivelinessMonitor.receivedPing(workerId);

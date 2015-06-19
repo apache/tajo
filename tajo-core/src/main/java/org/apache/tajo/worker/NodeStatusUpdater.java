@@ -124,14 +124,9 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return queueingThreshold;
   }
 
-  private NodeHeartbeatRequestProto.Builder createHeartBeatReport() {
+  private NodeHeartbeatRequestProto.Builder createResourceReport() {
     NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
     requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
-    return requestProto;
-  }
-
-  private NodeHeartbeatRequestProto.Builder createResourceReport() {
-    NodeHeartbeatRequestProto.Builder requestProto = createHeartBeatReport();
     requestProto.setAvailableResource(workerContext.getNodeResourceManager().getAvailableResource().getProto());
     requestProto.setRunningTasks(workerContext.getTaskManager().getRunningTasks());
     return requestProto;
@@ -260,14 +255,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           Runtime.getRuntime().halt(-1);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
-          if (!isStopped) {
-            synchronized (updaterThread) {
-              try {
-                updaterThread.wait(nextHeartBeatInterval);
-              } catch (InterruptedException ie) {
-                // Do Nothing
-              }
-            }
+          if (isStopped) {
+              break;
           }
         }
       }

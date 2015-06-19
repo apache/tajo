@@ -181,9 +181,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   @Override
   public List<AllocationResourceProto>
   reserve(QueryId queryId, QueryCoordinatorProtocol.NodeResourceRequestProto request) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Request:" + request.toString() + "Cluster resource: " + getClusterResource());
-    }
 
     List<AllocationResourceProto> reservedResources;
     NodeResource capacity = new NodeResource(request.getCapacity());
@@ -211,6 +208,10 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           randomWorkers, capacity, requiredContainers - reservedResources.size()));
     }
 
+    LOG.info("Request: " + request.getCapacity() + ", containerNum:"+ request.getNumContainers()
+        + "Current cluster resource: " + getClusterResource());
+    if (LOG.isDebugEnabled()) {
+    }
     return reservedResources;
   }
 
