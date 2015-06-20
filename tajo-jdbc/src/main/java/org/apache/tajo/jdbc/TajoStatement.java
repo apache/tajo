@@ -62,6 +62,15 @@ public class TajoStatement implements Statement {
     this.blockWait = tajoClient.getProperties().getBool(SessionVars.BLOCK_ON_RESULT);
   }
 
+  /*
+   * NOTICE
+   *
+   * For unimplemented methods, this class throws an exception or prints an error message.
+   * If the unimplemented method can cause unexpected result to user application when it is called,
+   * it should throw an exception.
+   * Otherwise, it is enough that prints an error message.
+   */
+
   @Override
   public void addBatch(String sql) throws SQLException {
     throw new SQLFeatureNotSupportedException("addBatch() is not supported yet.");
