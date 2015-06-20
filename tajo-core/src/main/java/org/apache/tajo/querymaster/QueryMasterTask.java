@@ -61,6 +61,7 @@ import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -69,12 +70,6 @@ import static org.apache.tajo.TajoProtos.QueryState;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
-
-  // query submission directory is private!
-  final public static FsPermission STAGING_DIR_PERMISSION =
-      FsPermission.createImmutable((short) 0700); // rwx--------
-
-  public static final String TMP_STAGING_DIR_PREFIX = ".staging";
 
   private QueryId queryId;
 
@@ -156,8 +151,6 @@ public class QueryMasterTask extends CompositeService {
       dispatcher.register(QueryMasterQueryCompletedEvent.EventType.class, new QueryFinishEventHandler());
       dispatcher.register(TaskSchedulerEvent.EventType.class, new TaskSchedulerDispatcher());
       dispatcher.register(LocalTaskEventType.class, new LocalTaskEventHandler());
-
-      initStagingDir();
 
       queryMetrics = new TajoMetrics(queryId.toString());
 
@@ -303,8 +296,10 @@ public class QueryMasterTask extends CompositeService {
         state == QueryState.QUERY_ERROR;
   }
 
+  private LogicalPlan plan;
+
   public synchronized void startQuery() {
-    LogicalPlan plan = null;
+    //LogicalPlan plan = null;
     Tablespace space = null;
     try {
       if (query != null) {
@@ -325,6 +320,8 @@ public class QueryMasterTask extends CompositeService {
       // when a given uri is null, TableSpaceManager.get will return the default tablespace.
       space = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
       space.rewritePlan(queryContext, plan);
+
+      initStagingDir();
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);
@@ -367,94 +364,25 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void initStagingDir() throws IOException {
-    Path stagingDir;
+    URI stagingDir;
 
     try {
+      Tablespace tablespace = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      TableDesc desc = PlannerUtil.getOutputTableDesc(plan);
 
-      stagingDir = initStagingDir(systemConf, queryId.toString(), queryContext);
+      FormatProperty formatProperty = tablespace.getFormatProperty(desc.getMeta());
+      if (formatProperty.isStagingSupport()) {
+        stagingDir = tablespace.prepareStagingSpace(systemConf, queryId.toString(), queryContext, desc.getMeta());
 
-      // Create a subdirectories
-      LOG.info("The staging dir '" + stagingDir + "' is created.");
-      queryContext.setStagingDir(stagingDir);
+        // Create a staging space
+        LOG.info("The staging dir '" + stagingDir + "' is created.");
+        queryContext.setStagingDir(stagingDir);
+      }
+
     } catch (IOException ioe) {
-      LOG.warn("Creating staging dir has been failed.", ioe);
-
+      LOG.warn("Creating staging space has been failed.", ioe);
       throw ioe;
     }
-  }
-
-  /**
-   * It initializes the final output and staging directory and sets
-   * them to variables.
-   */
-  public static Path initStagingDir(TajoConf conf, String queryId, QueryContext context) throws IOException {
-
-    String realUser;
-    String currentUser;
-    UserGroupInformation ugi;
-    ugi = UserGroupInformation.getLoginUser();
-    realUser = ugi.getShortUserName();
-    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
-
-    FileSystem fs;
-    Path stagingDir;
-
-    ////////////////////////////////////////////
-    // Create Output Directory
-    ////////////////////////////////////////////
-
-    String outputPath = context.get(QueryVars.OUTPUT_TABLE_URI, "");
-
-    // The fact that there is no output means that this query is neither CTAS or INSERT (OVERWRITE) INTO
-    // So, this query results won't be materialized as a part of a table.
-    // The result will be temporarily written in the staging directory.
-    if (outputPath.isEmpty()) {
-      // for temporarily written in the storage directory
-      stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-    } else {
-      Optional<Tablespace> spaceResult = TableSpaceManager.get(outputPath);
-      if (!spaceResult.isPresent()) {
-        throw new IOException("No registered Tablespace for " + outputPath);
-      }
-
-      Tablespace space = spaceResult.get();
-      if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
-        // If this space allows move operation, the staging directory will be underneath the final output table uri.
-        stagingDir = StorageUtil.concatPath(context.getOutputTableUri().toString(), TMP_STAGING_DIR_PREFIX, queryId);
-      } else {
-        stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-      }
-    }
-
-    // initializ
-    fs = stagingDir.getFileSystem(conf);
-
-    if (fs.exists(stagingDir)) {
-      throw new IOException("The staging directory '" + stagingDir + "' already exists");
-    }
-    fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-    FileStatus fsStatus = fs.getFileStatus(stagingDir);
-    String owner = fsStatus.getOwner();
-
-    if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
-      throw new IOException("The ownership on the user's query " +
-          "directory " + stagingDir + " is not as expected. " +
-          "It is owned by " + owner + ". The directory must " +
-          "be owned by the submitter " + currentUser + " or " +
-          "by " + realUser);
-    }
-
-    if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
-      LOG.info("Permissions on staging directory " + stagingDir + " are " +
-          "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
-          "to correct value " + STAGING_DIR_PERMISSION);
-      fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-    }
-
-    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-    fs.mkdirs(stagingResultDir);
-
-    return stagingDir;
   }
 
   public Query getQuery() {

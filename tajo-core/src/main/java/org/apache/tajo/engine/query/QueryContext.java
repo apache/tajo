@@ -99,8 +99,8 @@ public class QueryContext extends OverridableConf {
     return strVal != null && !strVal.isEmpty() ? URI.create(strVal) : null;
   }
 
-  public void setStagingDir(Path path) {
-    put(QueryVars.STAGING_DIR, path.toUri().toString());
+  public void setStagingDir(URI uri) {
+    put(QueryVars.STAGING_DIR, uri.toString());
   }
 
   public Path getStagingDir() {

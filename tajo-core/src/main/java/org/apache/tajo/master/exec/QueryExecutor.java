@@ -369,7 +369,8 @@ public class QueryExecutor {
 
       Path finalOutputPath = new Path(finalOutputUri);
 
-      Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), queryId.toString(), queryContext);
+      URI stagingSpaceUri = space.prepareStagingSpace(context.getConf(), queryId.toString(), queryContext, tableMeta);
+      Path stagingDir = new Path(stagingSpaceUri);
       Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
       TaskAttemptContext taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);

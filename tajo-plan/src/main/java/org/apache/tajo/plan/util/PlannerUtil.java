@@ -910,6 +910,22 @@ public class PlannerUtil {
     }
   }
 
+  public static TableDesc getOutputTableDesc(LogicalPlan plan) {
+    LogicalNode [] found = findAllNodes(plan.getRootNode().getChild(), NodeType.CREATE_TABLE, NodeType.INSERT);
+
+    if (found.length == 0) {
+      return new TableDesc(null, plan.getRootNode().getOutSchema(), "TEXT", new KeyValueSet(), null);
+    } else {
+      StoreTableNode storeNode = (StoreTableNode) found[0];
+      return new TableDesc(
+          storeNode.getTableName(),
+          storeNode.getOutSchema(),
+          storeNode.getStorageType(),
+          storeNode.getOptions(),
+          storeNode.getUri());
+    }
+  }
+
   public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
     if (node.getType() == NodeType.ROOT) {
       node = ((LogicalRootNode)node).getChild();

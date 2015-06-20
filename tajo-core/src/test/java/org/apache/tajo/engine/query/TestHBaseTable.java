@@ -682,7 +682,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
   }
 
-  //@Test
+  @Test
   public void testInsertIntoWithNonFromClause() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
         "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
