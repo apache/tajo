@@ -572,6 +572,15 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
+  public Appender getAppenderForInsertRow(OverridableConf queryContext,
+                                          TaskAttemptId taskAttemptId,
+                                          TableMeta meta,
+                                          Schema schema,
+                                          Path workDir) throws IOException {
+    return new HBasePutAppender(conf, uri, taskAttemptId, schema, meta, workDir);
+  }
+
+  @Override
   public Appender getAppender(OverridableConf queryContext,
                               TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {

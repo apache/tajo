@@ -690,7 +690,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
-    executeString("insert into hbase_mapped_table select 'aaa', 'bbb', 'ccc', 4").close();
+    executeString("insert into hbase_mapped_table select 'aaa', 'a12', 'a34', 1").close();
+    executeString("insert into hbase_mapped_table select 'bbb', 'b12', 'b34', 2").close();
+    executeString("insert into hbase_mapped_table select 'ccc', 'c12', 'c34', 3").close();
+    executeString("insert into hbase_mapped_table select 'ddd', 'd12', 'd34', 4").close();
 
     HTable htable = null;
     ResultScanner scanner = null;

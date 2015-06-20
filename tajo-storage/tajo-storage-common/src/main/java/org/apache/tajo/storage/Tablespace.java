@@ -261,6 +261,14 @@ public abstract class Tablespace {
     return scanner;
   }
 
+  public Appender getAppenderForInsertRow(OverridableConf queryContext,
+                                          TaskAttemptId taskAttemptId,
+                                          TableMeta meta,
+                                          Schema schema,
+                                          Path workDir) throws IOException {
+    return getAppender(queryContext, taskAttemptId, meta, schema, workDir);
+  }
+
   /**
    * Returns Appender instance.
    * @param queryContext Query property.
