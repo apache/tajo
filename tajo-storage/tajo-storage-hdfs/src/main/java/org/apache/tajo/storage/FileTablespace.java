@@ -95,6 +95,9 @@ public class FileTablespace extends Tablespace {
         }
       };
 
+  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
+  private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true);
+
   protected FileSystem fs;
   protected Path spacePath;
   protected Path stagingRootPath;
@@ -832,10 +835,6 @@ public class FileTablespace extends Tablespace {
     }
   }
 
-  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
-  private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true);
-  private static final FormatProperty HFileProperties = new FormatProperty(true, true, true);
-
   @Override
   public StorageProperty getProperty() {
     return FileStorageProperties;
@@ -843,11 +842,7 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public FormatProperty getFormatProperty(TableMeta meta) {
-    if (meta.getStoreType().equalsIgnoreCase("hbase")) {
-      return HFileProperties;
-    } else {
-      return GeneralFileProperties;
-    }
+    return GeneralFileProperties;
   }
 
   @Override

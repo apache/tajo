@@ -51,10 +51,7 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.BytesUtils;
-import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -69,8 +66,8 @@ public class HBaseTablespace extends Tablespace {
   private static final Log LOG = LogFactory.getLog(HBaseTablespace.class);
 
   public static final StorageProperty HBASE_STORAGE_PROPERTIES = new StorageProperty("hbase", false, true, false);
-  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, true, true);
-  public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, false, false);
+  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, false, true);
+  public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, true, false);
 
   private Configuration hbaseConf;
 
@@ -1106,7 +1103,9 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public FormatProperty getFormatProperty(TableMeta meta) {
-    if (meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
+    KeyValueSet tableProperty = meta.getOptions();
+    if (tableProperty.isTrue(HBaseStorageConstants.INSERT_PUT_MODE) ||
+        tableProperty.isTrue(StorageConstants.INSERT_DIRECTLY)) {
       return PUT_MODE_PROPERTIES;
     } else {
       return HFILE_FORMAT_PROPERTIES;

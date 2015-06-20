@@ -288,7 +288,7 @@ public class QueryExecutor {
       boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
       if (isInsert) {
         InsertNode insertNode = rootNode.getChild();
-        insertNonFromQuery(queryContext, insertNode, responseBuilder);
+        insertRowValues(queryContext, insertNode, responseBuilder);
       } else {
         Schema schema = PlannerUtil.targetToSchema(targets);
         RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
@@ -330,6 +330,9 @@ public class QueryExecutor {
     }
   }
 
+  /**
+   * Insert rows through staging phase
+   */
   private void insertRowsThroughStaging(TaskAttemptContext taskAttemptContext,
                                         InsertNode insertNode,
                                         Path finalOutputPath,
@@ -383,8 +386,11 @@ public class QueryExecutor {
     }
   }
 
-  private void insertNonFromQuery(QueryContext queryContext,
-                                  InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder) {
+  /**
+   * Insert row values
+   */
+  private void insertRowValues(QueryContext queryContext,
+                               InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder) {
     try {
       String nodeUniqName = insertNode.getTableName() == null ? new Path(insertNode.getUri()).getName() :
           insertNode.getTableName();
@@ -393,22 +399,12 @@ public class QueryExecutor {
       URI finalOutputUri = insertNode.getUri();
       Tablespace space = TableSpaceManager.get(finalOutputUri).get();
       TableMeta tableMeta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
+      tableMeta.putOption(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
 
       FormatProperty formatProperty = space.getFormatProperty(tableMeta);
 
       TaskAttemptContext taskAttemptContext;
-
-      if (formatProperty.isStagingSupport()) {
-
-        URI stagingSpaceUri = space.prepareStagingSpace(context.getConf(), queryId, queryContext, tableMeta);
-        Path stagingDir = new Path(stagingSpaceUri);
-        Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-
-        taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
-        taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
-        insertRowsThroughStaging(taskAttemptContext, insertNode, new Path(finalOutputUri), stagingDir, stagingResultDir);
-
-      } else {
+      if (formatProperty.directInsertSupported()) { // if this format and storage supports direct insertion
         taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, null);
         taskAttemptContext.setOutputPath(new Path(finalOutputUri));
 
@@ -421,9 +417,17 @@ public class QueryExecutor {
         } finally {
           exec.close();
         }
+      } else {
+        URI stagingSpaceUri = space.prepareStagingSpace(context.getConf(), queryId, queryContext, tableMeta);
+        Path stagingDir = new Path(stagingSpaceUri);
+        Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+
+        taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
+        taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
+        insertRowsThroughStaging(taskAttemptContext, insertNode, new Path(finalOutputUri), stagingDir, stagingResultDir);
       }
 
-
+      // set insert stats (how many rows and bytes)
       TableStats stats = new TableStats();
       stats.setNumBytes(taskAttemptContext.getResultStats().getNumBytes());
       stats.setNumRows(taskAttemptContext.getResultStats().getNumRows());
@@ -441,7 +445,8 @@ public class QueryExecutor {
             tableMeta,
             finalOutputUri);
         responseBuilder.setTableDesc(desc.getProto());
-      } else {
+
+      } else { // If INSERT INTO LOCATION
 
         // Empty TableDesc
         List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();

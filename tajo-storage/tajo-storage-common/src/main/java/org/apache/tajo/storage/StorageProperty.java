@@ -18,13 +18,17 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.util.KeyValueSet;
-
+/**
+ * Storage Properties
+ */
 public class StorageProperty {
+  /** default file format */
   private final String defaultFormat;
+  /** if this storage supports move operator */
   private final boolean movable;
+  /** if this storage supports is writable */
   private final boolean writable;
+  /** if this storage allows use of artibrary paths */
   private final boolean absolutePathAllowed;
 
   public StorageProperty(String defaultFormat,
@@ -38,6 +42,10 @@ public class StorageProperty {
     this.absolutePathAllowed = absolutePathAllowed;
   }
 
+  /**
+   * Return default file format
+   * @return Default file format
+   */
   public String defaultFormat() {
     return defaultFormat;
   }
