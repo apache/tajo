@@ -159,6 +159,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1650: TestQueryResource.testGetAllQueries() occasionally fails.
+    (Contributed by jinho, Committed by jaehwa)
+ 
     TAJO-1634: REST API: fix error when offset is zero.
     (Contributed by DaeMyung Kang, Committed by jaehwa)
 
