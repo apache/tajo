@@ -123,7 +123,7 @@ public class TajoTestingCluster {
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
 
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2000);
-    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 2);
+    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 3);
 
     // Client API RPC
     conf.setIntVar(ConfVars.RPC_CLIENT_WORKER_THREAD_NUM, 2);
