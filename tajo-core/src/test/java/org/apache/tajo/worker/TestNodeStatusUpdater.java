@@ -145,7 +145,9 @@ public class TestNodeStatusUpdater {
 
     TajoResourceTrackerProtocol.NodeHeartbeatRequestProto lastRequest = resourceTracker.getLastRequest();
     assertTrue(lastRequest.hasWorkerId());
-    assertFalse(lastRequest.hasAvailableResource());
+    assertTrue(lastRequest.hasAvailableResource());
+    assertTrue(lastRequest.hasRunningTasks());
+    assertTrue(lastRequest.hasRunningQueryMasters());
     assertFalse(lastRequest.hasTotalResource());
     assertFalse(lastRequest.hasConnectionInfo());
   }

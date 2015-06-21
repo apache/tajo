@@ -47,6 +47,7 @@ public class TaskRequestImpl implements TaskRequest {
   private QueryContext queryContext;
   private DataChannel dataChannel;
   private Enforcer enforcer;
+	private String queryMasterHostAndPort;
 	
 	private TaskRequestProto proto = TajoWorkerProtocol.TaskRequestProto.getDefaultInstance();
 	private TajoWorkerProtocol.TaskRequestProto.Builder builder = null;
@@ -61,9 +62,9 @@ public class TaskRequestImpl implements TaskRequest {
 	public TaskRequestImpl(TaskAttemptId id, List<FragmentProto> fragments,
 												 String outputTable, boolean clusteredOutput,
 												 PlanProto.LogicalNodeTree plan, QueryContext queryContext, DataChannel channel,
-												 Enforcer enforcer) {
+												 Enforcer enforcer, String queryMasterHostAndPort) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, plan, queryContext, channel, enforcer);
+		this.set(id, fragments, outputTable, clusteredOutput, plan, queryContext, channel, enforcer, queryMasterHostAndPort);
 	}
 	
 	public TaskRequestImpl(TaskRequestProto proto) {
@@ -75,7 +76,8 @@ public class TaskRequestImpl implements TaskRequest {
 	
 	public void set(TaskAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
-			PlanProto.LogicalNodeTree plan, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
+			PlanProto.LogicalNodeTree plan, QueryContext queryContext,
+									DataChannel dataChannel, Enforcer enforcer, String queryMasterHostAndPort) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
@@ -86,6 +88,7 @@ public class TaskRequestImpl implements TaskRequest {
     this.queryContext = queryContext;
     this.dataChannel = dataChannel;
     this.enforcer = enforcer;
+		this.queryMasterHostAndPort = queryMasterHostAndPort;
 	}
 
 	@Override
@@ -94,6 +97,19 @@ public class TaskRequestImpl implements TaskRequest {
 		proto = viaProto ? proto : builder.build();
 		viaProto = true;
 		return proto;
+	}
+
+	@Override
+	public String getQueryMasterHostAndPort() {
+		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
+		if (queryMasterHostAndPort != null) {
+			return this.queryMasterHostAndPort;
+		}
+		if (!p.hasQueryMasterHostAndPort()) {
+			return null;
+		}
+		this.queryMasterHostAndPort = p.getQueryMasterHostAndPort();
+		return this.queryMasterHostAndPort;
 	}
 
 	@Override
@@ -253,25 +269,6 @@ public class TaskRequestImpl implements TaskRequest {
     }
 	}
 
-  @Override
-  public boolean shouldDie() {
-    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (shouldDie != null) {
-      return shouldDie;
-    }
-    if (!p.hasShouldDie()) {
-      return false;
-    }
-    this.shouldDie = p.getShouldDie();
-    return this.shouldDie;
-  }
-
-  @Override
-  public void setShouldDie() {
-    maybeInitBuilder();
-    shouldDie = true;
-  }
-
   private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
 			builder = TajoWorkerProtocol.TaskRequestProto.newBuilder(proto);
@@ -305,8 +302,8 @@ public class TaskRequestImpl implements TaskRequest {
         builder.addFetches(fetches.get(i).getProto());
       }
     }
-    if (this.shouldDie != null) {
-      builder.setShouldDie(this.shouldDie);
+    if (this.queryMasterHostAndPort != null) {
+      builder.setQueryMasterHostAndPort(this.queryMasterHostAndPort);
     }
     if (this.queryContext != null) {
       builder.setQueryContext(queryContext.getProto());

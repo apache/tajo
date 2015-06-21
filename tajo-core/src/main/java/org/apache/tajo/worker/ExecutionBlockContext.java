@@ -40,11 +40,8 @@ import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,8 +50,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import static org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService.Interface;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
 public class ExecutionBlockContext {
   /** class logger */
@@ -78,10 +75,9 @@ public class ExecutionBlockContext {
 
   private TajoQueryEngine queryEngine;
   private RpcClientManager connManager;
-  private InetSocketAddress qmMasterAddr;
+  private AsyncRpcClient queryMasterClient;
   private NettyClientBase client;
   private QueryMasterProtocol.QueryMasterProtocolService.Interface stub;
-  private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
   // for the doAs block
   private UserGroupInformation taskOwner;
@@ -97,11 +93,11 @@ public class ExecutionBlockContext {
 
   private final Map<TaskId, TaskHistory> taskHistories = Maps.newTreeMap();
 
-  public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, StartExecutionBlockRequestProto request)
+  public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, ExecutionBlockContextProto request,
+                               AsyncRpcClient queryMasterClient)
       throws IOException {
     this.executionBlockId = new ExecutionBlockId(request.getExecutionBlockId());
     this.connManager = RpcClientManager.getInstance();
-    this.queryMaster = new WorkerConnectionInfo(request.getQueryMaster());
     this.systemConf = workerContext.getConf();
     this.reporter = new Reporter();
     this.defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
@@ -115,6 +111,7 @@ public class ExecutionBlockContext {
     this.resource = new ExecutionBlockSharedResource();
     this.workerContext = workerContext;
     this.shuffleType = request.getShuffleType();
+    this.queryMasterClient = queryMasterClient;
   }
 
   public void init() throws Throwable {
@@ -122,8 +119,6 @@ public class ExecutionBlockContext {
     LOG.info("Tajo Root Dir: " + systemConf.getVar(TajoConf.ConfVars.ROOT_DIR));
     LOG.info("Worker Local Dir: " + systemConf.getVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR));
 
-    this.qmMasterAddr = NetUtils.createSocketAddr(queryMaster.getHost(), queryMaster.getQueryMasterPort());
-    LOG.info("QueryMaster Address:" + qmMasterAddr);
 
     UserGroupInformation.setConfiguration(systemConf);
     // TODO - 'load credential' should be implemented
@@ -133,7 +128,7 @@ public class ExecutionBlockContext {
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
-    this.stub = getRpcClient().getStub();
+    this.stub = queryMasterClient.getStub();
     this.reporter.startReporter();
     // resource intiailization
     try{
@@ -152,12 +147,8 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  private NettyClientBase getRpcClient()
-      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    if (client != null) return client;
-
-    client = connManager.newClient(qmMasterAddr, QueryMasterProtocol.class, true);
-    return client;
+  private AsyncRpcClient getRpcClient() {
+    return queryMasterClient;
   }
 
   public Interface getStub() {

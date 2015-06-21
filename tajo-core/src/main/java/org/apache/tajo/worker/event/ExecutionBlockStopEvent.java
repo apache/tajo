@@ -25,13 +25,19 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 public class ExecutionBlockStopEvent extends TaskManagerEvent {
   private TajoWorkerProtocol.ExecutionBlockListProto cleanupList;
 
+  private ExecutionBlockId executionBlockId;
   public ExecutionBlockStopEvent(TajoIdProtos.ExecutionBlockIdProto executionBlockId,
                                  TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
-    super(EventType.EB_STOP, new ExecutionBlockId(executionBlockId));
+    super(EventType.EB_STOP);
     this.cleanupList = cleanupList;
+    this.executionBlockId = new ExecutionBlockId(executionBlockId);
   }
 
   public TajoWorkerProtocol.ExecutionBlockListProto getCleanupList() {
     return cleanupList;
+  }
+
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
   }
 }

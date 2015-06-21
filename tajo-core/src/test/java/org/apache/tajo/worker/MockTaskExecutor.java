@@ -22,7 +22,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.worker.event.TaskExecutorEvent;
+import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,7 +38,7 @@ public class MockTaskExecutor extends TaskExecutor {
   }
 
   @Override
-  public void handle(TaskExecutorEvent event) {
+  public void handle(TaskStartEvent event) {
     super.handle(event);
     barrier.release();
   }

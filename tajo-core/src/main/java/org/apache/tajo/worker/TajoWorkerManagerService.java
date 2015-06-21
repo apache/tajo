@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TaskAttemptId;
@@ -118,7 +117,7 @@ public class TajoWorkerManagerService extends CompositeService
     try {
 
       workerContext.getTaskManager().getDispatcher().getEventHandler().handle(
-          new ExecutionBlockStopEvent(requestProto.getExecutionBlockId(), requestProto.getChild()));
+          new ExecutionBlockStopEvent(requestProto.getExecutionBlockId(), requestProto.getCleanupList()));
 
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {

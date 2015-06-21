@@ -26,11 +26,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.CallFuture;
@@ -178,6 +181,36 @@ public class QueryMasterManagerService extends CompositeService
       queryMasterTask.getEventHandler().handle(new StageShuffleReportEvent(ebId, request));
     }
     done.run(TajoWorker.NULL_PROTO);
+  }
+
+  @Override
+  public void getExecutionBlockContext(RpcController controller,
+                                       TajoWorkerProtocol.ExecutionBlockContextRequestProto request,
+                                       RpcCallback<TajoWorkerProtocol.ExecutionBlockContextProto> done) {
+
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
+        new QueryId(request.getExecutionBlockId().getQueryId()));
+
+    Stage stage = queryMasterTask.getQuery().getStage(new ExecutionBlockId(request.getExecutionBlockId()));
+
+    // first request with starting ExecutionBlock
+    PlanProto.ShuffleType shuffleType = stage.getDataChannel().getShuffleType();
+
+    TajoWorkerProtocol.ExecutionBlockContextProto.Builder
+        ebRequestProto = TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+    ebRequestProto.setExecutionBlockId(request.getExecutionBlockId())
+        .setQueryContext(stage.getContext().getQueryContext().getProto())
+        .setQueryOutputPath(stage.getContext().getStagingDir().toString())
+        .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
+        .setShuffleType(shuffleType);
+
+    //Set assigned worker to stage
+    if (!stage.getWorkerMap().containsKey(request.getWorker().getId())) {
+      stage.getWorkerMap().put(request.getWorker().getId(),
+          NetUtils.createSocketAddr(request.getWorker().getHost(), request.getWorker().getPeerRpcPort()));
+    }
+
+    done.run(ebRequestProto.build());
   }
 
   @Override

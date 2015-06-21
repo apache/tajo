@@ -35,18 +35,17 @@ import java.util.List;
 
 public interface TaskRequest extends ProtoObject<TajoWorkerProtocol.TaskRequestProto> {
 
-	public TaskAttemptId getId();
-	public List<CatalogProtos.FragmentProto> getFragments();
-	public String getOutputTableId();
-	public boolean isClusteredOutput();
-	public PlanProto.LogicalNodeTree getPlan();
-	public boolean isInterQuery();
-	public void setInterQuery();
-	public void addFetch(String name, FetchImpl fetch);
-	public List<FetchImpl> getFetches();
-  public boolean shouldDie();
-  public void setShouldDie();
-  public QueryContext getQueryContext(TajoConf conf);
-  public DataChannel getDataChannel();
-  public Enforcer getEnforcer();
+	String getQueryMasterHostAndPort();
+	TaskAttemptId getId();
+	List<CatalogProtos.FragmentProto> getFragments();
+	String getOutputTableId();
+	boolean isClusteredOutput();
+	PlanProto.LogicalNodeTree getPlan();
+	boolean isInterQuery();
+	void setInterQuery();
+	void addFetch(String name, FetchImpl fetch);
+	List<FetchImpl> getFetches();
+  QueryContext getQueryContext(TajoConf conf);
+  DataChannel getDataChannel();
+  Enforcer getEnforcer();
 }

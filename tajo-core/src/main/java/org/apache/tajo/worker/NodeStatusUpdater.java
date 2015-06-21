@@ -129,6 +129,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
     requestProto.setAvailableResource(workerContext.getNodeResourceManager().getAvailableResource().getProto());
     requestProto.setRunningTasks(workerContext.getTaskManager().getRunningTasks());
+    requestProto.setRunningQueryMasters(workerContext.getNodeResourceManager().getRunningQueryMasters());
+
     return requestProto;
   }
 

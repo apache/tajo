@@ -32,6 +32,7 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
   protected int hostLocalAssigned;
   protected int rackLocalAssigned;
   protected int totalAssigned;
+  protected int cancellation;
   protected Set<String> leafTaskHosts = Sets.newHashSet();
 
   /**

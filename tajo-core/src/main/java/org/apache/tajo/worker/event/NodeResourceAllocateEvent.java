@@ -31,7 +31,7 @@ public class NodeResourceAllocateEvent extends NodeResourceEvent {
 
   public NodeResourceAllocateEvent(BatchAllocationRequestProto request,
                                    RpcCallback<BatchAllocationResponseProto> callback) {
-    super(EventType.TASK_ALLOCATE);
+    super(EventType.ALLOCATE, ResourceType.TASK);
     this.callback = callback;
     this.request = request;
   }

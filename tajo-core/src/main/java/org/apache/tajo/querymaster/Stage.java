@@ -721,7 +721,7 @@ public class Stage implements EventHandler<StageEvent> {
         cleanupList = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
 
     cleanupList.addAllExecutionBlockId(Lists.newArrayList(ebIds));
-    stopRequest.setChild(cleanupList.build());
+    stopRequest.setCleanupList(cleanupList.build());
     stopRequest.setExecutionBlockId(getId().getProto());
     sendStopExecutionBlockEvent(stopRequest.build());
   }

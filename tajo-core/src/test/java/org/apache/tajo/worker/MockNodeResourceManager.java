@@ -19,7 +19,6 @@
 package org.apache.tajo.worker;
 
 import org.apache.hadoop.yarn.event.Dispatcher;
-import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TaskAttemptId;
@@ -50,13 +49,6 @@ public class MockNodeResourceManager extends NodeResourceManager {
   }
 
   @Override
-  protected void startExecutionBlock(TajoWorkerProtocol.StartExecutionBlockRequestProto request) {
-    if(enableTaskHandlerEvent) {
-      super.startExecutionBlock(request);
-    }
-  }
-
-  @Override
   protected void startTask(TajoWorkerProtocol.TaskRequestProto request, NodeResource resource) {
     if(enableTaskHandlerEvent) {
       super.startTask(request, resource);
@@ -80,8 +72,8 @@ public class MockNodeResourceManager extends NodeResourceManager {
       TaskAttemptId taskAttemptId = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(ebId, i), 0);
       TajoWorkerProtocol.TaskRequestProto.Builder builder =
           TajoWorkerProtocol.TaskRequestProto.newBuilder();
+      builder.setQueryMasterHostAndPort("localhost:0");
       builder.setId(taskAttemptId.getProto());
-      builder.setShouldDie(true);
       builder.setOutputTable("");
       builder.setPlan(PlanProto.LogicalNodeTree.newBuilder());
       builder.setClusteredOutput(false);

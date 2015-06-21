@@ -38,6 +38,7 @@ service QueryMasterProtocolService {
   rpc fatalError(TaskFatalErrorReport) returns (NullProto);
   rpc done (TaskCompletionReport) returns (NullProto);
   rpc doneExecutionBlock(ExecutionBlockReport) returns (NullProto);
+  rpc getExecutionBlockContext(ExecutionBlockContextRequestProto) returns (ExecutionBlockContextProto);
 
   //from TajoMaster's QueryJobManager
   rpc killQuery(QueryIdProto) returns (NullProto);

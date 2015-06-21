@@ -68,6 +68,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
+import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.io.IOException;
@@ -193,12 +194,13 @@ public class QueryMasterTask extends CompositeService {
     LOG.info("Stopping QueryMasterTask:" + queryId);
 
     //release QM resource
-    getQueryTaskContext().getQueryMasterContext().getWorkerContext().getNodeResourceManager().getDispatcher()
-        .getEventHandler().handle(new NodeResourceDeallocateEvent(allocation));
+    EventHandler handler = getQueryTaskContext().getQueryMasterContext().getWorkerContext().
+        getNodeResourceManager().getDispatcher().getEventHandler();
+
+    handler.handle(new NodeResourceDeallocateEvent(allocation, NodeResourceEvent.ResourceType.QUERY_MASTER));
 
     //flush current node resource
-    getQueryTaskContext().getQueryMasterContext().getWorkerContext().getNodeResourceManager().getDispatcher()
-        .getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
+    handler.handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
 
     if (!queryContext.getBool(SessionVars.DEBUG_ENABLED)) {
       cleanupQuery(getQueryId());

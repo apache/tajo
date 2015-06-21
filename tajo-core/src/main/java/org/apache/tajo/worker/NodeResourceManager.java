@@ -33,6 +33,8 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
 public class NodeResourceManager extends AbstractService implements EventHandler<NodeResourceEvent> {
@@ -40,6 +42,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
 
   private final Dispatcher dispatcher;
   private final TajoWorker.WorkerContext workerContext;
+  private final AtomicInteger runningQueryMasters = new AtomicInteger(0);
   private NodeResource totalResource;
   private NodeResource availableResource;
   private TajoConf tajoConf;
@@ -66,43 +69,50 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   @Override
   public void handle(NodeResourceEvent event) {
 
-    if (event instanceof QMResourceAllocateEvent) {
-      // allocate query master resource
-      QMResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, QMResourceAllocateEvent.class);
-      NodeResource resource = new NodeResource(allocateEvent.getRequest().getResource());
-      if (allocate(resource)) {
-        allocateEvent.getCallback().run(TajoWorker.TRUE_PROTO);
-      } else {
-        allocateEvent.getCallback().run(TajoWorker.FALSE_PROTO);
-      }
-    } else if (event instanceof NodeResourceAllocateEvent) {
-      // allocate task resource
-      NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
-      BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
-      for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
-        NodeResource resource = new NodeResource(request.getResource());
-        if (allocate(resource)) {
-          if (allocateEvent.getRequest().hasExecutionBlockRequest()) {
-            //send ExecutionBlock start event to TaskManager
-            startExecutionBlock(allocateEvent.getRequest().getExecutionBlockRequest());
+    switch (event.getType()) {
+      case ALLOCATE: {
+        if (event.getResourceType() == NodeResourceEvent.ResourceType.TASK) {
+          // allocate task resource
+          NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
+          BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
+          for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
+            NodeResource resource = new NodeResource(request.getResource());
+            if (allocate(resource)) {
+              //send task start event to TaskExecutor
+              startTask(request.getTaskRequest(), resource);
+            } else {
+              // reject the exceeded requests
+              response.addCancellationTask(request);
+            }
           }
+          allocateEvent.getCallback().run(response.build());
 
-          //send task start event to TaskExecutor
-          startTask(request.getTaskRequest(), resource);
-        } else {
-          // reject the exceeded requests
-          response.addCancellationTask(request);
+        } else if (event.getResourceType() == NodeResourceEvent.ResourceType.QUERY_MASTER) {
+          QMResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, QMResourceAllocateEvent.class);
+          // allocate query master resource
+
+          NodeResource resource = new NodeResource(allocateEvent.getRequest().getResource());
+          if (allocate(resource)) {
+            allocateEvent.getCallback().run(TajoWorker.TRUE_PROTO);
+            runningQueryMasters.incrementAndGet();
+          } else {
+            allocateEvent.getCallback().run(TajoWorker.FALSE_PROTO);
+          }
         }
+        break;
       }
-      allocateEvent.getCallback().run(response.build());
+      case DEALLOCATE: {
+        NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
+        release(deallocateEvent.getResource());
 
-    } else if (event instanceof NodeResourceDeallocateEvent) {
-      NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
-      release(deallocateEvent.getResource());
-
-      // send current resource to ResourceTracker
-      getDispatcher().getEventHandler().handle(
-          new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE));
+        if (deallocateEvent.getResourceType() == NodeResourceEvent.ResourceType.QUERY_MASTER) {
+          runningQueryMasters.decrementAndGet();
+        }
+        // send current resource to ResourceTracker
+        getDispatcher().getEventHandler().handle(
+            new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE));
+        break;
+      }
     }
   }
 
@@ -118,6 +128,10 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     return availableResource;
   }
 
+  public int getRunningQueryMasters() {
+    return runningQueryMasters.get();
+  }
+
   private boolean allocate(NodeResource resource) {
 
     if (NodeResources.fitsIn(resource, availableResource) && checkFreeHeapMemory(resource)) {
@@ -130,10 +144,6 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private boolean checkFreeHeapMemory(NodeResource resource) {
     //TODO consider the jvm free memory
     return true;
-  }
-
-  protected void startExecutionBlock(StartExecutionBlockRequestProto request) {
-    workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new ExecutionBlockStartEvent(request));
   }
 
   protected void startTask(TaskRequestProto request, NodeResource resource) {

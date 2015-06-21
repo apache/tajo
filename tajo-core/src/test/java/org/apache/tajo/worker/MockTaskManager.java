@@ -19,9 +19,11 @@
 package org.apache.tajo.worker;
 
 import org.apache.hadoop.yarn.event.Dispatcher;
-import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.event.TaskManagerEvent;
 
 import java.io.IOException;
@@ -37,9 +39,16 @@ public class MockTaskManager extends TaskManager {
   }
 
   @Override
-  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.StartExecutionBlockRequestProto request) {
+  protected ExecutionBlockContext createExecutionBlock(ExecutionBlockId executionBlockId, String queryMaster) {
     try {
-      return new MockExecutionBlock(getWorkerContext(), request);
+      TajoWorkerProtocol.ExecutionBlockContextProto.Builder builder =
+          TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+      builder.setExecutionBlockId(executionBlockId.getProto())
+          .setPlanJson("test")
+          .setQueryContext(new QueryContext(new TajoConf()).getProto())
+          .setQueryOutputPath("testpath")
+          .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
+      return new MockExecutionBlock(getWorkerContext(), builder.build());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

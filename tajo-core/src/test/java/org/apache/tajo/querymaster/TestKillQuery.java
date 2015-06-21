@@ -233,20 +233,21 @@ public class TestKillQuery {
     TaskId tid = QueryIdFactory.newTaskId(eid);
     final TajoConf conf = new TajoConf();
     TaskRequestImpl taskRequest = new TaskRequestImpl();
+    WorkerConnectionInfo queryMaster = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
 
     TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
     taskRequest.set(attemptId, new ArrayList<CatalogProtos.FragmentProto>(),
-        null, false, PlanProto.LogicalNodeTree.newBuilder().build(), new QueryContext(conf), null, null);
+        null, false, PlanProto.LogicalNodeTree.newBuilder().build(), new QueryContext(conf),
+        null, null, queryMaster.getHostAndQMPort());
     taskRequest.setInterQuery();
 
-    WorkerConnectionInfo queryMaster = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
-    TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
-        requestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
 
-    requestProto.setExecutionBlockId(eid.getProto())
-        .setQueryMaster(queryMaster.getProto())
-        .setQueryContext(new QueryContext(conf).getProto())
+    TajoWorkerProtocol.ExecutionBlockContextProto.Builder requestProtoBuilder =
+        TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+    requestProtoBuilder.setExecutionBlockId(eid.getProto())
         .setPlanJson("test")
+        .setQueryContext(new QueryContext(conf).getProto())
+        .setQueryOutputPath("testpath")
         .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
 
     TajoWorker.WorkerContext workerContext = new MockWorkerContext() {
@@ -271,13 +272,12 @@ public class TestKillQuery {
       }
     };
 
-    ExecutionBlockContext context =
-        new ExecutionBlockContext(workerContext, requestProto.build()) {
-          @Override
-          public Path createBaseDir() throws IOException {
-            return new Path("test");
-          }
-        };
+    ExecutionBlockContext context = new MockExecutionBlock(workerContext, requestProtoBuilder.build()) {
+      @Override
+      public Path createBaseDir() throws IOException {
+        return new Path("test");
+      }
+    };
 
     org.apache.tajo.worker.Task task = new TaskImpl(taskRequest, context, null);
     task.kill();

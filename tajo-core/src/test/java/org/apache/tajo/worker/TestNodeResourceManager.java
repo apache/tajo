@@ -22,26 +22,26 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.tajo.*;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
-import org.junit.*;
+import org.apache.tajo.worker.event.NodeResourceEvent;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
-
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.junit.Assert.*;
 public class TestNodeResourceManager {
 
   private MockNodeResourceManager resourceManager;
@@ -194,7 +194,8 @@ public class TestNodeResourceManager {
     //deallocate
     for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
       // direct invoke handler for testing
-      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
+      resourceManager.handle(new NodeResourceDeallocateEvent(
+          allocationRequestProto.getResource(), NodeResourceEvent.ResourceType.TASK));
     }
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
@@ -213,20 +214,11 @@ public class TestNodeResourceManager {
     final Queue<TaskAllocationRequestProto>
         totalTasks = MockNodeResourceManager.createTaskRequests(ebId, taskMemory, taskSize);
 
-    // first request with starting ExecutionBlock
-    TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
-    ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setQueryContext(new QueryContext(conf).getProto())
-        .setPlanJson("test")
-        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
 
     TaskAllocationRequestProto task = totalTasks.poll();
     BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
     requestProto.addTaskRequest(task);
     requestProto.setExecutionBlockId(ebId.getProto());
-    requestProto.setExecutionBlockRequest(ebRequestProto.build());
     CallFuture<BatchAllocationResponseProto> callFuture = new CallFuture<BatchAllocationResponseProto>();
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
     assertTrue(callFuture.get().getCancellationTaskCount() == 0);

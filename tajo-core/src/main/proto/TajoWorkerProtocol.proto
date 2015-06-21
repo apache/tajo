@@ -66,14 +66,14 @@ message TaskFatalErrorReport {
 }
 
 message TaskRequestProto {
-    required TaskAttemptIdProto id = 1;
-    repeated FragmentProto fragments = 2;
-    required string outputTable = 3;
-    required bool clusteredOutput = 4;
-    required LogicalNodeTree plan = 5;
-    optional bool interQuery = 6 [default = false];
-    repeated FetchProto fetches = 7;
-    optional bool shouldDie = 8;
+    required string queryMasterHostAndPort = 1;
+    required TaskAttemptIdProto id = 2;
+    repeated FragmentProto fragments = 3;
+    required string outputTable = 4;
+    required bool clusteredOutput = 5;
+    required LogicalNodeTree plan = 6;
+    optional bool interQuery = 7 [default = false];
+    repeated FetchProto fetches = 8;
     optional KeyValueSetProto queryContext = 9;
     optional DataChannelProto dataChannel = 10;
     optional EnforcerProto enforcer = 11;
@@ -178,20 +178,24 @@ message DataChannelProto {
   optional string storeType = 10;
 }
 
-message StartExecutionBlockRequestProto {
+
+message ExecutionBlockContextProto {
     required ExecutionBlockIdProto executionBlockId = 1;
-    required WorkerConnectionInfoProto queryMaster = 2;
+    optional string queryOutputPath = 2;
 
-    optional string queryOutputPath = 3;
+    required KeyValueSetProto queryContext = 3;
+    required string planJson = 4;
+    required ShuffleType shuffleType = 5;
+}
 
-    required KeyValueSetProto queryContext = 4;
-    required string planJson = 5;
-    required ShuffleType shuffleType = 6;
+message ExecutionBlockContextRequestProto {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    required WorkerConnectionInfoProto worker = 2;
 }
 
 message StopExecutionBlockRequestProto {
     required ExecutionBlockIdProto executionBlockId = 1;
-    optional ExecutionBlockListProto child = 2;
+    optional ExecutionBlockListProto cleanupList = 2;
 }
 
 message ExecutionBlockListProto {
@@ -206,7 +210,6 @@ message TaskAllocationRequestProto {
 message BatchAllocationRequestProto {
     required ExecutionBlockIdProto executionBlockId = 1;
     repeated TaskAllocationRequestProto taskRequest = 2;
-    optional StartExecutionBlockRequestProto executionBlockRequest = 3;
 }
 
 message BatchAllocationResponseProto {

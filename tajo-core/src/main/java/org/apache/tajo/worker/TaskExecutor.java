@@ -33,18 +33,21 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
-import org.apache.tajo.worker.event.TaskExecutorEvent;
+import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * TaskExecutor uses a number of threads equal to the number of slots available for running tasks on the Worker
  */
-public class TaskExecutor extends AbstractService implements EventHandler<TaskExecutorEvent> {
+public class TaskExecutor extends AbstractService implements EventHandler<TaskStartEvent> {
   private static final Log LOG = LogFactory.getLog(TaskExecutor.class);
 
   private final TajoWorker.WorkerContext workerContext;
@@ -68,7 +71,6 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   protected void serviceInit(Configuration conf) throws Exception {
 
     this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    this.workerContext.getTaskManager().getDispatcher().register(TaskExecutorEvent.EventType.class, this);
     super.serviceInit(conf);
   }
 
@@ -124,8 +126,8 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   @SuppressWarnings("unchecked")
   protected void stopTask(TaskAttemptId taskId) {
     runningTasks.decrementAndGet();
-    workerContext.getNodeResourceManager().getDispatcher().getEventHandler()
-        .handle(new NodeResourceDeallocateEvent(allocatedResourceMap.remove(taskId)));
+    workerContext.getNodeResourceManager().getDispatcher().getEventHandler().handle(
+        new NodeResourceDeallocateEvent(allocatedResourceMap.remove(taskId), NodeResourceEvent.ResourceType.TASK));
   }
 
   protected ExecutorService getFetcherExecutor() {
@@ -149,37 +151,34 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskEx
   }
 
   @Override
-  public void handle(TaskExecutorEvent event) {
+  public void handle(TaskStartEvent event) {
 
-    if (event instanceof TaskStartEvent) {
-      TaskStartEvent startEvent = (TaskStartEvent) event;
-      allocatedResourceMap.put(startEvent.getTaskId(), startEvent.getAllocatedResource());
+    allocatedResourceMap.put(event.getTaskAttemptId(), event.getAllocatedResource());
 
-      ExecutionBlockContext context = workerContext.getTaskManager().getExecutionBlockContext(
-          startEvent.getTaskId().getTaskId().getExecutionBlockId());
+    ExecutionBlockContext context = workerContext.getTaskManager().getExecutionBlockContext(
+        event.getTaskAttemptId().getTaskId().getExecutionBlockId());
 
-      try {
-        Task task = createTask(context, startEvent.getTaskRequest());
-        if (task != null) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("Arrival task: " + task.getTaskContext().getTaskId() +
-                ", allocated resource: " + startEvent.getAllocatedResource());
-          }
-          taskQueue.put(task);
-          runningTasks.incrementAndGet();
-          context.getWorkerContext().getWorkerSystemMetrics()
-              .histogram("tasks", "running").update(runningTasks.get());
-        } else {
-          LOG.warn("Release duplicate task resource: " + startEvent.getAllocatedResource());
-          stopTask(startEvent.getTaskId());
+    try {
+      Task task = createTask(context, event.getTaskRequest());
+      if (task != null) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Arrival task: " + task.getTaskContext().getTaskId() +
+              ", allocated resource: " + event.getAllocatedResource());
         }
-      } catch (InterruptedException e) {
-        if (!isStopped) {
-          LOG.fatal(e.getMessage(), e);
-        }
-      } catch (IOException e) {
-        stopTask(startEvent.getTaskId());
+        taskQueue.put(task);
+        runningTasks.incrementAndGet();
+        context.getWorkerContext().getWorkerSystemMetrics()
+            .histogram("tasks", "running").update(runningTasks.get());
+      } else {
+        LOG.warn("Release duplicate task resource: " + event.getAllocatedResource());
+        stopTask(event.getTaskAttemptId());
       }
+    } catch (InterruptedException e) {
+      if (!isStopped) {
+        LOG.fatal(e.getMessage(), e);
+      }
+    } catch (IOException e) {
+      stopTask(event.getTaskAttemptId());
     }
   }
 }

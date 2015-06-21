@@ -21,22 +21,25 @@ package org.apache.tajo.worker;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.tajo.*;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.worker.event.ExecutionBlockStartEvent;
 import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
+import org.apache.tajo.worker.event.TaskStartEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import static org.junit.Assert.*;
@@ -140,22 +143,12 @@ public class TestTaskManager {
   @Test(timeout = 10000)
   public void testExecutionBlockStart() throws Exception {
     int requestSize = 1;
-
-    TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
-
-    ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setQueryContext(new QueryContext(conf).getProto())
-        .setPlanJson("test")
-        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
 
     CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
     BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
     requestProto.setExecutionBlockId(ebId.getProto());
-    requestProto.setExecutionBlockRequest(ebRequestProto.build());
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     requestProto.addAllTaskRequest(MockNodeResourceManager.createTaskRequests(ebId, taskMemory, requestSize));
@@ -170,18 +163,14 @@ public class TestTaskManager {
   @Test(timeout = 10000)
   public void testExecutionBlockStop() throws Exception {
 
-    TajoWorkerProtocol.StartExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.StartExecutionBlockRequestProto.newBuilder();
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
+    TaskAllocationRequestProto requestProto =
+        MockNodeResourceManager.createTaskRequests(ebId, taskMemory, 1).poll();
 
-    ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setQueryContext(new QueryContext(conf).getProto())
-        .setPlanJson("test")
-        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
+    taskDispatcher.getEventHandler().handle(new TaskStartEvent(requestProto.getTaskRequest(),
+        new NodeResource(requestProto.getResource())));
 
-    taskDispatcher.getEventHandler().handle(new ExecutionBlockStartEvent(ebRequestProto.build()));
     assertTrue(barrier.tryAcquire(3, TimeUnit.SECONDS));
     assertNotNull(taskManager.getExecutionBlockContext(ebId));
     assertEquals(ebId, taskManager.getExecutionBlockContext(ebId).getExecutionBlockId());

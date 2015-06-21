@@ -19,25 +19,20 @@
 package org.apache.tajo.worker.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.TaskAttemptId;
 
 public class TaskManagerEvent extends AbstractEvent<TaskManagerEvent.EventType> {
   // producer: NodeResourceManager, consumer: TaskManager
   public enum EventType {
-    EB_START,
+    TASK_START,
+    TASK_KILL,
+    TASK_ABORT,
+
     EB_STOP
   }
 
-  private ExecutionBlockId executionBlockId;
 
-  public TaskManagerEvent(EventType eventType,
-                          ExecutionBlockId executionBlockId) {
+
+  public TaskManagerEvent(EventType eventType) {
     super(eventType);
-    this.executionBlockId = executionBlockId;
-  }
-
-  public ExecutionBlockId getExecutionBlockId() {
-    return executionBlockId;
   }
 }
