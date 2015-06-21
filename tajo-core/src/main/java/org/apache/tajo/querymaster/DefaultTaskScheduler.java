@@ -103,6 +103,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             schedule();
           } catch (Throwable e) {
             LOG.fatal(e.getMessage(), e);
+            stage.abort(StageState.ERROR);
             break;
           }
         }
@@ -269,7 +270,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       request.setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount());
       request.addAllCandidateNodes(getWorkerIds(getLeafTaskHosts()));
       masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
-      LOG.info("request container:" + remainingScheduledObjectNum());
       QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
 
       for (QueryCoordinatorProtocol.AllocationResourceProto proto : responseProto.getResourceList()) {
@@ -777,8 +777,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         rackLocalAssigned++;
         totalAssigned++;
 
-        LOG.info(String.format("Assigned Local/Rack/Total: (%d/%d/%d), Locality: %.2f%%, Rack host: %s",
-            hostLocalAssigned, rackLocalAssigned, totalAssigned,
+        LOG.info(String.format("Assigned Local/Rack/Cancel/Total: (%d/%d/%d/%d), Locality: %.2f%%, Rack host: %s",
+            hostLocalAssigned, rackLocalAssigned, cancellation, totalAssigned,
             ((double) hostLocalAssigned / (double) totalAssigned) * 100, host));
 
       }
@@ -848,8 +848,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               leafTasks.remove(attemptId);
               rackLocalAssigned++;
               totalAssigned++;
-              LOG.info(String.format("Assigned Local/Remote/Total: (%d/%d/%d), Locality: %.2f%%,",
-                  hostLocalAssigned, rackLocalAssigned, totalAssigned,
+              LOG.info(String.format("Assigned Local/Remote/Cancel/Total: (%d/%d/%d/%d), Locality: %.2f%%,",
+                  hostLocalAssigned, rackLocalAssigned, cancellation, totalAssigned,
                   ((double) hostLocalAssigned / (double) totalAssigned) * 100));
             }
           }
