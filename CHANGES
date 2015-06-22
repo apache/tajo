@@ -27,6 +27,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1649: Change Rest API /databases/{database-name}/functions to 
+    /functions. (Contributed by DaeMyung Kang, Committed by hyunsik)
+
+    TAJO-1646: Add extlib directory for third-party libraries. (hyunsik)
+
     TAJO-1636: query rest api uri should change
     from /databases/{database_name}/queies to /queries.
     (Contributed by DaeMyung Kang, Committed by jaehwa)
@@ -153,6 +158,12 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1650: TestQueryResource.testGetAllQueries() occasionally fails.
+    (Contributed by jinho, Committed by jaehwa)
+ 
+    TAJO-1634: REST API: fix error when offset is zero.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
 
     TAJO-1630: Test failure after TAJO-1130. (jihoon)
 
