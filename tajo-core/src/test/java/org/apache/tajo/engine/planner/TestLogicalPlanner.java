@@ -21,9 +21,6 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -35,8 +32,6 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
@@ -67,8 +62,6 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 public class TestLogicalPlanner {
-  private static Log LOG = LogFactory.getLog(TestLogicalPlanner.class);
-
   private static TajoTestingCluster util;
   private static CatalogService catalog;
   private static SQLAnalyzer sqlAnalyzer;
