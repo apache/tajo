@@ -1,0 +1,11 @@
+table_name,table_type
+-------------------------------
+customer,EXTERNAL
+empty_orders,EXTERNAL
+lineitem,EXTERNAL
+nation,EXTERNAL
+orders,EXTERNAL
+part,EXTERNAL
+partsupp,EXTERNAL
+region,EXTERNAL
+supplier,EXTERNAL
