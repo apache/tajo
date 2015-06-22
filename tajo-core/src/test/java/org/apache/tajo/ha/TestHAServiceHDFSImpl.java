@@ -53,12 +53,12 @@ public class TestHAServiceHDFSImpl  {
       FileSystem fs = cluster.getDefaultFileSystem();
 
       TajoConf primaryConf = setConfigForHAMaster();
-      primaryMaster= new TajoMaster();
+      primaryMaster = new TajoMaster();
       primaryMaster.init(primaryConf);
       primaryMaster.start();
 
       TajoConf backupConf = setConfigForHAMaster();
-      backupMaster= new TajoMaster();
+      backupMaster = new TajoMaster();
       backupMaster.init(backupConf);
       backupMaster.start();
 
@@ -150,7 +150,6 @@ public class TestHAServiceHDFSImpl  {
     TajoClient client = null;
     try {
       client = new TajoClientImpl(tracker);
-
       client.existDatabase("default");
       client.existTable("default.ha_test1");
       client.existTable("default.ha_test2");
