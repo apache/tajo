@@ -207,7 +207,12 @@ public class QueryMasterTask extends CompositeService {
     }
 
     if (queryMetrics != null) {
-      queryMetrics.report(new MetricsConsoleReporter());
+      queryMasterContext.getEventExecutor().submit(new Runnable() {
+        @Override
+        public void run() {
+          queryMetrics.report(new MetricsConsoleReporter());
+        }
+      });
     }
 
     super.serviceStop();
