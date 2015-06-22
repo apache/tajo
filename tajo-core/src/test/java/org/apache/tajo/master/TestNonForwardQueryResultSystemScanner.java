@@ -64,12 +64,14 @@ import com.google.protobuf.ByteString;
 public class TestNonForwardQueryResultSystemScanner extends QueryTestCaseBase {
   @Test
   public void testGetNextRowsForAggregateFunction() throws Exception {
-    assertQueryStr("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES");
+    assertQueryStr("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES " +
+        "WHERE TABLE_NAME = 'lineitem' OR TABLE_NAME = 'nation' OR TABLE_NAME = 'customer'");
   }
 
   @Test
   public void testGetNextRowsForTable() throws Exception {
-    assertQueryStr("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES");
+    assertQueryStr("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES " +
+        "WHERE TABLE_NAME = 'lineitem' OR TABLE_NAME = 'nation' OR TABLE_NAME = 'customer'");
   }
 
   @Test
