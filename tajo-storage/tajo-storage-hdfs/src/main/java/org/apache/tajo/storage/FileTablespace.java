@@ -867,7 +867,7 @@ public class FileTablespace extends Tablespace {
     // The result will be temporarily written in the staging directory.
     if (outputPath.isEmpty()) {
       // for temporarily written in the storage directory
-      stagingDir = new Path(stagingRootPath, queryId);
+      stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
       Optional<Tablespace> spaceResult = TableSpaceManager.get(outputPath);
       if (!spaceResult.isPresent()) {
@@ -877,9 +877,9 @@ public class FileTablespace extends Tablespace {
       Tablespace space = spaceResult.get();
       if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
         // If this space allows move operation, the staging directory will be underneath the final output table uri.
-        stagingDir = StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId);
+        stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));
       } else {
-        stagingDir = new Path(stagingRootPath, queryId);
+        stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
       }
     }
 
@@ -900,16 +900,15 @@ public class FileTablespace extends Tablespace {
     realUser = ugi.getShortUserName();
     currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
 
-    FileSystem fs;
+
     Path stagingDir = new Path(getStagingUri(context, queryId, meta));
 
     ////////////////////////////////////////////
     // Create Output Directory
     ////////////////////////////////////////////
 
-    // initializ
-    fs = stagingDir.getFileSystem(conf);
-
+    System.err.println(">>>>> before fs.exists - fs.defaultUri:" + fs.getUri());
+    System.err.println(">>>>> before fs.exists - stagingDir:" + stagingDir);
     if (fs.exists(stagingDir)) {
       throw new IOException("The staging directory '" + stagingDir + "' already exists");
     }
