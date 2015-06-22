@@ -339,6 +339,9 @@ for d in $TAJO_JAR_DIRS; do
   done
 done
 
+# add CLASSPATH for common UDFs and third-party libraries like JDBC.
+TAJO_BASE_CLASSPATH=${TAJO_BASE_CLASSPATH}:$TAJO_HOME/extlib
+
 # add user-specified CLASSPATH last
 if [ "$TAJO_CLASSPATH" != "" ]; then
   if [ "$TAJO_USER_CLASSPATH_FIRST" != "" ]; then

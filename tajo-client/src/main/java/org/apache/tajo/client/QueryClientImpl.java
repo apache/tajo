@@ -437,8 +437,8 @@ public class QueryClientImpl implements QueryClient {
     connection.checkSessionAndGet(client);
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetQueryListRequest.Builder builder = ClientProtos.GetQueryListRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
+    TajoIdProtos.SessionIdProto.Builder builder = TajoIdProtos.SessionIdProto.newBuilder();
+    builder.setId(connection.sessionId.getId());
     ClientProtos.GetQueryListResponse res = tajoMasterService.getRunningQueryList(null, builder.build());
     return res.getQueryListList();
   }
@@ -450,8 +450,8 @@ public class QueryClientImpl implements QueryClient {
     connection.checkSessionAndGet(client);
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetQueryListRequest.Builder builder = ClientProtos.GetQueryListRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
+    TajoIdProtos.SessionIdProto.Builder builder = TajoIdProtos.SessionIdProto.newBuilder();
+    builder.setId(connection.sessionId.getId());
     ClientProtos.GetQueryListResponse res = tajoMasterService.getFinishedQueryList(null, builder.build());
     return res.getQueryListList();
   }
