@@ -869,7 +869,7 @@ public class FileTablespace extends Tablespace {
       // for temporarily written in the storage directory
       stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
-      Optional<Tablespace> spaceResult = TableSpaceManager.get(outputPath);
+      Optional<Tablespace> spaceResult = TablespaceManager.get(outputPath);
       if (!spaceResult.isPresent()) {
         throw new IOException("No registered Tablespace for " + outputPath);
       }

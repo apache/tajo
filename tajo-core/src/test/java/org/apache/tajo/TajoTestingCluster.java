@@ -48,7 +48,7 @@ import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -352,9 +352,9 @@ public class TajoTestingCluster {
 
       URI defaultTsUri = TajoConf.getWarehouseDir(c).toUri();
       FileTablespace defaultTableSpace =
-          new FileTablespace(TableSpaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri);
+          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri);
       defaultTableSpace.init(conf);
-      TableSpaceManager.addTableSpaceForTest(defaultTableSpace);
+      TablespaceManager.addTableSpaceForTest(defaultTableSpace);
 
       System.err.println(">>>>> tajo.rootdir: " + tajoRootDir);
       System.err.println(">>>>> default tablespace uri: " + defaultTsUri);

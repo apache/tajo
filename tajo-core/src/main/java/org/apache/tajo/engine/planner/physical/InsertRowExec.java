@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -28,7 +27,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -66,7 +65,7 @@ public class InsertRowExec extends UnaryPhysicalExec {
     sumStats = new TableStats();
 
     StoreTableNode storeTableNode = (StoreTableNode) plan;
-    appender = TableSpaceManager.get(storeTableNode.getUri()).get().getAppenderForInsertRow(
+    appender = TablespaceManager.get(storeTableNode.getUri()).get().getAppenderForInsertRow(
         context.getQueryContext(),
         context.getTaskId(), meta, storeTableNode.getTableSchema(), context.getOutputPath());
     appender.enableStats();

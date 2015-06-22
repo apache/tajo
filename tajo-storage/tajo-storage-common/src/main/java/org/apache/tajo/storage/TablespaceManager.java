@@ -51,8 +51,8 @@ import static org.apache.tajo.storage.StorageConstants.LOCAL_FS_URI;
  * HDFS and S3 can be a default tablespace if a Tajo cluster is in fully distributed mode.
  * Local file system can be a default tablespace if a Tajo cluster runs on a single machine.
  */
-public class TableSpaceManager implements StorageService {
-  private static final Log LOG = LogFactory.getLog(TableSpaceManager.class);
+public class TablespaceManager implements StorageService {
+  private static final Log LOG = LogFactory.getLog(TablespaceManager.class);
 
   public static final String DEFAULT_CONFIG_FILE = "storage-default.json";
   public static final String SITE_CONFIG_FILE = "storage-site.json";
@@ -73,14 +73,14 @@ public class TableSpaceManager implements StorageService {
   public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
 
   static {
-    instance = new TableSpaceManager();
+    instance = new TablespaceManager();
   }
   /**
    * Singleton instance
    */
-  private static final TableSpaceManager instance;
+  private static final TablespaceManager instance;
 
-  private TableSpaceManager() {
+  private TablespaceManager() {
     initForDefaultConfig(); // loading storage-default.json
     initSiteConfig();       // storage-site.json will override the configs of storage-default.json
     addWarehouseAsSpace();  // adding a warehouse directory for a default tablespace
@@ -99,7 +99,7 @@ public class TableSpaceManager implements StorageService {
     }
   }
 
-  public static TableSpaceManager getInstance() {
+  public static TablespaceManager getInstance() {
     return instance;
   }
 

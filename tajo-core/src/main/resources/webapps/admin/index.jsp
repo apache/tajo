@@ -27,7 +27,7 @@
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
-<%@ page import="org.apache.tajo.storage.TableSpaceManager" %>
+<%@ page import="org.apache.tajo.storage.TablespaceManager" %>
 <%@ page import="org.apache.tajo.storage.Tablespace" %>
 <%@ page import="org.apache.tajo.util.NetUtils" %>
 <%@ page import="org.apache.tajo.util.TUtil" %>
@@ -141,7 +141,7 @@
   <h3>Tablespaces</h3>
   <table width="100%" class="border_table" border="1">
     <tr><th>Tablespace Name</th><th>URI</th><th>Handler</th></tr>
-    <% for (Tablespace space : TableSpaceManager.getAllTablespaces()) {
+    <% for (Tablespace space : TablespaceManager.getAllTablespaces()) {
       if (space.isVisible()) { %>
     <tr><td><%=space.getName()%></td><td><%=space.getUri()%></td><td><%=space.getClass().getName()%></td></tr>
     <% }}%>

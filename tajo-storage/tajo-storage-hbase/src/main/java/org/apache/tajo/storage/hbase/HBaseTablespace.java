@@ -1150,14 +1150,14 @@ public class HBaseTablespace extends Tablespace {
     if (meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
       throw new IOException("Staging phase is not supported in this storage.");
     } else {
-      return TableSpaceManager.getDefault().getStagingUri(context, queryId, meta);
+      return TablespaceManager.getDefault().getStagingUri(context, queryId, meta);
     }
   }
 
   public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context,
                                  TableMeta meta) throws IOException {
     if (!meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
-      return TableSpaceManager.getDefault().prepareStagingSpace(conf, queryId, context, meta);
+      return TablespaceManager.getDefault().prepareStagingSpace(conf, queryId, context, meta);
     } else {
       throw new IOException("Staging phase is not supported in this storage.");
     }

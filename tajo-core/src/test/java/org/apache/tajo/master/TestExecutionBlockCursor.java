@@ -34,7 +34,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -79,7 +79,7 @@ public class TestExecutionBlockCursor {
     }
 
     analyzer = new SQLAnalyzer();
-    logicalPlanner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
+    logicalPlanner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf);
 
     dispatcher = new AsyncDispatcher();

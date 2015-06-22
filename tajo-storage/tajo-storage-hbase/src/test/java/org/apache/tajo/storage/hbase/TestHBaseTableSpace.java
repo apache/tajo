@@ -25,7 +25,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class TestHBaseTableSpace {
     String tableSpaceUri = "hbase:zk://host1:2171";
     HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
     hBaseTablespace.init(new TajoConf());
-    TableSpaceManager.addTableSpaceForTest(hBaseTablespace);
+    TablespaceManager.addTableSpaceForTest(hBaseTablespace);
   }
 
   @Test
@@ -58,8 +58,8 @@ public class TestHBaseTableSpace {
 
   @Test
   public void testTablespaceHandler() throws Exception {
-    assertTrue((TableSpaceManager.getByName("cluster1").get()) instanceof HBaseTablespace);
-    assertTrue((TableSpaceManager.get(URI.create("hbase:zk://host1:2171")).get())
+    assertTrue((TablespaceManager.getByName("cluster1").get()) instanceof HBaseTablespace);
+    assertTrue((TablespaceManager.get(URI.create("hbase:zk://host1:2171")).get())
         instanceof HBaseTablespace);
   }
 
@@ -73,7 +73,7 @@ public class TestHBaseTableSpace {
     EvalNode evalNodeA = new BinaryEval(EvalType.AND, evalNode1, evalNode2);
     scanNode.setQual(evalNodeA);
 
-    HBaseTablespace storageManager = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HBaseTablespace storageManager = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());

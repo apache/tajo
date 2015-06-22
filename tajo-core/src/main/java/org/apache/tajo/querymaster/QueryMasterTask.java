@@ -18,15 +18,10 @@
 
 package org.apache.tajo.querymaster;
 
-import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
@@ -309,7 +304,7 @@ public class QueryMasterTask extends CompositeService {
 
 
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
-      LogicalPlanner planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
+      LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       jsonExpr = null; // remove the possible OOM
@@ -317,8 +312,8 @@ public class QueryMasterTask extends CompositeService {
       plan = planner.createPlan(queryContext, expr);
       optimizer.optimize(queryContext, plan);
 
-      // when a given uri is null, TableSpaceManager.get will return the default tablespace.
-      space = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      // when a given uri is null, TablespaceManager.get will return the default tablespace.
+      space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
       space.rewritePlan(queryContext, plan);
 
       initStagingDir();
@@ -367,7 +362,7 @@ public class QueryMasterTask extends CompositeService {
     URI stagingDir;
 
     try {
-      Tablespace tablespace = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      Tablespace tablespace = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
       TableDesc desc = PlannerUtil.getOutputTableDesc(plan);
 
       FormatProperty formatProperty = tablespace.getFormatProperty(desc.getMeta());
