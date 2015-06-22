@@ -348,7 +348,11 @@ public class XMLCatalogSchemaManager {
   public boolean catalogAlreadyExists(Connection conn) throws CatalogException {
     boolean result = false;
     try {
-      result = checkExistence(conn, DatabaseObjectType.TABLE, CatalogConstants.TB_META);
+      for (DatabaseObjectType objectType : DatabaseObjectType.values()) {
+        if (checkExistence(conn, objectType, CatalogConstants.TB_META)) {
+          return true;
+        }
+      }
     } catch (SQLException e) {
       throw new CatalogException(e.getMessage(), e);
     }
