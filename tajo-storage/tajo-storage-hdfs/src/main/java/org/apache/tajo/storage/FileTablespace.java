@@ -907,8 +907,6 @@ public class FileTablespace extends Tablespace {
     // Create Output Directory
     ////////////////////////////////////////////
 
-    System.err.println(">>>>> before fs.exists - fs.defaultUri:" + fs.getUri());
-    System.err.println(">>>>> before fs.exists - stagingDir:" + stagingDir);
     if (fs.exists(stagingDir)) {
       throw new IOException("The staging directory '" + stagingDir + "' already exists");
     }

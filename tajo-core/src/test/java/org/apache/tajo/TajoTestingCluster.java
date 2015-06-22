@@ -356,8 +356,6 @@ public class TajoTestingCluster {
       defaultTableSpace.init(conf);
       TablespaceManager.addTableSpaceForTest(defaultTableSpace);
 
-      System.err.println(">>>>> tajo.rootdir: " + tajoRootDir);
-      System.err.println(">>>>> default tablespace uri: " + defaultTsUri);
     } else {
       c.setVar(ConfVars.ROOT_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo");
     }
