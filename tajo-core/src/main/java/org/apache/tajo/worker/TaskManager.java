@@ -31,21 +31,25 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.worker.event.*;
-
+import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
+import org.apache.tajo.worker.event.NodeStatusEvent;
+import org.apache.tajo.worker.event.TaskManagerEvent;
+import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockContextRequestProto;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockContextProto;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockContextRequestProto;
 
 /**
  * A TaskManager is responsible for managing executionBlock resource and tasks.
@@ -210,17 +214,14 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     return null;
   }
 
-  public List<TaskHistory> getTaskHistories(ExecutionBlockId executionblockId) throws IOException {
-    List<TaskHistory> histories = new ArrayList<TaskHistory>();
-    ExecutionBlockContext context = executionBlockContextMap.get(executionblockId);
-    if (context != null) {
-      histories.addAll(context.getTaskHistories().values());
-    }
-    //TODO get List<TaskHistory> from HistoryReader
-    return histories;
+  public List<org.apache.tajo.util.history.TaskHistory> getTaskHistories(ExecutionBlockId executionblockId)
+      throws IOException {
+
+    return getWorkerContext().getHistoryReader().getTaskHistory(executionblockId.getQueryId().toString(),
+        executionblockId.toString());
   }
 
-  public TaskHistory getTaskHistory(TaskId taskId) {
+  public TaskHistory getTaskHistory(TaskId taskId) throws IOException {
     TaskHistory history = null;
     ExecutionBlockContext context = executionBlockContextMap.get(taskId.getExecutionBlockId());
     if (context != null) {

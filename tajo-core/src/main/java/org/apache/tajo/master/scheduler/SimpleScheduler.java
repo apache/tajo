@@ -301,7 +301,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           queryQueue.add(query);
           synchronized (this) {
             try {
-              this.wait(100);
+              this.wait(1000);
             } catch (InterruptedException e) {
               if(!isStopped) {
                 LOG.fatal(e.getMessage(), e);

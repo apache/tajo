@@ -303,7 +303,6 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setQueryId(getId().toString());
     queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
     queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
-    queryHistory.setLogicalPlan(plan.toString());
     queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
     queryHistory.setDistributedPlan(plan.toString());
 

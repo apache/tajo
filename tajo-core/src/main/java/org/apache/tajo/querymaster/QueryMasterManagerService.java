@@ -117,26 +117,26 @@ public class QueryMasterManagerService extends CompositeService
     QueryId queryId = new QueryId(request.getId().getTaskId().getExecutionBlockId().getQueryId());
     TaskAttemptId attemptId = new TaskAttemptId(request.getId());
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
-    if (queryMasterTask == null) {
-      queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
-    }
-    Stage sq = queryMasterTask.getQuery().getStage(attemptId.getTaskId().getExecutionBlockId());
-    Task task = sq.getTask(attemptId.getTaskId());
-    TaskAttempt attempt = task.getAttempt(attemptId.getId());
 
-    if(LOG.isDebugEnabled()){
-      LOG.debug(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
-    }
+    if (queryMasterTask != null) {
+      Stage sq = queryMasterTask.getQuery().getStage(attemptId.getTaskId().getExecutionBlockId());
+      Task task = sq.getTask(attemptId.getTaskId());
+      TaskAttempt attempt = task.getAttempt(attemptId.getId());
 
-    if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
-      LOG.warn(attemptId + " Killed");
-      attempt.handle(
-          new TaskAttemptEvent(new TaskAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
-    } else {
-      queryMasterTask.getEventHandler().handle(
-          new TaskAttemptStatusUpdateEvent(new TaskAttemptId(request.getId()), request));
-    }
+      if(LOG.isDebugEnabled()){
+        LOG.debug(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
+      }
 
+      if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
+        LOG.warn(attemptId + " Killed");
+        attempt.handle(
+            new TaskAttemptEvent(new TaskAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
+      } else {
+        queryMasterTask.getEventHandler().handle(
+            new TaskAttemptStatusUpdateEvent(new TaskAttemptId(request.getId()), request));
+      }
+
+    }
     done.run(TajoWorker.NULL_PROTO);
   }
 
