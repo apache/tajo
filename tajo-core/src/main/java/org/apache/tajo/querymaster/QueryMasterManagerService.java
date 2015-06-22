@@ -191,10 +191,6 @@ public class QueryMasterManagerService extends CompositeService
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
         new QueryId(request.getExecutionBlockId().getQueryId()));
 
-    if(queryMasterTask == null) {
-      LOG.warn("Query was stopped. request ebId: " + new ExecutionBlockId(request.getExecutionBlockId()));
-      return;
-    }
     Stage stage = queryMasterTask.getQuery().getStage(new ExecutionBlockId(request.getExecutionBlockId()));
 
     // first request with starting ExecutionBlock

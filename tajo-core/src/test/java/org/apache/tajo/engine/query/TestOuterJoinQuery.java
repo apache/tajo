@@ -28,8 +28,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.sql.ResultSet;
-
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
 @NamedTest("TestJoinQuery")
@@ -251,7 +249,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
           "from jointable11 t1\n" +
