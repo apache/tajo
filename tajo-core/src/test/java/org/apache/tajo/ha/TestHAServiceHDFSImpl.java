@@ -139,8 +139,8 @@ public class TestHAServiceHDFSImpl  {
     TajoClient client = null;
     try {
       client = new TajoClientImpl(tracker);
-      client.executeQuery("CREATE TABLE default.table1 (age int);");
-      client.executeQuery("CREATE TABLE default.table2 (age int);");
+      client.executeQuery("CREATE TABLE default.ha_test1 (age int);");
+      client.executeQuery("CREATE TABLE default.ha_test2 (age int);");
     } finally {
       IOUtils.cleanup(null, client);
     }
@@ -152,8 +152,8 @@ public class TestHAServiceHDFSImpl  {
       client = new TajoClientImpl(tracker);
 
       client.existDatabase("default");
-      client.existTable("default.table1");
-      client.existTable("default.table2");
+      client.existTable("default.ha_test1");
+      client.existTable("default.ha_test2");
     } finally {
       IOUtils.cleanup(null, client);
     }
