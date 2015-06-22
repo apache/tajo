@@ -28,6 +28,7 @@ import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.exception.NoSuchColumnException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.conf.TajoConf;
@@ -424,9 +425,33 @@ public class DDLExecutor {
     case SET_PROPERTY:
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
+    case ADD_PARTITION:
+      existColumnNames(qualifiedName, alterTable.getColumnNames());
+      catalog.alterTable(CatalogUtil.addPartitionAndDropPartition(qualifiedName, alterTable.getColumnNames(),
+        alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
+      break;
+    case DROP_PARTITION:
+      existColumnNames(qualifiedName, alterTable.getColumnNames());
+      catalog.alterTable(CatalogUtil.addPartitionAndDropPartition(qualifiedName, alterTable.getColumnNames(),
+        alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
+      break;
     default:
       //TODO
     }
+  }
+
+  private boolean existColumnNames(String tableName, String[] columnNames) {
+    for(String columnName : columnNames) {
+      if (!existPartitionColumnName(tableName, columnName)) {
+        throw new NoSuchColumnException(columnName);
+      }
+    }
+    return true;
+  }
+
+  private boolean existPartitionColumnName(String tableName, String columnName) {
+    final TableDesc tableDesc = catalog.getTableDesc(tableName);
+    return tableDesc.getPartitionMethod().getExpressionSchema().contains(columnName) ? true : false;
   }
 
   private boolean existColumnName(String tableName, String columnName) {

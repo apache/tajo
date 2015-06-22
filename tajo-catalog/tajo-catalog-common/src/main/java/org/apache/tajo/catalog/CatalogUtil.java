@@ -22,6 +22,8 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
@@ -781,6 +783,40 @@ public class CatalogUtil {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setProperties(params);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  public static AlterTableDesc addPartitionAndDropPartition(String tableName, String[] columns,
+                                            String[] values, String location, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+
+    List<PartitionKey> partitionKeyList = TUtil.newList();
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < columns.length; i++) {
+      PartitionKey partitionKey = new PartitionKey();
+      partitionKey.setColumnName(columns[i]);
+      partitionKey.setPartitionValue(values[i]);
+
+      if (i > 0) {
+        sb.append("/");
+      }
+      sb.append(columns[i]).append("=").append(values[i]);
+      partitionKeyList.add(partitionKey);
+    }
+
+    partitionDesc.setPartitionKeys(partitionKeyList);
+    partitionDesc.setPartitionName(sb.toString());
+
+    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
+      partitionDesc.setPath(location);
+    }
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(alterTableType);
     return alterTableDesc;
   }
