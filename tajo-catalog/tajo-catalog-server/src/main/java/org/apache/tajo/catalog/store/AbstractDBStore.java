@@ -254,7 +254,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.error("| You might downgrade or upgrade Apache Tajo. Downgrading or upgrading |");
       LOG.error("| Tajo without migration process is only available in some versions. |");
       LOG.error("| In order to learn how to migration Apache Tajo instance, |");
-      LOG.error("| please refer http://s.apache.org/0_8_migration. |");
+      LOG.error("| please refer http://tajo.apache.org/docs/current/backup_and_restore/catalog.html |");
       LOG.error("=========================================================================");
       throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
     }
