@@ -27,6 +27,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-751: JDBC driver should support cancel() method.
+    (Contributed by navis, Committed by jihoon)
+
     TAJO-1649: Change Rest API /databases/{database-name}/functions to 
     /functions. (Contributed by DaeMyung Kang, Committed by hyunsik)
 

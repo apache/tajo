@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.ipc.ClientProtos;
@@ -67,16 +68,16 @@ public class SessionConnection implements Closeable {
 
   volatile TajoIdProtos.SessionIdProto sessionId;
 
-  private AtomicBoolean closed = new AtomicBoolean(false);
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /** session variable cache */
   private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
 
-  private ServiceTracker serviceTracker;
+  private final ServiceTracker serviceTracker;
 
   private NettyClientBase client;
 
-  private KeyValueSet properties;
+  private final KeyValueSet properties;
 
   /**
    * Connect to TajoMaster
@@ -87,17 +88,16 @@ public class SessionConnection implements Closeable {
    * @param properties configurations
    * @throws java.io.IOException
    */
-  public SessionConnection(ServiceTracker tracker, @Nullable String baseDatabase,
-                           KeyValueSet properties) throws IOException {
-
+  public SessionConnection(@NotNull ServiceTracker tracker, @Nullable String baseDatabase,
+                           @NotNull KeyValueSet properties) throws IOException {
+    this.serviceTracker = tracker;
+    this.baseDatabase = baseDatabase;
     this.properties = properties;
 
     this.manager = RpcClientManager.getInstance();
     this.manager.setRetries(properties.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
     this.userInfo = UserRoleInfo.getCurrentUser();
-    this.baseDatabase = baseDatabase != null ? baseDatabase : null;
 
-    this.serviceTracker = tracker;
     try {
       this.client = getTajoMasterConnection();
     } catch (ServiceException e) {
@@ -125,7 +125,7 @@ public class SessionConnection implements Closeable {
     }
   }
 
-  protected KeyValueSet getProperties() {
+  public KeyValueSet getProperties() {
     return properties;
   }
 
