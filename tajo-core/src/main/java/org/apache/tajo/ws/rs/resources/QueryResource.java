@@ -155,13 +155,8 @@ public class QueryResource {
       for (QueryInProgress queryInProgress: queryManager.getRunningQueries()) {
         queriesInfo.add(queryInProgress.getQueryInfo());
       }
-      
-      try {
-        queriesInfo.addAll(masterContext.getHistoryReader().getQueries(null));
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        return ResourcesUtil.createExceptionResponse(LOG, e.getMessage());
-      }
+
+      queriesInfo.addAll(queryManager.getFinishedQueries());
       
       if (state != null) {
         queriesInfo = selectQueriesInfoByState(queriesInfo, queryState);
