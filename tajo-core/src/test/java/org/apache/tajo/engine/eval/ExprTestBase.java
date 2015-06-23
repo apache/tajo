@@ -24,7 +24,6 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.cli.tsql.InvalidStatementException;
 import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
@@ -50,6 +49,7 @@ import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.LazyTuple;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.BytesUtils;
@@ -103,7 +103,7 @@ public class ExprTestBase {
 
     analyzer = new SQLAnalyzer();
     preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
-    planner = new LogicalPlanner(cat);
+    planner = new LogicalPlanner(cat, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(util.getConfiguration());
     annotatedPlanVerifier = new LogicalPlanVerifier(util.getConfiguration(), cat);
   }

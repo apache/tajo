@@ -115,6 +115,10 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     return get(key, null);
   }
 
+  public boolean isTrue(String key) {
+    return getBool(key, false);
+  }
+
   public void setBool(String key, boolean val) {
     set(key, val ? TRUE_STR : FALSE_STR);
   }

@@ -86,7 +86,7 @@ public class TestBNLJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
     appender.init();
     VTuple tuple = new VTuple(schema.size());
@@ -108,8 +108,7 @@ public class TestBNLJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
-        .getAppender(peopleMeta, peopleSchema, peoplePath);
+    appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
     for (int i = 1; i < INNER_TUPLE_NUM; i += 2) {
@@ -125,7 +124,7 @@ public class TestBNLJoinExec {
     people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
   }
 
   @After
@@ -150,10 +149,10 @@ public class TestBNLJoinExec {
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
     FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
-        new Path(employee.getPath()),
+        new Path(employee.getUri()),
         Integer.MAX_VALUE);
     FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
-        new Path(people.getPath()),
+        new Path(people.getUri()),
         Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testBNLCrossJoin");
@@ -183,9 +182,9 @@ public class TestBNLJoinExec {
         context).getRootBlock().getRoot();
 
     FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
-        new Path(employee.getPath()), Integer.MAX_VALUE);
+        new Path(employee.getUri()), Integer.MAX_VALUE);
     FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
-        new Path(people.getPath()), Integer.MAX_VALUE);
+        new Path(people.getUri()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
 

@@ -60,8 +60,8 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
@@ -1084,18 +1084,18 @@ public class Stage implements EventHandler<StageEvent> {
       Collection<Fragment> fragments;
       TableMeta meta = table.getMeta();
 
+      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri()).get();
+
       // Depending on scanner node's type, it creates fragments. If scan is for
       // a partitioned table, It will creates lots fragments for all partitions.
       // Otherwise, it creates at least one fragments for a table, which may
       // span a number of blocks or possibly consists of a number of files.
+      //
+      // Also, we can ensure FileTableSpace if the type of ScanNode is PARTITIONS_SCAN.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        FileTablespace storageManager =
-            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
-        fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
+        fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table);
       } else {
-        Tablespace tablespace =
-            TableSpaceManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
         fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan);
       }
 

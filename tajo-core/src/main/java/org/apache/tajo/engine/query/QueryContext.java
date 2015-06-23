@@ -28,6 +28,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.session.Session;
 
+import java.net.URI;
+
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 /**
@@ -63,8 +65,42 @@ public class QueryContext extends OverridableConf {
     return get(SessionVars.USERNAME);
   }
 
-  public void setStagingDir(Path path) {
-    put(QueryVars.STAGING_DIR, path.toUri().toString());
+  /**
+   * Set the default tablespace uri
+   *
+   * @param uri The default tablespace uri
+   */
+  public void setDefaultSpaceUri(URI uri) {
+    put(QueryVars.DEFAULT_SPACE_URI, uri.toString());
+  }
+
+  /**
+   * Return the default tablespace uri
+   */
+  public URI getDefaultSpaceUri() {
+    String strVal = get(QueryVars.DEFAULT_SPACE_URI, "");
+    return strVal != null && !strVal.isEmpty() ? URI.create(strVal) : null;
+  }
+
+  /**
+   * Set the root uri of the default tablespace
+   *
+   * @param uri The root uri of the default tablespace
+   */
+  public void setDefaultSpaceRootUri(URI uri) {
+    put(QueryVars.DEFAULT_SPACE_ROOT_URI, uri.toString());
+  }
+
+  /**
+   * Return the root of the default tablespace
+   */
+  public URI getDefaultSpaceRootUri() {
+    String strVal = get(QueryVars.DEFAULT_SPACE_ROOT_URI, "");
+    return strVal != null && !strVal.isEmpty() ? URI.create(strVal) : null;
+  }
+
+  public void setStagingDir(URI uri) {
+    put(QueryVars.STAGING_DIR, uri.toString());
   }
 
   public Path getStagingDir() {
@@ -82,24 +118,33 @@ public class QueryContext extends OverridableConf {
   }
 
   /**
-   * The fact that QueryContext has an output path means this query will write the output to a specific directory.
-   * In other words, this query is 'CREATE TABLE' or 'INSERT (OVERWRITE) INTO (<table name>|LOCATION)' statement.
+   * The final output table's uri. It will be set if a query is CTAS or INSERT (OVERWRITE) INTO statement
    *
-   * @return
+   * @return True if a output table uri is set. Otherwise, it will return false
    */
-  public boolean hasOutputPath() {
-    return containsKey(QueryVars.OUTPUT_TABLE_PATH);
+  public boolean hasOutputTableUri() {
+    return containsKey(QueryVars.OUTPUT_TABLE_URI);
   }
 
-  public void setOutputPath(Path path) {
-    if (path != null) {
-      put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+  /**
+   * Set the final output table uri
+   *
+   * @param uri
+   */
+  public void setOutputPath(URI uri) {
+    if (uri != null) {
+      put(QueryVars.OUTPUT_TABLE_URI, uri.toString());
     }
   }
 
-  public Path getOutputPath() {
-    String strVal = get(QueryVars.OUTPUT_TABLE_PATH);
-    return strVal != null ? new Path(strVal) : null;
+  /**
+   * Get the final output table uri
+   *
+   * @return The final output table uri
+   */
+  public URI getOutputTableUri() {
+    String strVal = get(QueryVars.OUTPUT_TABLE_URI);
+    return strVal != null ? URI.create(strVal) : null;
   }
 
   public boolean hasPartition() {

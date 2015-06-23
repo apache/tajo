@@ -45,6 +45,7 @@ import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -104,7 +105,7 @@ public class TestKillQuery {
     Session session = LocalTajoTestingUtility.createDummySession();
     CatalogService catalog = cluster.getMaster().getCatalog();
 
-    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
@@ -168,7 +169,7 @@ public class TestKillQuery {
     Session session = LocalTajoTestingUtility.createDummySession();
     CatalogService catalog = cluster.getMaster().getCatalog();
 
-    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);

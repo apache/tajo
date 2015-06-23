@@ -19,7 +19,7 @@ git:
   depth: 150
 
 jdk:
-  - openjdk7
+  - oraclejdk7
 
 env: PATH=$PATH:$HOME/local/bin
 
@@ -33,7 +33,7 @@ notifications:
   - issues@tajo.apache.org
   irc: "chat.freenode.net#tajo"
 
-
+before_install: ulimit -t 514029
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 

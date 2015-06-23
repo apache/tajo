@@ -117,7 +117,7 @@ public class HBaseScanner implements Scanner {
       targets = schema.toArray();
     }
 
-    columnMapping = new ColumnMapping(schema, meta);
+    columnMapping = new ColumnMapping(schema, meta.getOptions());
     targetIndexes = new int[targets.length];
     int index = 0;
     for (Column eachTargetColumn: targets) {
@@ -133,8 +133,8 @@ public class HBaseScanner implements Scanner {
     rowKeyDelimiter = columnMapping.getRowKeyDelimiter();
     rowKeyFieldIndexes = columnMapping.getRowKeyFieldIndexes();
 
-    hbaseConf = HBaseTablespace.getHBaseConfiguration(conf, meta);
-
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.get(fragment.getUri()).get();
+    hbaseConf = space.getHbaseConf();
     initScanner();
   }
 
@@ -181,8 +181,7 @@ public class HBaseScanner implements Scanner {
     }
 
     if (htable == null) {
-      HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
-          .getConnection(hbaseConf);
+      HConnection hconn = ((HBaseTablespace) TablespaceManager.get(fragment.getUri()).get()).getConnection();
       htable = hconn.getTable(fragment.getHbaseTableName());
     }
     scanner = htable.getScanner(scan);

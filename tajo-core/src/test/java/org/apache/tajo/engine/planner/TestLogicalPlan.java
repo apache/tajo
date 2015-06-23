@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -39,7 +40,7 @@ public class TestLogicalPlan {
   public static void setup() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
-    planner = new LogicalPlanner(util.getMiniCatalogCluster().getCatalog());
+    planner = new LogicalPlanner(util.getMiniCatalogCluster().getCatalog(), TablespaceManager.getInstance());
   }
 
   public static void tearDown() {
