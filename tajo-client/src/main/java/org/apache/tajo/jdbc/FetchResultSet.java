@@ -27,26 +27,19 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 public class FetchResultSet extends TajoResultSetBase {
-  private QueryClient tajoClient;
-  private QueryId queryId;
+  protected QueryClient tajoClient;
   private int fetchRowNum;
   private TajoMemoryResultSet currentResultSet;
-  private boolean finished = false;
-// maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
+  private boolean finished;
+  // maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
   private int maxRows;
 
   public FetchResultSet(QueryClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum) {
-    super(tajoClient.getClientSideSessionVars());
+    super(queryId, schema, tajoClient.getClientSideSessionVars());
     this.tajoClient = tajoClient;
     this.maxRows = tajoClient.getMaxRows();
-    this.queryId = queryId;
     this.fetchRowNum = fetchRowNum;
     this.totalRow = Integer.MAX_VALUE;
-    this.schema = schema;
-  }
-
-  public QueryId getQueryId() {
-    return queryId;
   }
 
   @Override

@@ -19,13 +19,12 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
+import org.apache.tajo.client.QueryStatus;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,10 +32,7 @@ import org.junit.experimental.categories.Category;
 
 import java.net.InetSocketAddress;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -667,6 +663,33 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
       if (stmt != null) {
         stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public final void testCancel() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+    Properties props = new Properties();
+    props.setProperty(SessionVars.BLOCK_ON_RESULT.keyname(), "false");
+
+    Connection conn = new JdbcConnection(connUri, props);
+    PreparedStatement statement = conn.prepareStatement("select sleep(1) from lineitem");
+    try {
+      assertTrue("should have result set", statement.execute());
+      TajoResultSetBase result = (TajoResultSetBase) statement.getResultSet();
+      Thread.sleep(1000);   // todo query master is not killed properly if it's compiling the query (use 100, if you want see)
+      statement.cancel();
+
+      QueryStatus status = client.getQueryStatus(result.getQueryId());
+      assertEquals(TajoProtos.QueryState.QUERY_KILLED, status.getState());
+    } finally {
+      if (statement != null) {
+        statement.close();
       }
       if (conn != null) {
         conn.close();

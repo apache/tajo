@@ -992,8 +992,8 @@ public class Repartitioner {
   public static void scheduleScatteredHashShuffleFetches(TaskSchedulerContext schedulerContext,
        Stage stage, Map<ExecutionBlockId, List<IntermediateEntry>> intermediates,
        String tableName) {
-    long splitVolume = StorageUnit.MB *
-        stage.getMasterPlan().getContext().getLong(SessionVars.TABLE_PARTITION_PER_SHUFFLE_SIZE);
+    long splitVolume = (long)StorageUnit.MB *
+        stage.getMasterPlan().getContext().getInt(SessionVars.TABLE_PARTITION_PER_SHUFFLE_SIZE);
     long pageSize = ((long)StorageUnit.MB) *
         stage.getContext().getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME); // in bytes
     if (pageSize >= splitVolume) {

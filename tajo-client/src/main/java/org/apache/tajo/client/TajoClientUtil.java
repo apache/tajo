@@ -18,7 +18,9 @@
 
 package org.apache.tajo.client;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -27,6 +29,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
+import org.apache.tajo.jdbc.TajoResultSetBase;
+import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
@@ -54,6 +58,21 @@ public class TajoClientUtil {
   /* query complete */
   public static boolean isQueryComplete(TajoProtos.QueryState state) {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
+  }
+
+  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws ServiceException {
+    QueryStatus status = client.getQueryStatus(queryId);
+
+    while(!isQueryComplete(status.getState())) {
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
+      status = client.getQueryStatus(queryId);
+    }
+    return status;
   }
 
   public static ResultSet createResultSet(TajoClient client, QueryId queryId,
@@ -91,7 +110,7 @@ public class TajoClientUtil {
   }
 
   public static ResultSet createNullResultSet() {
-    return new TajoMemoryResultSet(null, new Schema(), null, 0, null);
+    return new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
   }
 
   public static ResultSet createNullResultSet(QueryId queryId) {

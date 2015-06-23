@@ -6,6 +6,9 @@ Release 0.10.2 - Released
 
   IMPROVEMENT
 
+    TAJO-751: JDBC driver should support cancel() method.
+    (Contributed by navis, Committed by jihoon)
+
   BUG FIXES
 
   TASKS
