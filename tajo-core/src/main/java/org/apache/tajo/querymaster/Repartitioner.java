@@ -100,7 +100,7 @@ public class Repartitioner {
           stats[i] = masterContext.getStage(scanEBId).getResultStats().getNumBytes();
         }
 
-        // TODO - We should remove dummy flagment usages
+        // TODO - We should remove dummy fragment usages
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), new Path("/dummy"), 0, 0,
             new String[]{UNKNOWN_HOST});
 

@@ -40,7 +40,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
-import org.apache.tajo.engine.planner.physical.InsertRowExec;
+import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
@@ -341,7 +341,7 @@ public class QueryExecutor {
       throws IOException {
 
     EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
-    InsertRowExec exec = new InsertRowExec(taskAttemptContext, insertNode, evalExprExec);
+    InsertRowsExec exec = new InsertRowsExec(taskAttemptContext, insertNode, evalExprExec);
 
     try {
       exec.init();
@@ -409,7 +409,7 @@ public class QueryExecutor {
         taskAttemptContext.setOutputPath(new Path(finalOutputUri));
 
         EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
-        InsertRowExec exec = new InsertRowExec(taskAttemptContext, insertNode, evalExprExec);
+        InsertRowsExec exec = new InsertRowsExec(taskAttemptContext, insertNode, evalExprExec);
 
         try {
           exec.init();
@@ -483,7 +483,8 @@ public class QueryExecutor {
       FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
 
       if (!formatProperty.isInsertable()) {
-        throw new VerifyException("Inserting into non-file storage is not supported.");
+        throw new VerifyException(
+            String.format("%s tablespace does not allow INSERT operation.", tableDesc.getUri().toString()));
       }
 
       space.prepareTable(rootNode.getChild());

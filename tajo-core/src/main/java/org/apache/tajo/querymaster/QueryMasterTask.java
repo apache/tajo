@@ -294,7 +294,6 @@ public class QueryMasterTask extends CompositeService {
   private LogicalPlan plan;
 
   public synchronized void startQuery() {
-    //LogicalPlan plan = null;
     Tablespace space = null;
     try {
       if (query != null) {

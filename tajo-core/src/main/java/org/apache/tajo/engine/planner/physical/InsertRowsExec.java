@@ -34,10 +34,10 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 /**
- * This is a physical executor to store a row immediately
+ * This is a physical executor to store rows immediately.
  */
-public class InsertRowExec extends UnaryPhysicalExec {
-  private static final Log LOG = LogFactory.getLog(InsertRowExec.class);
+public class InsertRowsExec extends UnaryPhysicalExec {
+  private static final Log LOG = LogFactory.getLog(InsertRowsExec.class);
 
   private PersistentStoreNode plan;
   private TableMeta meta;
@@ -45,9 +45,9 @@ public class InsertRowExec extends UnaryPhysicalExec {
   private Tuple tuple;
 
   // for file punctuation
-  private TableStats sumStats;                  // for aggregating all stats of written files
+  private TableStats sumStats; // for aggregating all stats of written files
 
-  public InsertRowExec(TaskAttemptContext context, PersistentStoreNode plan, PhysicalExec child) throws IOException {
+  public InsertRowsExec(TaskAttemptContext context, PersistentStoreNode plan, PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
   }
@@ -95,8 +95,8 @@ public class InsertRowExec extends UnaryPhysicalExec {
     if(appender != null){
       appender.flush();
       appender.close();
-      // Collect statistics data
 
+      // Collect statistics data
       StatisticsUtil.aggregateTableStat(sumStats, appender.getStats());
       context.setResultStats(sumStats);
     }
