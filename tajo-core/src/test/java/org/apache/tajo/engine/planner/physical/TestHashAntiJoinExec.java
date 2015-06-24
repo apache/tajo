@@ -83,7 +83,7 @@ public class TestHashAntiJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getLocalFs())
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     VTuple tuple = new VTuple(employeeSchema.size());
@@ -109,7 +109,7 @@ public class TestHashAntiJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    appender = ((FileTablespace) TableSpaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -128,7 +128,7 @@ public class TestHashAntiJoinExec {
     people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf);
   }
 
@@ -149,9 +149,9 @@ public class TestHashAntiJoinExec {
   @Test
   public final void testHashAntiJoin() throws IOException, PlanningException {
     FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
-        new Path(employee.getPath()), Integer.MAX_VALUE);
+        new Path(employee.getUri()), Integer.MAX_VALUE);
     FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
-        new Path(people.getPath()), Integer.MAX_VALUE);
+        new Path(people.getUri()), Integer.MAX_VALUE);
 
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 

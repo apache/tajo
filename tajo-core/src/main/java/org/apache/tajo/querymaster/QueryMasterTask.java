@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -51,14 +52,9 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.StorageProperty;
-import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -308,42 +304,27 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public synchronized void startQuery() {
-    Tablespace sm = null;
     LogicalPlan plan = null;
+    Tablespace space = null;
     try {
       if (query != null) {
         LOG.warn("Query already started");
         return;
       }
+
+
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
-      LogicalPlanner planner = new LogicalPlanner(catalog);
+      LogicalPlanner planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       jsonExpr = null; // remove the possible OOM
+
       plan = planner.createPlan(queryContext, expr);
-
-      String storeType = PlannerUtil.getStoreType(plan);
-      if (storeType != null) {
-        sm = TableSpaceManager.getStorageManager(systemConf, storeType);
-        StorageProperty storageProperty = sm.getStorageProperty();
-        if (storageProperty.isSortedInsert()) {
-          String tableName = PlannerUtil.getStoreTableName(plan);
-          LogicalRootNode rootNode = plan.getRootBlock().getRoot();
-          TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
-          if (tableDesc == null) {
-            throw new VerifyException("Can't get table meta data from catalog: " + tableName);
-          }
-          List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
-              getQueryTaskContext().getQueryContext(), tableDesc);
-          if (storageSpecifiedRewriteRules != null) {
-            for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
-              optimizer.addRuleAfterToJoinOpt(eachRule);
-            }
-          }
-        }
-      }
-
       optimizer.optimize(queryContext, plan);
+
+      // when a given uri is null, TableSpaceManager.get will return the default tablespace.
+      space = TableSpaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      space.rewritePlan(queryContext, plan);
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);
@@ -374,10 +355,10 @@ public class QueryMasterTask extends CompositeService {
       LOG.error(t.getMessage(), t);
       initError = t;
 
-      if (plan != null && sm != null) {
+      if (plan != null && space != null) {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
-          sm.rollbackOutputCommit(rootNode.getChild());
+          space.rollbackTable(rootNode.getChild());
         } catch (IOException e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
@@ -422,16 +403,27 @@ public class QueryMasterTask extends CompositeService {
     // Create Output Directory
     ////////////////////////////////////////////
 
-    String outputPath = context.get(QueryVars.OUTPUT_TABLE_PATH, "");
-    if (context.isCreateTable() || context.isInsert()) {
-      if (outputPath == null || outputPath.isEmpty()) {
-        // hbase
-        stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-      } else {
-        stagingDir = StorageUtil.concatPath(context.getOutputPath(), TMP_STAGING_DIR_PREFIX, queryId);
-      }
-    } else {
+    String outputPath = context.get(QueryVars.OUTPUT_TABLE_URI, "");
+
+    // The fact that there is no output means that this query is neither CTAS or INSERT (OVERWRITE) INTO
+    // So, this query results won't be materialized as a part of a table.
+    // The result will be temporarily written in the staging directory.
+    if (outputPath.isEmpty()) {
+      // for temporarily written in the storage directory
       stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
+    } else {
+      Optional<Tablespace> spaceResult = TableSpaceManager.get(outputPath);
+      if (!spaceResult.isPresent()) {
+        throw new IOException("No registered Tablespace for " + outputPath);
+      }
+
+      Tablespace space = spaceResult.get();
+      if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
+        // If this space allows move operation, the staging directory will be underneath the final output table uri.
+        stagingDir = StorageUtil.concatPath(context.getOutputTableUri().toString(), TMP_STAGING_DIR_PREFIX, queryId);
+      } else {
+        stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
+      }
     }
 
     // initializ

@@ -26,7 +26,6 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
@@ -40,9 +39,6 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.CSV;
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.TEXTFILE;
 
 public class PlannerUtil {
 
@@ -915,6 +911,10 @@ public class PlannerUtil {
   }
 
   public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.ROOT) {
+      node = ((LogicalRootNode)node).getChild();
+    }
+
     if (node.getType() == NodeType.CREATE_TABLE) {
       return createTableDesc((CreateTableNode)node);
     }
@@ -935,7 +935,7 @@ public class PlannerUtil {
         }
       }
     } else {
-      if (insertNode.getPath() != null) {
+      if (insertNode.getUri() != null) {
         //insert ... location
         return createTableDesc(insertNode);
       }
@@ -951,7 +951,7 @@ public class PlannerUtil {
             createTableNode.getTableName(),
             createTableNode.getTableSchema(),
             meta,
-            createTableNode.getPath() != null ? createTableNode.getPath().toUri() : null);
+            createTableNode.getUri() != null ? createTableNode.getUri() : null);
 
     tableDescTobeCreated.setExternal(createTableNode.isExternal());
 
@@ -970,7 +970,7 @@ public class PlannerUtil {
             insertNode.getTableName(),
             insertNode.getTableSchema(),
             meta,
-            insertNode.getPath() != null ? insertNode.getPath().toUri() : null);
+            insertNode.getUri() != null ? insertNode.getUri() : null);
 
     if (insertNode.hasPartition()) {
       tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());

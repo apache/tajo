@@ -45,6 +45,7 @@ import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
@@ -116,7 +117,7 @@ public class TestEvalTreeUtil {
     catalog.createFunction(funcMeta);
 
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
 
     String[] QUERIES = {
         "select name, score, age from people where score > 30", // 0

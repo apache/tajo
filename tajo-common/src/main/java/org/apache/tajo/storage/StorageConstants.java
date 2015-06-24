@@ -20,7 +20,13 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.TajoConstants;
 
+import java.net.URI;
+
 public class StorageConstants {
+
+  // Tablespace  -------------------------------------------------
+
+  public static final URI LOCAL_FS_URI = URI.create("file:/");
 
   // Common table properties -------------------------------------------------
 

@@ -20,12 +20,17 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
 
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
+
 public class StoreTableNode extends PersistentStoreNode implements Cloneable {
   @Expose protected String tableName;
+  @Expose protected URI uri;
+  @Expose protected Schema tableSchema;
   @Expose private PartitionMethodDesc partitionDesc;
 
   public StoreTableNode(int pid) {
@@ -55,6 +60,26 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
 
   public final String getTableName() {
     return this.tableName;
+  }
+
+  public boolean hasUri() {
+    return this.uri != null;
+  }
+
+  public void setUri(URI uri) {
+    this.uri = uri;
+  }
+
+  public URI getUri() {
+    return this.uri;
+  }
+
+  public void setTableSchema(Schema schema) {
+    this.tableSchema = schema;
+  }
+
+  public Schema getTableSchema() {
+    return this.tableSchema;
   }
 
   public boolean hasPartition() {
@@ -93,6 +118,8 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
       StoreTableNode other = (StoreTableNode) obj;
       boolean eq = super.equals(other);
       eq = eq && TUtil.checkEquals(this.tableName, other.tableName);
+      eq = eq && TUtil.checkEquals(uri, other.uri);
+      eq = tableSchema.equals(other.tableSchema);
       eq = eq && TUtil.checkEquals(partitionDesc, other.partitionDesc);
       return eq;
     } else {

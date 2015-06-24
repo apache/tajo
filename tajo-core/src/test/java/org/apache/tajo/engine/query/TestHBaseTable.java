@@ -33,12 +33,13 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
@@ -49,7 +50,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -61,10 +64,11 @@ import static org.junit.Assert.assertEquals;
 public class TestHBaseTable extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestHBaseTable.class);
 
+  private static String tableSpaceUri;
   private static String hostName,zkPort;
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass() throws IOException {
     try {
       testingCluster.getHBaseUtil().startHBaseCluster();
       hostName = InetAddress.getLocalHost().getHostName();
@@ -74,6 +78,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } catch (Exception e) {
       e.printStackTrace();
     }
+
+    tableSpaceUri = "hbase:zk://" + hostName + ":" + zkPort;
+    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
+    hBaseTablespace.init(new TajoConf(testingCluster.getHBaseUtil().getConf()));
+    TableSpaceManager.addTableSpaceForTest(hBaseTablespace);
   }
 
   @AfterClass
@@ -88,8 +97,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testVerifyCreateHBaseTableRequiredMeta() throws Exception {
     try {
-      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) " +
-          "USING hbase").close();
+      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) TABLESPACE cluster1 USING hbase").close();
 
       fail("hbase table must have 'table' meta");
     } catch (Exception e) {
@@ -97,7 +105,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
 
     try {
-      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) " +
+      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) TABLESPACE cluster1 " +
           "USING hbase " +
           "WITH ('table'='hbase_table')").close();
 
@@ -109,10 +117,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateHBaseTable() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:a,col3:,col2:b', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+    executeString(
+        "CREATE TABLE hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:a,col3:,col2:b')").close();
 
     assertTableExists("hbase_mapped_table1");
 
@@ -138,11 +145,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateNotExistsExternalHBaseTable() throws Exception {
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b') " +
+            "LOCATION '%s/external_hbase_table'", tableSpaceUri);
     try {
-      executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
-          "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b', " +
-          "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-          "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+      executeString(sql).close();
       fail("External table should be a existed table.");
     } catch (Exception e) {
       assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
@@ -153,10 +161,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   public void testCreateRowFieldWithNonText() throws Exception {
     try {
       executeString("CREATE TABLE hbase_mapped_table2 (rk1 int4, rk2 text, col3 text, col4 text) " +
-          "USING hbase WITH ('table'='hbase_table', 'columns'='0:key#b,1:key,col3:,col2:b', " +
-          "'hbase.rowkey.delimiter'='_', " +
-          "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-          "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+          "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'='0:key#b,1:key,col3:,col2:b', " +
+          "'hbase.rowkey.delimiter'='_')").close();
       fail("Key field type should be TEXT type");
     } catch (Exception e) {
       assertTrue(e.getMessage().indexOf("Key field type should be TEXT type") >= 0);
@@ -171,10 +177,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b') " +
+        "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+    executeString(sql).close();
 
     assertTableExists("external_hbase_mapped_table");
 
@@ -198,15 +205,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b') " +
+        "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+    executeString(sql).close();
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
-        .getConnection(testingCluster.getHBaseUtil().getConf());
+    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
@@ -237,15 +245,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk int8, col1 text, col2 text, col3 int4)\n " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key#b,col1:a,col2:,col3:b#b', \n" +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "', \n" +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk int8, col1 text, col2 text, col3 int4)\n " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key#b,col1:a,col2:,col3:b#b') " +
+        "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+    executeString(sql).close();
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
-        .getConnection(testingCluster.getHBaseUtil().getConf());
+    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
@@ -289,16 +298,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, col2_key text, col2_value text, col3 text) " +
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, col2_key text, col2_value text, col3 text) " +
         "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
-        "'hbase.rowkey.delimiter'='_', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
+    executeString(sql).close();
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
-        .getConnection(testingCluster.getHBaseUtil().getConf());
+    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
@@ -326,16 +335,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, rk2 text, col3 text) " +
+    String sql = String.format(
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, rk2 text, col3 text) " +
         "USING hbase WITH ('table'='external_hbase_table', 'columns'='0:key,1:key,col3:a', " +
-        "'hbase.rowkey.delimiter'='_', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
+    executeString(sql).close();
 
     assertTableExists("external_hbase_mapped_table");
 
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager(conf, "HBASE"))
-        .getConnection(testingCluster.getHBaseUtil().getConf());
+    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
@@ -356,11 +365,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testIndexPredication() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
-        "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+    String sql =
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
+        "'hbase.split.rowkeys'='010,040,060,080') ";
+    executeString(sql).close();
 
 
     assertTableExists("hbase_mapped_table");
@@ -404,12 +413,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCompositeRowIndexPredication() throws Exception {
+
     executeString("CREATE TABLE hbase_mapped_table (rk text, rk2 text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'hbase.rowkey.delimiter'='_', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.rowkey.delimiter'='_')").close();
 
     assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -469,7 +477,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeEq = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
         new ConstEval(new TextDatum("021")));
     scanNode.setQual(evalNodeEq);
-    Tablespace tablespace = TableSpaceManager.getStorageManager(conf, "HBASE");
+    Tablespace tablespace = TableSpaceManager.getByName("cluster1").get();
     List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));
@@ -559,10 +567,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testNonForwardQuery() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:#b', " +
-        "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:#b', " +
+        "'hbase.split.rowkeys'='010,040,060,080')").close();
 
     assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -599,10 +605,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testJoin() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int8) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
-        "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
+        "'hbase.split.rowkeys'='010,040,060,080')").close();
 
     assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -641,9 +645,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testInsertInto() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -682,11 +684,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegion() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
-        "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.split.rowkeys'='010,040,060,080')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -740,11 +740,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegion2() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
-        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -799,11 +797,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
   public void testInsertIntoMultiRegionWithSplitFile() throws Exception {
     String splitFilePath = currentDatasetPath + "/splits.data";
 
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
-        "'hbase.split.rowkeys.file'='" + splitFilePath + "', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.split.rowkeys.file'='" + splitFilePath + "')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -857,12 +854,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegionMultiRowFields() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a', " +
         "'hbase.split.rowkeys'='001,002,003,004,005,006,007,008,009', " +
-        "'hbase.rowkey.delimiter'='_', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.rowkey.delimiter'='_')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -917,11 +913,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoBinaryMultiRegion() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk int4, col1 text) " +
+    executeString("CREATE TABLE hbase_mapped_table (rk int4, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key#b,col1:a', " +
-        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -974,11 +968,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoColumnKeyValue() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col2_key text, col2_value text, col3 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk text, col2_key text, col2_value text, col3 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
-        "'hbase.rowkey.delimiter'='_', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.rowkey.delimiter'='_')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -1065,11 +1058,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoDifferentType() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
-        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9')").close();
 
     assertTableExists("hbase_mapped_table");
 
@@ -1102,11 +1094,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoRowField() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text, col2 text, col3 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text, col2 text, col3 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
-        "'hbase.rowkey.delimiter'='_', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.rowkey.delimiter'='_')").close();
 
 
     assertTableExists("hbase_mapped_table");
@@ -1145,7 +1136,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
   }
 
   @Test
-  public void testCATS() throws Exception {
+  public void testCTAS() throws Exception {
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
@@ -1162,13 +1153,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
-        "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')" +
-        " as " +
-        "select id, name from base_table"
+        "'hbase.split.rowkeys'='010,040,060,080') as" +
+        " select id, name from base_table"
     ).close();
 
     assertTableExists("hbase_mapped_table");
@@ -1199,15 +1188,21 @@ public class TestHBaseTable extends QueryTestCaseBase {
       if (htable != null) {
         htable.close();
       }
+
+      // TODO - rollback should support its corresponding hbase table
+      HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
+      if (hAdmin.tableExists("hbase_table")) {
+        hAdmin.disableTable("hbase_table");
+        hAdmin.deleteTable("hbase_table");
+      }
     }
   }
 
   @Test
   public void testInsertIntoUsingPut() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
 
     assertTableExists("hbase_mapped_table");
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
@@ -1219,8 +1214,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      executeString("insert into hbase_mapped_table " +
-          "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem ").close();
+      executeString(
+          "insert into hbase_mapped_table " +
+          "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem"
+      ).close();
 
       htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
@@ -1253,11 +1250,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoLocation() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text) " +
+    executeString(
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text) TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:', " +
-        "'hbase.split.rowkeys'='010,040,060,080', " +
-        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+        "'hbase.split.rowkeys'='010,040,060,080')").close();
 
     assertTableExists("hbase_mapped_table");
 

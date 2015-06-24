@@ -33,7 +33,6 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
@@ -48,16 +47,18 @@ import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -345,10 +346,18 @@ public class TajoTestingCluster {
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
     if (!local) {
-      c.setVar(ConfVars.ROOT_DIR,
-          getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
+      c.setVar(ConfVars.ROOT_DIR, getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
     } else {
-      c.setVar(ConfVars.ROOT_DIR, testBuildDir.getAbsolutePath() + "/tajo");
+      c.setVar(ConfVars.ROOT_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo");
+    }
+
+    // Do not need for local file system
+    if (!local) {
+      FileTablespace defaultTableSpace =
+          new FileTablespace(TableSpaceManager.DEFAULT_TABLESPACE_NAME, TajoConf.getWarehouseDir(c).toUri());
+      defaultTableSpace.init(conf);
+
+      TableSpaceManager.addTableSpaceForTest(defaultTableSpace);
     }
 
     setupCatalogForTesting(c, testBuildDir);
@@ -439,13 +448,6 @@ public class TajoTestingCluster {
       LOG.info("MiniTajoCluster Worker #" + (i + 1) + " started.");
       tajoWorkers.add(tajoWorker);
     }
-  }
-
-  public void restartTajoCluster(int numSlaves) throws Exception {
-    tajoMaster.stop();
-    tajoMaster.start();
-
-    LOG.info("Minicluster has been restarted");
   }
 
   public TajoMaster getMaster() {
@@ -653,7 +655,14 @@ public class TajoTestingCluster {
       if (!fs.exists(rootDir)) {
         fs.mkdirs(rootDir);
       }
-      Path tablePath = new Path(rootDir, tableName);
+      Path tablePath;
+      if (CatalogUtil.isFQTableName(tableName)) {
+        Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
+        tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
+      } else {
+        tablePath = new Path(rootDir, tableName);
+      }
+
       fs.mkdirs(tablePath);
       if (tableDatas.length > 0) {
         int recordPerFile = tableDatas.length / numDataFiles;

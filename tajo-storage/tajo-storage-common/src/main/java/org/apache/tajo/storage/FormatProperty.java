@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,21 +16,16 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.storage.hbase";
-option java_outer_classname = "StorageFragmentProtos";
-option optimize_for = SPEED;
-option java_generic_services = false;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.storage;
 
-import "CatalogProtos.proto";
+public class FormatProperty {
+  private boolean sortedInsertRequired;
 
-message HBaseFragmentProto {
-  required string uri = 1;
-  required string tableName = 2;
-  required string hbaseTableName = 3;
-  required bytes startRow = 4;
-  required bytes stopRow = 5;
-  required bool last = 6;
-  required int64 length = 7;
-  optional string regionLocation = 8;
+  public FormatProperty(boolean sortedInsertRequired) {
+    this.sortedInsertRequired = sortedInsertRequired;
+  }
+
+  public boolean sortedInsertRequired() {
+    return sortedInsertRequired;
+  }
 }

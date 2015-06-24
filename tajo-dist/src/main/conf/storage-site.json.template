@@ -16,21 +16,20 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.storage.hbase";
-option java_outer_classname = "StorageFragmentProtos";
-option optimize_for = SPEED;
-option java_generic_services = false;
-option java_generate_equals_and_hash = true;
+/* HBase Storage Plugin and Tablespace Example */
+/*
+{
+  "spaces": {
+    "hbase-cluster1": {
+      "uri": "hbase://quorum1:port,quorum2:port/"
+    }
+  },
 
-import "CatalogProtos.proto";
-
-message HBaseFragmentProto {
-  required string uri = 1;
-  required string tableName = 2;
-  required string hbaseTableName = 3;
-  required bytes startRow = 4;
-  required bytes stopRow = 5;
-  required bool last = 6;
-  required int64 length = 7;
-  optional string regionLocation = 8;
+  "storages": {
+    "hbase": {
+      "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
+      "default-format": "hbase"
+    }
+  }
 }
+*/
