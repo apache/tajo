@@ -176,4 +176,32 @@ public class TestDelimitedTextFile {
       scanner.close();
     }
   }
+
+  @Test
+  public void testSkippingHeaderFooter() throws IOException {
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
+    meta.putOption(StorageConstants.TEXT_SKIP_FOOTER_LINE, "1");
+    FileFragment fragment = getFileFragment("testNormal.json");
+    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    scanner.init();
+
+    int lines = 0;
+
+    try {
+      while (true) {
+        Tuple tuple = scanner.next();
+
+        if (tuple != null) {
+          assertEquals(19+lines, tuple.getInt2(2));
+          lines++;
+        }
+        else break;
+      }
+    } finally {
+      assertEquals(3, lines);
+      scanner.close();
+    }
+  }
 }
