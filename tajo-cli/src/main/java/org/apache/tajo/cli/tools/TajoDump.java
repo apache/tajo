@@ -22,10 +22,8 @@ import com.google.protobuf.ServiceException;
 
 import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.DDLBuilder;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
@@ -185,6 +183,11 @@ public class TajoDump {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {
           writer.write(DDLBuilder.buildDDLForBaseTable(table));
+        }
+
+        List<CatalogProtos.IndexDescProto> indexeProtos = client.getIndexes(tableName);
+        for (CatalogProtos.IndexDescProto eachIndexProto : indexeProtos) {
+          writer.write(DDLBuilder.buildDDLForIndex(new IndexDesc(eachIndexProto)));
         }
         writer.write("\n\n");
       } catch (Exception e) {

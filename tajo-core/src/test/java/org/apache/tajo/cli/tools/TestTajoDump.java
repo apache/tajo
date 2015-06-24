@@ -64,4 +64,26 @@ public class TestTajoDump extends QueryTestCaseBase {
       executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName2\"");
     }
   }
+
+  @Test
+  public void testDump3() throws Exception {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
+      executeString("CREATE TABLE \"" + getCurrentDatabase() +
+          "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
+
+      executeString("CREATE INDEX test_idx on \"" + getCurrentDatabase() + "\".\"TableName1\" ( \"Age\" asc null first, \"FirstName\" desc null last )");
+
+      UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      PrintWriter printWriter = new PrintWriter(bos);
+      TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+      printWriter.flush();
+      printWriter.close();
+      assertStrings(new String(bos.toByteArray()));
+      bos.close();
+
+
+      executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+    }
+  }
 }
