@@ -166,27 +166,6 @@ public class QueryClientImpl implements QueryClient {
       connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
     }
     return response;
-
-//<<<<<<< HEAD
-//        connection.checkSessionAndGet(client);
-//
-//        final QueryRequest.Builder builder = QueryRequest.newBuilder();
-//        builder.setSessionId(connection.sessionId);
-//        builder.setQuery(sql);
-//        builder.setIsJson(false);
-//        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//
-//
-//
-//      }
-//    }.withRetries();
-//=======
-//    SubmitQueryResponse response = tajoMasterService.submitQuery(null, builder.build());
-//    if (response.getResultCode() == ResultCode.OK) {
-//      connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-//    }
-//    return response;
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
   }
 
   @Override
@@ -365,39 +344,6 @@ public class QueryClientImpl implements QueryClient {
       throws ServiceException {
 
     try {
-//<<<<<<< HEAD
-//      final ServerCallable<ClientProtos.SerializedResultSet> callable =
-//          new ServerCallable<ClientProtos.SerializedResultSet>(connection.manager, connection.getTajoMasterAddr(),
-//              TajoMasterClientProtocol.class, false) {
-//
-//            public ClientProtos.SerializedResultSet call(NettyClientBase client) throws ServiceException {
-//
-//              connection.checkSessionAndGet(client);
-//              TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//
-//              GetQueryResultDataRequest.Builder builder = GetQueryResultDataRequest.newBuilder();
-//              builder.setSessionId(connection.sessionId);
-//              builder.setQueryId(queryId.getProto());
-//              builder.setFetchRowNum(fetchRowNum);
-//              try {
-//                GetQueryResultDataResponse response = tajoMasterService.getQueryResultData(null, builder.build());
-//                if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
-//                  abort();
-//                  throw new ServiceException(response.getResult().getErrorMessage());
-//                }
-//
-//                return response.getResultSet();
-//              } catch (ServiceException e) {
-//                abort();
-//                throw e;
-//              } catch (Throwable t) {
-//                throw new ServiceException(t.getMessage(), t);
-//              }
-//            }
-//          };
-//
-//      ClientProtos.SerializedResultSet serializedResultSet = callable.withRetries();
-//=======
       NettyClientBase client = connection.getTajoMasterConnection();
       connection.checkSessionAndGet(client);
       TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -413,7 +359,6 @@ public class QueryClientImpl implements QueryClient {
       }
 
       ClientProtos.SerializedResultSet resultSet = response.getResultSet();
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
 
       return new TajoMemoryResultSet(queryId,
           new Schema(resultSet.getSchema()),
@@ -440,33 +385,12 @@ public class QueryClientImpl implements QueryClient {
     builder.setIsJson(false);
     ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
 
-//<<<<<<< HEAD
-//        connection.checkSessionAndGet(client);
-//        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//
-//        QueryRequest.Builder builder = QueryRequest.newBuilder();
-//        builder.setSessionId(connection.sessionId);
-//        builder.setQuery(sql);
-//        builder.setIsJson(false);
-//        ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
-//
-//        if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-//          connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-//          return true;
-//        } else {
-//          if (response.getResult().hasErrorMessage()) {
-//            System.err.println("ERROR: " + response.getResult().getErrorMessage());
-//          }
-//          return false;
-//        }
-//=======
     if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
       connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return true;
     } else {
       if (response.getResult().hasErrorMessage()) {
         LOG.error("ERROR: " + response.getResult().getErrorMessage());
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
       }
       return false;
     }
@@ -475,29 +399,6 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public boolean updateQueryWithJson(final String json) throws ServiceException {
 
-//<<<<<<< HEAD
-//    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
-//        TajoMasterClientProtocol.class, false) {
-//
-//      public Boolean call(NettyClientBase client) throws ServiceException {
-//
-//        connection.checkSessionAndGet(client);
-//        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//
-//        QueryRequest.Builder builder = QueryRequest.newBuilder();
-//        builder.setSessionId(connection.sessionId);
-//        builder.setQuery(json);
-//        builder.setIsJson(true);
-//        ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
-//        if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-//          return true;
-//        } else {
-//          if (response.getResult().hasErrorMessage()) {
-//            System.err.println("ERROR: " + response.getResult().getErrorMessage());
-//          }
-//          return false;
-//        }
-//=======
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -512,7 +413,6 @@ public class QueryClientImpl implements QueryClient {
     } else {
       if (response.getResult().hasErrorMessage()) {
         LOG.error("ERROR: " + response.getResult().getErrorMessage());
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
       }
       return false;
     }
@@ -607,27 +507,6 @@ public class QueryClientImpl implements QueryClient {
   }
   
   public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
-//<<<<<<< HEAD
-//    return new ServerCallable<QueryInfoProto>(connection.manager, connection.getTajoMasterAddr(),
-//        TajoMasterClientProtocol.class, false) {
-//      public QueryInfoProto call(NettyClientBase client) throws ServiceException {
-//        connection.checkSessionAndGet(client);
-//
-//        QueryIdRequest.Builder builder = QueryIdRequest.newBuilder();
-//        builder.setSessionId(connection.sessionId);
-//        builder.setQueryId(queryId.getProto());
-//
-//        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//        GetQueryInfoResponse res = tajoMasterService.getQueryInfo(null,builder.build());
-//        if (res.getResult().getResultCode() == ResultCode.OK) {
-//          return res.getQueryInfo();
-//        } else {
-//          abort();
-//          throw new ServiceException(res.getResult().getErrorMessage());
-//        }
-//      }
-//    }.withRetries();
-//=======
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
 
@@ -642,7 +521,6 @@ public class QueryClientImpl implements QueryClient {
     } else {
       throw new ServiceException(res.getResult().getErrorMessage());
     }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
   }
 
   public QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException {
@@ -666,16 +544,6 @@ public class QueryClientImpl implements QueryClient {
     try {
       connection.checkSessionAndGet(connection.getTajoMasterConnection());
 
-//<<<<<<< HEAD
-//        QueryMasterClientProtocolService.BlockingInterface queryMasterService = client.getStub();
-//        GetQueryHistoryResponse res = queryMasterService.getQueryHistory(null,builder.build());
-//        if (res.getResult().getResultCode() == ResultCode.OK) {
-//          return res.getQueryHistory();
-//        } else {
-//          abort();
-//          throw new ServiceException(res.getResult().getErrorMessage());
-//        }
-//=======
       QueryIdRequest.Builder builder = QueryIdRequest.newBuilder();
       builder.setSessionId(connection.sessionId);
       builder.setQueryId(queryId.getProto());
@@ -686,7 +554,6 @@ public class QueryClientImpl implements QueryClient {
         return res.getQueryHistory();
       } else {
         throw new ServiceException(res.getResult().getErrorMessage());
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
       }
     } finally {
       queryMasterClient.close();

@@ -478,8 +478,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public boolean existIndexByColumnNames(final String databaseName, final String tableName, final String [] columnNames) {
     try {
-
-//<<<<<<< HEAD
       GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       for (String colunName : columnNames) {
@@ -499,14 +497,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       CatalogProtocolService.BlockingInterface stub = getStub();
       return stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)).getValue();
-//=======
-//      GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
-//      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-//      builder.setColumnName(columnName);
-//
-//      CatalogProtocolService.BlockingInterface stub = getStub();
-//      return stub.existIndexByColumn(null, builder.build()).getValue();
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return false;
@@ -548,11 +538,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
                                            final String tableName,
                                            final String [] columnNames) {
     try {
-//      GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
-//      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-//      builder.setColumnName(columnName);
-//
-//<<<<<<< HEAD
       GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       for (String columnName : columnNames) {
@@ -579,10 +564,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
         indexDescs.add(new IndexDesc(descProto));
       }
       return indexDescs;
-//=======
-//      CatalogProtocolService.BlockingInterface stub = getStub();
-//      return new IndexDesc(stub.getIndexByColumn(null, builder.build()));
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
@@ -604,21 +585,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return false;
     }
   }
-//<<<<<<< HEAD
-//=======
-//
-//  @Override
-//  public List<IndexProto> getAllIndexes() {
-//    try {
-//      CatalogProtocolService.BlockingInterface stub = getStub();
-//      GetIndexesProto response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
-//      return response.getIndexList();
-//    } catch (ServiceException e) {
-//      LOG.error(e.getMessage(), e);
-//      return new ArrayList<IndexProto>();
-//    }
-//  }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
 
   @Override
   public final boolean createFunction(final FunctionDesc funcDesc) {

@@ -166,35 +166,8 @@ public class SessionConnection implements Closeable {
   }
 
   public Map<String, String> updateSessionVariables(final Map<String, String> variables) throws ServiceException {
-//<<<<<<< HEAD
-//    return new ServerCallable<Map<String, String>>(manager, getTajoMasterAddr(),
-//        TajoMasterClientProtocol.class, false) {
-//
-//      public Map<String, String> call(NettyClientBase client) throws ServiceException {
-//        checkSessionAndGet(client);
-//
-//        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//        KeyValueSet keyValueSet = new KeyValueSet();
-//        keyValueSet.putAll(variables);
-//        ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
-//            .setSessionId(sessionId)
-//            .setSessionVars(keyValueSet.getProto()).build();
-//
-//        SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
-//
-//        if (response.getResult().getResultCode() == ResultCode.OK) {
-//          updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-//          return Collections.unmodifiableMap(sessionVarsCache);
-//        } else {
-//          throw new ServiceException(response.getResult().getErrorMessage());
-//        }
-//      }
-//    }.withRetries();
-//  }
-//=======
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
 
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
     KeyValueSet keyValueSet = new KeyValueSet();
@@ -217,16 +190,6 @@ public class SessionConnection implements Closeable {
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
 
-//<<<<<<< HEAD
-//        if (response.getResult().getResultCode() == ResultCode.OK) {
-//          updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-//          return Collections.unmodifiableMap(sessionVarsCache);
-//        } else {
-//          throw new ServiceException(response.getResult().getErrorMessage());
-//        }
-//      }
-//    }.withRetries();
-//=======
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
     ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
         .setSessionId(sessionId)
@@ -240,7 +203,6 @@ public class SessionConnection implements Closeable {
     } else {
       throw new ServiceException(response.getResult().getErrorMessage());
     }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
   }
 
   void updateSessionVarsCache(Map<String, String> variables) {
@@ -368,21 +330,12 @@ public class SessionConnection implements Closeable {
 
     NettyClientBase client = getTajoMasterConnection();
 
-//<<<<<<< HEAD
-//        // create new session
-//        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-//        CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
-//        if (response.getResult().getResultCode() != ResultCode.OK) {
-//          return false;
-//        }
-//=======
     // create new session
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
     CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
     if (response.getResult().getResultCode() != ResultCode.OK) {
       return false;
     }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
 
     // Invalidate some session variables in client cache
     sessionId = response.getSessionId();
@@ -396,26 +349,6 @@ public class SessionConnection implements Closeable {
       }
     }
 
-//<<<<<<< HEAD
-//        // Update the session variables in server side
-//        try {
-//          KeyValueSet keyValueSet = new KeyValueSet();
-//          keyValueSet.putAll(sessionVarsCache);
-//          ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
-//              .setSessionId(sessionId)
-//              .setSessionVars(keyValueSet.getProto()).build();
-//
-//          if (tajoMasterService.updateSessionVariables(null, request).getResult().getResultCode() != ResultCode.OK) {
-//            tajoMasterService.removeSession(null, sessionId);
-//            return false;
-//          }
-//          LOG.info(String.format("Reconnected to session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
-//          return true;
-//        } catch (ServiceException e) {
-//          tajoMasterService.removeSession(null, sessionId);
-//          return false;
-//        }
-//=======
     // Update the session variables in server side
     try {
       KeyValueSet keyValueSet = new KeyValueSet();
@@ -427,7 +360,6 @@ public class SessionConnection implements Closeable {
       if (tajoMasterService.updateSessionVariables(null, request).getResult().getResultCode() != ResultCode.OK) {
         tajoMasterService.removeSession(null, sessionId);
         return false;
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
       }
       LOG.info(String.format("Reconnected to session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
       return true;

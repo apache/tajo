@@ -335,25 +335,6 @@ public class QueryExecutor {
         }
       }
     }
-//<<<<<<< HEAD
-//    boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
-//    if (isInsert) {
-//      InsertNode insertNode = rootNode.getChild();
-//      insertNonFromQuery(queryContext, insertNode, responseBuilder);
-//    } else {
-//      Schema schema = PlannerUtil.targetToSchema(targets);
-//      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
-//      byte[] serializedBytes = encoder.toBytes(outTuple);
-//      ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
-//      serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
-//      serializedResBuilder.setSchema(schema.getProto());
-//      serializedResBuilder.setBytesNum(serializedBytes.length);
-//
-//      responseBuilder.setResultSet(serializedResBuilder);
-//      responseBuilder.setMaxRowNum(1);
-//      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-//      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
-//=======
   }
 
   public static void stopScriptExecutors(EvalContext evalContext) {
