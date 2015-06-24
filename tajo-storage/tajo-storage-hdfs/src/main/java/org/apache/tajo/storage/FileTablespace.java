@@ -35,18 +35,28 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.net.URI;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT;
+
 public class FileTablespace extends Tablespace {
+
+  public static final PathFilter hiddenFileFilter = new PathFilter() {
+    public boolean accept(Path p) {
+      String name = p.getName();
+      return !name.startsWith("_") && !name.startsWith(".");
+    }
+  };
   private final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
@@ -83,27 +93,54 @@ public class FileTablespace extends Tablespace {
       };
 
   protected FileSystem fs;
-  protected Path tableBaseDir;
+  protected Path basePath;
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileTablespace(String storeType) {
-    super(storeType);
+  public FileTablespace(String spaceName, URI uri) {
+    super(spaceName, uri);
   }
 
   @Override
   protected void storageInit() throws IOException {
-    this.tableBaseDir = TajoConf.getWarehouseDir(conf);
-    this.fs = tableBaseDir.getFileSystem(conf);
-    this.blocksMetadataEnabled = conf.getBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
-        DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
-    if (!this.blocksMetadataEnabled)
+    this.basePath = new Path(uri);
+    this.fs = basePath.getFileSystem(conf);
+    this.conf.set(DFSConfigKeys.FS_DEFAULT_NAME_KEY, fs.getUri().toString());
+
+    this.blocksMetadataEnabled =
+        conf.getBoolean(DFS_HDFS_BLOCKS_METADATA_ENABLED, DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
+
+    if (!this.blocksMetadataEnabled) {
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
+    }
+  }
+
+  @Override
+  public void setConfig(String name, String value) {
+    conf.set(name, value);
+  }
+
+  @Override
+  public void setConfigs(Map<String, String> configs) {
+    for (Map.Entry<String, String> c : configs.entrySet()) {
+      conf.set(c.getKey(), c.getValue());
+    }
+  }
+
+  @Override
+  public long getTableVolume(URI uri) throws IOException {
+    Path path = new Path(uri);
+    ContentSummary summary = fs.getContentSummary(path);
+    return summary.getLength();
+  }
+
+  @Override
+  public URI getRootUri() {
+    return fs.getUri();
   }
 
   public Scanner getFileScanner(TableMeta meta, Schema schema, Path path)
       throws IOException {
-    FileSystem fs = path.getFileSystem(conf);
     FileStatus status = fs.getFileStatus(path);
     return getFileScanner(meta, schema, path, status);
   }
@@ -128,8 +165,9 @@ public class FileTablespace extends Tablespace {
     return fileSystem.exists(path);
   }
 
-  public Path getTablePath(String tableName) {
-    return new Path(tableBaseDir, tableName);
+  @Override
+  public URI getTableUri(String databaseName, String tableName) {
+    return StorageUtil.concatPath(basePath, databaseName, tableName).toUri();
   }
 
   private String partitionPath = "";
@@ -154,12 +192,12 @@ public class FileTablespace extends Tablespace {
   }
 
   public FileFragment[] split(String tableName) throws IOException {
-    Path tablePath = new Path(tableBaseDir, tableName);
+    Path tablePath = new Path(basePath, tableName);
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }
 
   public FileFragment[] split(String tableName, long fragmentSize) throws IOException {
-    Path tablePath = new Path(tableBaseDir, tableName);
+    Path tablePath = new Path(basePath, tableName);
     return split(tableName, tablePath, fragmentSize);
   }
 
@@ -314,7 +352,6 @@ public class FileTablespace extends Tablespace {
     for (int i = 0; i < dirs.length; ++i) {
       Path p = dirs[i];
 
-      FileSystem fs = p.getFileSystem(conf);
       FileStatus[] matches = fs.globStatus(p, inputFilter);
       if (matches == null) {
         errors.add(new IOException("Input path does not exist: " + p));
@@ -323,8 +360,7 @@ public class FileTablespace extends Tablespace {
       } else {
         for (FileStatus globStat : matches) {
           if (globStat.isDirectory()) {
-            for (FileStatus stat : fs.listStatus(globStat.getPath(),
-                inputFilter)) {
+            for (FileStatus stat : fs.listStatus(globStat.getPath(), inputFilter)) {
               result.add(stat);
             }
           } else {
@@ -492,8 +528,6 @@ public class FileTablespace extends Tablespace {
     List<BlockLocation> blockLocations = Lists.newArrayList();
 
     for (Path p : inputs) {
-      FileSystem fs = p.getFileSystem(conf);
-
       ArrayList<FileStatus> files = Lists.newArrayList();
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
@@ -586,7 +620,7 @@ public class FileTablespace extends Tablespace {
       return;
     }
 
-    DistributedFileSystem fs = (DistributedFileSystem)DistributedFileSystem.get(conf);
+    DistributedFileSystem fs = (DistributedFileSystem) this.fs;
     int lsLimit = conf.getInt(DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
     int blockLocationIdx = 0;
 
@@ -629,7 +663,7 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
-    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getPath()));
+    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getUri()));
   }
 
   @Override
@@ -640,13 +674,13 @@ public class FileTablespace extends Tablespace {
       String simpleTableName = splitted[1];
 
       // create a table directory (i.e., ${WAREHOUSE_DIR}/${DATABASE_NAME}/${TABLE_NAME} )
-      Path tablePath = StorageUtil.concatPath(tableBaseDir, databaseName, simpleTableName);
-      tableDesc.setPath(tablePath.toUri());
+      Path tablePath = StorageUtil.concatPath(basePath, databaseName, simpleTableName);
+      tableDesc.setUri(tablePath.toUri());
     } else {
-      Preconditions.checkState(tableDesc.getPath() != null, "ERROR: LOCATION must be given.");
+      Preconditions.checkState(tableDesc.getUri() != null, "ERROR: LOCATION must be given.");
     }
 
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
 
     FileSystem fs = path.getFileSystem(conf);
     TableStats stats = new TableStats();
@@ -679,7 +713,7 @@ public class FileTablespace extends Tablespace {
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException {
     try {
-      Path path = new Path(tableDesc.getPath());
+      Path path = new Path(tableDesc.getUri());
       FileSystem fs = path.getFileSystem(conf);
       LOG.info("Delete table data dir: " + path);
       fs.delete(path, true);
@@ -692,7 +726,7 @@ public class FileTablespace extends Tablespace {
   public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numResultFragments) throws IOException {
     // Listing table data file which is not empty.
     // If the table is a partitioned table, return file list which has same partition key.
-    Path tablePath = new Path(tableDesc.getPath());
+    Path tablePath = new Path(tableDesc.getUri());
     FileSystem fs = tablePath.getFileSystem(conf);
 
     //In the case of partitioned table, we should return same partition key data files.
@@ -704,7 +738,7 @@ public class FileTablespace extends Tablespace {
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
     if (fs.exists(tablePath)) {
       if (!partitionPath.isEmpty()) {
-        Path partPath = new Path(tableDesc.getPath() + partitionPath);
+        Path partPath = new Path(tableDesc.getUri() + partitionPath);
         if (fs.exists(partPath)) {
           getNonZeroLengthDataFiles(fs, partPath, nonZeroLengthFiles, currentPage, numResultFragments,
                   new AtomicInteger(0), tableDesc.hasPartition(), this.currentDepth, partitionDepth);
@@ -768,7 +802,7 @@ public class FileTablespace extends Tablespace {
     // Intermediate directory
     if (fs.isDirectory(path)) {
 
-      FileStatus[] files = fs.listStatus(path, Tablespace.hiddenFileFilter);
+      FileStatus[] files = fs.listStatus(path, hiddenFileFilter);
 
       if (files != null && files.length > 0) {
 
@@ -817,17 +851,22 @@ public class FileTablespace extends Tablespace {
     }
   }
 
-  @Override
-  public StorageProperty getStorageProperty() {
-    StorageProperty storageProperty = new StorageProperty();
-    storageProperty.setSortedInsert(false);
-    if (storeType.equalsIgnoreCase("RAW")) {
-      storageProperty.setSupportsInsertInto(false);
-    } else {
-      storageProperty.setSupportsInsertInto(true);
-    }
+  private static final StorageProperty FileStorageProperties = new StorageProperty(true, true, true, true);
+  private static final FormatProperty GeneralFileProperties = new FormatProperty(false);
+  private static final FormatProperty HFileProperties = new FormatProperty(true);
 
-    return storageProperty;
+  @Override
+  public StorageProperty getProperty() {
+    return FileStorageProperties;
+  }
+
+  @Override
+  public FormatProperty getFormatProperty(String format) {
+    if (format.equalsIgnoreCase("hbase")) {
+      return HFileProperties;
+    } else {
+      return GeneralFileProperties;
+    }
   }
 
   @Override
@@ -835,26 +874,20 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public void beforeInsertOrCATS(LogicalNode node) throws IOException {
+  public void prepareTable(LogicalNode node) throws IOException {
   }
 
   @Override
-  public void rollbackOutputCommit(LogicalNode node) throws IOException {
+  public void rollbackTable(LogicalNode node) throws IOException {
   }
 
   @Override
-  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException {
   }
 
   @Override
-  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc)
-      throws IOException {
-    return null;
-  }
-
-  @Override
-  public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
-                               Schema schema, TableDesc tableDesc) throws IOException {
+  public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
+                          Schema schema, TableDesc tableDesc) throws IOException {
     return commitOutputData(queryContext, true);
   }
 
@@ -879,8 +912,8 @@ public class FileTablespace extends Tablespace {
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
     Path finalOutputDir;
-    if (!queryContext.get(QueryVars.OUTPUT_TABLE_PATH, "").isEmpty()) {
-      finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_PATH));
+    if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()) {
+      finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
       try {
         FileSystem fs = stagingResultDir.getFileSystem(conf);
 
@@ -949,7 +982,7 @@ public class FileTablespace extends Tablespace {
               if (fs.exists(finalOutputDir)) {
                 fs.mkdirs(oldTableDir);
 
-                for (FileStatus status : fs.listStatus(finalOutputDir, Tablespace.hiddenFileFilter)) {
+                for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
                   fs.rename(status.getPath(), oldTableDir);
                 }
 
@@ -971,7 +1004,7 @@ public class FileTablespace extends Tablespace {
               if (movedToOldTable && !committed) {
 
                 // if commit is failed, recover the old data
-                for (FileStatus status : fs.listStatus(finalOutputDir, Tablespace.hiddenFileFilter)) {
+                for (FileStatus status : fs.listStatus(finalOutputDir, hiddenFileFilter)) {
                   fs.delete(status.getPath(), true);
                 }
 

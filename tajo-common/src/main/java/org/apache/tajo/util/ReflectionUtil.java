@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ReflectionUtil {
-  private static final Class<?>[] EMPTY_PARAM = new Class[]{};
-  private static final Object [] EMPTY_OBJECT = new Object[] {};
-  private static final Class<?>[] CONF_PARAM = new Class[]{TajoConf.class};
+  public static final Class<?>[] EMPTY_PARAM = new Class[]{};
+  public static final Object [] EMPTY_OBJECT = new Object[] {};
+  public static final Class<?>[] CONF_PARAM = new Class[]{TajoConf.class};
 
   /**
    * Caches of constructors for each class. Pins the classes so they

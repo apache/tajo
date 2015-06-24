@@ -5,6 +5,13 @@ Overview of Tajo Tables
 Overview
 ========
 
+Tablespaces
+===========
+
+Tablespaces is a physical location where files or data objects representing data rows can be stored. Once defined, a tablespace can be referred to by a name when creating a database or a table. Especially, it is very useful when a Tajo cluster instance should use heterogeneous storage systems such as HDFS, MySQL, and Oracle because each tablespace can be specified to use a different storage system. 
+
+Please refer to :doc:`/table_management/tablespaces` if you want to know more information about tablespaces.
+
 Managed Table
 ================
 

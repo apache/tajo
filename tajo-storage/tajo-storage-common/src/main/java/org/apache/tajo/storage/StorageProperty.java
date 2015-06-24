@@ -19,22 +19,51 @@
 package org.apache.tajo.storage;
 
 public class StorageProperty {
-  private boolean supportsInsertInto;
-  private boolean sortedInsert;
+  private boolean movable;
+  private boolean writable;
+  private boolean insertable;
+  private boolean absolutePathAllowed;
 
-  public boolean isSupportsInsertInto() {
-    return supportsInsertInto;
+  public StorageProperty(boolean movable, boolean writable, boolean isInsertable, boolean absolutePathAllowed) {
+    this.movable = movable;
+    this.writable = writable;
+    this.insertable = isInsertable;
+    this.absolutePathAllowed = absolutePathAllowed;
   }
 
-  public void setSupportsInsertInto(boolean supportsInsertInto) {
-    this.supportsInsertInto = supportsInsertInto;
+  /**
+   * Move-like operation is allowed
+   *
+   * @return true if move operation is available
+   */
+  public boolean isMovable() {
+    return movable;
   }
 
-  public boolean isSortedInsert() {
-    return sortedInsert;
+  /**
+   * Is it Writable storage?
+   *
+   * @return true if this storage is writable.
+   */
+  public boolean isWritable() {
+    return writable;
   }
 
-  public void setSortedInsert(boolean sortedInsert) {
-    this.sortedInsert = sortedInsert;
+  /**
+   * this storage supports insert operation?
+   *
+   * @return true if insert operation is allowed.
+   */
+  public boolean isInsertable() {
+    return insertable;
+  }
+
+  /**
+   * Does this storage allows the use of arbitrary absolute paths outside tablespace?
+   *
+   * @return
+   */
+  public boolean isArbitraryPathAllowed() {
+    return this.absolutePathAllowed;
   }
 }

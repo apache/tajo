@@ -259,9 +259,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
       return findFilteredPaths(queryContext, paritionValuesSchema,
-          indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getPath()));
+          indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()));
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPaths(queryContext, paritionValuesSchema, null, new Path(table.getPath()));
+      return findFilteredPaths(queryContext, paritionValuesSchema, null, new Path(table.getUri()));
     }
   }
 

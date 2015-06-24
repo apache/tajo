@@ -162,7 +162,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     if (hasQual()) {
       sb.append(", filter=").append(qual);
     }
-    sb.append(", path=").append(getTableDesc().getPath()).append(")");
+    sb.append(", path=").append(getTableDesc().getUri()).append(")");
     return sb.toString();
 	}
 
