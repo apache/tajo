@@ -62,6 +62,9 @@ public class SeqScanExec extends ScanExec {
 
   private TableStats inputStats;
 
+  // scanner iterator with filter or without filter
+  private ScannerIterator scanIt;
+
   public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
@@ -174,6 +177,12 @@ public class SeqScanExec extends ScanExec {
         qual.bind(context.getEvalContext(), inSchema);
       }
     }
+
+    if (plan.hasQual()) {
+      scanIt = new FilterScanIterator(scanner, qual);
+    } else {
+      scanIt = new FullScanIterator(scanner);
+    }
   }
 
   @Override
@@ -228,26 +237,15 @@ public class SeqScanExec extends ScanExec {
       return null;
     }
 
-    Tuple tuple;
-    Tuple outTuple = new VTuple(outColumnNum);
-
-    if (!plan.hasQual()) {
-      if ((tuple = scanner.next()) != null) {
-        projector.eval(tuple, outTuple);
-        outTuple.setOffset(tuple.getOffset());
-        return outTuple;
-      } else {
-        return null;
-      }
-    } else {
-      while ((tuple = scanner.next()) != null) {
-        if (qual.eval(tuple).isTrue()) {
-          projector.eval(tuple, outTuple);
-          return outTuple;
-        }
-      }
-      return null;
+    while(scanIt.hasNext()) {
+      Tuple outTuple = new VTuple(outColumnNum);
+      Tuple t = scanIt.next();
+      projector.eval(t, outTuple);
+      outTuple.setOffset(t.getOffset());
+      return outTuple;
     }
+
+    return null;
   }
 
   @Override
