@@ -176,9 +176,7 @@ public class SeqScanExec extends ScanExec {
       } else {
         qual.bind(context.getEvalContext(), inSchema);
       }
-    }
 
-    if (plan.hasQual()) {
       scanIt = new FilterScanIterator(scanner, qual);
     } else {
       scanIt = new FullScanIterator(scanner);
