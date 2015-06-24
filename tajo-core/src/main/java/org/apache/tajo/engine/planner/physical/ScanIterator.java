@@ -22,7 +22,11 @@ import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-public interface ScannerIterator {
+/**
+ * This is a scan iterator implementation for various scan types.
+ * It has the same semantic to java.util.Iterator except throwing IOException.
+ */
+public interface ScanIterator {
   boolean hasNext() throws IOException;
 
   Tuple next() throws IOException;

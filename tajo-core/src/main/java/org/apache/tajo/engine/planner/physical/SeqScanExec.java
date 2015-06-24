@@ -63,7 +63,7 @@ public class SeqScanExec extends ScanExec {
   private TableStats inputStats;
 
   // scanner iterator with filter or without filter
-  private ScannerIterator scanIt;
+  private ScanIterator scanIt;
 
   public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {

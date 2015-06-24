@@ -24,7 +24,10 @@ import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-public class FilterScanIterator implements ScannerIterator {
+/**
+ * This iterator involves filter operation.
+ */
+public class FilterScanIterator implements ScanIterator {
   private final Scanner scanner;
   private final EvalNode filter;
   private Tuple currentTuple;

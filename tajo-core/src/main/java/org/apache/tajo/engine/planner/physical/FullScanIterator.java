@@ -18,13 +18,15 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-public class FullScanIterator implements ScannerIterator {
+/**
+ * This scan iterator performs full scan.
+ */
+public class FullScanIterator implements ScanIterator {
   private final Scanner scanner;
   private Tuple currentTuple;
 
