@@ -1044,17 +1044,15 @@ public class Repartitioner {
         firstSplitVolume = splitVolume;
       }
 
-      //Each Pair object in the splits variable is assigned to the next ExecutionBlock's task.
+      //Each Pair object in the splits variable is assigned to the next ExectionBlock's task.
       //The first long value is a offset of the intermediate file and the second long value is length.
-      long[] splits = currentInterm.split(firstSplitVolume, splitVolume);
-      if (splits == null || splits.length == 0) {
+      List<Pair<Long, Long>> splits = currentInterm.split(firstSplitVolume, splitVolume);
+      if (splits == null || splits.isEmpty()) {
         break;
       }
 
-      for (int i = 0; i < splits.length; i += 2) {
-        long offset = splits[i];
-        long length = splits[i + 1];
-        if (fetchListVolume > 0 && fetchListVolume + length >= splitVolume) {
+      for (Pair<Long, Long> eachSplit: splits) {
+        if (fetchListVolume > 0 && fetchListVolume + eachSplit.getSecond() >= splitVolume) {
           if (!fetchListForSingleTask.isEmpty()) {
             fetches.add(fetchListForSingleTask);
           }
@@ -1063,10 +1061,10 @@ public class Repartitioner {
         }
         FetchImpl fetch = new FetchImpl(currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
             ebId, currentInterm.getPartId(), TUtil.newList(currentInterm));
-        fetch.setOffset(offset);
-        fetch.setLength(length);
+        fetch.setOffset(eachSplit.getFirst());
+        fetch.setLength(eachSplit.getSecond());
         fetchListForSingleTask.add(fetch);
-        fetchListVolume += length;
+        fetchListVolume += eachSplit.getSecond();
       }
     }
     if (!fetchListForSingleTask.isEmpty()) {
