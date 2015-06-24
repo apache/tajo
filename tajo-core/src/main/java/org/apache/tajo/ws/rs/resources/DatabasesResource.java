@@ -18,26 +18,6 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
@@ -45,13 +25,18 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.NewDatabaseRequest;
 import org.apache.tajo.ws.rs.responses.DatabaseInfoResponse;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Deals with Database Management
@@ -131,8 +116,8 @@ public class DatabasesResource {
    * @return
    */
   @POST
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response createNewDatabase(NewDatabaseRequest request) {
+  @Path("/{databaseName}")
+  public Response createNewDatabase(@PathParam("databaseName") String databaseName) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a new database creation request");
     }
@@ -140,10 +125,10 @@ public class DatabasesResource {
     Response response = null;
     try {
       initializeContext();
-      JerseyResourceDelegateContextKey<NewDatabaseRequest> newDatabaseRequestKey =
-          JerseyResourceDelegateContextKey.valueOf(newDatabaseRequestKeyName, NewDatabaseRequest.class);
-      context.put(newDatabaseRequestKey, request);
-      
+      JerseyResourceDelegateContextKey<String> databaseNameKey =
+        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
+      context.put(databaseNameKey, databaseName);
+
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
           new CreateNewDatabaseDelegate(),
           application,
@@ -162,9 +147,9 @@ public class DatabasesResource {
 
     @Override
     public Response run(JerseyResourceDelegateContext context) {
-      JerseyResourceDelegateContextKey<NewDatabaseRequest> newDatabaseRequestKey =
-          JerseyResourceDelegateContextKey.valueOf(newDatabaseRequestKeyName, NewDatabaseRequest.class);
-      NewDatabaseRequest request = context.get(newDatabaseRequestKey);
+      JerseyResourceDelegateContextKey<String> databaseNameKey =
+        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
+      String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
@@ -172,19 +157,19 @@ public class DatabasesResource {
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
       UriInfo uriInfo = context.get(uriInfoKey);
       
-      if (request.getDatabaseName() == null || request.getDatabaseName().isEmpty()) {
+      if (databaseName == null || databaseName.isEmpty()) {
         return ResourcesUtil.createBadRequestResponse(LOG, "databaseName is null or empty.");
       }
       
       boolean databaseCreated =
-          masterContext.getCatalog().createDatabase(request.getDatabaseName(), 
+          masterContext.getCatalog().createDatabase(databaseName,
               TajoConstants.DEFAULT_TABLESPACE_NAME);
       
       if (databaseCreated) {
         URI newDatabaseURI = uriInfo.getBaseUriBuilder()
             .path(DatabasesResource.class)
             .path(DatabasesResource.class, "getDatabase")
-            .build(request.getDatabaseName());
+            .build(databaseName);
         return Response.created(newDatabaseURI).build();
       } else {
         return ResourcesUtil.createExceptionResponse(LOG, "Failed to create a new database.");
@@ -209,7 +194,7 @@ public class DatabasesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
+        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -231,7 +216,7 @@ public class DatabasesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> databaseNameKey =
           JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
