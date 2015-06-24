@@ -895,11 +895,11 @@ public class FileTablespace extends Tablespace {
           ContentSummary summary = fs.getContentSummary(stagingResultDir);
 
           // When inserting empty data into a partitioned table, check if keep existing data need to be remove or not.
-          boolean keptEnabled = queryContext.getBool(SessionVars.TABLE_PARTITION_KEPT_EXISTING_DATA_ENABLED);
+          boolean overwriteEnabled = queryContext.getBool(SessionVars.TABLE_PARTITION_NO_RESULT_OVERWRITE_ENABLED);
 
           // If existing data doesn't need to keep, check if there are some files.
           if ( (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty())
-            && (keptEnabled || (!keptEnabled && summary.getFileCount() > 0L))) {
+            && (!overwriteEnabled || (overwriteEnabled && summary.getFileCount() > 0L))) {
             // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
             // renaming directory.
             Map<Path, Path> renameDirs = TUtil.newHashMap();

@@ -375,8 +375,9 @@ public class TajoConf extends Configuration {
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
 
-    // When inserting empty data into a partitioned table, set to keep existing data.
-    $TABLE_PARTITION_KEPT_EXISTING_DATA_ENABLED("tajo.table-partition.kept-existing-data.enabled", true),
+    // If True, a partitioned table is overwritten even if a sub query leads to no result.
+    // Otherwise, the table data will be kept if there is no result
+    $TABLE_PARTITION_NO_RESULT_OVERWRITE_ENABLED("tajo.partition.overwrite.even-if-no-result", false),
 
       // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
