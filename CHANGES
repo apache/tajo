@@ -11,6 +11,8 @@ Release 0.10.2 - Released
 
   BUG FIXES
 
+    TAJO-1642: CatalogServer need to check meta table first. (jaehwa)
+
   TASKS
 
 Release 0.10.1 - Released

@@ -81,6 +81,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogSchemaManager.isInitialized(getConnection());
   }
 
+  protected boolean catalogAlreadyExists() throws CatalogException {
+    return catalogSchemaManager.catalogAlreadyExists(getConnection());
+  }
+
   protected void createBaseTable() throws CatalogException {
     createDatabaseDependants();
     
@@ -141,22 +145,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     if (schemaPath != null && !schemaPath.isEmpty()) {
       this.catalogSchemaManager = new XMLCatalogSchemaManager(schemaPath);
     }
-    
+
     try {
-      if (isInitialized()) {
-        LOG.info("The base tables of CatalogServer already is initialized.");
+      if (catalogAlreadyExists()) {
+        LOG.info("The meta table of CatalogServer already is created.");
         verifySchemaVersion();
       } else {
-        try {
-          createBaseTable();
-          LOG.info("The base tables of CatalogServer are created.");
-        } catch (CatalogException ce) {
+        if (isInitialized()) {
+          LOG.info("The base tables of CatalogServer already is initialized.");
+          verifySchemaVersion();
+        } else {
           try {
-            dropBaseTable();
-          } catch (Throwable t) {
-            LOG.error(t, t);
+            createBaseTable();
+            LOG.info("The base tables of CatalogServer are created.");
+          } catch (CatalogException ce) {
+            try {
+              dropBaseTable();
+            } catch (Throwable t) {
+              LOG.error(t, t);
+            }
+            throw ce;
           }
-          throw ce;
         }
       }
     } catch (Exception se) {
@@ -246,7 +255,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.error("| You might downgrade or upgrade Apache Tajo. Downgrading or upgrading |");
       LOG.error("| Tajo without migration process is only available in some versions. |");
       LOG.error("| In order to learn how to migration Apache Tajo instance, |");
-      LOG.error("| please refer http://s.apache.org/0_8_migration. |");
+      LOG.error("| please refer http://tajo.apache.org/docs/current/backup_and_restore/catalog.html |");
       LOG.error("=========================================================================");
       throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
     }
