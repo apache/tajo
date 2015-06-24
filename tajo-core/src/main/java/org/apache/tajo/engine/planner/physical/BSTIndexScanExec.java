@@ -37,8 +37,6 @@ import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -233,14 +231,11 @@ public class BSTIndexScanExec extends PhysicalExec {
       }
     } else {
        while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
-         LOG.info("while: " + tuple);
          if (qual.eval(tuple).isTrue()) {
            projector.eval(tuple, outTuple);
-           LOG.info("return: " + outTuple);
            return outTuple;
          } else {
            long offset = reader.next();
-           LOG.info("offset: " + offset);
            if (offset == -1) {
              return null;
            }

@@ -30,33 +30,14 @@ import java.util.HashMap;
  * TajoPreparedStatement.
  *
  */
-public class TajoPreparedStatement implements PreparedStatement {
-  private JdbcConnection conn;
+public class TajoPreparedStatement extends TajoStatement implements PreparedStatement {
+
   private final String sql;
-  private TajoClient tajoClient;
+
   /**
    * save the SQL parameters {paramLoc:paramValue}
    */
   private final HashMap<Integer, String> parameters=new HashMap<Integer, String>();
-
-  /**
-   * We need to keep a reference to the result set to support the following:
-   * <code>
-   * statement.execute(String sql);
-   * statement.getResultSet();
-   * </code>.
-   */
-  private ResultSet resultSet = null;
-
-  /**
-   * Add SQLWarnings to the warningChain if needed.
-   */
-  //private  SQLWarning warningChain = null;
-
-  /**
-   * Keep state so we can fail certain calls made after close().
-   */
-  private boolean isClosed = false;
 
   /**
    * keep the current ResultRet update count
@@ -69,8 +50,7 @@ public class TajoPreparedStatement implements PreparedStatement {
   public TajoPreparedStatement(JdbcConnection conn,
                                TajoClient tajoClient,
                                String sql) {
-    this.conn = conn;
-    this.tajoClient = tajoClient;
+    super(conn, tajoClient);
     this.sql = sql;
   }
 
@@ -81,6 +61,7 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public void clearParameters() throws SQLException {
+    checkConnection("Can't clear parameters");
     this.parameters.clear();
   }
 
@@ -101,22 +82,14 @@ public class TajoPreparedStatement implements PreparedStatement {
     return updateCount;
   }
 
-  protected ResultSet executeImmediate(String sql) throws SQLException {
-    if (isClosed) {
-      throw new SQLException("Can't execute after statement has been closed");
-    }
+  protected TajoResultSetBase executeImmediate(String sql) throws SQLException {
+    checkConnection("Can't execute");
 
     try {
       if (sql.contains("?")) {
         sql = updateSql(sql, parameters);
       }
-      if (TajoStatement.isSetVariableQuery(sql)) {
-        return TajoStatement.setSessionVariable(tajoClient, sql);
-      } else if (TajoStatement.isUnSetVariableQuery(sql)) {
-        return TajoStatement.unSetSessionVariable(tajoClient, sql);
-      } else {
-        return tajoClient.executeQueryAndGetResult(sql);
-      }
+      return (TajoResultSetBase) executeSQL(sql);
     } catch (Exception e) {
       throw new SQLException(e.getMessage(), e);
     }
@@ -131,7 +104,7 @@ public class TajoPreparedStatement implements PreparedStatement {
    */
   private String updateSql(final String sql, HashMap<Integer, String> parameters) {
 
-    StringBuffer newSql = new StringBuffer(sql);
+    StringBuilder newSql = new StringBuilder(sql);
 
     int paramLoc = 1;
     while (getCharIndexFromSqlByParamLocation(sql, '?', paramLoc) > 0) {
@@ -179,6 +152,7 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
+    checkConnection("Can't get metadata");
     if(resultSet != null) {
       return resultSet.getMetaData();
     } else {
@@ -249,6 +223,7 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public void setBoolean(int parameterIndex, boolean x) throws SQLException {
+    checkConnection("Can't set parameters");
     this.parameters.put(parameterIndex, "" + x);
   }
 
@@ -306,21 +281,25 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public void setDouble(int parameterIndex, double x) throws SQLException {
+    checkConnection("Can't set parameters");
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setFloat(int parameterIndex, float x) throws SQLException {
+    checkConnection("Can't set parameters");
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setInt(int parameterIndex, int x) throws SQLException {
+    checkConnection("Can't set parameters");
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setLong(int parameterIndex, long x) throws SQLException {
+    checkConnection("Can't set parameters");
     this.parameters.put(parameterIndex,"" + x);
   }
 
@@ -399,11 +378,13 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public void setShort(int parameterIndex, short x) throws SQLException {
+    checkConnection("Can't set parameters");
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setString(int parameterIndex, String x) throws SQLException {
+    checkConnection("Can't set parameters");
      x=x.replace("'", "\\'");
      this.parameters.put(parameterIndex,"'" + x +"'");
   }
@@ -438,228 +419,5 @@ public class TajoPreparedStatement implements PreparedStatement {
   public void setUnicodeStream(int parameterIndex, InputStream x, int length)
       throws SQLException {
     throw new SQLFeatureNotSupportedException("setUnicodeStream not supported");
-  }
-
-  @Override
-  public void addBatch(String sql) throws SQLException {
-    throw new SQLFeatureNotSupportedException("addBatch not supported");
-  }
-
-  @Override
-  public void cancel() throws SQLException {
-    throw new SQLFeatureNotSupportedException("cancel not supported");
-  }
-
-  @Override
-  public void clearBatch() throws SQLException {
-    throw new SQLFeatureNotSupportedException("clearBatch not supported");
-  }
-
-  @Override
-  public void clearWarnings() throws SQLException {
-  }
-
-  public void closeOnCompletion() throws SQLException {
-    // JDK 1.7
-    throw new SQLFeatureNotSupportedException("closeOnCompletion");
-  }
-
-  @Override
-  public void close() throws SQLException {
-    if (resultSet!=null) {
-      resultSet.close();
-      resultSet = null;
-    }
-    isClosed = true;
-  }
-
-  @Override
-  public boolean execute(String sql) throws SQLException {
-    throw new SQLFeatureNotSupportedException("execute(sql) not supported");
-  }
-
-  @Override
-  public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
-    throw new SQLFeatureNotSupportedException("execute(sql) not supported");
-  }
-
-  @Override
-  public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-    throw new SQLFeatureNotSupportedException("execute(sql) not supported");
-  }
-
-  @Override
-  public boolean execute(String sql, String[] columnNames) throws SQLException {
-    throw new SQLFeatureNotSupportedException("execute(sql) not supported");
-  }
-
-  @Override
-  public int[] executeBatch() throws SQLException {
-    throw new SQLFeatureNotSupportedException("executeBatch not supported");
-  }
-
-  @Override
-  public ResultSet executeQuery(String sql) throws SQLException {
-    throw new SQLFeatureNotSupportedException("executeQuery(sql) not supported");
-  }
-
-  @Override
-  public int executeUpdate(String sql) throws SQLException {
-    throw new SQLFeatureNotSupportedException("executeUpdate not supported");
-  }
-
-  @Override
-  public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-    throw new SQLFeatureNotSupportedException("executeUpdate not supported");
-  }
-
-  @Override
-  public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-    throw new SQLFeatureNotSupportedException("executeUpdate not supported");
-  }
-
-  @Override
-  public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-    throw new SQLFeatureNotSupportedException("executeUpdate not supported");
-  }
-
-  @Override
-  public Connection getConnection() throws SQLException {
-    return conn;
-  }
-
-  @Override
-  public int getFetchDirection() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getFetchDirection not supported");
-  }
-
-  @Override
-  public int getFetchSize() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getFetchSize not supported");
-  }
-
-  @Override
-  public ResultSet getGeneratedKeys() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getGeneratedKeys not supported");
-  }
-
-  @Override
-  public int getMaxFieldSize() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxFieldSize not supported");
-  }
-
-  @Override
-  public int getMaxRows() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxRows not supported");
-  }
-
-  @Override
-  public boolean getMoreResults() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMoreResults not supported");
-  }
-
-  @Override
-  public boolean getMoreResults(int current) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMoreResults not supported");
-  }
-
-  @Override
-  public int getQueryTimeout() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getQueryTimeout not supported");
-  }
-
-  @Override
-  public ResultSet getResultSet() throws SQLException {
-    return this.resultSet;
-  }
-
-  @Override
-  public int getResultSetConcurrency() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getResultSetConcurrency not supported");
-  }
-
-  @Override
-  public int getResultSetHoldability() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getResultSetHoldability not supported");
-  }
-
-  @Override
-  public int getResultSetType() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getResultSetType not supported");
-  }
-
-  @Override
-  public int getUpdateCount() throws SQLException {
-    return updateCount;
-  }
-
-  @Override
-  public SQLWarning getWarnings() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public boolean isClosed() throws SQLException {
-    return isClosed;
-  }
-
-   public boolean isCloseOnCompletion() throws SQLException {
-     //JDK 1.7
-     throw new SQLFeatureNotSupportedException("isCloseOnCompletion not supported");
-   }
-
-  @Override
-  public boolean isPoolable() throws SQLException {
-    throw new SQLFeatureNotSupportedException("isPoolable not supported");
-  }
-
-  @Override
-  public void setCursorName(String name) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setCursorName not supported");
-  }
-
-  @Override
-  public void setEscapeProcessing(boolean enable) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setEscapeProcessing not supported");
-  }
-
-  @Override
-  public void setFetchDirection(int direction) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setFetchDirection not supported");
-  }
-
-  @Override
-  public void setFetchSize(int rows) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setFetchSize not supported");
-  }
-
-  @Override
-  public void setMaxFieldSize(int max) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setMaxFieldSize not supported");
-  }
-
-  @Override
-  public void setMaxRows(int max) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setMaxRows not supported");
-  }
-
-  @Override
-  public void setPoolable(boolean poolable) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setPoolable not supported");
-  }
-
-  @Override
-  public void setQueryTimeout(int seconds) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setQueryTimeout not supported");
-  }
-
-  @Override
-  public boolean isWrapperFor(Class<?> iface) throws SQLException {
-    throw new SQLFeatureNotSupportedException("isWrapperFor not supported");
-  }
-
-  @Override
-  public <T> T unwrap(Class<T> iface) throws SQLException {
-    throw new SQLFeatureNotSupportedException("unwrap not supported");
   }
 }

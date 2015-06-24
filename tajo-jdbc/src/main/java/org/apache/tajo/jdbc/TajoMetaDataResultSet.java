@@ -30,17 +30,12 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
   private List<MetaDataTuple> values;
 
   public TajoMetaDataResultSet(Schema schema, List<MetaDataTuple> values) {
-    super(null);
-    init();
-    this.schema = schema;
+    super(null, schema, null);
     setDataTuples(values);
   }
 
   public TajoMetaDataResultSet(List<String> columns, List<Type> types, List<MetaDataTuple> values) {
-    super(null);
-    init();
-    schema = new Schema();
-
+    super(null, new Schema(), null);
     int index = 0;
     if(columns != null) {
       for(String columnName: columns) {

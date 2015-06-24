@@ -20,15 +20,18 @@ package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
-import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
 import java.net.URI;
@@ -116,38 +119,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     } else {
       throw new SQLException(res.getResult().getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
     }
-
-//<<<<<<< HEAD
-//    return new ServerCallable<TableDesc>(connection.manager, connection.getTajoMasterAddr(),
-//        TajoMasterClientProtocol.class, false) {
-//
-//      public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
-//
-//
-//      }
-//
-//    }.withRetries();
-//=======
-//    NettyClientBase client = connection.getTajoMasterConnection();
-//    connection.checkSessionAndGet(client);
-//    BlockingInterface tajoMasterService = client.getStub();
-//
-//    ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
-//    builder.setSessionId(connection.sessionId);
-//    builder.setName(tableName);
-//    builder.setSchema(schema.getProto());
-//    builder.setMeta(meta.getProto());
-//    builder.setPath(path.toString());
-//    if (partitionMethodDesc != null) {
-//      builder.setPartition(partitionMethodDesc.getProto());
-//    }
-//    ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
-//    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
-//      return CatalogUtil.newTableDesc(res.getTableDesc());
-//    } else {
-//      throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
-//    }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
   }
 
   @Override
@@ -177,13 +148,13 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetTableListRequest.Builder builder = ClientProtos.GetTableListRequest.newBuilder();
+    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
     builder.setSessionId(connection.sessionId);
     if (databaseName != null) {
-      builder.setDatabaseName(databaseName);
+      builder.setValue(databaseName);
     }
-    ClientProtos.GetTableListResponse res = tajoMasterService.getTableList(null, builder.build());
-    return res.getTablesList();
+    PrimitiveProtos.StringListProto res = tajoMasterService.getTableList(null, builder.build());
+    return res.getValuesList();
   }
 
   @Override
@@ -192,9 +163,9 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetTableDescRequest.Builder builder = ClientProtos.GetTableDescRequest.newBuilder();
+    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
     builder.setSessionId(connection.sessionId);
-    builder.setTableName(tableName);
+    builder.setValue(tableName);
     ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
     if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
@@ -202,32 +173,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new ServiceException(new SQLException(res.getResult().getErrorMessage(),
           SQLStates.ER_NO_SUCH_TABLE.getState()));
     }
-
-//<<<<<<< HEAD
-//    return new ServerCallable<TableDesc>(connection.manager, connection.getTajoMasterAddr(),
-//        TajoMasterClientProtocol.class, false) {
-//
-//      public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
-//
-//
-//      }
-//
-//    }.withRetries();
-//=======
-//    NettyClientBase client = connection.getTajoMasterConnection();
-//    connection.checkSessionAndGet(client);
-//    BlockingInterface tajoMasterService = client.getStub();
-//
-//    ClientProtos.GetTableDescRequest.Builder builder = ClientProtos.GetTableDescRequest.newBuilder();
-//    builder.setSessionId(connection.sessionId);
-//    builder.setTableName(tableName);
-//    ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
-//    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
-//      return CatalogUtil.newTableDesc(res.getTableDesc());
-//    } else {
-//      throw new ServiceException(new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState()));
-//    }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
   }
 
   @Override
@@ -244,31 +189,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     } else {
       throw new ServiceException(res.getResult().getErrorMessage());
     }
-
-//<<<<<<< HEAD
-//    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      public List<CatalogProtos.FunctionDescProto> call(NettyClientBase client) throws ServiceException, SQLException {
-//
-//
-//      }
-//
-//    }.withRetries();
-//=======
-//    NettyClientBase client = connection.getTajoMasterConnection();
-//    connection.checkSessionAndGet(client);
-//    BlockingInterface tajoMasterService = client.getStub();
-//
-//    String paramFunctionName = functionName == null ? "" : functionName;
-//    ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
-//        connection.convertSessionedString(paramFunctionName));
-//    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
-//      return res.getFunctionsList();
-//    } else {
-//      throw new ServiceException(new SQLException(res.getErrorMessage()));
-//    }
-//>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
   }
 
   @Override
@@ -287,14 +207,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     BlockingInterface tajoMasterService = client.getStub();
     return tajoMasterService.existIndexWithName(null,
         connection.convertSessionedString(indexName)).getValue();
-//    return new ServerCallable<Boolean>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      @Override
-//      public Boolean call(NettyClientBase client) throws Exception {
-//
-//      }
-//    }.withRetries();
   }
 
   @Override
@@ -309,14 +221,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     } else {
       throw new ServiceException(response.getResult().getErrorMessage());
     }
-//    return new ServerCallable<List<IndexDescProto>>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      @Override
-//      public List<IndexDescProto> call(NettyClientBase client) throws Exception {
-//
-//      }
-//    }.withRetries();
   }
 
   @Override
@@ -326,15 +230,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     BlockingInterface tajoMasterService = client.getStub();
     return tajoMasterService.existIndexesForTable(null,
         connection.convertSessionedString(tableName)).getValue();
-
-//    return new ServerCallable<Boolean>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      @Override
-//      public Boolean call(NettyClientBase client) throws Exception {
-//
-//      }
-//    }.withRetries();
   }
 
   @Override
@@ -354,15 +249,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     } else {
       throw new ServiceException(response.getResult().getErrorMessage());
     }
-
-//    return new ServerCallable<IndexDescProto>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      @Override
-//      public IndexDescProto call(NettyClientBase client) throws Exception {
-//
-//      }
-//    }.withRetries();
   }
 
   @Override
@@ -377,15 +263,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       builder.addColumnNames(eachColumnName);
     }
     return tajoMasterService.existIndexWithColumns(null, builder.build()).getValue();
-
-//    return new ServerCallable<Boolean>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      @Override
-//      public Boolean call(NettyClientBase client) throws Exception {
-//
-//      }
-//    }.withRetries();
   }
 
   @Override
@@ -395,15 +272,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     BlockingInterface tajoMasterService = client.getStub();
     return tajoMasterService.dropIndex(null,
         connection.convertSessionedString(indexName)).getValue();
-
-//    return new ServerCallable<Boolean>(connection.manager,
-//        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
-//
-//      @Override
-//      public Boolean call(NettyClientBase client) throws Exception {
-//
-//      }
-//    }.withRetries();
   }
 
   @Override
