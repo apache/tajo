@@ -46,7 +46,8 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -285,6 +286,11 @@ public class DelimitedTextFile {
     /** How many errors have occurred? */
     private int errorNum;
 
+    private int headerLineNum = 0;
+    private int footerLineNum = 0;
+
+    private List<ByteBuf> footerBuf = null;
+
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final Fragment fragment)
         throws IOException {
@@ -325,8 +331,35 @@ public class DelimitedTextFile {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
 
+      // initialization for skipping header and footer(max 20)
+      headerLineNum = Math.min(Integer.parseInt(meta.getOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
+      footerLineNum = Math.min(Integer.parseInt(meta.getOption(StorageConstants.TEXT_SKIP_FOOTER_LINE, "0")), 20);
+
+      // skip first line if it reads from middle of file
       if (startOffset > 0) {
-        reader.readLine();  // skip first line;
+        reader.readLine();
+      }
+      // skip header lines if it is defined
+      else if (headerLineNum > 0) {
+        LOG.info(String.format("Skip %d header lines", headerLineNum));
+        for (int i=0; i<headerLineNum; i++) {
+          reader.readLine();
+        }
+
+        if (!reader.isReadable()) {
+          return;
+        }
+      }
+
+      /* To discard footer lines at end of file,
+         make a queue buffer and fill it */
+      if (footerLineNum > 0) {
+        LOG.info(String.format("Prepare to skip %d footer lines", footerLineNum));
+        footerBuf = new LinkedList<ByteBuf>();
+
+        for (int i=0; i<footerLineNum; i++) {
+          footerBuf.add(reader.readLine());
+        }
       }
 
       deserializer = getLineSerde().createDeserializer(schema, meta, targets);
@@ -372,8 +405,16 @@ public class DelimitedTextFile {
           long offset = reader.getUnCompressedPosition();
           ByteBuf buf = reader.readLine();
 
+          // To skip footer lines, make a queue buffer
+          // and append a read line and return head of the buffer.
+          if (buf != null) {
+            if (footerBuf != null) {
+              footerBuf.add(buf);
+              buf = footerBuf.remove(0);
+            }
+          }
           // if no more line, then return EOT (end of tuple)
-          if (buf == null) {
+          else {
             return null;
           }
 
@@ -389,7 +430,7 @@ public class DelimitedTextFile {
 
           try {
             deserializer.deserialize(buf, tuple);
-            // if a line is read normally, it exists this loop.
+            // if a line is read normally, it exits this loop.
             break;
 
           } catch (TextLineParsingError tae) {
@@ -398,7 +439,7 @@ public class DelimitedTextFile {
 
             // suppress too many log prints, which probably cause performance degradation
             if (errorNum < errorPrintOutMaxNum) {
-              LOG.warn("Ignore JSON Parse Error (" + errorNum + "): ", tae);
+              LOG.warn("Ignore Text Parse Error (" + errorNum + "): ", tae);
             }
 
             // Only when the maximum error torrence limit is set (i.e., errorTorrenceMaxNum >= 0),
