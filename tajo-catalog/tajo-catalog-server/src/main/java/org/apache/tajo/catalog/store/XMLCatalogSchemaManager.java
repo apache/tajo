@@ -51,9 +51,11 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.store.object.*;
+import org.apache.tajo.util.TUtil;
 
 public class XMLCatalogSchemaManager {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -342,6 +344,34 @@ public class XMLCatalogSchemaManager {
     }
 
     CatalogUtil.closeQuietly(stmt);
+  }
+
+  public boolean catalogAlreadyExists(Connection conn) throws CatalogException {
+    boolean result = false;
+    try {
+      List<String> constants = TUtil.newList();
+      constants.add(CatalogConstants.TB_META);
+      constants.add(CatalogConstants.TB_SPACES);
+      constants.add(CatalogConstants.TB_DATABASES);
+      constants.add(CatalogConstants.TB_TABLES);
+      constants.add(CatalogConstants.TB_COLUMNS);
+      constants.add(CatalogConstants.TB_OPTIONS);
+      constants.add(CatalogConstants.TB_INDEXES);
+      constants.add(CatalogConstants.TB_STATISTICS);
+      constants.add(CatalogConstants.TB_PARTITION_METHODS);
+      constants.add(CatalogConstants.TB_PARTTIONS);
+      constants.add(CatalogConstants.TB_PARTTION_KEYS);
+
+      for (String constant : constants) {
+        if (checkExistence(conn, DatabaseObjectType.TABLE, constant)) {
+          return true;
+        }
+      }
+
+    } catch (SQLException e) {
+      throw new CatalogException(e.getMessage(), e);
+    }
+    return result;
   }
 
   public boolean isInitialized(Connection conn) throws CatalogException {
