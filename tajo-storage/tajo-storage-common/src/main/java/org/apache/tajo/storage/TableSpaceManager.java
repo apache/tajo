@@ -63,10 +63,10 @@ public class TableSpaceManager {
       Path.class
   };
   /**
-   * Cache of StorageManager.
+   * Cache of Tablespace.
    * Key is manager key(warehouse path) + store type
    */
-  private static final Map<String, StorageManager> storageManagers = Maps.newHashMap();
+  private static final Map<String, Tablespace> storageManagers = Maps.newHashMap();
   /**
    * Cache of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
@@ -86,13 +86,13 @@ public class TableSpaceManager {
   }
 
   /**
-   * Close StorageManager
+   * Close Tablespace
    * @throws java.io.IOException
    */
   public static void shutdown() throws IOException {
     synchronized(storageManagers) {
-      for (StorageManager eachStorageManager: storageManagers.values()) {
-        eachStorageManager.close();
+      for (Tablespace eachTablespace : storageManagers.values()) {
+        eachTablespace.close();
       }
     }
     clearCache();
@@ -105,19 +105,19 @@ public class TableSpaceManager {
    * @return
    * @throws IOException
    */
-  public static StorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
+  public static Tablespace getFileStorageManager(TajoConf tajoConf) throws IOException {
     return getStorageManager(tajoConf, "CSV");
   }
 
   /**
-   * Returns the proper StorageManager instance according to the storeType.
+   * Returns the proper Tablespace instance according to the storeType.
    *
    * @param tajoConf Tajo system property.
    * @param storeType Storage type
    * @return
    * @throws IOException
    */
-  public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
+  public static Tablespace getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
       return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
@@ -127,7 +127,7 @@ public class TableSpaceManager {
   }
 
   /**
-   * Returns the proper StorageManager instance according to the storeType
+   * Returns the proper Tablespace instance according to the storeType
    *
    * @param tajoConf Tajo system property.
    * @param storeType Storage type
@@ -135,7 +135,7 @@ public class TableSpaceManager {
    * @return
    * @throws IOException
    */
-  private static synchronized StorageManager getStorageManager (
+  private static synchronized Tablespace getStorageManager (
       TajoConf tajoConf, String storeType, String managerKey) throws IOException {
 
     String typeName;
@@ -147,19 +147,19 @@ public class TableSpaceManager {
 
     synchronized (storageManagers) {
       String storeKey = typeName + "_" + managerKey;
-      StorageManager manager = storageManagers.get(storeKey);
+      Tablespace manager = storageManagers.get(storeKey);
 
       if (manager == null) {
-        Class<? extends StorageManager> storageManagerClass =
-            tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, StorageManager.class);
+        Class<? extends Tablespace> storageManagerClass =
+            tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, Tablespace.class);
 
         if (storageManagerClass == null) {
           throw new IOException("Unknown Storage Type: " + typeName);
         }
 
         try {
-          Constructor<? extends StorageManager> constructor =
-              (Constructor<? extends StorageManager>) CONSTRUCTOR_CACHE.get(storageManagerClass);
+          Constructor<? extends Tablespace> constructor =
+              (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(storageManagerClass);
           if (constructor == null) {
             constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{String.class});
             constructor.setAccessible(true);
@@ -175,22 +175,6 @@ public class TableSpaceManager {
 
       return manager;
     }
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param conf The system property
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
-   * @param target The output schema
-   * @return Scanner instance
-   * @throws IOException
-   */
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
-    return (SeekableScanner)getStorageManager(conf, meta.getStoreType()).getScanner(meta, schema, fragment, target);
   }
 
   /**

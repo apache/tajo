@@ -47,7 +47,7 @@ public class DateDatum extends Datum {
     dayOfMonth = tm.dayOfMonth;
   }
 
-  public TimeMeta toTimeMeta() {
+  public TimeMeta asTimeMeta() {
     TimeMeta tm = new TimeMeta();
     tm.years = year;
     tm.monthOfYear = monthOfYear;
@@ -56,7 +56,7 @@ public class DateDatum extends Datum {
   }
 
   public int getCenturyOfEra() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.getCenturyOfEra();
   }
 
@@ -65,7 +65,7 @@ public class DateDatum extends Datum {
   }
 
   public int getWeekyear() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.getWeekyear();
   }
 
@@ -74,22 +74,22 @@ public class DateDatum extends Datum {
   }
 
   public int getDayOfYear() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.getDayOfYear();
   }
 
   public int getDayOfWeek() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.getDayOfWeek();
   }
 
   public int getISODayOfWeek() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.getISODayOfWeek();
   }
 
   public int getWeekOfYear() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.getWeekOfYear();
   }
 
@@ -110,18 +110,18 @@ public class DateDatum extends Datum {
       case INT8:
       case FLOAT4:
       case FLOAT8: {
-        TimeMeta tm = toTimeMeta();
+        TimeMeta tm = asTimeMeta();
         tm.plusDays(datum.asInt4());
         return new DateDatum(tm);
       }
       case INTERVAL:
         IntervalDatum interval = (IntervalDatum) datum;
-        TimeMeta tm = toTimeMeta();
+        TimeMeta tm = asTimeMeta();
         tm.plusInterval(interval.months, interval.milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       case TIME: {
-        TimeMeta tm1 = toTimeMeta();
-        TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
+        TimeMeta tm1 = asTimeMeta();
+        TimeMeta tm2 = datum.asTimeMeta();
         tm1.plusTime(DateTimeUtil.toTime(tm2));
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
       }
@@ -138,19 +138,19 @@ public class DateDatum extends Datum {
       case INT8:
       case FLOAT4:
       case FLOAT8: {
-        TimeMeta tm = toTimeMeta();
+        TimeMeta tm = asTimeMeta();
         tm.plusDays(0 - datum.asInt4());
         return new DateDatum(tm);
       }
       case INTERVAL: {
         IntervalDatum interval = (IntervalDatum) datum;
-        TimeMeta tm = toTimeMeta();
+        TimeMeta tm = asTimeMeta();
         tm.plusInterval(-interval.months, -interval.milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {
-        TimeMeta tm1 = toTimeMeta();
-        TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
+        TimeMeta tm1 = asTimeMeta();
+        TimeMeta tm2 = datum.asTimeMeta();
         tm1.plusTime(0 - DateTimeUtil.toTime(tm2));
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
       }
@@ -231,8 +231,8 @@ public class DateDatum extends Datum {
     } else if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
       TimeMeta myMeta, otherMeta;
-      myMeta = toTimeMeta();
-      otherMeta = another.toTimeMeta();
+      myMeta = asTimeMeta();
+      otherMeta = another.asTimeMeta();
       return myMeta.compareTo(otherMeta);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;

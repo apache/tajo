@@ -1,0 +1,78 @@
+explain
+-------------------------------
+SORT(3)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+   JOIN(6)(INNER)
+     => Join Cond: ?lower_1 (TEXT) = ?lower_2 (TEXT)
+     => target list: default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)
+     => out schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
+     => in schema: {(5) ?lower_1 (TEXT), ?lower_2 (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
+      SCAN(1) on default.nation as n2
+        => target list: default.n2.n_name (TEXT), lower(default.n2.n_name (TEXT)) as ?lower_2
+        => out schema: {(2) ?lower_2 (TEXT), default.n2.n_name (TEXT)}
+        => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
+      SCAN(0) on default.nation as n1
+        => target list: default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), lower(default.n1.n_name (TEXT)) as ?lower_1
+        => out schema: {(3) ?lower_1 (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4)}
+        => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000005)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000005
+   |-eb_0000000000000_0000_000004
+      |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000004
+3: eb_0000000000000_0000_000005
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.n1.n_nationkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.n1
+
+SORT(10)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+   JOIN(6)(INNER)
+     => Join Cond: ?lower_1 (TEXT) = ?lower_2 (TEXT)
+     => target list: default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)
+     => out schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
+     => in schema: {(5) ?lower_1 (TEXT), ?lower_2 (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
+      SCAN(1) on default.nation as n2
+        => target list: default.n2.n_name (TEXT), lower(default.n2.n_name (TEXT)) as ?lower_2
+        => out schema: {(2) ?lower_2 (TEXT), default.n2.n_name (TEXT)}
+        => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
+      SCAN(0) on default.nation as n1
+        => target list: default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), lower(default.n1.n_name (TEXT)) as ?lower_1
+        => out schema: {(3) ?lower_1 (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4)}
+        => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.n1.n_nationkey (INT4), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000003
+
+SORT(3)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+   SCAN(11) on eb_0000000000000_0000_000003
+     => out schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
+     => in schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [TERMINAL]
+=======================================================

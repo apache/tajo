@@ -20,7 +20,6 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -31,17 +30,12 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
   private List<MetaDataTuple> values;
 
   public TajoMetaDataResultSet(Schema schema, List<MetaDataTuple> values) {
-    super(null);
-    init();
-    this.schema = schema;
+    super(null, schema, null);
     setDataTuples(values);
   }
 
   public TajoMetaDataResultSet(List<String> columns, List<Type> types, List<MetaDataTuple> values) {
-    super(null);
-    init();
-    schema = new Schema();
-
+    super(null, new Schema(), null);
     int index = 0;
     if(columns != null) {
       for(String columnName: columns) {
@@ -70,20 +64,11 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
 
   @Override
   public String getString(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    if(datum == null) {
-      return null;
-    }
-
-    return datum.asChars();
+    return cur.getText(fieldId - 1);
   }
 
   @Override
   public String getString(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    if(datum == null) {
-      return null;
-    }
-    return datum.asChars();
+    return cur.getText(findColumn(name));
   }
 }

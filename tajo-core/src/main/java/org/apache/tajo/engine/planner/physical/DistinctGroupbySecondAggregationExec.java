@@ -192,7 +192,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         throw new IOException(e.getMessage(), e);
       }
 
-      int distinctSeq = tuple.get(0).asInt2();
+      int distinctSeq = tuple.getInt2(0);
       Tuple keyTuple = getKeyTuple(distinctSeq, tuple);
 
       if (prevKeyTuple == null) {
@@ -267,12 +267,12 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     int[] columnIndexes = distinctKeyIndexes[distinctSeq];
 
     Tuple keyTuple = new VTuple(numGroupingColumns + columnIndexes.length + 1);
-    keyTuple.put(0, tuple.get(0));
+    keyTuple.put(0, tuple.asDatum(0));
     for (int i = 0; i < numGroupingColumns; i++) {
-      keyTuple.put(i + 1, tuple.get(i + 1));
+      keyTuple.put(i + 1, tuple.asDatum(i + 1));
     }
     for (int i = 0; i < columnIndexes.length; i++) {
-      keyTuple.put(i + 1 + numGroupingColumns, tuple.get(columnIndexes[i]));
+      keyTuple.put(i + 1 + numGroupingColumns, tuple.asDatum(columnIndexes[i]));
     }
 
     return keyTuple;

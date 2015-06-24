@@ -27,7 +27,6 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.Tuple;
 
@@ -46,8 +45,8 @@ public class HBasePutAppender extends AbstractHBaseAppender {
   public void init() throws IOException {
     super.init();
 
-    Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(conf, meta);
-    HConnection hconn = ((HBaseStorageManager) TableSpaceManager.getStorageManager((TajoConf) conf, "HBASE"))
+    Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(conf, meta);
+    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager((TajoConf) conf, "HBASE"))
         .getConnection(hbaseConf);
     htable = hconn.getTable(columnMapping.getHbaseTableName());
     htable.setAutoFlushTo(false);
@@ -65,12 +64,11 @@ public class HBasePutAppender extends AbstractHBaseAppender {
       if (isRowKeyMappings[i]) {
         continue;
       }
-      Datum datum = tuple.get(i);
       byte[] value;
       if (isBinaryColumns[i]) {
-        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), datum);
+        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), tuple, i);
       } else {
-        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
+        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), tuple, i);
       }
 
       if (isColumnKeys[i]) {

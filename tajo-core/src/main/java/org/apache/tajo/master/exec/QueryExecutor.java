@@ -292,7 +292,7 @@ public class QueryExecutor {
     try {
       // start script executor
       startScriptExecutors(queryContext, evalContext, targets);
-      final Tuple outTuple = new VTuple(targets.length);
+      final VTuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
         eval.bind(evalContext, null);
@@ -472,7 +472,7 @@ public class QueryExecutor {
 
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      StorageManager sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
+      Tablespace sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty();
       if (!storageProperty.isSupportsInsertInto()) {
         throw new VerifyException("Inserting into non-file storage is not supported.");
@@ -529,7 +529,7 @@ public class QueryExecutor {
 
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
-      StorageManager sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
+      Tablespace sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
       StorageProperty storageProperty = sm.getStorageProperty();
       if (storageProperty.isSortedInsert()) {
         String tableName = PlannerUtil.getStoreTableName(plan);
@@ -549,7 +549,7 @@ public class QueryExecutor {
     }
 
     MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
-    planner.build(masterPlan);
+    planner.build(context, masterPlan);
 
     return masterPlan;
   }

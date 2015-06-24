@@ -86,10 +86,10 @@ public class TestBNLJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, schema, employeePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < OUTER_TUPLE_NUM; i++) {
       tuple.put(new Datum[] { DatumFactory.createInt4(i),
           DatumFactory.createInt4(i), DatumFactory.createInt4(10 + i),
@@ -108,7 +108,7 @@ public class TestBNLJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
+    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -149,10 +149,10 @@ public class TestBNLJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
-    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(),
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getPath()),
         Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(),
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
         new Path(people.getPath()),
         Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
@@ -182,9 +182,9 @@ public class TestBNLJoinExec {
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
         context).getRootBlock().getRoot();
 
-    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(), 
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(), 
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
         new Path(people.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
@@ -212,10 +212,10 @@ public class TestBNLJoinExec {
     exec.init();
     while ((tuple = exec.next()) != null) {
       count++;
-      assertTrue(i == tuple.get(0).asInt4());
-      assertTrue(i == tuple.get(1).asInt4());
-      assertTrue(("dept_" + i).equals(tuple.get(2).asChars()));
-      assertTrue(10 + i == tuple.get(3).asInt4());
+      assertTrue(i == tuple.getInt4(0));
+      assertTrue(i == tuple.getInt4(1));
+      assertTrue(("dept_" + i).equals(tuple.getText(2)));
+      assertTrue(10 + i == tuple.getInt4(3));
       i += 2;
     }
     exec.close();

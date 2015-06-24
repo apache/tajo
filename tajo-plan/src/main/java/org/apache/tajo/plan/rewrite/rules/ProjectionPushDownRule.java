@@ -61,7 +61,9 @@ public class ProjectionPushDownRule extends
     LogicalNode toBeOptimized = context.getPlan().getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
-      return false;
+      if (!PlannerUtil.isDistExecDDL(toBeOptimized)) {
+        return false;
+      }
     }
     for (QueryBlock eachBlock: context.getPlan().getQueryBlocks()) {
       if (eachBlock.hasTableExpression()) {

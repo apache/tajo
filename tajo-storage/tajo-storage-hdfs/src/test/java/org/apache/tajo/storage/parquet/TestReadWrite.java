@@ -104,6 +104,6 @@ public class TestReadWrite {
     assertEquals(new Double(4.1), new Double(tuple.getFloat8(7)));
     assertTrue(HELLO.equals(tuple.getText(8)));
     assertArrayEquals(HELLO.getBytes(Charsets.UTF_8), tuple.getBytes(9));
-    assertEquals(NullDatum.get(), tuple.get(10));
+    assertTrue(tuple.isBlankOrNull(10));
   }
 }

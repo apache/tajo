@@ -48,10 +48,10 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.FileStorageManager;
+import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -261,7 +261,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       FragmentProto[] fragmentProtos = ctx.getTables(tableId);
       List<Fragment> fragments = FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
       for (Fragment frag : fragments) {
-        size += StorageManager.getFragmentLength(ctx.getConf(), frag);
+        size += Tablespace.getFragmentLength(ctx.getConf(), frag);
       }
     }
     return size;
@@ -934,7 +934,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         if (broadcastFlag) {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = TUtil.newList();
-          FileStorageManager fileStorageManager = (FileStorageManager) TableSpaceManager.getFileStorageManager(ctx.getConf());
+          FileTablespace fileStorageManager = (FileTablespace) TableSpaceManager.getFileStorageManager(ctx.getConf());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
           }
@@ -1193,11 +1193,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Preconditions.checkNotNull(ctx.getTable(annotation.getCanonicalName()),
         "Error: There is no table matched to %s", annotation.getCanonicalName());
 
-    FragmentProto [] fragmentProtos = ctx.getTables(annotation.getTableName());
-    List<FileFragment> fragments =
-        FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
+    FragmentProto [] fragments = ctx.getTables(annotation.getTableName());
 
-    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), annotation.getIndexPath(),
+    Preconditions.checkState(fragments.length == 1);
+    return new BSTIndexScanExec(ctx, annotation, fragments[0], annotation.getIndexPath(),
         annotation.getKeySchema(), annotation.getPredicates());
   }
 

@@ -121,7 +121,7 @@ public class ComparableVector {
     }
 
     protected final void set(int index, Tuple tuple, int field) {
-      if (tuple.isNull(field)) {
+      if (tuple.isBlankOrNull(field)) {
         nulls.set(index);
         return;
       }
@@ -196,7 +196,7 @@ public class ComparableVector {
     public void set(Tuple tuple) {
       for (int i = 0; i < keyTypes.length; i++) {
         final int field = keyIndex[i];
-        if (tuple.isNull(field)) {
+        if (tuple.isBlankOrNull(field)) {
           keys[i] = null;
           continue;
         }
@@ -216,7 +216,7 @@ public class ComparableVector {
           case TEXT:
           case CHAR:
           case BLOB: keys[i] = tuple.getBytes(field); break;
-          case DATUM: keys[i] = tuple.get(field); break;
+          case DATUM: keys[i] = tuple.asDatum(field); break;
           default:
             throw new IllegalArgumentException();
         }
@@ -252,7 +252,7 @@ public class ComparableVector {
       for (int i = 0; i < keys.length; i++) {
         final int field = keyIndex[i];
         final boolean n1 = keys[i] == null;
-        final boolean n2 = tuple.isNull(field);
+        final boolean n2 = tuple.isBlankOrNull(field);
         if (n1 && n2) {
           continue;
         }
@@ -275,7 +275,7 @@ public class ComparableVector {
           case TEXT:
           case CHAR:
           case BLOB: if (!Arrays.equals((byte[])keys[i], tuple.getBytes(field))) return false; continue;
-          case DATUM: if (!keys[i].equals(tuple.get(field))) return false; continue;
+          case DATUM: if (!keys[i].equals(tuple.asDatum(field))) return false; continue;
         }
       }
       return true;

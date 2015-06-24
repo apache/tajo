@@ -50,14 +50,14 @@ public class TestFileSystems {
 
   private static String TEST_PATH = "target/test-data/TestFileSystem";
   private TajoConf conf;
-  private FileStorageManager sm;
+  private FileTablespace sm;
   private FileSystem fs;
   private Path testDir;
 
   public TestFileSystems(FileSystem fs) throws IOException {
     this.fs = fs;
     this.conf = new TajoConf(fs.getConf());
-    sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
   }
 
@@ -106,11 +106,10 @@ public class TestFileSystems {
 
     Tuple[] tuples = new Tuple[4];
     for (int i = 0; i < tuples.length; i++) {
-      tuples[i] = new VTuple(3);
-      tuples[i]
-          .put(new Datum[]{DatumFactory.createInt4(i),
-              DatumFactory.createInt4(i + 32),
-              DatumFactory.createText("name" + i)});
+      tuples[i] = new VTuple(new Datum[]{
+          DatumFactory.createInt4(i),
+          DatumFactory.createInt4(i + 32),
+          DatumFactory.createText("name" + i)});
     }
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender",

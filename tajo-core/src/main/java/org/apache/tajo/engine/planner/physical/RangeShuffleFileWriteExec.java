@@ -77,7 +77,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
         context.getDataChannel().getStoreType() : "RAW");
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
-    this.appender = (FileAppender) ((FileStorageManager) TableSpaceManager.getFileStorageManager(context.getConf()))
+    this.appender = (FileAppender) ((FileTablespace) TableSpaceManager.getFileStorageManager(context.getConf()))
         .getAppender(meta, outSchema, new Path(storeTablePath, "output"));
     this.appender.enableStats();
     this.appender.init();
@@ -95,15 +95,20 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     long offset;
 
 
-    while(!context.isStopped() && (tuple = child.next()) != null) {
-      offset = appender.getOffset();
-      appender.addTuple(tuple);
-      keyTuple = new VTuple(keySchema.size());
-      RowStoreUtil.project(tuple, keyTuple, indexKeys);
-      if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
-        indexWriter.write(keyTuple, offset);
-        prevKeyTuple = keyTuple;
+    try {
+      while(!context.isStopped() && (tuple = child.next()) != null) {
+        offset = appender.getOffset();
+        appender.addTuple(tuple);
+        keyTuple = new VTuple(keySchema.size());
+        RowStoreUtil.project(tuple, keyTuple, indexKeys);
+        if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
+          indexWriter.write(keyTuple, offset);
+          prevKeyTuple = keyTuple;
+        }
       }
+    } catch (RuntimeException e) {
+      e.printStackTrace();
+      throw e;
     }
 
     return null;

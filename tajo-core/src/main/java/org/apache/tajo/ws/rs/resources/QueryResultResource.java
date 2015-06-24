@@ -58,13 +58,10 @@ public class QueryResultResource {
   
   private Application application;
   
-  private String databaseName;
-
   private String queryId;
   
   private JerseyResourceDelegateContext context;
   
-  private static final String databaseNameKeyName = "databaseName";
   private static final String queryIdKeyName = "queryId";
   private static final String sessionIdKeyName = "sessionId";
   private static final String cacheIdKeyName = "cacheId";
@@ -89,14 +86,6 @@ public class QueryResultResource {
     this.application = application;
   }
   
-  public String getDatabaseName() {
-    return databaseName;
-  }
-  
-  public void setDatabaseName(String databaseName) {
-    this.databaseName = databaseName;
-  }
-
   public String getQueryId() {
     return queryId;
   }
@@ -110,9 +99,6 @@ public class QueryResultResource {
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
         JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
-    JerseyResourceDelegateContextKey<String> databaseNameKey =
-        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-    context.put(databaseNameKey, databaseName);
     JerseyResourceDelegateContextKey<String> queryIdKey =
         JerseyResourceDelegateContextKey.valueOf(queryIdKeyName, String.class);
     context.put(queryIdKey, queryId);
@@ -200,10 +186,7 @@ public class QueryResultResource {
       JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
       UriInfo uriInfo = context.get(uriInfoKey);
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      String databaseName = context.get(databaseNameKey);
-      
+
       try {
         masterContext.getSessionManager().touch(sessionId);
         Session session = masterContext.getSessionManager().getSession(sessionId);
@@ -234,7 +217,7 @@ public class QueryResultResource {
             .path(QueryResource.class)
             .path(QueryResource.class, "getQueryResult")
             .path(QueryResultResource.class, "getQueryResultSet")
-            .build(databaseName, queryId, cacheId);
+            .build(queryId, cacheId);
         ResultSetInfoResponse resultSetInfoResponse = new ResultSetInfoResponse();
         resultSetInfoResponse.setId(cacheId);
         resultSetInfoResponse.setLink(resultSetCacheUri);
@@ -260,7 +243,7 @@ public class QueryResultResource {
   public Response getQueryResultSet(@HeaderParam(QueryResource.tajoSessionIdHeaderName) String sessionId,
       @PathParam("cacheId") String cacheId,
       @DefaultValue("-1") @QueryParam("offset") int offset,
-      @DefaultValue("-1") @QueryParam("count") int count) {
+      @DefaultValue("100") @QueryParam("count") int count) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a get query result set request.");
     }
@@ -366,7 +349,7 @@ public class QueryResultResource {
     }
 
     private void skipOffsetRow(NonForwardQueryResultScanner queryResultScanner, int offset) throws IOException {
-      if (offset < 0) {
+      if (offset <= 0) {
         return;
       }
 

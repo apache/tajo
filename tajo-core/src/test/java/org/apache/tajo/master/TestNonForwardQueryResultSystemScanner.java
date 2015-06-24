@@ -34,6 +34,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -239,15 +240,15 @@ public class TestNonForwardQueryResultSystemScanner {
 
       @Override
       protected boolean matchesSafely(Tuple item, Description mismatchDescription) {
-        Datum datum = item.get(fieldId);
         Object itemValue = null;
-        
-        if (datum.type() == Type.TEXT) {
-          itemValue = datum.asChars();
-        } else if (datum.type() == Type.INT4) {
-          itemValue = datum.asInt4();
-        } else if (datum.type() == Type.INT8) {
-          itemValue = datum.asInt8();
+
+        Type type = item.type(fieldId);
+        if (type == Type.TEXT) {
+          itemValue = item.getText(fieldId);
+        } else if (type == Type.INT4) {
+          itemValue = item.getInt4(fieldId);
+        } else if (type == Type.INT8) {
+          itemValue = item.getInt8(fieldId);
         }
         
         if (itemValue != null && matcher.matches(itemValue)) {

@@ -44,6 +44,10 @@ public class QueryId implements Comparable<QueryId> {
     return seq;
   }
 
+  public boolean isNull() {
+    return this.equals(QueryIdFactory.NULL_QUERY_ID);
+  }
+
   @Override
   public String toString() {
     return QUERY_ID_PREFIX + SEPARATOR + toStringNoPrefix();

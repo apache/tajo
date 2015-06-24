@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.ipc.ClientProtos;
@@ -30,9 +31,11 @@ import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -45,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
@@ -54,6 +58,8 @@ public class SessionConnection implements Closeable {
 
   private final static Log LOG = LogFactory.getLog(SessionConnection.class);
 
+  private final static AtomicInteger connections = new AtomicInteger();
+
   final RpcClientManager manager;
 
   private String baseDatabase;
@@ -62,16 +68,16 @@ public class SessionConnection implements Closeable {
 
   volatile TajoIdProtos.SessionIdProto sessionId;
 
-  private AtomicBoolean closed = new AtomicBoolean(false);
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /** session variable cache */
   private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
 
-  private ServiceTracker serviceTracker;
+  private final ServiceTracker serviceTracker;
 
   private NettyClientBase client;
 
-  private KeyValueSet properties;
+  private final KeyValueSet properties;
 
   /**
    * Connect to TajoMaster
@@ -82,17 +88,16 @@ public class SessionConnection implements Closeable {
    * @param properties configurations
    * @throws java.io.IOException
    */
-  public SessionConnection(ServiceTracker tracker, @Nullable String baseDatabase,
-                           KeyValueSet properties) throws IOException {
-
+  public SessionConnection(@NotNull ServiceTracker tracker, @Nullable String baseDatabase,
+                           @NotNull KeyValueSet properties) throws IOException {
+    this.serviceTracker = tracker;
+    this.baseDatabase = baseDatabase;
     this.properties = properties;
 
     this.manager = RpcClientManager.getInstance();
     this.manager.setRetries(properties.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
     this.userInfo = UserRoleInfo.getCurrentUser();
-    this.baseDatabase = baseDatabase != null ? baseDatabase : null;
 
-    this.serviceTracker = tracker;
     try {
       this.client = getTajoMasterConnection();
     } catch (ServiceException e) {
@@ -112,6 +117,7 @@ public class SessionConnection implements Closeable {
         // Client do not closed on idle state for support high available
         this.client = manager.newClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, false,
             manager.getRetries(), 0, TimeUnit.SECONDS, false);
+        connections.incrementAndGet();
       } catch (Exception e) {
         throw new ServiceException(e);
       }
@@ -119,7 +125,7 @@ public class SessionConnection implements Closeable {
     }
   }
 
-  protected KeyValueSet getProperties() {
+  public KeyValueSet getProperties() {
     return properties;
   }
 
@@ -310,6 +316,14 @@ public class SessionConnection implements Closeable {
       // ignore
     } finally {
       RpcClientManager.cleanup(client);
+      if(connections.decrementAndGet() == 0) {
+        if (!System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
+          RpcChannelFactory.shutdownGracefully();
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("RPC connection is closed");
+          }
+        }
+      }
     }
   }
 

@@ -25,7 +25,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
 
 public class HashLeftOuterJoinExec extends HashJoinExec {
 

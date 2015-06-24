@@ -247,7 +247,7 @@ public class QueryInProgress {
 
       // terminal state will let client to retrieve a query result
       // So, we must set the query result before changing query state
-      if (isFinishState(this.queryInfo.getQueryState())) {
+      if (isFinishState()) {
         if (queryInfo.hasResultdesc()) {
           this.queryInfo.setResultDesc(queryInfo.getResultDesc());
         }
@@ -260,7 +260,13 @@ public class QueryInProgress {
     }
   }
 
-  private boolean isFinishState(TajoProtos.QueryState state) {
+  public boolean isKillWait() {
+    TajoProtos.QueryState state = queryInfo.getQueryState();
+    return state == TajoProtos.QueryState.QUERY_KILL_WAIT;
+  }
+
+  public boolean isFinishState() {
+    TajoProtos.QueryState state = queryInfo.getQueryState();
     return state == TajoProtos.QueryState.QUERY_FAILED ||
         state == TajoProtos.QueryState.QUERY_ERROR ||
         state == TajoProtos.QueryState.QUERY_KILLED ||

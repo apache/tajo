@@ -51,12 +51,10 @@ public class Atan2 extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatumx = params.get(0);
-    Datum valueDatumy = params.get(1);
-    if(valueDatumx instanceof NullDatum || valueDatumy instanceof NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createFloat8(Math.atan2(valueDatumx.asFloat8(), valueDatumy.asFloat8()));
+    return DatumFactory.createFloat8(Math.atan2(params.getFloat8(0), params.getFloat8(1)));
   }
 }

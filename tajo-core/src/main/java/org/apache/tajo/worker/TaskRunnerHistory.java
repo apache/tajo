@@ -36,6 +36,7 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskRunnerHistoryProto;
 /**
  * The history class for TaskRunner processing.
  */
+@Deprecated
 public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
 
   private Service.STATE state;

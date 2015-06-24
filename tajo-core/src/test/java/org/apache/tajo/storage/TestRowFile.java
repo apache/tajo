@@ -67,8 +67,8 @@ public class TestRowFile {
 
     TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
 
-    FileStorageManager sm =
-        (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm =
+        (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");
@@ -127,8 +127,8 @@ public class TestRowFile {
       scanner = new RowFile.RowFileScanner(conf, schema, meta, fragment);
       scanner.init();
       while ((tuple=scanner.next()) != null) {
-        if (!idSet.remove(tuple.get(0).asInt4())) {
-          System.out.println("duplicated! " + tuple.get(0).asInt4());
+        if (!idSet.remove(tuple.getInt4(0))) {
+          System.out.println("duplicated! " + tuple.getInt4(0));
         }
         tupleCnt++;
       }

@@ -116,6 +116,7 @@ message ExecutionBlockReport {
     repeated IntermediateEntryProto intermediateEntries = 5;
 }
 
+// deprecated
 message TaskResponseProto {
     required string id = 1;
     required QueryState status = 2;
@@ -161,6 +162,7 @@ message QueryExecutionRequestProto {
     optional StringProto logicalPlanJson = 6;
 }
 
+// deprecated
 message GetTaskRequestProto {
     required int32 workerId = 1;
     required TajoContainerIdProto containerId = 2;
@@ -196,6 +198,21 @@ message RunExecutionBlockRequestProto {
 
 message ExecutionBlockListProto {
     repeated ExecutionBlockIdProto executionBlockId = 1;
+}
+
+message TaskAllocationRequestProto {
+    required TaskRequestProto taskRequest = 1;
+    required NodeResourceProto resource = 2;
+}
+
+message BatchAllocationRequestProto {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    repeated TaskAllocationRequestProto taskRequest = 2;
+    optional RunExecutionBlockRequestProto executionBlockRequest = 3;  //TODO should be refactored
+}
+
+message BatchAllocationResponseProto {
+    repeated TaskAllocationRequestProto cancellationTask = 2;
 }
 
 service TajoWorkerProtocolService {

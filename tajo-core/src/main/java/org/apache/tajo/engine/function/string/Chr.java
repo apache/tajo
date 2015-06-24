@@ -52,10 +52,11 @@ public class Chr extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if (datum instanceof NullDatum) return NullDatum.get();
+    if (params.isBlankOrNull(0)) {
+      return NullDatum.get();
+    }
 
-    int value = datum.asInt4();
+    int value = params.getInt4(0);
     if (value <= 0 || value > 65525) {
         return NullDatum.get();
     } else {

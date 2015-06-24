@@ -1,0 +1,136 @@
+explain
+-------------------------------
+SORT(4)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc)
+   GROUP_BY(3)(c_custkey)
+     => exprs: (sum(default.empty_orders.o_orderkey (INT4)),max(default.empty_orders.o_orderstatus (TEXT)),max(default.empty_orders.o_orderdate (TEXT)))
+     => target list: default.customer.c_custkey (INT4), ?sum (INT8), ?max_1 (TEXT), ?max_2 (TEXT)
+     => out schema:{(4) ?max_1 (TEXT), ?max_2 (TEXT), ?sum (INT8), default.customer.c_custkey (INT4)}
+     => in schema:{(4) default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+      JOIN(7)(LEFT_OUTER)
+        => Join Cond: default.customer.c_custkey (INT4) = default.empty_orders.o_orderkey (INT4)
+        => target list: default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)
+        => out schema: {(4) default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+        => in schema: {(4) default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+         SCAN(1) on default.empty_orders
+           => target list: default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)
+           => out schema: {(3) default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+           => in schema: {(9) default.empty_orders.o_clerk (TEXT), default.empty_orders.o_comment (TEXT), default.empty_orders.o_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderpriority (TEXT), default.empty_orders.o_orderstatus (TEXT), default.empty_orders.o_shippriority (INT4), default.empty_orders.o_totalprice (FLOAT8)}
+         SCAN(0) on default.customer
+           => target list: default.customer.c_custkey (INT4)
+           => out schema: {(1) default.customer.c_custkey (INT4)}
+           => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000006
+   |-eb_0000000000000_0000_000005
+      |-eb_0000000000000_0000_000004
+         |-eb_0000000000000_0000_000003
+            |-eb_0000000000000_0000_000002
+            |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+5: eb_0000000000000_0000_000005
+6: eb_0000000000000_0000_000006
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
+
+SCAN(0) on default.customer
+  => target list: default.customer.c_custkey (INT4)
+  => out schema: {(1) default.customer.c_custkey (INT4)}
+  => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.empty_orders.o_orderkey (INT4), num=32)
+
+SCAN(1) on default.empty_orders
+  => target list: default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)
+  => out schema: {(3) default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+  => in schema: {(9) default.empty_orders.o_clerk (TEXT), default.empty_orders.o_comment (TEXT), default.empty_orders.o_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderpriority (TEXT), default.empty_orders.o_orderstatus (TEXT), default.empty_orders.o_shippriority (INT4), default.empty_orders.o_totalprice (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.empty_orders.o_orderkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
+
+GROUP_BY(11)(c_custkey)
+  => exprs: (sum(default.empty_orders.o_orderkey (INT4)),max(default.empty_orders.o_orderstatus (TEXT)),max(default.empty_orders.o_orderdate (TEXT)))
+  => target list: default.customer.c_custkey (INT4), ?sum_5 (INT8), ?max_6 (TEXT), ?max_7 (TEXT)
+  => out schema:{(4) default.customer.c_custkey (INT4), ?sum_5 (INT8), ?max_6 (TEXT), ?max_7 (TEXT)}
+  => in schema:{(4) default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+   JOIN(7)(LEFT_OUTER)
+     => Join Cond: default.customer.c_custkey (INT4) = default.empty_orders.o_orderkey (INT4)
+     => target list: default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)
+     => out schema: {(4) default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+     => in schema: {(4) default.customer.c_custkey (INT4), default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+      SCAN(10) on eb_0000000000000_0000_000002
+        => out schema: {(3) default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+        => in schema: {(3) default.empty_orders.o_orderdate (TEXT), default.empty_orders.o_orderkey (INT4), default.empty_orders.o_orderstatus (TEXT)}
+      SCAN(9) on eb_0000000000000_0000_000001
+        => out schema: {(1) default.customer.c_custkey (INT4)}
+        => in schema: {(1) default.customer.c_custkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=RANGE_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
+
+SORT(13)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc)
+   GROUP_BY(3)(c_custkey)
+     => exprs: (sum(?sum_5 (INT8)),max(?max_6 (TEXT)),max(?max_7 (TEXT)))
+     => target list: default.customer.c_custkey (INT4), ?sum (INT8), ?max_1 (TEXT), ?max_2 (TEXT)
+     => out schema:{(4) ?max_1 (TEXT), ?max_2 (TEXT), ?sum (INT8), default.customer.c_custkey (INT4)}
+     => in schema:{(4) default.customer.c_custkey (INT4), ?sum_5 (INT8), ?max_6 (TEXT), ?max_7 (TEXT)}
+      SCAN(12) on eb_0000000000000_0000_000003
+        => out schema: {(4) default.customer.c_custkey (INT4), ?sum_5 (INT8), ?max_6 (TEXT), ?max_7 (TEXT)}
+        => in schema: {(4) default.customer.c_custkey (INT4), ?sum_5 (INT8), ?max_6 (TEXT), ?max_7 (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 4 => 5 (type=RANGE_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000004
+
+SORT(4)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc)
+   SCAN(14) on eb_0000000000000_0000_000004
+     => out schema: {(4) ?max_1 (TEXT), ?max_2 (TEXT), ?sum (INT8), default.customer.c_custkey (INT4)}
+     => in schema: {(4) ?max_1 (TEXT), ?max_2 (TEXT), ?sum (INT8), default.customer.c_custkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [TERMINAL]
+=======================================================

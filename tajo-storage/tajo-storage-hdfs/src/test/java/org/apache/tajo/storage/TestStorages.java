@@ -155,7 +155,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -210,7 +210,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
@@ -271,7 +271,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
     int tupleNum = 10000;
@@ -307,15 +307,15 @@ public class TestStorages {
 
   private void verifyProjectedFields(boolean projectable, Tuple tuple, int tupleCnt) {
     if (projectable) {
-      assertTrue(tupleCnt + 2 == tuple.get(0).asInt8());
-      assertTrue(tupleCnt + 3 == tuple.get(1).asFloat4());
+      assertTrue(tupleCnt + 2 == tuple.getInt8(0));
+      assertTrue(tupleCnt + 3 == tuple.getFloat4(1));
     } else {
       // RAW and ROW always project all fields.
       if (!storeType.equalsIgnoreCase("RAW") && !storeType.equalsIgnoreCase("ROWFILE")) {
-        assertTrue(tuple.get(0) == null);
+        assertTrue(tuple.isBlankOrNull(0));
       }
-      assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
-      assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
+      assertTrue(tupleCnt + 2 == tuple.getInt8(1));
+      assertTrue(tupleCnt + 3 == tuple.getFloat4(2));
     }
   }
 
@@ -347,7 +347,7 @@ public class TestStorages {
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
@@ -355,7 +355,7 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(11 + (handleProtobuf ? 1 : 0));
+    VTuple tuple = new VTuple(11 + (handleProtobuf ? 1 : 0));
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createChar("hyunsik"),
@@ -385,7 +385,7 @@ public class TestStorages {
     Tuple retrieved;
     while ((retrieved = scanner.next()) != null) {
       for (int i = 0; i < tuple.size(); i++) {
-        assertEquals(tuple.get(i), retrieved.get(i));
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
     }
     scanner.close();
@@ -425,14 +425,14 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
     int columnNum = 11 + (handleProtobuf ? 1 : 0);
-    Tuple seedTuple = new VTuple(columnNum);
+    VTuple seedTuple = new VTuple(columnNum);
     seedTuple.put(new Datum[]{
         DatumFactory.createBool(true),                // 0
         DatumFactory.createChar("hyunsik"),           // 2
@@ -478,9 +478,9 @@ public class TestStorages {
       assertEquals(columnNum, retrieved.size());
       for (int j = 0; j < columnNum; j++) {
         if (i == j) {
-          assertEquals(NullDatum.get(), retrieved.get(j));
+          assertEquals(NullDatum.get(), retrieved.asDatum(j));
         } else {
-          assertEquals(seedTuple.get(j), retrieved.get(j));
+          assertEquals(seedTuple.get(j), retrieved.asDatum(j));
         }
       }
 
@@ -513,7 +513,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -521,8 +521,7 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(13);
-    tuple.put(new Datum[] {
+    VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
@@ -551,7 +550,7 @@ public class TestStorages {
     Tuple retrieved;
     while ((retrieved=scanner.next()) != null) {
       for (int i = 0; i < tuple.size(); i++) {
-        assertEquals(tuple.get(i), retrieved.get(i));
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
     }
     scanner.close();
@@ -583,7 +582,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -591,8 +590,7 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(13);
-    tuple.put(new Datum[] {
+    VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
@@ -621,7 +619,7 @@ public class TestStorages {
     Tuple retrieved;
     while ((retrieved=scanner.next()) != null) {
       for (int i = 0; i < tuple.size(); i++) {
-        assertEquals(tuple.get(i), retrieved.get(i));
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
     }
     scanner.close();
@@ -653,7 +651,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -661,8 +659,7 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(13);
-    tuple.put(new Datum[] {
+    VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
@@ -695,7 +692,7 @@ public class TestStorages {
     Tuple retrieved;
     while ((retrieved=scanner.next()) != null) {
       for (int i = 0; i < tuple.size(); i++) {
-        assertEquals(tuple.get(i), retrieved.get(i));
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
     }
     scanner.close();
@@ -727,7 +724,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -735,7 +732,7 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(13);
+    VTuple tuple = new VTuple(13);
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
@@ -769,7 +766,7 @@ public class TestStorages {
     Tuple retrieved;
     while ((retrieved=scanner.next()) != null) {
       for (int i = 0; i < tuple.size(); i++) {
-        assertEquals(tuple.get(i), retrieved.get(i));
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
     }
     scanner.close();
@@ -789,12 +786,11 @@ public class TestStorages {
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
-      FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+      FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
       Appender appender = sm.getAppender(meta, schema, tablePath);
       appender.init();
 
-      Tuple tuple = new VTuple(3);
-      tuple.put(new Datum[]{
+      VTuple tuple = new VTuple(new Datum[]{
           DatumFactory.createDate("1980-04-01"),
           DatumFactory.createTime("12:34:56"),
           DatumFactory.createTimestmpDatumWithUnixTime((int)(System.currentTimeMillis() / 1000))
@@ -811,7 +807,7 @@ public class TestStorages {
       Tuple retrieved;
       while ((retrieved = scanner.next()) != null) {
         for (int i = 0; i < tuple.size(); i++) {
-          assertEquals(tuple.get(i), retrieved.get(i));
+          assertEquals(tuple.get(i), retrieved.asDatum(i));
         }
       }
       scanner.close();
@@ -831,7 +827,7 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
@@ -921,14 +917,13 @@ public class TestStorages {
       conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
     }
 
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testMaxValue.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
 
     appender.init();
 
-    Tuple tuple = new VTuple(5);
-    tuple.put(new Datum[]{
+    VTuple tuple = new VTuple(new Datum[]{
         DatumFactory.createFloat4(Float.MAX_VALUE),
         DatumFactory.createFloat8(Double.MAX_VALUE),
         DatumFactory.createInt2(Short.MAX_VALUE),
@@ -948,7 +943,7 @@ public class TestStorages {
     Tuple retrieved;
     while ((retrieved = scanner.next()) != null) {
       for (int i = 0; i < tuple.size(); i++) {
-        assertEquals(tuple.get(i), retrieved.get(i));
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
       }
     }
     scanner.close();
@@ -977,7 +972,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 
@@ -1016,11 +1011,11 @@ public class TestStorages {
     scanner.close();
 
     if (scanner.isProjectable()) {
-      assertEquals(expect.get(1), tuple.get(0));
-      assertEquals(NullDatum.get(), tuple.get(1));
+      assertEquals(expect.asDatum(1), tuple.asDatum(0));
+      assertEquals(NullDatum.get(), tuple.asDatum(1));
     } else {
-      assertEquals(expect.get(1), tuple.get(1));
-      assertEquals(NullDatum.get(), tuple.get(4));
+      assertEquals(expect.asDatum(1), tuple.asDatum(1));
+      assertEquals(NullDatum.get(), tuple.asDatum(4));
     }
   }
 
@@ -1041,7 +1036,7 @@ public class TestStorages {
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
 
     Path tablePath = new Path(testDir, "test_storetype_oversize.data");
-    FileStorageManager sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();
 

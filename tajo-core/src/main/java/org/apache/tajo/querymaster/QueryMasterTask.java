@@ -55,7 +55,7 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TableSpaceManager;
@@ -308,7 +308,7 @@ public class QueryMasterTask extends CompositeService {
   }
 
   public synchronized void startQuery() {
-    StorageManager sm = null;
+    Tablespace sm = null;
     LogicalPlan plan = null;
     try {
       if (query != null) {
@@ -372,7 +372,7 @@ public class QueryMasterTask extends CompositeService {
         }
       }
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
-      queryMasterContext.getGlobalPlanner().build(masterPlan);
+      queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);

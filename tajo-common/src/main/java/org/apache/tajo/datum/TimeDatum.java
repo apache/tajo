@@ -38,7 +38,8 @@ public class TimeDatum extends Datum {
     this.time = time;
   }
 
-  public TimeMeta toTimeMeta() {
+  @Override
+  public TimeMeta asTimeMeta() {
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.date2j(time, tm);
 
@@ -46,12 +47,12 @@ public class TimeDatum extends Datum {
   }
 
   public int getHourOfDay() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.hours;
   }
 
   public int getMinuteOfHour() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.minutes;
   }
 
@@ -62,7 +63,7 @@ public class TimeDatum extends Datum {
   }
 
   public int getMillisOfSecond() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return tm.fsecs / 1000;
   }
 
@@ -92,12 +93,11 @@ public class TimeDatum extends Datum {
 
   @Override
   public String asChars() {
-    TimeMeta tm = toTimeMeta();
+    TimeMeta tm = asTimeMeta();
     return DateTimeUtil.encodeTime(tm, DateStyle.ISO_DATES);
   }
 
-  public String asChars(TimeZone timeZone, boolean includeTimeZone) {
-    TimeMeta tm = toTimeMeta();
+  public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
     DateTimeUtil.toUserTimezone(tm, timeZone);
     if (includeTimeZone) {
       tm.timeZone = timeZone.getRawOffset() / 1000;
@@ -106,7 +106,7 @@ public class TimeDatum extends Datum {
   }
 
   public String toString(TimeZone timeZone, boolean includeTimeZone) {
-    return asChars(timeZone, includeTimeZone);
+    return asChars(asTimeMeta(), timeZone, includeTimeZone);
   }
 
   @Override
@@ -124,12 +124,12 @@ public class TimeDatum extends Datum {
     switch(datum.type()) {
       case INTERVAL:
         IntervalDatum interval = ((IntervalDatum)datum);
-        TimeMeta tm = toTimeMeta();
+        TimeMeta tm = asTimeMeta();
         tm.plusInterval(interval.months, interval.milliseconds);
         return new TimeDatum(DateTimeUtil.toTime(tm));
       case DATE: {
         DateDatum dateDatum = (DateDatum) datum;
-        TimeMeta dateTm = dateDatum.toTimeMeta();
+        TimeMeta dateTm = dateDatum.asTimeMeta();
         dateTm.plusTime(time);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(dateTm));
       }
@@ -143,7 +143,7 @@ public class TimeDatum extends Datum {
     switch(datum.type()) {
       case INTERVAL:
         IntervalDatum interval = ((IntervalDatum)datum);
-        TimeMeta tm = toTimeMeta();
+        TimeMeta tm = asTimeMeta();
         tm.plusInterval(-interval.months, -interval.milliseconds);
         return new TimeDatum(DateTimeUtil.toTime(tm));
       case TIME:

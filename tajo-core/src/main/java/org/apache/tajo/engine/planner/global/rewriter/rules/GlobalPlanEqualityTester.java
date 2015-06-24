@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -38,7 +39,7 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
   }
 
   @Override
-  public boolean isEligible(MasterPlan plan) {
+  public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
     return true;
   }
 
@@ -46,8 +47,7 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
   public MasterPlan rewrite(MasterPlan plan) {
     try {
       ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);
-      while (cursor.hasNext()) {
-        ExecutionBlock eb = cursor.nextBlock();
+      for (ExecutionBlock eb : cursor) {
         LogicalNode node = eb.getPlan();
         if (node != null) {
           PlanProto.LogicalNodeTree tree = LogicalNodeSerializer.serialize(node);

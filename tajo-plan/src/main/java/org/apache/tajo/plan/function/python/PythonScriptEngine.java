@@ -286,14 +286,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
     setSchema();
   }
 
-  public PythonScriptEngine(FunctionDesc functionDesc, boolean intermediatePhase, boolean finalPhase) {
+  public PythonScriptEngine(FunctionDesc functionDesc, boolean firstPhase, boolean lastPhase) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
-    this.intermediatePhase = intermediatePhase;
-    this.finalPhase = finalPhase;
+    this.firstPhase = firstPhase;
+    this.lastPhase = lastPhase;
     setSchema();
   }
 
@@ -381,7 +381,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
       outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
     } else {
       // UDAF
-      if (!intermediatePhase && !finalPhase) {
+      if (firstPhase) {
         // first phase
         TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
         inSchema = new Schema();
@@ -389,11 +389,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
           inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
         }
         outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
-      } else if (intermediatePhase) {
-        inSchema = outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
-      } else if (finalPhase) {
+      } else if (lastPhase) {
         inSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
         outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+      } else {
+        // intermediate phase
+        inSchema = outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
       }
     }
     projectionCols = new int[outSchema.size()];
@@ -476,7 +477,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     Datum result;
     try {
-      result = outputHandler.getNext().get(0);
+      result = outputHandler.getNext().asDatum(0);
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }
@@ -494,7 +495,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   public void callAggFunc(FunctionContext functionContext, Tuple input) {
 
     String methodName;
-    if (!intermediatePhase && !finalPhase) {
+    if (firstPhase) {
       // eval
       methodName = "eval";
     } else {
@@ -593,7 +594,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     Datum result;
     try {
-      result = outputHandler.getNext().get(0);
+      result = outputHandler.getNext().asDatum(0);
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
     }

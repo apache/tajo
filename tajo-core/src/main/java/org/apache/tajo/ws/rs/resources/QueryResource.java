@@ -18,28 +18,6 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
@@ -54,14 +32,19 @@ import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.TajoIdUtils;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
 
-@Path("/databases/{databaseName}/queries")
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Path("/queries")
 public class QueryResource {
 
   private static final Log LOG = LogFactory.getLog(QueryResource.class);
@@ -71,15 +54,11 @@ public class QueryResource {
   
   @Context
   Application application;
-  
-  @PathParam("databaseName")
-  String databaseName;
-  
+
   JerseyResourceDelegateContext context;
   
   protected static final String tajoSessionIdHeaderName = "X-Tajo-Session";
   
-  private static final String databaseNameKeyName = "databaseName";
   private static final String stateKeyName = "state";
   private static final String startTimeKeyName = "startTime";
   private static final String endTimeKeyName = "endTime";
@@ -87,15 +66,13 @@ public class QueryResource {
   private static final String submitQueryRequestKeyName = "submitQueryRequest";
   private static final String printTypeKeyName = "printType";
   private static final String queryIdKeyName = "queryId";
-  
+  private static final String defaultQueryInfoPrintType = "COMPLICATED";
+
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
         JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
-    JerseyResourceDelegateContextKey<String> databaseNameKey =
-        JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-    context.put(databaseNameKey, databaseName);
   }
   
   @GET
@@ -178,13 +155,8 @@ public class QueryResource {
       for (QueryInProgress queryInProgress: queryManager.getRunningQueries()) {
         queriesInfo.add(queryInProgress.getQueryInfo());
       }
-      
-      try {
-        queriesInfo.addAll(masterContext.getHistoryReader().getQueries(null));
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        return ResourcesUtil.createExceptionResponse(LOG, e.getMessage());
-      }
+
+      queriesInfo.addAll(queryManager.getFinishedQueries());
       
       if (state != null) {
         queriesInfo = selectQueriesInfoByState(queriesInfo, queryState);
@@ -233,9 +205,9 @@ public class QueryResource {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a submit query request.");
     }
-    
+
     Response response = null;
-    
+
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
@@ -244,21 +216,22 @@ public class QueryResource {
       JerseyResourceDelegateContextKey<SubmitQueryRequest> submitQueryRequestKey =
           JerseyResourceDelegateContextKey.valueOf(submitQueryRequestKeyName, SubmitQueryRequest.class);
       context.put(submitQueryRequestKey, request);
-      
+
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
           new SubmitQueryDelegate(),
           application,
           context,
           LOG);
+
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
-      
+
       response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
-    
+
     return response;
   }
-  
+
   private static class SubmitQueryDelegate implements JerseyResourceDelegate {
 
     @Override
@@ -269,20 +242,17 @@ public class QueryResource {
       JerseyResourceDelegateContextKey<SubmitQueryRequest> submitQueryRequestKey =
           JerseyResourceDelegateContextKey.valueOf(submitQueryRequestKeyName, SubmitQueryRequest.class);
       SubmitQueryRequest request = context.get(submitQueryRequestKey);
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
-      
+
       if (sessionId == null || sessionId.isEmpty()) {
         return ResourcesUtil.createBadRequestResponse(LOG, "Session Id is null or empty string.");
       }
       if (request == null || request.getQuery() == null || request.getQuery().isEmpty()) {
         return ResourcesUtil.createBadRequestResponse(LOG, "query is null or emptry string.");
       }
-      
+
       Session session;
       try {
         session = masterContext.getSessionManager().getSession(sessionId);
@@ -303,7 +273,7 @@ public class QueryResource {
         URI queryURI = uriInfo.getBaseUriBuilder()
             .path(QueryResource.class)
             .path(QueryResource.class, "getQuery")
-            .build(databaseName, new QueryId(response.getQueryId()).toString());
+            .build(new QueryId(response.getQueryId()).toString());
         return Response.created(queryURI).build();
       }
     }
@@ -312,7 +282,8 @@ public class QueryResource {
   @GET
   @Path("{queryId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getQuery(@PathParam("queryId") String queryId, @QueryParam("print") String printType) {
+  public Response getQuery(@PathParam("queryId") String queryId,
+													 @DefaultValue(defaultQueryInfoPrintType) @QueryParam("print") String printType) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a get query request.");
     }
@@ -326,6 +297,7 @@ public class QueryResource {
       context.put(queryIdKey, queryId);
       JerseyResourceDelegateContextKey<String> printTypeKey =
           JerseyResourceDelegateContextKey.valueOf(printTypeKeyName, String.class);
+
       context.put(printTypeKey, printType);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -436,13 +408,12 @@ public class QueryResource {
       return Response.ok().build();
     }
   }
-  
+
   @Path("/{queryId}/result")
   public QueryResultResource getQueryResult(@PathParam("queryId") String queryId) {
     QueryResultResource queryResultResource = new QueryResultResource();
     queryResultResource.setUriInfo(uriInfo);
     queryResultResource.setApplication(application);
-    queryResultResource.setDatabaseName(databaseName);
     queryResultResource.setQueryId(queryId);
     return queryResultResource;
   }

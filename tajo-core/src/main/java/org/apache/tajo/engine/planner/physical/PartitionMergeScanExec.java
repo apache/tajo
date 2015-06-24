@@ -64,8 +64,16 @@ public class PartitionMergeScanExec extends ScanExec {
       scanners.add(scanExec);
     }
     progress = 0.0f;
-    rescan();
+    initScanExecutors();
     super.init();
+  }
+
+  private void initScanExecutors() throws IOException {
+    if (scanners.size() > 0) {
+      iterator = scanners.iterator();
+      currentScanner = iterator.next();
+      currentScanner.init();
+    }
   }
 
   @Override
@@ -78,10 +86,13 @@ public class PartitionMergeScanExec extends ScanExec {
         return tuple;
       }
 
+      // since read tuple is null, close the current scanner.
+      if (currentScanner != null) {
+        currentScanner.close();
+        currentScanner = null;
+      }
+
       if (iterator.hasNext()) {
-        if (currentScanner != null) {
-          currentScanner.close();
-        }
         currentScanner = iterator.next();
         currentScanner.init();
       } else {
@@ -93,11 +104,10 @@ public class PartitionMergeScanExec extends ScanExec {
 
   @Override
   public void rescan() throws IOException {
-    if (scanners.size() > 0) {
-      iterator = scanners.iterator();
-      currentScanner = iterator.next();
-      currentScanner.init();
+    for (SeqScanExec scanner : scanners) {
+      scanner.close();
     }
+    initScanExecutors();
   }
 
   @Override
@@ -110,6 +120,7 @@ public class PartitionMergeScanExec extends ScanExec {
         inputStats.merge(scannerTableStsts);
       }
     }
+    scanners.clear();
     iterator = null;
     progress = 1.0f;
   }

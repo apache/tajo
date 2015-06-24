@@ -301,14 +301,13 @@ public class ExprTestBase {
       }
 
       for (int i = 0; i < expected.length; i++) {
-        Datum datum = outTuple.get(i);
         String outTupleAsChars;
-        if (datum.type() == Type.TIMESTAMP) {
-          outTupleAsChars = ((TimestampDatum) datum).asChars(timeZone, false);
-        } else if (datum.type() == Type.TIME) {
-          outTupleAsChars = ((TimeDatum) datum).asChars(timeZone, false);
+        if (outTuple.type(i) == Type.TIMESTAMP) {
+          outTupleAsChars = TimestampDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
+        } else if (outTuple.type(i) == Type.TIME) {
+          outTupleAsChars = TimeDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
         } else {
-          outTupleAsChars = datum.asChars();
+          outTupleAsChars = outTuple.getText(i);
         }
         assertEquals(query, expected[i], outTupleAsChars);
       }

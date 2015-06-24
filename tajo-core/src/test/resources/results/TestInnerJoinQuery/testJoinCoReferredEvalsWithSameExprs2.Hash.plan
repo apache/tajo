@@ -1,0 +1,119 @@
+explain
+-------------------------------
+PROJECTION(5)
+  => Targets: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus1 (INT4) as plus2, result (INT4), total (INT8)
+  => out schema: {(7) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus2 (INT4), result (INT4), total (INT8), v1 (INT4)}
+  => in  schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
+   SORT(4)
+     => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+      GROUP_BY(3)(v1,n_regionkey,r_regionkey,?plus,result)
+        => exprs: (sum(?plus (INT4)))
+        => target list: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4) as plus1, result (INT4), total (INT8)
+        => out schema:{(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
+        => in schema:{(5) ?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4)}
+         JOIN(8)(INNER)
+           => Join Cond: default.region.r_regionkey (INT4) = default.nation.n_regionkey (INT4)
+           => target list: default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) / 2 as result, default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), v1 (INT4), default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) as ?plus
+           => out schema: {(5) ?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4)}
+           => in schema: {(3) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), v1 (INT4)}
+            SCAN(0) on default.region
+              => filter: default.region.r_regionkey (INT4) > 0
+              => target list: default.region.r_regionkey (INT4)
+              => out schema: {(1) default.region.r_regionkey (INT4)}
+              => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+            SCAN(1) on default.nation
+              => target list: default.nation.n_regionkey (INT4), default.nation.n_regionkey (INT4) + default.nation.n_nationkey (INT4) as v1
+              => out schema: {(2) default.nation.n_regionkey (INT4), v1 (INT4)}
+              => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000006
+   |-eb_0000000000000_0000_000005
+      |-eb_0000000000000_0000_000004
+         |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000004
+3: eb_0000000000000_0000_000005
+4: eb_0000000000000_0000_000006
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.region
+
+GROUP_BY(12)(?plus,n_regionkey,r_regionkey,result,v1)
+  => exprs: (sum(?plus (INT4)))
+  => target list: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4), result (INT4), ?sum_3 (INT8)
+  => out schema:{(6) v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4), result (INT4), ?sum_3 (INT8)}
+  => in schema:{(5) ?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4)}
+   JOIN(8)(INNER)
+     => Join Cond: default.region.r_regionkey (INT4) = default.nation.n_regionkey (INT4)
+     => target list: default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) / 2 as result, default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), v1 (INT4), default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) as ?plus
+     => out schema: {(5) ?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4)}
+     => in schema: {(3) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), v1 (INT4)}
+      SCAN(0) on default.region
+        => filter: default.region.r_regionkey (INT4) > 0
+        => target list: default.region.r_regionkey (INT4)
+        => out schema: {(1) default.region.r_regionkey (INT4)}
+        => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+      SCAN(1) on default.nation
+        => target list: default.nation.n_regionkey (INT4), default.nation.n_regionkey (INT4) + default.nation.n_nationkey (INT4) as v1
+        => out schema: {(2) default.nation.n_regionkey (INT4), v1 (INT4)}
+        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=?plus (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), result (INT4), v1 (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=RANGE_SHUFFLE, key=default.nation.n_regionkey (INT4), v1 (INT4), num=32)
+
+SORT(14)
+  => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+   GROUP_BY(3)(v1,n_regionkey,r_regionkey,?plus,result)
+     => exprs: (sum(?sum_3 (INT8)))
+     => target list: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4) as plus1, result (INT4), total (INT8)
+     => out schema:{(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
+     => in schema:{(6) v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4), result (INT4), ?sum_3 (INT8)}
+      SCAN(13) on eb_0000000000000_0000_000003
+        => out schema: {(6) v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4), result (INT4), ?sum_3 (INT8)}
+        => in schema: {(6) v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4), result (INT4), ?sum_3 (INT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 4 => 5 (type=RANGE_SHUFFLE, key=default.nation.n_regionkey (INT4), v1 (INT4), num=32)
+
+[Enforcers]
+ 0: sorted input=eb_0000000000000_0000_000004
+
+PROJECTION(5)
+  => Targets: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus1 (INT4) as plus2, result (INT4), total (INT8)
+  => out schema: {(7) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus2 (INT4), result (INT4), total (INT8), v1 (INT4)}
+  => in  schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
+   SORT(4)
+     => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+      SCAN(15) on eb_0000000000000_0000_000004
+        => out schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
+        => in schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [TERMINAL]
+=======================================================

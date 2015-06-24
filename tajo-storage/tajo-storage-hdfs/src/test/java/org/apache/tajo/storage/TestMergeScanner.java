@@ -49,7 +49,7 @@ import static org.junit.Assert.*;
 @RunWith(Parameterized.class)
 public class TestMergeScanner {
   private TajoConf conf;
-  StorageManager sm;
+  Tablespace sm;
   private static String TEST_PATH = "target/test-data/TestMergeScanner";
 
   private static String TEST_MULTIPLE_FILES_AVRO_SCHEMA =
@@ -177,20 +177,20 @@ public class TestMergeScanner {
 
       if (storeType.equalsIgnoreCase("RAW")) {
         assertEquals(4, tuple.size());
-        assertNotNull(tuple.get(0));
-        assertNotNull(tuple.get(1));
-        assertNotNull(tuple.get(2));
-        assertNotNull(tuple.get(3));
+        assertFalse(tuple.isBlankOrNull(0));
+        assertFalse(tuple.isBlankOrNull(1));
+        assertFalse(tuple.isBlankOrNull(2));
+        assertFalse(tuple.isBlankOrNull(3));
       } else if (scanner.isProjectable()) {
         assertEquals(2, tuple.size());
-        assertNotNull(tuple.get(0));
-        assertNotNull(tuple.get(1));
+        assertFalse(tuple.isBlankOrNull(0));
+        assertFalse(tuple.isBlankOrNull(1));
       } else {
         assertEquals(4, tuple.size());
-        assertNotNull(tuple.get(0));
-        assertNull(tuple.get(1));
-        assertNotNull(tuple.get(2));
-        assertNull(tuple.get(3));
+        assertFalse(tuple.isBlankOrNull(0));
+        assertTrue(tuple.isBlankOrNull(1));
+        assertFalse(tuple.isBlankOrNull(2));
+        assertTrue(tuple.isBlankOrNull(3));
       }
     }
     scanner.close();

@@ -53,7 +53,7 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -114,7 +114,7 @@ public class TajoMaster extends CompositeService {
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
-  private StorageManager storeManager;
+  private Tablespace storeManager;
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
@@ -477,7 +477,7 @@ public class TajoMaster extends CompositeService {
       return globalEngine;
     }
 
-    public StorageManager getStorageManager() {
+    public Tablespace getStorageManager() {
       return storeManager;
     }
 

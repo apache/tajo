@@ -205,8 +205,7 @@ public class Int2Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createFloat8(val + datum.asFloat8());
     case DATE:
-      DateDatum dateDatum = (DateDatum)datum;
-      TimeMeta tm = dateDatum.toTimeMeta();
+      TimeMeta tm = datum.asTimeMeta();
       tm.plusDays(asInt2());
       return new DateDatum(tm);
     case NULL_TYPE:
@@ -230,8 +229,7 @@ public class Int2Datum extends NumericDatum {
     case FLOAT8:
       return DatumFactory.createFloat8(val - datum.asFloat8());
     case DATE:
-      DateDatum dateDatum = (DateDatum)datum;
-      TimeMeta tm = dateDatum.toTimeMeta();
+      TimeMeta tm = datum.asTimeMeta();
       tm.plusDays(0 - asInt2());
       return new DateDatum(tm);
     case NULL_TYPE:

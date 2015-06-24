@@ -56,7 +56,7 @@ public class TestSortExec {
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
-  private static FileStorageManager sm;
+  private static FileTablespace sm;
   private static Path workDir;
   private static Path tablePath;
   private static TableMeta employeeMeta;
@@ -70,7 +70,7 @@ public class TestSortExec {
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = (FileStorageManager) TableSpaceManager.getFileStorageManager(conf);
+    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);
@@ -82,10 +82,10 @@ public class TestSortExec {
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
-    Appender appender = ((FileStorageManager) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 100; i++) {
       tuple.put(new Datum[] {
           DatumFactory.createInt4(rnd.nextInt(5)),
@@ -112,7 +112,7 @@ public class TestSortExec {
 
   @Test
   public final void testNext() throws IOException, PlanningException {
-    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employeeMeta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employeeMeta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
         LocalTajoTestingUtility
@@ -130,7 +130,7 @@ public class TestSortExec {
     Datum curVal;
     exec.init();
     while ((tuple = exec.next()) != null) {
-      curVal = tuple.get(0);
+      curVal = tuple.asDatum(0);
       if (preVal != null) {
         assertTrue(preVal.lessThanEqual(curVal).asBool());
       }
@@ -151,9 +151,9 @@ public class TestSortExec {
     schema.addColumn("l_orderkey", Type.INT8);
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
-    Tuple s = new VTuple(1);
+    VTuple s = new VTuple(1);
     s.put(0, DatumFactory.createInt8(0));
-    Tuple e = new VTuple(1);
+    VTuple e = new VTuple(1);
     e.put(0, DatumFactory.createInt8(6000000000l));
     TupleRange expected = new TupleRange(sortSpecs, s, e);
     RangePartitionAlgorithm partitioner

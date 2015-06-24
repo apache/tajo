@@ -18,12 +18,14 @@
 
 package org.apache.tajo.jdbc;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,13 +51,18 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
-  public boolean isNull(int fieldid) {
+  public boolean isBlank(int fieldid) {
+    return values.get(fieldid) == null;
+  }
+
+  @Override
+  public boolean isBlankOrNull(int fieldid) {
     return values.get(fieldid) == null || values.get(fieldid).isNull();
   }
 
   @Override
-  public boolean isNotNull(int fieldid) {
-    return !isNull(fieldid);
+  public void put(int fieldId, Tuple tuple) {
+    this.put(fieldId, tuple.asDatum(fieldId));
   }
 
   @Override
@@ -69,22 +76,24 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
-  public void put(int fieldId, Datum[] values) {
-    throw new UnsupportedException("put");
-  }
-
-  @Override
-  public void put(int fieldId, Tuple tuple) {
-    throw new UnsupportedException("put");
-  }
-
-  @Override
   public void put(Datum[] values) {
-    throw new UnsupportedException("put");
+    for (int i = 0; i < values.length; i++) {
+      this.values.set(i, values[i]);
+    }
   }
 
   @Override
-  public Datum get(int fieldId) {
+  public TajoDataTypes.Type type(int fieldId) {
+    return values.get(fieldId).type();
+  }
+
+  @Override
+  public int size(int fieldId) {
+    return values.get(fieldId).size();
+  }
+
+  @Override
+  public Datum asDatum(int fieldId) {
     return values.get(fieldId);
   }
 
@@ -100,17 +109,17 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public boolean getBool(int fieldId) {
-    throw new UnsupportedException("getBool");
+    return values.get(fieldId).asBool();
   }
 
   @Override
   public byte getByte(int fieldId) {
-    throw new UnsupportedException("getByte");
+    return values.get(fieldId).asByte();
   }
 
   @Override
   public char getChar(int fieldId) {
-    throw new UnsupportedException("getChar");
+    return values.get(fieldId).asChar();
   }
 
   @Override
@@ -119,33 +128,43 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
+  public byte[] getTextBytes(int fieldId) {
+    return values.get(fieldId).asTextBytes();
+  }
+
+  @Override
   public short getInt2(int fieldId) {
-    return (short)Integer.parseInt(values.get(fieldId).toString());
+    return values.get(fieldId).asInt2();
   }
 
   @Override
   public int getInt4(int fieldId) {
-    return Integer.parseInt(values.get(fieldId).toString());
+    return values.get(fieldId).asInt4();
   }
 
   @Override
   public long getInt8(int fieldId) {
-    return Long.parseLong(values.get(fieldId).toString());
+    return values.get(fieldId).asInt8();
   }
 
   @Override
   public float getFloat4(int fieldId) {
-    return Float.parseFloat(values.get(fieldId).toString());
+    return values.get(fieldId).asFloat4();
   }
 
   @Override
   public double getFloat8(int fieldId) {
-    return Float.parseFloat(values.get(fieldId).toString());
+    return values.get(fieldId).asFloat8();
   }
 
   @Override
   public String getText(int fieldId) {
-    return values.get(fieldId).toString();
+    return values.get(fieldId).asChars();
+  }
+
+  @Override
+  public TimeMeta getTimeDate(int fieldId) {
+    return values.get(fieldId).asTimeMeta();
   }
 
   @Override
