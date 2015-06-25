@@ -168,7 +168,6 @@ public class MergeScanner implements Scanner {
 
   @Override
   public void setFilter(EvalNode filter) {
-    throw new UnsupportedException();
   }
 
   @Override

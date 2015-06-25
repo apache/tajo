@@ -163,24 +163,24 @@ public class SeqScanExec extends ScanExec {
       projected = outSchema;
     }
 
+    initScanner(projected);
+
     if (plan.hasQual()) {
       if (scanner.isProjectable()) {
         qual.bind(context.getEvalContext(), projected);
       } else {
         qual.bind(context.getEvalContext(), inSchema);
       }
-
-      scanIt = new FilterScanIterator(scanner, qual);
-    } else {
-      scanIt = new FullScanIterator(scanner);
     }
-
-    initScanner(projected);
 
     // We should use FilterScanIterator only if underlying storage does not support filter push down.
     if (plan.hasQual() && !scanner.isSelectable()) {
       scanIt = new FilterScanIterator(scanner, qual);
+
     } else {
+      if (scanner.isSelectable()) { // TODO - isSelectable should be moved to FormatProperty
+        scanner.setFilter(qual);
+      }
       scanIt = new FullScanIterator(scanner);
     }
 
@@ -221,11 +221,6 @@ public class SeqScanExec extends ScanExec {
             plan.getPhysicalSchema(),
             fragments[0],
             projected);
-
-        // TODO - isSelectable should be moved to FormatProperty
-        if (scanner.isSelectable()) {
-          scanner.setFilter(qual);
-        }
       }
       scanner.init();
 
