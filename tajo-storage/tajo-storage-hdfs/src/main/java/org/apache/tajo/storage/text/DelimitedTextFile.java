@@ -34,6 +34,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
@@ -461,11 +462,7 @@ public class DelimitedTextFile {
 
     @Override
     public void setFilter(EvalNode filter) {
-
-    }
-
-    @Override
-    public void setSearchCondition(Object expr) {
+      throw new UnsupportedException();
     }
 
     @Override
