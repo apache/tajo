@@ -24,8 +24,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.storage.TableSpaceManager;
-import org.apache.tajo.storage.Tablespace;
 
 public class CreateTableHook implements DistributedQueryHook {
 

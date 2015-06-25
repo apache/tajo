@@ -48,7 +48,7 @@ import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -59,6 +59,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -346,18 +347,17 @@ public class TajoTestingCluster {
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
     if (!local) {
-      c.setVar(ConfVars.ROOT_DIR, getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
+      String tajoRootDir = getMiniDFSCluster().getFileSystem().getUri().toString() + "/tajo";
+      c.setVar(ConfVars.ROOT_DIR, tajoRootDir);
+
+      URI defaultTsUri = TajoConf.getWarehouseDir(c).toUri();
+      FileTablespace defaultTableSpace =
+          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri);
+      defaultTableSpace.init(conf);
+      TablespaceManager.addTableSpaceForTest(defaultTableSpace);
+
     } else {
       c.setVar(ConfVars.ROOT_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo");
-    }
-
-    // Do not need for local file system
-    if (!local) {
-      FileTablespace defaultTableSpace =
-          new FileTablespace(TableSpaceManager.DEFAULT_TABLESPACE_NAME, TajoConf.getWarehouseDir(c).toUri());
-      defaultTableSpace.init(conf);
-
-      TableSpaceManager.addTableSpaceForTest(defaultTableSpace);
     }
 
     setupCatalogForTesting(c, testBuildDir);

@@ -30,6 +30,9 @@ public class StorageConstants {
 
   // Common table properties -------------------------------------------------
 
+  // Insert
+  public static final String INSERT_DIRECTLY = "insert.direct";
+
   // time zone
   public static final String TIMEZONE = "timezone";
 

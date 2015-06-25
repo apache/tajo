@@ -202,7 +202,7 @@ public class SeqScanExec extends ScanExec {
             FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        Tablespace tablespace = TableSpaceManager.get(plan.getTableDesc().getUri()).get();
+        Tablespace tablespace = TablespaceManager.get(plan.getTableDesc().getUri()).get();
         this.scanner = tablespace.getScanner(meta, plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();

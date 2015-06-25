@@ -107,7 +107,7 @@ public class TestRightOuterMergeJoinExec {
 
     TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
     Path dep3Path = new Path(testDir, "dep3.csv");
-    Appender appender1 = ((FileTablespace) TableSpaceManager.getLocalFs())
+    Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
     VTuple tuple = new VTuple(dep3Schema.size());
@@ -146,7 +146,7 @@ public class TestRightOuterMergeJoinExec {
 
     TableMeta dep4Meta = CatalogUtil.newTableMeta("CSV");
     Path dep4Path = new Path(testDir, "dep4.csv");
-    Appender appender4 = ((FileTablespace) TableSpaceManager.getLocalFs())
+    Appender appender4 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
     VTuple tuple4 = new VTuple(dep4Schema.size());
@@ -178,7 +178,7 @@ public class TestRightOuterMergeJoinExec {
 
     TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
     Path job3Path = new Path(testDir, "job3.csv");
-    Appender appender2 = ((FileTablespace) TableSpaceManager.getLocalFs())
+    Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
     VTuple tuple2 = new VTuple(job3Schema.size());
@@ -218,7 +218,7 @@ public class TestRightOuterMergeJoinExec {
 
     TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
     Path emp3Path = new Path(testDir, "emp3.csv");
-    Appender appender3 = ((FileTablespace) TableSpaceManager.getLocalFs())
+    Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
     VTuple tuple3 = new VTuple(emp3Schema.size());
@@ -271,7 +271,7 @@ public class TestRightOuterMergeJoinExec {
 
     TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
     Path phone3Path = new Path(testDir, "phone3.csv");
-    Appender appender5 = ((FileTablespace) TableSpaceManager.getLocalFs())
+    Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
     appender5.init();
 
@@ -281,7 +281,7 @@ public class TestRightOuterMergeJoinExec {
     catalog.createTable(phone3);
 
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }

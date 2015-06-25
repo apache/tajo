@@ -53,7 +53,7 @@ import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
@@ -91,7 +91,7 @@ public class GlobalEngine extends AbstractService {
     try  {
       analyzer = new SQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
-      planner = new LogicalPlanner(context.getCatalog(), TableSpaceManager.getInstance());
+      planner = new LogicalPlanner(context.getCatalog(), TablespaceManager.getInstance());
       optimizer = new LogicalOptimizer(context.getConf());
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
     } catch (Throwable t) {
@@ -141,8 +141,8 @@ public class GlobalEngine extends AbstractService {
     QueryContext newQueryContext =  new QueryContext(context.getConf(), session);
 
     // Set default space uri and its root uri
-    newQueryContext.setDefaultSpaceUri(TableSpaceManager.getDefault().getUri());
-    newQueryContext.setDefaultSpaceRootUri(TableSpaceManager.getDefault().getRootUri());
+    newQueryContext.setDefaultSpaceUri(TablespaceManager.getDefault().getUri());
+    newQueryContext.setDefaultSpaceRootUri(TablespaceManager.getDefault().getRootUri());
 
     String tajoTest = System.getProperty(CommonTestingUtil.TAJO_TEST_KEY);
     if (tajoTest != null && tajoTest.equalsIgnoreCase(CommonTestingUtil.TAJO_TEST_TRUE)) {
@@ -303,7 +303,7 @@ public class GlobalEngine extends AbstractService {
           InsertNode iNode = rootNode.getChild();
           Schema outSchema = iNode.getChild().getOutSchema();
 
-          TableSpaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
+          TablespaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
 
         } catch (Throwable t) {
           state.addVerification(t.getMessage());

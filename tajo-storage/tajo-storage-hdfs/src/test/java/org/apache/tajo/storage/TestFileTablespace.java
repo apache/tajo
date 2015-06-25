@@ -81,7 +81,7 @@ public class TestFileTablespace {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     localFs.mkdirs(path.getParent());
-    FileTablespace fileStorageManager = (FileTablespace) TableSpaceManager.getLocalFs();
+    FileTablespace fileStorageManager = (FileTablespace) TablespaceManager.getLocalFs();
     assertEquals(localFs.getUri(), fileStorageManager.getFileSystem().getUri());
 
 		Appender appender = fileStorageManager.getAppender(meta, schema, path);
@@ -224,24 +224,24 @@ public class TestFileTablespace {
     Optional<Tablespace> existingTs = Optional.absent();
     try {
       /* Local FileSystem */
-      FileTablespace space = TableSpaceManager.getLocalFs();
+      FileTablespace space = TablespaceManager.getLocalFs();
       assertEquals(localFs.getUri(), space.getFileSystem().getUri());
 
       FileTablespace distTablespace = new FileTablespace("testGetFileTablespace", uri);
       distTablespace.init(conf);
-      existingTs = TableSpaceManager.addTableSpaceForTest(distTablespace);
+      existingTs = TablespaceManager.addTableSpaceForTest(distTablespace);
 
       /* Distributed FileSystem */
-      space = (FileTablespace) TableSpaceManager.get(uri).get();
+      space = (FileTablespace) TablespaceManager.get(uri).get();
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
 
-      space = (FileTablespace) TableSpaceManager.getByName("testGetFileTablespace").get();
+      space = (FileTablespace) TablespaceManager.getByName("testGetFileTablespace").get();
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
 
     } finally {
 
       if (existingTs.isPresent()) {
-        TableSpaceManager.addTableSpaceForTest(existingTs.get());
+        TablespaceManager.addTableSpaceForTest(existingTs.get());
       }
 
       cluster.shutdown(true);

@@ -18,9 +18,11 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Optional;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -149,7 +151,7 @@ public abstract class Tablespace {
    */
   public abstract StorageProperty getProperty();
 
-  public abstract FormatProperty getFormatProperty(String dataFormat);
+  public abstract FormatProperty getFormatProperty(TableMeta meta);
 
   /**
    * Release storage manager resource
@@ -257,6 +259,14 @@ public abstract class Tablespace {
     scanner.setTarget(target.toArray());
 
     return scanner;
+  }
+
+  public Appender getAppenderForInsertRow(OverridableConf queryContext,
+                                          TaskAttemptId taskAttemptId,
+                                          TableMeta meta,
+                                          Schema schema,
+                                          Path workDir) throws IOException {
+    return getAppender(queryContext, taskAttemptId, meta, schema, workDir);
   }
 
   /**
@@ -394,5 +404,12 @@ public abstract class Tablespace {
     } else {
       return false;
     }
+  }
+
+  public abstract URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException;
+
+  public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context,
+                                 TableMeta meta) throws IOException {
+    throw new IOException("Staging the output result is not supported in this storage");
   }
 }

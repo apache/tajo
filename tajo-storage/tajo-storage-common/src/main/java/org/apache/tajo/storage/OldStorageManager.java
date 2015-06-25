@@ -31,7 +31,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.FileUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -158,7 +157,7 @@ public class OldStorageManager {
           Constructor<? extends Tablespace> constructor =
               (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(storageManagerClass);
           if (constructor == null) {
-            constructor = storageManagerClass.getDeclaredConstructor(TableSpaceManager.TABLESPACE_PARAM);
+            constructor = storageManagerClass.getDeclaredConstructor(TablespaceManager.TABLESPACE_PARAM);
             constructor.setAccessible(true);
             CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
           }

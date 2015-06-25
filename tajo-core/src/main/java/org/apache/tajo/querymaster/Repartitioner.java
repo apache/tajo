@@ -100,7 +100,7 @@ public class Repartitioner {
           stats[i] = masterContext.getStage(scanEBId).getResultStats().getNumBytes();
         }
 
-        // TODO - We should remove dummy flagment usages
+        // TODO - We should remove dummy fragment usages
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), new Path("/dummy"), 0, 0,
             new String[]{UNKNOWN_HOST});
 
@@ -115,7 +115,7 @@ public class Repartitioner {
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        Tablespace space = TableSpaceManager.get(tableDesc.getUri()).get();
+        Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
         List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
@@ -380,7 +380,7 @@ public class Repartitioner {
 
         Path[] partitionScanPaths = null;
         TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
-        Tablespace space = TableSpaceManager.get(tableDesc.getUri()).get();
+        Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
 
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
 
@@ -507,7 +507,7 @@ public class Repartitioner {
       Collection<Fragment> scanFragments;
       Path[] partitionScanPaths = null;
 
-      FileTablespace space = (FileTablespace) TableSpaceManager.get(desc.getUri()).get();
+      FileTablespace space = (FileTablespace) TablespaceManager.get(desc.getUri()).get();
 
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
@@ -645,7 +645,7 @@ public class Repartitioner {
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
 
-      Tablespace space = TableSpaceManager.getAnyByScheme(storeType).get();
+      Tablespace space = TablespaceManager.getAnyByScheme(storeType).get();
       ranges = space.getInsertSortRanges(
           stage.getContext().getQueryContext(),
           tableDesc,

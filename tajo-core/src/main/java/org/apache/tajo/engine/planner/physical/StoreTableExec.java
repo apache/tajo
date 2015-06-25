@@ -31,12 +31,14 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * This is a physical executor to store a table part into a specified storage.
@@ -92,7 +94,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      Optional<FileTablespace> spaceRes = TableSpaceManager.get(lastFileName.toUri());
+      Optional<FileTablespace> spaceRes = TablespaceManager.get(lastFileName.toUri());
       if (!spaceRes.isPresent())  {
         throw new IllegalStateException("No Tablespace for " + lastFileName.toUri());
       }
@@ -106,7 +108,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
       }
     } else {
       Path stagingDir = context.getQueryContext().getStagingDir();
-      appender = TableSpaceManager.get(stagingDir.toUri()).get().getAppender(
+      appender = TablespaceManager.get(stagingDir.toUri()).get().getAppender(
           context.getQueryContext(),
           context.getTaskId(),
           meta,
