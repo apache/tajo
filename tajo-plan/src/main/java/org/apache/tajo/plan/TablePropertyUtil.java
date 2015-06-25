@@ -32,12 +32,10 @@ import org.apache.tajo.util.KeyValueSet;
  */
 public class TablePropertyUtil {
   /**
-   * This method sets a set of table properties by System default configs.
-   * These properties are implicitly used to read or write rows in Table.
-   * Don't use this method for TableMeta to be stored in Catalog.
+   * It sets default table property for newly created table
    *
-   * @param context System configuration
-   * @param node ScanNode
+   * @param context QueryContext
+   * @param node CreateTableNode
    */
   public static void setTableProperty(OverridableConf context, CreateTableNode node) {
     String storeType = node.getStorageType();
@@ -64,7 +62,7 @@ public class TablePropertyUtil {
    * It sets default table properties affected by system global configuration
    * The table property are implicitly used to read Table rows.
    *
-   * @param context System configuration
+   * @param context QueryContext
    * @param node ScanNode
    */
   public static void setTableProperty(OverridableConf context, ScanNode node) {
@@ -84,7 +82,7 @@ public class TablePropertyUtil {
    * @param meta TableMeta
    * @param propertyKey table property key
    */
-  public static void setProperty(OverridableConf context, SessionVars sessionVarKey,
+  private static void setProperty(OverridableConf context, SessionVars sessionVarKey,
                           TableMeta meta, String propertyKey) {
 
     if (!meta.containsOption(propertyKey)) {
