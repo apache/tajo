@@ -23,20 +23,19 @@
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
 <%@ page import="org.apache.tajo.ipc.QueryCoordinatorProtocol" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.service.ServiceTracker" %>
-<%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
-<%@ page import="org.apache.tajo.master.QueryInProgress" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
+<%@ page import="org.apache.tajo.service.ServiceTracker" %>
+<%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
+<%@ page import="org.apache.tajo.storage.TablespaceManager" %>
+<%@ page import="org.apache.tajo.storage.Tablespace" %>
 <%@ page import="org.apache.tajo.util.NetUtils" %>
 <%@ page import="org.apache.tajo.util.TUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Collection" %>
-<%@ page import="java.util.Date" %>
-<%@ page import="java.util.Map" %>
 <%@ page import="java.net.InetSocketAddress" %>
-<%@ page import="org.apache.tajo.service.ServiceTracker" %>
+<%@ page import="java.util.Date" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -139,7 +138,15 @@
     <tr><td width='150'>Threads:</td><td><a href='thread.jsp'>thread dump...</a></tr>
   </table>
   <hr/>
-
+  <h3>Tablespaces</h3>
+  <table width="100%" class="border_table" border="1">
+    <tr><th>Tablespace Name</th><th>URI</th><th>Handler</th></tr>
+    <% for (Tablespace space : TablespaceManager.getAllTablespaces()) {
+      if (space.isVisible()) { %>
+    <tr><td><%=space.getName()%></td><td><%=space.getUri()%></td><td><%=space.getClass().getName()%></td></tr>
+    <% }}%>
+  </table>
+  <hr/>
   <h3>Cluster Summary</h3>
   <table width="100%" class="border_table" border="1">
     <tr><th>Type</th><th>Total</th><th>Live</th><th>Dead</th><th>Running Master</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th></tr>

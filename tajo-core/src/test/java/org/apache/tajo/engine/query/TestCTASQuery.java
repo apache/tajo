@@ -71,7 +71,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertEquals("key", partitionDesc.getExpressionSchema().getRootColumns().get(0).getSimpleName());
 
     FileSystem fs = FileSystem.get(testBase.getTestingCluster().getConfiguration());
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
@@ -114,7 +114,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertEquals("key", partitionDesc.getExpressionSchema().getRootColumns().get(0).getSimpleName());
 
     FileSystem fs = FileSystem.get(cluster.getConfiguration());
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
@@ -267,7 +267,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
       TableDesc desc =  client.getTableDesc("managed_table1");
 
       assertNotNull(desc);
-      assertEquals("managed_table1", new Path(desc.getPath()).getName());
+      assertEquals("managed_table1", new Path(desc.getUri()).getName());
     } else {
       assertFalse(client.existTable("managed_Table1"));
       assertTrue(client.existTable("MANAGED_TABLE1"));
@@ -275,7 +275,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
       TableDesc desc =  client.getTableDesc("MANAGED_TABLE1");
 
       assertNotNull(desc);
-      assertEquals("MANAGED_TABLE1", new Path(desc.getPath()).getName());
+      assertEquals("MANAGED_TABLE1", new Path(desc.getUri()).getName());
     }
   }
 }

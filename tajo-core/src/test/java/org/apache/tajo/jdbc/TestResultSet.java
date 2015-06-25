@@ -66,7 +66,7 @@ public class TestResultSet {
   public static void setup() throws Exception {
     util = TpchTestBase.getInstance().getTestingCluster();
     conf = util.getConfiguration();
-    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
+    sm = TablespaceManager.getDefault();
 
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
@@ -74,7 +74,7 @@ public class TestResultSet {
     scoreMeta = CatalogUtil.newTableMeta("CSV");
     TableStats stats = new TableStats();
 
-    Path p = sm.getTablePath("score");
+    Path p = new Path(sm.getTableUri("default", "score"));
     sm.getFileSystem().mkdirs(p);
     Appender appender = sm.getAppender(scoreMeta, scoreSchema, new Path(p, "score"));
     RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(scoreSchema);

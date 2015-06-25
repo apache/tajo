@@ -74,7 +74,7 @@ public class PhysicalPlanUtil {
    */
   public static CatalogProtos.FragmentProto[] getNonZeroLengthDataFiles(TajoConf tajoConf,TableDesc tableDesc,
                                                           int fileIndex, int numResultFiles) throws IOException {
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
     FileSystem fs = path.getFileSystem(tajoConf);
 
     //In the case of partitioned table, we should return same partition key data files.

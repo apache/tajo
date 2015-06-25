@@ -64,7 +64,7 @@ public class MergeScanner implements Scanner {
 
     long numBytes = 0;
     for (Fragment eachFileFragment: rawFragmentList) {
-      long fragmentLength = Tablespace.getFragmentLength((TajoConf) conf, eachFileFragment);
+      long fragmentLength = TablespaceManager.guessFragmentVolume((TajoConf) conf, eachFileFragment);
       if (fragmentLength > 0) {
         numBytes += fragmentLength;
         fragments.add(eachFileFragment);
@@ -131,8 +131,7 @@ public class MergeScanner implements Scanner {
   private Scanner getNextScanner() throws IOException {
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = TableSpaceManager.getStorageManager((TajoConf) conf, meta.getStoreType()).getScanner(meta, schema,
-          currentFragment, target);
+      currentScanner = TablespaceManager.getLocalFs().getScanner(meta, schema, currentFragment, target);
       currentScanner.init();
       return currentScanner;
     } else {

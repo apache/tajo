@@ -74,6 +74,8 @@
         <configuration>
           <excludes>
             <exclude>src/test/resources/dataset/**</exclude>
+            <exclude>src/main/resources/*.json</exclude>
+            <exclude>src/test/resources/*.json</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -349,10 +351,6 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.minidev</groupId>
-      <artifactId>json-smart</artifactId>
     </dependency>
   </dependencies>
 
