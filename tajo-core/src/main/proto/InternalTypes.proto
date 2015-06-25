@@ -36,3 +36,12 @@ message VarianceProto {
   required double avg = 2;
   required int64 count = 3;
 }
+
+message CorrProto {
+  required int64 count = 1;
+  required double xavg = 2;
+  required double yavg = 3;
+  required double xvar = 4;
+  required double yvar = 5;
+  required double covar = 6;
+}
