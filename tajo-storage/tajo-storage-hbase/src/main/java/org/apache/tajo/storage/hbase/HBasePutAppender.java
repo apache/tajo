@@ -26,28 +26,29 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
+import java.net.URI;
 
 public class HBasePutAppender extends AbstractHBaseAppender {
+  private URI uri;
   private HTableInterface htable;
   private long totalNumBytes;
 
-  public HBasePutAppender(Configuration conf, TaskAttemptId taskAttemptId,
+  public HBasePutAppender(Configuration conf, URI uri, TaskAttemptId taskAttemptId,
                           Schema schema, TableMeta meta, Path stagingDir) {
     super(conf, taskAttemptId, schema, meta, stagingDir);
+    this.uri = uri;
   }
 
   @Override
   public void init() throws IOException {
     super.init();
 
-    Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(conf, meta);
-    HConnection hconn = ((HBaseTablespace) TableSpaceManager.getStorageManager((TajoConf) conf, "HBASE"))
-        .getConnection(hbaseConf);
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.get(uri).get();
+    HConnection hconn = space.getConnection();
     htable = hconn.getTable(columnMapping.getHbaseTableName());
     htable.setAutoFlushTo(false);
     htable.setWriteBufferSize(5 * 1024 * 1024);

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.exec.prehook;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
@@ -40,7 +39,7 @@ public class CreateIndexHook implements DistributedQueryHook {
     String databaseName = splits[0];
     String indexName = splits[1];
     queryContext.setOutputTable(indexName);
-    queryContext.setOutputPath(new Path(createIndexNode.getIndexPath()));
+    queryContext.setOutputPath(createIndexNode.getIndexPath());
     queryContext.setCreateIndex();
   }
 }
