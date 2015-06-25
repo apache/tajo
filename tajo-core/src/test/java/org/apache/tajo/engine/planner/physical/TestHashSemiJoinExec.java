@@ -84,7 +84,7 @@ public class TestHashSemiJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TableSpaceManager.getLocalFs())
+    Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     VTuple tuple = new VTuple(employeeSchema.size());
@@ -110,7 +110,7 @@ public class TestHashSemiJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileTablespace) TableSpaceManager.getLocalFs())
+    appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -133,7 +133,7 @@ public class TestHashSemiJoinExec {
     people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog, TableSpaceManager.getInstance());
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf);
   }
 

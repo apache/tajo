@@ -36,7 +36,7 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
 
@@ -251,11 +251,11 @@ public class DDLExecutor {
 
     Tablespace tableSpace;
     if (tableSpaceName != null) {
-      tableSpace = TableSpaceManager.getByName(tableSpaceName).get();
+      tableSpace = TablespaceManager.getByName(tableSpaceName).get();
     } else if (uri != null) {
-      tableSpace = TableSpaceManager.get(uri).get();
+      tableSpace = TablespaceManager.get(uri).get();
     } else {
-      tableSpace = TableSpaceManager.getDefault();
+      tableSpace = TablespaceManager.getDefault();
     }
 
     TableDesc desc;
@@ -313,7 +313,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        TableSpaceManager.get(tableDesc.getUri()).get().purgeTable(tableDesc);
+        TablespaceManager.get(tableDesc.getUri()).get().purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
       }

@@ -18,14 +18,46 @@
 
 package org.apache.tajo.storage;
 
+/**
+ * Format properties
+ */
 public class FormatProperty {
-  private boolean sortedInsertRequired;
 
-  public FormatProperty(boolean sortedInsertRequired) {
-    this.sortedInsertRequired = sortedInsertRequired;
+  /** if this format supports insert operation */
+  private boolean insertable;
+  /** if this format supports direct insertion (e.g., HBASE or JDBC-based storages) */
+  private boolean directInsert;
+  /** if this format supports staging phase */
+  private boolean stagingSupport;
+
+  public FormatProperty(boolean insertable, boolean directInsert, boolean stagingSupport) {
+    this.insertable = insertable;
+    this.stagingSupport = stagingSupport;
+    this.directInsert = directInsert;
   }
 
-  public boolean sortedInsertRequired() {
-    return sortedInsertRequired;
+  /**
+   * Return if this format supports staging phase
+   * @return True if this format supports staging phase
+   */
+  public boolean isInsertable() {
+    return insertable;
+  }
+
+  /**
+   * Return if this format supports direct insertion (e.g., HBASE or JDBC-based storages)
+   * @return True if this format supports direct insertion
+   */
+  public boolean directInsertSupported() {
+    return directInsert;
+  }
+
+  /**
+   * Return if this format supports staging phase
+   *
+   * @return True if this format supports staging phase
+   */
+  public boolean isStagingSupport() {
+    return stagingSupport;
   }
 }

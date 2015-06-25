@@ -239,6 +239,14 @@ public class LogicalPlan {
     return queryBlocks.get(ROOT_BLOCK);
   }
 
+  public LogicalRootNode getRootNode() {
+    return queryBlocks.get(ROOT_BLOCK).getRoot();
+  }
+
+  public Schema getOutputSchema() {
+    return getRootNode().getOutSchema();
+  }
+
   public QueryBlock getBlock(String blockName) {
     return queryBlocks.get(blockName);
   }

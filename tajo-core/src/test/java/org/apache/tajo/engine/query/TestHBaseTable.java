@@ -38,7 +38,7 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
@@ -82,7 +82,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableSpaceUri = "hbase:zk://" + hostName + ":" + zkPort;
     HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
     hBaseTablespace.init(new TajoConf(testingCluster.getHBaseUtil().getConf()));
-    TableSpaceManager.addTableSpaceForTest(hBaseTablespace);
+    TablespaceManager.addTableSpaceForTest(hBaseTablespace);
   }
 
   @AfterClass
@@ -213,7 +213,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -253,7 +253,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -306,7 +306,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -343,7 +343,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
-    HBaseTablespace space = (HBaseTablespace) TableSpaceManager.getByName("cluster1").get();
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
     HTableInterface htable = hconn.getTable("external_hbase_table");
 
@@ -477,7 +477,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeEq = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
         new ConstEval(new TextDatum("021")));
     scanNode.setQual(evalNodeEq);
-    Tablespace tablespace = TableSpaceManager.getByName("cluster1").get();
+    Tablespace tablespace = TablespaceManager.getByName("cluster1").get();
     List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));
@@ -652,6 +652,48 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     executeString("insert into hbase_mapped_table " +
         "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem ").close();
+
+    HTable htable = null;
+    ResultScanner scanner = null;
+    try {
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
+
+      Scan scan = new Scan();
+      scan.addFamily(Bytes.toBytes("col1"));
+      scan.addFamily(Bytes.toBytes("col2"));
+      scan.addFamily(Bytes.toBytes("col3"));
+      scanner = htable.getScanner(scan);
+
+      assertStrings(resultSetToString(scanner,
+          new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
+          new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
+          new boolean[]{false, false, false, true}, tableDesc.getSchema()));
+
+    } finally {
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
+
+      if (scanner != null) {
+        scanner.close();
+      }
+
+      if (htable != null) {
+        htable.close();
+      }
+    }
+  }
+
+  @Test
+  public void testInsertValues1() throws Exception {
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
+
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
+
+    executeString("insert into hbase_mapped_table select 'aaa', 'a12', 'a34', 1").close();
+    executeString("insert into hbase_mapped_table select 'bbb', 'b12', 'b34', 2").close();
+    executeString("insert into hbase_mapped_table select 'ccc', 'c12', 'c34', 3").close();
+    executeString("insert into hbase_mapped_table select 'ddd', 'd12', 'd34', 4").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
@@ -1301,10 +1343,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
   }
 
-  private String resultSetToString(ResultScanner scanner,
-                                   byte[][] cfNames, byte[][] qualifiers,
-                                   boolean[] binaries,
-                                   Schema schema) throws Exception {
+  private String resultSetToString(ResultScanner scanner, byte[][] cfNames, byte[][] qualifiers,
+                                   boolean [] binaries, Schema schema) throws Exception {
     StringBuilder sb = new StringBuilder();
     Result result = null;
     while ( (result = scanner.next()) != null ) {

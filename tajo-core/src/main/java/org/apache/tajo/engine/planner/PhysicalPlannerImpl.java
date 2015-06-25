@@ -252,7 +252,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       FragmentProto[] fragmentProtos = ctx.getTables(tableId);
       List<Fragment> fragments = FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
       for (Fragment frag : fragments) {
-        size += TableSpaceManager.guessFragmentVolume(ctx.getConf(), frag);
+        size += TablespaceManager.guessFragmentVolume(ctx.getConf(), frag);
       }
     }
     return size;
@@ -926,7 +926,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = TUtil.newList();
 
-          FileTablespace space = (FileTablespace) TableSpaceManager.get(scanNode.getTableDesc().getUri()).get();
+          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri()).get();
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(TUtil.newList(space.split(scanNode.getCanonicalName(), path)));
           }
@@ -1190,7 +1190,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    FileTablespace sm = (FileTablespace) TableSpaceManager.get(fragments.get(0).getPath().toUri()).get();
+    FileTablespace sm = (FileTablespace) TablespaceManager.get(fragments.get(0).getPath().toUri()).get();
     String dbName = CatalogUtil.extractQualifier(annotation.getTableName());
     String simpleName = CatalogUtil.extractSimpleName(annotation.getTableName());
     Path indexPath = new Path(new Path(sm.getTableUri(dbName, simpleName)), "index");

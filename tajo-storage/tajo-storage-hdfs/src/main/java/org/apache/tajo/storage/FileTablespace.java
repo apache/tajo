@@ -19,14 +19,17 @@
 package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -92,8 +95,12 @@ public class FileTablespace extends Tablespace {
         }
       };
 
+  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
+  private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true);
+
   protected FileSystem fs;
-  protected Path basePath;
+  protected Path spacePath;
+  protected Path stagingRootPath;
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
@@ -103,8 +110,9 @@ public class FileTablespace extends Tablespace {
 
   @Override
   protected void storageInit() throws IOException {
-    this.basePath = new Path(uri);
-    this.fs = basePath.getFileSystem(conf);
+    this.spacePath = new Path(uri);
+    this.fs = spacePath.getFileSystem(conf);
+    this.stagingRootPath = fs.makeQualified(new Path(conf.getVar(TajoConf.ConfVars.STAGING_ROOT_DIR)));
     this.conf.set(DFSConfigKeys.FS_DEFAULT_NAME_KEY, fs.getUri().toString());
 
     this.blocksMetadataEnabled =
@@ -167,7 +175,7 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public URI getTableUri(String databaseName, String tableName) {
-    return StorageUtil.concatPath(basePath, databaseName, tableName).toUri();
+    return StorageUtil.concatPath(spacePath, databaseName, tableName).toUri();
   }
 
   private String partitionPath = "";
@@ -192,12 +200,12 @@ public class FileTablespace extends Tablespace {
   }
 
   public FileFragment[] split(String tableName) throws IOException {
-    Path tablePath = new Path(basePath, tableName);
+    Path tablePath = new Path(spacePath, tableName);
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }
 
   public FileFragment[] split(String tableName, long fragmentSize) throws IOException {
-    Path tablePath = new Path(basePath, tableName);
+    Path tablePath = new Path(spacePath, tableName);
     return split(tableName, tablePath, fragmentSize);
   }
 
@@ -491,30 +499,6 @@ public class FileTablespace extends Tablespace {
   }
 
   /**
-   * Generate the map of host and make them into Volume Ids.
-   *
-   */
-  private Map<String, Set<Integer>> getVolumeMap(List<FileFragment> frags) {
-    Map<String, Set<Integer>> volumeMap = new HashMap<String, Set<Integer>>();
-    for (FileFragment frag : frags) {
-      String[] hosts = frag.getHosts();
-      int[] diskIds = frag.getDiskIds();
-      for (int i = 0; i < hosts.length; i++) {
-        Set<Integer> volumeList = volumeMap.get(hosts[i]);
-        if (volumeList == null) {
-          volumeList = new HashSet<Integer>();
-          volumeMap.put(hosts[i], volumeList);
-        }
-
-        if (diskIds.length > 0 && diskIds[i] > -1) {
-          volumeList.add(diskIds[i]);
-        }
-      }
-    }
-
-    return volumeMap;
-  }
-  /**
    * Generate the list of files and make them into FileSplits.
    *
    * @throws IOException
@@ -674,7 +658,7 @@ public class FileTablespace extends Tablespace {
       String simpleTableName = splitted[1];
 
       // create a table directory (i.e., ${WAREHOUSE_DIR}/${DATABASE_NAME}/${TABLE_NAME} )
-      Path tablePath = StorageUtil.concatPath(basePath, databaseName, simpleTableName);
+      Path tablePath = StorageUtil.concatPath(spacePath, databaseName, simpleTableName);
       tableDesc.setUri(tablePath.toUri());
     } else {
       Preconditions.checkState(tableDesc.getUri() != null, "ERROR: LOCATION must be given.");
@@ -851,22 +835,14 @@ public class FileTablespace extends Tablespace {
     }
   }
 
-  private static final StorageProperty FileStorageProperties = new StorageProperty(true, true, true, true);
-  private static final FormatProperty GeneralFileProperties = new FormatProperty(false);
-  private static final FormatProperty HFileProperties = new FormatProperty(true);
-
   @Override
   public StorageProperty getProperty() {
     return FileStorageProperties;
   }
 
   @Override
-  public FormatProperty getFormatProperty(String format) {
-    if (format.equalsIgnoreCase("hbase")) {
-      return HFileProperties;
-    } else {
-      return GeneralFileProperties;
-    }
+  public FormatProperty getFormatProperty(TableMeta meta) {
+    return GeneralFileProperties;
   }
 
   @Override
@@ -879,6 +855,84 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public void rollbackTable(LogicalNode node) throws IOException {
+  }
+
+  @Override
+  public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
+    String outputPath = context.get(QueryVars.OUTPUT_TABLE_URI, "");
+
+    Path stagingDir;
+    // The fact that there is no output means that this query is neither CTAS or INSERT (OVERWRITE) INTO
+    // So, this query results won't be materialized as a part of a table.
+    // The result will be temporarily written in the staging directory.
+    if (outputPath.isEmpty()) {
+      // for temporarily written in the storage directory
+      stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
+    } else {
+      Optional<Tablespace> spaceResult = TablespaceManager.get(outputPath);
+      if (!spaceResult.isPresent()) {
+        throw new IOException("No registered Tablespace for " + outputPath);
+      }
+
+      Tablespace space = spaceResult.get();
+      if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
+        // If this space allows move operation, the staging directory will be underneath the final output table uri.
+        stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));
+      } else {
+        stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
+      }
+    }
+
+    return stagingDir.toUri();
+  }
+
+  // query submission directory is private!
+  final public static FsPermission STAGING_DIR_PERMISSION = FsPermission.createImmutable((short) 0700); // rwx--------
+  public static final String TMP_STAGING_DIR_PREFIX = ".staging";
+
+  public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context, TableMeta meta)
+      throws IOException {
+
+    String realUser;
+    String currentUser;
+    UserGroupInformation ugi;
+    ugi = UserGroupInformation.getLoginUser();
+    realUser = ugi.getShortUserName();
+    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
+
+
+    Path stagingDir = new Path(getStagingUri(context, queryId, meta));
+
+    ////////////////////////////////////////////
+    // Create Output Directory
+    ////////////////////////////////////////////
+
+    if (fs.exists(stagingDir)) {
+      throw new IOException("The staging directory '" + stagingDir + "' already exists");
+    }
+    fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    FileStatus fsStatus = fs.getFileStatus(stagingDir);
+    String owner = fsStatus.getOwner();
+
+    if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
+      throw new IOException("The ownership on the user's query " +
+          "directory " + stagingDir + " is not as expected. " +
+          "It is owned by " + owner + ". The directory must " +
+          "be owned by the submitter " + currentUser + " or " +
+          "by " + realUser);
+    }
+
+    if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
+      LOG.info("Permissions on staging directory " + stagingDir + " are " +
+          "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
+          "to correct value " + STAGING_DIR_PERMISSION);
+      fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    }
+
+    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+    fs.mkdirs(stagingResultDir);
+
+    return stagingDir.toUri();
   }
 
   @Override
@@ -1257,4 +1311,6 @@ public class FileTablespace extends Tablespace {
 
     return retValue;
   }
+
+
 }
