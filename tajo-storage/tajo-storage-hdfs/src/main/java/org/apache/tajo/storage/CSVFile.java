@@ -542,10 +542,6 @@ public class CSVFile {
     }
 
     @Override
-    public void setSearchCondition(Object expr) {
-    }
-
-    @Override
     public void seek(long offset) throws IOException {
       if(isCompress()) throw new UnsupportedException();
 
