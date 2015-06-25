@@ -68,7 +68,7 @@ import org.apache.tajo.storage.Tuple;
     returnType = TajoDataTypes.Type.FLOAT8,
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT8})}
 )
-public class CorrLong extends AggFunction<Datum> {
+public class CorrLongLong extends AggFunction<Datum> {
 
   /**
    * Evaluate the Pearson correlation coefficient using a stable one-pass
@@ -88,11 +88,15 @@ public class CorrLong extends AggFunction<Datum> {
    *   vy_(A,B) = vy_A + vy_B + (my_A - my_B)*(my_A - my_B)*n_A*n_B/(n_A+n_B)
    *
    */
-  public CorrLong() {
+  public CorrLongLong() {
     super(new Column[] {
         new Column("expr", TajoDataTypes.Type.INT8),
         new Column("expr", TajoDataTypes.Type.INT8)
     });
+  }
+
+  public CorrLongLong(Column[] definedArgs) {
+    super(definedArgs);
   }
 
   @Override
