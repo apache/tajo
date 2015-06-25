@@ -179,12 +179,11 @@ public class TestDelimitedTextFile {
 
   @Test
   public void testSkippingHeaderFooter() throws IOException {
-    TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
     meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
     meta.putOption(StorageConstants.TEXT_SKIP_FOOTER_LINE, "1");
     FileFragment fragment = getFileFragment("testNormal.json");
-    Scanner scanner = TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
     scanner.init();
 
     int lines = 0;
