@@ -43,7 +43,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 /**
@@ -105,7 +104,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -134,7 +133,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -163,7 +162,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -197,7 +196,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, SUPPLIER));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -247,7 +246,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, NATION));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -261,8 +260,8 @@ public class TestHiveCatalogStore {
       assertEquals(partitionSchema.getColumn(i).getSimpleName(), partitionSchema1.getColumn(i).getSimpleName());
     }
 
-    testAddPartition(table1.getPath(), NATION, "n_nationkey=10/n_date=20150101");
-    testAddPartition(table1.getPath(), NATION, "n_nationkey=20/n_date=20150102");
+    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
+    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
 
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
     testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
@@ -370,7 +369,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
     FileSystem fs = FileSystem.getLocal(new Configuration());
-    assertTrue(fs.exists(new Path(table1.getPath())));
+    assertTrue(fs.exists(new Path(table1.getUri())));
 
     store.dropTable(DB_NAME, tableName);
     assertFalse(store.existTable(DB_NAME, tableName));
@@ -395,7 +394,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -424,7 +423,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -456,7 +455,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
@@ -491,7 +490,7 @@ public class TestHiveCatalogStore {
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
     assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getUri(), table1.getUri());
     assertEquals(table.getSchema().size(), table1.getSchema().size());
     for (int i = 0; i < table.getSchema().size(); i++) {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());

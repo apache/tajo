@@ -37,7 +37,10 @@ import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.event.QueryEvent;
+import org.apache.tajo.master.event.QueryEventType;
+import org.apache.tajo.master.event.StageEvent;
+import org.apache.tajo.master.event.StageEventType;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -45,6 +48,7 @@ import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -104,7 +108,7 @@ public class TestKillQuery {
     Session session = LocalTajoTestingUtility.createDummySession();
     CatalogService catalog = cluster.getMaster().getCatalog();
 
-    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
@@ -168,7 +172,7 @@ public class TestKillQuery {
     Session session = LocalTajoTestingUtility.createDummySession();
     CatalogService catalog = cluster.getMaster().getCatalog();
 
-    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);

@@ -25,17 +25,44 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-public class TestHBaseStorageManager {
+public class TestHBaseTableSpace {
+  @BeforeClass
+  public static void setUp() throws IOException {
+    String tableSpaceUri = "hbase:zk://host1:2171";
+    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
+    hBaseTablespace.init(new TajoConf());
+    TablespaceManager.addTableSpaceForTest(hBaseTablespace);
+  }
+
+  @Test
+  public void testExtractQuorum() {
+    assertEquals("host1:2171", HBaseTablespace.extractQuorum(URI.create("hbase:zk://host1:2171")));
+    assertEquals("host1:2171", HBaseTablespace.extractQuorum(URI.create("hbase:zk://host1:2171/table1")));
+    assertEquals("host1:2171,host2:2172",
+        HBaseTablespace.extractQuorum(URI.create("hbase:zk://host1:2171,host2:2172/table1")));
+  }
+
+  @Test
+  public void testTablespaceHandler() throws Exception {
+    assertTrue((TablespaceManager.getByName("cluster1").get()) instanceof HBaseTablespace);
+    assertTrue((TablespaceManager.get(URI.create("hbase:zk://host1:2171")).get())
+        instanceof HBaseTablespace);
+  }
+
   @Test
   public void testGetIndexPredications() throws Exception {
     Column rowkeyColumn = new Column("rk", Type.TEXT);
@@ -46,8 +73,7 @@ public class TestHBaseStorageManager {
     EvalNode evalNodeA = new BinaryEval(EvalType.AND, evalNode1, evalNode2);
     scanNode.setQual(evalNodeA);
 
-    HBaseTablespace storageManager =
-        (HBaseTablespace) TableSpaceManager.getStorageManager(new TajoConf(), "HBASE");
+    HBaseTablespace storageManager = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());

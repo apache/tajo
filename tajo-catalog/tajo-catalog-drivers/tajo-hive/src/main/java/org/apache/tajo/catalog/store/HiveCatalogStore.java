@@ -443,7 +443,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         table.setTableType(TableType.EXTERNAL_TABLE.name());
         table.putToParameters("EXTERNAL", "TRUE");
 
-        Path tablePath = new Path(tableDesc.getPath());
+        Path tablePath = new Path(tableDesc.getUri());
         FileSystem fs = tablePath.getFileSystem(conf);
         if (fs.isFile(tablePath)) {
           LOG.warn("A table path is a file, but HiveCatalogStore does not allow a file path.");

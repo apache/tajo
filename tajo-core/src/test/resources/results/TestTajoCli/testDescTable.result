@@ -1,7 +1,7 @@
 OK
 
 table name: default.TEST_DESC_TABLE
-table path: ${table.path}
+table uri: ${table.path}
 store type: CSV
 number of rows: 0
 volume: 0 B
@@ -15,7 +15,7 @@ col2	INT4
 
 
 table name: default.TEST_DESC_TABLE
-table path: ${table.path}
+table uri: ${table.path}
 store type: CSV
 number of rows: 0
 volume: 0 B
@@ -25,5 +25,3 @@ Options:
 schema: 
 col1	INT4
 col2	INT4
-
-

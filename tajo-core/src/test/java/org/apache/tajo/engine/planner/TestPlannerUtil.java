@@ -39,6 +39,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -108,7 +109,7 @@ public class TestPlannerUtil {
 
     catalog.createFunction(funcDesc);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
   }
 
   @AfterClass
@@ -337,7 +338,7 @@ public class TestPlannerUtil {
 
     TableDesc tableDesc = new TableDesc();
     tableDesc.setName("Test");
-    tableDesc.setPath(path.toUri());
+    tableDesc.setUri(path.toUri());
 
     FileSystem fs = path.getFileSystem(util.getConfiguration());
 

@@ -97,15 +97,25 @@ message FetchProto {
     optional int64 length = 12;
 }
 
+message FailureIntermediateProto {
+    required int64 pagePos = 1;
+    required int32 startRowNum = 2;
+    required int32 endRowNum = 3;
+}
+
 message IntermediateEntryProto {
+    message PageProto {
+        required int64 pos = 1;
+        required int32 length = 2;
+    }
     required ExecutionBlockIdProto ebId = 1;
     required int32 taskId = 2;
     required int32 attemptId = 3;
     required int32 partId = 4;
-    required string address = 5;
+    required string host = 5;
     required int64 volume = 6;
-    repeated int64 pages = 7;       // pos : length
-    repeated int64 failures = 8;    // pagePos : startRowNum:endRowNum
+    repeated PageProto pages = 7;
+    repeated FailureIntermediateProto failures = 8;
 }
 
 message ExecutionBlockReport {

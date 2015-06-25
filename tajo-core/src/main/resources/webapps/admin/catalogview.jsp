@@ -30,7 +30,6 @@
 <%@ page import="java.util.Collection" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="java.net.InetSocketAddress" %>
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -186,7 +185,7 @@
           <div style='margin-top:10px'>
             <div style=''>Detail</div>
             <table border="1" class='border_table'>
-              <tr><td width='100'>Table path</td><td width='410'><%=tableDesc.getPath()%></td></tr>
+              <tr><td width='100'>Table path</td><td width='410'><%=tableDesc.getUri()%></td></tr>
               <tr><td>Store type</td><td><%=tableDesc.getMeta().getStoreType()%></td></tr>
               <tr><td># rows</td><td><%=(tableDesc.hasStats() ? ("" + tableDesc.getStats().getNumRows()) : "-")%></td></tr>
               <tr><td>Volume</td><td><%=(tableDesc.hasStats() ? FileUtil.humanReadableByteCount(tableDesc.getStats().getNumBytes(),true) : "-")%></td></tr>
