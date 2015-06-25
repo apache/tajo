@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.plan.expr.EvalNode;
 
 import java.io.IOException;
 
@@ -55,7 +56,7 @@ public abstract class AbstractScanner implements Scanner {
   }
 
   @Override
-  public void setSearchCondition(Object expr) {
+  public void setFilter(EvalNode filter) {
   }
 
   @Override

@@ -22,7 +22,7 @@ import java.io.IOException;
 
 public interface SeekableScanner extends Scanner {
 
-  public abstract long getNextOffset() throws IOException;
+  long getNextOffset() throws IOException;
 
-  public abstract void seek(long offset) throws IOException;
+  void seek(long offset) throws IOException;
 }

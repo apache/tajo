@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -533,6 +534,11 @@ public class CSVFile {
     @Override
     public boolean isSelectable() {
       return false;
+    }
+
+    @Override
+    public void setFilter(EvalNode filter) {
+      throw new UnsupportedException();
     }
 
     @Override

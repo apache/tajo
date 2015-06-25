@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -37,7 +34,6 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -167,20 +163,24 @@ public class SeqScanExec extends ScanExec {
       projected = outSchema;
     }
 
-    initScanner(projected);
-    super.init();
-
     if (plan.hasQual()) {
       if (scanner.isProjectable()) {
         qual.bind(context.getEvalContext(), projected);
       } else {
         qual.bind(context.getEvalContext(), inSchema);
       }
+    }
 
+    initScanner(projected);
+
+    // We should use FilterScanIterator only if underlying storage does not support filter push down.
+    if (plan.hasQual() && !scanner.isSelectable()) {
       scanIt = new FilterScanIterator(scanner, qual);
     } else {
       scanIt = new FullScanIterator(scanner);
     }
+
+    super.init();
   }
 
   @Override
@@ -191,26 +191,37 @@ public class SeqScanExec extends ScanExec {
   }
 
   private void initScanner(Schema projected) throws IOException {
-    
-    TableMeta meta;
-    try {
-      meta = (TableMeta) plan.getTableDesc().getMeta().clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
+    TableDesc table = plan.getTableDesc();
+    TableMeta meta = table.getMeta();
 
     // set system default properties
-    PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
+    // PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
 
     // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
     if (fragments != null) {
+
       if (fragments.length > 1) {
-        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
-            FragmentConvertor.convert(context.getConf(), fragments), projected
+
+        this.scanner = new MergeScanner(
+            context.getConf(),
+            plan.getPhysicalSchema(), meta,
+            FragmentConvertor.convert(context.getConf(), fragments),
+            projected
         );
+
       } else {
-        Tablespace tablespace = TableSpaceManager.get(plan.getTableDesc().getUri()).get();
-        this.scanner = tablespace.getScanner(meta, plan.getPhysicalSchema(), fragments[0], projected);
+
+        Tablespace tablespace = TableSpaceManager.get(table.getUri()).get();
+        this.scanner = tablespace.getScanner(
+            meta,
+            plan.getPhysicalSchema(),
+            fragments[0],
+            projected);
+
+        // TODO - isSelectable should be moved to FormatProperty
+        if (scanner.isSelectable()) {
+          scanner.setFilter(qual);
+        }
       }
       scanner.init();
 

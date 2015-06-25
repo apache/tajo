@@ -313,7 +313,7 @@ public class CatalogUtil {
   }
 
   public static TableMeta newTableMeta(String storeType) {
-    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(storeType);
+    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(storeType);
     return new TableMeta(storeType, defaultProperties);
   }
 
@@ -871,7 +871,7 @@ public class CatalogUtil {
    * @param storeType StoreType
    * @return Table properties
    */
-  public static KeyValueSet newPhysicalProperties(String storeType) {
+  public static KeyValueSet newDefaultProperty(String storeType) {
     KeyValueSet options = new KeyValueSet();
     if (storeType.equalsIgnoreCase("CSV") ||  storeType.equalsIgnoreCase("TEXT")) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);

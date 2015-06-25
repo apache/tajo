@@ -34,6 +34,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
@@ -89,7 +90,7 @@ public class DelimitedTextFile {
         serdeClass = (Class<? extends TextLineSerDe>) Class.forName(serDeClassName);
         serdeClassCache.put(serDeClassName, serdeClass);
       }
-      lineSerder = (TextLineSerDe) ReflectionUtil.newInstance(serdeClass);
+      lineSerder = ReflectionUtil.newInstance(serdeClass);
     } catch (Throwable e) {
       throw new RuntimeException("TextLineSerde class cannot be initialized.", e);
     }
@@ -456,6 +457,11 @@ public class DelimitedTextFile {
     @Override
     public boolean isSelectable() {
       return false;
+    }
+
+    @Override
+    public void setFilter(EvalNode filter) {
+
     }
 
     @Override
