@@ -21,7 +21,8 @@ package org.apache.tajo.engine.function.builtin;
 import org.apache.tajo.InternalTypes.CorrProto;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -56,7 +57,7 @@ import org.apache.tajo.storage.Tuple;
  */
 @Description(
     functionName = "corr",
-    example = "> SELECT avg(expr, expr);",
+    example = "> SELECT corr(expr, expr);",
     description = "Returns the Pearson coefficient of correlation between a set of number pairs.\n" +
         "The function takes as arguments any pair of numeric types and returns a double.\n"
         + "Any pair with a NULL is ignored. If the function is applied to an empty set or\n"
@@ -65,10 +66,27 @@ import org.apache.tajo.storage.Tuple;
         + "where neither x nor y is null,\n"
         + "COVAR_POP is the population covariance,\n"
         + "and STDDEV_POP is the population standard deviation.",
-    returnType = TajoDataTypes.Type.FLOAT8,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT8})}
+    returnType = Type.FLOAT8,
+    paramTypes = {
+        @ParamTypes(paramTypes = {Type.INT8, Type.INT8}),
+        @ParamTypes(paramTypes = {Type.INT8, Type.INT4}),
+        @ParamTypes(paramTypes = {Type.INT4, Type.INT8}),
+        @ParamTypes(paramTypes = {Type.INT4, Type.INT4}),
+        @ParamTypes(paramTypes = {Type.INT8, Type.FLOAT8}),
+        @ParamTypes(paramTypes = {Type.INT8, Type.FLOAT4}),
+        @ParamTypes(paramTypes = {Type.INT4, Type.FLOAT8}),
+        @ParamTypes(paramTypes = {Type.INT4, Type.FLOAT4}),
+        @ParamTypes(paramTypes = {Type.FLOAT8, Type.INT8}),
+        @ParamTypes(paramTypes = {Type.FLOAT8, Type.INT4}),
+        @ParamTypes(paramTypes = {Type.FLOAT4, Type.INT8}),
+        @ParamTypes(paramTypes = {Type.FLOAT4, Type.INT4}),
+        @ParamTypes(paramTypes = {Type.FLOAT8, Type.FLOAT8}),
+        @ParamTypes(paramTypes = {Type.FLOAT4, Type.FLOAT8}),
+        @ParamTypes(paramTypes = {Type.FLOAT8, Type.FLOAT4}),
+        @ParamTypes(paramTypes = {Type.FLOAT4, Type.FLOAT4}),
+    }
 )
-public class CorrLongLong extends AggFunction<Datum> {
+public class Corr extends AggFunction<Datum> {
 
   /**
    * Evaluate the Pearson correlation coefficient using a stable one-pass
@@ -88,14 +106,14 @@ public class CorrLongLong extends AggFunction<Datum> {
    *   vy_(A,B) = vy_A + vy_B + (my_A - my_B)*(my_A - my_B)*n_A*n_B/(n_A+n_B)
    *
    */
-  public CorrLongLong() {
+  public Corr() {
     super(new Column[] {
-        new Column("expr", TajoDataTypes.Type.INT8),
-        new Column("expr", TajoDataTypes.Type.INT8)
+        new Column("expr", Type.FLOAT8),
+        new Column("expr", Type.FLOAT8)
     });
   }
 
-  public CorrLongLong(Column[] definedArgs) {
+  public Corr(Column[] definedArgs) {
     super(definedArgs);
   }
 
@@ -108,8 +126,8 @@ public class CorrLongLong extends AggFunction<Datum> {
   public void eval(FunctionContext ctx, Tuple params) {
     if (!params.isBlankOrNull(0) && !params.isBlankOrNull(1)) {
       CorrContext corrContext = (CorrContext) ctx;
-      long vx = params.getInt8(0);
-      long vy = params.getInt8(1);
+      double vx = params.getFloat8(0);
+      double vy = params.getFloat8(1);
       double deltaX = vx - corrContext.xavg;
       double deltaY = vy - corrContext.yavg;
       corrContext.count++;
@@ -178,8 +196,8 @@ public class CorrLongLong extends AggFunction<Datum> {
   }
 
   @Override
-  public TajoDataTypes.DataType getPartialResultType() {
-    return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, CorrProto.class.getName());
+  public DataType getPartialResultType() {
+    return CatalogUtil.newDataType(Type.PROTOBUF, CorrProto.class.getName());
   }
 
   @Override
