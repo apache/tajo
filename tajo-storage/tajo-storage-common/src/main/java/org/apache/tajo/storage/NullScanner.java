@@ -81,7 +81,7 @@ public class NullScanner implements Scanner {
 
   @Override
   public boolean isSelectable() {
-    return true;
+    return false;
   }
 
   @Override
