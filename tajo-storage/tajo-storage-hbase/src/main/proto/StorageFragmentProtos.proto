@@ -25,11 +25,12 @@ option java_generate_equals_and_hash = true;
 import "CatalogProtos.proto";
 
 message HBaseFragmentProto {
-  required string tableName = 1;
-  required string hbaseTableName = 2;
-  required bytes startRow = 3;
-  required bytes stopRow = 4;
-  required bool last = 5;
-  required int64 length = 6;
-  optional string regionLocation = 7;
+  required string uri = 1;
+  required string tableName = 2;
+  required string hbaseTableName = 3;
+  required bytes startRow = 4;
+  required bytes stopRow = 5;
+  required bool last = 6;
+  required int64 length = 7;
+  optional string regionLocation = 8;
 }

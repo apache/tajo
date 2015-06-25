@@ -1252,14 +1252,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createTable.setTableElements(elements);
       createTable.setStorageType(storageType);
 
-      if (PlannerUtil.isFileStorageType(storageType)) {
-        String path = stripQuote(ctx.path.getText());
-        createTable.setLocation(path);
+      if (checkIfExist(ctx.LOCATION())) {
+        String uri = stripQuote(ctx.uri.getText());
+        createTable.setLocation(uri);
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
         ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
+      }
+
+      if (checkIfExist(ctx.TABLESPACE())) {
+        String spaceName = ctx.spacename.getText();
+        createTable.setTableSpaceName(spaceName);
       }
 
       if (checkIfExist(ctx.USING())) {

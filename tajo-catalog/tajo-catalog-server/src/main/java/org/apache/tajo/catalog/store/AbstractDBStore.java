@@ -80,6 +80,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogSchemaManager.isInitialized(getConnection());
   }
 
+  protected boolean catalogAlreadyExists() throws CatalogException {
+    return catalogSchemaManager.catalogAlreadyExists(getConnection());
+  }
+
   protected void createBaseTable() throws CatalogException {
     createDatabaseDependants();
     
@@ -142,22 +146,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     
     try {
-      if (isInitialized()) {
-        LOG.info("The base tables of CatalogServer already is initialized.");
+      if (catalogAlreadyExists()) {
+        LOG.info("The meta table of CatalogServer already is created.");
         verifySchemaVersion();
       } else {
-        try {
-          createBaseTable();
-          LOG.info("The base tables of CatalogServer are created.");
-        } catch (CatalogException ce) {
+        if (isInitialized()) {
+          LOG.info("The base tables of CatalogServer already is initialized.");
+          verifySchemaVersion();
+        } else {
           try {
-            dropBaseTable();
-          } catch (Throwable t) {
-            LOG.error(t, t);
+            createBaseTable();
+            LOG.info("The base tables of CatalogServer are created.");
+          } catch (CatalogException ce) {
+            try {
+              dropBaseTable();
+            } catch (Throwable t) {
+              LOG.error(t, t);
+            }
+            throw ce;
           }
-          throw ce;
         }
-      }
+     }
     } catch (Exception se) {
       throw new CatalogException("Cannot initialize the persistent storage of Catalog", se);
     }
@@ -245,7 +254,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.error("| You might downgrade or upgrade Apache Tajo. Downgrading or upgrading |");
       LOG.error("| Tajo without migration process is only available in some versions. |");
       LOG.error("| In order to learn how to migration Apache Tajo instance, |");
-      LOG.error("| please refer http://s.apache.org/0_8_migration. |");
+      LOG.error("| please refer http://tajo.apache.org/docs/current/backup_and_restore/catalog.html |");
       LOG.error("=========================================================================");
       throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
     }
@@ -752,36 +761,25 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       int dbid = getDatabaseId(databaseName);
 
-      if (table.getIsExternal()) {
-        String sql = "INSERT INTO TABLES (DB_ID, " + COL_TABLES_NAME + ", TABLE_TYPE, PATH, STORE_TYPE) VALUES(?, ?, ?, ?, ?) ";
+      String sql = "INSERT INTO TABLES (DB_ID, " + COL_TABLES_NAME +
+          ", TABLE_TYPE, PATH, STORE_TYPE) VALUES(?, ?, ?, ?, ?) ";
 
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(sql);
-        }
-
-        pstmt = conn.prepareStatement(sql);
-        pstmt.setInt(1, dbid);
-        pstmt.setString(2, tableName);
-        pstmt.setString(3, TableType.EXTERNAL_TABLE.name());
-        pstmt.setString(4, table.getPath());
-        pstmt.setString(5, table.getMeta().getStoreType());
-        pstmt.executeUpdate();
-        pstmt.close();
-      } else {
-        String sql = "INSERT INTO TABLES (DB_ID, " + COL_TABLES_NAME + ", TABLE_TYPE, STORE_TYPE) VALUES(?, ?, ?, ?) ";
-
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(sql);
-        }
-
-        pstmt = conn.prepareStatement(sql);
-        pstmt.setInt(1, dbid);
-        pstmt.setString(2, tableName);
-        pstmt.setString(3, TableType.BASE_TABLE.name());
-        pstmt.setString(4, table.getMeta().getStoreType());
-        pstmt.executeUpdate();
-        pstmt.close();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
       }
+
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, dbid);
+      pstmt.setString(2, tableName);
+      if (table.getIsExternal()) {
+        pstmt.setString(3, TableType.EXTERNAL_TABLE.name());
+      } else {
+        pstmt.setString(3, TableType.BASE_TABLE.name());
+      }
+      pstmt.setString(4, table.getPath());
+      pstmt.setString(5, table.getMeta().getStoreType());
+      pstmt.executeUpdate();
+      pstmt.close();
 
       String tidSql =
           "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
@@ -1603,12 +1601,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         tableBuilder.setIsExternal(true);
       }
 
-      if (tableType == TableType.BASE_TABLE) {
-        tableBuilder.setPath(databaseIdAndUri.getSecond() + "/" + tableName);
-      } else {
-        tableBuilder.setPath(res.getString(4).trim());
-      }
-
+      tableBuilder.setPath(res.getString(4).trim());
       storeType = res.getString(5).trim();
 
       res.close();

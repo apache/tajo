@@ -27,6 +27,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1659: Simplify scan iteration in SeqScan. (hyunsik)
+
+    TAJO-751: JDBC driver should support cancel() method.
+    (Contributed by navis, Committed by jihoon)
+
     TAJO-1649: Change Rest API /databases/{database-name}/functions to 
     /functions. (Contributed by DaeMyung Kang, Committed by hyunsik)
 
@@ -68,9 +73,6 @@ Release 0.11.0 - unreleased
     TAJO-1576: Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() 
     eliminates an important kind of information. 
     (Contributed by Jongyoung Park, Committed by jihoon)
-
-    TAJO-1408: Make IntermediateEntryProto more compact. 
-    (Contributed by navis, Committed by hyunsik)
 
     TAJO-1584: Remove QueryMaster client sharing in TajoMaster and TajoWorker.
     (jinho)
@@ -158,6 +160,8 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1642: CatalogServer need to check meta table first. (jaehwa)
 
     TAJO-1650: TestQueryResource.testGetAllQueries() occasionally fails.
     (Contributed by jinho, Committed by jaehwa)
@@ -347,6 +351,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1616: Implement TablespaceManager to load Tablespaces. (hyunsik)
 
     TAJO-1615: Implement TaskManager. (jinho)
 

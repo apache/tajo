@@ -89,7 +89,7 @@ public abstract class AbstractHBaseAppender implements Appender {
     if (enabledStats) {
       stats = new TableStatistics(this.schema);
     }
-    columnMapping = new ColumnMapping(schema, meta);
+    columnMapping = new ColumnMapping(schema, meta.getOptions());
 
     mappingColumnFamilies = columnMapping.getMappingColumns();
 

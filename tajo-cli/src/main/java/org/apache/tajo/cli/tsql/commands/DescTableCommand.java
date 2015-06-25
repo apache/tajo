@@ -78,7 +78,7 @@ public class DescTableCommand extends TajoShellCommand {
   protected String toFormattedString(TableDesc desc) {
     StringBuilder sb = new StringBuilder();
     sb.append("\ntable name: ").append(desc.getName()).append("\n");
-    sb.append("table path: ").append(desc.getPath()).append("\n");
+    sb.append("table uri: ").append(desc.getUri()).append("\n");
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     if (desc.getStats() != null) {
 
