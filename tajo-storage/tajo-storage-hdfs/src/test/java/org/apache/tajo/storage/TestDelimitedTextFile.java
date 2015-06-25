@@ -191,7 +191,6 @@ public class TestDelimitedTextFile {
     try {
       while (true) {
         Tuple tuple = scanner.next();
-
         if (tuple != null) {
           assertEquals(19+lines, tuple.getInt2(2));
           lines++;
