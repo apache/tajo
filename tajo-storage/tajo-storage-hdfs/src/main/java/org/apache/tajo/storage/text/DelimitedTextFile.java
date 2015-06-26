@@ -353,7 +353,9 @@ public class DelimitedTextFile {
 
       /* To discard footer lines at end of file,
          make a queue buffer and fill it */
-      if (footerLineNum > 0) {
+      Path filepath = fragment.getPath();
+      FileSystem fs = filepath.getFileSystem(conf);
+      if (endOffset == fs.getFileStatus(filepath).getLen() && footerLineNum > 0) {
         LOG.info(String.format("Prepare to skip %d footer lines", footerLineNum));
         footerBuf = new LinkedList<ByteBuf>();
 
