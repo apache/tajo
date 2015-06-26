@@ -1,5 +1,0 @@
-table_name,table_type
--------------------------------
-customer,EXTERNAL
-lineitem,EXTERNAL
-nation,EXTERNAL

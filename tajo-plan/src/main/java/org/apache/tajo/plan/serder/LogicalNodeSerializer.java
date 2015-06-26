@@ -491,10 +491,11 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = buildStoreTableNodeSpec(node);
 
     PlanProto.CreateTableNodeSpec.Builder createTableBuilder = PlanProto.CreateTableNodeSpec.newBuilder();
-    if (node.hasTableSpaceName()) {
-      createTableBuilder.setTablespaceName(node.getTableSpaceName());
-    }
+    createTableBuilder.setSchema(node.getTableSchema().getProto());
     createTableBuilder.setExternal(node.isExternal());
+    if (node.isExternal() && node.hasPath()) {
+      createTableBuilder.setPath(node.getPath().toString());
+    }
     createTableBuilder.setIfNotExists(node.isIfNotExists());
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
@@ -604,12 +605,15 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
     PlanProto.InsertNodeSpec.Builder insertNodeSpec = PlanProto.InsertNodeSpec.newBuilder();
     insertNodeSpec.setOverwrite(node.isOverwrite());
-
+    insertNodeSpec.setTableSchema(node.getTableSchema().getProto());
     if (node.hasProjectedSchema()) {
       insertNodeSpec.setProjectedSchema(node.getProjectedSchema().getProto());
     }
     if (node.hasTargetSchema()) {
       insertNodeSpec.setTargetSchema(node.getTargetSchema().getProto());
+    }
+    if (node.hasPath()) {
+      insertNodeSpec.setPath(node.getPath().toString());
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
@@ -637,18 +641,11 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   private static PlanProto.StoreTableNodeSpec.Builder buildStoreTableNodeSpec(StoreTableNode node) {
     PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = PlanProto.StoreTableNodeSpec.newBuilder();
-
-    if (node.hasTableName()) { // It will be false if node is for INSERT INTO LOCATION '...'
-      storeTableBuilder.setTableName(node.getTableName());
-    }
-
-    if (node.hasUri()) {
-      storeTableBuilder.setUri(node.getUri().toString());
-    }
-    storeTableBuilder.setTableSchema(node.getTableSchema().getProto());
-
     if (node.hasPartition()) {
       storeTableBuilder.setPartitionMethod(node.getPartitionMethod().getProto());
+    }
+    if (node.hasTableName()) { // It will be false if node is for INSERT INTO LOCATION '...'
+      storeTableBuilder.setTableName(node.getTableName());
     }
     return storeTableBuilder;
   }

@@ -115,10 +115,6 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     return get(key, null);
   }
 
-  public boolean isTrue(String key) {
-    return getBool(key, false);
-  }
-
   public void setBool(String key, boolean val) {
     set(key, val ? TRUE_STR : FALSE_STR);
   }
@@ -141,9 +137,9 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public boolean getBool(ConfigKey key) {
     String keyName = key.keyname();
     if (key instanceof SessionVars) {
-      return getBool(keyName, ((SessionVars) key).getConfVars().defaultBoolVal);
+      return getBool(keyName, ((SessionVars)key).getConfVars().defaultBoolVal);
     } else if (key instanceof TajoConf.ConfVars) {
-      return getBool(keyName, ((TajoConf.ConfVars) key).defaultBoolVal);
+      return getBool(keyName, ((TajoConf.ConfVars)key).defaultBoolVal);
     }
     return getBool(keyName);
   }

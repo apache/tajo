@@ -486,7 +486,7 @@ public class QueryExecutorServlet extends HttpServlet {
       if (resultRows <= 0) {
         resultRows = 1000;
       }
-      LOG.info("Tajo Query Result: " + desc.getUri() + "\n");
+      LOG.info("Tajo Query Result: " + desc.getPath() + "\n");
 
       int numOfColumns = rsmd.getColumnCount();
       for(int i = 0; i < numOfColumns; i++) {

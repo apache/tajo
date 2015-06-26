@@ -31,7 +31,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -40,34 +39,33 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
-import org.apache.tajo.engine.planner.physical.InsertRowsExec;
+import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
-import org.apache.tajo.master.QueryInfo;
-import org.apache.tajo.master.QueryManager;
-import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.*;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalContext;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.GeneralFunctionEval;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.querymaster.*;
+import org.apache.tajo.session.Session;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
-import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -288,7 +286,7 @@ public class QueryExecutor {
       boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
       if (isInsert) {
         InsertNode insertNode = rootNode.getChild();
-        insertRowValues(queryContext, insertNode, responseBuilder);
+        insertNonFromQuery(queryContext, insertNode, responseBuilder);
       } else {
         Schema schema = PlannerUtil.targetToSchema(targets);
         RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
@@ -330,27 +328,36 @@ public class QueryExecutor {
     }
   }
 
-  /**
-   * Insert rows through staging phase
-   */
-  private void insertRowsThroughStaging(TaskAttemptContext taskAttemptContext,
-                                        InsertNode insertNode,
-                                        Path finalOutputPath,
-                                        Path stagingDir,
-                                        Path stagingResultDir)
-      throws IOException {
+  private void insertNonFromQuery(QueryContext queryContext,
+                                  InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder)
+      throws Exception {
+    String nodeUniqName = insertNode.getTableName() == null ? insertNode.getPath().getName() : insertNode.getTableName();
+    String queryId = nodeUniqName + "_" + System.currentTimeMillis();
+
+    FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
+    Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), queryId.toString(), queryContext);
+    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+
+    TableDesc tableDesc = null;
+    Path finalOutputDir = null;
+    if (insertNode.getTableName() != null) {
+      tableDesc = this.catalog.getTableDesc(insertNode.getTableName());
+      finalOutputDir = new Path(tableDesc.getPath());
+    } else {
+      finalOutputDir = insertNode.getPath();
+    }
+
+    TaskAttemptContext taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
+    taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
 
     EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
-    InsertRowsExec exec = new InsertRowsExec(taskAttemptContext, insertNode, evalExprExec);
-
+    StoreTableExec exec = new StoreTableExec(taskAttemptContext, insertNode, evalExprExec);
     try {
       exec.init();
       exec.next();
     } finally {
       exec.close();
     }
-
-    FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
 
     if (insertNode.isOverwrite()) { // INSERT OVERWRITE INTO
       // it moves the original table into the temporary location.
@@ -360,113 +367,66 @@ public class QueryExecutor {
       boolean committed = false;
       Path oldTableDir = new Path(stagingDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
       try {
-        if (fs.exists(finalOutputPath)) {
-          fs.rename(finalOutputPath, oldTableDir);
+        if (fs.exists(finalOutputDir)) {
+          fs.rename(finalOutputDir, oldTableDir);
           movedToOldTable = fs.exists(oldTableDir);
         } else { // if the parent does not exist, make its parent directory.
-          fs.mkdirs(finalOutputPath.getParent());
+          fs.mkdirs(finalOutputDir.getParent());
         }
-        fs.rename(stagingResultDir, finalOutputPath);
-        committed = fs.exists(finalOutputPath);
+        fs.rename(stagingResultDir, finalOutputDir);
+        committed = fs.exists(finalOutputDir);
       } catch (IOException ioe) {
         // recover the old table
         if (movedToOldTable && !committed) {
-          fs.rename(oldTableDir, finalOutputPath);
+          fs.rename(oldTableDir, finalOutputDir);
         }
       }
     } else {
       FileStatus[] files = fs.listStatus(stagingResultDir);
-      for (FileStatus eachFile : files) {
-        Path targetFilePath = new Path(finalOutputPath, eachFile.getPath().getName());
+      for (FileStatus eachFile: files) {
+        Path targetFilePath = new Path(finalOutputDir, eachFile.getPath().getName());
         if (fs.exists(targetFilePath)) {
-          targetFilePath = new Path(finalOutputPath, eachFile.getPath().getName() + "_" + System.currentTimeMillis());
+          targetFilePath = new Path(finalOutputDir, eachFile.getPath().getName() + "_" + System.currentTimeMillis());
         }
         fs.rename(eachFile.getPath(), targetFilePath);
       }
     }
-  }
 
-  /**
-   * Insert row values
-   */
-  private void insertRowValues(QueryContext queryContext,
-                               InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder) {
-    try {
-      String nodeUniqName = insertNode.getTableName() == null ? new Path(insertNode.getUri()).getName() :
-          insertNode.getTableName();
-      String queryId = nodeUniqName + "_" + System.currentTimeMillis();
+    if (insertNode.hasTargetTable()) {
+      TableStats stats = tableDesc.getStats();
+      long volume = Query.getTableVolume(context.getConf(), finalOutputDir);
+      stats.setNumBytes(volume);
+      stats.setNumRows(1);
 
-      URI finalOutputUri = insertNode.getUri();
-      Tablespace space = TablespaceManager.get(finalOutputUri).get();
-      TableMeta tableMeta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
-      tableMeta.putOption(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
+      CatalogProtos.UpdateTableStatsProto.Builder builder = CatalogProtos.UpdateTableStatsProto.newBuilder();
+      builder.setTableName(tableDesc.getName());
+      builder.setStats(stats.getProto());
 
-      FormatProperty formatProperty = space.getFormatProperty(tableMeta);
+      catalog.updateTableStats(builder.build());
 
-      TaskAttemptContext taskAttemptContext;
-      if (formatProperty.directInsertSupported()) { // if this format and storage supports direct insertion
-        taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, null);
-        taskAttemptContext.setOutputPath(new Path(finalOutputUri));
-
-        EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
-        InsertRowsExec exec = new InsertRowsExec(taskAttemptContext, insertNode, evalExprExec);
-
-        try {
-          exec.init();
-          exec.next();
-        } finally {
-          exec.close();
-        }
-      } else {
-        URI stagingSpaceUri = space.prepareStagingSpace(context.getConf(), queryId, queryContext, tableMeta);
-        Path stagingDir = new Path(stagingSpaceUri);
-        Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-
-        taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
-        taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
-        insertRowsThroughStaging(taskAttemptContext, insertNode, new Path(finalOutputUri), stagingDir, stagingResultDir);
-      }
-
-      // set insert stats (how many rows and bytes)
+      responseBuilder.setTableDesc(tableDesc.getProto());
+    } else {
       TableStats stats = new TableStats();
-      stats.setNumBytes(taskAttemptContext.getResultStats().getNumBytes());
-      stats.setNumRows(taskAttemptContext.getResultStats().getNumRows());
+      long volume = Query.getTableVolume(context.getConf(), finalOutputDir);
+      stats.setNumBytes(volume);
+      stats.setNumRows(1);
 
-      if (insertNode.hasTargetTable()) {
-        CatalogProtos.UpdateTableStatsProto.Builder builder = CatalogProtos.UpdateTableStatsProto.newBuilder();
-        builder.setTableName(insertNode.getTableName());
-        builder.setStats(stats.getProto());
+      // Empty TableDesc
+      List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();
+      CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
+          .setTableName(nodeUniqName)
+          .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType("CSV").build())
+          .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
+          .setStats(stats.getProto())
+          .build();
 
-        catalog.updateTableStats(builder.build());
-
-        TableDesc desc = new TableDesc(
-            insertNode.getTableName(),
-            insertNode.getTargetSchema(),
-            tableMeta,
-            finalOutputUri);
-        responseBuilder.setTableDesc(desc.getProto());
-
-      } else { // If INSERT INTO LOCATION
-
-        // Empty TableDesc
-        List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();
-        CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
-            .setTableName(nodeUniqName)
-            .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType("CSV").build())
-            .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
-            .setStats(stats.getProto())
-            .build();
-
-        responseBuilder.setTableDesc(tableDescProto);
-      }
-
-      // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
-      responseBuilder.setMaxRowNum(-1);
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
-    } catch (Throwable t) {
-      throw new RuntimeException(t);
+      responseBuilder.setTableDesc(tableDescProto);
     }
+
+    // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
+    responseBuilder.setMaxRowNum(-1);
+    responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+    responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
   }
 
   public void executeDistributedQuery(QueryContext queryContext, Session session,
@@ -476,18 +436,14 @@ public class QueryExecutor {
                                       SubmitQueryResponse.Builder responseBuilder) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
-    if (tableDesc != null) {
-
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-      FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
-
-      if (!formatProperty.isInsertable()) {
-        throw new VerifyException(
-            String.format("%s tablespace does not allow INSERT operation.", tableDesc.getUri().toString()));
+    String storeType = PlannerUtil.getStoreType(plan);
+    if (storeType != null) {
+      Tablespace sm = TableSpaceManager.getStorageManager(context.getConf(), storeType);
+      StorageProperty storageProperty = sm.getStorageProperty();
+      if (!storageProperty.isSupportsInsertInto()) {
+        throw new VerifyException("Inserting into non-file storage is not supported.");
       }
-
-      space.prepareTable(rootNode.getChild());
+      sm.beforeInsertOrCATS(rootNode.getChild());
     }
     context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
     hookManager.doHooks(queryContext, plan);
@@ -515,15 +471,28 @@ public class QueryExecutor {
     }
   }
 
-  public MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
+  public static MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
       throws Exception {
 
-    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
-    TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
-
-    if (tableDesc != null) {
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-      space.rewritePlan(context, plan);
+    String storeType = PlannerUtil.getStoreType(plan);
+    if (storeType != null) {
+      Tablespace sm = TableSpaceManager.getStorageManager(planner.getConf(), storeType);
+      StorageProperty storageProperty = sm.getStorageProperty();
+      if (storageProperty.isSortedInsert()) {
+        String tableName = PlannerUtil.getStoreTableName(plan);
+        LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+        TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
+        if (tableDesc == null) {
+          throw new VerifyException("Can't get table meta data from catalog: " + tableName);
+        }
+        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
+            context, tableDesc);
+        if (storageSpecifiedRewriteRules != null) {
+          for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
+            eachRule.rewrite(context, plan);
+          }
+        }
+      }
     }
 
     MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);

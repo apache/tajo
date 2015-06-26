@@ -89,16 +89,12 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   public String getName() {
     return this.tableName;
   }
-
-  public boolean hasUri() {
-    return this.uri != null;
-  }
 	
-	public void setUri(URI uri) {
+	public void setPath(URI uri) {
 		this.uri = uri;
 	}
 	
-  public URI getUri() {
+  public URI getPath() {
     return this.uri;
   }
 

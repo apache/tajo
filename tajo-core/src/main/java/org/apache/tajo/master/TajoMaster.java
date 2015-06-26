@@ -21,10 +21,7 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
@@ -56,6 +53,8 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -115,6 +114,7 @@ public class TajoMaster extends CompositeService {
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
+  private Tablespace storeManager;
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
@@ -183,6 +183,7 @@ public class TajoMaster extends CompositeService {
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
       diagnoseTajoMaster();
+      this.storeManager = TableSpaceManager.getFileStorageManager(systemConf);
 
       catalogServer = new CatalogServer(loadFunctions());
       addIfService(catalogServer);
@@ -210,14 +211,7 @@ public class TajoMaster extends CompositeService {
       throw e;
     }
 
-    // Try to start up all services in TajoMaster.
-    // If anyone is failed, the master prints out the errors and immediately should shutdowns
-    try {
-      super.serviceInit(systemConf);
-    } catch (Throwable t) {
-      t.printStackTrace();
-      System.exit(1);
-    }
+    super.serviceInit(systemConf);
     LOG.info("Tajo Master is initialized.");
   }
 
@@ -481,6 +475,10 @@ public class TajoMaster extends CompositeService {
 
     public GlobalEngine getGlobalEngine() {
       return globalEngine;
+    }
+
+    public Tablespace getStorageManager() {
+      return storeManager;
     }
 
     public QueryCoordinatorService getTajoMasterService() {

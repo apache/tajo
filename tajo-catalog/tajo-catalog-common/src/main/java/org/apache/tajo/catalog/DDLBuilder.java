@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.util.Map;
@@ -31,7 +32,7 @@ public class DDLBuilder {
     sb.append("--\n")
       .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
       .append(" Storage: ").append(desc.getMeta().getStoreType());
-    sb.append("\n-- Path: ").append(desc.getUri());
+    sb.append("\n-- Path: ").append(desc.getPath());
     sb.append("\n--\n");
     sb.append("CREATE EXTERNAL TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
@@ -108,7 +109,7 @@ public class DDLBuilder {
   }
 
   private static void buildLocationClause(StringBuilder sb, TableDesc desc) {
-    sb.append(" LOCATION '").append(desc.getUri()).append("'");
+    sb.append(" LOCATION '").append(desc.getPath()).append("'");
   }
 
   private static void buildPartitionClause(StringBuilder sb, TableDesc desc) {

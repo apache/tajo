@@ -126,7 +126,7 @@ public enum SessionVars implements ConfigKey {
   NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
 
-  PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,
+  TABLE_PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$TABLE_PARTITION_NO_RESULT_OVERWRITE_ENABLED,
     "If True, a partitioned table is overwritten even if a sub query leads to no result. "
     + "Otherwise, the table data will be kept if there is no result", DEFAULT),
 

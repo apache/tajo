@@ -20,18 +20,18 @@ package org.apache.tajo.storage.hbase;
 
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.util.BytesUtils;
-import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ColumnMapping {
+  private TableMeta tableMeta;
   private Schema schema;
-  private KeyValueSet tableProperty;
-
   private char rowKeyDelimiter;
+
   private String hbaseTableName;
 
   private int[] rowKeyFieldIndexes;
@@ -45,15 +45,16 @@ public class ColumnMapping {
 
   private int numRowKeys;
 
-  public ColumnMapping(Schema schema, KeyValueSet tableProperty) throws IOException{
+  public ColumnMapping(Schema schema, TableMeta tableMeta) throws IOException {
     this.schema = schema;
-    this.tableProperty = tableProperty;
+    this.tableMeta = tableMeta;
+
     init();
   }
 
   public void init() throws IOException {
-    hbaseTableName = tableProperty.get(HBaseStorageConstants.META_TABLE_KEY);
-    String delim = tableProperty.get(HBaseStorageConstants.META_ROWKEY_DELIMITER, "").trim();
+    hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY);
+    String delim = tableMeta.getOption(HBaseStorageConstants.META_ROWKEY_DELIMITER, "").trim();
     if (delim.length() > 0) {
       rowKeyDelimiter = delim.charAt(0);
     }
@@ -69,7 +70,7 @@ public class ColumnMapping {
       rowKeyFieldIndexes[i] = -1;
     }
 
-    String columnMapping = tableProperty.get(HBaseStorageConstants.META_COLUMNS_KEY, "");
+    String columnMapping = tableMeta.getOption(HBaseStorageConstants.META_COLUMNS_KEY, "");
     if (columnMapping == null || columnMapping.isEmpty()) {
       throw new IOException("'columns' property is required.");
     }
