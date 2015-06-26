@@ -343,11 +343,11 @@ public class DelimitedTextFile {
       else if (headerLineNum > 0) {
         LOG.info(String.format("Skip %d header lines", headerLineNum));
         for (int i=0; i<headerLineNum; i++) {
-          reader.readLine();
-        }
+          if (!reader.isReadable()) {
+            return;
+          }
 
-        if (!reader.isReadable()) {
-          return;
+          reader.readLine();
         }
       }
 
@@ -358,6 +358,10 @@ public class DelimitedTextFile {
         footerBuf = new LinkedList<ByteBuf>();
 
         for (int i=0; i<footerLineNum; i++) {
+          if (!reader.isReadable()) {
+            return;
+          }
+
           footerBuf.add(reader.readLine());
         }
       }
