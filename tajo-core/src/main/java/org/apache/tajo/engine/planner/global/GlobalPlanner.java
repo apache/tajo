@@ -48,7 +48,6 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
@@ -171,8 +170,7 @@ public class GlobalPlanner {
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
     TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
-    TableDesc desc = new TableDesc(
-        channel.getSrcId().toString(), channel.getSchema(), meta, StorageConstants.LOCAL_FS_URI);
+    TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/").toUri());
     ScanNode scanNode = plan.createNode(ScanNode.class);
     scanNode.init(desc);
     return scanNode;

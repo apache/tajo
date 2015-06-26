@@ -37,7 +37,7 @@ public class DistributedQueryHookManager {
         try {
           hook.hook(queryContext, plan);
         } catch (Throwable t) {
-          throw new RuntimeException(t);
+          t.printStackTrace();
         }
       }
     }

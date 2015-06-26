@@ -18,7 +18,6 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
@@ -32,7 +31,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
@@ -227,11 +225,6 @@ public class CatalogUtil {
     }
 
     return sb.toString();
-  }
-
-  public static Pair<String, String> separateQualifierAndName(String name) {
-    Preconditions.checkArgument(isFQTableName(name), "Must be a qualified name.");
-    return new Pair<String, String>(extractQualifier(name), extractSimpleName(name));
   }
 
   /**

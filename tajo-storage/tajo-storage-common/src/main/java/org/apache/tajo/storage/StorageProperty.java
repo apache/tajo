@@ -18,62 +18,23 @@
 
 package org.apache.tajo.storage;
 
-/**
- * Storage Properties
- */
 public class StorageProperty {
-  /** default file format */
-  private final String defaultFormat;
-  /** if this storage supports move operator */
-  private final boolean movable;
-  /** if this storage supports is writable */
-  private final boolean writable;
-  /** if this storage allows use of artibrary paths */
-  private final boolean absolutePathAllowed;
+  private boolean supportsInsertInto;
+  private boolean sortedInsert;
 
-  public StorageProperty(String defaultFormat,
-                         boolean movable,
-                         boolean writable,
-                         boolean absolutePathAllowed) {
-
-    this.defaultFormat = defaultFormat;
-    this.movable = movable;
-    this.writable = writable;
-    this.absolutePathAllowed = absolutePathAllowed;
+  public boolean isSupportsInsertInto() {
+    return supportsInsertInto;
   }
 
-  /**
-   * Return default file format
-   * @return Default file format
-   */
-  public String defaultFormat() {
-    return defaultFormat;
+  public void setSupportsInsertInto(boolean supportsInsertInto) {
+    this.supportsInsertInto = supportsInsertInto;
   }
 
-  /**
-   * Move-like operation is allowed
-   *
-   * @return true if move operation is available
-   */
-  public boolean isMovable() {
-    return movable;
+  public boolean isSortedInsert() {
+    return sortedInsert;
   }
 
-  /**
-   * Is it Writable storage?
-   *
-   * @return true if this storage is writable.
-   */
-  public boolean isWritable() {
-    return writable;
-  }
-
-  /**
-   * Does this storage allows the use of arbitrary absolute paths outside tablespace?
-   *
-   * @return True if this storage allows accesses to artibrary paths.
-   */
-  public boolean isArbitraryPathAllowed() {
-    return this.absolutePathAllowed;
+  public void setSortedInsert(boolean sortedInsert) {
+    this.sortedInsert = sortedInsert;
   }
 }

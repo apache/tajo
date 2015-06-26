@@ -36,6 +36,7 @@ import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
@@ -82,14 +83,19 @@ public class Repartitioner {
     QueryMasterTask.QueryMasterTaskContext masterContext = stage.getContext();
 
     ScanNode[] scans = execBlock.getScanNodes();
+
+    Path tablePath;
     Fragment[] fragments = new Fragment[scans.length];
     long[] stats = new long[scans.length];
 
     // initialize variables from the child operators
     for (int i = 0; i < scans.length; i++) {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
-
       if (tableDesc == null) { // if it is a real table stored on storage
+        FileTablespace storageManager =
+            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+
+        tablePath = storageManager.getTablePath(scans[i].getTableName());
         if (execBlock.getUnionScanMap() != null && !execBlock.getUnionScanMap().isEmpty()) {
           for (Map.Entry<ExecutionBlockId, ExecutionBlockId> unionScanEntry: execBlock.getUnionScanMap().entrySet()) {
             ExecutionBlockId originScanEbId = unionScanEntry.getKey();
@@ -99,29 +105,25 @@ public class Repartitioner {
           ExecutionBlockId scanEBId = TajoIdUtils.createExecutionBlockId(scans[i].getTableName());
           stats[i] = masterContext.getStage(scanEBId).getResultStats().getNumBytes();
         }
-
-        // TODO - We should remove dummy fragment usages
-        fragments[i] = new FileFragment(scans[i].getCanonicalName(), new Path("/dummy"), 0, 0,
-            new String[]{UNKNOWN_HOST});
-
+        fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
-
         try {
           stats[i] = GlobalPlanRewriteUtil.computeDescendentVolume(scans[i]);
         } catch (PlanningException e) {
           throw new IOException(e);
         }
 
+        Tablespace tablespace =
+            TableSpaceManager.getStorageManager(stage.getContext().getConf(), tableDesc.getMeta().getStoreType());
+
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc);
+        List<Fragment> fileFragments = tablespace.getSplits(scans[i].getCanonicalName(), tableDesc);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
-          fragments[i] = new FileFragment(scans[i].getCanonicalName(),
-              new Path(tableDesc.getUri()), 0, 0, new String[]{UNKNOWN_HOST});
+          fragments[i] = new FileFragment(scans[i].getCanonicalName(), new Path(tableDesc.getPath()), 0, 0, new String[]{UNKNOWN_HOST});
         }
       }
     }
@@ -375,29 +377,26 @@ public class Repartitioner {
     if (broadcastFragments != null) {
       //In this phase a ScanNode has a single fragment.
       //If there are more than one data files, that files should be added to fragments or partition path
-
       for (ScanNode eachScan: broadcastScans) {
-
         Path[] partitionScanPaths = null;
         TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
-        Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
+          FileTablespace storageManager =
+              (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
 
           PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
           partitionScanPaths = partitionScan.getInputPaths();
           // set null to inputPaths in getFragmentsFromPartitionedTable()
-          getFragmentsFromPartitionedTable((FileTablespace) space, eachScan, tableDesc);
+          getFragmentsFromPartitionedTable(storageManager, eachScan, tableDesc);
           partitionScan.setInputPaths(partitionScanPaths);
-
         } else {
-
-          Collection<Fragment> scanFragments = space.getSplits(eachScan.getCanonicalName(),
+          Tablespace tablespace = TableSpaceManager.getStorageManager(stage.getContext().getConf(),
+              tableDesc.getMeta().getStoreType());
+          Collection<Fragment> scanFragments = tablespace.getSplits(eachScan.getCanonicalName(),
               tableDesc, eachScan);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
-
         }
       }
     }
@@ -506,16 +505,18 @@ public class Repartitioner {
 
       Collection<Fragment> scanFragments;
       Path[] partitionScanPaths = null;
-
-      FileTablespace space = (FileTablespace) TablespaceManager.get(desc.getUri()).get();
-
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
         partitionScanPaths = partitionScan.getInputPaths();
         // set null to inputPaths in getFragmentsFromPartitionedTable()
-        scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
+        FileTablespace storageManager =
+            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
+        scanFragments = getFragmentsFromPartitionedTable(storageManager, scan, desc);
       } else {
-        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan);
+        Tablespace tablespace =
+            TableSpaceManager.getStorageManager(stage.getContext().getConf(), desc.getMeta().getStoreType());
+
+        scanFragments = tablespace.getSplits(scan.getCanonicalName(), desc, scan);
       }
 
       if (scanFragments != null) {
@@ -617,6 +618,9 @@ public class Repartitioner {
       throws IOException {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
+    Path tablePath;
+    tablePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
+        .getTablePath(scan.getTableName());
 
     ExecutionBlock sampleChildBlock = masterPlan.getChild(stage.getId(), 0);
     SortNode sortNode = PlannerUtil.findTopNode(sampleChildBlock.getPlan(), NodeType.SORT);
@@ -644,15 +648,10 @@ public class Repartitioner {
         throw new IOException("Can't get table meta data from catalog: " +
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
-
-      Tablespace space = TablespaceManager.getAnyByScheme(storeType).get();
-      ranges = space.getInsertSortRanges(
-          stage.getContext().getQueryContext(),
-          tableDesc,
-          sortNode.getInSchema(),
-          sortSpecs,
-          mergedRange);
-
+      ranges = TableSpaceManager.getStorageManager(stage.getContext().getConf(), storeType)
+          .getInsertSortRanges(stage.getContext().getQueryContext(), tableDesc,
+              sortNode.getInSchema(), sortSpecs,
+              mergedRange);
       determinedTaskNum = ranges.length;
     } else {
       RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
@@ -689,9 +688,7 @@ public class Repartitioner {
       }
     }
 
-    // TODO - We should remove dummy fragment.
-    FileFragment dummyFragment = new FileFragment(scan.getTableName(), new Path("/dummy"), 0, 0,
-        new String[]{UNKNOWN_HOST});
+    FileFragment dummyFragment = new FileFragment(scan.getTableName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
     Stage.scheduleFragment(stage, dummyFragment);
 
     List<FetchImpl> fetches = new ArrayList<FetchImpl>();
@@ -787,9 +784,11 @@ public class Repartitioner {
                                                  int maxNum) throws IOException {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
+    Path tablePath;
+    tablePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf()))
+        .getTablePath(scan.getTableName());
 
-    // TODO - We should remove dummy fragment usages
-    Fragment frag = new FileFragment(scan.getCanonicalName(), new Path("/dummy"), 0, 0, new String[]{UNKNOWN_HOST});
+    Fragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
     List<Fragment> fragments = new ArrayList<Fragment>();
     fragments.add(frag);
     Stage.scheduleFragments(stage, fragments);
@@ -1045,15 +1044,17 @@ public class Repartitioner {
         firstSplitVolume = splitVolume;
       }
 
-      //Each Pair object in the splits variable is assigned to the next ExectionBlock's task.
+      //Each Pair object in the splits variable is assigned to the next ExecutionBlock's task.
       //The first long value is a offset of the intermediate file and the second long value is length.
-      List<Pair<Long, Long>> splits = currentInterm.split(firstSplitVolume, splitVolume);
-      if (splits == null || splits.isEmpty()) {
+      long[] splits = currentInterm.split(firstSplitVolume, splitVolume);
+      if (splits == null || splits.length == 0) {
         break;
       }
 
-      for (Pair<Long, Long> eachSplit: splits) {
-        if (fetchListVolume > 0 && fetchListVolume + eachSplit.getSecond() >= splitVolume) {
+      for (int i = 0; i < splits.length; i += 2) {
+        long offset = splits[i];
+        long length = splits[i + 1];
+        if (fetchListVolume > 0 && fetchListVolume + length >= splitVolume) {
           if (!fetchListForSingleTask.isEmpty()) {
             fetches.add(fetchListForSingleTask);
           }
@@ -1062,10 +1063,10 @@ public class Repartitioner {
         }
         FetchImpl fetch = new FetchImpl(currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
             ebId, currentInterm.getPartId(), TUtil.newList(currentInterm));
-        fetch.setOffset(eachSplit.getFirst());
-        fetch.setLength(eachSplit.getSecond());
+        fetch.setOffset(offset);
+        fetch.setLength(length);
         fetchListForSingleTask.add(fetch);
-        fetchListVolume += eachSplit.getSecond();
+        fetchListVolume += length;
       }
     }
     if (!fetchListForSingleTask.isEmpty()) {

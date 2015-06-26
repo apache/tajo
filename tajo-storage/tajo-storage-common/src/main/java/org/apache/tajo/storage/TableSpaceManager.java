@@ -19,10 +19,7 @@
 package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -34,15 +31,13 @@ import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * It handles available table spaces and cache TableSpace instances.
  */
-public class OldStorageManager {
-  private static final Log LOG = LogFactory.getLog(OldStorageManager.class);
+public class TableSpaceManager {
 
   /**
    * Cache of scanner handlers for each storage type.
@@ -76,7 +71,8 @@ public class OldStorageManager {
    * Cache of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
    */
-  protected static Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
+  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
+      new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
   /**
    * Clear all class cache
@@ -103,6 +99,17 @@ public class OldStorageManager {
   }
 
   /**
+   * Returns FileStorageManager instance.
+   *
+   * @param tajoConf Tajo system property.
+   * @return
+   * @throws IOException
+   */
+  public static Tablespace getFileStorageManager(TajoConf tajoConf) throws IOException {
+    return getStorageManager(tajoConf, "CSV");
+  }
+
+  /**
    * Returns the proper Tablespace instance according to the storeType.
    *
    * @param tajoConf Tajo system property.
@@ -113,9 +120,9 @@ public class OldStorageManager {
   public static Tablespace getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
-      return getStorageManager(tajoConf, fileSystem.getUri(), storeType);
+      return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
     } else {
-      return getStorageManager(tajoConf, null, storeType);
+      return getStorageManager(tajoConf, storeType, null);
     }
   }
 
@@ -123,16 +130,13 @@ public class OldStorageManager {
    * Returns the proper Tablespace instance according to the storeType
    *
    * @param tajoConf Tajo system property.
-   * @param uri Key that can identify each storage manager(may be a path)
    * @param storeType Storage type
+   * @param managerKey Key that can identify each storage manager(may be a path)
    * @return
    * @throws IOException
    */
-  public static synchronized Tablespace getStorageManager(
-      TajoConf tajoConf, URI uri, String storeType) throws IOException {
-    Preconditions.checkNotNull(tajoConf);
-    Preconditions.checkNotNull(uri);
-    Preconditions.checkNotNull(storeType);
+  private static synchronized Tablespace getStorageManager (
+      TajoConf tajoConf, String storeType, String managerKey) throws IOException {
 
     String typeName;
     if (storeType.equalsIgnoreCase("HBASE")) {
@@ -142,7 +146,7 @@ public class OldStorageManager {
     }
 
     synchronized (storageManagers) {
-      String storeKey = typeName + "_" + uri.toString();
+      String storeKey = typeName + "_" + managerKey;
       Tablespace manager = storageManagers.get(storeKey);
 
       if (manager == null) {
@@ -157,11 +161,11 @@ public class OldStorageManager {
           Constructor<? extends Tablespace> constructor =
               (Constructor<? extends Tablespace>) CONSTRUCTOR_CACHE.get(storageManagerClass);
           if (constructor == null) {
-            constructor = storageManagerClass.getDeclaredConstructor(TablespaceManager.TABLESPACE_PARAM);
+            constructor = storageManagerClass.getDeclaredConstructor(new Class<?>[]{String.class});
             constructor.setAccessible(true);
             CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
           }
-          manager = constructor.newInstance(new Object[]{"noname", uri});
+          manager = constructor.newInstance(new Object[]{storeType});
         } catch (Exception e) {
           throw new RuntimeException(e);
         }

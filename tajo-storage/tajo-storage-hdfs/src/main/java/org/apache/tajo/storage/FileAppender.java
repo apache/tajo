@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -52,23 +51,20 @@ public abstract class FileAppender implements Appender {
     this.workDir = workDir;
     this.taskAttemptId = taskAttemptId;
 
+    try {
+      if (taskAttemptId != null) {
+        if (!(conf instanceof TajoConf)) {
+          throw new IllegalArgumentException("Configuration must be an instance of TajoConf");
+        }
 
-    if (taskAttemptId != null) {
-      if (!(conf instanceof TajoConf)) {
-        throw new IllegalArgumentException("Configuration must be an instance of TajoConf");
+        this.path = ((FileTablespace) TableSpaceManager.getFileStorageManager((TajoConf) conf))
+            .getAppenderFilePath(taskAttemptId, workDir);
+      } else {
+        this.path = workDir;
       }
-
-      Optional<FileTablespace> spaceResult = TablespaceManager.get(workDir.toUri());
-
-      if (!spaceResult.isPresent()) {
-        throw new IllegalStateException("No TableSpace for " + workDir.toUri());
-      }
-
-      FileTablespace space = spaceResult.get();
-      this.path = space.getAppenderFilePath(taskAttemptId, workDir);
-
-    } else {
-      this.path = workDir;
+    } catch (IOException e) {
+      LOG.error(e.getMessage(), e);
+      throw new IllegalStateException("Error while opeining FileAppender: " + e.getMessage(), e);
     }
   }
 

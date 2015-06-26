@@ -36,12 +36,11 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TableSpaceManager;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,10 +54,12 @@ public class DDLExecutor {
 
   private final TajoMaster.MasterContext context;
   private final CatalogService catalog;
+  private final Tablespace tablespace;
 
   public DDLExecutor(TajoMaster.MasterContext context) {
     this.context = context;
     this.catalog = context.getCatalog();
+    this.tablespace = context.getStorageManager();
   }
 
   public boolean execute(QueryContext queryContext, LogicalPlan plan) throws IOException {
@@ -201,31 +202,17 @@ public class DDLExecutor {
     }
 
     if(PlannerUtil.isFileStorageType(createTable.getStorageType()) && createTable.isExternal()){
-      Preconditions.checkState(createTable.hasUri(), "ERROR: LOCATION must be given.");
+      Preconditions.checkState(createTable.hasPath(), "ERROR: LOCATION must be given.");
     }
 
-    return createTable(
-        queryContext,
-        createTable.getTableName(),
-        createTable.getTableSpaceName(),
-        createTable.getStorageType(),createTable.getTableSchema(),
-        meta,
-        createTable.getUri(),
-        createTable.isExternal(),
-        createTable.getPartitionMethod(),
-        ifNotExists);
+    return createTable(queryContext, createTable.getTableName(), createTable.getStorageType(),
+        createTable.getTableSchema(), meta, createTable.getPath(), createTable.isExternal(),
+        createTable.getPartitionMethod(), ifNotExists);
   }
 
-  public TableDesc createTable(QueryContext queryContext,
-                               String tableName,
-                               @Nullable String tableSpaceName,
-                               @Nullable String storeType,
-                               Schema schema,
-                               TableMeta meta,
-                               @Nullable URI uri,
-                               boolean isExternal,
-                               @Nullable PartitionMethodDesc partitionDesc,
-                               boolean ifNotExists) throws IOException {
+  public TableDesc createTable(QueryContext queryContext, String tableName, String storeType,
+                               Schema schema, TableMeta meta, Path path, boolean isExternal,
+                               PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
     String databaseName;
     String simpleTableName;
     if (CatalogUtil.isFQTableName(tableName)) {
@@ -245,28 +232,18 @@ public class DDLExecutor {
         LOG.info("relation \"" + qualifiedName + "\" is already exists." );
         return catalog.getTableDesc(databaseName, simpleTableName);
       } else {
-        throw new AlreadyExistsTableException(qualifiedName);
+        throw new AlreadyExistsTableException(CatalogUtil.buildFQName(databaseName, tableName));
       }
     }
 
-    Tablespace tableSpace;
-    if (tableSpaceName != null) {
-      tableSpace = TablespaceManager.getByName(tableSpaceName).get();
-    } else if (uri != null) {
-      tableSpace = TablespaceManager.get(uri).get();
-    } else {
-      tableSpace = TablespaceManager.getDefault();
-    }
-
-    TableDesc desc;
-    URI tableUri = isExternal ? uri : tableSpace.getTableUri(databaseName, simpleTableName);
-    desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal);
+    TableDesc desc = new TableDesc(CatalogUtil.buildFQName(databaseName, simpleTableName),
+        schema, meta, (path != null ? path.toUri(): null), isExternal);
 
     if (partitionDesc != null) {
       desc.setPartitionMethod(partitionDesc);
     }
 
-    tableSpace.createTable(desc, ifNotExists);
+    TableSpaceManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
 
     if (catalog.createTable(desc)) {
       LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
@@ -313,7 +290,8 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        TablespaceManager.get(tableDesc.getUri()).get().purgeTable(tableDesc);
+        TableSpaceManager.getStorageManager(queryContext.getConf(),
+            tableDesc.getMeta().getStoreType()).purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
       }
@@ -352,7 +330,7 @@ public class DDLExecutor {
 
       Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
       TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
-      Path tablePath = new Path(tableDesc.getUri());
+      Path tablePath = new Path(tableDesc.getPath());
       if (tablePath.getParent() == null ||
           !tablePath.getParent().toUri().getPath().equals(warehousePath.toUri().getPath())) {
         throw new IOException("Can't truncate external table:" + eachTableName + ", data dir=" + tablePath +
@@ -362,7 +340,7 @@ public class DDLExecutor {
     }
 
     for (TableDesc eachTable: tableDescList) {
-      Path path = new Path(eachTable.getUri());
+      Path path = new Path(eachTable.getPath());
       LOG.info("Truncate table: " + eachTable.getName() + ", delete all data files in " + path);
       FileSystem fs = path.getFileSystem(context.getConf());
 

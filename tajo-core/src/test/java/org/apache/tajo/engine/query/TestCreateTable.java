@@ -107,9 +107,9 @@ public class TestCreateTable extends QueryTestCaseBase {
     // checking the existence of the table directory and validating the path
     Path warehouseDir = TajoConf.getWarehouseDir(testingCluster.getConfiguration());
     FileSystem fs = warehouseDir.getFileSystem(testingCluster.getConfiguration());
-    assertTrue(fs.exists(new Path(oldTableDesc.getUri())));
+    assertTrue(fs.exists(new Path(oldTableDesc.getPath())));
     assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, originalTableName),
-        new Path(oldTableDesc.getUri()));
+        new Path(oldTableDesc.getPath()));
 
     // Rename
     client.executeQuery("ALTER TABLE " + CatalogUtil.denormalizeIdentifier(oldFQTableName)
@@ -118,8 +118,8 @@ public class TestCreateTable extends QueryTestCaseBase {
     // checking the existence of the new table directory and validating the path
     final String newFQTableName = CatalogUtil.buildFQName(databaseName, newTableName);
     TableDesc newTableDesc = client.getTableDesc(newFQTableName);
-    assertTrue(fs.exists(new Path(newTableDesc.getUri())));
-    assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, newTableName), new Path(newTableDesc.getUri()));
+    assertTrue(fs.exists(new Path(newTableDesc.getPath())));
+    assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, newTableName), new Path(newTableDesc.getPath()));
   }
 
   @Test

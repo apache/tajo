@@ -29,11 +29,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.StorageFragmentProtos.*;
 
-import java.net.URI;
-
 public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Cloneable {
-  @Expose
-  private URI uri;
   @Expose
   private String tableName;
   @Expose
@@ -49,9 +45,7 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   @Expose
   private long length;
 
-  public HBaseFragment(URI uri, String tableName, String hbaseTableName, byte[] startRow, byte[] stopRow,
-                       String regionLocation) {
-    this.uri = uri;
+  public HBaseFragment(String tableName, String hbaseTableName, byte[] startRow, byte[] stopRow, String regionLocation) {
     this.tableName = tableName;
     this.hbaseTableName = hbaseTableName;
     this.startRow = startRow;
@@ -68,7 +62,6 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   }
 
   private void init(HBaseFragmentProto proto) {
-    this.uri = URI.create(proto.getUri());
     this.tableName = proto.getTableName();
     this.hbaseTableName = proto.getHbaseTableName();
     this.startRow = proto.getStartRow().toByteArray();
@@ -81,10 +74,6 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   @Override
   public int compareTo(HBaseFragment t) {
     return Bytes.compareTo(startRow, t.startRow);
-  }
-
-  public URI getUri() {
-    return uri;
   }
 
   @Override
@@ -118,7 +107,6 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
 
   public Object clone() throws CloneNotSupportedException {
     HBaseFragment frag = (HBaseFragment) super.clone();
-    frag.uri = uri;
     frag.tableName = tableName;
     frag.hbaseTableName = hbaseTableName;
     frag.startRow = startRow;
@@ -149,20 +137,16 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
 
   @Override
   public String toString() {
-    return
-        "\"fragment\": {\"uri:\"" + uri.toString() +"\", \"tableName\": \""+ tableName +
-            "\", hbaseTableName\": \"" + hbaseTableName + "\"" +
-            ", \"startRow\": \"" + new String(startRow) + "\"" +
-            ", \"stopRow\": \"" + new String(stopRow) + "\"" +
-            ", \"length\": \"" + length + "\"}" ;
+    return "\"fragment\": {\"tableName\": \""+ tableName + "\", hbaseTableName\": \"" + hbaseTableName + "\"" +
+        ", \"startRow\": \"" + new String(startRow) + "\"" +
+        ", \"stopRow\": \"" + new String(stopRow) + "\"" +
+        ", \"length\": \"" + length + "\"}" ;
   }
 
   @Override
   public FragmentProto getProto() {
     HBaseFragmentProto.Builder builder = HBaseFragmentProto.newBuilder();
-    builder
-        .setUri(uri.toString())
-        .setTableName(tableName)
+    builder.setTableName(tableName)
         .setHbaseTableName(hbaseTableName)
         .setStartRow(ByteString.copyFrom(startRow))
         .setStopRow(ByteString.copyFrom(stopRow))

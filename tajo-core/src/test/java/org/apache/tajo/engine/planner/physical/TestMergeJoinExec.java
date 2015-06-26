@@ -85,7 +85,7 @@ public class TestMergeJoinExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
+    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     VTuple tuple = new VTuple(employeeSchema.size());
@@ -114,7 +114,7 @@ public class TestMergeJoinExec {
     peopleSchema.addColumn("age", Type.INT4);
     TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
     Path peoplePath = new Path(testDir, "people.csv");
-    appender = ((FileTablespace) TablespaceManager.getLocalFs())
+    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
         .getAppender(peopleMeta, peopleSchema, peoplePath);
     appender.init();
     tuple = new VTuple(peopleSchema.size());
@@ -139,7 +139,7 @@ public class TestMergeJoinExec {
     people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
+    planner = new LogicalPlanner(catalog);
   }
 
   @After
@@ -162,9 +162,9 @@ public class TestMergeJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
-    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(), new Path(employee.getUri()),
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(), new Path(employee.getPath()),
         Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(), new Path(people.getUri()),
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(), new Path(people.getPath()),
         Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 

@@ -160,7 +160,7 @@ public class LegacyTaskImpl implements Task {
         this.sortComp = new BaseTupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
-      Path outFilePath = ((FileTablespace) TablespaceManager.get(queryContext.getStagingDir().toUri()).get())
+      Path outFilePath = ((FileTablespace) TableSpaceManager.getFileStorageManager(systemConf))
           .getAppenderFilePath(getId(), queryContext.getStagingDir());
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);

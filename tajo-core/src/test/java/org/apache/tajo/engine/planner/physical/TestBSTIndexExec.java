@@ -90,7 +90,7 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = TablespaceManager.getLocalFs();
+    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
 
     idxPath = new Path(workDir, "test.idx");
 
@@ -144,11 +144,11 @@ public class TestBSTIndexExec {
 
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        sm.getTableUri(TajoConstants.DEFAULT_DATABASE_NAME, "employee"));
+        sm.getTablePath("employee").toUri());
     catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
+    planner = new LogicalPlanner(catalog);
     optimizer = new LogicalOptimizer(conf);
   }
 
