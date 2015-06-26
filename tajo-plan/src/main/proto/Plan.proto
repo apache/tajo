@@ -223,22 +223,21 @@ message PersistentStoreNode {
 
 message StoreTableNodeSpec { // required PersistentStoreNode
   optional string tableName = 1; // 'INSERT INTO LOCATION' does not require 'table name'.
-  optional PartitionMethodProto partitionMethod = 2;
+  optional string uri = 2;
+  required SchemaProto table_schema = 3;
+  optional PartitionMethodProto partitionMethod = 4;
 }
 
 message InsertNodeSpec { // required PersistentStoreNode and StoreTableSpec
   required bool overwrite = 1;
-  required SchemaProto tableSchema = 2;
-  optional SchemaProto targetSchema = 4;
+  optional SchemaProto targetSchema = 2;
   optional SchemaProto projectedSchema = 3;
-  optional string path = 5;
 }
 
 message CreateTableNodeSpec { // required PersistentStoreNode and StoreTableNodeSpec
-  required SchemaProto schema = 1;
+  optional string tablespace_name = 1;
   required bool external = 2;
   required bool ifNotExists = 3;
-  optional string path = 4;
 }
 
 message DropTableNode {

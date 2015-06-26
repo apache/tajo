@@ -22,45 +22,70 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.LogicalRootNode;
-import org.apache.tajo.plan.logical.SortNode;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
-import org.apache.tajo.plan.logical.UnaryNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
-import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.util.KeyValueSet;
 
-public class AddSortForInsertRewriter implements LogicalPlanRewriteRule {
-  private int[] sortColumnIndexes;
-  private Column[] sortColumns;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-  public AddSortForInsertRewriter(TableDesc tableDesc, Column[] sortColumns) {
-    this.sortColumns = sortColumns;
-    this.sortColumnIndexes = new int[sortColumns.length];
-
-    Schema tableSchema = tableDesc.getSchema();
-    for (int i = 0; i < sortColumns.length; i++) {
-      sortColumnIndexes[i] = tableSchema.getColumnId(sortColumns[i].getQualifiedName());
-    }
-  }
+/**
+ * This rewrite rule injects a sort operation to preserve the writing rows in
+ * an ascending order of HBase row keys, required by HFile.
+ */
+public class SortedInsertRewriter implements LogicalPlanRewriteRule {
 
   @Override
   public String getName() {
-    return "AddSortForInsertRewriter";
+    return "SortedInsertRewriter";
   }
 
   @Override
   public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    String storeType = PlannerUtil.getStoreType(plan);
-    return storeType != null;
+    boolean hbaseMode = "false".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"));
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    LogicalNode node = rootNode.getChild();
+    return hbaseMode && node.getType() == NodeType.CREATE_TABLE || node.getType() == NodeType.INSERT;
+  }
+
+  public static Column[] getIndexColumns(Schema tableSchema, KeyValueSet tableProperty) throws IOException {
+    List<Column> indexColumns = new ArrayList<Column>();
+
+    ColumnMapping columnMapping = new ColumnMapping(tableSchema, tableProperty);
+
+    boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
+    for (int i = 0; i < isRowKeys.length; i++) {
+      if (isRowKeys[i]) {
+        indexColumns.add(tableSchema.getColumn(i));
+      }
+    }
+
+    return indexColumns.toArray(new Column[]{});
   }
 
   @Override
   public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+
+    StoreTableNode storeTable = rootNode.getChild();
+    Schema tableSchema = storeTable.getTableSchema();
+
+    Column[] sortColumns;
+    try {
+      sortColumns = getIndexColumns(tableSchema, storeTable.getOptions());
+    } catch (IOException e) {
+      throw new PlanningException(e);
+    }
+
+    int[] sortColumnIndexes = new int[sortColumns.length];
+    for (int i = 0; i < sortColumns.length; i++) {
+      sortColumnIndexes[i] = tableSchema.getColumnId(sortColumns[i].getQualifiedName());
+    }
+
     UnaryNode insertNode = rootNode.getChild();
     LogicalNode childNode = insertNode.getChild();
 

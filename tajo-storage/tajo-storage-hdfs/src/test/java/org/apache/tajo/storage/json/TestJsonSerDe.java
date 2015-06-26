@@ -69,7 +69,7 @@ public class TestJsonSerDe {
     FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple tuple = scanner.next();

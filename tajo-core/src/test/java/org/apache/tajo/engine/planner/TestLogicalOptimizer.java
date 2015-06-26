@@ -24,7 +24,6 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
@@ -35,6 +34,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -103,7 +103,7 @@ public class TestLogicalOptimizer {
 
     catalog.createFunction(funcDesc);
     sqlAnalyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(util.getConfiguration());
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());

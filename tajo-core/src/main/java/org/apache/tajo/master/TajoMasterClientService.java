@@ -54,7 +54,6 @@ import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -619,6 +618,12 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
+
+        QueryInProgress progress = context.getQueryJobManager().getQueryInProgress(queryId);
+        if (progress == null || progress.isFinishState() || progress.isKillWait()) {
+          return BOOL_TRUE;
+        }
+
         QueryManager queryManager = context.getQueryJobManager();
         queryManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
             new QueryInfo(queryId)));
@@ -839,8 +844,7 @@ public class TajoMasterClientService extends AbstractService {
         TableDesc desc;
         try {
           desc = context.getGlobalEngine().getDDLExecutor().createTable(queryContext, request.getName(),
-              meta.getStoreType(), schema,
-              meta, path, true, partitionDesc, false);
+              null, meta.getStoreType(), schema, meta, path.toUri(), true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.ERROR)

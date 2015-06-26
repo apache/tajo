@@ -1,7 +1,7 @@
 OK
 
 table name: default.TEST_DESC_TABLE_NESTED
-table path: ${table.path}
+table uri: ${table.path}
 store type: CSV
 number of rows: 0
 volume: 0 B
@@ -16,7 +16,7 @@ col3	RECORD (col4 RECORD (col5 TEXT))
 
 
 table name: default.TEST_DESC_TABLE_NESTED
-table path: ${table.path}
+table uri: ${table.path}
 store type: CSV
 number of rows: 0
 volume: 0 B

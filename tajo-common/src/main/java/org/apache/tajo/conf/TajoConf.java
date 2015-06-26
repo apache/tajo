@@ -323,7 +323,6 @@ public class TajoConf extends Configuration {
     $DIST_QUERY_JOIN_TASK_VOLUME("tajo.dist-query.join.task-volume-mb", 128),
     $DIST_QUERY_SORT_TASK_VOLUME("tajo.dist-query.sort.task-volume-mb", 128),
     $DIST_QUERY_GROUPBY_TASK_VOLUME("tajo.dist-query.groupby.task-volume-mb", 128),
-
     $DIST_QUERY_JOIN_PARTITION_VOLUME("tajo.dist-query.join.partition-volume-mb", 128, Validators.min("1")),
     $DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256, Validators.min("1")),
     $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256, Validators.min("1")),
@@ -376,8 +375,13 @@ public class TajoConf extends Configuration {
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
 
-    // ResultSet ---------------------------------------------------------
+    // If True, a partitioned table is overwritten even if a sub query leads to no result.
+    // Otherwise, the table data will be kept if there is no result
+    $PARTITION_NO_RESULT_OVERWRITE_ENABLED("tajo.partition.overwrite.even-if-no-result", false),
+
+      // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
+    $RESULT_SET_BLOCK_WAIT("tajo.resultset.block.wait", true),
     ;
 
     public final String varname;

@@ -21,11 +21,7 @@ package org.apache.tajo.querymaster;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
@@ -51,20 +47,16 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.StorageProperty;
-import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.TajoResourceAllocator;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -73,12 +65,6 @@ import static org.apache.tajo.TajoProtos.QueryState;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
-
-  // query submission directory is private!
-  final public static FsPermission STAGING_DIR_PERMISSION =
-      FsPermission.createImmutable((short) 0700); // rwx--------
-
-  public static final String TMP_STAGING_DIR_PREFIX = ".staging";
 
   private QueryId queryId;
 
@@ -160,8 +146,6 @@ public class QueryMasterTask extends CompositeService {
       dispatcher.register(QueryMasterQueryCompletedEvent.EventType.class, new QueryFinishEventHandler());
       dispatcher.register(TaskSchedulerEvent.EventType.class, new TaskSchedulerDispatcher());
       dispatcher.register(LocalTaskEventType.class, new LocalTaskEventHandler());
-
-      initStagingDir();
 
       queryMetrics = new TajoMetrics(queryId.toString());
 
@@ -307,43 +291,31 @@ public class QueryMasterTask extends CompositeService {
         state == QueryState.QUERY_ERROR;
   }
 
+  private LogicalPlan plan;
+
   public synchronized void startQuery() {
-    Tablespace sm = null;
-    LogicalPlan plan = null;
+    Tablespace space = null;
     try {
       if (query != null) {
         LOG.warn("Query already started");
         return;
       }
+
+
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
-      LogicalPlanner planner = new LogicalPlanner(catalog);
+      LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       jsonExpr = null; // remove the possible OOM
+
       plan = planner.createPlan(queryContext, expr);
-
-      String storeType = PlannerUtil.getStoreType(plan);
-      if (storeType != null) {
-        sm = TableSpaceManager.getStorageManager(systemConf, storeType);
-        StorageProperty storageProperty = sm.getStorageProperty();
-        if (storageProperty.isSortedInsert()) {
-          String tableName = PlannerUtil.getStoreTableName(plan);
-          LogicalRootNode rootNode = plan.getRootBlock().getRoot();
-          TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
-          if (tableDesc == null) {
-            throw new VerifyException("Can't get table meta data from catalog: " + tableName);
-          }
-          List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
-              getQueryTaskContext().getQueryContext(), tableDesc);
-          if (storageSpecifiedRewriteRules != null) {
-            for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
-              optimizer.addRuleAfterToJoinOpt(eachRule);
-            }
-          }
-        }
-      }
-
       optimizer.optimize(queryContext, plan);
+
+      // when a given uri is null, TablespaceManager.get will return the default tablespace.
+      space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      space.rewritePlan(queryContext, plan);
+
+      initStagingDir();
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);
@@ -374,10 +346,10 @@ public class QueryMasterTask extends CompositeService {
       LOG.error(t.getMessage(), t);
       initError = t;
 
-      if (plan != null && sm != null) {
+      if (plan != null && space != null) {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
-          sm.rollbackOutputCommit(rootNode.getChild());
+          space.rollbackTable(rootNode.getChild());
         } catch (IOException e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
@@ -386,83 +358,25 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void initStagingDir() throws IOException {
-    Path stagingDir;
+    URI stagingDir;
 
     try {
+      Tablespace tablespace = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      TableDesc desc = PlannerUtil.getOutputTableDesc(plan);
 
-      stagingDir = initStagingDir(systemConf, queryId.toString(), queryContext);
+      FormatProperty formatProperty = tablespace.getFormatProperty(desc.getMeta());
+      if (formatProperty.isStagingSupport()) {
+        stagingDir = tablespace.prepareStagingSpace(systemConf, queryId.toString(), queryContext, desc.getMeta());
 
-      // Create a subdirectories
-      LOG.info("The staging dir '" + stagingDir + "' is created.");
-      queryContext.setStagingDir(stagingDir);
+        // Create a staging space
+        LOG.info("The staging dir '" + stagingDir + "' is created.");
+        queryContext.setStagingDir(stagingDir);
+      }
+
     } catch (IOException ioe) {
-      LOG.warn("Creating staging dir has been failed.", ioe);
-
+      LOG.warn("Creating staging space has been failed.", ioe);
       throw ioe;
     }
-  }
-
-  /**
-   * It initializes the final output and staging directory and sets
-   * them to variables.
-   */
-  public static Path initStagingDir(TajoConf conf, String queryId, QueryContext context) throws IOException {
-
-    String realUser;
-    String currentUser;
-    UserGroupInformation ugi;
-    ugi = UserGroupInformation.getLoginUser();
-    realUser = ugi.getShortUserName();
-    currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
-
-    FileSystem fs;
-    Path stagingDir;
-
-    ////////////////////////////////////////////
-    // Create Output Directory
-    ////////////////////////////////////////////
-
-    String outputPath = context.get(QueryVars.OUTPUT_TABLE_PATH, "");
-    if (context.isCreateTable() || context.isInsert()) {
-      if (outputPath == null || outputPath.isEmpty()) {
-        // hbase
-        stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-      } else {
-        stagingDir = StorageUtil.concatPath(context.getOutputPath(), TMP_STAGING_DIR_PREFIX, queryId);
-      }
-    } else {
-      stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
-    }
-
-    // initializ
-    fs = stagingDir.getFileSystem(conf);
-
-    if (fs.exists(stagingDir)) {
-      throw new IOException("The staging directory '" + stagingDir + "' already exists");
-    }
-    fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-    FileStatus fsStatus = fs.getFileStatus(stagingDir);
-    String owner = fsStatus.getOwner();
-
-    if (!owner.isEmpty() && !(owner.equals(currentUser) || owner.equals(realUser))) {
-      throw new IOException("The ownership on the user's query " +
-          "directory " + stagingDir + " is not as expected. " +
-          "It is owned by " + owner + ". The directory must " +
-          "be owned by the submitter " + currentUser + " or " +
-          "by " + realUser);
-    }
-
-    if (!fsStatus.getPermission().equals(STAGING_DIR_PERMISSION)) {
-      LOG.info("Permissions on staging directory " + stagingDir + " are " +
-          "incorrect: " + fsStatus.getPermission() + ". Fixing permissions " +
-          "to correct value " + STAGING_DIR_PERMISSION);
-      fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
-    }
-
-    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-    fs.mkdirs(stagingResultDir);
-
-    return stagingDir;
   }
 
   public Query getQuery() {

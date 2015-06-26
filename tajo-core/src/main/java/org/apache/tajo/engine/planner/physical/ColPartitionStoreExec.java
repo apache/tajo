@@ -165,7 +165,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
     }
 
-    appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(context.getConf()))
+    appender = ((FileTablespace) TablespaceManager.get(lastFileName.toUri()).get())
         .getAppender(meta, outSchema, actualFilePath);
 
     appender.enableStats();

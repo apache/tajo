@@ -35,6 +35,8 @@ Available Session Variables:
 \set MAX_OUTPUT_FILE_SIZE [int value] - Maximum per-output file size (mb). 0 means infinite.
 \set NULL_CHAR [text value] - null char of text file output
 \set CODEGEN [true or false] - Runtime code generation enabled (experiment)
+\set PARTITION_NO_RESULT_OVERWRITE_ENABLED [true or false] - If True, a partitioned table is overwritten even if a sub query leads to no result. Otherwise, the table data will be kept if there is no result
 \set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
 \set FETCH_ROWNUM [int value] - Sets the number of rows at a time from Master
+\set BLOCK_ON_RESULT [true or false] - Whether to block result set on query execution
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled

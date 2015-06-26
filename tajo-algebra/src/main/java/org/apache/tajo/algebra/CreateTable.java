@@ -38,6 +38,8 @@ public class CreateTable extends Expr {
   private String tableName;
   @Expose @SerializedName("Attributes")
   private ColumnDefinition [] tableElements;
+  @Expose @SerializedName("SpaceName")
+  private String spaceName;
   @Expose @SerializedName("StorageType")
   private String storageType;
   @Expose @SerializedName("Location")
@@ -98,6 +100,18 @@ public class CreateTable extends Expr {
 
   public void setTableElements(ColumnDefinition [] tableElements) {
     this.tableElements = tableElements;
+  }
+
+  public boolean hasTableSpaceName() {
+    return spaceName != null;
+  }
+
+  public void setTableSpaceName(String spaceName) {
+    this.spaceName = spaceName;
+  }
+
+  public String getTableSpaceName() {
+    return spaceName;
   }
 
   public boolean hasStorageType() {

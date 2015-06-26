@@ -348,6 +348,41 @@ public class QueryTestCaseBase {
   }
 
   /**
+   * It executes the query file and compare the result against the the result file.
+   *
+   * @throws Exception
+   */
+  public void assertQuery() throws Exception {
+    ResultSet res = null;
+    try {
+      res = executeQuery();
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  /**
+   * It executes a given query statement and verifies the result against the the result file.
+   *
+   * @param query A query statement
+   * @throws Exception
+   */
+  public void assertQueryStr(String query) throws Exception {
+    ResultSet res = null;
+    try {
+      res = executeString(query);
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  /**
    * Execute a query contained in the file located in src/test/resources/results/<i>ClassName</i>/<i>MethodName</i>.
    * <i>ClassName</i> and <i>MethodName</i> will be replaced by actual executed class and methods.
    *
@@ -945,7 +980,7 @@ public class QueryTestCaseBase {
       return null;
     }
 
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
     return getTableFileContents(path);
   }
 
@@ -955,7 +990,7 @@ public class QueryTestCaseBase {
       return null;
     }
 
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
     FileSystem fs = path.getFileSystem(conf);
 
     return listFiles(fs, path);

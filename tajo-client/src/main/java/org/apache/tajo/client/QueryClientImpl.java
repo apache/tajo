@@ -258,17 +258,7 @@ public class QueryClientImpl implements QueryClient {
       return createNullResultSet(queryId);
     }
 
-    QueryStatus status = getQueryStatus(queryId);
-
-    while(status != null && !TajoClientUtil.isQueryComplete(status.getState())) {
-      try {
-        Thread.sleep(500);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-
-      status = getQueryStatus(queryId);
-    }
+    QueryStatus status = TajoClientUtil.waitCompletion(this, queryId);
 
     if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
       if (status.hasResult()) {
