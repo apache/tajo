@@ -788,4 +788,37 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
       executeString("DROP TABLE rank_table2 PURGE");
     }
   }
+
+  @Test
+  public void testCorr() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|-111|1.2|-50.5",
+        "2|1|\\N|\\N|52.5",
+        "3|2|-333|2.8|\\N",
+        "4|3|-555|2.8|43.2",
+        "5|4|-111|1.1|10.2",};
+    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select corr(value_int, value_long) as corr1, corr(value_long, value_float) as corr2, corr(value_float, value_double) as corr3, corr(value_double, value_int) as corr4 from testbuiltin11");
+      String ascExpected = "corr1,corr2,corr3,corr4\n" +
+          "-------------------------------\n" +
+          "0.5,-0.9037045658322675,0.7350290063698216,-0.8761489936497805\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE testbuiltin11 PURGE");
+    }
+  }
 }
