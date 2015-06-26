@@ -11,6 +11,9 @@ Release 0.10.2 - Released
 
   BUG FIXES
 
+    TAJO-1644: When inserting empty data into a partitioned table,
+    existing data would be removed. (jaehwa)
+
     TAJO-1642: CatalogServer need to check meta table first. (jaehwa)
 
   TASKS

@@ -359,6 +359,10 @@ public class TajoConf extends Configuration {
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
 
+    // If True, a partitioned table is overwritten even if a sub query leads to no result.
+    // Otherwise, the table data will be kept if there is no result
+    $PARTITION_NO_RESULT_OVERWRITE_ENABLED("tajo.partition.overwrite.even-if-no-result", false),
+
     // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
     $RESULT_SET_BLOCK_WAIT("tajo.resultset.block.wait", true),
