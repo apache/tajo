@@ -40,7 +40,6 @@ import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
@@ -56,7 +55,7 @@ import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -370,7 +369,7 @@ public class TajoWorker extends CompositeService {
     }
 
     try {
-      TableSpaceManager.shutdown();
+      OldStorageManager.shutdown();
     } catch (IOException ie) {
       LOG.error(ie.getMessage(), ie);
     }

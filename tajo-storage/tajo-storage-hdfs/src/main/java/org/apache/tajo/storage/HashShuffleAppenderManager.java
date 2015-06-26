@@ -30,9 +30,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,8 +84,9 @@ public class HashShuffleAppenderManager {
         if (!fs.exists(dataFile.getParent())) {
           fs.mkdirs(dataFile.getParent());
         }
-        FileAppender appender = (FileAppender)((FileTablespace) TableSpaceManager.getFileStorageManager(tajoConf))
-            .getAppender(meta, outSchema, dataFile);
+
+        FileTablespace space = (FileTablespace) TablespaceManager.get(dataFile.toUri()).get();
+        FileAppender appender = (FileAppender) space.getAppender(meta, outSchema, dataFile);
         appender.enableStats();
         appender.init();
 
@@ -174,14 +177,14 @@ public class HashShuffleAppenderManager {
     private long volume;
 
     //[<page start offset,<task start, task end>>]
-    private Iterable<Long> failureTskTupleIndexes;
+    private Collection<Pair<Long, Pair<Integer, Integer>>> failureTskTupleIndexes;
 
     //[<page start offset, length>]
-    private Iterable<Long> pages;
+    private List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
 
     public HashShuffleIntermediate(int partId, long volume,
-                                   Iterable<Long> pages,
-                                   Iterable<Long> failureTskTupleIndexes) {
+                                   List<Pair<Long, Integer>> pages,
+                                   Collection<Pair<Long, Pair<Integer, Integer>>> failureTskTupleIndexes) {
       this.partId = partId;
       this.volume = volume;
       this.failureTskTupleIndexes = failureTskTupleIndexes;
@@ -196,11 +199,11 @@ public class HashShuffleAppenderManager {
       return volume;
     }
 
-    public Iterable<Long> getFailureTskTupleIndexes() {
+    public Collection<Pair<Long, Pair<Integer, Integer>>> getFailureTskTupleIndexes() {
       return failureTskTupleIndexes;
     }
 
-    public Iterable<Long> getPages() {
+    public List<Pair<Long, Integer>> getPages() {
       return pages;
     }
   }

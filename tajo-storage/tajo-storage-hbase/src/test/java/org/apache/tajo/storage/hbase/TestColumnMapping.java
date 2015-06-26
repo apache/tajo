@@ -43,7 +43,7 @@ public class TestColumnMapping {
 
     TableMeta tableMeta = new TableMeta("HBASE", keyValueSet);
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
 
     List<String> cfNames = columnMapping.getColumnFamilyNames();
     assertEquals(2, cfNames.size());

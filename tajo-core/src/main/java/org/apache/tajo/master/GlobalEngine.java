@@ -43,7 +43,6 @@ import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
@@ -53,8 +52,8 @@ import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.session.Session;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.IPCUtil;
 
@@ -69,7 +68,6 @@ public class GlobalEngine extends AbstractService {
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
   private final MasterContext context;
-  private final Tablespace sm;
 
   private SQLAnalyzer analyzer;
   private CatalogService catalog;
@@ -85,7 +83,6 @@ public class GlobalEngine extends AbstractService {
     super(GlobalEngine.class.getName());
     this.context = context;
     this.catalog = context.getCatalog();
-    this.sm = context.getStorageManager();
 
     this.ddlExecutor = new DDLExecutor(context);
     this.queryExecutor = new QueryExecutor(context, ddlExecutor);
@@ -95,7 +92,7 @@ public class GlobalEngine extends AbstractService {
     try  {
       analyzer = new SQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
-      planner = new LogicalPlanner(context.getCatalog());
+      planner = new LogicalPlanner(context.getCatalog(), TablespaceManager.getInstance());
       // Access path rewriter is enabled only in QueryMasterTask
       optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
@@ -144,6 +141,10 @@ public class GlobalEngine extends AbstractService {
 
   private QueryContext createQueryContext(Session session) {
     QueryContext newQueryContext =  new QueryContext(context.getConf(), session);
+
+    // Set default space uri and its root uri
+    newQueryContext.setDefaultSpaceUri(TablespaceManager.getDefault().getUri());
+    newQueryContext.setDefaultSpaceRootUri(TablespaceManager.getDefault().getRootUri());
 
     String tajoTest = System.getProperty(CommonTestingUtil.TAJO_TEST_KEY);
     if (tajoTest != null && tajoTest.equalsIgnoreCase(CommonTestingUtil.TAJO_TEST_TRUE)) {
@@ -303,8 +304,8 @@ public class GlobalEngine extends AbstractService {
           InsertNode iNode = rootNode.getChild();
           Schema outSchema = iNode.getChild().getOutSchema();
 
-          TableSpaceManager.getStorageManager(queryContext.getConf(), storeType)
-              .verifyInsertTableSchema(tableDesc, outSchema);
+          TablespaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
+
         } catch (Throwable t) {
           state.addVerification(t.getMessage());
         }

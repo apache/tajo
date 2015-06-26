@@ -23,7 +23,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.primitives.Longs;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,6 +34,7 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
@@ -44,7 +44,6 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.TaskHistory;
@@ -786,8 +785,8 @@ public class Task implements EventHandler<TaskEvent> {
     int partId;
     PullHost host;
     long volume;
-    long[] pages;
-    long[] failureRowNums;
+    List<Pair<Long, Integer>> pages;
+    List<Pair<Long, Pair<Integer, Integer>>> failureRowNums;
 
     public IntermediateEntry(IntermediateEntryProto proto) {
       this.ebId = new ExecutionBlockId(proto.getEbId());
@@ -795,12 +794,21 @@ public class Task implements EventHandler<TaskEvent> {
       this.attemptId = proto.getAttemptId();
       this.partId = proto.getPartId();
 
-      String [] pullHost = proto.getAddress().split(":");
+      String[] pullHost = proto.getHost().split(":");
       this.host = new PullHost(pullHost[0], Integer.parseInt(pullHost[1]));
       this.volume = proto.getVolume();
 
-      this.failureRowNums = Longs.toArray(proto.getFailuresList());
-      this.pages = Longs.toArray(proto.getPagesList());
+      failureRowNums = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
+      for (FailureIntermediateProto eachFailure: proto.getFailuresList()) {
+
+        failureRowNums.add(new Pair(eachFailure.getPagePos(),
+            new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())));
+      }
+
+      pages = new ArrayList<Pair<Long, Integer>>();
+      for (IntermediateEntryProto.PageProto eachPage: proto.getPagesList()) {
+        pages.add(new Pair(eachPage.getPos(), eachPage.getLength()));
+      }
     }
 
     public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {
@@ -850,15 +858,15 @@ public class Task implements EventHandler<TaskEvent> {
       return this.volume = volume;
     }
 
-    public long[] getPages() {
+    public List<Pair<Long, Integer>> getPages() {
       return pages;
     }
 
-    public void setPages(long[] pages) {
+    public void setPages(List<Pair<Long, Integer>> pages) {
       this.pages = pages;
     }
 
-    public long[] getFailureRowNums() {
+    public List<Pair<Long, Pair<Integer, Integer>>> getFailureRowNums() {
       return failureRowNums;
     }
 
@@ -867,38 +875,38 @@ public class Task implements EventHandler<TaskEvent> {
       return Objects.hashCode(ebId, taskId, partId, attemptId, host);
     }
 
-    public long[] split(long firstSplitVolume, long splitVolume) {
+    public List<Pair<Long, Long>> split(long firstSplitVolume, long splitVolume) {
+      List<Pair<Long, Long>> splits = new ArrayList<Pair<Long, Long>>();
 
-      if (pages == null || pages.length == 0) {
-        return null;
+      if (pages == null || pages.isEmpty()) {
+        return splits;
       }
+      int pageSize = pages.size();
 
-      NumberUtil.PrimitiveLongs splits = new NumberUtil.PrimitiveLongs(100);
       long currentOffset = -1;
       long currentBytes = 0;
 
       long realSplitVolume = firstSplitVolume > 0 ? firstSplitVolume : splitVolume;
-      for (int i = 0; i < pages.length; i += 2) {
+      for (int i = 0; i < pageSize; i++) {
+        Pair<Long, Integer> eachPage = pages.get(i);
         if (currentOffset == -1) {
-          currentOffset = pages[i];
+          currentOffset = eachPage.getFirst();
         }
-        if (currentBytes > 0 && currentBytes + pages[i + 1] >= realSplitVolume) {
-          splits.add(currentOffset);
-          splits.add(currentBytes);
-          currentOffset = pages[i];
+        if (currentBytes > 0 && currentBytes + eachPage.getSecond() >= realSplitVolume) {
+          splits.add(new Pair(currentOffset, currentBytes));
+          currentOffset = eachPage.getFirst();
           currentBytes = 0;
           realSplitVolume = splitVolume;
         }
 
-        currentBytes += pages[i + 1];
+        currentBytes += eachPage.getSecond();
       }
 
       //add last
       if (currentBytes > 0) {
-        splits.add(currentOffset);
-        splits.add(currentBytes);
+        splits.add(new Pair(currentOffset, currentBytes));
       }
-      return splits.toArray();
+      return splits;
     }
   }
 }

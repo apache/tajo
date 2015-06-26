@@ -30,11 +30,17 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
+import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
+import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
-import org.apache.tajo.plan.*;
-import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -70,7 +76,7 @@ public class TestSortExec {
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
+    sm = TablespaceManager.getLocalFs();
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);
@@ -82,7 +88,7 @@ public class TestSortExec {
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
-    Appender appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+    Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, tablePath);
     appender.init();
     VTuple tuple = new VTuple(schema.size());
@@ -103,7 +109,7 @@ public class TestSortExec {
 
     queryContext = new QueryContext(conf);
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf, catalog);
   }
 

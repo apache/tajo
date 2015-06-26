@@ -173,7 +173,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
       Schema fileScanOutSchema = mergeSubSchemas(projected, keySchema, plan.getTargets(), qual);
 
-      this.fileScanner = TableSpaceManager.getStorageManager(context.getConf(),
+      this.fileScanner = OldStorageManager.getStorageManager(context.getConf(),
           plan.getTableDesc().getMeta().getStoreType())
           .getSeekableScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragment, fileScanOutSchema);
       this.fileScanner.init();

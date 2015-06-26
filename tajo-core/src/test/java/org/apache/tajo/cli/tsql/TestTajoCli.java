@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -214,10 +215,9 @@ public class TestTajoCli {
 
     String consoleResult = new String(out.toByteArray());
 
-    FileSystem fs = FileSystem.get(testBase.getTestingCluster().getConfiguration());
     if (!cluster.isHiveCatalogStoreRunning()) {
       assertOutputResult(resultFileName, consoleResult, new String[]{"${table.path}"},
-        new String[]{fs.getUri() + "/tajo/warehouse/default/" + tableName});
+        new String[]{TablespaceManager.getDefault().getTableUri("default", tableName).toString()});
     }
   }
 

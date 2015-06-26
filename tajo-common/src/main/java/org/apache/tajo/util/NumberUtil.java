@@ -18,7 +18,6 @@
 
 package org.apache.tajo.util;
 
-import com.google.common.primitives.Longs;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
 
@@ -26,8 +25,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Iterator;
 
 // this is an implementation copied from LazyPrimitives in hive
 public class NumberUtil {
@@ -1052,56 +1049,5 @@ public class NumberUtil {
     }
 
     return returnNumber;
-  }
-
-  public static long mergeToLong(int value1, int value2) {
-    return (long)value1 << 32 | value2 & 0xffffffffl;
-  }
-
-  public static int toHighInt(long value) {
-    return (int)(value >> 32);
-  }
-
-  public static int toLowInt(long value) {
-    return (int)value;
-  }
-
-  public static class PrimitiveLongs implements Iterable<Long> {
-    int index;
-    long[] longArray;
-
-    public PrimitiveLongs(int initLength) {
-      longArray = new long[initLength];
-    }
-    public void add(long value) {
-      reserve(1)[index++] = value;
-    }
-    public void add(long[] value) {
-      System.arraycopy(value, 0, reserve(value.length), index, value.length);
-      index += value.length;
-    }
-    public long[] backingArray() {
-      return longArray;
-    }
-    public long[] toArray() {
-      return Arrays.copyOfRange(longArray, 0, index);
-    }
-    public int size() {
-      return index;
-    }
-    private long[] reserve(int reserve) {
-      if (index + reserve < longArray.length) {
-        return longArray;
-      }
-      int newLength = Math.max(index + reserve, longArray.length << 1);
-      long[] newLongArray = new long[newLength];
-      System.arraycopy(longArray, 0, newLongArray, 0, index);
-      return longArray = newLongArray;
-    }
-
-    @Override
-    public Iterator<Long> iterator() {
-      return Longs.asList(toArray()).iterator();
-    }
   }
 }
