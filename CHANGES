@@ -27,8 +27,6 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1659: Simplify scan iteration in SeqScan. (hyunsik)
-
     TAJO-751: JDBC driver should support cancel() method.
     (Contributed by navis, Committed by jihoon)
 
