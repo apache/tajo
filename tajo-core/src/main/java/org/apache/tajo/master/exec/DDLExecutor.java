@@ -137,7 +137,7 @@ public class DDLExecutor {
       throw new InternalError("Cannot find the table of the relation");
     }
 
-    IndexDesc indexDesc = new IndexDesc(databaseName, scanNode.getTableName(),
+    IndexDesc indexDesc = new IndexDesc(databaseName, CatalogUtil.extractSimpleName(scanNode.getTableName()),
         simpleIndexName, createIndexNode.getIndexPath(),
         createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
         createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
