@@ -895,7 +895,7 @@ public class FileTablespace extends Tablespace {
           ContentSummary summary = fs.getContentSummary(stagingResultDir);
 
           // When inserting empty data into a partitioned table, check if keep existing data need to be remove or not.
-          boolean overwriteEnabled = queryContext.getBool(SessionVars.TABLE_PARTITION_NO_RESULT_OVERWRITE_ENABLED);
+          boolean overwriteEnabled = queryContext.getBool(SessionVars.PARTITION_NO_RESULT_OVERWRITE_ENABLED);
 
           // If existing data doesn't need to keep, check if there are some files.
           if ( (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty())
