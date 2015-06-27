@@ -1234,7 +1234,6 @@ public class TestLogicalPlanner {
     return root.getChild();
   }
 
-
   String [] ALTER_PARTITIONS = {
     "ALTER TABLE partitioned_table ADD PARTITION (col1 = 1 , col2 = 2) LOCATION 'hdfs://xxx" +
       ".com/warehouse/partitioned_table/col1=1/col2=2'", //0
