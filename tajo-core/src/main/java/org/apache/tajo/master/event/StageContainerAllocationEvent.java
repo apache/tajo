@@ -20,19 +20,20 @@ package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.worker.TajoWorkerContainer;
 
 import java.util.List;
 
 public class StageContainerAllocationEvent extends StageEvent {
-  private List<TajoContainer> allocatedContainer;
+  private List<TajoWorkerContainer> allocatedContainer;
 
   public StageContainerAllocationEvent(final ExecutionBlockId id,
-                                       List<TajoContainer> allocatedContainer) {
+                                       List<TajoWorkerContainer> allocatedContainer) {
     super(id, StageEventType.SQ_CONTAINER_ALLOCATED);
     this.allocatedContainer = allocatedContainer;
   }
 
-  public List<TajoContainer> getAllocatedContainer() {
+  public List<TajoWorkerContainer> getAllocatedContainer() {
     return this.allocatedContainer;
   }
 }

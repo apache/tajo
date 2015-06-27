@@ -18,27 +18,64 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.master.ContainerProxy;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.container.TajoContainerId;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 public abstract class AbstractResourceAllocator extends CompositeService implements ResourceAllocator {
-  /**
-   * A key is worker id, and a value is a worker connection information.
-   */
-  protected ConcurrentMap<Integer, WorkerConnectionInfo> workerInfoMap = Maps.newConcurrentMap();
 
-  public WorkerConnectionInfo getWorkerConnectionInfo(int workerId) {
-    return workerInfoMap.get(workerId);
+  // resource-id to resource
+  private final Map<Integer, AllocatedResource> allocated = new HashMap<Integer, AllocatedResource>();
+
+  public synchronized void addAllocatedResource(AllocatedResource resource) {
+    allocated.put(resource.getResourceId(), resource);
   }
 
-  public void addWorkerConnectionInfo(WorkerConnectionInfo connectionInfo) {
-    workerInfoMap.putIfAbsent(connectionInfo.getId(), connectionInfo);
+  public synchronized AllocatedResource getAllocatedResource(int resourceId) {
+    return allocated.get(resourceId);
+  }
+
+  public WorkerConnectionInfo getWorkerConnectionInfo(int resourceId) {
+    return getAllocatedResource(resourceId).getConnectionInfo();
+  }
+
+  public synchronized List<AllocatedResource> removeFreeResources() {
+    List<AllocatedResource> result = new ArrayList<AllocatedResource>();
+    for (AllocatedResource resource : allocated.values()) {
+      if (resource.acquire()) {
+        result.add(resource);
+      }
+    }
+    for (AllocatedResource free : result) {
+      allocated.remove(free.getConnectionInfo().getId());
+    }
+    return result;
+  }
+
+  public synchronized void removeResources(List<AllocatedResource> resources) {
+    for (AllocatedResource resource : resources) {
+      allocated.remove(resource.getConnectionInfo().getId());
+    }
+  }
+
+  public synchronized List<AllocatedResource> allocatedResources(Resources required, int count) {
+    Predicate<AllocatedResource> predicate = AllocatedResource.getMinimum(required);
+    List<AllocatedResource> result = new ArrayList<AllocatedResource>(count);
+    for (AllocatedResource resource : Iterables.filter(allocated.values(), predicate)) {
+      if (resource.acquire()) {
+        result.add(resource);
+      }
+    }
+    return result;
   }
 
   private Map<TajoContainerId, ContainerProxy> containers = Maps.newConcurrentMap();

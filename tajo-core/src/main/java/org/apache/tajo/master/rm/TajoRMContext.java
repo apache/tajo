@@ -21,7 +21,6 @@ package org.apache.tajo.master.rm;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.ipc.ContainerProtocol;
 
 import java.util.Collections;
 import java.util.Set;
@@ -42,8 +41,7 @@ public class TajoRMContext {
   private final ConcurrentMap<Integer, Worker> inactiveWorkers = Maps.newConcurrentMap();
 
   /** map between queryIds and query master ContainerId */
-  private final ConcurrentMap<QueryId, ContainerProtocol.TajoContainerIdProto> qmContainerMap = Maps
-    .newConcurrentMap();
+  private final ConcurrentMap<QueryId, Integer> qmContainerMap = Maps.newConcurrentMap();
 
   private final Set<Integer> liveQueryMasterWorkerResources =
       Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
@@ -77,7 +75,7 @@ public class TajoRMContext {
    *
    * @return The Map for query master containers
    */
-  public ConcurrentMap<QueryId, ContainerProtocol.TajoContainerIdProto> getQueryMasterContainer() {
+  public ConcurrentMap<QueryId, Integer> getQueryMasterContainer() {
     return qmContainerMap;
   }
 

@@ -60,9 +60,9 @@ public interface WorkerResourceManager extends Service {
   /**
    * Release a container
    *
-   * @param containerId ContainerIdProto to be released
+   * @param resourceId ContainerIdProto to be released
    */
-  public void releaseWorkerResource(ContainerProtocol.TajoContainerIdProto containerId);
+  public void releaseWorkerResource(int resourceId);
 
   public String getSeedQueryId() throws IOException;
 

@@ -19,8 +19,8 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.worker.Resources;
 
 import java.util.Map;
 
@@ -31,7 +31,7 @@ public class GrouppedContainerAllocatorEvent
   public GrouppedContainerAllocatorEvent(ContainerAllocatorEventType eventType,
                                          ExecutionBlockId executionBlockId,
                                          Priority priority,
-                                         Resource resource,
+                                         Resources resource,
                                          Map<String, Integer> requestMap,
                                          boolean isLeafQuery, float progress) {
     super(eventType, executionBlockId, priority,

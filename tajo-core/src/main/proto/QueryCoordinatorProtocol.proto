@@ -119,12 +119,11 @@ message WorkerResourcesRequest {
 }
 
 message WorkerResourceReleaseRequest {
-    required ExecutionBlockIdProto executionBlockId = 1;
-    repeated TajoContainerIdProto containerIds = 2;
+    repeated int32 resourceIds = 1;
 }
 
 message WorkerAllocatedResource {
-    required TajoContainerIdProto containerId = 1;
+    required int32 resourceId = 1;
     required WorkerConnectionInfoProto connectionInfo = 2;
 
     required int32 allocatedMemoryMB = 3;

@@ -46,6 +46,8 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.worker.AbstractResourceAllocator;
+import org.apache.tajo.worker.AllocatedResource;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.*;
@@ -754,19 +756,21 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         if(taskRequest == null) { // if there are only remote task requests
           taskRequest = remoteTaskRequests.pollFirst();
         }
+        AbstractResourceAllocator allocator = context.getMasterContext().getResourceAllocator();
 
         // checking if this container is still alive.
         // If not, ignore the task request and stop the task runner
-        ContainerProxy container = context.getMasterContext().getResourceAllocator()
-            .getContainer(taskRequest.getContainerId());
+        ContainerProxy container = allocator.getContainer(taskRequest.getContainerId());
         if(container == null) {
           taskRequest.getCallback().run(stopTaskRunnerReq);
           continue;
         }
 
         // getting the hostname of requested node
-        WorkerConnectionInfo connectionInfo =
-            context.getMasterContext().getResourceAllocator().getWorkerConnectionInfo(taskRequest.getWorkerId());
+        AllocatedResource resource = (AllocatedResource)container.getContainer().getResource();
+        TajoContainerId containerId = container.getContainer().getId();
+        WorkerConnectionInfo connectionInfo = resource.getConnectionInfo();
+
         String host = connectionInfo.getHost();
 
         // if there are no worker matched to the hostname a task request
@@ -783,7 +787,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
 
-        TajoContainerId containerId = taskRequest.getContainerId();
         LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
             "containerId=" + containerId);
 
@@ -880,6 +883,16 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         taskRequest = taskRequests.pollFirst();
         LOG.debug("assignToNonLeafTasks: " + taskRequest.getExecutionBlockId());
 
+        TajoContainerId containerId = taskRequest.getContainerId();
+        AbstractResourceAllocator allocator = context.getMasterContext().getResourceAllocator();
+
+        // checking if this container is still alive.
+        // If not, ignore the task request and stop the task runner
+        ContainerProxy container = allocator.getContainer(taskRequest.getContainerId());
+        if (container == null) {
+          taskRequest.getCallback().run(stopTaskRunnerReq);
+          break;
+        }
         TaskAttemptId attemptId;
         // random allocation
         if (nonLeafTasks.size() > 0) {
@@ -912,10 +925,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             }
           }
 
-          WorkerConnectionInfo connectionInfo = context.getMasterContext().getResourceAllocator().
-              getWorkerConnectionInfo(taskRequest.getWorkerId());
+          AllocatedResource resource = (AllocatedResource)container.getContainer().getResource();
+
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-              taskRequest.getContainerId(), connectionInfo));
+              containerId, resource.getConnectionInfo()));
           taskRequest.getCallback().run(taskAssign.getProto());
           totalAssigned++;
           scheduledObjectNum--;
