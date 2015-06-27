@@ -20,11 +20,19 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 import java.util.List;
+
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
@@ -62,5 +70,37 @@ public class TestAlterTable extends QueryTestCaseBase {
     ResultSet after_res = executeQuery();
     assertResultSet(after_res, "after_set_property_delimiter.result");
     cleanupQuery(after_res);
+  }
+
+  @Test
+  public final void testAlterTableAddPartition() throws Exception {
+    executeDDL("create_partitioned_table.sql", null);
+
+    String tableName = CatalogUtil.buildFQName("TestAlterTable", "partitioned_table");
+    assertTrue(catalog.existsTable(tableName));
+
+    TableDesc retrieved = catalog.getTableDesc(tableName);
+    assertEquals(retrieved.getName(), tableName);
+    assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getAllColumns().size(), 2);
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "col3");
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col4");
+
+    executeDDL("alter_table_add_partition1.sql", null);
+
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 1);
+    assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
+    assertEquals(partitions.get(0).getPartitionKeysList().get(0).getColumnName(), "col3");
+    assertEquals(partitions.get(0).getPartitionKeysList().get(0).getPartitionValue(), "1");
+    assertEquals(partitions.get(0).getPartitionKeysList().get(1).getColumnName(), "col4");
+    assertEquals(partitions.get(0).getPartitionKeysList().get(1).getPartitionValue(), "2");
+
+    executeDDL("alter_table_drop_partition1.sql", null);
+
+    partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 0);
   }
 }
