@@ -894,34 +894,6 @@ public class PlannerUtil {
     return explains.toString();
   }
 
-  public static void applySessionToTableProperties(OverridableConf sessionVars,
-                                                   String storeType,
-                                                   KeyValueSet tableProperties) {
-    if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("TEXT")) {
-      if (sessionVars.containsKey(SessionVars.NULL_CHAR)) {
-        tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
-      }
-
-      if (sessionVars.containsKey(SessionVars.TIMEZONE)) {
-        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TIMEZONE));
-      }
-    }
-  }
-
-  /**
-   * This method sets a set of table properties by System default configs.
-   * These properties are implicitly used to read or write rows in Table.
-   * Don't use this method for TableMeta to be stored in Catalog.
-   *
-   * @param systemConf System configuration
-   * @param meta TableMeta to be set
-   */
-  public static void applySystemDefaultToTableProperties(OverridableConf systemConf, TableMeta meta) {
-    if (!meta.containsOption(StorageConstants.TIMEZONE)) {
-      meta.putOption(StorageConstants.TIMEZONE, systemConf.get(SessionVars.TIMEZONE));
-    }
-  }
-
   public static boolean isFileStorageType(String storageType) {
     if (storageType.equalsIgnoreCase("hbase")) {
       return false;
