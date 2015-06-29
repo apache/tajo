@@ -33,6 +33,7 @@ import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
@@ -42,6 +43,8 @@ import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+
+import static org.apache.tajo.exception.ErrorUtil.isOk;
 
 public class TajoCli {
   public static final String ERROR_PREFIX = "ERROR: ";
@@ -490,7 +493,7 @@ public class TajoCli {
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       onError("response is null", null);
-    } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+    } else if (isOk(response.getResultCode())) {
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
@@ -521,7 +524,7 @@ public class TajoCli {
 
     if (response == null) {
       onError("response is null", null);
-    } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+    } else if (isOk(response.getResultCode())) {
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);

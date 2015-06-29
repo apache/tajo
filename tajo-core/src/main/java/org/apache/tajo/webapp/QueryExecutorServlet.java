@@ -14,6 +14,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.service.ServiceTrackerFactory;
@@ -42,6 +43,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.tajo.exception.ErrorUtil.isFailed;
+import static org.apache.tajo.exception.ErrorUtil.isOk;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -320,7 +324,7 @@ public class QueryExecutorServlet extends HttpServlet {
           LOG.error("Internal Error: SubmissionResponse is NULL");
           error = new Exception("Internal Error: SubmissionResponse is NULL");
 
-        } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+        } else if (isOk(response.getResultCode())) {
           if (response.getIsForwarded()) {
             queryId = new QueryId(response.getQueryId());
             getQueryResult(queryId);
@@ -332,7 +336,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
             progress.set(100);
           }
-        } else if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+        } else if (isFailed(response.getResultCode())) {
           if (response.hasErrorMessage()) {
             StringBuffer errorMessage = new StringBuffer(response.getErrorMessage());
             String modifiedMessage;

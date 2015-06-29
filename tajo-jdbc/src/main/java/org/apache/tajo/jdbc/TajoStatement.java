@@ -23,6 +23,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.io.IOException;
@@ -163,7 +164,7 @@ public class TajoStatement implements Statement {
     }
 
     ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
-    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+    if (ErrorUtil.isFailed(response.getResultCode())) {
       if (response.hasErrorMessage()) {
         throw new ServiceException(response.getErrorMessage());
       }

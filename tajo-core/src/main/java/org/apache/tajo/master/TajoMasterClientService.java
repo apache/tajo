@@ -40,6 +40,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -152,12 +154,12 @@ public class TajoMasterClientService extends AbstractService {
         return builder.build();
       } catch (NoSuchDatabaseException nsde) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.ERROR);
+        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
         builder.setMessage(nsde.getMessage());
         return builder.build();
       } catch (InvalidSessionException e) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.ERROR);
+        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
         builder.setMessage(e.getMessage());
         return builder.build();
       }
@@ -183,7 +185,7 @@ public class TajoMasterClientService extends AbstractService {
 
     public SessionUpdateResponse buildSessionUpdateOnError(String message) {
       SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-      builder.setResultCode(ResultCode.ERROR);
+      builder.setResultCode(ResultCode.UNKNOWN_ERROR);
       builder.setMessage(message);
       return builder.build();
     }
@@ -291,7 +293,7 @@ public class TajoMasterClientService extends AbstractService {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setIsForwarded(true);
         responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
-        responseBuilder.setResultCode(ResultCode.ERROR);
+        responseBuilder.setResultCode(ResultCode.UNKNOWN_ERROR);
         if (e.getMessage() != null) {
           responseBuilder.setErrorMessage(ExceptionUtils.getStackTrace(e));
         } else {
@@ -314,7 +316,7 @@ public class TajoMasterClientService extends AbstractService {
           builder.setResultCode(ResultCode.OK);
           return builder.build();
         } catch (Exception e) {
-          builder.setResultCode(ResultCode.ERROR);
+          builder.setResultCode(ResultCode.UNKNOWN_ERROR);
           if (e.getMessage() == null) {
             builder.setErrorMessage(ExceptionUtils.getStackTrace(e));
           }
@@ -496,7 +498,7 @@ public class TajoMasterClientService extends AbstractService {
               builder.setResultCode(ResultCode.OK);
               builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
             } else {
-              builder.setResultCode(ResultCode.ERROR);
+              builder.setResultCode(ResultCode.UNKNOWN_ERROR);
               builder.setErrorMessage("No such query: " + queryId.toString());
             }
           }
@@ -557,7 +559,7 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         builder.setResultSet(resultSetBuilder.build()); // required field
-        builder.setResultCode(ResultCode.ERROR);
+        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
         String errorMessage = t.getMessage() == null ? t.getClass().getName() : t.getMessage();
         builder.setErrorMessage(errorMessage);
         builder.setErrorTrace(org.apache.hadoop.util.StringUtils.stringifyException(t));
@@ -603,7 +605,7 @@ public class TajoMasterClientService extends AbstractService {
         builder.setResultCode(ResultCode.OK);
       } catch (Throwable t) {
         LOG.warn(t.getMessage(), t);
-        builder.setResultCode(ResultCode.ERROR);
+        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
         builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
       }
 
@@ -786,7 +788,7 @@ public class TajoMasterClientService extends AbstractService {
 
         if (!request.hasValue()) {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.ERROR)
+              .setResultCode(ResultCode.UNKNOWN_ERROR)
               .setErrorMessage("table name is required.")
               .build();
         }
@@ -811,7 +813,7 @@ public class TajoMasterClientService extends AbstractService {
               .build();
         } else {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.ERROR)
+              .setResultCode(ResultCode.UNKNOWN_ERROR)
               .setErrorMessage("ERROR: no such a table: " + request.getValue())
               .build();
         }
@@ -847,7 +849,7 @@ public class TajoMasterClientService extends AbstractService {
               null, meta.getStoreType(), schema, meta, path.toUri(), true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.ERROR)
+              .setResultCode(ResultCode.UNKNOWN_ERROR)
               .setErrorMessage(e.getMessage()).build();
         }
 
@@ -856,11 +858,11 @@ public class TajoMasterClientService extends AbstractService {
             .setTableDesc(desc.getProto()).build();
       } catch (InvalidSessionException ise) {
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.ERROR)
+            .setResultCode(ResultCode.UNKNOWN_ERROR)
             .setErrorMessage(ise.getMessage()).build();
       } catch (IOException ioe) {
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.ERROR)
+            .setResultCode(ResultCode.UNKNOWN_ERROR)
             .setErrorMessage(ioe.getMessage()).build();
       }
     }

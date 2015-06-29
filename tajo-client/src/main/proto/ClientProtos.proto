@@ -26,10 +26,10 @@ import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
-enum ResultCode {
-  OK = 0;
-  ERROR = 1;
-}
+import "errors.proto"; // tajo-common
+import "stacktrace.proto"; // tajo-common
+
+
 
 message CreateSessionRequest {
   required string username = 1;
@@ -37,7 +37,7 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional SessionIdProto sessionId = 2;
   optional KeyValueSetProto sessionVars = 3;
   optional string message = 4;
@@ -50,7 +50,7 @@ message UpdateSessionVariableRequest {
 }
 
 message SessionUpdateResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional KeyValueSetProto sessionVars = 2;
   optional string message = 3;
 }
@@ -61,7 +61,7 @@ message SessionedStringProto {
 }
 
 message ExplainQueryResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional string explain = 2;
   optional string errorMessage = 3;
 }
@@ -74,7 +74,7 @@ message QueryRequest {
 }
 
 message UpdateQueryResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional string errorMessage = 2;
   optional KeyValueSetProto sessionVars = 3;
 }
@@ -126,7 +126,7 @@ message SerializedResultSet {
 }
 
 message SubmitQueryResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   required QueryIdProto queryId = 2;
   required string userName = 3;
   optional bool isForwarded = 4 [default = false];
@@ -145,7 +145,7 @@ message SubmitQueryResponse {
 }
 
 message GetQueryStatusResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   required QueryIdProto queryId = 2;
   optional QueryState state = 3;
   optional float progress = 4;
@@ -165,7 +165,7 @@ message GetQueryResultDataRequest {
 }
 
 message GetQueryResultDataResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   required SerializedResultSet resultSet = 2;
   optional string errorMessage = 3;
   optional string errorTrace = 4;
@@ -212,13 +212,13 @@ message DropTableRequest {
 }
 
 message TableResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional TableDescProto tableDesc = 2;
   optional string errorMessage = 3;
 }
 
 message FunctionResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   repeated FunctionDescProto functions = 2;
   optional string errorMessage = 3;
 }
@@ -273,13 +273,13 @@ message QueryHistoryProto {
 }
 
 message GetQueryHistoryResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional QueryHistoryProto queryHistory = 2;
   optional string errorMessage = 3;
 }
 
 message GetQueryInfoResponse {
-  required ResultCode resultCode = 1;
+  required tajo.error.ResultCode resultCode = 1;
   optional QueryInfoProto queryInfo = 2;
   optional string errorMessage = 3;
 }

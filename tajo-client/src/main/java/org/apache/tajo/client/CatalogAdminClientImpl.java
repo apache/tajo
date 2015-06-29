@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
 import org.apache.tajo.jdbc.SQLStates;
@@ -37,6 +38,7 @@ import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
+import static org.apache.tajo.exception.ErrorUtil.isOk;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 
 public class CatalogAdminClientImpl implements CatalogAdminClient {
@@ -113,7 +115,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       builder.setPartition(partitionMethodDesc.getProto());
     }
     ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
-    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+    if (isOk(res.getResultCode())) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
     } else {
       throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
@@ -167,7 +169,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     builder.setSessionId(connection.sessionId);
     builder.setValue(tableName);
     ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
-    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+    if (isOk(res.getResultCode())) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
     } else {
       throw new ServiceException(new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState()));
@@ -184,7 +186,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     String paramFunctionName = functionName == null ? "" : functionName;
     ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
         connection.convertSessionedString(paramFunctionName));
-    if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+    if (isOk(res.getResultCode())) {
       return res.getFunctionsList();
     } else {
       throw new ServiceException(new SQLException(res.getErrorMessage()));

@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInfo;
@@ -106,7 +107,7 @@ public class QueryExecutor {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
       ddlExecutor.execute(queryContext, plan);
       response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      response.setResultCode(ClientProtos.ResultCode.OK);
+      response.setResultCode(ResultCode.OK);
 
 
     } else if (plan.isExplain()) { // explain query
@@ -146,7 +147,7 @@ public class QueryExecutor {
         session.selectDatabase(setSessionNode.getValue());
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        response.setResultCode(ClientProtos.ResultCode.ERROR);
+        response.setResultCode(ResultCode.NO_SUCH_DATABASE);
         response.setErrorMessage("database \"" + databaseName + "\" does not exists.");
       }
 
@@ -161,7 +162,7 @@ public class QueryExecutor {
 
     context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResultCode(ResultCode.OK);
   }
 
   public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
@@ -206,7 +207,7 @@ public class QueryExecutor {
 
     response.setResultSet(serializedResBuilder.build());
     response.setMaxRowNum(lines.length);
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResultCode(ResultCode.OK);
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
   }
 
@@ -228,7 +229,7 @@ public class QueryExecutor {
     response.setQueryId(queryId.getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(queryResultScanner.getTableDesc().getProto());
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResultCode(ResultCode.OK);
   }
 
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
@@ -264,7 +265,7 @@ public class QueryExecutor {
     response.setQueryId(queryInfo.getQueryId().getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(desc.getProto());
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResultCode(ResultCode.OK);
   }
 
   public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
@@ -301,7 +302,7 @@ public class QueryExecutor {
         responseBuilder.setResultSet(serializedResBuilder);
         responseBuilder.setMaxRowNum(1);
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+        responseBuilder.setResultCode(ResultCode.OK);
       }
     } finally {
       // stop script executor
@@ -463,7 +464,7 @@ public class QueryExecutor {
       // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
       responseBuilder.setMaxRowNum(-1);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResultCode(ResultCode.OK);
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
@@ -499,13 +500,13 @@ public class QueryExecutor {
 
     if(queryInfo == null) {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+      responseBuilder.setResultCode(ResultCode.UNKNOWN_ERROR);
       responseBuilder.setErrorMessage("Fail starting QueryMaster.");
       LOG.error("Fail starting QueryMaster: " + sql);
     } else {
       responseBuilder.setIsForwarded(true);
       responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResultCode(ResultCode.OK);
       if(queryInfo.getQueryMasterHost() != null) {
         responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
       }

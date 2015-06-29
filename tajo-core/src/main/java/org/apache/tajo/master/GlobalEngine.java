@@ -39,6 +39,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
@@ -194,7 +195,7 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setIsForwarded(true);
-      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+      responseBuilder.setResultCode(Errors.ResultCode.UNKNOWN_ERROR);
       String errorMessage = t.getMessage();
       if (t.getMessage() == null) {
         errorMessage = t.getClass().getName();

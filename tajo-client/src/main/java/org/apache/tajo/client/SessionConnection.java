@@ -27,7 +27,6 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
@@ -50,6 +49,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.exception.ErrorUtil.isFailed;
+import static org.apache.tajo.exception.ErrorUtil.isOk;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
@@ -178,7 +179,7 @@ public class SessionConnection implements Closeable {
 
     SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
-    if (response.getResultCode() == ResultCode.OK) {
+    if (isOk(response.getResultCode())) {
       updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return Collections.unmodifiableMap(sessionVarsCache);
     } else {
@@ -197,7 +198,7 @@ public class SessionConnection implements Closeable {
 
     SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
-    if (response.getResultCode() == ResultCode.OK) {
+    if (isOk(response.getResultCode())) {
       updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return Collections.unmodifiableMap(sessionVarsCache);
     } else {
@@ -307,7 +308,7 @@ public class SessionConnection implements Closeable {
 
       CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
 
-      if (response.getResultCode() == ResultCode.OK) {
+      if (isOk(response.getResultCode())) {
 
         sessionId = response.getSessionId();
         updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
@@ -333,7 +334,7 @@ public class SessionConnection implements Closeable {
     // create new session
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
     CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
-    if (response.getResultCode() != ResultCode.OK) {
+    if (isFailed(response.getResultCode())) {
       return false;
     }
 
@@ -357,7 +358,7 @@ public class SessionConnection implements Closeable {
           .setSessionId(sessionId)
           .setSessionVars(keyValueSet.getProto()).build();
 
-      if (tajoMasterService.updateSessionVariables(null, request).getResultCode() != ResultCode.OK) {
+      if (isFailed(tajoMasterService.updateSessionVariables(null, request).getResultCode())) {
         tajoMasterService.removeSession(null, sessionId);
         return false;
       }
