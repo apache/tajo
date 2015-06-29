@@ -158,16 +158,6 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
 
-    TableMeta meta;
-    try {
-      meta = (TableMeta) plan.getTableDesc().getMeta().clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
-
-    // set system default properties
-    PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
-
     // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
     if (fragment != null) {
 

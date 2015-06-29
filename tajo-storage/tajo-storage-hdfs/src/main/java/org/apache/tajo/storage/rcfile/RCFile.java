@@ -37,6 +37,8 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 
@@ -1784,6 +1786,11 @@ public class RCFile {
     @Override
     public boolean isSelectable() {
       return false;
+    }
+
+    @Override
+    public void setFilter(EvalNode filter) {
+      throw new UnsupportedException();
     }
 
     @Override

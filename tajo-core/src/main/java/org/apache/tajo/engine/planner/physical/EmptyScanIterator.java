@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.engine.planner.physical;
+
+import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-public interface SeekableScanner extends Scanner {
+/**
+ * Empty Iterator
+ */
+public class EmptyScanIterator implements ScanIterator {
 
-  long getNextOffset() throws IOException;
+  @Override
+  public boolean hasNext() throws IOException {
+    return false;
+  }
 
-  void seek(long offset) throws IOException;
+  @Override
+  public Tuple next() throws IOException {
+    throw new IOException(this.getClass().getSimpleName() + "::next() is invoked.");
+  }
 }
+
