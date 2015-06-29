@@ -36,6 +36,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BytesUtils;
@@ -424,8 +426,8 @@ public class HBaseScanner implements Scanner {
   }
 
   @Override
-  public void setSearchCondition(Object expr) {
-    // TODO implements adding column filter to scanner.
+  public void setFilter(EvalNode filter) {
+    throw new UnsupportedException();
   }
 
   @Override

@@ -264,7 +264,7 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
     if (storeType.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_PROJECTION_AVRO_SCHEMA);
@@ -341,7 +341,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
     if (storeType.equalsIgnoreCase("AVRO")) {
       String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
@@ -414,7 +414,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
     meta.putOption(StorageConstants.TEXT_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
@@ -969,7 +969,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1033,7 +1033,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
 
     Path tablePath = new Path(testDir, "test_storetype_oversize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();

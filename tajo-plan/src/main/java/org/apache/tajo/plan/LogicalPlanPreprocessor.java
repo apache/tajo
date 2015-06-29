@@ -383,14 +383,17 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     }
 
     TableDesc desc = catalog.getTableDesc(actualRelationName);
+
     ScanNode scanNode = ctx.plan.createNode(ScanNode.class);
     if (relation.hasAlias()) {
       scanNode.init(desc, relation.getAlias());
     } else {
       scanNode.init(desc);
     }
-    ctx.queryBlock.addRelation(scanNode);
 
+    TablePropertyUtil.setTableProperty(ctx.getQueryContext(), scanNode);
+
+    ctx.queryBlock.addRelation(scanNode);
     return scanNode;
   }
 

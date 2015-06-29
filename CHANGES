@@ -4,6 +4,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1661: Implement CORR function. (jihoon)
+
     TAJO-1537: Implement a virtual table for sessions. 
     (Contributed by Yongjin Choi, Committed by hyunsik)
 
@@ -65,8 +67,8 @@ Release 0.11.0 - unreleased
 
     TAJO-1603: Refactor StorageManager. (hyunsik)
 
-    TAJO-1542: Refactoring of HashJoinExecs. (Contributed by Navis, Committed by 
-    hyunsik)
+    TAJO-1542: Refactoring of HashJoinExecs. (Contributed by Navis, 
+    Committed by hyunsik)
 
     TAJO-1591: Change StoreType represented as Enum to String type. (hyunsik)
 
@@ -163,6 +165,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1644: When inserting empty data into a partitioned table,
+    existing data would be removed. (jaehwa)
 
     TAJO-1642: CatalogServer need to check meta table first. (jaehwa)
 
@@ -354,6 +359,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1658: Filter push down to underlying storages. (hyunsik)
 
     TAJO-1616: Implement TablespaceManager to load Tablespaces. (hyunsik)
 

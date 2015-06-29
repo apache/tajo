@@ -89,12 +89,6 @@ public abstract class FileScanner implements Scanner {
     this.targets = targets;
   }
 
-  public void setSearchCondition(Object expr) {
-    if (inited) {
-      throw new IllegalStateException("Should be called before init()");
-    }
-  }
-
   public static FileSystem getFileSystem(TajoConf tajoConf, Path path) throws IOException {
     String tajoUser = tajoConf.getVar(TajoConf.ConfVars.USERNAME);
     FileSystem fs;
