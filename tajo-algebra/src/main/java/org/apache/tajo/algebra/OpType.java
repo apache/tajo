@@ -38,7 +38,6 @@ public enum OpType {
   Union(SetOperation.class),
   Except(SetOperation.class),
   Intersect(SetOperation.class),
-  SimpleTableSubQuery(SimpleTableSubQuery.class),
   TablePrimaryTableSubQuery(TablePrimarySubQuery.class),
   RelationList(RelationList.class),
   Relation(Relation.class),

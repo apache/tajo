@@ -368,12 +368,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode visitInPredicate(Context ctx, Stack<Expr> stack, InPredicate expr) throws PlanningException {
     stack.push(expr);
     EvalNode lhs = visit(ctx, stack, expr.getLeft());
-    RowConstantEval rowConstantEval = (RowConstantEval) visit(ctx, stack, expr.getInValue());
+    ValueSetEval valueSetEval = (ValueSetEval) visit(ctx, stack, expr.getInValue());
     stack.pop();
 
-    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(ctx, lhs, rowConstantEval);
+    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(ctx, lhs, valueSetEval);
 
-    return new InEval(pair.getFirst(), (RowConstantEval) pair.getSecond(), expr.isNot());
+    return new InEval(pair.getFirst(), (ValueSetEval) pair.getSecond(), expr.isNot());
   }
 
   @Override

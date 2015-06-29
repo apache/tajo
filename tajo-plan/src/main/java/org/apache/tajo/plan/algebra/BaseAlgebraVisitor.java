@@ -85,9 +85,6 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case Intersect:
       current = visitIntersect(ctx, stack, (SetOperation) expr);
       break;
-    case SimpleTableSubQuery:
-      current = visitSimpleTableSubQuery(ctx, stack, (SimpleTableSubQuery) expr);
-      break;
     case TablePrimaryTableSubQuery:
       current = visitTableSubQuery(ctx, stack, (TablePrimarySubQuery) expr);
       break;
@@ -395,12 +392,6 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   @Override
   public RESULT visitIntersect(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException {
     return visitDefaultBinaryExpr(ctx, stack, expr);
-  }
-
-  @Override
-  public RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr)
-      throws PlanningException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
   }
 
   @Override

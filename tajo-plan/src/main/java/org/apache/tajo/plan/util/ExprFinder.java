@@ -24,15 +24,17 @@ import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.algebra.UnaryOperator;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.util.TUtil;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
 public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object> {
 
   static class Context {
-    Set<Expr> set = new HashSet<Expr>();
+    List<Expr> set = TUtil.newList();
     OpType targetType;
 
     Context(OpType type) {
@@ -41,18 +43,20 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
   }
 
   public static <T extends Expr> Set<T> finds(Expr expr, OpType type) {
+    return (Set<T>) new HashSet<Expr>(findsInOrder(expr, type));
+  }
+
+  public static <T extends Expr> List<T> findsInOrder(Expr expr, OpType type) {
     Context context = new Context(type);
     ExprFinder finder = new ExprFinder();
-    Stack<Expr> stack = new Stack<Expr>();
-    stack.push(expr);
     try {
       finder.visit(context, new Stack<Expr>(), expr);
     } catch (PlanningException e) {
       throw new RuntimeException(e);
     }
-    stack.pop();
-    return (Set<T>) context.set;
+    return (List<T>) context.set;
   }
+
 
   public Object visit(Context ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
     if (expr instanceof UnaryOperator) {

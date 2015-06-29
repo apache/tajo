@@ -21,29 +21,14 @@ package org.apache.tajo.algebra;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.tajo.util.TUtil;
 
 public class TablePrimarySubQuery extends Relation {
   @Expose @SerializedName("SubPlan")
   private Expr subquery;
-  @Expose @SerializedName("ColumnNames")
-  private String [] columnNames;
 
   public TablePrimarySubQuery(String relName, Expr subquery) {
     super(OpType.TablePrimaryTableSubQuery, relName);
     this.subquery = subquery;
-  }
-
-  public boolean hasColumnNames() {
-    return this.columnNames != null;
-  }
-
-  public void setColumnNames(String[] aliasList) {
-    this.columnNames = aliasList;
-  }
-
-  public String [] getColumnNames() {
-    return columnNames;
   }
 
   public Expr getSubQuery() {
@@ -51,13 +36,13 @@ public class TablePrimarySubQuery extends Relation {
   }
 
   public int hashCode() {
-    return Objects.hashCode(subquery, Objects.hashCode(columnNames));
+    return Objects.hashCode(subquery);
   }
 
   @Override
   boolean equalsTo(Expr expr) {
     TablePrimarySubQuery another = (TablePrimarySubQuery) expr;
-    return subquery.equals(another.subquery) && TUtil.checkEquals(columnNames, another.columnNames);
+    return subquery.equals(another.subquery);
   }
 
   public String toJson() {
@@ -68,9 +53,6 @@ public class TablePrimarySubQuery extends Relation {
   public Object clone() throws CloneNotSupportedException {
     TablePrimarySubQuery subQuery = (TablePrimarySubQuery) super.clone();
     subQuery.subquery = (Expr) subquery.clone();
-    if (columnNames != null) {
-      subQuery.columnNames = columnNames.clone();
-    }
     return subQuery;
   }
 }

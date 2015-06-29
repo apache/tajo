@@ -48,7 +48,6 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
@@ -367,7 +366,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private interface Matcher {
-    public boolean isMatch(Expr expr);
+    boolean isMatch(Expr expr);
   }
 
   public List<Integer> normalize(PlanContext context, Projection projection, ExprNormalizedResult [] normalizedExprList,
@@ -1078,6 +1077,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Visit and Build Child Plan
     ////////////////////////////////////////////////////////
     stack.push(selection);
+    // Since filter push down will be done later, it is guaranteed that in-subqueries are found at only selection.
+    for (Expr eachQual : PlannerUtil.extractInSubquery(selection.getQual())) {
+      InPredicate inPredicate = (InPredicate) eachQual;
+      visit(context, stack, inPredicate.getRight());
+    }
     LogicalNode child = visit(context, stack, selection.getChild());
     stack.pop();
     ////////////////////////////////////////////////////////
@@ -1370,6 +1374,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
+  @Override
   public TableSubQueryNode visitTableSubQuery(PlanContext context, Stack<Expr> stack, TablePrimarySubQuery expr)
       throws PlanningException {
     QueryBlock block = context.queryBlock;

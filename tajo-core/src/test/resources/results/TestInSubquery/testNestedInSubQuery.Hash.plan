@@ -1,0 +1,158 @@
+explain
+-------------------------------
+JOIN(16)(LEFT_SEMI)
+  => Join Cond: default.customer.c_nationkey (INT4) = default.SQ_1.n_nationkey (INT4)
+  => target list: default.customer.c_name (TEXT)
+  => out schema: {(1) default.customer.c_name (TEXT)}
+  => in schema: {(3) default.SQ_1.n_nationkey (INT4), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4)}
+   TABLE_SUBQUERY(9) as default.SQ_1
+     => Targets: default.SQ_1.n_nationkey (INT4)
+     => out schema: {(1) default.SQ_1.n_nationkey (INT4)}
+     => in  schema: {(1) default.SQ_1.n_nationkey (INT4)}
+      GROUP_BY(13)(n_nationkey)
+        => target list: default.nation.n_nationkey (INT4)
+        => out schema:{(1) default.nation.n_nationkey (INT4)}
+        => in schema:{(1) default.nation.n_nationkey (INT4)}
+         JOIN(15)(LEFT_SEMI)
+           => Join Cond: default.nation.n_regionkey (INT4) = default.SQ_0.r_regionkey (INT4)
+           => target list: default.nation.n_nationkey (INT4)
+           => out schema: {(1) default.nation.n_nationkey (INT4)}
+           => in schema: {(3) default.SQ_0.r_regionkey (INT4), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+            TABLE_SUBQUERY(6) as default.SQ_0
+              => Targets: default.SQ_0.r_regionkey (INT4)
+              => out schema: {(1) default.SQ_0.r_regionkey (INT4)}
+              => in  schema: {(1) default.SQ_0.r_regionkey (INT4)}
+               GROUP_BY(12)(r_regionkey)
+                 => target list: default.region.r_regionkey (INT4)
+                 => out schema:{(1) default.region.r_regionkey (INT4)}
+                 => in schema:{(1) default.region.r_regionkey (INT4)}
+                  SCAN(3) on default.region
+                    => filter: default.region.r_regionkey (INT4) > 0 AND default.region.r_regionkey (INT4) < 3
+                    => target list: default.region.r_regionkey (INT4)
+                    => out schema: {(1) default.region.r_regionkey (INT4)}
+                    => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+            SCAN(1) on default.nation
+              => filter: default.nation.n_name (TEXT)LIKE'C%'
+              => target list: default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+              => out schema: {(2) default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+              => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+   SCAN(0) on default.customer
+     => target list: default.customer.c_name (TEXT), default.customer.c_nationkey (INT4)
+     => out schema: {(2) default.customer.c_name (TEXT), default.customer.c_nationkey (INT4)}
+     => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000008)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000008
+   |-eb_0000000000000_0000_000007
+      |-eb_0000000000000_0000_000005
+         |-eb_0000000000000_0000_000003
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000003
+2: eb_0000000000000_0000_000005
+3: eb_0000000000000_0000_000007
+4: eb_0000000000000_0000_000008
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+GROUP_BY(18)(r_regionkey)
+  => target list: default.region.r_regionkey (INT4)
+  => out schema:{(1) default.region.r_regionkey (INT4)}
+  => in schema:{(1) default.region.r_regionkey (INT4)}
+   SCAN(3) on default.region
+     => filter: default.region.r_regionkey (INT4) > 0 AND default.region.r_regionkey (INT4) < 3
+     => target list: default.region.r_regionkey (INT4)
+     => out schema: {(1) default.region.r_regionkey (INT4)}
+     => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.region.r_regionkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 7 (type=HASH_SHUFFLE, key=default.nation.n_nationkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.nation
+
+GROUP_BY(22)(n_nationkey)
+  => target list: default.nation.n_nationkey (INT4)
+  => out schema:{(1) default.nation.n_nationkey (INT4)}
+  => in schema:{(1) default.nation.n_nationkey (INT4)}
+   JOIN(15)(LEFT_SEMI)
+     => Join Cond: default.nation.n_regionkey (INT4) = default.SQ_0.r_regionkey (INT4)
+     => target list: default.nation.n_nationkey (INT4)
+     => out schema: {(1) default.nation.n_nationkey (INT4)}
+     => in schema: {(3) default.SQ_0.r_regionkey (INT4), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+      TABLE_SUBQUERY(6) as default.SQ_0
+        => Targets: default.SQ_0.r_regionkey (INT4)
+        => out schema: {(1) default.SQ_0.r_regionkey (INT4)}
+        => in  schema: {(1) default.SQ_0.r_regionkey (INT4)}
+         PROJECTION(5) (distinct)
+           => Targets: default.region.r_regionkey (INT4)
+           => out schema: {(1) default.region.r_regionkey (INT4)}
+           => in  schema: {(1) default.region.r_regionkey (INT4)}
+            GROUP_BY(12)(r_regionkey)
+              => target list: default.region.r_regionkey (INT4)
+              => out schema:{(1) default.region.r_regionkey (INT4)}
+              => in schema:{(1) default.region.r_regionkey (INT4)}
+               SCAN(19) on eb_0000000000000_0000_000003
+                 => out schema: {(1) default.region.r_regionkey (INT4)}
+                 => in schema: {(1) default.region.r_regionkey (INT4)}
+      SCAN(1) on default.nation
+        => filter: default.nation.n_name (TEXT)LIKE'C%'
+        => target list: default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+        => out schema: {(2) default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 5 => 7 (type=HASH_SHUFFLE, key=default.nation.n_nationkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.customer
+
+JOIN(16)(LEFT_SEMI)
+  => Join Cond: default.customer.c_nationkey (INT4) = default.SQ_1.n_nationkey (INT4)
+  => target list: default.customer.c_name (TEXT)
+  => out schema: {(1) default.customer.c_name (TEXT)}
+  => in schema: {(3) default.SQ_1.n_nationkey (INT4), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4)}
+   TABLE_SUBQUERY(9) as default.SQ_1
+     => Targets: default.SQ_1.n_nationkey (INT4)
+     => out schema: {(1) default.SQ_1.n_nationkey (INT4)}
+     => in  schema: {(1) default.SQ_1.n_nationkey (INT4)}
+      PROJECTION(8) (distinct)
+        => Targets: default.nation.n_nationkey (INT4)
+        => out schema: {(1) default.nation.n_nationkey (INT4)}
+        => in  schema: {(1) default.nation.n_nationkey (INT4)}
+         GROUP_BY(13)(n_nationkey)
+           => target list: default.nation.n_nationkey (INT4)
+           => out schema:{(1) default.nation.n_nationkey (INT4)}
+           => in schema:{(1) default.nation.n_nationkey (INT4)}
+            SCAN(23) on eb_0000000000000_0000_000005
+              => out schema: {(1) default.nation.n_nationkey (INT4)}
+              => in schema: {(1) default.nation.n_nationkey (INT4)}
+   SCAN(0) on default.customer
+     => target list: default.customer.c_name (TEXT), default.customer.c_nationkey (INT4)
+     => out schema: {(2) default.customer.c_name (TEXT), default.customer.c_nationkey (INT4)}
+     => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000008 [TERMINAL]
+=======================================================
