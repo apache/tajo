@@ -29,6 +29,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1638: Remove offset parameter from rest api result/{cacheId}.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1659: Simplify scan iteration in SeqScan. (hyunsik)
 
     TAJO-751: JDBC driver should support cancel() method.
