@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.plan.expr.EvalNode;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -28,8 +29,8 @@ import java.io.IOException;
 /**
  * Scanner Interface
  */
-public interface Scanner extends SchemaObject, Closeable {
 
+public interface Scanner extends SchemaObject, Closeable {
   void init() throws IOException;
 
   /**
@@ -88,12 +89,12 @@ public interface Scanner extends SchemaObject, Closeable {
   boolean isSelectable();
 
   /**
-   * Set a search condition
-   * @param expr to be searched
+   * Set a filter condition
+   * @param filter to be searched
    *
    * TODO - to be changed Object type
    */
-  void setSearchCondition(Object expr);
+  void setFilter(EvalNode filter);
 
   /**
    * It returns if the file is splittable.
