@@ -398,6 +398,12 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
+  public LogicalNode visitSimpleTableSubQuery(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, SimpleTableSubQuery expr)
+      throws PlanningException {
+    return super.visitSimpleTableSubQuery(ctx, stack, expr);
+  }
+
+  @Override
   public LogicalNode visitTableSubQuery(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
       throws PlanningException {
 

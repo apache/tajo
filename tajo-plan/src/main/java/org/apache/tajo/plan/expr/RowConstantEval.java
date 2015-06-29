@@ -18,10 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
@@ -29,9 +26,12 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+import java.util.Set;
+
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class RowConstantEval extends EvalNode {
+public class RowConstantEval extends ValueSetEval {
   @Expose Datum [] values;
 
   public RowConstantEval(Datum [] values) {
@@ -45,16 +45,6 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public int childNum() {
-    return 0;
-  }
-
-  @Override
-  public EvalNode getChild(int idx) {
-    return null;
-  }
-
-  @Override
   public String getName() {
     return "ROW";
   }
@@ -64,10 +54,6 @@ public class RowConstantEval extends EvalNode {
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
     return NullDatum.get();
-  }
-
-  public Datum [] getValues() {
-    return values;
   }
 
   @Override
@@ -92,14 +78,6 @@ public class RowConstantEval extends EvalNode {
     return StringUtils.join(values);
   }
 
-  public void preOrder(EvalNodeVisitor visitor) {
-    visitor.visit(this);
-  }
-
-  public void postOrder(EvalNodeVisitor visitor) {
-    visitor.visit(this);
-  }
-
   @Override
   public Object clone() throws CloneNotSupportedException {
     RowConstantEval rowConstantEval = (RowConstantEval) super.clone();
@@ -108,5 +86,10 @@ public class RowConstantEval extends EvalNode {
       System.arraycopy(values, 0, rowConstantEval.values, 0, values.length);
     }
     return rowConstantEval;
+  }
+
+  @Override
+  public Set<Datum> getValues() {
+    return TUtil.newHashSet(values);
   }
 }

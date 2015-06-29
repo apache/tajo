@@ -37,7 +37,7 @@ public class InEval extends BinaryEval {
   @Expose private boolean not;
   Set<Datum> values;
 
-  public InEval(EvalNode lhs, RowConstantEval valueList, boolean not) {
+  public InEval(EvalNode lhs, ValueSetEval valueList, boolean not) {
     super(EvalType.IN, lhs, valueList);
     this.not = not;
   }
@@ -62,7 +62,7 @@ public class InEval extends BinaryEval {
       throw new IllegalStateException("bind() must be called before eval()");
     }
     if (values == null) {
-      values = Sets.newHashSet(((RowConstantEval)rightExpr).getValues());
+      values = ((ValueSetEval)rightExpr).getValues();
     }
 
     Datum leftValue = leftExpr.eval(tuple);
