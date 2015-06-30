@@ -20,8 +20,6 @@ package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.datum.Datum;
 
-import java.util.Set;
-
 public abstract class ValueSetEval extends EvalNode implements Cloneable {
 
   public ValueSetEval(EvalType evalType) {

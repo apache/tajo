@@ -65,8 +65,9 @@ public enum EvalType {
   CAST(CastEval.class),
   ROW_CONSTANT(RowConstantEval.class),
   FIELD(FieldEval.class),
-  SUBQUERY(SubqueryEval.class),
-  CONST(ConstEval.class);
+  CONST(ConstEval.class),
+
+  SUBQUERY(SubqueryEval.class);
 
   private Class<? extends EvalNode> baseClass;
   private String operatorName;

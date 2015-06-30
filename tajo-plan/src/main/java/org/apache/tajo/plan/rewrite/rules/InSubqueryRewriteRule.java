@@ -23,10 +23,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
@@ -87,25 +89,39 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
       stack.push(node);
       for (InEval eachIn : inSubqueries) {
         SubqueryEval subqueryEval = eachIn.getRightExpr();
-        QueryBlock childBlock = plan.getBlock(subqueryEval.getSubQueryNode());
+        QueryBlock childBlock = plan.getBlock(subqueryEval.getSubQueryNode().getSubQuery());
         visit(context, plan, childBlock, childBlock.getRoot(), stack);
       }
       visit(context, plan, block, node.getChild(), stack);
       stack.pop();
 
-      LogicalNode baseRelation = null;
+      LogicalNode baseRelation = node.getChild();
       for (InEval eachIn : inSubqueries) {
         // find the base relation for the column of the outer query
         Preconditions.checkArgument(eachIn.getLeftExpr().getType() == EvalType.FIELD);
         FieldEval fieldEval = eachIn.getLeftExpr();
         SubqueryEval subqueryEval = eachIn.getRightExpr();
-        baseRelation = baseRelation == null ? node.getChild() : baseRelation;
+        QueryBlock childBlock = plan.getBlock(subqueryEval.getSubQueryNode().getSubQuery());
 
         // create join
+        JoinType joinType = eachIn.isNot() ? JoinType.LEFT_ANTI : JoinType.LEFT_SEMI;
         JoinNode joinNode = new JoinNode(plan.newPID());
-        joinNode.init(eachIn.isNot() ? JoinType.LEFT_ANTI : JoinType.LEFT_SEMI,
-            baseRelation, subqueryEval.getSubQueryNode());
+        joinNode.init(joinType, baseRelation, subqueryEval.getSubQueryNode());
         joinNode.setJoinQual(buildJoinCondition(fieldEval, subqueryEval.getSubQueryNode()));
+        ProjectionNode projectionNode = PlannerUtil.findTopNode(subqueryEval.getSubQueryNode(), NodeType.PROJECTION);
+        insertDistinctOperator(plan, childBlock, projectionNode, projectionNode.getChild());
+
+        Schema inSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
+            joinNode.getRightChild().getOutSchema());
+        joinNode.setInSchema(inSchema);
+        joinNode.setOutSchema(node.getOutSchema());
+
+        List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(inSchema));
+        joinNode.setTargets(targets.toArray(new Target[targets.size()]));
+
+        block.addJoinType(joinType);
+        block.registerNode(joinNode);
+        plan.addHistory("IN subquery is optimized.");
 
         // set the created join as the base relation
         baseRelation = joinNode;
@@ -123,10 +139,25 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
       }
       node.setQual(AlgebraicUtil.createSingletonExprFromDNF(rewrittenDnfs.toArray(new EvalNode[rewrittenDnfs.size()])));
 
-      // Selection node is expected to be removed at the projection push down phase.
+      // The current selection node is expected to be removed at the filter push down phase.
       node.setChild(baseRelation);
 
-      return null;
+      return node;
+    }
+
+    private void insertDistinctOperator(LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                        ProjectionNode projectionNode, LogicalNode child) throws PlanningException {
+      Schema outSchema = projectionNode.getOutSchema();
+      GroupbyNode dupRemoval = plan.createNode(GroupbyNode.class);
+      dupRemoval.setChild(child);
+      dupRemoval.setInSchema(projectionNode.getInSchema());
+      dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
+      dupRemoval.setGroupingColumns(outSchema.toArray());
+
+      block.registerNode(dupRemoval);
+
+      projectionNode.setChild(dupRemoval);
+      projectionNode.setInSchema(dupRemoval.getOutSchema());
     }
 
     private EvalNode buildJoinCondition(FieldEval leftField, TableSubQueryNode subQueryNode) {

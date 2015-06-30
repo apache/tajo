@@ -349,6 +349,8 @@ enum EvalType {
   ROW_CONSTANT = 32;
   FIELD = 33;
   CONST = 34;
+
+  SUBQUERY = 35;
 }
 
 message EvalNodeTree {
@@ -372,6 +374,7 @@ message EvalNode {
   optional CaseWhenEval casewhen = 13;
   optional IfCondEval ifCond = 14;
   optional PatternMatchEvalSpec patternMatch = 15;
+  optional SubqueryEval subquery = 16;
 }
 
 message UnaryEval {
@@ -389,6 +392,10 @@ message BinaryEval {
 
 message PatternMatchEvalSpec { // requires BinaryEval
   optional bool caseSensitive = 1;
+}
+
+message SubqueryEval {
+  required LogicalNodeTree subquery = 1;
 }
 
 message BetweenEval {

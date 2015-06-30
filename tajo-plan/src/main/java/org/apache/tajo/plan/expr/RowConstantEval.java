@@ -27,7 +27,6 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
-import java.util.Set;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 

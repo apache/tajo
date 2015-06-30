@@ -91,6 +91,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock queryBlock;
     EvalTreeOptimizer evalOptimizer;
     TimeZone timeZone;
+    List<Expr> unplannedExprs = TUtil.newList();
     boolean debugOrUnitTests;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
@@ -1080,7 +1081,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Since filter push down will be done later, it is guaranteed that in-subqueries are found at only selection.
     for (Expr eachQual : PlannerUtil.extractInSubquery(selection.getQual())) {
       InPredicate inPredicate = (InPredicate) eachQual;
-      visit(context, stack, inPredicate.getRight());
+      visit(context, stack, inPredicate.getInValue());
+      context.unplannedExprs.add(inPredicate.getInValue());
     }
     LogicalNode child = visit(context, stack, selection.getChild());
     stack.pop();

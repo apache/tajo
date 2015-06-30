@@ -51,91 +51,91 @@ public class TestInSubquery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testInSubQuery2() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testNestedInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testInSubQueryWithOtherConditions() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testMultipleInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testInSubQueryWithJoin() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testInSubQueryWithTableSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testMultipleNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testNestedNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testInAndNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testNestedInAndNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
   @SimpleTest()
   public final void testNestedInSubQuery2() throws Exception {
     // select c_name from customer

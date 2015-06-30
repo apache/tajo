@@ -42,6 +42,9 @@ public class BaseLogicalPlanRewriteRuleProvider extends LogicalPlanRewriteRulePr
   public Collection<Class<? extends LogicalPlanRewriteRule>> getPreRules() {
     List<Class<? extends LogicalPlanRewriteRule>> rules = TUtil.newList();
 
+    // In-subquery rewrite phase must be executed before the filter push down phase.
+    rules.add(InSubqueryRewriteRule.class);
+
     if (systemConf.getBoolVar(TajoConf.ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
       rules.add(FilterPushDownRule.class);
     }
@@ -52,8 +55,6 @@ public class BaseLogicalPlanRewriteRuleProvider extends LogicalPlanRewriteRulePr
   @Override
   public Collection<Class<? extends LogicalPlanRewriteRule>> getPostRules() {
     List<Class<? extends LogicalPlanRewriteRule>> rules = TUtil.newList(
-        // In-subquery rewrite phase must be executed before the projection push down phase.
-        InSubqueryRewriteRule.class,
         ProjectionPushDownRule.class,
         PartitionedTableRewriter.class
     );

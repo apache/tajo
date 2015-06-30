@@ -36,6 +36,7 @@ import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.util.Pair;
@@ -388,6 +389,17 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       values[i] = EvalTreeUtil.evaluateImmediately(null, evalNodes[i]);
     }
     return new RowConstantEval(values);
+  }
+
+  @Override
+  public EvalNode visitTableSubQuery(Context ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
+      throws PlanningException {
+    if (stack.peek().getType() == OpType.InPredicate) {
+      // In the case of in-subquery, stop visiting because the subquery expr is not expression.
+      return new SubqueryEval((TableSubQueryNode) ctx.currentBlock.getNodeFromExpr(expr));
+    } else {
+      return super.visitTableSubQuery(ctx, stack, expr);
+    }
   }
 
   @Override

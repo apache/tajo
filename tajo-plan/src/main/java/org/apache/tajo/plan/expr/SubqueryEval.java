@@ -26,8 +26,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.storage.Tuple;
 
-import java.util.Set;
-
 public class SubqueryEval extends ValueSetEval {
 
   private TableSubQueryNode subQueryNode;
@@ -79,7 +77,7 @@ public class SubqueryEval extends ValueSetEval {
   public Object clone() throws CloneNotSupportedException {
     SubqueryEval clone = (SubqueryEval) super.clone();
     clone.subQueryNode = (TableSubQueryNode) this.subQueryNode.clone();
-    return subQueryNode;
+    return clone;
   }
 
   @Override
