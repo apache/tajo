@@ -49,8 +49,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.exception.ErrorUtil.isFailed;
-import static org.apache.tajo.exception.ErrorUtil.isOk;
+import static org.apache.tajo.client.ClientErrorUtil.*;
+import static org.apache.tajo.error.Errors.ResultCode.INVALID_SESSION;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
@@ -179,11 +179,11 @@ public class SessionConnection implements Closeable {
 
     SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
-    if (isOk(response.getResultCode())) {
+    if (isSuccess(response.getState())) {
       updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return Collections.unmodifiableMap(sessionVarsCache);
     } else {
-      throw new ServiceException(response.getMessage());
+      throw new ServiceException(response.getState().getMessage());
     }
   }
 
@@ -198,11 +198,11 @@ public class SessionConnection implements Closeable {
 
     SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
-    if (isOk(response.getResultCode())) {
+    if (isSuccess(response.getState())) {
       updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return Collections.unmodifiableMap(sessionVarsCache);
     } else {
-      throw new ServiceException(response.getMessage());
+      throw new ServiceException(response.getState().getMessage());
     }
   }
 
@@ -233,13 +233,7 @@ public class SessionConnection implements Closeable {
     checkSessionAndGet(client);
 
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-    return tajoMasterService.existSessionVariable(null, convertSessionedString(varname)).getValue();
-  }
-
-  public Map<String, String> getCachedAllSessionVariables() {
-    synchronized (sessionVarsCache) {
-      return Collections.unmodifiableMap(sessionVarsCache);
-    }
+    return isSuccess(tajoMasterService.existSessionVariable(null, convertSessionedString(varname)));
   }
 
   public Map<String, String> getAllSessionVariables() throws ServiceException {
@@ -255,7 +249,7 @@ public class SessionConnection implements Closeable {
     checkSessionAndGet(client);
 
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-    boolean selected = tajoMasterService.selectDatabase(null, convertSessionedString(databaseName)).getValue();
+    boolean selected = isSuccess(tajoMasterService.selectDatabase(null, convertSessionedString(databaseName)));
 
     if (selected) {
       this.baseDatabase = databaseName;
@@ -308,7 +302,7 @@ public class SessionConnection implements Closeable {
 
       CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
 
-      if (isOk(response.getResultCode())) {
+      if (isSuccess(response.getState())) {
 
         sessionId = response.getSessionId();
         updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
@@ -316,8 +310,10 @@ public class SessionConnection implements Closeable {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }
 
+      } else if (isThisError(response.getState(), INVALID_SESSION)) {
+        throw new InvalidClientSessionException(response.getState().getMessage());
       } else {
-        throw new InvalidClientSessionException(response.getMessage());
+        throw new ServiceException(response.getState().getMessage());
       }
     }
   }
@@ -334,7 +330,7 @@ public class SessionConnection implements Closeable {
     // create new session
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
     CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
-    if (isFailed(response.getResultCode())) {
+    if (isError(response.getState())) {
       return false;
     }
 
@@ -358,7 +354,7 @@ public class SessionConnection implements Closeable {
           .setSessionId(sessionId)
           .setSessionVars(keyValueSet.getProto()).build();
 
-      if (isFailed(tajoMasterService.updateSessionVariables(null, request).getResultCode())) {
+      if (isError(tajoMasterService.updateSessionVariables(null, request).getState())) {
         tajoMasterService.removeSession(null, sessionId);
         return false;
       }

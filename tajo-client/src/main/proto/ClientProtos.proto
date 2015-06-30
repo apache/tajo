@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package tajo.client;
+
 option java_package = "org.apache.tajo.ipc";
 option java_outer_classname = "ClientProtos";
 option java_generic_services = true;
@@ -29,7 +31,11 @@ import "PrimitiveProtos.proto";
 import "errors.proto"; // tajo-common
 import "stacktrace.proto"; // tajo-common
 
-
+message ResponseState {
+  required tajo.error.ResultCode return_code  = 1;
+  required string message                     = 2;
+  optional tajo.error.StackTrace stack_trace  = 3;
+}
 
 message CreateSessionRequest {
   required string username = 1;
@@ -37,10 +43,9 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional SessionIdProto sessionId = 2;
   optional KeyValueSetProto sessionVars = 3;
-  optional string message = 4;
 }
 
 message UpdateSessionVariableRequest {
@@ -50,9 +55,8 @@ message UpdateSessionVariableRequest {
 }
 
 message SessionUpdateResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional KeyValueSetProto sessionVars = 2;
-  optional string message = 3;
 }
 
 message SessionedStringProto {
@@ -61,9 +65,8 @@ message SessionedStringProto {
 }
 
 message ExplainQueryResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional string explain = 2;
-  optional string errorMessage = 3;
 }
 
 message QueryRequest {
@@ -74,7 +77,7 @@ message QueryRequest {
 }
 
 message UpdateQueryResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional string errorMessage = 2;
   optional KeyValueSetProto sessionVars = 3;
 }
@@ -85,9 +88,10 @@ message GetQueryResultRequest {
 }
 
 message GetQueryResultResponse {
-  optional TableDescProto tableDesc = 1;
-  optional string errorMessage = 2;
-  optional string tajoUserName = 3;
+  required ResponseState state = 1;
+  optional TableDescProto tableDesc = 2;
+  optional string errorMessage = 3;
+  optional string tajoUserName = 4;
 }
 
 message QueryIdRequest {
@@ -111,7 +115,8 @@ message BriefQueryInfo {
 }
 
 message GetQueryListResponse {
-  repeated BriefQueryInfo queryList = 1;
+  required ResponseState state = 1;
+  repeated BriefQueryInfo queryList = 2;
 }
 
 message GetQueryStatusRequest {
@@ -126,7 +131,7 @@ message SerializedResultSet {
 }
 
 message SubmitQueryResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   required QueryIdProto queryId = 2;
   required string userName = 3;
   optional bool isForwarded = 4 [default = false];
@@ -138,16 +143,13 @@ message SubmitQueryResponse {
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
-  optional string errorMessage = 10;
-  optional string errorTrace = 11;
-
   optional KeyValueSetProto sessionVars = 12;
 }
 
 message GetQueryStatusResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   required QueryIdProto queryId = 2;
-  optional QueryState state = 3;
+  optional QueryState query_state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;
   optional int64 finishTime = 7;
@@ -165,10 +167,8 @@ message GetQueryResultDataRequest {
 }
 
 message GetQueryResultDataResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   required SerializedResultSet resultSet = 2;
-  optional string errorMessage = 3;
-  optional string errorTrace = 4;
 }
 
 message GetClusterInfoRequest {
@@ -193,7 +193,8 @@ message WorkerResourceInfo {
 }
 
 message GetClusterInfoResponse {
-  repeated WorkerResourceInfo workerList = 1;
+  required ResponseState state = 1;
+  repeated WorkerResourceInfo workerList = 2;
 }
 
 message CreateTableRequest {
@@ -212,13 +213,12 @@ message DropTableRequest {
 }
 
 message TableResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional TableDescProto tableDesc = 2;
-  optional string errorMessage = 3;
 }
 
 message FunctionResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   repeated FunctionDescProto functions = 2;
   optional string errorMessage = 3;
 }
@@ -273,14 +273,12 @@ message QueryHistoryProto {
 }
 
 message GetQueryHistoryResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional QueryHistoryProto queryHistory = 2;
-  optional string errorMessage = 3;
 }
 
 message GetQueryInfoResponse {
-  required tajo.error.ResultCode resultCode = 1;
+  required ResponseState state = 1;
   optional QueryInfoProto queryInfo = 2;
-  optional string errorMessage = 3;
 }
 

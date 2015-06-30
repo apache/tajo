@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,7 +31,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -40,8 +39,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -59,8 +56,6 @@ import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
-import org.apache.tajo.session.InvalidSessionException;
-import org.apache.tajo.session.NoSuchSessionVariableException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -71,6 +66,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.client.ClientErrorUtil.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
@@ -85,8 +81,6 @@ public class TajoMasterClientService extends AbstractService {
 
   private final BoolProto BOOL_TRUE =
       BoolProto.newBuilder().setValue(true).build();
-  private final BoolProto BOOL_FALSE =
-      BoolProto.newBuilder().setValue(false).build();
 
   public TajoMasterClientService(MasterContext context) {
     super(TajoMasterClientService.class.getName());
@@ -148,19 +142,14 @@ public class TajoMasterClientService extends AbstractService {
         String sessionId =
             context.getSessionManager().createSession(request.getUsername(), databaseName);
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.OK);
+        builder.setState(OK);
         builder.setSessionId(TajoIdProtos.SessionIdProto.newBuilder().setId(sessionId).build());
         builder.setSessionVars(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
         return builder.build();
-      } catch (NoSuchDatabaseException nsde) {
+
+      } catch (Throwable t) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-        builder.setMessage(nsde.getMessage());
-        return builder.build();
-      } catch (InvalidSessionException e) {
-        CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-        builder.setMessage(e.getMessage());
+        builder.setState(returnError(t));
         return builder.build();
       }
     }
@@ -176,23 +165,13 @@ public class TajoMasterClientService extends AbstractService {
       return BOOL_TRUE;
     }
 
-    public SessionUpdateResponse buildSessionUpdateOnSuccess(Map<String, String> variables) {
-      SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-      builder.setResultCode(ResultCode.OK);
-      builder.setSessionVars(new KeyValueSet(variables).getProto());
-      return builder.build();
-    }
-
-    public SessionUpdateResponse buildSessionUpdateOnError(String message) {
-      SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-      builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-      builder.setMessage(message);
-      return builder.build();
-    }
-
     @Override
-    public SessionUpdateResponse updateSessionVariables(RpcController controller, UpdateSessionVariableRequest request)
+    public SessionUpdateResponse updateSessionVariables(RpcController controller,
+                                                        UpdateSessionVariableRequest request)
         throws ServiceException {
+
+      SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
+
       try {
         String sessionId = request.getSessionId().getId();
         for (KeyValueProto kv : request.getSessionVars().getKeyvalList()) {
@@ -201,9 +180,15 @@ public class TajoMasterClientService extends AbstractService {
         for (String unsetVariable : request.getUnsetVariablesList()) {
           context.getSessionManager().removeVariable(sessionId, unsetVariable);
         }
-        return buildSessionUpdateOnSuccess(context.getSessionManager().getAllVariables(sessionId));
+
+
+        builder.setState(OK);
+        builder.setSessionVars(new KeyValueSet(context.getSessionManager().getAllVariables(sessionId)).getProto());
+        return builder.build();
+
       } catch (Throwable t) {
-        return buildSessionUpdateOnError("Invalid Session Id" + request.getSessionId());
+        builder.setState(returnError(t));
+        return builder.build();
       }
     }
 
@@ -220,19 +205,17 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto existSessionVariable(RpcController controller, SessionedStringProto request)
+    public ResponseState existSessionVariable(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         String value = context.getSessionManager().getVariable(request.getSessionId().getId(), request.getValue());
         if (value != null) {
-          return ProtoUtil.TRUE;
+          return OK;
         } else {
-          return ProtoUtil.FALSE;
+          return ERR_NO_SESSION_VARIABLE(request.getValue());
         }
-      } catch (NoSuchSessionVariableException nssv) {
-        return ProtoUtil.FALSE;
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -245,6 +228,7 @@ public class TajoMasterClientService extends AbstractService {
         KeyValueSet keyValueSet = new KeyValueSet();
         keyValueSet.putAll(context.getSessionManager().getAllVariables(sessionId));
         return keyValueSet.getProto();
+
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
@@ -256,25 +240,26 @@ public class TajoMasterClientService extends AbstractService {
       try {
         String sessionId = request.getId();
         return ProtoUtil.convertString(context.getSessionManager().getSession(sessionId).getCurrentDatabase());
+
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
     }
 
     @Override
-    public BoolProto selectDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ResponseState selectDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         String sessionId = request.getSessionId().getId();
         String databaseName = request.getValue();
 
         if (context.getCatalog().existDatabase(databaseName)) {
           context.getSessionManager().getSession(sessionId).selectDatabase(databaseName);
-          return ProtoUtil.TRUE;
+          return OK;
         } else {
-          throw new ServiceException(new NoSuchDatabaseException(databaseName));
+          return ERR_UNDEFIED_DATABASE(databaseName);
         }
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -286,45 +271,35 @@ public class TajoMasterClientService extends AbstractService {
         if(LOG.isDebugEnabled()) {
           LOG.debug("Query [" + request.getQuery() + "] is submitted");
         }
+
         return context.getGlobalEngine().executeQuery(session, request.getQuery(), request.getIsJson());
+
       } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
-        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setIsForwarded(true);
-        responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
-        responseBuilder.setResultCode(ResultCode.UNKNOWN_ERROR);
-        if (e.getMessage() != null) {
-          responseBuilder.setErrorMessage(ExceptionUtils.getStackTrace(e));
-        } else {
-          responseBuilder.setErrorMessage("Internal Error");
-        }
-        return responseBuilder.build();
+
+        return ClientProtos.SubmitQueryResponse.newBuilder()
+            .setState(returnError(e))
+            .setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto())
+            .setIsForwarded(true)
+            .setUserName(context.getConf().getVar(ConfVars.USERNAME))
+            .build();
+
       }
     }
 
     @Override
     public UpdateQueryResponse updateQuery(RpcController controller, QueryRequest request) throws ServiceException {
+      UpdateQueryResponse.Builder builder = UpdateQueryResponse.newBuilder();
 
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
+        context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
+        builder.setState(OK);
 
-        UpdateQueryResponse.Builder builder = UpdateQueryResponse.newBuilder();
-        try {
-          context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
-          builder.setResultCode(ResultCode.OK);
-          return builder.build();
-        } catch (Exception e) {
-          builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-          if (e.getMessage() == null) {
-            builder.setErrorMessage(ExceptionUtils.getStackTrace(e));
-          }
-          return builder.build();
-        }
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        builder.setState(returnError(t));
       }
+      return builder.build();
     }
 
     @Override
@@ -460,8 +435,8 @@ public class TajoMasterClientService extends AbstractService {
         builder.setQueryId(request.getQueryId());
 
         if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-          builder.setResultCode(ResultCode.OK);
-          builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+          builder.setState(OK);
+          builder.setQueryState(QueryState.QUERY_SUCCEEDED);
         } else {
           QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
 
@@ -474,8 +449,8 @@ public class TajoMasterClientService extends AbstractService {
           }
 
           if (queryInfo != null) {
-            builder.setResultCode(ResultCode.OK);
-            builder.setState(queryInfo.getQueryState());
+            builder.setState(OK);
+            builder.setQueryState(queryInfo.getQueryState());
 
             boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
             boolean isInsert = queryInfo.getQueryContext().isInsert();
@@ -487,7 +462,7 @@ public class TajoMasterClientService extends AbstractService {
               builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
               builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
             }
-            if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+            if (queryInfo.getQueryState() == QueryState.QUERY_SUCCEEDED) {
               builder.setFinishTime(queryInfo.getFinishTime());
             } else {
               builder.setFinishTime(System.currentTimeMillis());
@@ -495,11 +470,10 @@ public class TajoMasterClientService extends AbstractService {
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
             if (session.getNonForwardQueryResultScanner(queryId) != null) {
-              builder.setResultCode(ResultCode.OK);
-              builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+              builder.setState(OK);
+              builder.setQueryState(QueryState.QUERY_SUCCEEDED);
             } else {
-              builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-              builder.setErrorMessage("No such query: " + queryId.toString());
+              builder.setState(ERR_NO_SUCH_QUERY_ID(queryId));
             }
           }
         }
@@ -551,33 +525,33 @@ public class TajoMasterClientService extends AbstractService {
         resultSetBuilder.addAllSerializedTuples(rows);
 
         builder.setResultSet(resultSetBuilder.build());
-        builder.setResultCode(ResultCode.OK);
+        builder.setState(OK);
 
         LOG.info("Send result to client for " +
             request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
 
       } catch (Throwable t) {
-        LOG.error(t.getMessage(), t);
         builder.setResultSet(resultSetBuilder.build()); // required field
-        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-        String errorMessage = t.getMessage() == null ? t.getClass().getName() : t.getMessage();
-        builder.setErrorMessage(errorMessage);
-        builder.setErrorTrace(org.apache.hadoop.util.StringUtils.stringifyException(t));
+        builder.setState(returnError(t));
       }
+
       return builder.build();
     }
 
     @Override
-    public BoolProto closeNonForwardQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
+    public ResponseState closeNonForwardQuery(RpcController controller, QueryIdRequest request)
+        throws ServiceException {
+
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
 
         session.closeNonForwardQueryResultScanner(queryId);
-        return BOOL_TRUE;
+        return OK;
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -602,11 +576,10 @@ public class TajoMasterClientService extends AbstractService {
         if (queryInfo != null) {
           builder.setQueryInfo(queryInfo.getProto());
         }
-        builder.setResultCode(ResultCode.OK);
+        builder.setState(OK);
+
       } catch (Throwable t) {
-        LOG.warn(t.getMessage(), t);
-        builder.setResultCode(ResultCode.UNKNOWN_ERROR);
-        builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
+        builder.setState(returnError(t));
       }
 
       return builder.build();
@@ -616,23 +589,24 @@ public class TajoMasterClientService extends AbstractService {
      * It is invoked by TajoContainerProxy.
      */
     @Override
-    public BoolProto killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
+    public ResponseState killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
 
         QueryInProgress progress = context.getQueryJobManager().getQueryInProgress(queryId);
         if (progress == null || progress.isFinishState() || progress.isKillWait()) {
-          return BOOL_TRUE;
+          return OK;
         }
 
         QueryManager queryManager = context.getQueryJobManager();
         queryManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
             new QueryInfo(queryId)));
-        return BOOL_TRUE;
+
+        return OK;
+
       } catch (Throwable t) {
-        LOG.error(t.getMessage(), t);
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -640,9 +614,11 @@ public class TajoMasterClientService extends AbstractService {
     public GetClusterInfoResponse getClusterInfo(RpcController controller,
                                                  GetClusterInfoRequest request)
         throws ServiceException {
+
+      GetClusterInfoResponse.Builder builder = GetClusterInfoResponse.newBuilder();
+
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
-        GetClusterInfoResponse.Builder builder= GetClusterInfoResponse.newBuilder();
 
         Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
 
@@ -673,71 +649,80 @@ public class TajoMasterClientService extends AbstractService {
           builder.addWorkerList(workerBuilder.build());
         }
 
-        return builder.build();
+        builder.setState(OK);
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        builder.setState(returnError(t));
       }
+
+      return builder.build();
     }
 
     @Override
-    public BoolProto createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ResponseState createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
 
         if (context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false)) {
-          return BOOL_TRUE;
+          return OK;
         } else {
-          return BOOL_FALSE;
+          return ERR_DUPLICATE_DATABASE(request.getValue());
         }
-      } catch (Throwable e) {
-        throw new ServiceException(e);
+
+      } catch (Throwable t) {
+        return returnError(t);
       }
     }
 
     @Override
-    public BoolProto existDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ResponseState existDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         if (catalog.existDatabase(request.getValue())) {
-          return BOOL_TRUE;
+          return OK;
         } else {
-          return BOOL_FALSE;
+          return ERR_UNDEFIED_DATABASE(request.getValue());
         }
-      } catch (Throwable e) {
-        throw new ServiceException(e);
+
+      } catch (Throwable t) {
+        return returnError(t);
       }
     }
 
     @Override
-    public BoolProto dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ResponseState dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
 
         if (context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false)) {
-          return BOOL_TRUE;
+          return OK;
         } else {
-          return BOOL_FALSE;
+          return ERR_UNDEFIED_DATABASE(request.getValue());
         }
-      } catch (Throwable e) {
-        throw new ServiceException(e);
+
+      } catch (Throwable t) {
+        return returnError(t);
       }
     }
 
     @Override
     public StringListProto getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
         request) throws ServiceException {
+
       try {
         context.getSessionManager().touch(request.getId());
         return ProtoUtil.convertStrings(catalog.getAllDatabaseNames());
+
       } catch (Throwable e) {
         throw new ServiceException(e);
       }
     }
 
     @Override
-    public BoolProto existTable(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ResponseState existTable(RpcController controller, SessionedStringProto request) throws ServiceException {
+
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
@@ -753,12 +738,13 @@ public class TajoMasterClientService extends AbstractService {
         }
 
         if (catalog.existsTable(databaseName, tableName)) {
-          return BOOL_TRUE;
+          return OK;
         } else {
-          return BOOL_FALSE;
+          return ERR_UNDEFIED_TABLE(tableName);
         }
-      } catch (Throwable e) {
-        throw new ServiceException(e);
+
+      } catch (Throwable t) {
+        return returnError(t);
       }
     }
 
@@ -776,7 +762,9 @@ public class TajoMasterClientService extends AbstractService {
         Collection<String> tableNames = catalog.getAllTableNames(databaseName);
         StringListProto.Builder builder = StringListProto.newBuilder();
         builder.addAllValues(tableNames);
+
         return builder.build();
+
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
@@ -788,8 +776,7 @@ public class TajoMasterClientService extends AbstractService {
 
         if (!request.hasValue()) {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.UNKNOWN_ERROR)
-              .setErrorMessage("table name is required.")
+              .setState(ERR_INVALID_RPC_CALL("Table name is required"))
               .build();
         }
 
@@ -808,13 +795,12 @@ public class TajoMasterClientService extends AbstractService {
 
         if (catalog.existsTable(databaseName, tableName)) {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.OK)
+              .setState(OK)
               .setTableDesc(catalog.getTableDesc(databaseName, tableName).getProto())
               .build();
         } else {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.UNKNOWN_ERROR)
-              .setErrorMessage("ERROR: no such a table: " + request.getValue())
+              .setState(ERR_UNDEFIED_TABLE(request.getValue()))
               .build();
         }
       } catch (Throwable t) {
@@ -843,41 +829,42 @@ public class TajoMasterClientService extends AbstractService {
           partitionDesc = new PartitionMethodDesc(request.getPartition());
         }
 
-        TableDesc desc;
-        try {
-          desc = context.getGlobalEngine().getDDLExecutor().createTable(queryContext, request.getName(),
-              null, meta.getStoreType(), schema, meta, path.toUri(), true, partitionDesc, false);
-        } catch (Exception e) {
-          return TableResponse.newBuilder()
-              .setResultCode(ResultCode.UNKNOWN_ERROR)
-              .setErrorMessage(e.getMessage()).build();
-        }
+        TableDesc desc = context.getGlobalEngine().getDDLExecutor().createTable(
+            queryContext,
+            request.getName(),
+            null,
+            meta.getStoreType(),
+            schema,
+            meta,
+            path.toUri(),
+            true,
+            partitionDesc,
+            false
+        );
 
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.OK)
+            .setState(OK)
             .setTableDesc(desc.getProto()).build();
-      } catch (InvalidSessionException ise) {
+
+      } catch (Throwable t) {
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.UNKNOWN_ERROR)
-            .setErrorMessage(ise.getMessage()).build();
-      } catch (IOException ioe) {
-        return TableResponse.newBuilder()
-            .setResultCode(ResultCode.UNKNOWN_ERROR)
-            .setErrorMessage(ioe.getMessage()).build();
+            .setState(returnError(t))
+            .build();
       }
     }
 
     @Override
-    public BoolProto dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
+    public ResponseState dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(dropTable.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
 
         context.getGlobalEngine().getDDLExecutor().dropTable(queryContext, dropTable.getName(), false,
             dropTable.getPurge());
-        return BOOL_TRUE;
+        return OK;
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -903,11 +890,12 @@ public class TajoMasterClientService extends AbstractService {
           }
         }
         return FunctionResponse.newBuilder()
-            .setResultCode(ResultCode.OK)
+            .setState(OK)
             .addAllFunctions(functionProtos)
             .build();
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return FunctionResponse.newBuilder().setState(returnError(t)).build();
       }
     }
   }

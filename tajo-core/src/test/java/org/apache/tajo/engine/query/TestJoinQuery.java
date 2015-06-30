@@ -43,6 +43,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -210,7 +211,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     Tuple createTuple(String[] columnDatas);
   }
 
-  private static String buildSchemaString(String tableName) throws ServiceException {
+  private static String buildSchemaString(String tableName) throws ServiceException, SQLException {
     TableDesc desc = client.getTableDesc(tableName);
     StringBuffer sb = new StringBuffer();
     for (Column column : desc.getSchema().getRootColumns()) {
@@ -225,7 +226,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     return sb.toString();
   }
 
-  private static String buildMultifileDDlString(String tableName) throws ServiceException {
+  private static String buildMultifileDDlString(String tableName) throws ServiceException, SQLException {
     String multiTableName = tableName + "_multifile";
     StringBuilder sb = new StringBuilder("create table ").append(multiTableName).append(" (");
     sb.append(buildSchemaString(tableName)).append(" )");

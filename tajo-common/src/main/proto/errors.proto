@@ -22,46 +22,56 @@ option java_package = "org.apache.tajo.error";
 import "stacktrace.proto";
 
 enum ResultCode {
-
+  // Class
+  // 00 - Successful Completion
+  OK                            = 0;
 
   WARNING                       = 100; // Warning
 
   // General Errors
-  INTERNAL_ERROR                = 200; // Error caused by internal bugs
-  ILLEGAL_STATE                 = 201; // Illegal state or unexpected state
-  NOT_IMPLEMENTED               = 202; // Not implemented feature
-  NOT_SUPPORTED                 = 203; // Not supported feature
+  INTERNAL_ERROR                = 201; // Error caused by internal bugs
+  ILLEGAL_STATE                 = 202; // Illegal state or unexpected state
+  NOT_IMPLEMENTED               = 203; // Not implemented feature
+  NOT_SUPPORTED                 = 204; // Not supported feature
+  INVALID_RPC_CALL              = 205; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
+
+  // Query Management and Scheduler
+  NO_SUCH_QUERYID               = 300; // No query id in TajoMaster
+
+
 
   // Session Errors
-  SESSION_INVALIDATION          = 251;
+  INVALID_SESSION               = 251;
   NO_SUCH_SESSION_VARIABLE      = 252;
 
   // Query and Catalog Errors
-  NO_SUCH_DATABASE              = 301;
-  NO_SUCH_TABLE                 = 302;
-  NO_SUCH_COLUMN                = 303;
-  DATABASE_EXISTS               = 305;
-  TABLE_EXISTS                  = 306;
-  COLUMN_EXISTS                 = 307;
+  // Section: Class 42 - Syntax Error or Access Rule Violation
+  UNDEFINED_DATABASE            = 301;
+  UNDEFINED_TABLE               = 302;
+  UNDEFINED_COLUMN              = 303; // SQLState: 42703
+  UNDEFINED_FUNCTION            = 303; // SQLState: 42883
+
+  DUPLICATE_DATABASE            = 305;
+  DUPLICATE_TABLE               = 306;
+  DUPLICATE_COLUMN              = 307; // SQLState: 42701
+  DUPLICATE_ALIAS               = 308; // SQLState: 42712
+  DUPLICATE_FUNCTION            = 309; // SQLState: 42723
 
   // Expressions
   INVALID_EXPRESSION            = 401;
   INVALID_CAST                  = 402;
   UNKNOWN_DATA_TYPE             = 403;
 
-  NUMERIC_OVERFLOW              = 403;  // Numeric value overflow
-  VALUE_LARGER_THAN_PRECISION   = 404;  // Value larger than column precision
+  //NUMERIC_OVERFLOW              = 403;  // Numeric value overflow
+  //VALUE_LARGER_THAN_PRECISION   = 404;  // Value larger than column precision
 
   // Physical Operator
-  EXCEEDED_MEMORY               = 404;
 
 
   // Class values that begin with 0, 1, 2, 3, 4, A, B, C, D, E, F, G or H
   // are called "standard-defined classes".
 
-  // Class
-  // 00 - Successful Completion
-  OK                            = 0;
+
 
   // 01 - Warning
   // 02 - No Data
@@ -109,15 +119,8 @@ enum ResultCode {
   // INDETERMINATE_DATATYPE                = 42P18; - PgSQL implementation -defined
 
   INVALID_COLUMN_DEFINITION             = 42611;
-  DUPLICATE_COLUMN                      = 42701;
   AMBIGUOUS_COLUMN                      = 42702;
-  UNDEFINED_COLUMN                      = 42703;
-  DUPLICATE_ALIAS                       = 42712;
-  DUPLICATE_FUNCTION                    = 42723;
   AMBIGUOUS_FUNCTION                    = 42725;
-  UNDEFINED_FUNCTION                    = 42883;
-
-
 
   // 44 - WITH CHECK OPTION Violation
   // 46 - Java DDL

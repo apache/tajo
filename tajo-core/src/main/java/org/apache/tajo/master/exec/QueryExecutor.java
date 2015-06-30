@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.client.ClientErrorUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -72,6 +73,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.tajo.client.ClientErrorUtil.ERR_UNDEFIED_DATABASE;
+import static org.apache.tajo.client.ClientErrorUtil.OK;
+
 public class QueryExecutor {
   private static final Log LOG = LogFactory.getLog(QueryExecutor.class);
 
@@ -107,7 +111,7 @@ public class QueryExecutor {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
       ddlExecutor.execute(queryContext, plan);
       response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      response.setResultCode(ResultCode.OK);
+      response.setState(OK);
 
 
     } else if (plan.isExplain()) { // explain query
@@ -147,8 +151,7 @@ public class QueryExecutor {
         session.selectDatabase(setSessionNode.getValue());
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        response.setResultCode(ResultCode.NO_SUCH_DATABASE);
-        response.setErrorMessage("database \"" + databaseName + "\" does not exists.");
+        response.setState(ERR_UNDEFIED_DATABASE(databaseName));
       }
 
       // others
@@ -162,7 +165,7 @@ public class QueryExecutor {
 
     context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-    response.setResultCode(ResultCode.OK);
+    response.setState(OK);
   }
 
   public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
@@ -205,9 +208,9 @@ public class QueryExecutor {
     serializedResBuilder.setSchema(schema.getProto());
     serializedResBuilder.setBytesNum(bytesNum);
 
+    response.setState(OK);
     response.setResultSet(serializedResBuilder.build());
     response.setMaxRowNum(lines.length);
-    response.setResultCode(ResultCode.OK);
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
   }
 
@@ -226,10 +229,10 @@ public class QueryExecutor {
     queryResultScanner.init();
     session.addNonForwardQueryResultScanner(queryResultScanner);
 
+    response.setState(OK);
     response.setQueryId(queryId.getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(queryResultScanner.getTableDesc().getProto());
-    response.setResultCode(ResultCode.OK);
   }
 
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
@@ -262,10 +265,10 @@ public class QueryExecutor {
     queryResultScanner.init();
     session.addNonForwardQueryResultScanner(queryResultScanner);
 
+    response.setState(OK);
     response.setQueryId(queryInfo.getQueryId().getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(desc.getProto());
-    response.setResultCode(ResultCode.OK);
   }
 
   public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
@@ -299,10 +302,10 @@ public class QueryExecutor {
         serializedResBuilder.setSchema(schema.getProto());
         serializedResBuilder.setBytesNum(serializedBytes.length);
 
+        responseBuilder.setState(OK);
         responseBuilder.setResultSet(serializedResBuilder);
         responseBuilder.setMaxRowNum(1);
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ResultCode.OK);
       }
     } finally {
       // stop script executor
@@ -464,7 +467,7 @@ public class QueryExecutor {
       // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
       responseBuilder.setMaxRowNum(-1);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ResultCode.OK);
+      responseBuilder.setState(OK);
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
@@ -498,22 +501,15 @@ public class QueryExecutor {
 
     queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
 
-    if(queryInfo == null) {
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ResultCode.UNKNOWN_ERROR);
-      responseBuilder.setErrorMessage("Fail starting QueryMaster.");
-      LOG.error("Fail starting QueryMaster: " + sql);
-    } else {
-      responseBuilder.setIsForwarded(true);
-      responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-      responseBuilder.setResultCode(ResultCode.OK);
-      if(queryInfo.getQueryMasterHost() != null) {
-        responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
-      }
-      responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
-      LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
-          " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+    responseBuilder.setIsForwarded(true);
+    responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+    responseBuilder.setState(OK);
+    if (queryInfo.getQueryMasterHost() != null) {
+      responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
     }
+    responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
+    LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
+        " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
   }
 
   public MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)

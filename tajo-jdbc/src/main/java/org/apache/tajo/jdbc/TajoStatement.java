@@ -23,13 +23,14 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
-import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.tajo.client.ClientErrorUtil.isError;
 
 public class TajoStatement implements Statement {
   protected JdbcConnection conn;
@@ -164,14 +165,8 @@ public class TajoStatement implements Statement {
     }
 
     ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
-    if (ErrorUtil.isFailed(response.getResultCode())) {
-      if (response.hasErrorMessage()) {
-        throw new ServiceException(response.getErrorMessage());
-      }
-      if (response.hasErrorTrace()) {
-        throw new ServiceException(response.getErrorTrace());
-      }
-      throw new ServiceException("Failed to submit query by unknown reason");
+    if (isError(response.getState())) {
+      throw new ServiceException(response.getState().getMessage());
     }
 
     QueryId queryId = new QueryId(response.getQueryId());

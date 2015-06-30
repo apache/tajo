@@ -39,7 +39,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if created successfully.
    * @throws com.google.protobuf.ServiceException
    */
-  public boolean createDatabase(final String databaseName) throws ServiceException;
+  boolean createDatabase(final String databaseName) throws ServiceException;
   /**
    * Does the database exist?
    *
@@ -47,7 +47,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if so.
    * @throws ServiceException
    */
-  public boolean existDatabase(final String databaseName) throws ServiceException;
+  boolean existDatabase(final String databaseName) throws ServiceException;
   /**
    * Drop the database
    *
@@ -55,9 +55,9 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the database is dropped successfully.
    * @throws ServiceException
    */
-  public boolean dropDatabase(final String databaseName) throws ServiceException;
+  boolean dropDatabase(final String databaseName) throws ServiceException;
 
-  public List<String> getAllDatabaseNames() throws ServiceException;
+  List<String> getAllDatabaseNames() throws ServiceException;
 
   /**
    * Does the table exist?
@@ -65,7 +65,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @return True if so.
    */
-  public boolean existTable(final String tableName) throws ServiceException;
+  boolean existTable(final String tableName) throws ServiceException;
 
   /**
    * Create an external table.
@@ -79,7 +79,7 @@ public interface CatalogAdminClient extends Closeable {
    * @throws java.sql.SQLException
    * @throws ServiceException
    */
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+  TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta) throws SQLException, ServiceException;
 
   /**
@@ -95,7 +95,7 @@ public interface CatalogAdminClient extends Closeable {
    * @throws SQLException
    * @throws ServiceException
    */
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+  TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws SQLException, ServiceException;
 
@@ -105,7 +105,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to be dropped. This name is case sensitive.
    * @return True if the table is dropped successfully.
    */
-  public boolean dropTable(final String tableName) throws ServiceException;
+  boolean dropTable(final String tableName) throws ServiceException;
 
   /**
    * Drop a table.
@@ -114,7 +114,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param purge If purge is true, this call will remove the entry in catalog as well as the table contents.
    * @return True if the table is dropped successfully.
    */
-  public boolean dropTable(final String tableName, final boolean purge) throws ServiceException;
+  boolean dropTable(final String tableName, final boolean purge) throws ServiceException;
 
   /**
    * Get a list of table names.
@@ -123,7 +123,7 @@ public interface CatalogAdminClient extends Closeable {
    *                     If it is null, this method will show all tables
    *                     in the current database of this session.
    */
-  public List<String> getTableList(@Nullable final String databaseName) throws ServiceException;
+  List<String> getTableList(@Nullable final String databaseName) throws ServiceException;
 
   /**
    * Get a table description
@@ -131,7 +131,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to get. This name is case sensitive.
    * @return Table description
    */
-  public TableDesc getTableDesc(final String tableName) throws ServiceException;
+  TableDesc getTableDesc(final String tableName) throws ServiceException, SQLException;
 
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException;
+  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException;
 }

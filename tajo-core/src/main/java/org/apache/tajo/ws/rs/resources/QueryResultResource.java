@@ -24,7 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
@@ -198,7 +198,7 @@ public class QueryResultResource {
         GetQueryResultDataResponse response = new GetQueryResultDataResponse();
         
         if (queryInfo == null) {
-          response.setResultCode(ResultCode.ERROR);
+          response.setResultCode(ResultCode.INTERNAL_ERROR);
           response.setErrorMessage("Unable to find a query info for requested id : " + queryId);
           return Response.status(Status.NOT_FOUND).entity(response).build();
         }
@@ -229,7 +229,7 @@ public class QueryResultResource {
         LOG.error(e.getMessage(), e);
         
         GetQueryResultDataResponse response = new GetQueryResultDataResponse();
-        response.setResultCode(ResultCode.ERROR);
+        response.setResultCode(ResultCode.INTERNAL_ERROR);
         response.setErrorMessage(e.getMessage());
         response.setErrorTrace(org.apache.hadoop.util.StringUtils.stringifyException(e));
         return Response.status(Status.INTERNAL_SERVER_ERROR).entity(response).build();

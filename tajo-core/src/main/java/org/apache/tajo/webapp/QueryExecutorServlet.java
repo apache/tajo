@@ -9,10 +9,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
-import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
@@ -44,6 +41,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.client.ClientErrorUtil.isError;
+import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
 import static org.apache.tajo.exception.ErrorUtil.isFailed;
 import static org.apache.tajo.exception.ErrorUtil.isOk;
 
@@ -324,7 +323,7 @@ public class QueryExecutorServlet extends HttpServlet {
           LOG.error("Internal Error: SubmissionResponse is NULL");
           error = new Exception("Internal Error: SubmissionResponse is NULL");
 
-        } else if (isOk(response.getResultCode())) {
+        } else if (isSuccess(response.getState())) {
           if (response.getIsForwarded()) {
             queryId = new QueryId(response.getQueryId());
             getQueryResult(queryId);
@@ -336,22 +335,20 @@ public class QueryExecutorServlet extends HttpServlet {
 
             progress.set(100);
           }
-        } else if (isFailed(response.getResultCode())) {
-          if (response.hasErrorMessage()) {
-            StringBuffer errorMessage = new StringBuffer(response.getErrorMessage());
-            String modifiedMessage;
+        } else if (isError(response.getState())) {
+          StringBuffer errorMessage = new StringBuffer(response.getState().getMessage());
+          String modifiedMessage;
 
-            if (errorMessage.length() > 200) {
-              modifiedMessage = errorMessage.substring(0, 200);
-            } else {
-              modifiedMessage = errorMessage.toString();
-            }
-            
-            String lineSeparator = System.getProperty("line.separator");
-            modifiedMessage = modifiedMessage.replaceAll(lineSeparator, "<br/>");
-
-            error = new Exception(modifiedMessage);
+          if (errorMessage.length() > 200) {
+            modifiedMessage = errorMessage.substring(0, 200);
+          } else {
+            modifiedMessage = errorMessage.toString();
           }
+
+          String lineSeparator = System.getProperty("line.separator");
+          modifiedMessage = modifiedMessage.replaceAll(lineSeparator, "<br/>");
+
+          error = new Exception(modifiedMessage);
         }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);

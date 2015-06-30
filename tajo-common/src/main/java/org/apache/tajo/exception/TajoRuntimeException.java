@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.error.Errors.ResultCode;
 
-public class NoSuchSessionVariableException extends TajoException {
+public class TajoRuntimeException extends RuntimeException implements TajoExceptionInterface {
+  private ResultCode code;
 
-  public NoSuchSessionVariableException(String varname) {
-    super(Errors.ResultCode.NO_SUCH_SESSION_VARIABLE, varname);
+  public TajoRuntimeException(ResultCode code) {
+    super(ErrorMessages.getMessage(code));
+    this.code = code;
+  }
+
+  public TajoRuntimeException(ResultCode code, String ... args) {
+    super(ErrorMessages.getMessage(code, args));
+    this.code = code;
+  }
+
+  @Override
+  public ResultCode getErrorCode() {
+    return code;
   }
 }

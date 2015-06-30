@@ -699,17 +699,19 @@ public class QueryTestCaseBase {
     assertTrue(!client.existTable(tableName));
   }
 
-  public void assertColumnExists(String tableName,String columnName) throws ServiceException {
-    TableDesc tableDesc = fetchTableMetaData(tableName);
+  public void assertColumnExists(String tableName,String columnName) throws ServiceException, SQLException {
+    TableDesc tableDesc = getTableDesc(tableName);
     assertTrue(tableDesc.getSchema().containsByName(columnName));
   }
 
-  private TableDesc fetchTableMetaData(String tableName) throws ServiceException {
+  private TableDesc getTableDesc(String tableName) throws ServiceException, SQLException {
     return client.getTableDesc(tableName);
   }
 
-  public void assertTablePropertyEquals(String tableName, String key, String expectedValue) throws ServiceException {
-    TableDesc tableDesc = fetchTableMetaData(tableName);
+  public void assertTablePropertyEquals(String tableName, String key, String expectedValue)
+      throws ServiceException, SQLException {
+
+    TableDesc tableDesc = getTableDesc(tableName);
     assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
   }
 

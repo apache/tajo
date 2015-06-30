@@ -41,8 +41,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.exception.ErrorUtil.isFailed;
-import static org.apache.tajo.exception.ErrorUtil.isOk;
+import static org.apache.tajo.client.ClientErrorUtil.isError;
+import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
@@ -166,7 +166,7 @@ public class QueryClientImpl implements QueryClient {
 
 
     SubmitQueryResponse response = tajoMasterService.submitQuery(null, builder.build());
-    if (isOk(response.getResultCode())) {
+    if (isSuccess(response.getState())) {
       connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
     }
     return response;
@@ -193,12 +193,8 @@ public class QueryClientImpl implements QueryClient {
 
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
 
-    if (isFailed(response.getResultCode())) {
-      if (response.hasErrorMessage()) {
-        throw new ServiceException(response.getErrorMessage());
-      } else if (response.hasErrorTrace()) {
-        throw new ServiceException(response.getErrorTrace());
-      }
+    if (isError(response.getState())) {
+      throw new ServiceException(response.getState().getMessage());
     }
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -229,8 +225,8 @@ public class QueryClientImpl implements QueryClient {
 
     ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
 
-    if (isFailed(response.getResultCode())) {
-      throw new ServiceException(response.getErrorTrace());
+    if (isError(response.getState())) {
+      throw new ServiceException(response.getState().getMessage());
     }
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -358,8 +354,9 @@ public class QueryClientImpl implements QueryClient {
       builder.setFetchRowNum(fetchRowNum);
 
       GetQueryResultDataResponse response = tajoMasterService.getQueryResultData(null, builder.build());
-      if (isFailed(response.getResultCode())) {
-        throw new ServiceException(response.getErrorMessage());
+
+      if (isError(response.getState())) {
+        throw new ServiceException(response.getState().getMessage());
       }
 
       ClientProtos.SerializedResultSet resultSet = response.getResultSet();
@@ -389,7 +386,7 @@ public class QueryClientImpl implements QueryClient {
     builder.setIsJson(false);
     ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
 
-    if (isOk(response.getResultCode())) {
+    if (isError(response.getState())) {
       connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return true;
     } else {
@@ -412,7 +409,7 @@ public class QueryClientImpl implements QueryClient {
     builder.setQuery(json);
     builder.setIsJson(true);
     ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
-    if (isOk(response.getResultCode())) {
+    if (isSuccess(response.getState())) {
       return true;
     } else {
       if (response.hasErrorMessage()) {
@@ -520,10 +517,10 @@ public class QueryClientImpl implements QueryClient {
 
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
     GetQueryInfoResponse res = tajoMasterService.getQueryInfo(null,builder.build());
-    if (isOk(res.getResultCode())) {
+    if (isSuccess(res.getState())) {
       return res.getQueryInfo();
     } else {
-      throw new ServiceException(res.getErrorMessage());
+      throw new ServiceException(res.getState().getMessage());
     }
   }
 
@@ -554,10 +551,10 @@ public class QueryClientImpl implements QueryClient {
 
       QueryMasterClientProtocolService.BlockingInterface queryMasterService = queryMasterClient.getStub();
       GetQueryHistoryResponse res = queryMasterService.getQueryHistory(null, builder.build());
-      if (isOk(res.getResultCode())) {
+      if (isSuccess(res.getState())) {
         return res.getQueryHistory();
       } else {
-        throw new ServiceException(res.getErrorMessage());
+        throw new ServiceException(res.getState().getMessage());
       }
     } finally {
       queryMasterClient.close();

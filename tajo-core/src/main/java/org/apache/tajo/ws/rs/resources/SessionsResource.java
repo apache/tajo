@@ -142,7 +142,7 @@ public class SessionsResource {
         LOG.error(e.getMessage(), e);
         
         NewSessionResponse sessionResponse = new NewSessionResponse();
-        sessionResponse.setResultCode(ResultCode.UNKNOWN_ERROR);
+        sessionResponse.setResultCode(ResultCode.INTERNAL_ERROR);
         sessionResponse.setMessage(e.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sessionResponse).build();
@@ -150,7 +150,7 @@ public class SessionsResource {
         LOG.error(e.getMessage(), e);
         
         NewSessionResponse sessionResponse = new NewSessionResponse();
-        sessionResponse.setResultCode(ResultCode.UNKNOWN_ERROR);
+        sessionResponse.setResultCode(ResultCode.INTERNAL_ERROR);
         sessionResponse.setMessage(e.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sessionResponse).build();

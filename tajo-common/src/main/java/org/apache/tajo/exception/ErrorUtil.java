@@ -19,6 +19,7 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.error.Stacktrace;
 
 public class ErrorUtil {
   public static boolean isOk(ResultCode code) {
@@ -27,5 +28,9 @@ public class ErrorUtil {
 
   public static boolean isFailed(ResultCode code) {
     return code != ResultCode.OK;
+  }
+
+  public static Stacktrace.StackTrace convertStacktrace(Throwable t) {
+    return null;
   }
 }

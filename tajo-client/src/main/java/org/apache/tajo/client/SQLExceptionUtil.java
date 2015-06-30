@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.client;
 
+import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.ResponseState;
 
-public class NoSuchSessionVariableException extends TajoException {
+import java.sql.SQLException;
+import java.util.Map;
 
-  public NoSuchSessionVariableException(String varname) {
-    super(Errors.ResultCode.NO_SUCH_SESSION_VARIABLE, varname);
+public class SQLExceptionUtil {
+
+  private static final Map<Errors.ResultCode, String> SQL_STATES = Maps.newHashMap();
+
+  public static SQLException convert(ResponseState state) {
+    return new SQLException(
+        state.getMessage(),
+        SQL_STATES.get(state.getReturnCode()),
+        state.getReturnCode().getNumber());
   }
 }
