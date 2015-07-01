@@ -18,17 +18,12 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoSuchIndexException extends CatalogException {
-  private static final long serialVersionUID = 3705839985189534673L;
+import org.apache.tajo.error.Errors;
 
-  public NoSuchIndexException() {
-  }
+public class DuplicateColumnException extends CatalogException {
+	private static final long serialVersionUID = 6766228091940775275L;
 
-  public NoSuchIndexException(String databaseName, String columnName) {
-    super(String.format("ERROR: index \" %s \" in %s does not exist", columnName, databaseName));
-  }
-
-  public NoSuchIndexException(String indexName) {
-    super("ERROR: index \"" + indexName + "\" does not exist");
-  }
+	public DuplicateColumnException(String columnName) {
+		super(Errors.ResultCode.DUPLICATE_COLUMN, columnName);
+	}
 }

@@ -19,21 +19,26 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.function.FunctionUtil;
-import org.codehaus.jackson.schema.JsonSerializableSchema;
 
 import java.util.Collection;
 
-public class NoSuchPartitionException extends RuntimeException {
+public class UndefinedFunctionException extends CatalogException {
+	private static final long serialVersionUID = 5062193018697228028L;
 
-  private static final long serialVersionUID = 277182608283894938L;
-
-  public NoSuchPartitionException(String message) {
-    super(message);
+  public UndefinedFunctionException(String signature) {
+    super(ResultCode.UNDEFINED_FUNCTION, signature);
   }
 
-  public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" does not exist in \"%s.%s\".", partitionName, databaseName, tableName));
+  public UndefinedFunctionException(String funcName, TajoDataTypes.DataType[] parameters) {
+    super(ResultCode.UNDEFINED_FUNCTION, FunctionUtil.buildSimpleFunctionSignature(funcName, parameters));
   }
 
+	public UndefinedFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
+		super(ResultCode.UNDEFINED_FUNCTION, FunctionUtil.buildSimpleFunctionSignature(funcName, parameters));
+	}
 }

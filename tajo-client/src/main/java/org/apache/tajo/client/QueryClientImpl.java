@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.client.ClientErrorUtil.isError;
 import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
+import static org.apache.tajo.client.ClientErrorUtil.returnError;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
@@ -334,8 +335,8 @@ public class QueryClientImpl implements QueryClient {
 
       return response;
 
-    } catch (Exception e) {
-      throw new ServiceException(e.getMessage(), e);
+    } catch (Exception t) {
+      return GetQueryResultResponse.newBuilder().setState(returnError(t)).build();
     }
   }
 

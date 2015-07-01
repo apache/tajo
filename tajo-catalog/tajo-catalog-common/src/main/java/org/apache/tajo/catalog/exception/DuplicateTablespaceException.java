@@ -16,34 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.common.exception;
+package org.apache.tajo.catalog.exception;
 
-public class NotImplementedException extends RuntimeException {
 
-  private static final long serialVersionUID = 8515328809349325243L;
+import org.apache.tajo.error.Errors;
 
-  public NotImplementedException() {
-  }
-
-  /**
-   * @param message
-   */
-  public NotImplementedException(String message) {
-    super(message);
-  }
-
-  /**
-   * @param cause
-   */
-  public NotImplementedException(Throwable cause) {
-    super(cause);
-  }
-
-  /**
-   * @param message
-   * @param cause
-   */
-  public NotImplementedException(String message, Throwable cause) {
-    super(message, cause);
-  }
+public class DuplicateTablespaceException extends CatalogException {
+	public DuplicateTablespaceException(String spaceName) {
+		super(Errors.ResultCode.DUPLICATE_TABLESPACE, spaceName);
+	}
 }

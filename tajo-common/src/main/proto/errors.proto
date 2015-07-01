@@ -31,41 +31,85 @@ enum ResultCode {
   // General Errors
   INTERNAL_ERROR                = 201; // Error caused by internal bugs
   ILLEGAL_STATE                 = 202; // Illegal state or unexpected state
-  NOT_IMPLEMENTED               = 203; // Not implemented feature
+  NOT_IMPLEMENTED               = 203; // Not implemented method
   NOT_SUPPORTED                 = 204; // Not supported feature
   INVALID_RPC_CALL              = 205; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
 
   // Query Management and Scheduler
   NO_SUCH_QUERYID               = 300; // No query id in TajoMaster
-
-
+  NO_DATA                       = 301; // No data due to query fail or error
+  INCOMPLETE_QUERY              = 302; // It occurs when a client requests something of a completed query.
 
   // Session Errors
-  INVALID_SESSION               = 251;
-  NO_SUCH_SESSION_VARIABLE      = 252;
+  INVALID_SESSION               = 401;
+  NO_SUCH_SESSION_VARIABLE      = 402;
+  INVALID_SESSION_VARIABLE      = 403;
+
+  // Data Exception (SQLState Class - 22)
+  DIVISION_BY_ZERO              = 451; // SQLState: 22012 - Division by zero
 
   // Query and Catalog Errors
   // Section: Class 42 - Syntax Error or Access Rule Violation
-  UNDEFINED_DATABASE            = 301;
-  UNDEFINED_TABLE               = 302;
-  UNDEFINED_COLUMN              = 303; // SQLState: 42703
-  UNDEFINED_FUNCTION            = 303; // SQLState: 42883
+  UNDEFINED_TABLESPACE                  = 500; // ?
+  UNDEFINED_DATABASE                    = 501; // ?
+  UNDEFINED_SCHEMA                      = 502; // ?
+  UNDEFINED_TABLE                       = 503; // ?
+  UNDEFINED_COLUMN                      = 504; // SQLState: 42703
+  UNDEFINED_FUNCTION                    = 505; // SQLState: 42883
+  UNDEFINED_INDEX                       = 506; // ?
+  UNDEFINED_INDEX_NAME                  = 507; // ?
+  UNDEFINED_PARTITION                   = 508; // ?
+  UNDEFINED_OPERATOR                    = 509; // SQLState: 42883 (=UNDEFINED_FUNCTION)
 
-  DUPLICATE_DATABASE            = 305;
-  DUPLICATE_TABLE               = 306;
-  DUPLICATE_COLUMN              = 307; // SQLState: 42701
-  DUPLICATE_ALIAS               = 308; // SQLState: 42712
-  DUPLICATE_FUNCTION            = 309; // SQLState: 42723
+  DUPLICATE_TABLESPACE                  = 510;
+  DUPLICATE_DATABASE                    = 511; // SQLState: 42P04
+  DUPLICATE_SCHEMA                      = 512; // SQLState: 42P06
+  DUPLICATE_TABLE                       = 513; // SQLState: 42P07
+  DUPLICATE_COLUMN                      = 514; // SQLState: 42701
+  DUPLICATE_ALIAS                       = 515; // SQLState: 42712
+  DUPLICATE_FUNCTION                    = 516; // SQLState: 42723
+  DUPLICATE_INDEX                       = 517; // SQLState: ?
+  DUPLICATE_PARTITION                   = 518; // SQLState: ?
+
+  AMBIGUOUS_TABLE                       = 521; // ?
+  AMBIGUOUS_COLUMN                      = 522; // SQLState: 42702;
+  AMBIGUOUS_FUNCTION                    = 523; // SQLState: 42725;
+
+
+  // Section: Syntax Error or Access Rule Violation
+  SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 601; // SQLState: 42000
+  SYNTAX_ERROR                          = 602; // SQLState: 42601
+  INSUFFICIENT_PRIVILEGE                = 603; // SQLState: 42501
+  CANNOT_CAST                           = 604; // SQLState: 42846 - Cast from source type to target type is not supported.
+  GROUPING_ERROR                        = 605; // SQLState: 42803
+  WINDOWING_ERROR                       = 606; // SQLState: 42P20 - PgSQL implementation-defined
+  INVALID_RECURSION                     = 607; // SQLState: 42P19 - PgSQL implementation-defined
+  SET_OPERATION_SCHEMA_MISMATCH         = 608; // SQLState: 42601 (=SYNTAX_ERROR)
+  SET_OPERATION_DATATYPE_MISMATCH       = 609; // SQLState: 42601 (=SYNTAX_ERROR)
+
+  INVALID_FOREIGN_KEY                   = 621; // SQLState: 42830
+  INVALID_NAME                          = 622; // SQLState: 42602
+  NAME_TOO_LONG                         = 623; // SQLState: 42622
+  RESERVED_NAME                         = 624; // SQLState: 42939
+  DATATYPE_MISMATCH                     = 625; // SQLState: 42804;
+  INDETERMINATE_DATATYPE                = 626; // SQLState: 42P18; - PgSQL implementation -defined
+
+  INVALID_COLUMN_DEFINITION             = 631; // SQLState: 42611;
 
   // Expressions
-  INVALID_EXPRESSION            = 401;
-  INVALID_CAST                  = 402;
-  UNKNOWN_DATA_TYPE             = 403;
+  INVALID_EXPRESSION                    = 701;
+  INVALID_CAST                          = 702;
+  UNKNOWN_DATATYPE                      = 703;
 
-  //NUMERIC_OVERFLOW              = 403;  // Numeric value overflow
-  //VALUE_LARGER_THAN_PRECISION   = 404;  // Value larger than column precision
+  //NUMERIC_OVERFLOW                    = 803;  // Numeric value overflow
+  //VALUE_LARGER_THAN_PRECISION         = 804;  // Value larger than column precision
 
-  // Physical Operator
+  // Metadata Connector
+  CAT_UPGRADE_REQUIRED                  = 901;  // Migration
+  CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server
+
+  // Storage and Data Format
+  UNKNOWN_DATAFORMAT                    = 1001; // Unknown Data Format
 
 
   // Class values that begin with 0, 1, 2, 3, 4, A, B, C, D, E, F, G or H
@@ -100,27 +144,6 @@ enum ResultCode {
   // 3B - Invalid SAVEPOINT
   // 40 - Transaction Rollback
 
-  // Section: Class 42 - Syntax Error or Access Rule Violation
-  SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 42000;
-
-  SYNTAX_ERROR                          = 42601;
-  INSUFFICIENT_PRIVILEGE                = 42501;
-  CANNOT_COERCE                         = 42846; // Cast from source type to target type is not supported.
-  GROUPING_ERROR                        = 42803;
-  // WINDOWING_ERROR                       = 42P20; - PgSQL implementation-defined
-  // INVALID_RECURSION                     = 42P19; - PgSQL implementation-defined
-
-  // INVALID_RECURSION                     = 42P19; - PgSQL implementation -defined
-  INVALID_FOREIGN_KEY                   = 42830;
-  INVALID_NAME                          = 42602;
-  NAME_TOO_LONG                         = 42622;
-  RESERVED_NAME                         = 42939;
-  DATATYPE_MISMATCH                     = 42804;
-  // INDETERMINATE_DATATYPE                = 42P18; - PgSQL implementation -defined
-
-  INVALID_COLUMN_DEFINITION             = 42611;
-  AMBIGUOUS_COLUMN                      = 42702;
-  AMBIGUOUS_FUNCTION                    = 42725;
 
   // 44 - WITH CHECK OPTION Violation
   // 46 - Java DDL

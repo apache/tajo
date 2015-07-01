@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
@@ -152,7 +153,7 @@ public class DDLExecutor {
         LOG.info("database \"" + databaseName + "\" is already exists." );
         return true;
       } else {
-        throw new AlreadyExistsDatabaseException(databaseName);
+        throw new DuplicateDatabaseException(databaseName);
       }
     }
 
@@ -173,7 +174,7 @@ public class DDLExecutor {
         LOG.info("database \"" + databaseName + "\" does not exists." );
         return true;
       } else { // Otherwise, it causes an exception.
-        throw new NoSuchDatabaseException(databaseName);
+        throw new UndefinedDatabaseException(databaseName);
       }
     }
 
@@ -245,7 +246,7 @@ public class DDLExecutor {
         LOG.info("relation \"" + qualifiedName + "\" is already exists." );
         return catalog.getTableDesc(databaseName, simpleTableName);
       } else {
-        throw new AlreadyExistsTableException(qualifiedName);
+        throw new DuplicateTableException(qualifiedName);
       }
     }
 
@@ -273,7 +274,7 @@ public class DDLExecutor {
       return desc;
     } else {
       LOG.info("Table creation " + tableName + " is failed.");
-      throw new CatalogException("Cannot create table \"" + tableName + "\".");
+      throw new TajoInternalError("Cannot create table \"" + tableName + "\"");
     }
   }
 
@@ -304,7 +305,7 @@ public class DDLExecutor {
         LOG.info("relation \"" + qualifiedName + "\" is already exists." );
         return true;
       } else { // Otherwise, it causes an exception.
-        throw new NoSuchTableException(qualifiedName);
+        throw new UndefinedTbleException(qualifiedName);
       }
     }
 
@@ -347,7 +348,7 @@ public class DDLExecutor {
       final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
 
       if (!catalog.existsTable(databaseName, simpleTableName)) {
-        throw new NoSuchTableException(qualifiedName);
+        throw new UndefinedTbleException(qualifiedName);
       }
 
       Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
@@ -397,16 +398,16 @@ public class DDLExecutor {
     final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
 
     if (!catalog.existsTable(databaseName, simpleTableName)) {
-      throw new NoSuchTableException(qualifiedName);
+      throw new UndefinedTbleException(qualifiedName);
     }
 
     switch (alterTable.getAlterTableOpType()) {
     case RENAME_TABLE:
       if (!catalog.existsTable(databaseName, simpleTableName)) {
-        throw new NoSuchTableException(alterTable.getTableName());
+        throw new UndefinedTbleException(alterTable.getTableName());
       }
       if (catalog.existsTable(databaseName, alterTable.getNewTableName())) {
-        throw new AlreadyExistsTableException(alterTable.getNewTableName());
+        throw new DuplicateTableException(alterTable.getNewTableName());
       }
 
       TableDesc desc = catalog.getTableDesc(databaseName, simpleTableName);
@@ -432,14 +433,14 @@ public class DDLExecutor {
       break;
     case RENAME_COLUMN:
       if (existColumnName(qualifiedName, alterTable.getNewColumnName())) {
-        throw new ColumnNameAlreadyExistException(alterTable.getNewColumnName());
+        throw new DuplicateColumnException(alterTable.getNewColumnName());
       }
       catalog.alterTable(CatalogUtil.renameColumn(qualifiedName, alterTable.getColumnName(),
           alterTable.getNewColumnName(), AlterTableType.RENAME_COLUMN));
       break;
     case ADD_COLUMN:
       if (existColumnName(qualifiedName, alterTable.getAddNewColumn().getSimpleName())) {
-        throw new ColumnNameAlreadyExistException(alterTable.getAddNewColumn().getSimpleName());
+        throw new DuplicateColumnException(alterTable.getAddNewColumn().getSimpleName());
       }
       catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn(), AlterTableType.ADD_COLUMN));
       break;

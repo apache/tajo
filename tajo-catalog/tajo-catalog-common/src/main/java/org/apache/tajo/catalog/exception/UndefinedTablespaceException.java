@@ -18,17 +18,12 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.error.Errors;
 
-public class NoSuchTableException extends CatalogException {
+public class UndefinedTablespaceException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
 
-	public NoSuchTableException() {}
-
-  public NoSuchTableException(String databaseName, String relName) {
-    super(String.format("ERROR: relation \" %s \" in %s does not exist", relName, databaseName));
-  }
-
-	public NoSuchTableException(String relName) {
-		super("ERROR: relation \"" + relName + "\" does not exist");
+	public UndefinedTablespaceException(String spaceName) {
+		super(Errors.ResultCode.UNDEFINED_PARTITION, spaceName);
 	}
 }

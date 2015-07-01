@@ -16,27 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.nameresolver;
+package org.apache.tajo.plan.verifier;
 
-import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
 
-public class ResolverByRelsAndSubExprs extends NameResolver {
-  @Override
-  public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException {
+public class SyntaxErrorException extends TajoException {
 
-    Column column = resolveFromRelsWithinBlock(plan, block, columnRef);
-    if (column == null) {
-      column =  resolveFromCurrentAndChildNode(block, columnRef);
-    }
-
-    if (column == null) {
-      throw new UndefinedColumnException(columnRef.getCanonicalName());
-    }
-    return column;
+  public SyntaxErrorException(Errors.ResultCode code, String ... args) {
+    super(code, args);
   }
 }

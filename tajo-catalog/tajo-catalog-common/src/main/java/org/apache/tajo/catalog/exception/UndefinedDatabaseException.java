@@ -18,12 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoSuchTablespaceException extends CatalogException {
+
+import org.apache.tajo.error.Errors;
+
+public class UndefinedDatabaseException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
 
-	public NoSuchTablespaceException() {}
-
-	public NoSuchTablespaceException(String spaceName) {
-		super("ERROR: tablespace \"" + spaceName + "\" does not exist");
+	public UndefinedDatabaseException(String dbName) {
+		super(Errors.ResultCode.UNDEFINED_DATABASE, dbName);
 	}
 }

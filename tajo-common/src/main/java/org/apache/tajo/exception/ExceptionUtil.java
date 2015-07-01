@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,27 +18,11 @@
 
 package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.error.Stacktrace;
+import org.apache.tajo.error.Errors;
 
-public class ErrorUtil {
-  public static boolean isOk(ResultCode code) {
-    return code == ResultCode.OK;
-  }
+public class ExceptionUtil {
 
-  public static boolean isFailed(ResultCode code) {
-    return code != ResultCode.OK;
-  }
-
-  public static Stacktrace.StackTrace convertStacktrace(Throwable t) {
-    Stacktrace.StackTrace.Builder builder = Stacktrace.StackTrace.newBuilder();
-    for (StackTraceElement element: t.getStackTrace()) {
-      builder.addElement(Stacktrace.StackTrace.Element.newBuilder()
-              .setFilename(element.getFileName())
-              .setFunction(element.getClassName() + "::" + element.getMethodName())
-              .setLine(element.getLineNumber())
-      );
-    }
-    return builder.build();
+  public static TajoRuntimeException makeNotSupported(String feature) {
+    return new TajoRuntimeException(Errors.ResultCode.NOT_SUPPORTED, feature);
   }
 }

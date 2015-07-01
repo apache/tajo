@@ -23,7 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -578,21 +578,21 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       CatalogProtocolService.BlockingInterface stub = getStub();
       descProto = stub.getFunctionMeta(null, builder.build());
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       LOG.debug(e.getMessage());
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
     }
 
     if (descProto == null) {
-      throw new NoSuchFunctionException(signature, paramTypes);
+      throw new UndefinedFunctionException(signature, paramTypes);
     }
 
     try {
       return new FunctionDesc(descProto);
     } catch (ClassNotFoundException e) {
       LOG.error(e, e);
-      throw new NoSuchFunctionException(signature, paramTypes);
+      throw new UndefinedFunctionException(signature, paramTypes);
     }
   }
 

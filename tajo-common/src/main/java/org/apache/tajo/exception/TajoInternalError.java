@@ -21,11 +21,19 @@ package org.apache.tajo.exception;
 import org.apache.tajo.error.Errors.ResultCode;
 
 /**
- * Exception Internal Bugs
+ * Exception for Internal Bugs and Unexpected exception
+ *
+ * When should we use TajoInternalError?
+ *  * Cases that must not be happened
+ *  * Developer bugs
  */
 public class TajoInternalError extends TajoError {
 
-  public TajoInternalError() {
-    super(ResultCode.INTERNAL_ERROR);
+  public TajoInternalError(String message) {
+    super(ResultCode.INTERNAL_ERROR, message);
+  }
+
+  public TajoInternalError(Throwable t) {
+    super(ResultCode.INTERNAL_ERROR, t.getMessage());
   }
 }

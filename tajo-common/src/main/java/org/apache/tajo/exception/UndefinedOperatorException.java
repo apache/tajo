@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,18 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-public class AlreadyExistsPartitionException extends RuntimeException {
+import org.apache.tajo.error.Errors;
 
-  private static final long serialVersionUID = 277182608283894930L;
+public class UndefinedOperatorException extends TajoException {
 
-  public AlreadyExistsPartitionException(String message) {
-    super(message);
+  public UndefinedOperatorException(String operation) {
+    super(Errors.ResultCode.UNDEFINED_OPERATOR, operation);
   }
-
-  public AlreadyExistsPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s already exist in \"%s.%s\"", partitionName, databaseName, tableName));
-  }
-
 }

@@ -18,13 +18,16 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.error.Errors.ResultCode;
 
-public class AlreadyExistsDatabaseException extends CatalogException {
+public class UndefinedIndexException extends CatalogException {
+  private static final long serialVersionUID = 3705839985189534673L;
 
-  public AlreadyExistsDatabaseException() {
-	}
+  public UndefinedIndexException(String tableName, String columnName) {
+    super(ResultCode.UNDEFINED_INDEX, tableName, columnName);
+  }
 
-	public AlreadyExistsDatabaseException(String dbName) {
-		super(String.format("Already exists database \"%s\"", dbName));
-	}
+  public UndefinedIndexException(String indexName) {
+    super(ResultCode.UNDEFINED_INDEX_NAME, indexName);
+  }
 }

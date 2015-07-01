@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,23 +18,15 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoError;
 
-import java.util.Collection;
+/**
+ * Tajo Metadata Connector's connection error
+ */
+public class TMCConnectionException extends TajoError {
 
-public class NoSuchFunctionException extends RuntimeException {
-	private static final long serialVersionUID = 5062193018697228028L;
-
-  public NoSuchFunctionException(String message) {
-    super(message);
+  public TMCConnectionException(String uri, Throwable t) {
+    super(ResultCode.CAT_CANNOT_CONNECT, t, uri, t.getMessage());
   }
-
-  public NoSuchFunctionException(String funcName, TajoDataTypes.DataType [] parameters) {
-    super("function " + FunctionUtil.buildSimpleFunctionSignature(funcName, parameters) + " does not exist");
-  }
-
-	public NoSuchFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
-		super("function " + FunctionUtil.buildSimpleFunctionSignature(funcName, parameters) + " does not exist");
-	}
 }

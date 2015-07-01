@@ -20,8 +20,6 @@ package org.apache.tajo.catalog.exception;
 
 public class NoPartitionedTableException extends Exception {
 
-  public NoPartitionedTableException() {}
-
   public NoPartitionedTableException(String databaseName, String relName) {
     super(String.format("ERROR: \"%s.%s\" is not a partitioned table", databaseName, relName));
   }

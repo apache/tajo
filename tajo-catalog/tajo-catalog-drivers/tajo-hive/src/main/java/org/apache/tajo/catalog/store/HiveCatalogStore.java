@@ -49,9 +49,10 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.thrift.TException;
@@ -73,7 +74,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   public HiveCatalogStore(final Configuration conf) throws InternalException {
     if (!(conf instanceof TajoConf)) {
-      throw new CatalogException("Invalid Configuration Type:" + conf.getClass().getSimpleName());
+      throw new TajoInternalError("Invalid Configuration Type:" + conf.getClass().getSimpleName());
     }
     this.conf = conf;
     this.defaultTableSpaceUri = TajoConf.getWarehouseDir((TajoConf) conf).toString();
@@ -96,7 +97,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (NoSuchObjectException nsoe) {
       exist = false;
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -127,9 +128,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
         path = table.getPath();
       } catch (NoSuchObjectException nsoe) {
-        throw new CatalogException("Table not found. - tableName:" + tableName, nsoe);
+        throw new UndefinedTbleException(tableName);
       } catch (Exception e) {
-        throw new CatalogException(e);
+        throw new TajoInternalError(e);
       }
 
       // convert HiveCatalogStore field schema into tajo field schema.
@@ -221,7 +222,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               totalSize = fs.getContentSummary(path).getLength();
             }
           } catch (IOException ioe) {
-            throw new CatalogException("Fail to get path. - path:" + path.toString(), ioe);
+            throw new TajoInternalError(ioe);
           }
         }
         stats.setNumBytes(totalSize);
@@ -288,7 +289,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
       return client.getHiveClient().getAllTables(databaseName);
     } catch (TException e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if(client != null) client.release();
     }
@@ -323,7 +324,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       builder.setUri(defaultTableSpaceUri);
       return builder.build();
     } else {
-      throw new CatalogException("tablespace concept is not supported in HiveCatalogStore");
+      throw new UnsupportedException("Tablespace in HiveMeta");
     }
   }
 
@@ -335,7 +336,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws CatalogException {
-    throw new CatalogException("tablespace concept is not supported in HiveCatalogStore");
+    throw new UnsupportedException("Tablespace in HiveMeta");
   }
 
   @Override
@@ -351,9 +352,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
       client.getHiveClient().createDatabase(database);
     } catch (AlreadyExistsException e) {
-      throw new AlreadyExistsDatabaseException(databaseName);
+      throw new DuplicateDatabaseException(databaseName);
     } catch (Throwable t) {
-      throw new CatalogException(t);
+      throw new TajoInternalError(t);
     } finally {
       if (client != null) {
         client.release();
@@ -370,7 +371,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<String> databaseNames = client.getHiveClient().getAllDatabases();
       return databaseNames.contains(databaseName);
     } catch (Throwable t) {
-      throw new CatalogException(t);
+      throw new TajoInternalError(t);
     } finally {
       if (client != null) {
         client.release();
@@ -386,9 +387,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
       client.getHiveClient().dropDatabase(databaseName);
     } catch (NoSuchObjectException e) {
-      throw new NoSuchDatabaseException(databaseName);
+      throw new UndefinedDatabaseException(databaseName);
     } catch (Throwable t) {
-      throw new CatalogException(databaseName);
+      throw new  TajoInternalError(t);
     } finally {
       if (client != null) {
         client.release();
@@ -404,7 +405,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
       return client.getHiveClient().getAllDatabases();
     } catch (TException e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -549,7 +550,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           sd.setOutputFormat(parquet.hive.DeprecatedParquetOutputFormat.class.getName());
           sd.getSerdeInfo().setSerializationLib(parquet.hive.serde.ParquetHiveSerDe.class.getName());
         } else {
-          throw new CatalogException(new NotImplementedException(tableDesc.getMeta().getStoreType()));
+          throw new UnsupportedException(tableDesc.getMeta().getStoreType() + " in HivecatalogStore");
         }
       }
 
@@ -557,10 +558,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       table.setSd(sd);
       client.getHiveClient().createTable(table);
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new CatalogException(e);
+    } catch (Throwable t) {
+      throw new TajoInternalError(t);
     } finally {
       if(client != null) client.release();
     }
@@ -575,7 +574,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client.getHiveClient().dropTable(databaseName, tableName, false, false);
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -601,19 +600,19 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     switch (alterTableDescProto.getAlterTableType()) {
       case RENAME_TABLE:
         if (existTable(databaseName,alterTableDescProto.getNewTableName().toLowerCase())) {
-          throw new AlreadyExistsTableException(alterTableDescProto.getNewTableName());
+          throw new DuplicateTableException(alterTableDescProto.getNewTableName());
         }
         renameTable(databaseName, tableName, alterTableDescProto.getNewTableName().toLowerCase());
         break;
       case RENAME_COLUMN:
         if (existColumn(databaseName,tableName, alterTableDescProto.getAlterColumnName().getNewColumnName())) {
-          throw new ColumnNameAlreadyExistException(alterTableDescProto.getAlterColumnName().getNewColumnName());
+          throw new DuplicateColumnException(alterTableDescProto.getAlterColumnName().getNewColumnName());
         }
         renameColumn(databaseName, tableName, alterTableDescProto.getAlterColumnName());
         break;
       case ADD_COLUMN:
         if (existColumn(databaseName,tableName, alterTableDescProto.getAddColumn().getName())) {
-          throw new ColumnNameAlreadyExistException(alterTableDescProto.getAddColumn().getName());
+          throw new DuplicateColumnException(alterTableDescProto.getAddColumn().getName());
         }
         addNewColumn(databaseName, tableName, alterTableDescProto.getAddColumn());
         break;
@@ -621,7 +620,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
         partitionDesc = getPartition(databaseName, tableName, partitionName);
         if(partitionDesc != null) {
-          throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+          throw new DuplicatePartitionException(partitionName);
         }
         addPartition(databaseName, tableName, alterTableDescProto.getPartitionDesc());
         break;
@@ -629,7 +628,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
         partitionDesc = getPartition(databaseName, tableName, partitionName);
         if(partitionDesc == null) {
-          throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+          throw new UndefinedPartitionException(partitionName);
         }
         dropPartition(databaseName, tableName, partitionDesc);
         break;
@@ -652,7 +651,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -677,7 +676,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -700,7 +699,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -732,7 +731,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       client.getHiveClient().add_partition(partition);
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -753,7 +752,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       }
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -817,7 +816,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     } catch (NoSuchObjectException e) {
       return null;
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();
@@ -912,7 +911,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     } finally {
       if (client != null) {
         client.release();

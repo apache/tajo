@@ -19,12 +19,12 @@
 package org.apache.tajo.catalog.exception;
 
 
-public class AlreadyExistsTablespaceException extends CatalogException {
+import org.apache.tajo.error.Errors.ResultCode;
 
-  public AlreadyExistsTablespaceException() {
-	}
+public class UndefinedColumnException extends CatalogException {
+	private static final long serialVersionUID = 277182608283894937L;
 
-	public AlreadyExistsTablespaceException(String dbName) {
-		super(String.format("Already exists tablespace \"%s\"", dbName));
+	public UndefinedColumnException(String columnName) {
+		super(ResultCode.UNDEFINED_COLUMN, columnName);
 	}
 }

@@ -18,10 +18,11 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class AlreadyExistsFunctionException extends CatalogException {
-	private static final long serialVersionUID = 3224521585413794703L;
 
-	public AlreadyExistsFunctionException(String funcName) {
-		super("Already Exists Function: "+funcName);
+import org.apache.tajo.error.Errors;
+
+public class DuplicateDatabaseException extends CatalogException {
+	public DuplicateDatabaseException(String dbName) {
+		super(Errors.ResultCode.DUPLICATE_DATABASE, dbName);
 	}
 }

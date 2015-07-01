@@ -33,12 +33,14 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.client.ClientErrorUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -136,7 +138,7 @@ public class TajoMasterClientService extends AbstractService {
 
         if (!context.getCatalog().existDatabase(databaseName)) {
           LOG.info("Session creation is canceled due to absent base database \"" + databaseName + "\".");
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
 
         String sessionId =
@@ -305,6 +307,9 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public GetQueryResultResponse getQueryResult(RpcController controller,
                                                  GetQueryResultRequest request) throws ServiceException {
+
+      GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
+
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
@@ -319,7 +324,6 @@ public class TajoMasterClientService extends AbstractService {
           queryInfo = queryInProgress.getQueryInfo();
         }
 
-        GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
         builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
 
         // If we cannot the QueryInfo instance from the finished list,
@@ -333,15 +337,17 @@ public class TajoMasterClientService extends AbstractService {
         switch (queryInfo.getQueryState()) {
           case QUERY_SUCCEEDED:
             if (queryInfo.hasResultdesc()) {
+              builder.setState(OK);
               builder.setTableDesc(queryInfo.getResultDesc().getProto());
             }
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
-            builder.setErrorMessage("Query " + queryId + " is failed");
+            builder.setState(ClientErrorUtil.returnError(Errors.ResultCode.NO_DATA));
             break;
+
           default:
-            builder.setErrorMessage("Query " + queryId + " is still running");
+            builder.setState(ClientErrorUtil.returnError(Errors.ResultCode.INCOMPLETE_QUERY));
         }
 
         return builder.build();

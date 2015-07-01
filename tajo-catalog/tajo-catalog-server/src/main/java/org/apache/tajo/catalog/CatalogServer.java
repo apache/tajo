@@ -40,6 +40,9 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
@@ -123,7 +126,7 @@ public class CatalogServer extends AbstractService {
       if (conf instanceof TajoConf) {
         this.conf = (TajoConf) conf;
       } else {
-        throw new CatalogException("conf must be a TajoConf instance");
+        throw new TajoInternalError("conf must be a TajoConf instance");
       }
 
       Class<?> storeClass = this.conf.getClass(CatalogConstants.STORE_CLASS, DerbyStore.class);
@@ -137,7 +140,7 @@ public class CatalogServer extends AbstractService {
       initBuiltinFunctions(builtingFuncs);
     } catch (Throwable t) {
       LOG.error("CatalogServer initialization failed", t);
-      throw new CatalogException(t);
+      throw new TajoInternalError(t);
     }
 
     super.serviceInit(conf);
@@ -185,7 +188,7 @@ public class CatalogServer extends AbstractService {
       conf.setVar(ConfVars.CATALOG_ADDRESS, bindAddressStr);
     } catch (Exception e) {
       LOG.error("CatalogServer startup failed", e);
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     }
 
     LOG.info("Catalog Server startup (" + bindAddressStr + ")");
@@ -228,7 +231,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (store.existTablespace(tablespaceName)) {
-          throw new AlreadyExistsDatabaseException(tablespaceName);
+          throw new DuplicateDatabaseException(tablespaceName);
         }
 
         store.createTablespace(tablespaceName, uri);
@@ -250,11 +253,11 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (tablespaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
-          throw new CatalogException("default tablespace cannot be dropped.");
+          throw new CatalogException(ResultCode.INSUFFICIENT_PRIVILEGE, "drop to default tablespace");
         }
 
         if (!store.existTablespace(tablespaceName)) {
-          throw new NoSuchTablespaceException(tablespaceName);
+          throw new UndefinedTablespaceException(tablespaceName);
         }
 
         store.dropTablespace(tablespaceName);
@@ -330,7 +333,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (!store.existTablespace(request.getSpaceName())) {
-          throw new NoSuchTablespaceException(request.getSpaceName());
+          throw new UndefinedTablespaceException(request.getSpaceName());
         }
 
         if (request.getCommandList().size() > 0) {
@@ -369,7 +372,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (store.existDatabase(databaseName)) {
-          throw new AlreadyExistsDatabaseException(databaseName);
+          throw new DuplicateDatabaseException(databaseName);
         }
 
         store.createDatabase(databaseName, tablespaceName);
@@ -390,7 +393,7 @@ public class CatalogServer extends AbstractService {
       try {
         String [] split = CatalogUtil.splitTableName(proto.getTableName());
         if (!store.existTable(split[0], split[1])) {
-          throw new NoSuchTableException(proto.getTableName());
+          throw new UndefinedTbleException(proto.getTableName());
         }
         store.updateTableStats(proto);
       } catch (Exception e) {
@@ -415,7 +418,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (!store.existTable(split[0], split[1])) {
-          throw new NoSuchTableException(proto.getTableName());
+          throw new UndefinedTbleException(proto.getTableName());
         }
         store.alterTable(proto);
       } catch (Exception e) {
@@ -440,7 +443,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (!store.existDatabase(databaseName)) {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
 
         store.dropDatabase(databaseName);
@@ -525,10 +528,10 @@ public class CatalogServer extends AbstractService {
             if (contain) {
               return store.getTable(databaseName, tableName);
             } else {
-              throw new NoSuchTableException(tableName);
+              throw new UndefinedTbleException(tableName);
             }
           } else {
-            throw new NoSuchDatabaseException(databaseName);
+            throw new UndefinedDatabaseException(databaseName);
           }
         } catch (Exception e) {
           LOG.error(e);
@@ -553,7 +556,7 @@ public class CatalogServer extends AbstractService {
           if (store.existDatabase(databaseName)) {
             return ProtoUtil.convertStrings(store.getAllTableNames(databaseName));
           } else {
-            throw new NoSuchDatabaseException(databaseName);
+            throw new UndefinedDatabaseException(databaseName);
           }
         } catch (Exception e) {
           LOG.error(e);
@@ -596,14 +599,14 @@ public class CatalogServer extends AbstractService {
 
         if (contain) {
           if (store.existTable(databaseName, tableName)) {
-            throw new AlreadyExistsTableException(databaseName, tableName);
+            throw new DuplicateTableException(tableName);
           }
 
           store.createTable(request);
           LOG.info(String.format("relation \"%s\" is added to the catalog (%s)",
               CatalogUtil.getCanonicalTableName(databaseName, tableName), bindAddressStr));
         } else {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
@@ -631,14 +634,14 @@ public class CatalogServer extends AbstractService {
 
         if (contain) {
           if (!store.existTable(databaseName, tableName)) {
-            throw new NoSuchTableException(databaseName, tableName);
+            throw new UndefinedTbleException(databaseName, tableName);
           }
 
           store.dropTable(databaseName, tableName);
           LOG.info(String.format("relation \"%s\" is deleted from the catalog (%s)",
               CatalogUtil.getCanonicalTableName(databaseName, tableName), bindAddressStr));
         } else {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
@@ -669,7 +672,7 @@ public class CatalogServer extends AbstractService {
               return BOOL_FALSE;
             }
           } else {
-            throw new NoSuchDatabaseException(databaseName);
+            throw new UndefinedDatabaseException(databaseName);
           }
         } catch (Exception e) {
           LOG.error(e);
@@ -761,10 +764,10 @@ public class CatalogServer extends AbstractService {
               throw new NoPartitionedTableException(databaseName, tableName);
             }
           } else {
-            throw new NoSuchTableException(databaseName);
+            throw new UndefinedTbleException(databaseName);
           }
         } else {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
       } catch (Exception e) {
         LOG.error(e);
@@ -799,10 +802,10 @@ public class CatalogServer extends AbstractService {
               return ProtoUtil.FALSE;
             }
           } else {
-            throw new NoSuchTableException(databaseName);
+            throw new UndefinedTbleException(databaseName);
           }
         } else {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
       } catch (Exception e) {
         LOG.error(e);
@@ -842,16 +845,16 @@ public class CatalogServer extends AbstractService {
               if (partitionDesc != null) {
                 return partitionDesc;
               } else {
-                throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+                throw new UndefinedPartitionException(partitionName);
               }
             } else {
               throw new NoPartitionedTableException(databaseName, tableName);
             }
           } else {
-            throw new NoSuchTableException(tableName);
+            throw new UndefinedTbleException(tableName);
           }
         } else {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
       } catch (Exception e) {
         LOG.error(e);
@@ -890,10 +893,10 @@ public class CatalogServer extends AbstractService {
               throw new NoPartitionedTableException(databaseName, tableName);
             }
           } else {
-            throw new NoSuchTableException(tableName);
+            throw new UndefinedTbleException(tableName);
           }
         } else {
-          throw new NoSuchDatabaseException(databaseName);
+          throw new UndefinedDatabaseException(databaseName);
         }
       } catch (Exception e) {
         LOG.error(e);
@@ -925,7 +928,7 @@ public class CatalogServer extends AbstractService {
         if (store.existIndexByName(
             databaseName,
             indexDesc.getIndexName())) {
-          throw new AlreadyExistsIndexException(indexDesc.getIndexName());
+          throw new DuplicateIndexException(indexDesc.getIndexName());
         }
         store.createIndex(indexDesc);
       } catch (Exception e) {
@@ -987,7 +990,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         if (!store.existIndexByName(databaseName, indexName)) {
-          throw new NoSuchIndexException(databaseName, indexName);
+          throw new UndefinedIndexException(indexName);
         }
         return store.getIndexByName(databaseName, indexName);
       } catch (Exception e) {
@@ -1010,7 +1013,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         if (!store.existIndexByColumn(databaseName, tableName, columnName)) {
-          throw new NoSuchIndexException(databaseName, columnName);
+          throw new UndefinedIndexException(columnName);
         }
         return store.getIndexByColumn(databaseName, tableName, columnName);
       } catch (Exception e) {
@@ -1031,7 +1034,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (!store.existIndexByName(databaseName, indexName)) {
-          throw new NoSuchIndexException(indexName);
+          throw new UndefinedIndexException(indexName);
         }
         store.dropIndex(databaseName, indexName);
       } catch (Exception e) {
@@ -1190,7 +1193,7 @@ public class CatalogServer extends AbstractService {
       if (functions.containsKey(funcDesc.getSignature())) {
         FunctionDescProto found = findFunctionStrictType(funcDesc, true);
         if (found != null) {
-          throw new ServiceException(new AlreadyExistsFunctionException(signature.toString()));
+          throw new ServiceException(new DuplicateFunctionException(signature.toString()));
         }
       }
 
@@ -1207,7 +1210,7 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
 
       if (!containFunction(request.getSignature())) {
-        throw new ServiceException(new NoSuchFunctionException(request.getSignature(), new DataType[]{}));
+        throw new ServiceException(new UndefinedFunctionException(request.getSignature(), new DataType[]{}));
       }
 
       functions.remove(request.getSignature());
@@ -1229,7 +1232,7 @@ public class CatalogServer extends AbstractService {
       }
 
       if (function == null) {
-        throw new ServiceException(new NoSuchFunctionException(request.getSignature(), request.getParameterTypesList()));
+        throw new ServiceException(new UndefinedFunctionException(request.getSignature(), request.getParameterTypesList()));
       } else {
         return function;
       }

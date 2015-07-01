@@ -18,12 +18,16 @@
 
 package org.apache.tajo.plan;
 
-public class PlanningException extends Exception {
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
+
+public class PlanningException extends TajoException {
+
   public PlanningException(String message) {
-    super(message);
+    super(ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION, message);
   }
 
-  public PlanningException(Exception e) {
-    super(e);
+  public PlanningException(Throwable e) {
+    super(ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION, e.getMessage());
   }
 }

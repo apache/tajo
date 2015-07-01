@@ -18,17 +18,12 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.error.Errors;
 
-public class NoSuchColumnException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
+public class DuplicateFunctionException extends CatalogException {
+	private static final long serialVersionUID = 3224521585413794703L;
 
-	public NoSuchColumnException() {}
-
-  public NoSuchColumnException(String databaseName, String relName, String columnName) {
-    super(String.format("ERROR: column \" %s.%s \" in %s does not exist", relName, columnName, databaseName));
-  }
-
-	public NoSuchColumnException(String columnName) {
-		super("ERROR: column \"" + columnName + "\" does not exist");
+	public DuplicateFunctionException(String funcName) {
+		super(Errors.ResultCode.DUPLICATE_FUNCTION, funcName);
 	}
 }

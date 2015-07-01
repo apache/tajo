@@ -31,8 +31,18 @@ public class TajoError extends Error implements TajoExceptionInterface {
     this.code = code;
   }
 
+  public TajoError(ResultCode code, Throwable t) {
+    super(ErrorMessages.getMessage(code), t);
+    this.code = code;
+  }
+
   public TajoError(ResultCode code, String ... args) {
     super(ErrorMessages.getMessage(code, args));
+    this.code = code;
+  }
+
+  public TajoError(ResultCode code, Throwable t, String ... args) {
+    super(ErrorMessages.getMessage(code, args), t);
     this.code = code;
   }
 

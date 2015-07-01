@@ -19,12 +19,12 @@
 package org.apache.tajo.catalog.exception;
 
 
-public class NoSuchDatabaseException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
+import org.apache.tajo.error.Errors;
 
-	public NoSuchDatabaseException() {}
+public class DuplicateTableException extends CatalogException {
+	private static final long serialVersionUID = -641623770742392865L;
 
-	public NoSuchDatabaseException(String databaseName) {
-		super("ERROR: database \"" + databaseName + "\" does not exist");
-	}
+  public DuplicateTableException(String relName) {
+    super(Errors.ResultCode.DUPLICATE_TABLE, relName);
+  }
 }

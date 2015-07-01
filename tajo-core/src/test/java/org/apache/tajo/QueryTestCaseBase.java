@@ -296,7 +296,7 @@ public class QueryTestCaseBase {
 
     Expr expr = sqlParser.parse(query);
     verifier.verify(context, state, expr);
-    if (state.getErrorMessages().size() > 0) {
+    if (state.getErrors().size() > 0) {
       return state;
     }
     LogicalPlan plan = planner.createPlan(context, expr);
@@ -308,8 +308,8 @@ public class QueryTestCaseBase {
 
   public void assertValidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
-    if (state.getErrorMessages().size() > 0) {
-      fail(state.getErrorMessages().get(0));
+    if (state.getErrors().size() > 0) {
+      fail(state.getErrors().get(0).getMessage());
     }
   }
 
@@ -321,7 +321,7 @@ public class QueryTestCaseBase {
 
   public void assertInvalidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
-    if (state.getErrorMessages().size() == 0) {
+    if (state.getErrors().size() == 0) {
       fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
     }
   }

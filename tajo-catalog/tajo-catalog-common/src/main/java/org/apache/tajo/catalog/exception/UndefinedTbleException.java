@@ -15,17 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.tajo.catalog.exception;
 
 
-public class ColumnNameAlreadyExistException extends CatalogException {
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.error.Errors.ResultCode;
 
-  private static final long serialVersionUID = -4863862140874083282L;
+public class UndefinedTbleException extends CatalogException {
+	private static final long serialVersionUID = 277182608283894937L;
 
-  public ColumnNameAlreadyExistException() {
+  public UndefinedTbleException(String dbName, String tbName) {
+		super(ResultCode.UNDEFINED_TABLE, CatalogUtil.buildFQName(dbName, tbName));
   }
 
-  public ColumnNameAlreadyExistException(String columnName) {
-    super("Column already exists : " + columnName);
-  }
+	public UndefinedTbleException(String relName) {
+		super(ResultCode.UNDEFINED_TABLE, relName);
+	}
 }

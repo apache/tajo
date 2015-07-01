@@ -18,13 +18,12 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class AlreadyExistsFieldException extends CatalogException {
-	private static final long serialVersionUID = 6766228091940775275L;
+import org.apache.tajo.error.Errors;
 
-	public AlreadyExistsFieldException() {
-	}
+public class DuplicateIndexException extends CatalogException {
+  private static final long serialVersionUID = 3705839985189534673L;
 
-	public AlreadyExistsFieldException(String fieldName) {
-		super("Already Exists Field: "+fieldName);
-	}
+  public DuplicateIndexException(String indexName) {
+    super(Errors.ResultCode.DUPLICATE_INDEX, indexName);
+  }
 }

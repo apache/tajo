@@ -18,22 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.error.Errors.ResultCode;
 
-public class AlreadyExistsIndexException extends CatalogException {
-  private static final long serialVersionUID = 3705839985189534673L;
+public class UndefinedPartitionException extends CatalogException {
 
-  /**
-   * 
-   */
-  public AlreadyExistsIndexException() {
-  }
+  private static final long serialVersionUID = 277182608283894938L;
 
-  public AlreadyExistsIndexException(String databaseName, @Nullable String namespace, String indexName) {
-    super(String.format("index \" %s \" already exists in %s.%s", indexName, databaseName, namespace));
-  }
-
-  public AlreadyExistsIndexException(String indexName) {
-    super("index \"" + indexName + "\" exists table");
+  public UndefinedPartitionException(String partitionName) {
+    super(ResultCode.UNDEFINED_PARTITION, partitionName);
   }
 }

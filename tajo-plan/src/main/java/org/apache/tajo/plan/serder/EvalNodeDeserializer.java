@@ -27,7 +27,7 @@ import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -229,19 +229,15 @@ public class EvalNodeDeserializer {
           DataType[] parameterTypes = new DataType[0];
           if (funcProto.getFuncion() != null && funcProto.getFuncion().getSignature() != null) {
             FunctionSignatureProto funcSignatureProto = funcProto.getFuncion().getSignature();
-            
+
             if (funcSignatureProto.hasName()) {
               functionName = funcSignatureProto.getName();
             }
-            
+
             parameterTypes = funcSignatureProto.getParameterTypesList().toArray(
                 new DataType[funcSignatureProto.getParameterTypesCount()]);
           }
-          throw new NoSuchFunctionException(functionName, parameterTypes);
-        } catch (InternalException ie) {
-          throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
-        } catch (IOException e) {
-          throw new NoSuchFunctionException(e.getMessage());
+          throw new UndefinedFunctionException(functionName, parameterTypes);
         }
       } else {
         throw new RuntimeException("Unknown EvalType: " + type.name());

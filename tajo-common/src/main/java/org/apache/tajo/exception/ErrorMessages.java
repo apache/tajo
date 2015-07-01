@@ -22,27 +22,55 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.util.Pair;
 
-import java.util.Collections;
 import java.util.Map;
 
 public class ErrorMessages {
   public static final Map<ResultCode, Pair<String, Integer>> MESSAGES;
 
   static {
-    Map<ResultCode, Pair<String, Integer>> msgs = Maps.newHashMap();
+    MESSAGES = Maps.newHashMap();
 
-    ADD_MESSAGE(ResultCode.INTERNAL_ERROR, "Internal Error: %s", 1);
-    ADD_MESSAGE(ResultCode.INVALID_RPC_CALL, "Invalid RPC Call: %s", 1);
+    ADD_MESSAGE(ResultCode.INTERNAL_ERROR, "internal Error: %s", 1);
+    ADD_MESSAGE(ResultCode.INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
 
-    ADD_MESSAGE(ResultCode.NO_SUCH_QUERYID, "Query id '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.NO_SUCH_QUERYID, "query id '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.NO_DATA, "no data due to query failure or error");
+    ADD_MESSAGE(ResultCode.INCOMPLETE_QUERY, "query '%s' is stilling running", 1);
 
-    ADD_MESSAGE(ResultCode.INVALID_SESSION, "Invalid Session '%s'", 1);
-    ADD_MESSAGE(ResultCode.NO_SUCH_SESSION_VARIABLE, "No such session variable '%s", 1);
+    ADD_MESSAGE(ResultCode.INVALID_SESSION, "invalid Session '%s'", 1);
+    ADD_MESSAGE(ResultCode.NO_SUCH_SESSION_VARIABLE, "no such session variable '%s", 1);
+    ADD_MESSAGE(ResultCode.INVALID_SESSION_VARIABLE, "invalid session variable '%s': %s", 2);
 
-    ADD_MESSAGE(ResultCode.UNDEFINED_DATABASE, "Database '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_TABLE, "Table '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
 
-    MESSAGES = Collections.unmodifiableMap(msgs);
+    ADD_MESSAGE(ResultCode.SYNTAX_ERROR, "%s", 1);
+
+    ADD_MESSAGE(ResultCode.UNDEFINED_DATABASE, "database '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.UNDEFINED_TABLE, "table '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.UNDEFINED_COLUMN, "column '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.UNDEFINED_FUNCTION, "function does not exist: %s", 1);
+    ADD_MESSAGE(ResultCode.UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
+
+    ADD_MESSAGE(ResultCode.DUPLICATE_DATABASE, "database '%s' already exists", 1);
+    ADD_MESSAGE(ResultCode.DUPLICATE_SCHEMA, "schema '%s' already exists", 1);
+    ADD_MESSAGE(ResultCode.DUPLICATE_TABLE, "table '%s' already exists", 1);
+    ADD_MESSAGE(ResultCode.DUPLICATE_COLUMN, "column '%s' already exists", 1);
+    ADD_MESSAGE(ResultCode.DUPLICATE_ALIAS, "table name '%s' specified more than once", 1);
+    ADD_MESSAGE(ResultCode.DUPLICATE_INDEX, "index '%s' already exists", 1);
+    ADD_MESSAGE(ResultCode.DUPLICATE_PARTITION, "partition '%s' already exists", 1);
+
+    ADD_MESSAGE(ResultCode.DIVISION_BY_ZERO, "Division by zero: %s", 1);
+
+    ADD_MESSAGE(ResultCode.DATATYPE_MISMATCH,
+        "column \"%s\" is of type %s but expression %s is of type %s", 4);
+
+    ADD_MESSAGE(ResultCode.SET_OPERATION_SCHEMA_MISMATCH, "each %s query must have the same number of columns", 1);
+    ADD_MESSAGE(ResultCode.SET_OPERATION_DATATYPE_MISMATCH, "%s types %s and %s cannot be matched");
+
+    ADD_MESSAGE(ResultCode.CAT_UPGRADE_REQUIRED, "Catalog must be upgraded");
+    ADD_MESSAGE(ResultCode.CAT_CANNOT_CONNECT, "Cannot connect metadata store '%s': %s", 2);
+
+    ADD_MESSAGE(ResultCode.UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {
