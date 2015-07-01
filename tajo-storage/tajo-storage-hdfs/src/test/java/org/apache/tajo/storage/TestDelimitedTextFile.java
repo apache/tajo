@@ -178,7 +178,7 @@ public class TestDelimitedTextFile {
   }
 
   @Test
-  public void testSkippingHeaderFooter() throws IOException {
+  public void testSkippingHeaderFooterWithJson() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
     meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
     meta.putOption(StorageConstants.TEXT_SKIP_FOOTER_LINE, "1");
@@ -199,6 +199,33 @@ public class TestDelimitedTextFile {
       }
     } finally {
       assertEquals(3, lines);
+      scanner.close();
+    }
+  }
+
+  @Test
+  public void testSkippingHeaderFooterWithText() throws IOException {
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "1");
+    meta.putOption(StorageConstants.TEXT_SKIP_FOOTER_LINE, "1");
+    meta.putOption(StorageConstants.TEXT_DELIMITER, ",");
+    FileFragment fragment = getFileFragment("testSkip.txt");
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    scanner.init();
+
+    int lines = 0;
+
+    try {
+      while (true) {
+        Tuple tuple = scanner.next();
+        if (tuple != null) {
+          assertEquals(17+lines, tuple.getInt2(2));
+          lines++;
+        }
+        else break;
+      }
+    } finally {
+      assertEquals(6, lines);
       scanner.close();
     }
   }
