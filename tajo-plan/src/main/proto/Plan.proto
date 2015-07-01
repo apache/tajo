@@ -105,6 +105,7 @@ message ScanNode {
   repeated Target targets = 4;
   optional EvalNodeTree qual = 5;
   optional bool broadcast = 6;
+  required bool nameResolveBase = 7;
 }
 
 message PartitionScanSpec {
@@ -172,6 +173,7 @@ message TableSubQueryNode {
   required int32 childSeq = 1;
   required string tableName = 2;
   repeated Target targets = 3;
+  required bool nameResolveBase = 4;
 }
 
 message ProjectionNode {

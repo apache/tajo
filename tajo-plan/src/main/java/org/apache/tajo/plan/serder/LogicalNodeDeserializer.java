@@ -425,6 +425,7 @@ public class LogicalNodeDeserializer {
     }
     scan.setInSchema(convertSchema(protoNode.getInSchema()));
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    scan.setNameResolveBase(scanProto.getNameResolveBase());
   }
 
   private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, EvalContext evalContext,
@@ -452,6 +453,7 @@ public class LogicalNodeDeserializer {
     if (proto.getTargetsCount() > 0) {
       tableSubQuery.setTargets(convertTargets(context, evalContext, proto.getTargetsList()));
     }
+    tableSubQuery.setNameResolveBase(proto.getNameResolveBase());
 
     return tableSubQuery;
   }

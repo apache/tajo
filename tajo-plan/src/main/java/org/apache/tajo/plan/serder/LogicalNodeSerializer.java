@@ -433,6 +433,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     }
 
     scanBuilder.setBroadcast(scan.isBroadcastTable());
+    scanBuilder.setNameResolveBase(scan.isNameResolveBase());
     return scanBuilder;
   }
 
@@ -474,6 +475,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (node.hasTargets()) {
       builder.addAllTargets(ProtoUtil.<PlanProto.Target>toProtoObjects(node.getTargets()));
     }
+    builder.setNameResolveBase(node.isNameResolveBase());
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setTableSubQuery(builder);

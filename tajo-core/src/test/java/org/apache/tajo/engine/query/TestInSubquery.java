@@ -145,7 +145,7 @@ public class TestInSubquery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  @Test()
+  @Test
   public final void testCorrelatedSubQuery() throws Exception {
     try {
       executeString("select * from nation where n_regionkey in (select r_regionkey from region where default.nation.n_name > r_name)");
@@ -153,5 +153,10 @@ public class TestInSubquery extends TestJoinQuery {
     } catch (ServiceException e) {
       assertEquals("Correlated subquery is not supported yet.", e.getMessage());
     }
+  }
+
+  @Test
+  public final void testTPCDSlikeQuery() throws Exception {
+    executeString("select n_regionkey, count(*) from customer, lineitem, orders, supplier, nation where l_orderkey = o_orderkey and c_custkey = o_custkey and l_suppkey = s_suppkey and l_partkey in ( select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9)) and n_nationkey = c_nationkey group by n_regionkey order by n_regionkey limit 100;");
   }
 }

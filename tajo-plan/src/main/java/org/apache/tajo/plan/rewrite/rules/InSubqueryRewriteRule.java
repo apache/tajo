@@ -122,7 +122,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
 
         block.addJoinType(joinType);
         block.registerNode(joinNode);
-        plan.addHistory("IN subquery is rewritten into " + joinType + " join.");
+        plan.addHistory("IN subquery is rewritten into " + (eachIn.isNot() ? "anti" : "semi") + " join.");
 
         // set the created join as the base relation
         baseRelation = joinNode;

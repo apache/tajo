@@ -22,10 +22,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.algebra.Relation;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchColumnException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -242,9 +240,11 @@ public abstract class NameResolver {
     List<Column> candidates = TUtil.newList();
 
     for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getLogicalSchema().getColumn(columnName);
-      if (found != null) {
-        candidates.add(found);
+      if (rel.isNameResolveBase()) {
+        Column found = rel.getLogicalSchema().getColumn(columnName);
+        if (found != null) {
+          candidates.add(found);
+        }
       }
     }
 

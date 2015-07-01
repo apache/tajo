@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.joinorder;
 
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -32,7 +33,8 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
   public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) throws PlanningException {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
-    isSymmetricJoinOnly = PlannerUtil.isSymmetricJoin(edge.getJoinType());
+    isSymmetricJoinOnly &= PlannerUtil.isSymmetricJoin(edge.getJoinType())
+        || edge.getJoinType() == JoinType.LEFT_SEMI || edge.getJoinType() == JoinType.LEFT_ANTI;
     this.addEdge(left, right, edge);
     return edge;
   }
