@@ -34,6 +34,8 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BitArray;
@@ -296,6 +298,11 @@ public class RowFile {
     @Override
     public boolean isSelectable() {
       return false;
+    }
+
+    @Override
+    public void setFilter(EvalNode filter) {
+      throw new UnsupportedException();
     }
 
     @Override

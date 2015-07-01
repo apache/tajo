@@ -63,6 +63,9 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
   private static final String tajoSessionIdHeaderName = "X-Tajo-Session";
   private static final String tajoDigestHeaderName = "X-Tajo-Digest";
+	private static final String tajoOffsetHeaderName = "X-Tajo-Offset";
+	private static final String tajoCountHeaderName = "X-Tajo-Count";
+	private static final String tajoEOSHeaderName = "X-Tajo-EOS";
 
   public TestQueryResultResource() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
@@ -220,69 +223,6 @@ public class TestQueryResultResource extends QueryTestCaseBase {
   }
 
   @Test
-  public void testGetQueryResultSetWithOffset() throws Exception {
-    String sessionId = generateNewSessionAndGetId();
-    URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
-    URI queryResultURI = new URI(queryIdURI + "/result");
-
-    GetQueryResultDataResponse response = restClient.target(queryResultURI)
-        .request().header(tajoSessionIdHeaderName, sessionId)
-        .get(new GenericType<GetQueryResultDataResponse>(GetQueryResultDataResponse.class));
-
-    assertNotNull(response);
-    assertNotNull(response.getResultCode());
-    assertEquals(ResultCode.OK, response.getResultCode());
-    assertNotNull(response.getSchema());
-    assertEquals(16, response.getSchema().getRootColumns().size());
-    assertNotNull(response.getResultset());
-    assertTrue(response.getResultset().getId() != 0);
-    assertNotNull(response.getResultset().getLink());
-
-    URI queryResultSetURI = response.getResultset().getLink();
-
-    Response queryResultSetResponse = restClient.target(queryResultSetURI)
-        .queryParam("count", 100)
-        .queryParam("offset", 3)
-        .request().header(tajoSessionIdHeaderName, sessionId)
-        .get();
-
-    assertNotNull(queryResultSetResponse);
-    String tajoDigest = queryResultSetResponse.getHeaderString(tajoDigestHeaderName);
-    assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
-
-    DataInputStream queryResultSetInputStream =
-        new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
-
-    assertNotNull(queryResultSetInputStream);
-
-    boolean isFinished = false;
-    List<Tuple> tupleList = TUtil.newList();
-    RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
-    MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
-    while (!isFinished) {
-      try {
-        int length = queryResultSetInputStream.readInt();
-        byte[] dataByteArray = new byte[length];
-        int readBytes = queryResultSetInputStream.read(dataByteArray);
-
-        assertEquals(length, readBytes);
-
-        tupleList.add(decoder.toTuple(dataByteArray));
-        messageDigest.update(dataByteArray);
-      } catch (EOFException eof) {
-        isFinished = true;
-      }
-    }
-
-    assertEquals(3, tupleList.size());
-    assertEquals(tajoDigest, Base64.encodeBase64String(messageDigest.digest()));
-
-    for (Tuple aTuple: tupleList) {
-      assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
-    }
-  }
-
-  @Test
   public void testGetQueryResultSetWithDefaultCount() throws Exception {
     String sessionId = generateNewSessionAndGetId();
     URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
@@ -309,7 +249,14 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertNotNull(queryResultSetResponse);
     String tajoDigest = queryResultSetResponse.getHeaderString(tajoDigestHeaderName);
+    int offset = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoOffsetHeaderName));
+    int count = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoCountHeaderName));
+    boolean eos = Boolean.valueOf(queryResultSetResponse.getHeaderString(tajoEOSHeaderName));
+
     assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
+    assertTrue(eos);
+    assertEquals(0, offset);
+    assertEquals(5, count);
 
     DataInputStream queryResultSetInputStream =
         new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));

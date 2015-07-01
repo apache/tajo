@@ -21,60 +21,69 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 
 import java.io.IOException;
 
-// dummy scanner
+/**
+ * It's a dummy class to avoid subclass to implement all methods.
+ */
 public abstract class AbstractScanner implements Scanner {
 
   @Override
   public void init() throws IOException {
-
+    throw new UnimplementedException();
   }
 
   @Override
   public void reset() throws IOException {
+    throw new UnimplementedException();
   }
 
   @Override
   public void close() throws IOException {
+    throw new UnimplementedException();
   }
 
   @Override
   public boolean isProjectable() {
-    return false;
+    throw new UnimplementedException();
   }
 
   @Override
   public void setTarget(Column[] targets) {
+    throw new UnsupportedException();
   }
 
   @Override
   public boolean isSelectable() {
-    return false;
+    throw new UnimplementedException();
   }
 
   @Override
-  public void setSearchCondition(Object expr) {
+  public void setFilter(EvalNode filter) {
+    throw new UnsupportedException();
   }
 
   @Override
   public boolean isSplittable() {
-    return false;
+    throw new UnimplementedException();
   }
 
   @Override
   public float getProgress() {
-    return 0;
+    throw new UnimplementedException();
   }
 
   @Override
   public TableStats getInputStats() {
-    return null;
+    throw new UnimplementedException();
   }
 
   @Override
   public Schema getSchema() {
-    return null;
+    throw new UnimplementedException();
   }
 }
