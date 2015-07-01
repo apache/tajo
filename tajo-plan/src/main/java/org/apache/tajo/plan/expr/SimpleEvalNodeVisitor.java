@@ -41,42 +41,46 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
     } else {
 
       switch (evalNode.getType()) {
-      // Column and Value reference expressions
-      case CONST:
-        result = visitConst(context, (ConstEval) evalNode, stack);
-        break;
-      case ROW_CONSTANT:
-        result = visitRowConstant(context, (RowConstantEval) evalNode, stack);
-        break;
-      case FIELD:
-        result = visitField(context, stack, (FieldEval) evalNode);
-        break;
+        // Column and Value reference expressions
+        case CONST:
+          result = visitConst(context, (ConstEval) evalNode, stack);
+          break;
+        case ROW_CONSTANT:
+          result = visitRowConstant(context, (RowConstantEval) evalNode, stack);
+          break;
+        case FIELD:
+          result = visitField(context, stack, (FieldEval) evalNode);
+          break;
 
 
-      // SQL standard predicates
-      case BETWEEN:
-        result = visitBetween(context, (BetweenPredicateEval) evalNode, stack);
-        break;
-      case CASE:
-        result = visitCaseWhen(context, (CaseWhenEval) evalNode, stack);
-        break;
-      case IF_THEN:
-        result = visitIfThen(context, (CaseWhenEval.IfThenEval) evalNode, stack);
-        break;
+        // SQL standard predicates
+        case BETWEEN:
+          result = visitBetween(context, (BetweenPredicateEval) evalNode, stack);
+          break;
+        case CASE:
+          result = visitCaseWhen(context, (CaseWhenEval) evalNode, stack);
+          break;
+        case IF_THEN:
+          result = visitIfThen(context, (CaseWhenEval.IfThenEval) evalNode, stack);
+          break;
 
-      // Functions
-      case FUNCTION:
-        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
-        break;
-      case AGG_FUNCTION:
-        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
-        break;
-      case WINDOW_FUNCTION:
-        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
-        break;
+        // Functions
+        case FUNCTION:
+          result = visitFuncCall(context, (FunctionEval) evalNode, stack);
+          break;
+        case AGG_FUNCTION:
+          result = visitFuncCall(context, (FunctionEval) evalNode, stack);
+          break;
+        case WINDOW_FUNCTION:
+          result = visitFuncCall(context, (FunctionEval) evalNode, stack);
+          break;
 
-      default:
-        throw new UnsupportedException("Unknown EvalType: " + evalNode);
+        case SUBQUERY:
+          result = visitSubquery(context, (SubqueryEval) evalNode, stack);
+          break;
+
+        default:
+          throw new UnsupportedException("Unknown EvalType: " + evalNode);
       }
     }
 
@@ -168,5 +172,9 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
 
   protected EvalNode visitFuncCall(CONTEXT context, FunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
+  }
+
+  protected EvalNode visitSubquery(CONTEXT context, SubqueryEval evalNode, Stack<EvalNode> stack) {
+    return evalNode;
   }
 }

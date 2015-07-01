@@ -32,7 +32,6 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
 
@@ -344,6 +343,11 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   public LogicalNode visitFilter(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Selection expr)
       throws PlanningException {
     stack.push(expr);
+    // Since filter push down will be done later, it is guaranteed that in-subqueries are found at only selection.
+    for (Expr eachQual : PlannerUtil.extractInSubquery(expr.getQual())) {
+      InPredicate inPredicate = (InPredicate) eachQual;
+      visit(ctx, stack, inPredicate.getRight());
+    }
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
 
@@ -400,7 +404,6 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   @Override
   public LogicalNode visitTableSubQuery(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
       throws PlanningException {
-
     LogicalPlanner.PlanContext newContext;
     // Note: TableSubQuery always has a table name.
     // SELECT .... FROM (SELECT ...) TB_NAME <-

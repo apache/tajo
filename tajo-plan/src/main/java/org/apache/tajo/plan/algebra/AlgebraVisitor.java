@@ -38,7 +38,6 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitUnion(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException;
   RESULT visitExcept(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException;
   RESULT visitIntersect(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws PlanningException;
-  RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr) throws PlanningException;
   RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr) throws PlanningException;
   RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws PlanningException;
   RESULT visitRelation(CONTEXT ctx, Stack<Expr> stack, Relation expr) throws PlanningException;

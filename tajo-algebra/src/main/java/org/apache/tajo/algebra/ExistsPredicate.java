@@ -26,7 +26,7 @@ public class ExistsPredicate extends UnaryOperator {
   @Expose @SerializedName("IsNot")
   private boolean not;
 
-  public ExistsPredicate(SimpleTableSubQuery simpleTableSubQuery, boolean not) {
+  public ExistsPredicate(TablePrimarySubQuery simpleTableSubQuery, boolean not) {
     super(OpType.ExistsPredicate);
     this.not = not;
     setChild(simpleTableSubQuery);
@@ -36,8 +36,8 @@ public class ExistsPredicate extends UnaryOperator {
     return this.not;
   }
 
-  public SimpleTableSubQuery getSubQuery() {
-    return (SimpleTableSubQuery) getChild();
+  public TablePrimarySubQuery getSubQuery() {
+    return (TablePrimarySubQuery) getChild();
   }
 
   @Override

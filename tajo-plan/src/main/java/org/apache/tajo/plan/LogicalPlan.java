@@ -68,15 +68,12 @@ public class LogicalPlan {
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
 
-  private static enum ExplainType {
+  private enum ExplainType {
     NOT_EXPLAIN,
     EXPLAIN_LOGICAL,
     EXPLAIN_GLOBAL
   }
   private ExplainType explainType = ExplainType.NOT_EXPLAIN;
-
-  public LogicalPlan(LogicalPlanner planner) {
-  }
 
   /**
    * Create a LogicalNode instance for a type. Each a LogicalNode instance is given an unique plan node id (PID).

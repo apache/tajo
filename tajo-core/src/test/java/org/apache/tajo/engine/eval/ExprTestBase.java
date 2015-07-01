@@ -105,7 +105,7 @@ public class ExprTestBase {
     preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
     planner = new LogicalPlanner(cat, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(util.getConfiguration());
-    annotatedPlanVerifier = new LogicalPlanVerifier(util.getConfiguration(), cat);
+    annotatedPlanVerifier = new LogicalPlanVerifier();
   }
 
   @AfterClass
@@ -150,7 +150,7 @@ public class ExprTestBase {
     }
     LogicalPlan plan = planner.createPlan(context, expr, true);
     optimizer.optimize(context, plan);
-    annotatedPlanVerifier.verify(context, state, plan);
+    annotatedPlanVerifier.verify(state, plan);
 
     if (state.getErrorMessages().size() > 0) {
       assertFalse(state.getErrorMessages().get(0), true);

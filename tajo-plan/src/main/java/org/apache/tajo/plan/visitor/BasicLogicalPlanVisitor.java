@@ -54,6 +54,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode node,
                       Stack<LogicalNode> stack)
       throws PlanningException {
+    preHook(plan, node, stack, context);
     RESULT current;
     switch (node.getType()) {
       case ROOT:
@@ -141,6 +142,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         throw new PlanningException("Unknown logical node type: " + node.getType());
     }
 
+    postHook(plan, node, stack, context);
     return current;
   }
 

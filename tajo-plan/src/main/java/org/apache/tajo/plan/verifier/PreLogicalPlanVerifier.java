@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.validation.ConstraintViolation;
 
@@ -79,6 +80,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return expr;
   }
 
+  @Override
   public Expr visitProjection(Context context, Stack<Expr> stack, Projection expr) throws PlanningException {
     super.visitProjection(context, stack, expr);
 
@@ -252,7 +254,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+  @Override
   public Expr visitInsert(Context context, Stack<Expr> stack, Insert expr) throws PlanningException {
     Expr child = super.visitInsert(context, stack, expr);
 
