@@ -1383,9 +1383,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock childBlock = context.plan.getBlock(context.plan.getBlockNameByExpr(expr.getSubQuery()));
     PlanContext newContext = new PlanContext(context, childBlock);
+    context.plan.connectBlocks(childBlock, context.queryBlock, BlockType.TableSubQuery);
     LogicalNode child = visit(newContext, new Stack<Expr>(), expr.getSubQuery());
     TableSubQueryNode subQueryNode = context.queryBlock.getNodeFromExpr(expr);
-    context.plan.connectBlocks(childBlock, context.queryBlock, BlockType.TableSubQuery);
     subQueryNode.setSubQuery(child);
 
     // Add additional expressions required in upper nodes.

@@ -301,7 +301,7 @@ public class QueryTestCaseBase {
     }
     LogicalPlan plan = planner.createPlan(context, expr);
     optimizer.optimize(plan);
-    postVerifier.verify(context, state, plan);
+    postVerifier.verify(state, plan);
 
     return state;
   }

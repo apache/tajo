@@ -36,20 +36,20 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import java.util.Stack;
 
 public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVerifier.Context, LogicalNode> {
-  public LogicalPlanVerifier(TajoConf conf, CatalogService catalog) {
+  public LogicalPlanVerifier() {
   }
 
   public static class Context {
     VerificationState state;
 
-    public Context(OverridableConf queryContext, VerificationState state) {
+    public Context(VerificationState state) {
       this.state = state;
     }
   }
 
-  public VerificationState verify(OverridableConf queryContext, VerificationState state, LogicalPlan plan)
+  public VerificationState verify(VerificationState state, LogicalPlan plan)
       throws PlanningException {
-    Context context = new Context(queryContext, state);
+    Context context = new Context(state);
     visit(context, plan, plan.getRootBlock());
     return context.state;
   }

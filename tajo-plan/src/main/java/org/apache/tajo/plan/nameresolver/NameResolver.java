@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchColumnException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.algebra.AmbiguousFieldException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -149,12 +150,29 @@ public abstract class NameResolver {
    * @throws PlanningException
    */
   static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                  ColumnReferenceExpr columnRef) throws PlanningException {
+                                           ColumnReferenceExpr columnRef) throws PlanningException {
     String qualifier;
     String canonicalName;
 
     if (columnRef.hasQualifier()) {
-      Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
+      Pair<String, String> normalized;
+      try {
+        normalized = lookupQualifierAndCanonicalName(block, columnRef);
+      } catch (NoSuchColumnException nsce) {
+        // is it correlated subquery?
+        LogicalPlan.QueryBlock current = block;
+        while (!plan.getRootBlock().getName().equals(current.getName())) {
+          LogicalPlan.QueryBlock parentBlock = plan.getParentBlock(current);
+          for (RelationNode relationNode : parentBlock.getRelations()) {
+            if (relationNode.getLogicalSchema().containsByQualifiedName(columnRef.getCanonicalName())) {
+              throw new UnsupportedException("Correlated subquery is not supported yet.");
+            }
+          }
+          current = parentBlock;
+        }
+
+        throw nsce;
+      }
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
 

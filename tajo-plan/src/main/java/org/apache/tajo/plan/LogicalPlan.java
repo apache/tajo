@@ -74,7 +74,7 @@ public class LogicalPlan {
     EXPLAIN_GLOBAL
   }
   private ExplainType explainType = ExplainType.NOT_EXPLAIN;
-  
+
   /**
    * Create a LogicalNode instance for a type. Each a LogicalNode instance is given an unique plan node id (PID).
    *
