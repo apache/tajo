@@ -68,7 +68,7 @@ public class LogicalPlan {
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
 
-  private static enum ExplainType {
+  private enum ExplainType {
     NOT_EXPLAIN,
     EXPLAIN_LOGICAL,
     EXPLAIN_GLOBAL
@@ -173,7 +173,8 @@ public class LogicalPlan {
    */
   private String attachSeqIdToGeneratedColumnName(String prefix) {
     int sequence = noNameColumnId++;
-    return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + (sequence > 0 ? "_" + sequence : "");
+//    return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + (sequence > 0 ? "_" + sequence : "");
+    return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + "_" + sequence;
   }
 
   /**
