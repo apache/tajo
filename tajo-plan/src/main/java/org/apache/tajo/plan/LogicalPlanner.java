@@ -146,7 +146,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug)
       throws PlanningException {
 
-    LogicalPlan plan = new LogicalPlan(this);
+    LogicalPlan plan = new LogicalPlan();
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, debug);
@@ -273,6 +273,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     projectionNode.init(projection.isDistinct(), targets);
     projectionNode.setChild(child);
     projectionNode.setInSchema(child.getOutSchema());
+    projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
 
     if (projection.isDistinct() && block.hasNode(NodeType.GROUP_BY)) {
       throw new VerifyException("Cannot support grouping and distinct at the same time yet");
@@ -294,7 +295,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   private void setRawTargets(PlanContext context, Target[] targets, String[] referenceNames,
                              Projection projection) throws PlanningException {
-    LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
     // It's for debugging or unit tests.

@@ -74,10 +74,7 @@ public class LogicalPlan {
     EXPLAIN_GLOBAL
   }
   private ExplainType explainType = ExplainType.NOT_EXPLAIN;
-
-  public LogicalPlan(LogicalPlanner planner) {
-  }
-
+  
   /**
    * Create a LogicalNode instance for a type. Each a LogicalNode instance is given an unique plan node id (PID).
    *
@@ -173,8 +170,7 @@ public class LogicalPlan {
    */
   private String attachSeqIdToGeneratedColumnName(String prefix) {
     int sequence = noNameColumnId++;
-//    return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + (sequence > 0 ? "_" + sequence : "");
-    return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + "_" + sequence;
+    return NONAMED_COLUMN_PREFIX + prefix.toLowerCase() + (sequence > 0 ? "_" + sequence : "");
   }
 
   /**
