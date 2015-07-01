@@ -28,6 +28,8 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.sql.ResultSet;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -157,6 +159,7 @@ public class TestInSubquery extends TestJoinQuery {
 
   @Test
   public final void testTPCDSlikeQuery() throws Exception {
-    executeString("select n_regionkey, count(*) from customer, lineitem, orders, supplier, nation where l_orderkey = o_orderkey and c_custkey = o_custkey and l_suppkey = s_suppkey and l_partkey in ( select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9)) and n_nationkey = c_nationkey group by n_regionkey order by n_regionkey limit 100;");
+    ResultSet res = executeString("select n_regionkey, count(*) from customer, lineitem, orders, supplier, nation where l_orderkey = o_orderkey and c_custkey = o_custkey and l_suppkey = s_suppkey and l_partkey in ( select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9)) and n_nationkey = c_nationkey group by n_regionkey order by n_regionkey limit 100;");
+    System.out.println(resultSetToString(res));
   }
 }
