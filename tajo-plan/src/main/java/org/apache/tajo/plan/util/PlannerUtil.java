@@ -487,7 +487,7 @@ public class PlannerUtil {
     Preconditions.checkNotNull(type);
 
     ParentNodeFinder finder = new ParentNodeFinder(type);
-    node.postOrder(finder);
+    node.preOrder(finder);
 
     if (finder.getFoundNodes().size() == 0) {
       return null;
@@ -770,8 +770,9 @@ public class PlannerUtil {
     }
   }
 
-  public static boolean isCommutativeJoin(JoinType joinType) {
-    return joinType == JoinType.INNER;
+  public static boolean isSymmetricJoin(JoinType joinType) {
+    // Full outer join is also commutative.
+    return joinType == JoinType.INNER || joinType == JoinType.CROSS || joinType == JoinType.FULL_OUTER;
   }
 
   public static boolean isOuterJoin(JoinType joinType) {

@@ -95,8 +95,8 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       |-eb_1404143727281_0002_000005
          |-eb_1404143727281_0002_000004        (order by)
             |-eb_1404143727281_0002_000003     (join)
-               |-eb_1404143727281_0002_000002  (scan)
-               |-eb_1404143727281_0002_000001  (scan, filter)
+               |-eb_1404143727281_0002_000002  (scan, filter)
+               |-eb_1404143727281_0002_000001  (scan)
        */
       res = executeQuery();
 
@@ -104,9 +104,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       System.out.println(actualResult);
 
       // in/out * stage(4)
-      long[] expectedNumRows = new long[]{2, 2, 5, 5, 7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{8, 34, 20, 75, 109, 34, 34, 18};
-      long[] expectedReadBytes = new long[]{8, 8, 20, 20, 109, 0, 34, 0};
+      long[] expectedNumRows = new long[]{5, 5, 2, 2, 7, 2, 2, 2};
+      long[] expectedNumBytes = new long[]{20, 75, 8, 34, 109, 34, 34, 18};
+      long[] expectedReadBytes = new long[]{20, 20, 8, 8, 109, 0, 34, 0};
 
       assertStatus(4, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {

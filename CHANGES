@@ -29,6 +29,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1352: Improve the join order algorithm to consider missed cases of 
+    associative join operators. (jihoon)
+
     TAJO-1659: Simplify scan iteration in SeqScan. (hyunsik)
 
     TAJO-751: JDBC driver should support cancel() method.
