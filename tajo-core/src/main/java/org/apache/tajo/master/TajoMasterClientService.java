@@ -36,11 +36,9 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.client.ClientErrorUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.error.Errors;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -330,7 +328,7 @@ public class TajoMasterClientService extends AbstractService {
         // the query result was expired due to timeout.
         // In this case, we will result in error.
         if (queryInfo == null) {
-          builder.setErrorMessage("No such query: " + queryId.toString());
+          builder.setState(ERR_NO_SUCH_QUERY_ID(queryId));
           return builder.build();
         }
 
@@ -343,11 +341,11 @@ public class TajoMasterClientService extends AbstractService {
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
-            builder.setState(ClientErrorUtil.returnError(Errors.ResultCode.NO_DATA));
+            builder.setState(ERR_NO_DATA(queryId));
             break;
 
           default:
-            builder.setState(ClientErrorUtil.returnError(Errors.ResultCode.INCOMPLETE_QUERY));
+            builder.setState(ERR_INCOMPLETE_QUERY(queryId));
         }
 
         return builder.build();
@@ -397,9 +395,10 @@ public class TajoMasterClientService extends AbstractService {
     public GetQueryListResponse getFinishedQueryList(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
 
+      GetQueryListResponse.Builder builder = GetQueryListResponse.newBuilder();
+
       try {
         context.getSessionManager().touch(request.getId());
-        GetQueryListResponse.Builder builder = GetQueryListResponse.newBuilder();
 
         Collection<QueryInfo> queries
             = context.getQueryJobManager().getFinishedQueries();
@@ -421,11 +420,12 @@ public class TajoMasterClientService extends AbstractService {
           builder.addQueryList(infoBuilder.build());
         }
 
-        GetQueryListResponse result = builder.build();
-        return result;
+        builder.setState(OK);
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        builder.setState(returnError(t));
       }
+
+      return builder.build();
     }
 
     @Override

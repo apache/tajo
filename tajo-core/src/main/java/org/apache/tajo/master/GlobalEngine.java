@@ -40,7 +40,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
@@ -186,9 +189,12 @@ public class GlobalEngine extends AbstractService {
       LogicalPlan plan = createLogicalPlan(queryContext, planningContext);
       SubmitQueryResponse response = queryExecutor.execute(queryContext, session, query, jsonExpr, plan);
       return response;
+
+
     } catch (Throwable t) {
+      ExceptionUtil.printStackTraceIfError(LOG, t);
+
       context.getSystemMetrics().counter("Query", "errorQuery").inc();
-      LOG.error("\nStack Trace:\n" + StringUtils.stringifyException(t));
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
@@ -241,9 +247,9 @@ public class GlobalEngine extends AbstractService {
         ddlExecutor.execute(queryContext, plan);
         return QueryIdFactory.NULL_QUERY_ID;
       }
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      throw new IOException(e.getMessage(), e);
+    } catch (Throwable e) {
+      ExceptionUtil.printStackTraceIfError(LOG, e);
+      throw e;
     }
   }
 

@@ -186,7 +186,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     Preconditions.checkNotNull(name);
 
     if (name.equalsIgnoreCase("RAW")) {
-      state.addVerification(SyntaxErrorUtil.makeUnknownDataformat(name));
+      state.addVerification(SyntaxErrorUtil.makeUnknownDataFormat(name));
       return false;
     }
     return true;

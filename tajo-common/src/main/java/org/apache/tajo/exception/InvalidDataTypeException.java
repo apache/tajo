@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.logical;
+package org.apache.tajo.exception;
 
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.error.Errors;
 
-import org.apache.tajo.plan.verifier.VerifyException;
+public class InvalidDataTypeException extends TajoRuntimeException {
 
-public class NoSuchColumnException extends VerifyException {
-  private static final long serialVersionUID = 277182608283894937L;
-
-  public NoSuchColumnException(String databaseName, String relName, String columnName) {
-    super(String.format("ERROR: column \" %s.%s \" in %s does not exist", relName, columnName, databaseName));
-  }
-
-  public NoSuchColumnException(String columnName) {
-    super("ERROR: column \"" + columnName + "\" does not exist");
+  public InvalidDataTypeException(DataType dataType) {
+    super(Errors.ResultCode.INVALID_DATATYPE, dataType.getType().name());
   }
 }

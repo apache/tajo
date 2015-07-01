@@ -56,4 +56,8 @@ public class CatalogExceptionUtil {
   public static CatalogException makeCatalogUpgrade() {
     return new CatalogException(ResultCode.CAT_UPGRADE_REQUIRED);
   }
+
+  public static CatalogException makeTMCNoMatchedDataType(String dataType) {
+    return new CatalogException(ResultCode.TMC_NO_MATCHED_DATATYPE, dataType);
+  }
 }

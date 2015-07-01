@@ -30,23 +30,32 @@ public class ErrorMessages {
   static {
     MESSAGES = Maps.newHashMap();
 
-    ADD_MESSAGE(ResultCode.INTERNAL_ERROR, "internal Error: %s", 1);
+    // Warnings
+
+    // General Errors
+    ADD_MESSAGE(ResultCode.INTERNAL_ERROR, "internal error: %s", 1);
+    ADD_MESSAGE(ResultCode.NOT_IMPLEMENTED, "not implemented feature: %s", 1);
+    ADD_MESSAGE(ResultCode.UNSUPPORTED, "unsupported feature: %s", 1);
     ADD_MESSAGE(ResultCode.INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
 
-    ADD_MESSAGE(ResultCode.NO_SUCH_QUERYID, "query id '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.NO_DATA, "no data due to query failure or error");
-    ADD_MESSAGE(ResultCode.INCOMPLETE_QUERY, "query '%s' is stilling running", 1);
+    // Query Management and Scheduler
+    ADD_MESSAGE(ResultCode.NO_SUCH_QUERYID, "query %s does not exist", 1);
+    ADD_MESSAGE(ResultCode.NO_DATA, "no data for %s due to query failure or error", 1);
+    ADD_MESSAGE(ResultCode.INCOMPLETE_QUERY, "query %s is stilling running", 1);
 
+    // Session
     ADD_MESSAGE(ResultCode.INVALID_SESSION, "invalid Session '%s'", 1);
     ADD_MESSAGE(ResultCode.NO_SUCH_SESSION_VARIABLE, "no such session variable '%s", 1);
     ADD_MESSAGE(ResultCode.INVALID_SESSION_VARIABLE, "invalid session variable '%s': %s", 2);
+
 
     ADD_MESSAGE(ResultCode.INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
 
     ADD_MESSAGE(ResultCode.SYNTAX_ERROR, "%s", 1);
 
     ADD_MESSAGE(ResultCode.UNDEFINED_DATABASE, "database '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_TABLE, "table '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.UNDEFINED_SCHEMA, "schema '%s' does not exist", 1);
+    ADD_MESSAGE(ResultCode.UNDEFINED_TABLE, "relation '%s' does not exist", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_COLUMN, "column '%s' does not exist", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_FUNCTION, "function does not exist: %s", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
@@ -67,8 +76,10 @@ public class ErrorMessages {
     ADD_MESSAGE(ResultCode.SET_OPERATION_SCHEMA_MISMATCH, "each %s query must have the same number of columns", 1);
     ADD_MESSAGE(ResultCode.SET_OPERATION_DATATYPE_MISMATCH, "%s types %s and %s cannot be matched");
 
-    ADD_MESSAGE(ResultCode.CAT_UPGRADE_REQUIRED, "Catalog must be upgraded");
-    ADD_MESSAGE(ResultCode.CAT_CANNOT_CONNECT, "Cannot connect metadata store '%s': %s", 2);
+    ADD_MESSAGE(ResultCode.CAT_UPGRADE_REQUIRED, "catalog must be upgraded");
+    ADD_MESSAGE(ResultCode.CAT_CANNOT_CONNECT, "cannot connect metadata store '%s': %s", 2);
+
+    ADD_MESSAGE(ResultCode.TMC_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     ADD_MESSAGE(ResultCode.UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
   }
@@ -96,7 +107,7 @@ public class ErrorMessages {
 
   public static String getMessage(ResultCode code, String...args) {
     if (!MESSAGES.containsKey(code)) {
-      throw new TajoRuntimeException(code, args);
+      throw new TajoInternalError("no error message for " + code);
     } else {
 
       Pair<String, Integer> messageFormat = MESSAGES.get(code);

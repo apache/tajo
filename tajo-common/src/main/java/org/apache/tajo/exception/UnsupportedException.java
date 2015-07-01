@@ -24,10 +24,10 @@ public class UnsupportedException extends TajoRuntimeException {
   private static final long serialVersionUID = 6702291354858193578L;
 
   public UnsupportedException(String featureName) {
-    super(Errors.ResultCode.NOT_SUPPORTED, featureName);
+    super(Errors.ResultCode.UNSUPPORTED, featureName);
   }
 
   public UnsupportedException() {
-    super(Errors.ResultCode.NOT_SUPPORTED, Thread.currentThread().getStackTrace()[1].getClassName());
+    super(Errors.ResultCode.UNSUPPORTED, Thread.currentThread().getStackTrace()[1].getClassName());
   }
 }

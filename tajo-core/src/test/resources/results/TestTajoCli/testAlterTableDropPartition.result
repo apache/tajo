@@ -1,2 +1,2 @@
 OK
-ERROR: DROP_PARTITION is not supported yet
+ERROR: not implemented feature: DROP_PARTITION

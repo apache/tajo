@@ -78,8 +78,7 @@ message QueryRequest {
 
 message UpdateQueryResponse {
   required ResponseState state = 1;
-  optional string errorMessage = 2;
-  optional KeyValueSetProto sessionVars = 3;
+  optional KeyValueSetProto sessionVars = 2;
 }
 
 message GetQueryResultRequest {
@@ -90,8 +89,7 @@ message GetQueryResultRequest {
 message GetQueryResultResponse {
   required ResponseState state = 1;
   optional TableDescProto tableDesc = 2;
-  optional string errorMessage = 3;
-  optional string tajoUserName = 4;
+  optional string tajoUserName = 3;
 }
 
 message QueryIdRequest {

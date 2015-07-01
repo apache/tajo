@@ -44,11 +44,11 @@ public class SyntaxErrorUtil {
     return new SyntaxErrorException(ResultCode.DUPLICATE_ALIAS, name);
   }
 
-  public static SyntaxErrorException makeUnknownDataformat(String format) {
-    return new SyntaxErrorException(ResultCode.UNKNOWN_DATAFORMAT, format);
-  }
-
   public static SyntaxErrorException makeInvalidSessionVar(String varName, String message) {
     return new SyntaxErrorException(ResultCode.INVALID_SESSION_VARIABLE, varName, message);
+  }
+
+  public static SyntaxErrorException makeUnknownDataFormat(String dataFormat) {
+    return new SyntaxErrorException(ResultCode.UNKNOWN_DATAFORMAT, dataFormat);
   }
 }

@@ -47,7 +47,7 @@ public class ClientErrorUtil {
     return builder.build();
   }
 
-  private static ResponseState returnError(ResultCode code, String...args) {
+  public static ResponseState returnError(ResultCode code, String...args) {
     Preconditions.checkNotNull(args);
 
     ResponseState.Builder builder = ResponseState.newBuilder();
@@ -102,6 +102,14 @@ public class ClientErrorUtil {
 
   public static ResponseState ERR_NO_SUCH_QUERY_ID(QueryId queryId) {
     return returnError(ResultCode.NO_SUCH_QUERYID, queryId.toString());
+  }
+
+  public static ResponseState ERR_NO_DATA(QueryId queryId) {
+    return returnError(ResultCode.NO_DATA, queryId.toString());
+  }
+
+  public static ResponseState ERR_INCOMPLETE_QUERY(QueryId queryId) {
+    return returnError(ResultCode.INCOMPLETE_QUERY, queryId.toString());
   }
 
   public static ResponseState ERR_INVALID_SESSION(String sessionId) {

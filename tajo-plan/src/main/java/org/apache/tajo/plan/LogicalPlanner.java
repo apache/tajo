@@ -35,10 +35,12 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -634,7 +636,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           // TODO - Later, we also consider the possibility that a window function contains only a window name.
           rawWindowSpecs.add(((WindowFunctionExpr) (rawTarget.getExpr())).getWindowSpec());
         }
-      } catch (VerifyException ve) {
+      } catch (UndefinedColumnException uc) {
       }
     }
 
@@ -768,7 +770,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           aggEvals.add((AggregationFunctionCallEval) evalNode);
           block.namedExprsMgr.markAsEvaluated(rawTarget.getAlias(), evalNode);
         }
-      } catch (VerifyException ve) {
+      } catch (UndefinedColumnException ve) {
       }
     }
 
@@ -1008,7 +1010,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           aggEvalNames.add(namedExpr.getAlias());
           aggEvalNodes.add((AggregationFunctionCallEval) evalNode);
         }
-      } catch (VerifyException ve) {
+      } catch (UndefinedColumnException ve) {
       }
     }
     // if there is at least one distinct aggregation function
@@ -1182,7 +1184,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
-      } catch (VerifyException ve) {
+      } catch (UndefinedColumnException ve) {
       } catch (PlanningException e) {
       }
     }
@@ -1253,7 +1255,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
-      } catch (VerifyException ve) {}
+      } catch (UndefinedColumnException ve) {}
     }
 
     List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
@@ -1306,7 +1308,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(rawTarget.getAlias(), evalNode);
           newlyEvaluatedExprsReferences.add(rawTarget.getAlias()); // newly added exr
         }
-      } catch (VerifyException ve) {
+      } catch (UndefinedColumnException ve) {
       }
     }
 
@@ -1391,7 +1393,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           block.namedExprsMgr.markAsEvaluated(rawTarget.getAlias(), evalNode);
           newlyEvaluatedExprs.add(rawTarget.getAlias()); // newly added exr
         }
-      } catch (VerifyException ve) {
+      } catch (UndefinedColumnException ve) {
       }
     }
 
@@ -1811,8 +1813,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
         createTableNode.setPartitionMethod(getPartitionMethod(context, expr.getTableName(), expr.getPartitionMethod()));
       } else {
-        throw new PlanningException(String.format("Not supported PartitonType: %s",
-            expr.getPartitionMethod().getPartitionType()));
+        throw ExceptionUtil.makeNotSupported(
+            String.format("PartitonType " + expr.getPartitionMethod().getPartitionType()));
       }
     }
 

@@ -387,13 +387,11 @@ public class QueryClientImpl implements QueryClient {
     builder.setIsJson(false);
     ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
 
-    if (isError(response.getState())) {
+    if (isSuccess(response.getState())) {
       connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return true;
     } else {
-      if (response.hasErrorMessage()) {
-        LOG.error("ERROR: " + response.getErrorMessage());
-      }
+      LOG.error("ERROR: " + response.getState().getMessage());
       return false;
     }
   }
@@ -413,9 +411,7 @@ public class QueryClientImpl implements QueryClient {
     if (isSuccess(response.getState())) {
       return true;
     } else {
-      if (response.hasErrorMessage()) {
-        LOG.error("ERROR: " + response.getErrorMessage());
-      }
+      LOG.error("ERROR: " + response.getState().getMessage());
       return false;
     }
   }

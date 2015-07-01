@@ -18,11 +18,31 @@
 
 package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors;
+import org.apache.commons.logging.Log;
+import org.apache.hadoop.util.StringUtils;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class ExceptionUtil {
 
   public static TajoRuntimeException makeNotSupported(String feature) {
-    return new TajoRuntimeException(Errors.ResultCode.NOT_SUPPORTED, feature);
+    return new UnsupportedException(feature);
+  }
+
+  public static boolean isManagedException(Throwable t) {
+    return t instanceof TajoException || t instanceof TajoRuntimeException;
+  }
+
+  public static InvalidDataTypeException makeInvalidDataType(DataType dataType) {
+    return new InvalidDataTypeException(dataType);
+  }
+
+  private static void printStackTrace(Log log, Throwable t) {
+    log.error("\nStack Trace:\n" + StringUtils.stringifyException(t));
+  }
+
+  public static void printStackTraceIfError(Log log, Throwable t) {
+    if (!ExceptionUtil.isManagedException(t)) {
+      ExceptionUtil.printStackTrace(log, t);
+    }
   }
 }
