@@ -170,6 +170,10 @@ Release 0.11.0 - unreleased
 
     TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
 
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
+    names only without invalid external table info. 
+    (Contributed by  DaeMyung Kang, Committed by jihoon)
+
     TAJO-1644: When inserting empty data into a partitioned table,
     existing data would be removed. (jaehwa)
 
