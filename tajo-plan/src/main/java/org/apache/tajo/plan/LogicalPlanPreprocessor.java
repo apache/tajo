@@ -122,8 +122,10 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
       while (iterator.hasNext()) {
         relationOp = iterator.next();
-        schema = relationOp.getLogicalSchema();
-        resolvedColumns.addAll(schema.getRootColumns());
+        if (relationOp.isNameResolveBase()) {
+          schema = relationOp.getLogicalSchema();
+          resolvedColumns.addAll(schema.getRootColumns());
+        }
       }
 
       if (resolvedColumns.size() == 0) {

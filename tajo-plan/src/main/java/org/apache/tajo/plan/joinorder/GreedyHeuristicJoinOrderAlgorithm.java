@@ -276,7 +276,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           if (interchangeableWithRightVertex.contains(rightTarget)) {
             JoinEdge targetEdge = joinGraph.getEdge(leftTarget, rightTarget);
             if (targetEdge == null) {
-              if (joinGraph.isSymmetricJoinOnly()) {
+              if (joinGraph.allowArbitraryCrossJoin()) {
                 // Since the targets of the both sides are searched with symmetric characteristics,
                 // the join type is assumed as CROSS.
                 joinGraph.addJoin(graphContext, new JoinSpec(JoinType.CROSS), leftTarget, rightTarget);

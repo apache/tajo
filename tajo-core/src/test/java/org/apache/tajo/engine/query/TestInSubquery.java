@@ -163,10 +163,10 @@ public class TestInSubquery extends TestJoinQuery {
   }
 
   @Test
-  @SimpleTest(
-      queries = @QuerySpec("select l_linenumber from lineitem where l_partkey in (select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9))")
-  )
-  public final void testAAAAAA() throws Exception {
+  @Option(parameterized = true, sort = true)
+  @SimpleTest()
+  public final void testWithAsteriskAndJoin() throws Exception {
+    // select * from lineitem, orders where l_orderkey = o_orderkey and l_partkey in (select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9))
     runSimpleTests();
   }
 }
