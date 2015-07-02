@@ -31,24 +31,24 @@ import "PrimitiveProtos.proto";
 import "errors.proto"; // tajo-common
 import "stacktrace.proto"; // tajo-common
 
-message ResponseState {
+message ReturnState {
   required tajo.error.ResultCode return_code  = 1;
   optional string message                     = 2;
   optional tajo.error.StackTrace stack_trace  = 3;
 }
 
 message StringListResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   repeated string values = 2;
 }
 
 message KeyValueSetResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional KeyValueSetProto value = 2;
 }
 
 message StringResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional string value = 2;
 }
 
@@ -58,7 +58,7 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional SessionIdProto sessionId = 2;
   optional KeyValueSetProto sessionVars = 3;
 }
@@ -70,7 +70,7 @@ message UpdateSessionVariableRequest {
 }
 
 message SessionUpdateResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional KeyValueSetProto sessionVars = 2;
 }
 
@@ -80,7 +80,7 @@ message SessionedStringProto {
 }
 
 message ExplainQueryResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional string explain = 2;
 }
 
@@ -92,7 +92,7 @@ message QueryRequest {
 }
 
 message UpdateQueryResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional KeyValueSetProto sessionVars = 2;
 }
 
@@ -102,7 +102,7 @@ message GetQueryResultRequest {
 }
 
 message GetQueryResultResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional TableDescProto tableDesc = 2;
   optional string tajoUserName = 3;
 }
@@ -128,7 +128,7 @@ message BriefQueryInfo {
 }
 
 message GetQueryListResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   repeated BriefQueryInfo queryList = 2;
 }
 
@@ -144,7 +144,7 @@ message SerializedResultSet {
 }
 
 message SubmitQueryResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional QueryIdProto queryId = 2;
   optional string userName = 3;
   optional bool isForwarded = 4 [default = false];
@@ -160,7 +160,7 @@ message SubmitQueryResponse {
 }
 
 message GetQueryStatusResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional QueryIdProto queryId = 2;
   optional QueryState query_state = 3;
   optional float progress = 4;
@@ -180,7 +180,7 @@ message GetQueryResultDataRequest {
 }
 
 message GetQueryResultDataResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional SerializedResultSet resultSet = 2;
 }
 
@@ -206,7 +206,7 @@ message WorkerResourceInfo {
 }
 
 message GetClusterInfoResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   repeated WorkerResourceInfo workerList = 2;
 }
 
@@ -226,12 +226,12 @@ message DropTableRequest {
 }
 
 message TableResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional TableDescProto tableDesc = 2;
 }
 
 message FunctionResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   repeated FunctionDescProto functions = 2;
   optional string errorMessage = 3;
 }
@@ -286,12 +286,12 @@ message QueryHistoryProto {
 }
 
 message GetQueryHistoryResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional QueryHistoryProto queryHistory = 2;
 }
 
 message GetQueryInfoResponse {
-  required ResponseState state = 1;
+  required ReturnState state = 1;
   optional QueryInfoProto queryInfo = 2;
 }
 

@@ -153,7 +153,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState removeSession(RpcController controller, TajoIdProtos.SessionIdProto request)
+    public ReturnState removeSession(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
 
       if (request != null) {
@@ -203,7 +203,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState existSessionVariable(RpcController controller, SessionedStringProto request)
+    public ReturnState existSessionVariable(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         String value = context.getSessionManager().getVariable(request.getSessionId().getId(), request.getValue());
@@ -256,7 +256,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState selectDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ReturnState selectDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         String sessionId = request.getSessionId().getId();
         String databaseName = request.getValue();
@@ -554,7 +554,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState closeNonForwardQuery(RpcController controller, QueryIdRequest request)
+    public ReturnState closeNonForwardQuery(RpcController controller, QueryIdRequest request)
         throws ServiceException {
 
       try {
@@ -604,7 +604,7 @@ public class TajoMasterClientService extends AbstractService {
      * It is invoked by TajoContainerProxy.
      */
     @Override
-    public ResponseState killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
+    public ReturnState killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
@@ -674,7 +674,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ReturnState createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
@@ -691,7 +691,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState existDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ReturnState existDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         if (catalog.existDatabase(request.getValue())) {
@@ -706,7 +706,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ReturnState dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
@@ -742,7 +742,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState existTable(RpcController controller, SessionedStringProto request) throws ServiceException {
+    public ReturnState existTable(RpcController controller, SessionedStringProto request) throws ServiceException {
 
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
@@ -878,7 +878,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public ResponseState dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
+    public ReturnState dropTable(RpcController controller, DropTableRequest dropTable) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(dropTable.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);

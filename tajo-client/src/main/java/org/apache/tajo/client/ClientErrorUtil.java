@@ -25,38 +25,37 @@ import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoExceptionInterface;
-import org.apache.tajo.ipc.ClientProtos.ResponseState;
-
-import java.sql.SQLException;
+import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.ReturnState;
 
 public class ClientErrorUtil {
 
-  public static final ResponseState OK;
+  public static final ClientProtos.ReturnState OK;
 
   static {
-    ResponseState.Builder builder = ResponseState.newBuilder();
+    ClientProtos.ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(ResultCode.OK);
     OK = builder.build();
   }
 
-  public static ResponseState returnError(ResultCode code) {
-    ResponseState.Builder builder = ResponseState.newBuilder();
+  public static ClientProtos.ReturnState returnError(ResultCode code) {
+    ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(code);
     builder.setMessage(ErrorMessages.getMessage(code));
     return builder.build();
   }
 
-  public static ResponseState returnError(ResultCode code, String...args) {
+  public static ReturnState returnError(ResultCode code, String...args) {
     Preconditions.checkNotNull(args);
 
-    ResponseState.Builder builder = ResponseState.newBuilder();
+    ClientProtos.ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(code);
     builder.setMessage(ErrorMessages.getMessage(code, args));
     return builder.build();
   }
 
-  public static ResponseState returnError(Throwable t) {
-    ResponseState.Builder builder = ResponseState.newBuilder();
+  public static ClientProtos.ReturnState returnError(Throwable t) {
+    ReturnState.Builder builder = ClientProtos.ReturnState.newBuilder();
 
     if (ExceptionUtil.isExceptionWithResultCode(t)) {
       TajoExceptionInterface tajoException = (TajoExceptionInterface) t;
@@ -77,7 +76,7 @@ public class ClientErrorUtil {
    * @param state ResponseState to be checked
    * @return True if ResponseState is success.
    */
-  public static boolean isSuccess(ResponseState state) {
+  public static boolean isSuccess(ClientProtos.ReturnState state) {
     return ErrorUtil.isOk(state.getReturnCode());
   }
 
@@ -87,43 +86,43 @@ public class ClientErrorUtil {
    * @param state ResponseState to be checked
    * @return True if ResponseState is failed.
    */
-  public static boolean isError(ResponseState state) {
+  public static boolean isError(ClientProtos.ReturnState state) {
     return ErrorUtil.isFailed(state.getReturnCode());
   }
 
-  public static ResponseState errInvalidRpcCall(String message) {
+  public static ReturnState errInvalidRpcCall(String message) {
     return returnError(ResultCode.INVALID_RPC_CALL, message);
   }
 
-  public static ResponseState errNoSuchQueryId(QueryId queryId) {
+  public static ClientProtos.ReturnState errNoSuchQueryId(QueryId queryId) {
     return returnError(ResultCode.NO_SUCH_QUERYID, queryId.toString());
   }
 
-  public static ResponseState errNoData(QueryId queryId) {
+  public static ClientProtos.ReturnState errNoData(QueryId queryId) {
     return returnError(ResultCode.NO_DATA, queryId.toString());
   }
 
-  public static ResponseState errIncompleteQuery(QueryId queryId) {
+  public static ReturnState errIncompleteQuery(QueryId queryId) {
     return returnError(ResultCode.INCOMPLETE_QUERY, queryId.toString());
   }
 
-  public static ResponseState errInvalidSession(String sessionId) {
+  public static ClientProtos.ReturnState errInvalidSession(String sessionId) {
     return returnError(ResultCode.INVALID_SESSION, sessionId);
   }
 
-  public static ResponseState errNoSessionVar(String varName) {
+  public static ClientProtos.ReturnState errNoSessionVar(String varName) {
     return returnError(ResultCode.NO_SUCH_QUERYID, varName);
   }
 
-  public static ResponseState errUndefinedDatabase(String dbName) {
+  public static ReturnState errUndefinedDatabase(String dbName) {
     return returnError(ResultCode.UNDEFINED_DATABASE, dbName);
   }
 
-  public static ResponseState errUndefinedTable(String tableName) {
+  public static ClientProtos.ReturnState errUndefinedTable(String tableName) {
     return returnError(ResultCode.UNDEFINED_TABLE, tableName);
   }
 
-  public static ResponseState errDuplicateDatabase(String dbName) {
+  public static ClientProtos.ReturnState errDuplicateDatabase(String dbName) {
     return returnError(ResultCode.DUPLICATE_DATABASE, dbName);
   }
 }

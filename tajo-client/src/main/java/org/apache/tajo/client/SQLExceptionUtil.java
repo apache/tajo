@@ -21,7 +21,7 @@ package org.apache.tajo.client;
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorMessages;
-import org.apache.tajo.ipc.ClientProtos.ResponseState;
+import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -38,13 +38,13 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
   }
 
-  public static void throwIfError(ResponseState state) throws SQLException {
+  public static void throwIfError(ClientProtos.ReturnState state) throws SQLException {
     if (ClientErrorUtil.isError(state)) {
       throw convert(state);
     }
   }
 
-  public static SQLException convert(ResponseState state) throws SQLException {
+  public static SQLException convert(ClientProtos.ReturnState state) throws SQLException {
     if (SQLSTATES.containsKey(state.getReturnCode())) {
       return new SQLException(
           state.getMessage(),

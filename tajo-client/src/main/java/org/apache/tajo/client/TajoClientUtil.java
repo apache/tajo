@@ -18,7 +18,6 @@
 
 package org.apache.tajo.client;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
@@ -26,9 +25,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.ResponseState;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;

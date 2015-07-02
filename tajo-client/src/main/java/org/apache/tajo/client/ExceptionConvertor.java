@@ -22,7 +22,7 @@ import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.ipc.ClientProtos.ResponseState;
+import org.apache.tajo.ipc.ClientProtos;
 
 /**
  *
@@ -33,9 +33,9 @@ public class ExceptionConvertor {
     return t instanceof TajoException || t instanceof TajoRuntimeException;
   }
 
-  public ResponseState convert(Throwable t) {
+  public ClientProtos.ReturnState convert(Throwable t) {
 
-    ResponseState.Builder builder = ResponseState.newBuilder();
+    ClientProtos.ReturnState.Builder builder = ClientProtos.ReturnState.newBuilder();
 
     if (isManagedException(t)) {
 

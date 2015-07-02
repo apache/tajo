@@ -34,9 +34,9 @@ service TajoMasterClientProtocolService {
 
   // Session APIs
   rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
-  rpc removeSession(SessionIdProto) returns (ResponseState);
+  rpc removeSession(SessionIdProto) returns (ReturnState);
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
-  rpc existSessionVariable(SessionedStringProto) returns (ResponseState);
+  rpc existSessionVariable(SessionedStringProto) returns (ReturnState);
   rpc getSessionVariable(SessionedStringProto) returns (StringProto);
   rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetResponse);
 
@@ -50,23 +50,23 @@ service TajoMasterClientProtocolService {
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
   rpc getRunningQueryList(SessionIdProto) returns (GetQueryListResponse);
   rpc getFinishedQueryList(SessionIdProto) returns (GetQueryListResponse);
-  rpc killQuery(QueryIdRequest) returns (ResponseState);
+  rpc killQuery(QueryIdRequest) returns (ReturnState);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
-  rpc closeNonForwardQuery(QueryIdRequest) returns (ResponseState);
+  rpc closeNonForwardQuery(QueryIdRequest) returns (ReturnState);
   rpc getQueryInfo(QueryIdRequest) returns (GetQueryInfoResponse);
 
   // Database Management APIs
-  rpc createDatabase(SessionedStringProto) returns (ResponseState);
-  rpc existDatabase(SessionedStringProto) returns (ResponseState);
-  rpc dropDatabase(SessionedStringProto) returns (ResponseState);
+  rpc createDatabase(SessionedStringProto) returns (ReturnState);
+  rpc existDatabase(SessionedStringProto) returns (ReturnState);
+  rpc dropDatabase(SessionedStringProto) returns (ReturnState);
   rpc getAllDatabases(SessionIdProto) returns (StringListResponse);
   rpc getCurrentDatabase(SessionIdProto) returns (StringResponse);
-  rpc selectDatabase(SessionedStringProto) returns (ResponseState);
+  rpc selectDatabase(SessionedStringProto) returns (ReturnState);
 
   // Table Management APIs
   rpc createExternalTable(CreateTableRequest) returns (TableResponse);
-  rpc existTable(SessionedStringProto) returns (ResponseState);
-  rpc dropTable(DropTableRequest) returns (ResponseState);
+  rpc existTable(SessionedStringProto) returns (ReturnState);
+  rpc dropTable(DropTableRequest) returns (ReturnState);
   rpc getTableList(SessionedStringProto) returns (StringListResponse);
   rpc getTableDesc(SessionedStringProto) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
