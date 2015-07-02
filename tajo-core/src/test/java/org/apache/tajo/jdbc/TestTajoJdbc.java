@@ -620,7 +620,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     } catch (SQLException e) {
       errorMessage = e.getMessage();
     } finally {
-      assertEquals("not implemented feature: ADD_PARTITION", errorMessage);
+      assertEquals(errorMessage, "not implemented feature: ADD_PARTITION");
       cleanupQuery(resultSet);
       if (stmt != null) {
         stmt.close();

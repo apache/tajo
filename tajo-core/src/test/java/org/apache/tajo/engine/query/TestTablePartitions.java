@@ -866,7 +866,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         + " select l_orderkey, l_partkey from lineitem");
 
     assertTrue(ClientErrorUtil.isError(response.getState()));
-    assertEquals("INSERT has smaller expressions than target columns", response.getState().getMessage());
+    assertEquals(response.getState().getMessage(), "INSERT has smaller expressions than target columns");
 
     res = executeFile("case14.sql");
     assertResultSet(res, "case14.result");
@@ -892,7 +892,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         + " select l_returnflag , l_orderkey, l_partkey from lineitem");
 
       assertTrue(ClientErrorUtil.isError(response.getState()));
-      assertEquals("INSERT has smaller expressions than target columns", response.getState().getMessage());
+      assertEquals(response.getState().getMessage(), "INSERT has smaller expressions than target columns");
 
       res = executeFile("case15.sql");
       assertResultSet(res, "case15.result");

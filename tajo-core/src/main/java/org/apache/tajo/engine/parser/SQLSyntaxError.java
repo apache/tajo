@@ -19,19 +19,20 @@
 package org.apache.tajo.engine.parser;
 
 
-import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoRuntimeException;
 
-public class SQLSyntaxError extends InvalidQueryException {
+public class SQLSyntaxError extends TajoRuntimeException {
   private static final long serialVersionUID = 5388279335175632067L;
 
   private transient String detailedMessage;
 
   public SQLSyntaxError(String errorMessage) {
-    super(errorMessage);
+    super(Errors.ResultCode.SYNTAX_ERROR, errorMessage);
   }
 
   public SQLSyntaxError(SQLParseError e) {
-    super(e.getMessageHeader(), e);
+    super(Errors.ResultCode.SYNTAX_ERROR, e.getMessageHeader());
   }
 
   @Override

@@ -20,7 +20,7 @@ package org.apache.tajo.client;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.ResponseState;
 
 import java.sql.SQLException;
@@ -28,12 +28,22 @@ import java.util.Map;
 
 public class SQLExceptionUtil {
 
-  private static final Map<Errors.ResultCode, String> SQL_STATES = Maps.newHashMap();
+  private static final Map<ResultCode, String> SQLSTATES = Maps.newHashMap();
 
-  public static SQLException convert(ResponseState state) {
+  static {
+    SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
+  }
+
+  public static void throwIfError(ResponseState state) throws SQLException {
+    if (ClientErrorUtil.isError(state)) {
+      throw convert(state);
+    }
+  }
+
+  public static SQLException convert(ResponseState state) throws SQLException {
     return new SQLException(
         state.getMessage(),
-        SQL_STATES.get(state.getReturnCode()),
+        SQLSTATES.get(state.getReturnCode()),
         state.getReturnCode().getNumber());
   }
 }

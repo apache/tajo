@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.client.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.ipc.ClientProtos;
@@ -29,8 +30,6 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.apache.tajo.client.ClientErrorUtil.isError;
 
 public class TajoStatement implements Statement {
   protected JdbcConnection conn;
@@ -148,15 +147,11 @@ public class TajoStatement implements Statement {
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     checkConnection("Can't execute");
+    return executeSQL(sql);
 
-    try {
-      return executeSQL(sql);
-    } catch (Exception e) {
-      throw new SQLException(e.getMessage(), e);
-    }
   }
 
-  protected ResultSet executeSQL(String sql) throws SQLException, ServiceException, IOException {
+  protected ResultSet executeSQL(String sql) throws SQLException {
     if (isSetVariableQuery(sql)) {
       return setSessionVariable(tajoClient, sql);
     }
@@ -164,24 +159,29 @@ public class TajoStatement implements Statement {
       return unSetSessionVariable(tajoClient, sql);
     }
 
-    ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
-    if (isError(response.getState())) {
-      throw new ServiceException(response.getState().getMessage());
-    }
 
-    QueryId queryId = new QueryId(response.getQueryId());
-    if (response.getIsForwarded() && !queryId.isNull()) {
-      WaitingResultSet result = new WaitingResultSet(tajoClient, queryId, fetchSize);
-      if (blockWait) {
-        result.getSchema();
+    try {
+      ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
+      SQLExceptionUtil.throwIfError(response.getState());
+
+      QueryId queryId = new QueryId(response.getQueryId());
+      if (response.getIsForwarded() && !queryId.isNull()) {
+        WaitingResultSet result = new WaitingResultSet(tajoClient, queryId, fetchSize);
+        if (blockWait) {
+          result.getSchema();
+        }
+        return result;
       }
-      return result;
-    }
 
-    if (response.hasResultSet() || response.hasTableDesc()) {
-      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+      if (response.hasResultSet() || response.hasTableDesc()) {
+        return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+      }
+      return TajoClientUtil.createNullResultSet(queryId);
+    } catch (SQLException s) {
+      throw s;
+    } catch (Throwable t) {
+      throw new SQLException(t.getMessage(), t);
     }
-    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   protected void checkConnection(String errorMsg) throws SQLException {
