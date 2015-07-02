@@ -228,8 +228,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public LogicalNode visitProjection(PlanContext context, Stack<Expr> stack, Projection projection)
       throws PlanningException {
 
-
-    LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
     // If a non-from statement is given

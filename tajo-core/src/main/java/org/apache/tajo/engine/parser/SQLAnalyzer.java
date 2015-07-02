@@ -46,10 +46,8 @@ import static org.apache.tajo.engine.parser.SQLParser.*;
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   private SQLParser parser;
 
-  public SQLAnalyzer() {
-  }
-
   public Expr parse(String sql) {
+    resetSubqueryPostfix();
     ANTLRInputStream input = new ANTLRInputStream(sql);
     SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -995,6 +993,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   private final static String SUBQUERY_NAME_PREFIX = "SQ_";
   private static int subqueryNamePostfix = 0;
+
+  private static void resetSubqueryPostfix() {
+    subqueryNamePostfix = 0;
+  }
 
   private static String getNextSubqueryName() {
     return SUBQUERY_NAME_PREFIX + subqueryNamePostfix++;

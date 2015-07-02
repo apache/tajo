@@ -28,8 +28,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.sql.ResultSet;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -53,91 +51,91 @@ public class TestInSubquery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInSubQuery2() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInSubQueryWithOtherConditions() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testMultipleInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInSubQueryWithJoin() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInSubQueryWithTableSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testMultipleNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInAndNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedInAndNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = false, withExplainGlobal = false, parameterized = false, sort = true)
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedInSubQuery2() throws Exception {
     // select c_name from customer
@@ -158,8 +156,17 @@ public class TestInSubquery extends TestJoinQuery {
   }
 
   @Test
-  public final void testTPCDSlikeQuery() throws Exception {
-    ResultSet res = executeString("select n_regionkey, count(*) from customer, lineitem, orders, supplier, nation where l_orderkey = o_orderkey and c_custkey = o_custkey and l_suppkey = s_suppkey and l_partkey in ( select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9)) and n_nationkey = c_nationkey group by n_regionkey order by n_regionkey limit 100;");
-    System.out.println(resultSetToString(res));
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
+  @SimpleTest()
+  public final void testSameKeyNameOfOuterAndInnerQueries() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @SimpleTest(
+      queries = @QuerySpec("select l_linenumber from lineitem where l_partkey in (select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9))")
+  )
+  public final void testAAAAAA() throws Exception {
+    runSimpleTests();
   }
 }
