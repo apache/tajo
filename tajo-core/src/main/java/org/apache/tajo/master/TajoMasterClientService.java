@@ -155,14 +155,14 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto removeSession(RpcController controller, TajoIdProtos.SessionIdProto request)
+    public ResponseState removeSession(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
 
       if (request != null) {
         context.getSessionManager().removeSession(request.getId());
       }
 
-      return BOOL_TRUE;
+      return OK;
     }
 
     @Override
@@ -220,29 +220,40 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public KeyValueSetProto getAllSessionVariables(RpcController controller,
+    public KeyValueSetResponse getAllSessionVariables(RpcController controller,
                                                                  TajoIdProtos.SessionIdProto request)
         throws ServiceException {
+
       try {
         String sessionId = request.getId();
         KeyValueSet keyValueSet = new KeyValueSet();
         keyValueSet.putAll(context.getSessionManager().getAllVariables(sessionId));
-        return keyValueSet.getProto();
+
+        return KeyValueSetResponse.newBuilder()
+            .setState(OK)
+            .setValue(keyValueSet.getProto())
+            .build();
 
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return KeyValueSetResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
     @Override
-    public StringProto getCurrentDatabase(RpcController controller, TajoIdProtos.SessionIdProto request)
+    public StringResponse getCurrentDatabase(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
       try {
-        String sessionId = request.getId();
-        return ProtoUtil.convertString(context.getSessionManager().getSession(sessionId).getCurrentDatabase());
+        return StringResponse.newBuilder()
+            .setState(OK)
+            .setValue(context.getSessionManager().getSession(request.getId()).getCurrentDatabase())
+            .build();
 
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return StringResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
@@ -714,15 +725,21 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public StringListProto getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
+    public StringListResponse getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
         request) throws ServiceException {
 
       try {
         context.getSessionManager().touch(request.getId());
-        return ProtoUtil.convertStrings(catalog.getAllDatabaseNames());
 
-      } catch (Throwable e) {
-        throw new ServiceException(e);
+        return StringListResponse.newBuilder()
+            .setState(OK)
+            .addAllValues(catalog.getAllDatabaseNames())
+            .build();
+
+      } catch (Throwable t) {
+        return StringListResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
@@ -755,7 +772,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public StringListProto getTableList(RpcController controller,
+    public StringListResponse getTableList(RpcController controller,
                                              SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
@@ -766,13 +783,16 @@ public class TajoMasterClientService extends AbstractService {
           databaseName = session.getCurrentDatabase();
         }
         Collection<String> tableNames = catalog.getAllTableNames(databaseName);
-        StringListProto.Builder builder = StringListProto.newBuilder();
-        builder.addAllValues(tableNames);
 
-        return builder.build();
+        return StringListResponse.newBuilder()
+          .setState(OK)
+          .addAllValues(tableNames)
+          .build();
 
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return StringListResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 

@@ -37,6 +37,21 @@ message ResponseState {
   optional tajo.error.StackTrace stack_trace  = 3;
 }
 
+message StringListResponse {
+  required ResponseState state = 1;
+  repeated string values = 2;
+}
+
+message KeyValueSetResponse {
+  required ResponseState state = 1;
+  optional KeyValueSetProto value = 2;
+}
+
+message StringResponse {
+  required ResponseState state = 1;
+  optional string value = 2;
+}
+
 message CreateSessionRequest {
   required string username = 1;
   optional string baseDatabaseName = 2;
@@ -130,8 +145,8 @@ message SerializedResultSet {
 
 message SubmitQueryResponse {
   required ResponseState state = 1;
-  required QueryIdProto queryId = 2;
-  required string userName = 3;
+  optional QueryIdProto queryId = 2;
+  optional string userName = 3;
   optional bool isForwarded = 4 [default = false];
 
   optional string queryMasterHost = 5;
@@ -146,7 +161,7 @@ message SubmitQueryResponse {
 
 message GetQueryStatusResponse {
   required ResponseState state = 1;
-  required QueryIdProto queryId = 2;
+  optional QueryIdProto queryId = 2;
   optional QueryState query_state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;
@@ -166,7 +181,7 @@ message GetQueryResultDataRequest {
 
 message GetQueryResultDataResponse {
   required ResponseState state = 1;
-  required SerializedResultSet resultSet = 2;
+  optional SerializedResultSet resultSet = 2;
 }
 
 message GetClusterInfoRequest {

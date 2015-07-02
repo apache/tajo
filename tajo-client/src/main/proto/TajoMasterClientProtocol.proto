@@ -34,11 +34,11 @@ service TajoMasterClientProtocolService {
 
   // Session APIs
   rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
-  rpc removeSession(SessionIdProto) returns (BoolProto);
+  rpc removeSession(SessionIdProto) returns (ResponseState);
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
   rpc existSessionVariable(SessionedStringProto) returns (ResponseState);
   rpc getSessionVariable(SessionedStringProto) returns (StringProto);
-  rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetProto);
+  rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetResponse);
 
   // Query Submission and Result APIs
   rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
@@ -59,15 +59,15 @@ service TajoMasterClientProtocolService {
   rpc createDatabase(SessionedStringProto) returns (ResponseState);
   rpc existDatabase(SessionedStringProto) returns (ResponseState);
   rpc dropDatabase(SessionedStringProto) returns (ResponseState);
-  rpc getAllDatabases(SessionIdProto) returns (StringListProto);
-  rpc getCurrentDatabase(SessionIdProto) returns (StringProto);
+  rpc getAllDatabases(SessionIdProto) returns (StringListResponse);
+  rpc getCurrentDatabase(SessionIdProto) returns (StringResponse);
   rpc selectDatabase(SessionedStringProto) returns (ResponseState);
 
   // Table Management APIs
   rpc createExternalTable(CreateTableRequest) returns (TableResponse);
   rpc existTable(SessionedStringProto) returns (ResponseState);
   rpc dropTable(DropTableRequest) returns (ResponseState);
-  rpc getTableList(SessionedStringProto) returns (StringListProto);
+  rpc getTableList(SessionedStringProto) returns (StringListResponse);
   rpc getTableDesc(SessionedStringProto) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
 }

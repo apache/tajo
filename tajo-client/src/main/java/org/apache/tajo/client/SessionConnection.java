@@ -27,7 +27,9 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.KeyValueSetResponse;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
+import org.apache.tajo.ipc.ClientProtos.StringResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcChannelFactory;
@@ -51,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.client.ClientErrorUtil.*;
 import static org.apache.tajo.client.SQLExceptionUtil.convert;
+import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
@@ -180,11 +183,15 @@ public class SessionConnection implements Closeable {
 
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
+    StringResponse response;
     try {
-      return tajoMasterService.getCurrentDatabase(null, sessionId).getValue();
+      response = tajoMasterService.getCurrentDatabase(null, sessionId);
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    throwIfError(response.getState());
+    return response.getValue();
   }
 
   public Map<String, String> updateSessionVariables(final Map<String, String> variables) throws SQLException {
@@ -284,11 +291,15 @@ public class SessionConnection implements Closeable {
     checkSessionAndGet(client);
 
     TajoMasterClientProtocolService.BlockingInterface stub = client.getStub();
+    KeyValueSetResponse response;
     try {
-      return ProtoUtil.convertToMap(stub.getAllSessionVariables(null, sessionId));
+      response = stub.getAllSessionVariables(null, sessionId);
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    throwIfError(response.getState());
+    return ProtoUtil.convertToMap(response.getValue());
   }
 
   public Boolean selectDatabase(final String databaseName) throws SQLException {

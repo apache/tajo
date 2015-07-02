@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
 import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
+import org.apache.tajo.ipc.ClientProtos.StringListResponse;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
@@ -174,14 +175,15 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
     final BlockingInterface stub = conn.getTMStub();
 
-    PrimitiveProtos.StringListProto res;
+    StringListResponse response;
     try {
-      res = stub.getTableList(null, conn.getSessionedString(databaseName));
+      response = stub.getTableList(null, conn.getSessionedString(databaseName));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
 
-    return res.getValuesList();
+    throwIfError(response.getState());
+    return response.getValuesList();
   }
 
   @Override
