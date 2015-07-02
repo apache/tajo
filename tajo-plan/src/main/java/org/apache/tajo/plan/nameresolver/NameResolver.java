@@ -163,7 +163,7 @@ public abstract class NameResolver {
           LogicalPlan.QueryBlock parentBlock = plan.getParentBlock(current);
           for (RelationNode relationNode : parentBlock.getRelations()) {
             if (relationNode.getLogicalSchema().containsByQualifiedName(columnRef.getCanonicalName())) {
-              throw new UnsupportedException("Correlated subquery is not supported yet.");
+              throw new UnsupportedException("Correlated subquery is not supported yet: " + columnRef.getCanonicalName());
             }
           }
           current = parentBlock;
