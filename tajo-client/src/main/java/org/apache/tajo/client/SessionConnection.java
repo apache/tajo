@@ -51,8 +51,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.client.ClientErrorUtil.isError;
-import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
+import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 import static org.apache.tajo.client.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;

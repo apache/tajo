@@ -16,10 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.exception;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.exception.ErrorUtil;
@@ -27,7 +29,7 @@ import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoExceptionInterface;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class ClientErrorUtil {
+public class ReturnStateUtil {
 
   public static final ReturnState OK;
 
@@ -89,6 +91,10 @@ public class ClientErrorUtil {
     return ErrorUtil.isFailed(state.getReturnCode());
   }
 
+  public static ReturnState errFeatureNotSupported(String feature) {
+    return returnError(ResultCode.FEATURE_NOT_SUPPORTED, feature);
+  }
+
   public static ReturnState errInvalidRpcCall(String message) {
     return returnError(ResultCode.INVALID_RPC_CALL, message);
   }
@@ -113,15 +119,55 @@ public class ClientErrorUtil {
     return returnError(ResultCode.NO_SUCH_QUERYID, varName);
   }
 
+  public static ReturnState errInsufficientPrivilege(String message) {
+    return returnError(ResultCode.INSUFFICIENT_PRIVILEGE, message);
+  }
+
+  public static ReturnState errUndefinedTablespace(String spaceName) {
+    return returnError(ResultCode.UNDEFINED_TABLESPACE, spaceName);
+  }
+
   public static ReturnState errUndefinedDatabase(String dbName) {
     return returnError(ResultCode.UNDEFINED_DATABASE, dbName);
   }
 
-  public static ReturnState errUndefinedTable(String tableName) {
-    return returnError(ResultCode.UNDEFINED_TABLE, tableName);
+  public static ReturnState errUndefinedTable(String tbName) {
+    return returnError(ResultCode.UNDEFINED_TABLE, tbName);
+  }
+
+  public static ReturnState errUndefinedPartition(String partitionName) {
+    return returnError(ResultCode.UNDEFINED_PARTITION, partitionName);
+  }
+
+  public static ReturnState errUndefinedPartitionMethod(String tbName) {
+    return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);
+  }
+
+  public static ReturnState errUndefinedIndex(String tbName, String columnName) {
+    return returnError(ResultCode.UNDEFINED_INDEX, tbName, columnName);
+  }
+
+  public static ReturnState errUndefinedIndexName(String indexName) {
+    return returnError(ResultCode.UNDEFINED_INDEX_NAME, indexName);
+  }
+
+  public static ReturnState errUndefinedFunction(String funcName) {
+    return returnError(ResultCode.UNDEFINED_FUNCTION, funcName);
   }
 
   public static ReturnState errDuplicateDatabase(String dbName) {
     return returnError(ResultCode.DUPLICATE_DATABASE, dbName);
+  }
+
+  public static ReturnState errDuplicateTable(String tbName) {
+    return returnError(ResultCode.DUPLICATE_TABLE, tbName);
+  }
+
+  public static ReturnState errDuplicateIndex(String indexName) {
+    return returnError(ResultCode.DUPLICATE_INDEX, indexName);
+  }
+
+  public static ReturnState errDuplicateFunction(String signature) {
+    return returnError(ResultCode.DUPLICATE_FUNCTION, signature);
   }
 }

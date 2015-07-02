@@ -31,6 +31,7 @@ import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
 import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -490,7 +491,7 @@ public class TajoCli {
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       onError("response is null", null);
-    } else if (ClientErrorUtil.isSuccess(response.getState())) {
+    } else if (ReturnStateUtil.isSuccess(response.getState())) {
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
@@ -503,7 +504,7 @@ public class TajoCli {
         }
       }
     } else {
-      if (ClientErrorUtil.isError(response.getState())) {
+      if (ReturnStateUtil.isError(response.getState())) {
         onError(response.getState().getMessage(), null);
       }
     }
@@ -520,7 +521,7 @@ public class TajoCli {
     }
 
     if (response != null) {
-      if (ClientErrorUtil.isSuccess(response.getState())) {
+      if (ReturnStateUtil.isSuccess(response.getState())) {
         if (response.getIsForwarded()) {
           QueryId queryId = new QueryId(response.getQueryId());
           waitForQueryCompleted(queryId);
@@ -532,7 +533,7 @@ public class TajoCli {
           }
         }
       } else {
-        if (ClientErrorUtil.isError(response.getState())) {
+        if (ReturnStateUtil.isError(response.getState())) {
           onError(response.getState().getMessage(), null);
         }
       }

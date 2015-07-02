@@ -128,7 +128,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
         path = table.getPath();
       } catch (NoSuchObjectException nsoe) {
-        throw new UndefinedTbleException(tableName);
+        throw new UndefinedTableException(tableName);
       } catch (Exception e) {
         throw new TajoInternalError(e);
       }

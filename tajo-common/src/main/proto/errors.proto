@@ -58,7 +58,8 @@ enum ResultCode {
   UNDEFINED_INDEX                       = 506; // ?
   UNDEFINED_INDEX_NAME                  = 507; // ?
   UNDEFINED_PARTITION                   = 508; // ?
-  UNDEFINED_OPERATOR                    = 509; // SQLState: 42883 (=UNDEFINED_FUNCTION)
+  UNDEFINED_PARTITION_METHOD            = 509; // ?
+  UNDEFINED_OPERATOR                    = 510; // SQLState: 42883 (=UNDEFINED_FUNCTION)
 
   DUPLICATE_TABLESPACE                  = 510;
   DUPLICATE_DATABASE                    = 511; // SQLState: 42P04
@@ -73,7 +74,6 @@ enum ResultCode {
   AMBIGUOUS_TABLE                       = 521; // ?
   AMBIGUOUS_COLUMN                      = 522; // SQLState: 42702;
   AMBIGUOUS_FUNCTION                    = 523; // SQLState: 42725;
-
 
   // Section: Syntax Error or Access Rule Violation
   SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 601; // SQLState: 42000

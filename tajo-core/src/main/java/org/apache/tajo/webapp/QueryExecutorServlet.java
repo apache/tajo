@@ -1,6 +1,5 @@
 package org.apache.tajo.webapp;
 
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
@@ -11,7 +10,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.service.ServiceTrackerFactory;
@@ -41,10 +39,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.client.ClientErrorUtil.isError;
-import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
-import static org.apache.tajo.exception.ErrorUtil.isFailed;
-import static org.apache.tajo.exception.ErrorUtil.isOk;
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
+import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one

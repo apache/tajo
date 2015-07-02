@@ -301,7 +301,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
             TableDesc table = catalog.getTableDesc(qualifiedName);
             if (table == null) {
-              context.state.addVerification(new UndefinedTbleException(qualifiedName));
+              context.state.addVerification(new UndefinedTableException(qualifiedName));
               return null;
             }
             if (table.hasPartition()) {

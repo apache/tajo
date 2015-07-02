@@ -16,20 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
+public class InvalidAddressException extends Exception {
 
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.error.Errors.ResultCode;
+	private static final long serialVersionUID = -7266998886109689882L;
 
-public class UndefinedTbleException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
-
-  public UndefinedTbleException(String dbName, String tbName) {
-		super(ResultCode.UNDEFINED_TABLE, CatalogUtil.buildFQName(dbName, tbName));
-  }
-
-	public UndefinedTbleException(String relName) {
-		super(ResultCode.UNDEFINED_TABLE, relName);
-	}
 }

@@ -44,9 +44,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.client.ClientErrorUtil.isError;
-import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
-import static org.apache.tajo.client.ClientErrorUtil.returnError;
+import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
+import static org.apache.tajo.exception.ReturnStateUtil.returnError;
 import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;

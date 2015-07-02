@@ -251,7 +251,7 @@ public class MemStore implements CatalogStore {
     if (database.containsKey(tbName)) {
       database.remove(tbName);
     } else {
-      throw new UndefinedTbleException(tbName);
+      throw new UndefinedTableException(tbName);
     }
   }
 
@@ -397,7 +397,7 @@ public class MemStore implements CatalogStore {
       builder.setSchema(schemaProto);
       return builder.build();
     } else {
-      throw new UndefinedTbleException(tableName);
+      throw new UndefinedTableException(tableName);
     }
   }
 
@@ -536,7 +536,7 @@ public class MemStore implements CatalogStore {
       CatalogProtos.TableDescProto table = database.get(tableName);
       return table.hasPartition() ? table.getPartition() : null;
     } else {
-      throw new UndefinedTbleException(tableName);
+      throw new UndefinedTableException(tableName);
     }
   }
 
@@ -549,7 +549,7 @@ public class MemStore implements CatalogStore {
       CatalogProtos.TableDescProto table = database.get(tableName);
       return table.hasPartition();
     } else {
-      throw new UndefinedTbleException(tableName);
+      throw new UndefinedTableException(tableName);
     }
   }
 

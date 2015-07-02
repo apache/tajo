@@ -49,10 +49,11 @@ public class ErrorMessages {
     ADD_MESSAGE(ResultCode.INVALID_SESSION_VARIABLE, "invalid session variable '%s': %s", 2);
 
 
-    ADD_MESSAGE(ResultCode.INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
 
     ADD_MESSAGE(ResultCode.SYNTAX_ERROR, "%s", 1);
+    ADD_MESSAGE(ResultCode.INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
 
+    ADD_MESSAGE(ResultCode.UNDEFINED_TABLESPACE, "tablespace '%s' does not exist", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_DATABASE, "database '%s' does not exist", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_SCHEMA, "schema '%s' does not exist", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_TABLE, "relation '%s' does not exist", 1);
@@ -60,6 +61,7 @@ public class ErrorMessages {
     ADD_MESSAGE(ResultCode.UNDEFINED_FUNCTION, "function does not exist: %s", 1);
     ADD_MESSAGE(ResultCode.UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
 
+    ADD_MESSAGE(ResultCode.DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
     ADD_MESSAGE(ResultCode.DUPLICATE_DATABASE, "database '%s' already exists", 1);
     ADD_MESSAGE(ResultCode.DUPLICATE_SCHEMA, "schema '%s' already exists", 1);
     ADD_MESSAGE(ResultCode.DUPLICATE_TABLE, "table '%s' already exists", 1);

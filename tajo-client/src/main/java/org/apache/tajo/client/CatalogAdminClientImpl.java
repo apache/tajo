@@ -36,7 +36,7 @@ import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
+import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 

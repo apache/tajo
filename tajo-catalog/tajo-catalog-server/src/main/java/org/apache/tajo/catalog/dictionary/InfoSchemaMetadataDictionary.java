@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.tajo.catalog.exception.UndefinedTbleException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
@@ -95,7 +95,7 @@ public class InfoSchemaMetadataDictionary {
     TableDescriptor tableDescriptor = null;
     
     if (tableName == null || tableName.isEmpty()) {
-      throw new UndefinedTbleException(tableName);
+      throw new UndefinedTableException(tableName);
     }
     
     tableName = tableName.toUpperCase();
@@ -115,7 +115,7 @@ public class InfoSchemaMetadataDictionary {
     
     tableDescriptor = getTableDescriptor(tableName);
     if (tableDescriptor == null) {
-      throw new UndefinedTbleException(DATABASE_NAME, tableName);
+      throw new UndefinedTableException(DATABASE_NAME, tableName);
     }
     
     return tableDescriptor.getTableDescription();

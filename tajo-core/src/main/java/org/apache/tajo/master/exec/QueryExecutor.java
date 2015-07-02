@@ -71,8 +71,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.tajo.client.ClientErrorUtil.errUndefinedDatabase;
-import static org.apache.tajo.client.ClientErrorUtil.OK;
+import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;
+import static org.apache.tajo.exception.ReturnStateUtil.OK;
 
 public class QueryExecutor {
   private static final Log LOG = LogFactory.getLog(QueryExecutor.class);

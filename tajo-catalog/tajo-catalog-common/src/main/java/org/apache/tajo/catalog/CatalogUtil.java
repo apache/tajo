@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
@@ -689,11 +690,11 @@ public class CatalogUtil {
     return widest;
   }
 
-  public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
-    CatalogProtos.TableIdentifierProto.Builder builder = CatalogProtos.TableIdentifierProto.newBuilder();
-    builder.setDatabaseName(databaseName);
-    builder.setTableName(tableName);
-    return builder.build();
+  public static TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
+    return TableIdentifierProto.newBuilder()
+        .setDatabaseName(databaseName)
+        .setTableName(tableName)
+        .build();
   }
 
   public static void closeQuietly(Connection conn) {

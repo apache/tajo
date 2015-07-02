@@ -26,7 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.client.ClientErrorUtil;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
@@ -129,10 +129,10 @@ public class TajoWorkerClientService extends AbstractService {
         if (queryHistory != null) {
           builder.setQueryHistory(queryHistory.getProto());
         }
-        builder.setState(ClientErrorUtil.OK);
+        builder.setState(ReturnStateUtil.OK);
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
-        builder.setState(ClientErrorUtil.returnError(t));
+        builder.setState(ReturnStateUtil.returnError(t));
       }
 
       return builder.build();

@@ -730,7 +730,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       return res.getInt(1);
     } catch (SQLException se) {
-      throw new UndefinedTbleException(databaseName, tableName);
+      throw new UndefinedTableException(databaseName, tableName);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }

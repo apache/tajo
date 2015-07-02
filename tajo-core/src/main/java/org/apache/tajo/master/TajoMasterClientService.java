@@ -53,7 +53,6 @@ import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.*;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.KeyValueSet;
@@ -65,8 +64,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.apache.tajo.client.ClientErrorUtil.*;
-import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import static org.apache.tajo.exception.ReturnStateUtil.*;
 
 public class TajoMasterClientService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(TajoMasterClientService.class);
@@ -438,8 +436,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryStatusResponse getQueryStatus(RpcController controller,
-                                                 GetQueryStatusRequest request)
+    public GetQueryStatusResponse getQueryStatus(RpcController controller, GetQueryStatusRequest request)
         throws ServiceException {
 
       try {

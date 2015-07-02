@@ -305,7 +305,7 @@ public class DDLExecutor {
         LOG.info("relation \"" + qualifiedName + "\" is already exists." );
         return true;
       } else { // Otherwise, it causes an exception.
-        throw new UndefinedTbleException(qualifiedName);
+        throw new UndefinedTableException(qualifiedName);
       }
     }
 
@@ -348,7 +348,7 @@ public class DDLExecutor {
       final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
 
       if (!catalog.existsTable(databaseName, simpleTableName)) {
-        throw new UndefinedTbleException(qualifiedName);
+        throw new UndefinedTableException(qualifiedName);
       }
 
       Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
@@ -398,13 +398,13 @@ public class DDLExecutor {
     final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
 
     if (!catalog.existsTable(databaseName, simpleTableName)) {
-      throw new UndefinedTbleException(qualifiedName);
+      throw new UndefinedTableException(qualifiedName);
     }
 
     switch (alterTable.getAlterTableOpType()) {
     case RENAME_TABLE:
       if (!catalog.existsTable(databaseName, simpleTableName)) {
-        throw new UndefinedTbleException(alterTable.getTableName());
+        throw new UndefinedTableException(alterTable.getTableName());
       }
       if (catalog.existsTable(databaseName, alterTable.getNewTableName())) {
         throw new DuplicateTableException(alterTable.getNewTableName());
