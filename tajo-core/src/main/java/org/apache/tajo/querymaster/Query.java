@@ -33,10 +33,9 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -633,8 +632,15 @@ public class Query implements EventHandler<QueryEvent> {
           builder.setStats(stats.getProto());
 
           catalog.updateTableStats(builder.build());
+          // If there is partitions
+          if (stats.getPartitions() != null && stats.getPartitions().size() > 0) {
+            // Store partitions to CatalogStore using alter table statement.
+            for (PartitionDesc partitionDesc : stats.getPartitions()) {
+              catalog.alterTable(CatalogUtil.addPartitionAndDropPartition(finalTable.getName(), partitionDesc,
+                AlterTableType.ADD_PARTITION));
+            }
+          }
         }
-
         query.setResultDesc(finalTable);
       }
     }

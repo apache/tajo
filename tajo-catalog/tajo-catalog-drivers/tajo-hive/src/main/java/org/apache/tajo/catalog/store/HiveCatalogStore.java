@@ -621,7 +621,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
         partitionDesc = getPartition(databaseName, tableName, partitionName);
         if(partitionDesc != null) {
-          throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+          dropPartition(databaseName, tableName, partitionDesc);
         }
         addPartition(databaseName, tableName, alterTableDescProto.getPartitionDesc());
         break;
@@ -630,8 +630,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         partitionDesc = getPartition(databaseName, tableName, partitionName);
         if(partitionDesc == null) {
           throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+        } else {
+          dropPartition(databaseName, tableName, partitionDesc);
         }
-        dropPartition(databaseName, tableName, partitionDesc);
         break;
       case SET_PROPERTY:
         // TODO - not implemented yet

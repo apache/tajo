@@ -233,6 +233,7 @@ message TableStatsProto {
   optional int64 readBytes = 7;
   repeated ColumnStatsProto colStat = 8;
   optional int32 tid = 9;
+  repeated PartitionDescProto partitions = 10;
 }
 
 message ColumnStatsProto {

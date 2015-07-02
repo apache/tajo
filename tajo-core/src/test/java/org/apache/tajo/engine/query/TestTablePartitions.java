@@ -31,6 +31,8 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -73,7 +75,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-      {NodeType.CREATE_TABLE},
+//      {NodeType.CREATE_TABLE},
     });
   }
 

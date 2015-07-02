@@ -999,7 +999,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
           partitionDesc = getPartition(databaseName, tableName, partitionName);
           if(partitionDesc != null) {
-            throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+            dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
           }
           addPartition(tableId, alterTableDescProto.getPartitionDesc());
           break;
