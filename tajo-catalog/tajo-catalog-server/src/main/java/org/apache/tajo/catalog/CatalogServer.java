@@ -100,11 +100,6 @@ public class CatalogServer extends AbstractService {
   @SuppressWarnings("unused")
   private volatile boolean isOnline = false;
 
-  private static BoolProto BOOL_TRUE = BoolProto.newBuilder().
-      setValue(true).build();
-  private static BoolProto BOOL_FALSE = BoolProto.newBuilder().
-      setValue(false).build();
-
   private Collection<FunctionDesc> builtingFuncs;
 
   public CatalogServer() throws IOException {
@@ -1262,7 +1257,7 @@ public class CatalogServer extends AbstractService {
       }
 
       if (function == null) {
-        throw new ServiceException(new UndefinedFunctionException(request.getSignature(), request.getParameterTypesList()));
+        throw new UndefinedFunctionException(request.getSignature(), request.getParameterTypesList());
       } else {
         return function;
       }
