@@ -29,8 +29,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1352: Improve the join order algorithm to consider missed cases of 
-    associative join operators. (jihoon)
+    TAJO-1638: Remove offset parameter from rest api result/{cacheId}.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
 
     TAJO-1659: Simplify scan iteration in SeqScan. (hyunsik)
 
@@ -165,6 +165,10 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
+    names only without invalid external table info. 
+    (Contributed by  DaeMyung Kang, Committed by jihoon)
 
     TAJO-1644: When inserting empty data into a partitioned table,
     existing data would be removed. (jaehwa)
