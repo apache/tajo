@@ -254,9 +254,6 @@ public class LogicalOptimizer {
         RelationVertex rightVertex = new RelationVertex(rightChild);
 
         JoinEdge edge = context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
-        if (context.getMostLeftVertex() == null) {
-          context.setMostLeftVertex(leftVertex);
-        }
 
         // find all possible predicates for this join edge
         Set<EvalNode> joinConditions = TUtil.newHashSet();
