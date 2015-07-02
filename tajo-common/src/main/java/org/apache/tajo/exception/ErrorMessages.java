@@ -35,7 +35,7 @@ public class ErrorMessages {
     // General Errors
     ADD_MESSAGE(ResultCode.INTERNAL_ERROR, "internal error: %s", 1);
     ADD_MESSAGE(ResultCode.NOT_IMPLEMENTED, "not implemented feature: %s", 1);
-    ADD_MESSAGE(ResultCode.UNSUPPORTED, "unsupported feature: %s", 1);
+    ADD_MESSAGE(ResultCode.FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
     ADD_MESSAGE(ResultCode.INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
 
     // Query Management and Scheduler

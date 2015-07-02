@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Map;
 
@@ -65,7 +66,7 @@ public class TestHistory {
   }
 
   @Test
-  public final void testTaskRunnerHistory() throws IOException, ServiceException, InterruptedException {
+  public final void testTaskRunnerHistory() throws IOException, SQLException, InterruptedException {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select count(*) from lineitem");
 
@@ -92,7 +93,7 @@ public class TestHistory {
   }
 
   @Test
-  public final void testTaskHistory() throws IOException, ServiceException, InterruptedException {
+  public final void testTaskHistory() throws IOException, SQLException, InterruptedException {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select count(*) from lineitem");
 

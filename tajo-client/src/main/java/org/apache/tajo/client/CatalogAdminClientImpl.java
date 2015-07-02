@@ -26,7 +26,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
 import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -37,82 +39,107 @@ import java.sql.SQLException;
 import java.util.List;
 
 import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
+import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 
 public class CatalogAdminClientImpl implements CatalogAdminClient {
-  private final SessionConnection connection;
+  private final SessionConnection conn;
 
-  public CatalogAdminClientImpl(SessionConnection connection) {
-    this.connection = connection;
+  public CatalogAdminClientImpl(SessionConnection conn) {
+    this.conn = conn;
   }
 
   @Override
-  public boolean createDatabase(final String databaseName) throws ServiceException {
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMaster = client.getStub();
-    return isSuccess(tajoMaster.createDatabase(null, connection.convertSessionedString(databaseName)));
+  public boolean createDatabase(final String databaseName) throws SQLException {
+
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.createDatabase(null, conn.getSessionedString(databaseName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
-  public boolean existDatabase(final String databaseName) throws ServiceException {
+  public boolean existDatabase(final String databaseName) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMaster = client.getStub();
-    return isSuccess(tajoMaster.existDatabase(null, connection.convertSessionedString(databaseName)));
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.existDatabase(null, conn.getSessionedString(databaseName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
-  public boolean dropDatabase(final String databaseName) throws ServiceException {
+  public boolean dropDatabase(final String databaseName) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
-    return isSuccess(tajoMasterService.dropDatabase(null, connection.convertSessionedString(databaseName)));
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.dropDatabase(null, conn.getSessionedString(databaseName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
-  public List<String> getAllDatabaseNames() throws ServiceException {
+  public List<String> getAllDatabaseNames() throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
-    return tajoMasterService.getAllDatabases(null, connection.sessionId).getValuesList();
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return stub.getAllDatabases(null, conn.sessionId).getValuesList();
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public boolean existTable(final String tableName) throws ServiceException {
+  public boolean existTable(final String tableName) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
-    return isSuccess(tajoMasterService.existTable(null, connection.convertSessionedString(tableName)));
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.existTable(null, conn.getSessionedString(tableName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public TableDesc createExternalTable(String tableName, Schema schema, URI path, TableMeta meta)
-      throws SQLException, ServiceException {
+      throws SQLException {
     return createExternalTable(tableName, schema, path, meta, null);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException, ServiceException {
+      throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
+    NettyClientBase client = conn.getTajoMasterConnection();
+    conn.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
 
     ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
+    builder.setSessionId(conn.sessionId);
     builder.setName(tableName);
     builder.setSchema(schema.getProto());
     builder.setMeta(meta.getProto());
     builder.setPath(path.toString());
+
     if (partitionMethodDesc != null) {
       builder.setPartition(partitionMethodDesc.getProto());
     }
-    ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
+
+    ClientProtos.TableResponse res;
+    try {
+      res = tajoMasterService.createExternalTable(null, builder.build());
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
     if (isSuccess(res.getState())) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
     } else {
@@ -121,74 +148,73 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean dropTable(String tableName) throws ServiceException {
+  public boolean dropTable(String tableName) throws SQLException {
     return dropTable(tableName, false);
   }
 
   @Override
-  public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
+  public boolean dropTable(final String tableName, final boolean purge) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
+    final DropTableRequest request = DropTableRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .setName(tableName)
+        .setPurge(purge)
+        .build();
 
-    ClientProtos.DropTableRequest.Builder builder = ClientProtos.DropTableRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    builder.setName(tableName);
-    builder.setPurge(purge);
-    return isSuccess(tajoMasterService.dropTable(null, builder.build()));
-
+    try {
+      return isSuccess(stub.dropTable(null, request));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
-  public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
+  public List<String> getTableList(@Nullable final String databaseName) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
 
-    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    if (databaseName != null) {
-      builder.setValue(databaseName);
+    PrimitiveProtos.StringListProto res;
+    try {
+      res = stub.getTableList(null, conn.getSessionedString(databaseName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
-    PrimitiveProtos.StringListProto res = tajoMasterService.getTableList(null, builder.build());
+
     return res.getValuesList();
   }
 
   @Override
   public TableDesc getTableDesc(final String tableName) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
 
-    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    builder.setValue(tableName);
-    ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
-    if (isSuccess(res.getState())) {
-      return CatalogUtil.newTableDesc(res.getTableDesc());
-    } else {
-      throw SQLExceptionUtil.convert(res.getState());
+    ClientProtos.TableResponse res;
+    try {
+      res = stub.getTableDesc(null, conn.getSessionedString(tableName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
+
+    throwIfError(res.getState());
+    return CatalogUtil.newTableDesc(res.getTableDesc());
   }
 
   @Override
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
+  public List<FunctionDescProto> getFunctions(final String functionName) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
 
     String paramFunctionName = functionName == null ? "" : functionName;
-    ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
-        connection.convertSessionedString(paramFunctionName));
-    if (isSuccess(res.getState())) {
-      return res.getFunctionsList();
-    } else {
-      throw new ServiceException(new SQLException(res.getErrorMessage()));
+    ClientProtos.FunctionResponse res;
+    try {
+      res = stub.getFunctionList(null, conn.getSessionedString(paramFunctionName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
+
+    throwIfError(res.getState());
+    return res.getFunctionsList();
   }
 
   @Override

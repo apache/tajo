@@ -31,7 +31,7 @@ enum ResultCode {
   // General Errors
   INTERNAL_ERROR                = 201; // Error caused by internal bugs (See also TajoInternalException.java)
   NOT_IMPLEMENTED               = 202; // Planned, but not implemented yet.
-  UNSUPPORTED                   = 203; // Unsupported feature (usually for unreasonable feature)
+  FEATURE_NOT_SUPPORTED         = 203; // SQLState: 0A000 - Unsupported feature (usually for unreasonable feature)
   INVALID_RPC_CALL              = 204; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
 
   // Query Management and Scheduler
@@ -116,6 +116,7 @@ enum ResultCode {
 
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
   CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08001 -
+  CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1103; // SQLState: ?
 
   // Class values that begin with 0, 1, 2, 3, 4, A, B, C, D, E, F, G or H
   // are called "standard-defined classes".

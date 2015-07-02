@@ -97,7 +97,7 @@ public class QueryExecutorServlet extends HttpServlet {
       tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
 
       new QueryRunnerCleaner().start();
-    } catch (IOException e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
     }
   }
@@ -359,7 +359,11 @@ public class QueryExecutorServlet extends HttpServlet {
         finishTime = System.currentTimeMillis();
 
         if (queryId != null) {
-          tajoClient.closeQuery(queryId);
+          try {
+            tajoClient.closeQuery(queryId);
+          } catch (SQLException e) {
+            LOG.warn(e);
+          }
         }
       }
     }
@@ -391,7 +395,7 @@ public class QueryExecutorServlet extends HttpServlet {
       }
     }
 
-    private QueryStatus waitForComplete(QueryId queryid) throws ServiceException {
+    private QueryStatus waitForComplete(QueryId queryid) throws SQLException {
       QueryStatus status = null;
 
       while (!stop.get()) {

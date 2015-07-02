@@ -192,7 +192,7 @@ public class TPCH extends BenchmarkSet {
     loadQueries(BENCHMARK_DIR);
   }
 
-  public void loadTables() throws ServiceException {
+  public void loadTables() throws SQLException {
     loadTable(LINEITEM);
     loadTable(CUSTOMER);
     loadTable(CUSTOMER_PARTS);
@@ -206,7 +206,7 @@ public class TPCH extends BenchmarkSet {
 
   }
 
-  public void loadTable(String tableName) throws ServiceException {
+  public void loadTable(String tableName) throws SQLException {
     TableMeta meta = CatalogUtil.newTableMeta("CSV");
     meta.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
@@ -221,12 +221,9 @@ public class TPCH extends BenchmarkSet {
           "c_nationkey",
           expressionSchema);
     }
-    try {
-      tajo.createExternalTable(tableName, getSchema(tableName),
-          new Path(dataDir, tableName).toUri(), meta, partitionMethodDesc);
-    } catch (SQLException s) {
-      throw new ServiceException(s);
-    }
+
+    tajo.createExternalTable(tableName, getSchema(tableName),
+        new Path(dataDir, tableName).toUri(), meta, partitionMethodDesc);
   }
 
   public static List<String> getDataFilePaths(String... tables) {

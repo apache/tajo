@@ -35,6 +35,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class TajoClientUtil {
 
@@ -60,7 +61,7 @@ public class TajoClientUtil {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
   }
 
-  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws ServiceException {
+  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws SQLException {
     QueryStatus status = client.getQueryStatus(queryId);
 
     while(!isQueryComplete(status.getState())) {
@@ -82,8 +83,7 @@ public class TajoClientUtil {
     return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 
-  public static ResultSet createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows)
-      throws IOException {
+  public static ResultSet createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows) {
     if (response.hasTableDesc()) {
       // non-forward query
       // select * from table1 [limit 10]

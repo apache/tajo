@@ -110,7 +110,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
   }
 
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
         ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
@@ -194,7 +194,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     addEmptyDataFile("nation_multifile", false);
   }
 
-  protected static void dropCommonTables() throws ServiceException {
+  protected static void dropCommonTables() throws SQLException {
     LOG.info("Clear common tables for join tests");
 
     client.executeQuery("DROP TABLE IF EXISTS jointable11 PURGE;");

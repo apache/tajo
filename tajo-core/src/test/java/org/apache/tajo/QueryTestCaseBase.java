@@ -208,7 +208,7 @@ public class QueryTestCaseBase {
   }
 
   @AfterClass
-  public static void tearDownClass() throws ServiceException {
+  public static void tearDownClass() throws SQLException {
     for (String tableName : createdTableGlobalSet) {
       client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
     }
@@ -539,7 +539,7 @@ public class QueryTestCaseBase {
       for (String cleanup : annotation.cleanup()) {
         try {
           client.executeQueryAndGetResult(cleanup).close();
-        } catch (ServiceException e) {
+        } catch (SQLException e) {
           // ignore
         }
       }
@@ -668,7 +668,7 @@ public class QueryTestCaseBase {
    * Assert that the database exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseExists(String databaseName) throws ServiceException {
+  public void assertDatabaseExists(String databaseName) throws SQLException {
     assertTrue(client.existDatabase(databaseName));
   }
 
@@ -676,7 +676,7 @@ public class QueryTestCaseBase {
    * Assert that the database does not exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseNotExists(String databaseName) throws ServiceException {
+  public void assertDatabaseNotExists(String databaseName) throws SQLException {
     assertTrue(!client.existDatabase(databaseName));
   }
 
@@ -686,7 +686,7 @@ public class QueryTestCaseBase {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @throws ServiceException
    */
-  public void assertTableExists(String tableName) throws ServiceException {
+  public void assertTableExists(String tableName) throws SQLException {
     assertTrue(client.existTable(tableName));
   }
 
@@ -695,7 +695,7 @@ public class QueryTestCaseBase {
    *
    * @param tableName The table name to be checked. This name is case sensitive.
    */
-  public void assertTableNotExists(String tableName) throws ServiceException {
+  public void assertTableNotExists(String tableName) throws SQLException {
     assertTrue(!client.existTable(tableName));
   }
 

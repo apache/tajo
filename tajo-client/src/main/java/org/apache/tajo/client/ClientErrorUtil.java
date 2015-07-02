@@ -26,6 +26,8 @@ import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.TajoExceptionInterface;
 import org.apache.tajo.ipc.ClientProtos.ResponseState;
 
+import java.sql.SQLException;
+
 public class ClientErrorUtil {
 
   public static final ResponseState OK;

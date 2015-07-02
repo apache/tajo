@@ -30,6 +30,7 @@ import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public interface QueryClient extends Closeable {
 
   boolean isConnected();
 
-  SessionIdProto getSessionId();
+  String getSessionId();
 
   Map<String, String> getClientSideSessionVars();
 
@@ -58,32 +59,32 @@ public interface QueryClient extends Closeable {
    * Call to QueryMaster closing query resources
    * @param queryId
    */
-  void closeQuery(final QueryId queryId);
+  void closeQuery(final QueryId queryId) throws SQLException;
 
-  void closeNonForwardQuery(final QueryId queryId);
+  void closeNonForwardQuery(final QueryId queryId) throws SQLException;
 
-  String getCurrentDatabase() throws ServiceException;
+  String getCurrentDatabase() throws SQLException;
 
-  Boolean selectDatabase(final String databaseName) throws ServiceException;
+  Boolean selectDatabase(final String databaseName) throws SQLException;
 
-  Map<String, String> updateSessionVariables(final Map<String, String> variables) throws ServiceException;
+  Map<String, String> updateSessionVariables(final Map<String, String> variables) throws SQLException;
 
-  Map<String, String> unsetSessionVariables(final List<String> variables) throws ServiceException;
+  Map<String, String> unsetSessionVariables(final List<String> variables) throws SQLException;
 
-  String getSessionVariable(final String varname) throws ServiceException;
+  String getSessionVariable(final String varname) throws SQLException;
 
-  Boolean existSessionVariable(final String varname) throws ServiceException;
+  Boolean existSessionVariable(final String varname) throws SQLException;
 
-  Map<String, String> getAllSessionVariables() throws ServiceException;
+  Map<String, String> getAllSessionVariables() throws SQLException;
 
   /**
    * It submits a query statement and get a response immediately.
    * The response only contains a query id, and submission status.
    * In order to get the result, you should use {@link #getQueryResult(org.apache.tajo.QueryId)}.
    */
-  SubmitQueryResponse executeQuery(final String sql) throws ServiceException;
+  SubmitQueryResponse executeQuery(final String sql) throws SQLException;
 
-  SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException;
+  SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException;
 
   /**
    * It submits a query statement and get a response.
@@ -93,33 +94,33 @@ public interface QueryClient extends Closeable {
    *
    * @return If failed, return null.
    */
-  ResultSet executeQueryAndGetResult(final String sql) throws ServiceException, IOException;
+  ResultSet executeQueryAndGetResult(final String sql) throws SQLException;
 
-  ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException;
+  ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException;
 
-  QueryStatus getQueryStatus(QueryId queryId) throws ServiceException;
+  QueryStatus getQueryStatus(QueryId queryId) throws SQLException;
 
-  ResultSet getQueryResult(QueryId queryId) throws ServiceException, IOException;
+  ResultSet getQueryResult(QueryId queryId) throws SQLException;
 
-  ResultSet createNullResultSet(QueryId queryId) throws IOException;
+  ResultSet createNullResultSet(QueryId queryId) throws SQLException;
 
-  ClientProtos.GetQueryResultResponse getResultResponse(QueryId queryId) throws ServiceException;
+  ClientProtos.GetQueryResultResponse getResultResponse(QueryId queryId) throws SQLException;
 
-  TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws ServiceException;
+  TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException;
 
-  boolean updateQuery(final String sql) throws ServiceException;
+  boolean updateQuery(final String sql) throws SQLException;
 
-  boolean updateQueryWithJson(final String json) throws ServiceException;
+  boolean updateQueryWithJson(final String json) throws SQLException;
 
-  List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws ServiceException;
+  List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws SQLException;
 
-  List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws ServiceException;
+  List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws SQLException;
 
-  List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws ServiceException;
+  List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws SQLException;
 
-  QueryStatus killQuery(final QueryId queryId) throws ServiceException, IOException;
+  QueryStatus killQuery(final QueryId queryId) throws SQLException;
 
-  QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException;
+  QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException;
 
-  QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException;
+  QueryHistoryProto getQueryHistory(final QueryId queryId) throws SQLException;
 }

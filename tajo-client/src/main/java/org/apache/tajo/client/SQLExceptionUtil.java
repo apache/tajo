@@ -19,8 +19,8 @@
 package org.apache.tajo.client;
 
 import com.google.common.collect.Maps;
-import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.ipc.ClientProtos.ResponseState;
 
 import java.sql.SQLException;
@@ -32,6 +32,9 @@ public class SQLExceptionUtil {
 
   static {
     // TODO - All SQLState should be be filled
+    SQLSTATES.put(ResultCode.FEATURE_NOT_SUPPORTED, "0A000");
+    SQLSTATES.put(ResultCode.NOT_IMPLEMENTED, "0A000");
+
     SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
   }
 
@@ -57,5 +60,25 @@ public class SQLExceptionUtil {
     }
   }
 
-  public static SQLException makeCon
+  public static SQLException makeSQLException(ResultCode code, String ...args) {
+    if (SQLSTATES.containsKey(code)) {
+      return new SQLException(
+          ErrorMessages.getMessage(code, args),
+          SQLSTATES.get(code),
+          code.getNumber());
+    } else {
+      // If there is no SQLState corresponding to error code,
+      // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).
+      return new SQLException(
+          code.name(),
+          "42000",
+          code.getNumber());
+    }
+
+  }
+
+  public static SQLException makeUnableToEstablishConnection(Throwable t) {
+    return makeSQLException(
+        ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, t.getMessage());
+  }
 }
