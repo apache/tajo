@@ -23,6 +23,8 @@ import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;
 
+import java.util.List;
+
 /**
  * A join graph must be the connected graph
  */
@@ -34,6 +36,14 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
     isSymmetricJoinOnly = PlannerUtil.isSymmetricJoin(edge.getJoinType());
     this.addEdge(left, right, edge);
+    List<JoinEdge> incomeToLeft = getIncomingEdges(left);
+    if (incomeToLeft == null || incomeToLeft.isEmpty()) {
+      context.addRootVertexes(left);
+    }
+    if (context.getRootVertexes().size() > 1) {
+      // for the case of cycle
+      context.removeRootVertexes(right);
+    }
     return edge;
   }
 

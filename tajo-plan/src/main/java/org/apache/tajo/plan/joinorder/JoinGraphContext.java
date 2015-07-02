@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class JoinGraphContext {
-  private JoinVertex mostLeftVertex; // most left vertex in the join plan
+  private Set<JoinVertex> rootVertexes = TUtil.newHashSet(); // most left vertex in the join plan
   private JoinGraph joinGraph = new JoinGraph();
   // New join edges are frequently created during join order optimization.
   // This cache is to reduce the overhead of join edge creation.
@@ -101,12 +101,21 @@ public class JoinGraphContext {
     return evaluatedJoinFilters;
   }
 
-  public JoinVertex getMostLeftVertex() {
-    return mostLeftVertex;
+  public Set<JoinVertex> getRootVertexes() {
+    return rootVertexes;
   }
 
-  public void setMostLeftVertex(JoinVertex mostLeftVertex) {
-    this.mostLeftVertex = mostLeftVertex;
+  public void addRootVertexes(JoinVertex rootVertex) {
+    this.rootVertexes.add(rootVertex);
+  }
+
+  public boolean removeRootVertexes(JoinVertex rootVertex) {
+    return this.rootVertexes.remove(rootVertex);
+  }
+
+  public void replaceRootVertexes(JoinVertex oldRoot, JoinVertex newRoot) {
+    removeRootVertexes(oldRoot);
+    addRootVertexes(newRoot);
   }
 
   public JoinEdge cacheEdge(JoinEdge edge) {

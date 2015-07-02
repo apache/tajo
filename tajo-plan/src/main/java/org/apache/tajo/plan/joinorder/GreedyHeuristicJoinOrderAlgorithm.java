@@ -57,11 +57,12 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       JoinEdge bestPair = getBestPair(context, graphContext, vertexes);
       JoinedRelationsVertex newVertex = new JoinedRelationsVertex(bestPair);
 
-      // Update most left vertex if the previous most left vertex is merged into a new vertex
-      if (bestPair.getLeftVertex().equals(graphContext.getMostLeftVertex())
-          || (PlannerUtil.isSymmetricJoin(bestPair.getJoinType())
-          && bestPair.getRightVertex().equals(graphContext.getMostLeftVertex()))) {
-        graphContext.setMostLeftVertex(newVertex);
+      // Update root vertex if the previous root vertex is merged into a new one
+      if (graphContext.getRootVertexes().contains(bestPair.getLeftVertex())) {
+        graphContext.replaceRootVertexes(bestPair.getLeftVertex(), newVertex);
+      } else if (PlannerUtil.isSymmetricJoin(bestPair.getJoinType())
+          && graphContext.getRootVertexes().contains(bestPair.getRightVertex())) {
+        graphContext.replaceRootVertexes(bestPair.getRightVertex(), newVertex);
       }
 
       /*
@@ -167,7 +168,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
 
         context.reset();
-        JoinEdge foundJoin = findJoin(context, graphContext, graphContext.getMostLeftVertex(), outer, inner);
+        JoinEdge foundJoin = null;
+        for (JoinVertex eachRoot : graphContext.getRootVertexes()) {
+          foundJoin = findJoin(context, graphContext, eachRoot, outer, inner);
+          if (foundJoin != null) break;
+        }
         if (foundJoin == null) {
           continue;
         }
@@ -324,33 +329,32 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       // TODO - should statistic information obtained from query history
       switch (joinEdge.getJoinType()) {
         // TODO - improve cost estimation
-        // cost = estimated input size * filter factor * estimated write size
-        case INNER:
-          factor = factor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size())
-              * SchemaUtil.estimateSchemaSize(joinEdge.getSchema())
-              / (SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema())
-              + SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
-          break;
         // for outer joins, filter factor does not matter
         case LEFT_OUTER:
-          factor = SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+          factor *= SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
               SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema());
           break;
         case RIGHT_OUTER:
-          factor = SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+          factor *= SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
               SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema());
           break;
         case FULL_OUTER:
-          factor = Math.max(SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
+          factor *= Math.max(SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
               SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema()),
                   SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
                   SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
           break;
+        case INNER:
         default:
           // by default, do the same operation with that of inner join
-          factor = factor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size());
+          // filter factor * output tuple width / input tuple width
+          factor *= Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size())
+              * SchemaUtil.estimateSchemaSize(joinEdge.getSchema())
+              / (SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema())
+              + SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
           break;
       }
+      // cost = estimated input size * filter factor * (output tuple width / input tuple width)
       cost = getCost(joinEdge.getLeftVertex()) *
           getCost(joinEdge.getRightVertex()) * factor;
     } else {
