@@ -31,6 +31,7 @@ public class SQLExceptionUtil {
   private static final Map<ResultCode, String> SQLSTATES = Maps.newHashMap();
 
   static {
+    // TODO - All SQLState should be be filled
     SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
   }
 
@@ -41,9 +42,20 @@ public class SQLExceptionUtil {
   }
 
   public static SQLException convert(ResponseState state) throws SQLException {
-    return new SQLException(
-        state.getMessage(),
-        SQLSTATES.get(state.getReturnCode()),
-        state.getReturnCode().getNumber());
+    if (SQLSTATES.containsKey(state.getReturnCode())) {
+      return new SQLException(
+          state.getMessage(),
+          SQLSTATES.get(state.getReturnCode()),
+          state.getReturnCode().getNumber());
+    } else {
+      // If there is no SQLState corresponding to error code,
+      // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).
+      return new SQLException(
+          state.getMessage(),
+          "42000",
+          ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION_VALUE);
+    }
   }
+
+  public static SQLException makeCon
 }

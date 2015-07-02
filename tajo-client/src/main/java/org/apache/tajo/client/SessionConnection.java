@@ -41,6 +41,7 @@ import org.apache.tajo.util.ProtoUtil;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -110,7 +111,7 @@ public class SessionConnection implements Closeable {
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public synchronized NettyClientBase getTajoMasterConnection() throws ServiceException {
+  public synchronized NettyClientBase getTajoMasterConnection() throws SQLException {
     if (client != null && client.isConnected()) return client;
     else {
       try {

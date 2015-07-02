@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
-import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
@@ -158,7 +157,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public TableDesc getTableDesc(final String tableName) throws ServiceException, SQLException {
+  public TableDesc getTableDesc(final String tableName) throws SQLException {
 
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);

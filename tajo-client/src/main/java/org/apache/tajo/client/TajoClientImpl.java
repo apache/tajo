@@ -221,7 +221,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.getTableList(databaseName);
   }
 
-  public TableDesc getTableDesc(final String tableName) throws ServiceException, SQLException {
+  public TableDesc getTableDesc(final String tableName) throws SQLException {
     return catalogClient.getTableDesc(tableName);
   }
 

@@ -114,6 +114,9 @@ enum ResultCode {
   UNKNOWN_DATAFORMAT                    = 1001; // Unknown Data Format
 
 
+  CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
+  CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08001 -
+
   // Class values that begin with 0, 1, 2, 3, 4, A, B, C, D, E, F, G or H
   // are called "standard-defined classes".
 

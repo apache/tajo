@@ -131,7 +131,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to get. This name is case sensitive.
    * @return Table description
    */
-  TableDesc getTableDesc(final String tableName) throws ServiceException, SQLException;
+  TableDesc getTableDesc(final String tableName) throws SQLException;
 
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException;
 }
