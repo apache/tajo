@@ -17,7 +17,6 @@
  */
 package org.apache.tajo.ws.rs.resources;
 
-import com.google.gson.internal.StringMap;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
@@ -39,7 +38,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -103,16 +104,17 @@ public class TestTablesResource extends QueryTestCaseBase {
     
     assertNotNull(response);
     assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
-    
-    List<StringMap<String>> tables = restClient.target(tablesURI)
-        .request().get(new GenericType<List<StringMap<String>>>(List.class));
-    
-    assertNotNull(tables);
-    assertTrue(!tables.isEmpty());
-    
+
+    Map<String, Collection<String>> tables = restClient.target(tablesURI)
+        .request().get(new GenericType<Map<String, Collection<String>>>(Map.class));
+
+    List<String> tableNames = (List<String>)tables.get("tables");
+    assertNotNull(tableNames);
+    assertTrue(!tableNames.isEmpty());
+
     boolean tableFound = false;
-    for (StringMap<String> table: tables) {
-      if (tableName.equals(CatalogUtil.extractSimpleName(table.get("tableName")))) {
+    for (String table: tableNames) {
+      if (tableName.equals(CatalogUtil.extractSimpleName(table))) {
         tableFound = true;
         break;
       }

@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -37,7 +34,6 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -137,8 +133,7 @@ public class SeqScanExec extends ScanExec {
     }
   }
 
-  @Override
-  public void init() throws IOException {
+  public Schema getProjectSchema() {
     Schema projected;
 
     // in the case where projected column or expression are given
@@ -167,20 +162,52 @@ public class SeqScanExec extends ScanExec {
       projected = outSchema;
     }
 
-    initScanner(projected);
-    super.init();
+    return projected;
+  }
 
-    if (plan.hasQual()) {
-      if (scanner.isProjectable()) {
-        qual.bind(context.getEvalContext(), projected);
-      } else {
-        qual.bind(context.getEvalContext(), inSchema);
-      }
-
+  private void initScanIterator() {
+    // We should use FilterScanIterator only if underlying storage does not support filter push down.
+    if (plan.hasQual() && !scanner.isSelectable()) {
       scanIt = new FilterScanIterator(scanner, qual);
+
     } else {
+      if (scanner.isSelectable()) { // TODO - isSelectable should be moved to FormatProperty
+        scanner.setFilter(qual);
+      }
       scanIt = new FullScanIterator(scanner);
     }
+  }
+
+  @Override
+  public void init() throws IOException {
+
+    // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
+
+    if (fragments == null) {
+      scanIt = new EmptyScanIterator();
+
+    } else {
+      Schema projectedFields = getProjectSchema();
+      initScanner(projectedFields);
+
+      // See Scanner.isProjectable() method. Depending on the result of isProjectable(),
+      // the width of retrieved tuple is changed.
+      //
+      // If projectable, the retrieved tuple will contain only projected fields.
+      // Otherwise, the retrieved tuple will contain projected fields and NullDatum
+      // for non-projected fields.
+      Schema actualInSchema = scanner.isProjectable() ? projectedFields : inSchema;
+
+      this.projector = new Projector(context, actualInSchema, outSchema, plan.getTargets());
+
+      if (plan.hasQual()) {
+        qual.bind(context.getEvalContext(), actualInSchema);
+      }
+
+      initScanIterator();
+    }
+
+    super.init();
   }
 
   @Override
@@ -191,47 +218,33 @@ public class SeqScanExec extends ScanExec {
   }
 
   private void initScanner(Schema projected) throws IOException {
-    
-    TableMeta meta;
-    try {
-      meta = (TableMeta) plan.getTableDesc().getMeta().clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
+    TableDesc table = plan.getTableDesc();
+    TableMeta meta = table.getMeta();
+
+    if (fragments.length > 1) {
+
+      this.scanner = new MergeScanner(
+          context.getConf(),
+          plan.getPhysicalSchema(), meta,
+          FragmentConvertor.convert(context.getConf(), fragments),
+          projected
+      );
+
+    } else {
+
+      Tablespace tablespace = TablespaceManager.get(table.getUri()).get();
+      this.scanner = tablespace.getScanner(
+          meta,
+          plan.getPhysicalSchema(),
+          fragments[0],
+          projected);
     }
 
-    // set system default properties
-    PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
-
-    // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
-    if (fragments != null) {
-      if (fragments.length > 1) {
-        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
-            FragmentConvertor.convert(context.getConf(), fragments), projected
-        );
-      } else {
-        Tablespace tablespace = TablespaceManager.get(plan.getTableDesc().getUri()).get();
-        this.scanner = tablespace.getScanner(meta, plan.getPhysicalSchema(), fragments[0], projected);
-      }
-      scanner.init();
-
-      // See Scanner.isProjectable() method Depending on the result of isProjectable(),
-      // the width of retrieved tuple is changed.
-      //
-      // If TRUE, the retrieved tuple will contain only projected fields.
-      // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
-      if (scanner.isProjectable()) {
-        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
-      } else {
-        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-      }
-    }
+    scanner.init();
   }
 
   @Override
   public Tuple next() throws IOException {
-    if (fragments == null) {
-      return null;
-    }
 
     while(scanIt.hasNext()) {
       Tuple outTuple = new VTuple(outColumnNum);

@@ -1792,20 +1792,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     // Set default storage properties to table
-    KeyValueSet properties = CatalogUtil.newPhysicalProperties(createTableNode.getStorageType());
+    createTableNode.setOptions(CatalogUtil.newDefaultProperty(createTableNode.getStorageType()));
 
     // Priority to apply table properties
     // 1. Explicit table properties specified in WITH clause
     // 2. Session variables
 
     // Set session variables to properties
-    PlannerUtil.applySessionToTableProperties(context.queryContext, createTableNode.getStorageType(), properties);
-    // Set table properties specified in WITH clause
+    TablePropertyUtil.setTableProperty(context.queryContext, createTableNode);
+
+    // Set table property specified in WITH clause and it will override all others
     if (expr.hasParams()) {
-      properties.putAll(expr.getParams());
+      createTableNode.getOptions().putAll(expr.getParams());
     }
 
-    createTableNode.setOptions(properties);
 
     if (expr.hasPartition()) {
       if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
