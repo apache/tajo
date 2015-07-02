@@ -21,10 +21,12 @@ package org.apache.tajo.client;
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorMessages;
-import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.sql.SQLException;
 import java.util.Map;
+
+import static org.apache.tajo.client.ClientErrorUtil.isError;
 
 public class SQLExceptionUtil {
 
@@ -38,25 +40,27 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
   }
 
-  public static void throwIfError(ClientProtos.ReturnState state) throws SQLException {
-    if (ClientErrorUtil.isError(state)) {
-      throw convert(state);
+  public static void throwIfError(ReturnState state) throws SQLException {
+    if (isError(state)) {
+      throw toSQLException(state);
     }
   }
 
-  public static SQLException convert(ClientProtos.ReturnState state) throws SQLException {
+  public static SQLException toSQLException(ReturnState state) throws SQLException {
     if (SQLSTATES.containsKey(state.getReturnCode())) {
       return new SQLException(
           state.getMessage(),
           SQLSTATES.get(state.getReturnCode()),
-          state.getReturnCode().getNumber());
+          state.getReturnCode().getNumber()
+      );
     } else {
       // If there is no SQLState corresponding to error code,
       // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).
       return new SQLException(
           state.getMessage(),
           "42000",
-          ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION_VALUE);
+          ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION_VALUE
+      );
     }
   }
 

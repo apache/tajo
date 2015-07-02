@@ -27,14 +27,14 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.KeyValueSetResponse;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
-import org.apache.tajo.ipc.ClientProtos.StringResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -51,8 +51,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.client.ClientErrorUtil.*;
-import static org.apache.tajo.client.SQLExceptionUtil.convert;
+import static org.apache.tajo.client.ClientErrorUtil.isError;
+import static org.apache.tajo.client.ClientErrorUtil.isSuccess;
+import static org.apache.tajo.client.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
@@ -217,7 +218,7 @@ public class SessionConnection implements Closeable {
       updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return Collections.unmodifiableMap(sessionVarsCache);
     } else {
-      throw convert(response.getState());
+      throw toSQLException(response.getState());
     }
   }
 
@@ -242,7 +243,7 @@ public class SessionConnection implements Closeable {
       updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
       return Collections.unmodifiableMap(sessionVarsCache);
     } else {
-      throw convert(response.getState());
+      throw toSQLException(response.getState());
     }
   }
 
@@ -380,7 +381,7 @@ public class SessionConnection implements Closeable {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }
       } else {
-        throw SQLExceptionUtil.convert(response.getState());
+        throw SQLExceptionUtil.toSQLException(response.getState());
       }
     }
   }

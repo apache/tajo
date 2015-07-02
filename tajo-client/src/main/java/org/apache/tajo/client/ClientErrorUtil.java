@@ -25,20 +25,19 @@ import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoExceptionInterface;
-import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.ReturnState;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class ClientErrorUtil {
 
-  public static final ClientProtos.ReturnState OK;
+  public static final ReturnState OK;
 
   static {
-    ClientProtos.ReturnState.Builder builder = ReturnState.newBuilder();
+    ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(ResultCode.OK);
     OK = builder.build();
   }
 
-  public static ClientProtos.ReturnState returnError(ResultCode code) {
+  public static ReturnState returnError(ResultCode code) {
     ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(code);
     builder.setMessage(ErrorMessages.getMessage(code));
@@ -48,14 +47,14 @@ public class ClientErrorUtil {
   public static ReturnState returnError(ResultCode code, String...args) {
     Preconditions.checkNotNull(args);
 
-    ClientProtos.ReturnState.Builder builder = ReturnState.newBuilder();
+    ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(code);
     builder.setMessage(ErrorMessages.getMessage(code, args));
     return builder.build();
   }
 
-  public static ClientProtos.ReturnState returnError(Throwable t) {
-    ReturnState.Builder builder = ClientProtos.ReturnState.newBuilder();
+  public static ReturnState returnError(Throwable t) {
+    ReturnState.Builder builder = ReturnState.newBuilder();
 
     if (ExceptionUtil.isExceptionWithResultCode(t)) {
       TajoExceptionInterface tajoException = (TajoExceptionInterface) t;
@@ -76,7 +75,7 @@ public class ClientErrorUtil {
    * @param state ResponseState to be checked
    * @return True if ResponseState is success.
    */
-  public static boolean isSuccess(ClientProtos.ReturnState state) {
+  public static boolean isSuccess(ReturnState state) {
     return ErrorUtil.isOk(state.getReturnCode());
   }
 
@@ -86,7 +85,7 @@ public class ClientErrorUtil {
    * @param state ResponseState to be checked
    * @return True if ResponseState is failed.
    */
-  public static boolean isError(ClientProtos.ReturnState state) {
+  public static boolean isError(ReturnState state) {
     return ErrorUtil.isFailed(state.getReturnCode());
   }
 
@@ -94,11 +93,11 @@ public class ClientErrorUtil {
     return returnError(ResultCode.INVALID_RPC_CALL, message);
   }
 
-  public static ClientProtos.ReturnState errNoSuchQueryId(QueryId queryId) {
+  public static ReturnState errNoSuchQueryId(QueryId queryId) {
     return returnError(ResultCode.NO_SUCH_QUERYID, queryId.toString());
   }
 
-  public static ClientProtos.ReturnState errNoData(QueryId queryId) {
+  public static ReturnState errNoData(QueryId queryId) {
     return returnError(ResultCode.NO_DATA, queryId.toString());
   }
 
@@ -106,11 +105,11 @@ public class ClientErrorUtil {
     return returnError(ResultCode.INCOMPLETE_QUERY, queryId.toString());
   }
 
-  public static ClientProtos.ReturnState errInvalidSession(String sessionId) {
+  public static ReturnState errInvalidSession(String sessionId) {
     return returnError(ResultCode.INVALID_SESSION, sessionId);
   }
 
-  public static ClientProtos.ReturnState errNoSessionVar(String varName) {
+  public static ReturnState errNoSessionVar(String varName) {
     return returnError(ResultCode.NO_SUCH_QUERYID, varName);
   }
 
@@ -118,11 +117,11 @@ public class ClientErrorUtil {
     return returnError(ResultCode.UNDEFINED_DATABASE, dbName);
   }
 
-  public static ClientProtos.ReturnState errUndefinedTable(String tableName) {
+  public static ReturnState errUndefinedTable(String tableName) {
     return returnError(ResultCode.UNDEFINED_TABLE, tableName);
   }
 
-  public static ClientProtos.ReturnState errDuplicateDatabase(String dbName) {
+  public static ReturnState errDuplicateDatabase(String dbName) {
     return returnError(ResultCode.DUPLICATE_DATABASE, dbName);
   }
 }

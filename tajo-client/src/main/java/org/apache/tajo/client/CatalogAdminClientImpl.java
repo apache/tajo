@@ -25,14 +25,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
-import org.apache.tajo.ipc.ClientProtos.SessionedStringProto;
-import org.apache.tajo.ipc.ClientProtos.StringListResponse;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 
 import java.io.IOException;
 import java.net.URI;
@@ -144,7 +141,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     if (isSuccess(res.getState())) {
       return CatalogUtil.newTableDesc(res.getTableDesc());
     } else {
-      throw SQLExceptionUtil.convert(res.getState());
+      throw SQLExceptionUtil.toSQLException(res.getState());
     }
   }
 
