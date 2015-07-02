@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -239,7 +240,14 @@ public class LogicalOptimizer {
       if (joinNode.getJoinType() == JoinType.LEFT_SEMI || joinNode.getJoinType() == JoinType.LEFT_ANTI) {
         // in-subquery
         BinaryEval joinQual = (BinaryEval) joinNode.getJoinQual();
-        FieldEval leftColumn = joinQual.getLeftExpr();
+        Preconditions.checkArgument(joinQual.getLeftExpr().getType() == EvalType.FIELD ||
+            joinQual.getLeftExpr().getType() == EvalType.CAST);
+        FieldEval leftColumn = null;
+        if (joinQual.getLeftExpr().getType() == EvalType.FIELD) {
+          leftColumn = joinQual.getLeftExpr();
+        } else if (joinQual.getLeftExpr().getType() == EvalType.CAST) {
+          leftColumn = (FieldEval) ((CastEval)joinQual.getLeftExpr()).getOperand();
+        }
         RelationNode leftChild = block.getRelation(leftColumn.getQualifier());
         RelationNode rightChild = joinNode.getRightChild();
         RelationVertex leftVertex = new RelationVertex(leftChild);
