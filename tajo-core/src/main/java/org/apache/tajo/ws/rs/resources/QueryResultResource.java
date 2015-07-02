@@ -69,6 +69,9 @@ public class QueryResultResource {
   private static final String countKeyName = "count";
 
   private static final String tajoDigestHeaderName = "X-Tajo-Digest";
+  private static final String tajoOffsetHeaderName = "X-Tajo-Offset";
+  private static final String tajoCountHeaderName = "X-Tajo-Count";
+  private static final String tajoEOSHeaderName = "X-Tajo-EOS";
 
   public UriInfo getUriInfo() {
     return uriInfo;
@@ -242,7 +245,6 @@ public class QueryResultResource {
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   public Response getQueryResultSet(@HeaderParam(QueryResource.tajoSessionIdHeaderName) String sessionId,
       @PathParam("cacheId") String cacheId,
-      @DefaultValue("-1") @QueryParam("offset") int offset,
       @DefaultValue("100") @QueryParam("count") int count) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent a get query result set request.");
@@ -257,9 +259,6 @@ public class QueryResultResource {
       JerseyResourceDelegateContextKey<Long> cacheIdKey =
           JerseyResourceDelegateContextKey.valueOf(cacheIdKeyName, Long.class);
       context.put(cacheIdKey, Long.valueOf(cacheId));
-      JerseyResourceDelegateContextKey<Integer> offsetKey =
-          JerseyResourceDelegateContextKey.valueOf(offsetKeyName, Integer.class);
-      context.put(offsetKey, offset);
       JerseyResourceDelegateContextKey<Integer> countKey =
           JerseyResourceDelegateContextKey.valueOf(countKeyName, Integer.class);
       context.put(countKey, count);
@@ -294,9 +293,6 @@ public class QueryResultResource {
       JerseyResourceDelegateContextKey<ClientApplication> clientApplicationKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.ClientApplicationKey, ClientApplication.class);
       ClientApplication clientApplication = context.get(clientApplicationKey);
-      JerseyResourceDelegateContextKey<Integer> offsetKey =
-          JerseyResourceDelegateContextKey.valueOf(offsetKeyName, Integer.class);
-      int offset = context.get(offsetKey);
       JerseyResourceDelegateContextKey<Integer> countKey =
           JerseyResourceDelegateContextKey.valueOf(countKeyName, Integer.class);
       int count = context.get(countKey);
@@ -329,14 +325,17 @@ public class QueryResultResource {
           clientApplication.getCachedNonForwardResultScanner(queryIdObj, cacheId.longValue());
 
       try {
-        skipOffsetRow(cachedQueryResultScanner, offset);
-
+        int start_offset = cachedQueryResultScanner.getCurrentRowNumber();
         List<ByteString> output = cachedQueryResultScanner.getNextRows(count);
         String digestString = getEncodedBase64DigestString(output);
+        boolean eos = count != output.size();
 
         return Response.ok(new QueryResultStreamingOutput(output))
-            .header(tajoDigestHeaderName, digestString)
-            .build();
+          .header(tajoDigestHeaderName, digestString)
+          .header(tajoOffsetHeaderName, start_offset)
+          .header(tajoCountHeaderName, output.size())
+          .header(tajoEOSHeaderName, eos)
+          .build();
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
 
@@ -346,20 +345,6 @@ public class QueryResultResource {
 
         return ResourcesUtil.createExceptionResponse(null, e.getMessage());
       }
-    }
-
-    private void skipOffsetRow(NonForwardQueryResultScanner queryResultScanner, int offset) throws IOException {
-      if (offset <= 0) {
-        return;
-      }
-
-      int currentRow = queryResultScanner.getCurrentRowNumber();
-
-      if (offset < (currentRow+1)) {
-        throw new RuntimeException("Offset must be over the current row number");
-      }
-
-      queryResultScanner.getNextRows(offset - currentRow - 1);
     }
 
     private String getEncodedBase64DigestString(List<ByteString> outputList) throws NoSuchAlgorithmException {
