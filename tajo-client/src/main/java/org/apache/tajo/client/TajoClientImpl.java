@@ -198,13 +198,13 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws SQLException, SQLException {
+                                       final TableMeta meta) throws SQLException {
     return catalogClient.createExternalTable(tableName, schema, path, meta);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException, SQLException {
+      throws SQLException {
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);
   }
 
