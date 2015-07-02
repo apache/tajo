@@ -34,7 +34,6 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.client.ClientErrorUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -43,7 +42,6 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInfo;
@@ -73,7 +71,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.tajo.client.ClientErrorUtil.ERR_UNDEFIED_DATABASE;
+import static org.apache.tajo.client.ClientErrorUtil.errUndefinedDatabase;
 import static org.apache.tajo.client.ClientErrorUtil.OK;
 
 public class QueryExecutor {
@@ -151,7 +149,7 @@ public class QueryExecutor {
         session.selectDatabase(setSessionNode.getValue());
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        response.setState(ERR_UNDEFIED_DATABASE(databaseName));
+        response.setState(errUndefinedDatabase(databaseName));
       }
 
       // others

@@ -54,7 +54,6 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.KeyValueSet;
@@ -68,7 +67,6 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.client.ClientErrorUtil.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
-import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 public class TajoMasterClientService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(TajoMasterClientService.class);
@@ -212,7 +210,7 @@ public class TajoMasterClientService extends AbstractService {
         if (value != null) {
           return OK;
         } else {
-          return ERR_NO_SESSION_VARIABLE(request.getValue());
+          return errNoSessionVar(request.getValue());
         }
       } catch (Throwable t) {
         return returnError(t);
@@ -267,7 +265,7 @@ public class TajoMasterClientService extends AbstractService {
           context.getSessionManager().getSession(sessionId).selectDatabase(databaseName);
           return OK;
         } else {
-          return ERR_UNDEFIED_DATABASE(databaseName);
+          return errUndefinedDatabase(databaseName);
         }
       } catch (Throwable t) {
         return returnError(t);
@@ -339,7 +337,7 @@ public class TajoMasterClientService extends AbstractService {
         // the query result was expired due to timeout.
         // In this case, we will result in error.
         if (queryInfo == null) {
-          builder.setState(ERR_NO_SUCH_QUERY_ID(queryId));
+          builder.setState(errNoSuchQueryId(queryId));
           return builder.build();
         }
 
@@ -352,11 +350,11 @@ public class TajoMasterClientService extends AbstractService {
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
-            builder.setState(ERR_NO_DATA(queryId));
+            builder.setState(errNoData(queryId));
             break;
 
           default:
-            builder.setState(ERR_INCOMPLETE_QUERY(queryId));
+            builder.setState(errIncompleteQuery(queryId));
         }
 
         return builder.build();
@@ -490,7 +488,7 @@ public class TajoMasterClientService extends AbstractService {
               builder.setState(OK);
               builder.setQueryState(QueryState.QUERY_SUCCEEDED);
             } else {
-              builder.setState(ERR_NO_SUCH_QUERY_ID(queryId));
+              builder.setState(errNoSuchQueryId(queryId));
             }
           }
         }
@@ -684,7 +682,7 @@ public class TajoMasterClientService extends AbstractService {
         if (context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false)) {
           return OK;
         } else {
-          return ERR_DUPLICATE_DATABASE(request.getValue());
+          return errDuplicateDatabase(request.getValue());
         }
 
       } catch (Throwable t) {
@@ -699,7 +697,7 @@ public class TajoMasterClientService extends AbstractService {
         if (catalog.existDatabase(request.getValue())) {
           return OK;
         } else {
-          return ERR_UNDEFIED_DATABASE(request.getValue());
+          return errUndefinedDatabase(request.getValue());
         }
 
       } catch (Throwable t) {
@@ -716,7 +714,7 @@ public class TajoMasterClientService extends AbstractService {
         if (context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false)) {
           return OK;
         } else {
-          return ERR_UNDEFIED_DATABASE(request.getValue());
+          return errUndefinedDatabase(request.getValue());
         }
 
       } catch (Throwable t) {
@@ -763,7 +761,7 @@ public class TajoMasterClientService extends AbstractService {
         if (catalog.existsTable(databaseName, tableName)) {
           return OK;
         } else {
-          return ERR_UNDEFIED_TABLE(tableName);
+          return errUndefinedTable(tableName);
         }
 
       } catch (Throwable t) {
@@ -802,7 +800,7 @@ public class TajoMasterClientService extends AbstractService {
 
         if (!request.hasValue()) {
           return TableResponse.newBuilder()
-              .setState(ERR_INVALID_RPC_CALL("Table name is required"))
+              .setState(errInvalidRpcCall("Table name is required"))
               .build();
         }
 
@@ -826,7 +824,7 @@ public class TajoMasterClientService extends AbstractService {
               .build();
         } else {
           return TableResponse.newBuilder()
-              .setState(ERR_UNDEFIED_TABLE(request.getValue()))
+              .setState(errUndefinedTable(request.getValue()))
               .build();
         }
       } catch (Throwable t) {

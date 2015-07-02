@@ -23,6 +23,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoExceptionInterface;
 import org.apache.tajo.ipc.ClientProtos.ResponseState;
 
@@ -36,10 +37,6 @@ public class ClientErrorUtil {
     ResponseState.Builder builder = ResponseState.newBuilder();
     builder.setReturnCode(ResultCode.OK);
     OK = builder.build();
-  }
-
-  public static ResponseState returnOk() {
-    return OK;
   }
 
   public static ResponseState returnError(ResultCode code) {
@@ -61,7 +58,7 @@ public class ClientErrorUtil {
   public static ResponseState returnError(Throwable t) {
     ResponseState.Builder builder = ResponseState.newBuilder();
 
-    if (t instanceof TajoExceptionInterface) {
+    if (ExceptionUtil.isExceptionWithResultCode(t)) {
       TajoExceptionInterface tajoException = (TajoExceptionInterface) t;
       builder.setReturnCode(tajoException.getErrorCode());
       builder.setMessage(tajoException.getMessage());
@@ -94,43 +91,39 @@ public class ClientErrorUtil {
     return ErrorUtil.isFailed(state.getReturnCode());
   }
 
-  public static boolean isThisError(ResponseState state, ResultCode expected) {
-    return state.getReturnCode() == expected;
-  }
-
-  public static ResponseState ERR_INVALID_RPC_CALL(String message) {
+  public static ResponseState errInvalidRpcCall(String message) {
     return returnError(ResultCode.INVALID_RPC_CALL, message);
   }
 
-  public static ResponseState ERR_NO_SUCH_QUERY_ID(QueryId queryId) {
+  public static ResponseState errNoSuchQueryId(QueryId queryId) {
     return returnError(ResultCode.NO_SUCH_QUERYID, queryId.toString());
   }
 
-  public static ResponseState ERR_NO_DATA(QueryId queryId) {
+  public static ResponseState errNoData(QueryId queryId) {
     return returnError(ResultCode.NO_DATA, queryId.toString());
   }
 
-  public static ResponseState ERR_INCOMPLETE_QUERY(QueryId queryId) {
+  public static ResponseState errIncompleteQuery(QueryId queryId) {
     return returnError(ResultCode.INCOMPLETE_QUERY, queryId.toString());
   }
 
-  public static ResponseState ERR_INVALID_SESSION(String sessionId) {
+  public static ResponseState errInvalidSession(String sessionId) {
     return returnError(ResultCode.INVALID_SESSION, sessionId);
   }
 
-  public static ResponseState ERR_NO_SESSION_VARIABLE(String varName) {
+  public static ResponseState errNoSessionVar(String varName) {
     return returnError(ResultCode.NO_SUCH_QUERYID, varName);
   }
 
-  public static ResponseState ERR_UNDEFIED_DATABASE(String dbName) {
+  public static ResponseState errUndefinedDatabase(String dbName) {
     return returnError(ResultCode.UNDEFINED_DATABASE, dbName);
   }
 
-  public static ResponseState ERR_UNDEFIED_TABLE(String tableName) {
+  public static ResponseState errUndefinedTable(String tableName) {
     return returnError(ResultCode.UNDEFINED_TABLE, tableName);
   }
 
-  public static ResponseState ERR_DUPLICATE_DATABASE(String dbName) {
+  public static ResponseState errDuplicateDatabase(String dbName) {
     return returnError(ResultCode.DUPLICATE_DATABASE, dbName);
   }
 }

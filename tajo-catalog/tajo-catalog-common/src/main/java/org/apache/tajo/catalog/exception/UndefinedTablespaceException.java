@@ -24,6 +24,6 @@ public class UndefinedTablespaceException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
 
 	public UndefinedTablespaceException(String spaceName) {
-		super(Errors.ResultCode.UNDEFINED_PARTITION, spaceName);
+		super(Errors.ResultCode.UNDEFINED_TABLESPACE, spaceName);
 	}
 }

@@ -24,16 +24,24 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class ExceptionUtil {
 
-  public static TajoRuntimeException makeNotSupported(String feature) {
-    return new UnsupportedException(feature);
+  /**
+   * Determine if a Throwable has Tajo's ReturnCode and error message.
+   *
+   * @param t Throwable
+   * @return true if a Throwable has Tajo's ReturnCode and error message.
+   */
+  public static boolean isExceptionWithResultCode(Throwable t) {
+    return t instanceof TajoExceptionInterface;
   }
 
+  /**
+   * Determine if a Throwable is caused by user's wrong input and invalid data instead of a bug.
+   *
+   * @param t Throwable
+   * @return true if a Throwable has Tajo's ReturnCode and error message.
+   */
   public static boolean isManagedException(Throwable t) {
     return t instanceof TajoException || t instanceof TajoRuntimeException;
-  }
-
-  public static InvalidDataTypeException makeInvalidDataType(DataType dataType) {
-    return new InvalidDataTypeException(dataType);
   }
 
   private static void printStackTrace(Log log, Throwable t) {
@@ -44,5 +52,13 @@ public class ExceptionUtil {
     if (!ExceptionUtil.isManagedException(t)) {
       ExceptionUtil.printStackTrace(log, t);
     }
+  }
+
+  public static UnsupportedException makeNotSupported(String feature) {
+    return new UnsupportedException(feature);
+  }
+
+  public static InvalidDataTypeException makeInvalidDataType(DataType dataType) {
+    return new InvalidDataTypeException(dataType);
   }
 }
