@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.exception;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
@@ -40,6 +40,14 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
   }
 
+  public static boolean isThisError(SQLException e, ResultCode code) {
+    if (SQLSTATES.containsKey(code)) {
+      return e.getSQLState().equals(SQLSTATES.get(code));
+    } else {
+      throw new TajoInternalError("Unknown error code: " + code.name());
+    }
+  }
+
   public static void throwIfError(ReturnState state) throws SQLException {
     if (isError(state)) {
       throw toSQLException(state);
@@ -47,12 +55,15 @@ public class SQLExceptionUtil {
   }
 
   public static SQLException toSQLException(ReturnState state) throws SQLException {
+
     if (SQLSTATES.containsKey(state.getReturnCode())) {
+
       return new SQLException(
           state.getMessage(),
           SQLSTATES.get(state.getReturnCode()),
           state.getReturnCode().getNumber()
       );
+
     } else {
       // If there is no SQLState corresponding to error code,
       // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).

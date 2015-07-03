@@ -942,7 +942,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+  public List<TableOptionProto> getAllTableProperties() throws CatalogException {
     throw new UnsupportedOperationException();
   }
 

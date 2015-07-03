@@ -441,7 +441,7 @@ public class MemStore implements CatalogStore {
   }
   
   @Override
-  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+  public List<TableOptionProto> getAllTableProperties() throws CatalogException {
     List<TableOptionProto> optionList = new ArrayList<CatalogProtos.TableOptionProto>();
     int tid = 0;
     

@@ -18,15 +18,13 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.client.SQLExceptionUtil;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;

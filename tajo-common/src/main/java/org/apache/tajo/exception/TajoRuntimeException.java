@@ -19,9 +19,15 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class TajoRuntimeException extends RuntimeException implements TajoExceptionInterface {
   private ResultCode code;
+
+  public TajoRuntimeException(ReturnState state) {
+    super(state.getMessage());
+    this.code = state.getReturnCode();
+  }
 
   public TajoRuntimeException(ResultCode code) {
     super(ErrorMessages.getMessage(code));

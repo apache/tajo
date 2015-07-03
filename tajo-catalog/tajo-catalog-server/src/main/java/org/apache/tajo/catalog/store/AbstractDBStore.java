@@ -38,6 +38,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
@@ -1792,7 +1793,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+  public List<TableOptionProto> getAllTableProperties() throws CatalogException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;

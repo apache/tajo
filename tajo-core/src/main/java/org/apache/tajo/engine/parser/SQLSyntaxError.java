@@ -21,6 +21,8 @@ package org.apache.tajo.engine.parser;
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class SQLSyntaxError extends TajoRuntimeException {
   private static final long serialVersionUID = 5388279335175632067L;

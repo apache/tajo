@@ -27,7 +27,11 @@ import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoExceptionInterface;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
+
+import java.util.Collection;
 
 public class ReturnStateUtil {
 
@@ -37,6 +41,25 @@ public class ReturnStateUtil {
     ReturnState.Builder builder = ReturnState.newBuilder();
     builder.setReturnCode(ResultCode.OK);
     OK = builder.build();
+  }
+
+  public static void ensureOk(ReturnState state) {
+    if (isError(state)) {
+      throw new TajoRuntimeException(state);
+    }
+  }
+
+  public static StringListResponse returnStringList(Collection<String> values) {
+    return StringListResponse.newBuilder()
+        .setState(OK)
+        .addAllValues(values)
+        .build();
+  }
+
+  public static StringListResponse returnFailedStringList(Throwable t) {
+    return StringListResponse.newBuilder()
+        .setState(returnError(t))
+        .build();
   }
 
   public static ReturnState returnError(ResultCode code) {
@@ -89,6 +112,10 @@ public class ReturnStateUtil {
    */
   public static boolean isError(ReturnState state) {
     return ErrorUtil.isFailed(state.getReturnCode());
+  }
+
+  public static boolean isThisError(ReturnState state, ResultCode code) {
+    return state.getReturnCode() == code;
   }
 
   public static ReturnState errFeatureNotSupported(String feature) {

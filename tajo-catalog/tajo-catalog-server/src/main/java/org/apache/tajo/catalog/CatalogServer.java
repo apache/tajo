@@ -23,14 +23,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
-import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
+import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -43,14 +42,12 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.function.FunctionUtil;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -63,11 +60,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
-import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.exception.ExceptionUtil.printStackTraceIfError;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
 import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
-import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -94,11 +89,6 @@ public class CatalogServer extends AbstractService {
   private InetSocketAddress bindAddress;
   private String bindAddressStr;
   final CatalogProtocolHandler handler;
-
-  // Server status variables
-  private volatile boolean stopped = false;
-  @SuppressWarnings("unused")
-  private volatile boolean isOnline = false;
 
   private Collection<FunctionDesc> builtingFuncs;
 
@@ -293,23 +283,31 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public StringListProto getAllTablespaceNames(RpcController controller, NullProto request) throws ServiceException {
+    public StringListResponse getAllTablespaceNames(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return ProtoUtil.convertStrings(store.getAllDatabaseNames());
+        return StringListResponse.newBuilder()
+            .setState(OK)
+            .addAllValues(store.getAllDatabaseNames())
+            .build();
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
-        throw new ServiceException(t);
+        return returnFailedStringList(t);
       } finally {
         rlock.unlock();
       }
     }
     
     @Override
-    public GetTablespacesProto getAllTablespaces(RpcController controller, NullProto request) throws ServiceException {
+    public GetTablespacesResponse getAllTablespaces(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return GetTablespacesProto.newBuilder().addAllTablespace(store.getTablespaces()).build();
+        return GetTablespacesResponse.newBuilder()
+            .setState(OK)
+            .addAllTablespace(store.getTablespaces())
+            .build();
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         throw new ServiceException(t);
@@ -319,15 +317,22 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public TablespaceProto getTablespace(RpcController controller, StringProto request) throws ServiceException {
+    public GetTablespaceResponse getTablespace(RpcController controller, StringProto request) {
       rlock.lock();
 
       try {
-        return store.getTablespace(request.getValue());
+
+        return GetTablespaceResponse.newBuilder()
+            .setState(OK)
+            .setTablespace(store.getTablespace(request.getValue()))
+            .build();
 
       } catch (Throwable t) {
+
         printStackTraceIfError(LOG, t);
-        throw new ServiceException(t);
+        return GetTablespaceResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
 
       } finally {
         rlock.unlock();
@@ -500,61 +505,88 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public StringListProto getAllDatabaseNames(RpcController controller, NullProto request) throws ServiceException {
+    public StringListResponse getAllDatabaseNames(RpcController controller, NullProto request) {
       rlock.lock();
       try {
-        StringListProto.Builder builder = StringListProto.newBuilder();
-        builder.addAllValues(store.getAllDatabaseNames());
-        builder.addValues(metaDictionary.getSystemDatabaseName());
-        return builder.build();
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
+        return StringListResponse.newBuilder()
+            .setState(OK)
+            .addAllValues(store.getAllDatabaseNames())
+            .addValues(metaDictionary.getSystemDatabaseName())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnFailedStringList(t);
+
       } finally {
         rlock.unlock();
       }
     }
     
     @Override
-    public GetDatabasesProto getAllDatabases(RpcController controller, NullProto request) throws ServiceException {
+    public GetDatabasesResponse getAllDatabases(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return GetDatabasesProto.newBuilder().addAllDatabase(store.getAllDatabases()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetDatabasesResponse.newBuilder()
+            .setState(OK)
+            .addAllDatabase(store.getAllDatabases())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetDatabasesResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
 
     @Override
-    public TableDescProto getTableDesc(RpcController controller,
+    public TableDescResponse getTableDesc(RpcController controller,
                                        TableIdentifierProto request) throws ServiceException {
-      String databaseName = request.getDatabaseName();
-      String tableName = request.getTableName();
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
 
-      if (metaDictionary.isSystemDatabase(databaseName)){
-        return metaDictionary.getTableDesc(tableName);
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return TableDescResponse.newBuilder()
+            .setState(OK)
+            .setTable(metaDictionary.getTableDesc(tbName))
+            .build();
       } else {
         rlock.lock();
         try {
           boolean contain;
 
-          contain = store.existDatabase(databaseName);
+          contain = store.existDatabase(dbName);
 
           if (contain) {
-            contain = store.existTable(databaseName, tableName);
+            contain = store.existTable(dbName, tbName);
             if (contain) {
-              return store.getTable(databaseName, tableName);
+              return TableDescResponse.newBuilder()
+                  .setState(OK)
+                  .setTable(store.getTable(dbName, tbName))
+                  .build();
             } else {
-              throw new UndefinedTableException(tableName);
+              return TableDescResponse.newBuilder()
+                  .setState(errUndefinedTable(tbName))
+                  .build();
             }
           } else {
-            throw new UndefinedDatabaseException(databaseName);
+            return TableDescResponse.newBuilder()
+                .setState(errUndefinedDatabase(dbName))
+                .build();
           }
-        } catch (Exception e) {
-          LOG.error(e);
-          throw new ServiceException(e);
+
+        } catch (Throwable t) {
+          printStackTraceIfError(LOG, t);
+
+          return TableDescResponse.newBuilder()
+              .setState(returnError(t))
+              .build();
+
         } finally {
           rlock.unlock();
         }
@@ -562,24 +594,29 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public StringListProto getAllTableNames(RpcController controller, StringProto request)
-        throws ServiceException {
+    public StringListResponse getAllTableNames(RpcController controller, StringProto request) {
 
-      String databaseName = request.getValue();
+      String dbName = request.getValue();
 
-      if (metaDictionary.isSystemDatabase(databaseName)) {
-        return ProtoUtil.convertStrings(metaDictionary.getAllSystemTables());
+      if (metaDictionary.isSystemDatabase(dbName)) {
+
+        return returnStringList(metaDictionary.getAllSystemTables());
+
       } else {
         rlock.lock();
         try {
-          if (store.existDatabase(databaseName)) {
-            return ProtoUtil.convertStrings(store.getAllTableNames(databaseName));
+          if (store.existDatabase(dbName)) {
+            return returnStringList(store.getAllTableNames(dbName));
           } else {
-            throw new UndefinedDatabaseException(databaseName);
+            return StringListResponse.newBuilder()
+                .setState(errUndefinedDatabase(dbName))
+                .build();
           }
-        } catch (Exception e) {
-          LOG.error(e);
-          throw new ServiceException(e);
+
+        } catch (Throwable t) {
+          printStackTraceIfError(LOG, t);
+          return returnFailedStringList(t);
+
         } finally {
           rlock.unlock();
         }
@@ -710,55 +747,90 @@ public class CatalogServer extends AbstractService {
     }
     
     @Override
-    public GetTablesProto getAllTables(RpcController controller, NullProto request) throws ServiceException {
+    public GetTablesResponse getAllTables(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return GetTablesProto.newBuilder().addAllTable(store.getAllTables()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetTablesResponse.newBuilder()
+            .setState(OK)
+            .addAllTable(store.getAllTables())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetTablesResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
     
     @Override
-    public GetTableOptionsProto getAllTableOptions(RpcController controller, NullProto request) throws ServiceException {
+    public GetTablePropertiesResponse getAllTableProperties(RpcController controller, NullProto request) {
       rlock.lock();
       try {
-        return GetTableOptionsProto.newBuilder().addAllTableOption(store.getAllTableOptions()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetTablePropertiesResponse.newBuilder()
+        .setState(OK)
+        .addAllProperties(store.getAllTableProperties())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetTablePropertiesResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
     
     @Override
-    public GetTableStatsProto getAllTableStats(RpcController controller, NullProto request) throws ServiceException {
+    public GetTableStatsResponse getAllTableStats(RpcController controller, NullProto request) {
       rlock.lock();
       try {
-        return GetTableStatsProto.newBuilder().addAllStat(store.getAllTableStats()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetTableStatsResponse.newBuilder()
+            .addAllStats(store.getAllTableStats())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetTableStatsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
     
     @Override
-    public GetColumnsProto getAllColumns(RpcController controller, NullProto request) throws ServiceException {
+    public GetColumnsResponse getAllColumns(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return GetColumnsProto.newBuilder().addAllColumn(store.getAllColumns()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetColumnsResponse
+            .newBuilder()
+            .addAllColumn(store.getAllColumns())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetColumnsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
 
     @Override
-    public PartitionMethodProto getPartitionMethodByTableName(RpcController controller,
+    public GetPartitionMethodResponse getPartitionMethodByTableName(RpcController controller,
                                                               TableIdentifierProto request)
         throws ServiceException {
       String databaseName = request.getDatabaseName();
@@ -777,20 +849,36 @@ public class CatalogServer extends AbstractService {
         if (contain) {
           contain = store.existTable(databaseName, tableName);
           if (contain) {
+
             if (store.existPartitionMethod(databaseName, tableName)) {
-              return store.getPartitionMethod(databaseName, tableName);
+
+              return GetPartitionMethodResponse.newBuilder()
+                  .setState(OK)
+                  .setPartition(store.getPartitionMethod(databaseName, tableName))
+                  .build();
+
             } else {
-              throw new NoPartitionedTableException(databaseName, tableName);
+              return GetPartitionMethodResponse.newBuilder()
+                  .setState(errUndefinedPartitionMethod(tableName))
+                  .build();
             }
           } else {
-            throw new UndefinedTableException(databaseName);
+            return GetPartitionMethodResponse.newBuilder()
+                .setState(errUndefinedTable(tableName))
+                .build();
           }
         } else {
-          throw new UndefinedDatabaseException(databaseName);
+          return GetPartitionMethodResponse.newBuilder()
+              .setState(errUndefinedDatabase(tableName))
+              .build();
         }
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetPartitionMethodResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
@@ -817,7 +905,7 @@ public class CatalogServer extends AbstractService {
             if (store.existPartitionMethod(databaseName, tableName)) {
               return OK;
             } else {
-              return ReturnStateUtil.errUndefinedPartitionMethod(tableName);
+              return errUndefinedPartitionMethod(tableName);
             }
           } else {
             return errUndefinedTable(tableName);
@@ -840,97 +928,136 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public PartitionDescProto getPartitionByPartitionName(RpcController controller, PartitionIdentifierProto request)
+    public GetPartitionDescResponse getPartitionByPartitionName(RpcController controller, PartitionIdentifierProto request)
         throws ServiceException {
-      String databaseName = request.getDatabaseName();
-      String tableName = request.getTableName();
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
       String partitionName = request.getPartitionName();
 
-      if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
       }
 
       rlock.lock();
       try {
         boolean contain;
 
-        contain = store.existDatabase(databaseName);
+        contain = store.existDatabase(dbName);
         if (contain) {
-          contain = store.existTable(databaseName, tableName);
+          contain = store.existTable(dbName, tbName);
           if (contain) {
-            if (store.existPartitionMethod(databaseName, tableName)) {
-              PartitionDescProto partitionDesc = store.getPartition(databaseName, tableName, partitionName);
-              if (partitionDesc != null) {
-                return partitionDesc;
-              } else {
-                throw new UndefinedPartitionException(partitionName);
-              }
+
+            if (store.existPartitionMethod(dbName, tbName)) {
+              PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
+
+
+              return GetPartitionDescResponse.newBuilder()
+                  .setState(OK)
+                  .setPartition(partitionDesc)
+                  .build();
+
             } else {
-              throw new NoPartitionedTableException(databaseName, tableName);
+              return GetPartitionDescResponse.newBuilder()
+                  .setState(errUndefinedPartitionMethod(tbName))
+                  .build();
             }
           } else {
-            throw new UndefinedTableException(tableName);
+            return GetPartitionDescResponse.newBuilder()
+                .setState(errUndefinedTable(tbName))
+                .build();
           }
         } else {
-          throw new UndefinedDatabaseException(databaseName);
+          return GetPartitionDescResponse.newBuilder()
+              .setState(errUndefinedDatabase(dbName))
+              .build();
         }
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetPartitionDescResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
 
     @Override
-    public PartitionsProto getPartitionsByTableName(RpcController controller, PartitionIdentifierProto request)
+    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, PartitionIdentifierProto request)
       throws ServiceException {
-      String databaseName = request.getDatabaseName();
-      String tableName = request.getTableName();
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
 
-      if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
       }
 
       rlock.lock();
       try {
         boolean contain;
 
-        contain = store.existDatabase(databaseName);
+        contain = store.existDatabase(dbName);
         if (contain) {
-          contain = store.existTable(databaseName, tableName);
+          contain = store.existTable(dbName, tbName);
           if (contain) {
-            if (store.existPartitionMethod(databaseName, tableName)) {
-              List<PartitionDescProto> partitions = store.getPartitions(databaseName, tableName);
-              PartitionsProto.Builder builder = PartitionsProto.newBuilder();
+            if (store.existPartitionMethod(dbName, tbName)) {
+              List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
+
+              GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
               for(PartitionDescProto partition : partitions) {
                 builder.addPartition(partition);
               }
+
+              builder.setState(OK);
               return builder.build();
+
             } else {
-              throw new NoPartitionedTableException(databaseName, tableName);
+              return GetPartitionsResponse.newBuilder()
+                  .setState(errUndefinedPartitionMethod(tbName))
+                  .build();
             }
+
           } else {
-            throw new UndefinedTableException(tableName);
+            return GetPartitionsResponse.newBuilder()
+                .setState(errUndefinedTable(tbName))
+                .build();
           }
         } else {
-          throw new UndefinedDatabaseException(databaseName);
+          return GetPartitionsResponse.newBuilder()
+              .setState(errUndefinedDatabase(dbName))
+              .build();
+
         }
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetPartitionsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
 
     @Override
-    public GetTablePartitionsProto getAllPartitions(RpcController controller, NullProto request) throws ServiceException {
+    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
+
       try {
-        return GetTablePartitionsProto.newBuilder().addAllPart(store.getAllPartitions()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetTablePartitionsResponse.newBuilder()
+            .setState(OK)
+            .addAllPart(store.getAllPartitions())
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetTablePartitionsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
@@ -1002,7 +1129,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public IndexDescProto getIndexByName(RpcController controller, IndexNameProto request)
+    public GetIndexResponse getIndexByName(RpcController controller, IndexNameProto request)
         throws ServiceException {
 
       String databaseName = request.getDatabaseName();
@@ -1010,20 +1137,32 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
+
         if (!store.existIndexByName(databaseName, indexName)) {
-          throw new UndefinedIndexException(indexName);
+          return GetIndexResponse.newBuilder()
+              .setState(errUndefinedIndexName(indexName))
+              .build();
         }
-        return store.getIndexByName(databaseName, indexName);
-      } catch (Exception e) {
-        LOG.error("ERROR : cannot get index " + indexName, e);
-        return null;
+
+        return GetIndexResponse.newBuilder()
+            .setState(OK)
+            .setIndex(store.getIndexByName(databaseName, indexName))
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetIndexResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
     }
 
     @Override
-    public IndexDescProto getIndexByColumn(RpcController controller, GetIndexByColumnRequest request)
+    public GetIndexResponse getIndexByColumn(RpcController controller, GetIndexByColumnRequest request)
         throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
@@ -1034,12 +1173,23 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         if (!store.existIndexByColumn(databaseName, tableName, columnName)) {
-          throw new UndefinedIndexException(columnName);
+          return GetIndexResponse.newBuilder()
+              .setState(errUndefinedIndex(tableName, columnName))
+              .build();
         }
-        return store.getIndexByColumn(databaseName, tableName, columnName);
-      } catch (Exception e) {
-        LOG.error("ERROR : cannot get index for " + tableName + "." + columnName, e);
-        return null;
+
+        return GetIndexResponse.newBuilder()
+            .setState(OK)
+            .setIndex(store.getIndexByColumn(databaseName, tableName, columnName))
+            .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetIndexResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
@@ -1070,12 +1220,18 @@ public class CatalogServer extends AbstractService {
     }
     
     @Override
-    public GetIndexesProto getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
+    public GetIndexesResponse getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return GetIndexesProto.newBuilder().addAllIndex(store.getAllIndexes()).build();
-      } catch (Exception e) {
-        throw new ServiceException(e);
+        return GetIndexesResponse.newBuilder().addAllIndex(store.getAllIndexes()).build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetIndexesResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
       } finally {
         rlock.unlock();
       }
@@ -1245,21 +1401,38 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public FunctionDescProto getFunctionMeta(RpcController controller, GetFunctionMetaRequest request)
-        throws ServiceException {
-      FunctionDescProto function = null;
-      if (request.hasFunctionType()) {
-        if (containFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList())) {
-          function = findFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList(),true);
-        }
-      } else {
-        function = findFunction(request.getSignature(), request.getParameterTypesList());
-      }
+    public FunctionDescResponse getFunctionMeta(RpcController controller, GetFunctionMetaRequest request) {
 
-      if (function == null) {
-        throw new UndefinedFunctionException(request.getSignature(), request.getParameterTypesList());
-      } else {
-        return function;
+      FunctionDescProto function = null;
+
+      try {
+        if (request.hasFunctionType()) {
+          if (containFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList())) {
+            function = findFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList(), true);
+          }
+        } else {
+          function = findFunction(request.getSignature(), request.getParameterTypesList());
+        }
+
+        if (function != null) {
+          return FunctionDescResponse.newBuilder()
+              .setState(OK)
+              .setFunction(function)
+              .build();
+        } else {
+
+          return FunctionDescResponse.newBuilder()
+              .setState(errUndefinedFunction(
+                  buildSimpleFunctionSignature(request.getSignature(), request.getParameterTypesList())))
+              .build();
+        }
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return FunctionDescResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 

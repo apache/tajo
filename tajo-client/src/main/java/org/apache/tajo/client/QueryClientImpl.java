@@ -27,6 +27,7 @@ import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
@@ -46,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 import static org.apache.tajo.exception.ReturnStateUtil.returnError;
-import static org.apache.tajo.client.SQLExceptionUtil.throwIfError;
+import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 
@@ -164,11 +165,11 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException {
-    final BlockingInterface tajoMasterService = conn.getTMStub();
+    final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(json, true);
 
     try {
-      return tajoMasterService.submitQuery(null, request);
+      return stub.submitQuery(null, request);
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }

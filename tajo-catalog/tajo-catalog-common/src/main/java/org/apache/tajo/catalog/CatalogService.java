@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -29,6 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
@@ -209,9 +211,9 @@ public interface CatalogService {
 
   boolean dropFunction(String signature);
 
-  FunctionDesc getFunction(String signature, DataType... paramTypes);
+  FunctionDesc getFunction(String signature, DataType... paramTypes) throws UndefinedFunctionException;
 
-  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes);
+  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes) throws UndefinedFunctionException;
 
   boolean containFunction(String signature, DataType... paramTypes);
 

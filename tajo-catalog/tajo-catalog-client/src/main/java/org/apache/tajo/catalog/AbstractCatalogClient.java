@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,14 +23,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
+import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.Closeable;
@@ -39,7 +40,8 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.apache.tajo.catalog.CatalogUtil.buildTableIdentifier;
-import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
+import static org.apache.tajo.exception.ExceptionUtil.printStackTraceIfError;
+import static org.apache.tajo.exception.ReturnStateUtil.*;
 
 /**
  * CatalogClient provides a client API to access the catalog server.
@@ -77,7 +79,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.dropTablespace(null, ProtoUtil.convertString(tablespaceName)));
 
     } catch (ServiceException e) {
@@ -90,7 +91,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.existTablespace(null, ProtoUtil.convertString(tablespaceName)));
 
     } catch (ServiceException e) {
@@ -103,21 +103,23 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      PrimitiveProtos.StringListProto response = stub.getAllTablespaceNames(null, ProtoUtil.NULL_PROTO);
+      final StringListResponse response = stub.getAllTablespaceNames(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
-      return ProtoUtil.convertStrings(response);
+      return response.getValuesList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
   public List<TablespaceProto> getAllTablespaces() {
 
     try {
       final BlockingInterface stub = getStub();
-      CatalogProtos.GetTablespacesProto response = stub.getAllTablespaces(null, ProtoUtil.NULL_PROTO);
+      final GetTablespacesResponse response = stub.getAllTablespaces(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
       return response.getTablespaceList();
 
@@ -130,13 +132,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   public TablespaceProto getTablespace(final String tablespaceName) {
 
     try {
-      BlockingInterface stub = getStub();
+      final BlockingInterface stub = getStub();
+      final GetTablespaceResponse response = stub.getTablespace(null, ProtoUtil.convertString(tablespaceName));
+      ensureOk(response.getState());
 
-      return stub.getTablespace(null, ProtoUtil.convertString(tablespaceName));
+      return response.getTablespace();
 
     } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return null;
+      throw new RuntimeException(e);
     }
   }
 
@@ -145,7 +148,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.alterTablespace(null, alterTablespace));
 
     } catch (ServiceException e) {
@@ -159,7 +161,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
 
       final BlockingInterface stub = getStub();
-      CreateDatabaseRequest.Builder builder = CreateDatabaseRequest.newBuilder();
+      final CreateDatabaseRequest.Builder builder = CreateDatabaseRequest.newBuilder();
       builder.setDatabaseName(databaseName);
       if (tablespaceName != null) {
         builder.setTablespaceName(tablespaceName);
@@ -176,8 +178,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   public final Boolean dropDatabase(final String databaseName) {
 
     try {
-      BlockingInterface stub = getStub();
-
+      final BlockingInterface stub = getStub();
       return isSuccess(stub.dropDatabase(null, ProtoUtil.convertString(databaseName)));
 
     } catch (ServiceException e) {
@@ -191,7 +192,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.existDatabase(null, ProtoUtil.convertString(databaseName)));
 
     } catch (ServiceException e) {
@@ -204,20 +204,23 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      PrimitiveProtos.StringListProto response = stub.getAllDatabaseNames(null, ProtoUtil.NULL_PROTO);
+      final StringListResponse response = stub.getAllDatabaseNames(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
-      return ProtoUtil.convertStrings(response);
+      return response.getValuesList();
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
   public List<DatabaseProto> getAllDatabases() {
 
     try {
       final BlockingInterface stub = getStub();
-      final GetDatabasesProto response = stub.getAllDatabases(null, ProtoUtil.NULL_PROTO);
+      final GetDatabasesResponse response = stub.getAllDatabases(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
       return response.getDatabaseList();
 
@@ -233,7 +236,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
 
-      return CatalogUtil.newTableDesc(stub.getTableDesc(null, request));
+      TableDescResponse response = stub.getTableDesc(null, request);
+      ensureOk(response.getState());
+
+      return CatalogUtil.newTableDesc(response.getTable());
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -242,16 +248,17 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public TableDesc getTableDesc(String qualifiedName) {
-    String [] splitted = CatalogUtil.splitFQTableName(qualifiedName);
+    String[] splitted = CatalogUtil.splitFQTableName(qualifiedName);
     return getTableDesc(splitted[0], splitted[1]);
   }
-  
+
   @Override
   public List<TableDescriptorProto> getAllTables() {
 
     try {
       final BlockingInterface stub = getStub();
-      final GetTablesProto response = stub.getAllTables(null, ProtoUtil.NULL_PROTO);
+      final GetTablesResponse response = stub.getAllTables(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
       return response.getTableList();
 
@@ -259,41 +266,44 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
   public List<TableOptionProto> getAllTableOptions() {
 
     try {
       final BlockingInterface stub = getStub();
-      final GetTableOptionsProto response = stub.getAllTableOptions(null, ProtoUtil.NULL_PROTO);
+      final GetTablePropertiesResponse response = stub.getAllTableProperties(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
-      return response.getTableOptionList();
+      return response.getPropertiesList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
   public List<TableStatsProto> getAllTableStats() {
 
     try {
       final BlockingInterface stub = getStub();
-      final GetTableStatsProto response = stub.getAllTableStats(null, ProtoUtil.NULL_PROTO);
+      final GetTableStatsResponse response = stub.getAllTableStats(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
-      return response.getStatList();
+      return response.getStatsList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
   public List<ColumnProto> getAllColumns() {
 
     try {
       final BlockingInterface stub = getStub();
-      final GetColumnsProto response = stub.getAllColumns(null, ProtoUtil.NULL_PROTO);
+      final GetColumnsResponse response = stub.getAllColumns(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
 
       return response.getColumnList();
 
@@ -308,8 +318,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
+      final GetPartitionMethodResponse response = stub.getPartitionMethodByTableName(null, request);
+      ensureOk(response.getState());
 
-      return CatalogUtil.newPartitionMethodDesc(stub.getPartitionMethodByTableName(null, request));
+      return CatalogUtil.newPartitionMethodDesc(response.getPartition());
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -339,7 +351,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .setPartitionName(partitionName)
           .build();
 
-      return stub.getPartitionByPartitionName(null, request);
+      final GetPartitionDescResponse response = stub.getPartitionByPartitionName(null, request);
+      ensureOk(response.getState());
+
+      return response.getPartition();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -355,18 +370,23 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .setTableName(tableName)
           .build();
 
-      final PartitionsProto response = stub.getPartitionsByTableName(null, request);
+      final GetPartitionsResponse response = stub.getPartitionsByTableName(null, request);
+      ensureOk(response.getState());
+
       return response.getPartitionList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
+
   @Override
   public List<TablePartitionProto> getAllPartitions() {
     try {
-      BlockingInterface stub = getStub();
-      GetTablePartitionsProto response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
+      final BlockingInterface stub = getStub();
+      final GetTablePartitionsResponse response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
+
       return response.getPartList();
 
     } catch (ServiceException e) {
@@ -377,9 +397,12 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public final Collection<String> getAllTableNames(final String databaseName) {
     try {
-      BlockingInterface stub = getStub();
-      PrimitiveProtos.StringListProto response = stub.getAllTableNames(null, ProtoUtil.convertString(databaseName));
-      return ProtoUtil.convertStrings(response);
+      final BlockingInterface stub = getStub();
+      final StringListResponse response = stub.getAllTableNames(null, ProtoUtil.convertString(databaseName));
+      ensureOk(response.getState());
+
+      return response.getValuesList();
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -421,7 +444,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public boolean dropTable(String tableName) {
-    String [] splitted = CatalogUtil.splitFQTableName(tableName);
+    String[] splitted = CatalogUtil.splitFQTableName(tableName);
     final String databaseName = splitted[0];
     final String simpleName = splitted[1];
 
@@ -453,9 +476,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throw new RuntimeException(e);
     }
   }
+
   @Override
   public final boolean existsTable(final String tableName) {
-    String [] splitted = CatalogUtil.splitFQTableName(tableName);
+    String[] splitted = CatalogUtil.splitFQTableName(tableName);
     return existsTable(splitted[0], splitted[1]);
   }
 
@@ -517,7 +541,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
 
       final BlockingInterface stub = getStub();
-      return new IndexDesc(stub.getIndexByName(null, request));
+      final GetIndexResponse response = stub.getIndexByName(null, request);
+      ensureOk(response.getState());
+
+      return new IndexDesc(response.getIndex());
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -529,12 +556,17 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
                                           final String tableName,
                                           final String columnName) {
     try {
-      GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
-      builder.setTableIdentifier(buildTableIdentifier(databaseName, tableName));
-      builder.setColumnName(columnName);
 
-      BlockingInterface stub = getStub();
-      return new IndexDesc(stub.getIndexByColumn(null, builder.build()));
+      final GetIndexByColumnRequest request = GetIndexByColumnRequest.newBuilder()
+          .setTableIdentifier(buildTableIdentifier(databaseName, tableName))
+          .setColumnName(columnName)
+          .build();
+
+      final BlockingInterface stub = getStub();
+      final GetIndexResponse response = stub.getIndexByColumn(null, request);
+      ensureOk(response.getState());;
+
+      return new IndexDesc(response.getIndex());
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -542,11 +574,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean dropIndex(final String databaseName,
-                           final String indexName) {
+  public boolean dropIndex(final String dbName, final String indexName) {
     try {
       final IndexNameProto request = IndexNameProto.newBuilder()
-          .setDatabaseName(databaseName)
+          .setDatabaseName(dbName)
           .setIndexName(indexName)
           .build();
 
@@ -558,12 +589,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throw new RuntimeException(e);
     }
   }
-  
+
   @Override
   public List<IndexProto> getAllIndexes() {
+
     try {
-      BlockingInterface stub = getStub();
-      GetIndexesProto response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+      final BlockingInterface stub = getStub();
+      final GetIndexesResponse response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
+
       return response.getIndexList();
 
     } catch (ServiceException e) {
@@ -573,9 +607,9 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final boolean createFunction(final FunctionDesc funcDesc) {
+
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.createFunction(null, funcDesc.getProto()));
 
     } catch (ServiceException e) {
@@ -592,7 +626,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
 
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.dropFunction(null, request));
 
     } catch (ServiceException e) {
@@ -601,12 +634,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final FunctionDesc getFunction(final String signature, DataType... paramTypes) {
+  public final FunctionDesc getFunction(final String signature, DataType... paramTypes)
+      throws UndefinedFunctionException {
     return getFunction(signature, null, paramTypes);
   }
 
   @Override
-  public final FunctionDesc getFunction(final String signature, FunctionType funcType, DataType... paramTypes) {
+  public final FunctionDesc getFunction(final String signature, FunctionType funcType, DataType... paramTypes)
+      throws UndefinedFunctionException {
+
     final GetFunctionMetaRequest.Builder builder = GetFunctionMetaRequest.newBuilder();
     builder.setSignature(signature);
     if (funcType != null) {
@@ -616,24 +652,20 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       builder.addParameterTypes(type);
     }
 
-    FunctionDescProto descProto = null;
     try {
-      BlockingInterface stub = getStub();
-      descProto = stub.getFunctionMeta(null, builder.build());
-    } catch (UndefinedFunctionException e) {
-      LOG.debug(e.getMessage());
-    } catch (ServiceException e) {
-      throw new RuntimeException(e);
-    }
+      final BlockingInterface stub = getStub();
+      final FunctionDescResponse response = stub.getFunctionMeta(null, builder.build());
 
-    if (descProto == null) {
-      throw new UndefinedFunctionException(signature, paramTypes);
-    }
+      if (isThisError(response.getState(), ResultCode.UNDEFINED_FUNCTION)) {
+        throw new UndefinedFunctionException(signature, paramTypes);
+      }
+      ensureOk(response.getState());
 
-    try {
-      return new FunctionDesc(descProto);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
+      return new FunctionDesc(response.getFunction());
+
+    } catch (Throwable t) {
+      printStackTraceIfError(LOG, t);
+      throw new RuntimeException(t);
     }
   }
 
@@ -657,7 +689,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.containFunction(null, builder.build()));
 
     } catch (ServiceException e) {
@@ -670,7 +701,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.alterTable(null, desc.getProto()));
 
     } catch (ServiceException e) {
@@ -680,9 +710,9 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public boolean updateTableStats(final UpdateTableStatsProto updateTableStatsProto) {
+
     try {
       final BlockingInterface stub = getStub();
-
       return isSuccess(stub.updateTableStats(null, updateTableStatsProto));
 
     } catch (ServiceException e) {
