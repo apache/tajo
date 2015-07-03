@@ -998,6 +998,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     subqueryNamePostfix = 0;
   }
 
+  /**
+   * Subquery name is required for in-subquery or scalar subquery.
+   * This function generates unique subquery names.
+   *
+   * @return generated subquery name
+   */
   private static String getNextSubqueryName() {
     return SUBQUERY_NAME_PREFIX + subqueryNamePostfix++;
   }

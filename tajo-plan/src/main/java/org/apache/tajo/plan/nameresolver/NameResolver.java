@@ -158,6 +158,7 @@ public abstract class NameResolver {
         normalized = lookupQualifierAndCanonicalName(block, columnRef);
       } catch (NoSuchColumnException nsce) {
         // is it correlated subquery?
+        // if the search column is not found at the current block, find it at all ancestors of the block.
         LogicalPlan.QueryBlock current = block;
         while (!plan.getRootBlock().getName().equals(current.getName())) {
           LogicalPlan.QueryBlock parentBlock = plan.getParentBlock(current);

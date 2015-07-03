@@ -238,7 +238,10 @@ public class LogicalOptimizer {
       super.visitJoin(context, plan, block, joinNode, stack);
 
       if (joinNode.getJoinType() == JoinType.LEFT_SEMI || joinNode.getJoinType() == JoinType.LEFT_ANTI) {
-        // in-subquery
+        // In case of in-subquery, the left vertex must be the relation of the left column of the in qual.
+        // In addition, the join qual can be evaluated only at the join node for in-subquery,
+        // we don't need to consider moving it to other joins.
+
         BinaryEval joinQual = (BinaryEval) joinNode.getJoinQual();
         Preconditions.checkArgument(joinQual.getLeftExpr().getType() == EvalType.FIELD ||
             joinQual.getLeftExpr().getType() == EvalType.CAST);

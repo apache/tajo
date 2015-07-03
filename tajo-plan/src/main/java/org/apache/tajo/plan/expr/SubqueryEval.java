@@ -26,6 +26,13 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.storage.Tuple;
 
+/**
+ * SubqueryEval is a temporal eval to keep subquery information when the subquery occurs in expressions,
+ * such as in subquery or scalar subquery, before {@link org.apache.tajo.plan.rewrite.rules.InSubqueryRewriteRule} is
+ * applied.
+ * During in subquery rewrite phase, A SubqueryEval is expected to be replaced with a Join.
+ *
+ */
 public class SubqueryEval extends ValueSetEval {
 
   private TableSubQueryNode subQueryNode;

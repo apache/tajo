@@ -20,6 +20,10 @@ package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.datum.Datum;
 
+/**
+ * ValueSetEval is an abstract class to represent both {@link RowConstantEval} and {@link SubqueryEval}.
+ * This is allowed only for the right child of {@link InEval}.
+ */
 public abstract class ValueSetEval extends EvalNode implements Cloneable {
 
   public ValueSetEval(EvalType evalType) {

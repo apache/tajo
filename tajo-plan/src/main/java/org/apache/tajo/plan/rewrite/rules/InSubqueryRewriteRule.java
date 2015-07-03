@@ -40,9 +40,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+/**
+ * InSubqueryRewriteRule finds all subqueries occurring in the where clause with "IN" keywords,
+ * and replaces them with appropriate join plans.
+ * This rule must be executed before {@link FilterPushDownRule}.
+ *
+ */
 public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
 
-  private static final Log LOG = LogFactory.getLog(InSubqueryRewriteRule.class);
   private static final String NAME = "InSubqueryRewrite";
   private final Rewriter rewriter = new Rewriter();
 
@@ -85,6 +90,10 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
     @Override
     public Object visitFilter(Object context, LogicalPlan plan, LogicalPlan.QueryBlock block, SelectionNode node,
                               Stack<LogicalNode> stack) throws PlanningException {
+      // Since InSubqueryRewriteRule is executed before FilterPushDownRule,
+      // we can expect that in-subqueries are found at only SelectionNode.
+
+      // Visit every child first.
       List<InEval> inSubqueries = extractInSubquery(node.getQual());
       stack.push(node);
       for (InEval eachIn : inSubqueries) {
@@ -97,19 +106,23 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
 
       LogicalNode baseRelation = node.getChild();
       for (InEval eachIn : inSubqueries) {
-        // find the base relation for the column of the outer query
+        // 1. find the base relation for the column of the outer query
+
+        // We assume that the left child of an in-subquery is either a FieldEval or a CastEval.
         Preconditions.checkArgument(eachIn.getLeftExpr().getType() == EvalType.FIELD ||
             eachIn.getLeftExpr().getType() == EvalType.CAST);
         EvalNode leftEval = eachIn.getLeftExpr();
         SubqueryEval subqueryEval = eachIn.getRightExpr();
         QueryBlock childBlock = plan.getBlock(subqueryEval.getSubQueryNode().getSubQuery());
 
-        // create join
+        // 2. create join
         JoinType joinType = eachIn.isNot() ? JoinType.LEFT_ANTI : JoinType.LEFT_SEMI;
         JoinNode joinNode = new JoinNode(plan.newPID());
         joinNode.init(joinType, baseRelation, subqueryEval.getSubQueryNode());
         joinNode.setJoinQual(buildJoinCondition(leftEval, subqueryEval.getSubQueryNode()));
         ProjectionNode projectionNode = PlannerUtil.findTopNode(subqueryEval.getSubQueryNode(), NodeType.PROJECTION);
+        // Insert an aggregation operator rather than just setting the distinct flag of the ProjectionNode
+        // because the performance of distinct aggregation is poor.
         insertDistinctOperator(plan, childBlock, projectionNode, projectionNode.getChild());
 
         Schema inSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
@@ -124,11 +137,11 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
         block.registerNode(joinNode);
         plan.addHistory("IN subquery is rewritten into " + (eachIn.isNot() ? "anti" : "semi") + " join.");
 
-        // set the created join as the base relation
+        // 3. set the created join as the base relation
         baseRelation = joinNode;
       }
       
-      // remove in quals
+      // 4. remove in quals
       EvalNode[] originDnfs = AlgebraicUtil.toDisjunctiveNormalFormArray(node.getQual());
       List<EvalNode> rewrittenDnfs = TUtil.newList();
       for (EvalNode eachDnf : originDnfs) {
