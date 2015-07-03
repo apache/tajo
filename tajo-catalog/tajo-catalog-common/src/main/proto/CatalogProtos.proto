@@ -39,6 +39,7 @@ enum StoreType {
   JSON = 11;
   HBASE = 12;
   SYSTEM = 13;
+  ELASTICSEARCH = 14;
 }
 
 enum OrderType {
