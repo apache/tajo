@@ -211,6 +211,7 @@ public class TestDelimitedTextFile {
     meta.putOption(StorageConstants.TEXT_DELIMITER, ",");
     FileFragment fragment = getFileFragment("testSkip.txt");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    
     scanner.init();
 
     int lines = 0;
