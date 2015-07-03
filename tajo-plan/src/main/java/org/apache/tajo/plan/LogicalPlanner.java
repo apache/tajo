@@ -2042,7 +2042,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (alterTable.getColumns() != null) {
-      alterTableNode.setColumnNames(convertColumnsToStrings(alterTable.getColumns()));
+      alterTableNode.setPartitionColumns(convertColumnsToStrings(alterTable.getColumns()));
     }
 
     if (alterTable.getValues() != null) {

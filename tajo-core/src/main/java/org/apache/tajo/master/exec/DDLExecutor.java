@@ -448,13 +448,13 @@ public class DDLExecutor {
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
     case ADD_PARTITION:
-      existColumnNames(qualifiedName, alterTable.getColumnNames());
-      catalog.alterTable(CatalogUtil.addPartitionAndDropPartition(qualifiedName, alterTable.getColumnNames(),
+      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
+      catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
       break;
     case DROP_PARTITION:
-      existColumnNames(qualifiedName, alterTable.getColumnNames());
-      catalog.alterTable(CatalogUtil.addPartitionAndDropPartition(qualifiedName, alterTable.getColumnNames(),
+      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
+      catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
       break;
     default:
@@ -462,10 +462,10 @@ public class DDLExecutor {
     }
   }
 
-  private boolean existColumnNames(String tableName, String[] columnNames) {
+  private boolean existPartitionColumnNames(String tableName, String[] columnNames) {
     for(String columnName : columnNames) {
       if (!existPartitionColumnName(tableName, columnName)) {
-        throw new NoSuchColumnException(columnName);
+        throw new NoSuchPartitionKeyException(columnName);
       }
     }
     return true;
@@ -473,7 +473,11 @@ public class DDLExecutor {
 
   private boolean existPartitionColumnName(String tableName, String columnName) {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
-    return tableDesc.getPartitionMethod().getExpressionSchema().contains(columnName) ? true : false;
+    if (tableDesc.getPartitionMethod().getExpressionSchema().contains(columnName)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private boolean existColumnName(String tableName, String columnName) {

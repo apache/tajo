@@ -597,7 +597,7 @@ public class LogicalNodeDeserializer {
       break;
     case ADD_PARTITION:
       alterPartition = alterTableProto.getAlterPartition();
-      alterTable.setColumnNames(alterPartition.getColumnNamesList().toArray(new String[alterPartition
+      alterTable.setPartitionColumns(alterPartition.getColumnNamesList().toArray(new String[alterPartition
       .getColumnNamesCount()]));
       alterTable.setPartitionValues(alterPartition.getPartitionValuesList().toArray(new String[alterPartition
         .getPartitionValuesCount()]));
@@ -607,7 +607,7 @@ public class LogicalNodeDeserializer {
       break;
     case DROP_PARTITION:
       alterPartition = alterTableProto.getAlterPartition();
-      alterTable.setColumnNames(alterPartition.getColumnNamesList().toArray(new String[alterPartition
+      alterTable.setPartitionColumns(alterPartition.getColumnNamesList().toArray(new String[alterPartition
         .getColumnNamesCount()]));
       alterTable.setPartitionValues(alterPartition.getPartitionValuesList().toArray(new String[alterPartition
         .getPartitionValuesCount()]));

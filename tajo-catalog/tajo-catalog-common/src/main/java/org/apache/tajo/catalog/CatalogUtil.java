@@ -794,7 +794,7 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
-  public static AlterTableDesc addPartitionAndDropPartition(String tableName, String[] columns,
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
                                             String[] values, String location, AlterTableType alterTableType) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);

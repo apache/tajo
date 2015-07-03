@@ -1296,11 +1296,11 @@ public class TestLogicalPlanner {
 
     assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
 
-    assertEquals(alterTableNode.getColumnNames().length, 2);
+    assertEquals(alterTableNode.getPartitionColumns().length, 2);
     assertEquals(alterTableNode.getPartitionValues().length, 2);
 
-    assertEquals(alterTableNode.getColumnNames()[0], "col1");
-    assertEquals(alterTableNode.getColumnNames()[1], "col2");
+    assertEquals(alterTableNode.getPartitionColumns()[0], "col1");
+    assertEquals(alterTableNode.getPartitionColumns()[1], "col2");
 
     assertEquals(alterTableNode.getPartitionValues()[0], "1");
     assertEquals(alterTableNode.getPartitionValues()[1], "2");
@@ -1320,12 +1320,12 @@ public class TestLogicalPlanner {
 
     assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.DROP_PARTITION);
 
-    assertEquals(alterTableNode.getColumnNames().length, 3);
+    assertEquals(alterTableNode.getPartitionColumns().length, 3);
     assertEquals(alterTableNode.getPartitionValues().length, 3);
 
-    assertEquals(alterTableNode.getColumnNames()[0], "col1");
-    assertEquals(alterTableNode.getColumnNames()[1], "col2");
-    assertEquals(alterTableNode.getColumnNames()[2], "col3");
+    assertEquals(alterTableNode.getPartitionColumns()[0], "col1");
+    assertEquals(alterTableNode.getPartitionColumns()[1], "col2");
+    assertEquals(alterTableNode.getPartitionColumns()[2], "col3");
 
     assertEquals(alterTableNode.getPartitionValues()[0], "2015");
     assertEquals(alterTableNode.getPartitionValues()[1], "01");

@@ -573,7 +573,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     case ADD_PARTITION:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.ADD_PARTITION);
       partitionBuilder = PlanProto.AlterTableNode.AlterPartition.newBuilder();
-      for (String columnName : node.getColumnNames()) {
+      for (String columnName : node.getPartitionColumns()) {
         partitionBuilder.addColumnNames(columnName);
       }
 
@@ -588,7 +588,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     case DROP_PARTITION:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.DROP_PARTITION);
       partitionBuilder = PlanProto.AlterTableNode.AlterPartition.newBuilder();
-      for (String columnName : node.getColumnNames()) {
+      for (String columnName : node.getPartitionColumns()) {
         partitionBuilder.addColumnNames(columnName);
       }
 

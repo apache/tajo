@@ -44,7 +44,7 @@ public class AlterTableNode extends LogicalNode {
   @Expose
   private AlterTableOpType alterTableOpType;
   @Expose
-  private String[] columnNames;
+  private String[] partitionColumns;
   @Expose
   private String[] partitionValues;
   @Expose
@@ -124,12 +124,12 @@ public class AlterTableNode extends LogicalNode {
     this.properties = properties;
   }
 
-  public String[] getColumnNames() {
-    return columnNames;
+  public String[] getPartitionColumns() {
+    return partitionColumns;
   }
 
-  public void setColumnNames(String[] columnNames) {
-    this.columnNames = columnNames;
+  public void setPartitionColumns(String[] partitionColumns) {
+    this.partitionColumns = partitionColumns;
   }
 
   public String[] getPartitionValues() {
@@ -155,18 +155,8 @@ public class AlterTableNode extends LogicalNode {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName,
-      null != addNewColumn ? Objects.hashCode(addNewColumn) : addNewColumn,
-      null != alterTableOpType ? Objects.hashCode(alterTableOpType) : alterTableOpType,
-      null != columnName ? Objects.hashCode(columnName) : columnName,
-      null != newColumnName ? Objects.hashCode(newColumnName) : newColumnName,
-      null != newTableName ? Objects.hashCode(newTableName) : newTableName,
-      null != tableName ? Objects.hashCode(tableName) : tableName,
-      null != properties ? Objects.hashCode(properties) : properties,
-      null != columnNames ? Objects.hashCode(columnNames) : columnNames,
-      null != partitionValues ? Objects.hashCode(partitionValues) : partitionValues,
-      null != location ? Objects.hashCode(location) : location
-    );
+    return Objects.hashCode(tableName, addNewColumn, alterTableOpType, columnName, newColumnName, newTableName,
+      tableName, properties, partitionColumns, partitionValues, location);
   }
 
   @Override

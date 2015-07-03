@@ -346,9 +346,7 @@ public class MemStore implements CatalogStore {
         if(!partitions.containsKey(tableName)) {
           throw new NoSuchPartitionException(databaseName, tableName, partitionName);
         } else {
-          Map<String, CatalogProtos.PartitionDescProto> protoMap = partitions.get(tableName);
-          protoMap.remove(partitionName);
-          partitions.put(tableName, protoMap);
+          partitions.get(tableName).remove(partitionName);
         }
         break;
       case SET_PROPERTY:
