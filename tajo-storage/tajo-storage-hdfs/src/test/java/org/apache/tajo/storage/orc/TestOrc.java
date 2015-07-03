@@ -101,15 +101,6 @@ public class TestOrc {
     }
   }
 
-  @After
-  public void end() {
-    try {
-      orcScanner.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
   @Test
   public void testWrite() {
     Schema schema = new Schema();
@@ -123,5 +114,14 @@ public class TestOrc {
     StructField midField = fieldList.get(0);
 
     assertEquals("movieid", midField.getFieldName());
+  }
+
+  @After
+  public void end() {
+    try {
+      orcScanner.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }
