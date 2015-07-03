@@ -22,14 +22,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.serde2.objectinspector.StructField;
+import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.orc.objectinspector.ObjectInspectorFactory;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.After;
 import org.junit.Before;
@@ -39,9 +43,10 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
-public class TestORCScanner {
-  private ORCScanner orcScanner;
+public class TestOrc {
+  private OrcScanner orcScanner;
 
   public static Path getResourcePath(String path, String suffix) {
     URL resultBaseURL = ClassLoader.getSystemResource(path);
@@ -66,11 +71,11 @@ public class TestORCScanner {
 
     Configuration conf = new TajoConf();
 
-    TableMeta meta = new TableMeta("ORC", new KeyValueSet());
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
 
     Fragment fragment = getFileFragment(conf, "u_data_20.orc");
 
-    orcScanner = new ORCScanner(conf, schema, meta, fragment);
+    orcScanner = new OrcScanner(conf, schema, meta, fragment);
 
     orcScanner.init();
   }
@@ -86,7 +91,7 @@ public class TestORCScanner {
       assertEquals(tuple.getText(3), "881250949");
 
       // Timestamp test
-      TimestampDatum timestamp = (TimestampDatum)tuple.asDatum(4);
+      TimestampDatum timestamp = (TimestampDatum)tuple.get(4);
 
       assertEquals(timestamp.getYear(), 2008);
       assertEquals(timestamp.getMonthOfYear(), 12);
@@ -103,5 +108,20 @@ public class TestORCScanner {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  @Test
+  public void testWrite() {
+    Schema schema = new Schema();
+    schema.addColumn("movieid", TajoDataTypes.Type.INT4);
+    schema.addColumn("rating", TajoDataTypes.Type.INT2);
+    schema.addColumn("comment", TajoDataTypes.Type.TEXT);
+    schema.addColumn("showtime", TajoDataTypes.Type.TIMESTAMP);
+
+    StructObjectInspector structOI = ObjectInspectorFactory.buildStructObjectInspector(schema);
+    List<? extends StructField> fieldList = structOI.getAllStructFieldRefs();
+    StructField midField = fieldList.get(0);
+
+    assertEquals("movieid", midField.getFieldName());
   }
 }
