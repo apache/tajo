@@ -254,6 +254,11 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
+      <name>Dongjoon Hyun</name>
+      <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>Dongmin Yu</name>
       <organization>InfiniLoop</organization>
       <roles><role>Contributor</role></roles>
@@ -270,7 +275,7 @@
     </contributor>
     <contributor>
       <name>Jinhang Choi</name>
-      <organization>Korea University</organization>
+      <organization>LineWalks</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -283,6 +288,11 @@
       <organization>ETRI</organization>
       <roles><role>Contributor</role></roles>
     </contributor>        
+    <contributor>
+      <name>Navis</name>
+      <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor> 
     <contributor>
       <name>Prafulla T.</name>
       <organization />
@@ -305,6 +315,11 @@
     <contributor>
       <name>SeongHwa Ahn</name>
       <organization>SK Telecom</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>YeonSu Han</name>
+      <organization>Gruter</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
