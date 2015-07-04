@@ -21,10 +21,12 @@ package org.apache.tajo.plan;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.exception.NoSuchColumnException;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.TajoConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,6 +111,18 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     public String toString() {
       return baseExpr.toString() + ", agg=" + aggExprs.size() + ", scalar=" + scalarExprs.size();
     }
+  }
+
+  public ExprNormalizedResult normalizeSort(LogicalPlanner.PlanContext context, Expr expr) throws PlanningException {
+    if (expr instanceof ColumnReferenceExpr) {
+      Column c = context.getQueryBlock().getSchema().getColumn(((ColumnReferenceExpr)expr).getCanonicalName());
+      if (c != null && !c.getQualifier().equals(TajoConstants.EMPTY_STRING)) {
+        ExprNormalizedResult exprNormalizedResult = new ExprNormalizedResult(context, false);
+        exprNormalizedResult.baseExpr = new ColumnReferenceExpr(c.getQualifier(), c.getSimpleName());
+        return exprNormalizedResult;
+      }
+    }
+    return normalize(context, expr, false);
   }
 
   public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr) throws PlanningException {
