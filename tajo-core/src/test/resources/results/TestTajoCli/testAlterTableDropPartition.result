@@ -1,2 +1,2 @@
 OK
-OK
+ERROR: java.lang.NullPointerException
