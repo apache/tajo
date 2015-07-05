@@ -2053,6 +2053,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       alterTableNode.setLocation(alterTable.getLocation());
     }
 
+    alterTableNode.setPurge(alterTable.isPurge());
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
   }

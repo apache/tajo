@@ -29,7 +29,10 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.exception.NoSuchColumnException;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -40,6 +43,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.net.URI;
@@ -449,16 +453,64 @@ public class DDLExecutor {
       break;
     case ADD_PARTITION:
       existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
+
+      Path partitionPath = null;
+
+      if (alterTable.getLocation() != null) {
+        partitionPath = new Path(alterTable.getLocation());
+      } else {
+        // If location is not specified, the partition's location will be set using the table location.
+        desc = catalog.getTableDesc(databaseName, simpleTableName);
+        Pair<List<PartitionKey>, String> pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(),
+          alterTable.getPartitionValues());
+        partitionPath = new Path(desc.getUri().toString(), pair.getSecond());
+        alterTable.setLocation(partitionPath.toString());
+      }
+
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
+
+      FileSystem fs = partitionPath.getFileSystem(context.getConf());
+      // If the partition's path doesn't exist, this would make the directory by force.
+      if (!fs.exists(partitionPath)) {
+        fs.mkdirs(partitionPath);
+      }
       break;
     case DROP_PARTITION:
       existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
+
+      desc = catalog.getTableDesc(databaseName, simpleTableName);
+
+      Pair<List<PartitionKey>, String> pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(),
+        alterTable.getPartitionValues());
+
+      CatalogProtos.PartitionDescProto partitionDescProto = catalog.getPartition(databaseName, simpleTableName,
+        pair.getSecond());
+
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
+
+      // When dropping partition on an managed table, the data will be delete from file system.
+      if (!desc.isExternal()) {
+        deletePartitionPath(partitionDescProto);
+      } else {
+        // When dropping partition on an external table, the data in the table will NOT be deleted from the file
+        // system. But if PURGE is specified, the partition data will be deleted.
+        if (alterTable.isPurge()) {
+          deletePartitionPath(partitionDescProto);
+        }
+      }
       break;
     default:
       //TODO
+    }
+  }
+
+  private void deletePartitionPath(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException {
+    Path partitionPath = new Path(partitionDescProto.getPath());
+    FileSystem fs = partitionPath.getFileSystem(context.getConf());
+    if (fs.exists(partitionPath)) {
+      fs.delete(partitionPath, true);
     }
   }
 

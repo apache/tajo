@@ -595,6 +595,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       for (String partitionValue : node.getPartitionValues()) {
         partitionBuilder.addPartitionValues(partitionValue);
       }
+      partitionBuilder.setPurge(node.isPurge());
       alterTableBuilder.setAlterPartition(partitionBuilder);
       break;
     default:

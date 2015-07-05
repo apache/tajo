@@ -42,10 +42,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -794,13 +791,50 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
+  /**
+   * Add partition or Drop partition
+   *
+   * @param tableName table name
+   * @param columns partition column names
+   * @param values partition values
+   * @param location partition location
+   * @param alterTableType ADD_PARTITION or DROP_PARTITION
+   * @return
+   */
   public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
                                             String[] values, String location, AlterTableType alterTableType) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
 
     PartitionDesc partitionDesc = new PartitionDesc();
+    Pair<List<PartitionKey>, String> pair = getPartitionKeyNamePair(columns, values);
 
+    partitionDesc.setPartitionKeys(pair.getFirst());
+    partitionDesc.setPartitionName(pair.getSecond());
+
+    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
+      partitionDesc.setPath(location);
+    }
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  /**
+   * Get partition key/value list and partition name
+   *
+   * ex) partition key/value list :
+   *   - col1, 2015-07-01
+   *   - col2, tajo
+   *     partition name : col1=2015-07-01/col2=tajo
+   *
+   * @param columns partition column names
+   * @param values partition values
+   * @return partition key/value list and partition name
+   */
+  public static Pair<List<PartitionKey>, String> getPartitionKeyNamePair(String[] columns, String[] values) {
+    Pair<List<PartitionKey>, String> pair = null;
     List<PartitionKey> partitionKeyList = TUtil.newList();
 
     StringBuilder sb = new StringBuilder();
@@ -816,16 +850,8 @@ public class CatalogUtil {
       partitionKeyList.add(partitionKey);
     }
 
-    partitionDesc.setPartitionKeys(partitionKeyList);
-    partitionDesc.setPartitionName(sb.toString());
-
-    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
-      partitionDesc.setPath(location);
-    }
-
-    alterTableDesc.setPartitionDesc(partitionDesc);
-    alterTableDesc.setAlterTableType(alterTableType);
-    return alterTableDesc;
+    pair = new Pair<List<PartitionKey>, String>(partitionKeyList, sb.toString());
+    return pair;
   }
 
   /* It is the relationship graph of type conversions. */

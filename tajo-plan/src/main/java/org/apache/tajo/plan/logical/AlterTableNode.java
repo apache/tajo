@@ -49,6 +49,8 @@ public class AlterTableNode extends LogicalNode {
   private String[] partitionValues;
   @Expose
   private String location;
+  @Expose
+  private boolean isPurge;
 
   public AlterTableNode(int pid) {
     super(pid, NodeType.ALTER_TABLE);
@@ -148,6 +150,14 @@ public class AlterTableNode extends LogicalNode {
     this.location = location;
   }
 
+  public boolean isPurge() {
+    return isPurge;
+  }
+
+  public void setPurge(boolean isPurge) {
+    this.isPurge = isPurge;
+  }
+
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
@@ -156,7 +166,7 @@ public class AlterTableNode extends LogicalNode {
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName, addNewColumn, alterTableOpType, columnName, newColumnName, newTableName,
-      tableName, properties, partitionColumns, partitionValues, location);
+      tableName, properties, partitionColumns, partitionValues, location, isPurge);
   }
 
   @Override

@@ -301,6 +301,7 @@ message AlterTableNode {
     repeated string columnNames = 1;
     repeated string partitionValues = 21;
     optional string location = 3;
+    optional bool purge = 4;
   }
 
   required string tableName = 1;
