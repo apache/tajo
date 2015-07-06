@@ -30,13 +30,13 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
@@ -50,11 +50,13 @@ import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
+import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
@@ -67,13 +69,17 @@ import static org.apache.tajo.plan.LogicalPlan.BlockType;
 public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContext, LogicalNode> {
   private static Log LOG = LogFactory.getLog(LogicalPlanner.class);
   private final CatalogService catalog;
+  private final StorageService storage;
+
   private final LogicalPlanPreprocessor preprocessor;
   private final EvalTreeOptimizer evalOptimizer;
   private final ExprAnnotator exprAnnotator;
   private final ExprNormalizer normalizer;
 
-  public LogicalPlanner(CatalogService catalog) {
+  public LogicalPlanner(CatalogService catalog, StorageService storage) {
     this.catalog = catalog;
+    this.storage = storage;
+
     this.exprAnnotator = new ExprAnnotator(catalog);
     this.preprocessor = new LogicalPlanPreprocessor(catalog, exprAnnotator);
     this.normalizer = new ExprNormalizer();
@@ -1345,9 +1351,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private void updatePhysicalInfo(TableDesc desc) {
-    if (desc.getPath() != null && desc.getMeta().getStoreType() != "SYSTEM") {
+    if (desc.getUri() != null &&
+        desc.getMeta().getStoreType() != "SYSTEM" && PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
       try {
-        Path path = new Path(desc.getPath());
+        Path path = new Path(desc.getUri());
         FileSystem fs = path.getFileSystem(new Configuration());
         FileStatus status = fs.getFileStatus(path);
         if (desc.getStats() != null && (status.isDirectory() || status.isFile())) {
@@ -1689,7 +1696,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setInSchema(childSchema);
     insertNode.setOutSchema(childSchema);
     insertNode.setTableSchema(childSchema);
-    insertNode.setTargetLocation(new Path(expr.getLocation()));
+
+    // Rewrite
+    URI targetUri = URI.create(expr.getLocation());
+    if (targetUri.getScheme() == null) {
+      targetUri = URI.create(context.getQueryContext().get(QueryVars.DEFAULT_SPACE_ROOT_URI) + "/" + targetUri);
+    }
+    insertNode.setUri(targetUri);
 
     if (expr.hasStorageType()) {
       insertNode.setStorageType(expr.getStorageType());
@@ -1742,7 +1755,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     createTableNode.setExternal(parentTableDesc.isExternal());
     if(parentTableDesc.isExternal()) {
-      createTableNode.setPath(new Path(parentTableDesc.getPath()));
+      createTableNode.setUri(parentTableDesc.getUri());
     }
     return createTableNode;
   }
@@ -1762,8 +1775,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getTableName()));
     }
     // This is CREATE TABLE <tablename> LIKE <parentTable>
-    if(expr.getLikeParentTableName() != null)
+    if(expr.getLikeParentTableName() != null) {
       return handleCreateTableLike(context, expr, createTableNode);
+    }
+
+    if (expr.hasTableSpaceName()) {
+      createTableNode.setTableSpaceName(expr.getTableSpaceName());
+    }
+
+    createTableNode.setUri(getCreatedTableURI(context, expr));
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
       createTableNode.setStorageType(expr.getStorageType());
@@ -1771,24 +1791,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setStorageType("CSV");
     }
 
-
-
     // Set default storage properties to table
-    KeyValueSet properties = CatalogUtil.newPhysicalProperties(createTableNode.getStorageType());
+    createTableNode.setOptions(CatalogUtil.newDefaultProperty(createTableNode.getStorageType()));
 
     // Priority to apply table properties
     // 1. Explicit table properties specified in WITH clause
     // 2. Session variables
 
     // Set session variables to properties
-    PlannerUtil.applySessionToTableProperties(context.queryContext, createTableNode.getStorageType(), properties);
-    // Set table properties specified in WITH clause
+    TablePropertyUtil.setTableProperty(context.queryContext, createTableNode);
+
+    // Set table property specified in WITH clause and it will override all others
     if (expr.hasParams()) {
-      properties.putAll(expr.getParams());
+      createTableNode.getOptions().putAll(expr.getParams());
     }
-
-    createTableNode.setOptions(properties);
-
 
 
     if (expr.hasPartition()) {
@@ -1850,11 +1866,29 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         createTableNode.setExternal(true);
       }
 
-      if (expr.hasLocation()) {
-        createTableNode.setPath(new Path(expr.getLocation()));
-      }
-
       return createTableNode;
+    }
+  }
+
+  /**
+   * Return a table uri to be created
+   *
+   * @param context PlanContext
+   * @param createTable An algebral expression for create table
+   * @return a Table uri to be created on a given table space
+   */
+  private URI getCreatedTableURI(PlanContext context, CreateTable createTable) {
+
+    if (createTable.hasLocation()) {
+      return URI.create(createTable.getLocation());
+    } else {
+
+      String tableName = createTable.getTableName();
+      String databaseName = CatalogUtil.isFQTableName(tableName) ?
+          CatalogUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
+
+      return storage.getTableURI(
+          createTable.getTableSpaceName(), databaseName, CatalogUtil.extractSimpleName(tableName));
     }
   }
 

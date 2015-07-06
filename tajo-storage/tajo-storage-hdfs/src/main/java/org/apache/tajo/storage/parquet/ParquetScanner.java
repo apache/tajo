@@ -21,6 +21,8 @@ package org.apache.tajo.storage.parquet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -105,6 +107,11 @@ public class ParquetScanner extends FileScanner {
   @Override
   public boolean isSelectable() {
     return false;
+  }
+
+  @Override
+  public void setFilter(EvalNode filter) {
+    throw new UnsupportedException();
   }
 
   /**

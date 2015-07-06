@@ -53,7 +53,7 @@ import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.storage.TableSpaceManager;
+import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -358,7 +358,7 @@ public class TajoWorker extends CompositeService {
     }
 
     try {
-      TableSpaceManager.shutdown();
+      OldStorageManager.shutdown();
     } catch (IOException ie) {
       LOG.error(ie.getMessage(), ie);
     }

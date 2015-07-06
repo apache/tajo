@@ -34,12 +34,12 @@ import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -306,18 +306,38 @@ public class ExecutionBlockContext {
       }
 
       IntermediateEntryProto.Builder intermediateBuilder = IntermediateEntryProto.newBuilder();
+      IntermediateEntryProto.PageProto.Builder pageBuilder = IntermediateEntryProto.PageProto.newBuilder();
+      FailureIntermediateProto.Builder failureBuilder = FailureIntermediateProto.newBuilder();
 
-      WorkerConnectionInfo connectionInfo = getWorkerContext().getConnectionInfo();
-      String address = connectionInfo.getHost() + ":" + connectionInfo.getPullServerPort();
       for (HashShuffleAppenderManager.HashShuffleIntermediate eachShuffle: shuffles) {
+        List<IntermediateEntryProto.PageProto> pages = Lists.newArrayList();
+        List<FailureIntermediateProto> failureIntermediateItems = Lists.newArrayList();
+
+        for (Pair<Long, Integer> eachPage: eachShuffle.getPages()) {
+          pageBuilder.clear();
+          pageBuilder.setPos(eachPage.getFirst());
+          pageBuilder.setLength(eachPage.getSecond());
+          pages.add(pageBuilder.build());
+        }
+
+        for(Pair<Long, Pair<Integer, Integer>> eachFailure: eachShuffle.getFailureTskTupleIndexes()) {
+          failureBuilder.clear();
+          failureBuilder.setPagePos(eachFailure.getFirst());
+          failureBuilder.setStartRowNum(eachFailure.getSecond().getFirst());
+          failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
+          failureIntermediateItems.add(failureBuilder.build());
+        }
+        intermediateBuilder.clear();
+
         intermediateBuilder.setEbId(ebId.getProto())
-            .setAddress(address)
+            .setHost(getWorkerContext().getConnectionInfo().getHost() + ":" +
+                getWorkerContext().getConnectionInfo().getPullServerPort())
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())
             .setVolume(eachShuffle.getVolume())
-            .addAllPages(eachShuffle.getPages())
-            .addAllFailures(eachShuffle.getFailureTskTupleIndexes());
+            .addAllPages(pages)
+            .addAllFailures(failureIntermediateItems);
         intermediateEntries.add(intermediateBuilder.build());
       }
 

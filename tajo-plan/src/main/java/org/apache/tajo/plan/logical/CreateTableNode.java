@@ -20,15 +20,14 @@ package org.apache.tajo.plan.logical;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
+
 public class CreateTableNode extends StoreTableNode implements Cloneable {
-  @Expose private Schema schema;
-  @Expose private Path path;
+  @Expose private String tableSpaceName;
   @Expose private boolean external;
   @Expose private boolean ifNotExists;
 
@@ -41,34 +40,26 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     return child == null ? 0 : 1;
   }
 
-  public void setTableSchema(Schema schema) {
-    this.schema = schema;
-  }
-    
-  public Schema getTableSchema() {
-    return this.schema;
-  }
-
   public Schema getLogicalSchema() {
     if (hasPartition()) {
-      Schema logicalSchema = new Schema(schema);
+      Schema logicalSchema = new Schema(tableSchema);
       logicalSchema.addColumns(getPartitionMethod().getExpressionSchema());
       return logicalSchema;
     } else {
-      return schema;
+      return tableSchema;
     }
   }
 
-  public boolean hasPath() {
-    return this.path != null;
+  public boolean hasTableSpaceName() {
+    return tableSpaceName != null;
   }
 
-  public void setPath(Path path) {
-    this.path = path;
+  public String getTableSpaceName() {
+    return tableSpaceName;
   }
-  
-  public Path getPath() {
-    return this.path;
+
+  public void setTableSpaceName(String tableSpaceName) {
+    this.tableSpaceName = tableSpaceName;
   }
 
   public boolean isExternal() {
@@ -97,7 +88,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   }
 
   public int hashCode() {
-    return super.hashCode() ^ Objects.hashCode(schema, path, external, ifNotExists) * 31;
+    return super.hashCode() ^ Objects.hashCode(tableSchema, uri, external, ifNotExists) * 31;
   }
   
   @Override
@@ -105,9 +96,8 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     if (obj instanceof CreateTableNode) {
       CreateTableNode other = (CreateTableNode) obj;
       boolean eq = super.equals(other);
-      eq &= this.schema.equals(other.schema);
+      eq &= TUtil.checkEquals(tableSpaceName, other.tableSpaceName);
       eq &= this.external == other.external;
-      eq &= TUtil.checkEquals(path, other.path);
       eq &= ifNotExists == other.ifNotExists;;
       return eq;
     } else {
@@ -118,12 +108,8 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     CreateTableNode createTableNode = (CreateTableNode) super.clone();
-    createTableNode.tableName = tableName;
-    createTableNode.schema = (Schema) schema.clone();
-    createTableNode.storageType = storageType;
+    createTableNode.tableSpaceName = tableSpaceName;
     createTableNode.external = external;
-    createTableNode.path = path != null ? new Path(path.toString()) : null;
-    createTableNode.options = (KeyValueSet) (options != null ? options.clone() : null);
     createTableNode.ifNotExists = ifNotExists;
     return createTableNode;
   }

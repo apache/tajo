@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
@@ -31,6 +32,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
@@ -227,6 +229,11 @@ public class CatalogUtil {
     return sb.toString();
   }
 
+  public static Pair<String, String> separateQualifierAndName(String name) {
+    Preconditions.checkArgument(isFQTableName(name), "Must be a qualified name.");
+    return new Pair<String, String>(extractQualifier(name), extractSimpleName(name));
+  }
+
   /**
    * Extract a qualification name from an identifier.
    *
@@ -306,7 +313,7 @@ public class CatalogUtil {
   }
 
   public static TableMeta newTableMeta(String storeType) {
-    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(storeType);
+    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(storeType);
     return new TableMeta(storeType, defaultProperties);
   }
 
@@ -864,7 +871,7 @@ public class CatalogUtil {
    * @param storeType StoreType
    * @return Table properties
    */
-  public static KeyValueSet newPhysicalProperties(String storeType) {
+  public static KeyValueSet newDefaultProperty(String storeType) {
     KeyValueSet options = new KeyValueSet();
     if (storeType.equalsIgnoreCase("CSV") ||  storeType.equalsIgnoreCase("TEXT")) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);

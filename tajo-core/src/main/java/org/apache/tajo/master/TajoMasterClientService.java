@@ -609,6 +609,12 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
+
+        QueryInProgress progress = context.getQueryJobManager().getQueryInProgress(queryId);
+        if (progress == null || progress.isFinishState() || progress.isKillWait()) {
+          return BOOL_TRUE;
+        }
+
         QueryManager queryManager = context.getQueryJobManager();
         queryManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
             new QueryInfo(queryId)));
@@ -818,8 +824,7 @@ public class TajoMasterClientService extends AbstractService {
         TableDesc desc;
         try {
           desc = context.getGlobalEngine().getDDLExecutor().createTable(queryContext, request.getName(),
-              meta.getStoreType(), schema,
-              meta, path, true, partitionDesc, false);
+              null, meta.getStoreType(), schema, meta, path.toUri(), true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.ERROR)

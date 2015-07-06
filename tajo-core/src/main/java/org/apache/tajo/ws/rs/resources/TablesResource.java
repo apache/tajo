@@ -19,9 +19,7 @@
 package org.apache.tajo.ws.rs.resources;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -64,7 +62,8 @@ public class TablesResource {
   String databaseName;
   
   JerseyResourceDelegateContext context;
-  
+
+  private static final String tablesKeyName = "tables";
   private static final String databaseNameKeyName = "databaseName";
   private static final String tableNameKeyName = "tableName";
   private static final String tableDescKeyName = "tableDesc";
@@ -206,15 +205,11 @@ public class TablesResource {
       if (!catalogService.existDatabase(databaseName)) {
         return Response.status(Status.NOT_FOUND).build();
       }
-      
+
       Collection<String> tableNames = catalogService.getAllTableNames(databaseName);
-      List<TableDesc> tables = new ArrayList<TableDesc>();
-      
-      for (String tableName: tableNames) {
-        tables.add(new TableDesc(tableName, null, null, null));
-      }
-      
-      return Response.ok(tables).build();
+      Map<String, Collection<String>> tableNamesMap = new HashMap<String, Collection<String>>();
+      tableNamesMap.put(tablesKeyName, tableNames);
+      return Response.ok(tableNamesMap).build();
     }
     
   }

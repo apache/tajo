@@ -20,10 +20,13 @@ package org.apache.tajo.ha;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.ServiceTracker;
@@ -32,58 +35,51 @@ import org.junit.Test;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
 
 public class TestHAServiceHDFSImpl  {
   private TajoTestingCluster cluster;
-  private TajoMaster backupMaster;
 
-  private TajoConf conf;
-  private TajoClient client;
+  private TajoMaster primaryMaster;
+  private TajoMaster backupMaster;
 
   private Path haPath, activePath, backupPath;
 
-  private String masterAddress;
-
   @Test
   public final void testAutoFailOver() throws Exception {
-    cluster = new TajoTestingCluster(true);
-
-    cluster.startMiniCluster(1);
-    conf = cluster.getConfiguration();
-    client = cluster.newTajoClient();
+    cluster = TpchTestBase.getInstance().getTestingCluster();
 
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
 
-      ServiceTracker serviceTracker = ServiceTrackerFactory.get(conf);
-      masterAddress = serviceTracker.getUmbilicalAddress().getHostName();
+      TajoConf primaryConf = setConfigForHAMaster();
+      primaryMaster = new TajoMaster();
+      primaryMaster.init(primaryConf);
+      primaryMaster.start();
 
-      setConfiguration();
-
+      TajoConf backupConf = setConfigForHAMaster();
       backupMaster = new TajoMaster();
-      backupMaster.init(conf);
+      backupMaster.init(backupConf);
       backupMaster.start();
 
-      assertNotEquals(cluster.getMaster().getMasterName(), backupMaster.getMasterName());
+      ServiceTracker tracker = ServiceTrackerFactory.get(primaryConf);
 
+      assertNotEquals(primaryMaster.getMasterName(), backupMaster.getMasterName());
       verifySystemDirectories(fs);
 
       assertEquals(2, fs.listStatus(activePath).length);
       assertEquals(1, fs.listStatus(backupPath).length);
 
       assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
-      assertTrue(fs.exists(new Path(activePath, cluster.getMaster().getMasterName().replaceAll(":", "_"))));
+      assertTrue(fs.exists(new Path(activePath, primaryMaster.getMasterName().replaceAll(":", "_"))));
       assertTrue(fs.exists(new Path(backupPath, backupMaster.getMasterName().replaceAll(":", "_"))));
 
-      createDatabaseAndTable();
-      verifyDataBaseAndTable();
-      client.close();
+      createDatabaseAndTable(tracker);
+      verifyDataBaseAndTable(tracker);
 
-      cluster.getMaster().stop();
+      primaryMaster.stop();
 
-      client = cluster.newTajoClient();
-      verifyDataBaseAndTable();
+      verifyDataBaseAndTable(tracker);
 
       assertEquals(2, fs.listStatus(activePath).length);
       assertEquals(0, fs.listStatus(backupPath).length);
@@ -91,25 +87,23 @@ public class TestHAServiceHDFSImpl  {
       assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
       assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
     } finally {
-      client.close();
       backupMaster.stop();
-      cluster.shutdownMiniCluster();
     }
   }
 
-  private void setConfiguration() {
-    conf = cluster.getConfiguration();
+  private TajoConf setConfigForHAMaster() {
+    TajoConf conf = new TajoConf(cluster.getConfiguration());
 
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-      masterAddress + ":" + NetUtils.getFreeSocketPort());
+        "localhost:" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-      masterAddress + ":" + NetUtils.getFreeSocketPort());
+        "localhost:" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS,
-      masterAddress + ":" + NetUtils.getFreeSocketPort());
+        "localhost:" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
-      masterAddress + ":" + NetUtils.getFreeSocketPort());
+        "localhost:" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
-        masterAddress + ":" + NetUtils.getFreeSocketPort());
+        "localhost:" + NetUtils.getFreeSocketPort());
     conf.setIntVar(TajoConf.ConfVars.REST_SERVICE_PORT,
         NetUtils.getFreeSocketPort());
 
@@ -126,6 +120,8 @@ public class TestHAServiceHDFSImpl  {
     conf.setIntVar(TajoConf.ConfVars.WORKER_RPC_SERVER_WORKER_THREAD_NUM, 2);
     conf.setIntVar(TajoConf.ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM, 2);
     conf.setIntVar(TajoConf.ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
+
+    return conf;
   }
 
   private void verifySystemDirectories(FileSystem fs) throws Exception {
@@ -139,14 +135,26 @@ public class TestHAServiceHDFSImpl  {
     assertTrue(fs.exists(backupPath));
   }
 
-  private void createDatabaseAndTable() throws Exception {
-    client.executeQuery("CREATE TABLE default.table1 (age int);");
-    client.executeQuery("CREATE TABLE default.table2 (age int);");
+  private void createDatabaseAndTable(ServiceTracker tracker) throws Exception {
+    TajoClient client = null;
+    try {
+      client = new TajoClientImpl(tracker);
+      client.executeQuery("CREATE TABLE default.ha_test1 (age int);");
+      client.executeQuery("CREATE TABLE default.ha_test2 (age int);");
+    } finally {
+      IOUtils.cleanup(null, client);
+    }
   }
 
-  private void verifyDataBaseAndTable() throws Exception {
-    client.existDatabase("default");
-    client.existTable("default.table1");
-    client.existTable("default.table2");
+  private void verifyDataBaseAndTable(ServiceTracker tracker) throws Exception {
+    TajoClient client = null;
+    try {
+      client = new TajoClientImpl(tracker);
+      client.existDatabase("default");
+      client.existTable("default.ha_test1");
+      client.existTable("default.ha_test2");
+    } finally {
+      IOUtils.cleanup(null, client);
+    }
   }
 }

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.hbase;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -44,22 +43,20 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.BytesUtils;
-import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -68,14 +65,44 @@ import java.util.*;
 public class HBaseTablespace extends Tablespace {
   private static final Log LOG = LogFactory.getLog(HBaseTablespace.class);
 
+  public static final StorageProperty HBASE_STORAGE_PROPERTIES = new StorageProperty("hbase", false, true, false);
+  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, false, true);
+  public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, true, false);
+
+  private Configuration hbaseConf;
+
+  private final static SortedInsertRewriter REWRITE_RULE = new SortedInsertRewriter();
+
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
-  public HBaseTablespace(String storeType) {
-    super(storeType);
+  public HBaseTablespace(String spaceName, URI uri) {
+    super(spaceName, uri);
   }
 
   @Override
   public void storageInit() throws IOException {
+    this.hbaseConf = HBaseConfiguration.create(conf);
+    String zkQuorum = extractQuorum(uri);
+    String [] splits = zkQuorum.split(":");
+    hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, splits[0]);
+    hbaseConf.set(HConstants.ZOOKEEPER_CLIENT_PORT, splits[1]);
+  }
+
+  @Override
+  public void setConfig(String name, String value) {
+  }
+
+  @Override
+  public void setConfigs(Map<String, String> configs) {
+  }
+
+  public Configuration getHbaseConf() {
+    return hbaseConf;
+  }
+
+  @Override
+  public long getTableVolume(URI uri) throws IOException {
+    return 0;
   }
 
   @Override
@@ -93,13 +120,13 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
-    createTable(tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.isExternal(), ifNotExists);
+    createTable(tableDesc.getUri(), tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.isExternal(), ifNotExists);
     TableStats stats = new TableStats();
     stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
     tableDesc.setStats(stats);
   }
 
-  private void createTable(TableMeta tableMeta, Schema schema,
+  private void createTable(URI uri, TableMeta tableMeta, Schema schema,
                            boolean isExternal, boolean ifNotExists) throws IOException {
     String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
@@ -113,7 +140,7 @@ public class HBaseTablespace extends Tablespace {
       throw new IOException("Columns property has more entry than Tajo table columns");
     }
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
     int numRowKeys = 0;
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     for (int i = 0; i < isRowKeyMappings.length; i++) {
@@ -138,8 +165,7 @@ public class HBaseTablespace extends Tablespace {
       }
     }
 
-    Configuration hConf = getHBaseConfiguration(conf, tableMeta);
-    HBaseAdmin hAdmin =  new HBaseAdmin(hConf);
+    HBaseAdmin hAdmin =  new HBaseAdmin(getHbaseConf());
 
     try {
       if (isExternal) {
@@ -210,7 +236,7 @@ public class HBaseTablespace extends Tablespace {
       return null;
     }
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, meta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, meta.getOptions());
     boolean[] isBinaryColumns = columnMapping.getIsBinaryColumns();
     boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
 
@@ -291,45 +317,23 @@ public class HBaseTablespace extends Tablespace {
   }
 
   /**
-   * Creates Configuration instance and sets with hbase connection options.
+   * It extracts quorum addresses from a Hbase Tablespace URI.
+   * For example, consider an example URI 'hbase:zk://host1:2171,host2:2172,host3:2173/table1'.
+   * <code>extractQuorum</code> will extract only 'host1:2171,host2:2172,host3:2173'.
    *
-   * @param conf
-   * @param tableMeta
-   * @return
-   * @throws java.io.IOException
+   * @param uri Hbase Tablespace URI
+   * @return Quorum addresses
    */
-  public static Configuration getHBaseConfiguration(Configuration conf, TableMeta tableMeta) throws IOException {
-    Configuration hbaseConf = (conf == null) ? HBaseConfiguration.create() : HBaseConfiguration.create(conf);
+  static String extractQuorum(URI uri) {
+    String uriStr = uri.toString();
+    int start = uriStr.indexOf("/") + 2;
+    int pathIndex = uriStr.lastIndexOf("/");
 
-    String zkQuorum = hbaseConf.get(HConstants.ZOOKEEPER_QUORUM);
-    if (tableMeta.containsOption(HBaseStorageConstants.META_ZK_QUORUM_KEY)) {
-      zkQuorum = tableMeta.getOption(HBaseStorageConstants.META_ZK_QUORUM_KEY, "");
-      hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, zkQuorum);
+    if (pathIndex < start) {
+      return uriStr.substring(start);
+    } else {
+      return uriStr.substring(start, pathIndex);
     }
-
-    if (zkQuorum == null || zkQuorum.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" +
-          HBaseStorageConstants.META_ZK_QUORUM_KEY + "' attribute.");
-    }
-
-    String zkPort = hbaseConf.get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    if (tableMeta.containsOption(HBaseStorageConstants.META_ZK_CLIENT_PORT)) {
-      zkPort = tableMeta.getOption(HBaseStorageConstants.META_ZK_CLIENT_PORT, "");
-      hbaseConf.set(HConstants.ZOOKEEPER_CLIENT_PORT, zkPort);
-    }
-
-    if (zkPort == null || zkPort.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" +
-        HBaseStorageConstants.META_ZK_CLIENT_PORT + "' attribute.");
-    }
-
-    for (Map.Entry<String, String> eachOption: tableMeta.getOptions().getAllKeyValus().entrySet()) {
-      String key = eachOption.getKey();
-      if (key.startsWith(HConstants.ZK_CFG_PROPERTY_PREFIX)) {
-        hbaseConf.set(key, eachOption.getValue());
-      }
-    }
-    return hbaseConf;
   }
 
   /**
@@ -348,7 +352,7 @@ public class HBaseTablespace extends Tablespace {
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
 
     HTableDescriptor hTableDescriptor = new HTableDescriptor(hTableName);
 
@@ -369,7 +373,7 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException {
-    HBaseAdmin hAdmin =  new HBaseAdmin(getHBaseConfiguration(conf, tableDesc.getMeta()));
+    HBaseAdmin hAdmin =  new HBaseAdmin(hbaseConf);
 
     try {
       HTableDescriptor hTableDesc = parseHTableDescriptor(tableDesc.getMeta(), tableDesc.getSchema());
@@ -381,6 +385,11 @@ public class HBaseTablespace extends Tablespace {
     }
   }
 
+  @Override
+  public URI getTableUri(String databaseName, String tableName) {
+    return URI.create(uri.toString() + "/" + tableName);
+  }
+
   /**
    * Returns columns which are mapped to the rowkey of the hbase table.
    *
@@ -389,7 +398,7 @@ public class HBaseTablespace extends Tablespace {
    * @throws java.io.IOException
    */
   private Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     int[] rowKeyIndexes = columnMapping.getRowKeyFieldIndexes();
 
@@ -407,15 +416,14 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode) throws IOException {
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
 
     List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, scanNode);
-    Configuration hconf = getHBaseConfiguration(conf, tableDesc.getMeta());
     HTable htable = null;
     HBaseAdmin hAdmin = null;
 
     try {
-      htable = new HTable(hconf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
+      htable = new HTable(hbaseConf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
 
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
@@ -424,8 +432,12 @@ public class HBaseTablespace extends Tablespace {
           throw new IOException("Expecting at least one region.");
         }
         List<Fragment> fragments = new ArrayList<Fragment>(1);
-        Fragment fragment = new HBaseFragment(fragmentId, htable.getName().getNameAsString(),
-            HConstants.EMPTY_BYTE_ARRAY, HConstants.EMPTY_BYTE_ARRAY, regLoc.getHostname());
+        Fragment fragment = new HBaseFragment(
+            tableDesc.getUri(),
+            fragmentId, htable.getName().getNameAsString(),
+            HConstants.EMPTY_BYTE_ARRAY,
+            HConstants.EMPTY_BYTE_ARRAY,
+            regLoc.getHostname());
         fragments.add(fragment);
         return fragments;
       }
@@ -458,7 +470,7 @@ public class HBaseTablespace extends Tablespace {
         stopRows = TUtil.newList(HConstants.EMPTY_END_ROW);
       }
 
-      hAdmin =  new HBaseAdmin(hconf);
+      hAdmin =  new HBaseAdmin(hbaseConf);
       Map<ServerName, ServerLoad> serverLoadMap = new HashMap<ServerName, ServerLoad>();
 
       // region startkey -> HBaseFragment
@@ -499,8 +511,12 @@ public class HBaseTablespace extends Tablespace {
                 prevFragment.setStopRow(fragmentStop);
               }
             } else {
-              HBaseFragment fragment = new HBaseFragment(fragmentId, htable.getName().getNameAsString(),
-                  fragmentStart, fragmentStop, location.getHostname());
+              HBaseFragment fragment = new HBaseFragment(tableDesc.getUri(),
+                  fragmentId,
+                  htable.getName().getNameAsString(),
+                  fragmentStart,
+                  fragmentStop,
+                  location.getHostname());
 
               // get region size
               boolean foundLength = false;
@@ -553,11 +569,20 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
+  public Appender getAppenderForInsertRow(OverridableConf queryContext,
+                                          TaskAttemptId taskAttemptId,
+                                          TableMeta meta,
+                                          Schema schema,
+                                          Path workDir) throws IOException {
+    return new HBasePutAppender(conf, uri, taskAttemptId, schema, meta, workDir);
+  }
+
+  @Override
   public Appender getAppender(OverridableConf queryContext,
                               TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
     if ("true".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
-      return new HBasePutAppender(conf, taskAttemptId, schema, meta, workDir);
+      return new HBasePutAppender(conf, uri, taskAttemptId, schema, meta, workDir);
     } else {
       return super.getAppender(queryContext, taskAttemptId, meta, schema, workDir);
     }
@@ -566,17 +591,16 @@ public class HBaseTablespace extends Tablespace {
   @Override
   public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
       throws IOException {
-    Configuration hconf = getHBaseConfiguration(conf, tableDesc.getMeta());
     HTable htable = null;
     HBaseAdmin hAdmin = null;
     try {
-      htable = new HTable(hconf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
+      htable = new HTable(hbaseConf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
 
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
         return new ArrayList<Fragment>(1);
       }
-      hAdmin =  new HBaseAdmin(hconf);
+      hAdmin =  new HBaseAdmin(hbaseConf);
       Map<ServerName, ServerLoad> serverLoadMap = new HashMap<ServerName, ServerLoad>();
 
       List<Fragment> fragments = new ArrayList<Fragment>(keys.getFirst().length);
@@ -599,8 +623,13 @@ public class HBaseTablespace extends Tablespace {
           serverLoadMap.put(location.getServerName(), serverLoad);
         }
 
-        HBaseFragment fragment = new HBaseFragment(tableDesc.getName(), htable.getName().getNameAsString(),
-            location.getRegionInfo().getStartKey(), location.getRegionInfo().getEndKey(), location.getHostname());
+        HBaseFragment fragment = new HBaseFragment(
+            tableDesc.getUri(),
+            tableDesc.getName(),
+            htable.getName().getNameAsString(),
+            location.getRegionInfo().getStartKey(),
+            location.getRegionInfo().getEndKey(),
+            location.getHostname());
 
         // get region size
         boolean foundLength = false;
@@ -642,7 +671,7 @@ public class HBaseTablespace extends Tablespace {
     }
   }
 
-  public HConnection getConnection(Configuration hbaseConf) throws IOException {
+  public HConnection getConnection() throws IOException {
     synchronized(connMap) {
       HConnectionKey key = new HConnectionKey(hbaseConf);
       HConnection conn = connMap.get(key);
@@ -937,18 +966,17 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
-                               LogicalPlan plan, Schema schema,
-                               TableDesc tableDesc) throws IOException {
+  public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId,
+                          LogicalPlan plan, Schema schema,
+                          TableDesc tableDesc) throws IOException {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
-    Preconditions.checkArgument(tableDesc.getName() != null && tableDesc.getPath() == null);
 
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
-    Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
+    Configuration hbaseConf = HBaseConfiguration.create(this.hbaseConf);
     hbaseConf.set("hbase.loadincremental.threads.max", "2");
 
     JobContextImpl jobContext = new JobContextImpl(hbaseConf,
@@ -993,8 +1021,7 @@ public class HBaseTablespace extends Tablespace {
         sortKeyIndexes[i] = inputSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
       }
 
-      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
-      Configuration hbaseConf = HBaseTablespace.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
+      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
 
       HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
       try {
@@ -1062,59 +1089,51 @@ public class HBaseTablespace extends Tablespace {
     }
   }
 
-  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
-    if ("false".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
-      List<LogicalPlanRewriteRule> rules = new ArrayList<LogicalPlanRewriteRule>();
-      rules.add(new AddSortForInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
-      return rules;
-    } else {
-      return null;
+  @Override
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
+    if (REWRITE_RULE.isEligible(context, plan)) {
+      REWRITE_RULE.rewrite(context, plan);
     }
-  }
-
-  private Column[] getIndexColumns(TableDesc tableDesc) throws IOException {
-    List<Column> indexColumns = new ArrayList<Column>();
-
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
-
-    boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
-    for (int i = 0; i < isRowKeys.length; i++) {
-      if (isRowKeys[i]) {
-        indexColumns.add(tableDesc.getSchema().getColumn(i));
-      }
-    }
-
-    return indexColumns.toArray(new Column[]{});
   }
 
   @Override
-  public StorageProperty getStorageProperty() {
-    StorageProperty storageProperty = new StorageProperty();
-    storageProperty.setSortedInsert(true);
-    storageProperty.setSupportsInsertInto(true);
-    return storageProperty;
+  public StorageProperty getProperty() {
+    return HBASE_STORAGE_PROPERTIES;
   }
 
-  public void beforeInsertOrCATS(LogicalNode node) throws IOException {
+  @Override
+  public FormatProperty getFormatProperty(TableMeta meta) {
+    KeyValueSet tableProperty = meta.getOptions();
+    if (tableProperty.isTrue(HBaseStorageConstants.INSERT_PUT_MODE) ||
+        tableProperty.isTrue(StorageConstants.INSERT_DIRECTLY)) {
+      return PUT_MODE_PROPERTIES;
+    } else {
+      return HFILE_FORMAT_PROPERTIES;
+    }
+  }
+
+  public void prepareTable(LogicalNode node) throws IOException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (!cNode.isExternal()) {
         TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
-        createTable(tableMeta, cNode.getTableSchema(), cNode.isExternal(), cNode.isIfNotExists());
+        createTable(
+            ((CreateTableNode) node).getUri(), tableMeta, cNode.getTableSchema(),
+            cNode.isExternal(), cNode.isIfNotExists());
       }
     }
   }
 
   @Override
-  public void rollbackOutputCommit(LogicalNode node) throws IOException {
+  public void rollbackTable(LogicalNode node) throws IOException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (cNode.isExternal()) {
         return;
       }
-      TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
-      HBaseAdmin hAdmin =  new HBaseAdmin(getHBaseConfiguration(conf, tableMeta));
 
+      HBaseAdmin hAdmin =  new HBaseAdmin(this.hbaseConf);
+      TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
       try {
         HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
         LOG.info("Delete table cause query failed:" + new String(hTableDesc.getName()));
@@ -1127,7 +1146,25 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException  {
+  public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
+    if (meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
+      throw new IOException("Staging phase is not supported in this storage.");
+    } else {
+      return TablespaceManager.getDefault().getStagingUri(context, queryId, meta);
+    }
+  }
+
+  public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context,
+                                 TableMeta meta) throws IOException {
+    if (!meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
+      return TablespaceManager.getDefault().prepareStagingSpace(conf, queryId, context, meta);
+    } else {
+      throw new IOException("Staging phase is not supported in this storage.");
+    }
+  }
+
+  @Override
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException  {
     if (tableDesc != null) {
       Schema tableSchema = tableDesc.getSchema();
       if (tableSchema.size() != outSchema.size()) {

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -30,7 +31,10 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -90,17 +94,26 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(context.getConf()))
-          .getAppender(meta, appenderSchema, lastFileName);
+      Optional<FileTablespace> spaceRes = TablespaceManager.get(lastFileName.toUri());
+      if (!spaceRes.isPresent())  {
+        throw new IllegalStateException("No Tablespace for " + lastFileName.toUri());
+      }
+
+      FileTablespace space = spaceRes.get();
+      appender = space.getAppender(meta, appenderSchema, lastFileName);
 
       if (suffixId > 0) {
         LOG.info(prevFile + " exceeds " + SessionVars.MAX_OUTPUT_FILE_SIZE.keyname() + " (" + maxPerFileSize + " MB), " +
             "The remain output will be written into " + lastFileName.toString());
       }
     } else {
-      appender = TableSpaceManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
+      Path stagingDir = context.getQueryContext().getStagingDir();
+      appender = TablespaceManager.get(stagingDir.toUri()).get().getAppender(
           context.getQueryContext(),
-          context.getTaskId(), meta, appenderSchema, context.getQueryContext().getStagingDir());
+          context.getTaskId(),
+          meta,
+          appenderSchema,
+          stagingDir);
     }
 
     appender.enableStats();
