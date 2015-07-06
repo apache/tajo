@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<title>Release Notes - Tajo - Version 0.10.1</title>
+</head>
+
+<body>
+<h1>Release Notes - Tajo - Version 0.10.1</h1>
+
+<h2>Changes since Tajo 0.10.1</h2>
+
+<h2>        Sub-task
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1437'>TAJO-1437</a>] -         Resolve findbug warnings on Tajo JDBC Module
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1438'>TAJO-1438</a>] -         Resolve findbug warnings on Tajo Client Module
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1529'>TAJO-1529</a>] -         Implement json_extract_path_text(string, string) function
+</li>
+</ul>
+                        
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1147'>TAJO-1147</a>] -         Simple query doesn&#39;t work in Web UI
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1360'>TAJO-1360</a>] -         VALUES_ field in OPTIONS table of catalog store should be longer.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1384'>TAJO-1384</a>] -         Duplicated output file path problem
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1386'>TAJO-1386</a>] -         CURRENT_DATE generates parsing errors sometimes.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1387'>TAJO-1387</a>] -         Correct error message for EXISTS clause
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1396'>TAJO-1396</a>] -         Unexpected IllegalMonitorStateException can be thrown in QueryInProgress
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1411'>TAJO-1411</a>] -         Support case-insensitive table description command
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1419'>TAJO-1419</a>] -         Tsql session command doesn&#39;t work
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1434'>TAJO-1434</a>] -         Fix supporting version of Hadoop
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1440'>TAJO-1440</a>] -         Some tests fail in parallel test environment in TestKillQuery
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1481'>TAJO-1481</a>] -         Numeric conversion of Inet4 type should be considered as unsigned
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1485'>TAJO-1485</a>] -         Datum &#39;Char&#39; returned only 1byte.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1512'>TAJO-1512</a>] -         Fix various Expr cloning bugs
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1516'>TAJO-1516</a>] -         JDBC connection is lost while retrieving large results
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1522'>TAJO-1522</a>] -         NPE making stage history before task scheduler is initialized
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1534'>TAJO-1534</a>] -         DelimitedTextFile return null instead of a NullDatum 
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1538'>TAJO-1538</a>] -         TajoWorkerResourceManager.allocatedResourceMap is increasing forever
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1556'>TAJO-1556</a>] -         &quot;insert into select&quot; with reordered column list does not work.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1560'>TAJO-1560</a>] -         HashShuffle report should be ignored when a succeed tasks are not included
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1564'>TAJO-1564</a>] -         TestFetcher fails occasionally
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1574'>TAJO-1574</a>] -         Fix NPE on natural join
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1580'>TAJO-1580</a>] -         Error line number is incorrect
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1581'>TAJO-1581</a>] -         Does not update last state of query stage in non-hash shuffle
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1586'>TAJO-1586</a>] -         TajoMaster HA startup failure on Yarn.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1598'>TAJO-1598</a>] -         TableMeta should change equals mechanism 
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1605'>TAJO-1605</a>] -         Fix master build failure on jdk 1.6
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1612'>TAJO-1612</a>] -         TestKillQuery occassionally fails
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1619'>TAJO-1619</a>] -         JDBC program is stuck after closing
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1621'>TAJO-1621</a>] -         Compilation error with hadoop 2.7.0
+</li>
+</ul>
+                    
+<h2>        Improvement
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1374'>TAJO-1374</a>] -         Support multi-bytes delimiter for CSV file
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1381'>TAJO-1381</a>] -         Support multi-bytes delimiter for Text file
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1394'>TAJO-1394</a>] -         Support reconnect on tsql
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1395'>TAJO-1395</a>] -         Remove deprecated sql files for Oracle and PostgreSQL
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1400'>TAJO-1400</a>] -         Add TajoStatement::setMaxRows method support
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1425'>TAJO-1425</a>] -         SQLAnalyzer should print message to indicate exact error line with supplement
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1452'>TAJO-1452</a>] -         Improve function listing order
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1501'>TAJO-1501</a>] -         Too many log message of HashShuffleAppenderManager.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1576'>TAJO-1576</a>] -         Sometimes DefaultTajoCliOutputFormatter.parseErrorMessage() eliminates an important kind of information.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1623'>TAJO-1623</a>] -         INSERT INTO with wrong target columns causes NPE.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1626'>TAJO-1626</a>] -         JdbcConnection::setAutoCommit() should not throw an exception.
+</li>
+</ul>
+                                                                
+<h2>        Task
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1380'>TAJO-1380</a>] -         Update JDBC documentation for new JDBC driver
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1439'>TAJO-1439</a>] -         Some method name is written wrongly
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1462'>TAJO-1462</a>] -         Replace CSV examples into TEXT examples in docs
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1559'>TAJO-1559</a>] -         Fix data model description (tinyint, smallint)
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1567'>TAJO-1567</a>] -         Update old license in some pom.xml files
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1568'>TAJO-1568</a>] -         Apply UnpooledByteBufAllocator when a tajo.test.enabled is set to enable
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1571'>TAJO-1571</a>] -         Merge TAJO-1497 and TAJO-1569 to 0.10.1
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1604'>TAJO-1604</a>] -         Merge TAJO-1442 to 0.10.1
+</li>
+</ul>
+    
+</body>
+</html>
