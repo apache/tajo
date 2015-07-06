@@ -113,6 +113,27 @@ public interface CatalogStore extends Closeable {
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                 String partitionName) throws CatalogException;
 
+  /**
+   * PartitionedTableRewriter take a look into partition directories for rewriting filter conditions. But if there
+   * are lots of sub directories on HDFS, such as, more than 10,000 directories,
+   * it might be cause overload to NameNode. Thus, CatalogStore need to provide partition directories for specified
+   * filter conditions. This scan right partition directories on CatalogStore with where clause.
+   *
+   * For examples, users set parameters as following:
+   *  - databaseName: default
+   *  - tableName: table1
+   *  - directSql: COLUMN_NAME = 'col1' AND PARTITION_VALUE = '3' OR COLUMN_NAME = 'col2' AND PARTITION_VALUE IS NOT
+   *  NULL OR COLUMN_NAME = 'col3' AND PARTITION_VALUE IN ('1', '2', '3')
+   *
+   * @param databaseName the database name
+   * @param tableName the table name
+   * @param directSql where clause (included target column name and partition value, this should be DNF)
+   * @return list of TablePartitionProto
+   * @throws CatalogException
+   */
+  List<TablePartitionProto> getPartitionsByDirectSql(String databaseName, String tableName,
+                                               String directSql) throws CatalogException;
+
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
 
   /**************************** INDEX *******************************/

@@ -24,10 +24,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan;
@@ -36,6 +38,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.SQLFinderWithPartitionFilter;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -51,6 +54,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
   private static final String NAME = "Partitioned Table Rewriter";
   private final Rewriter rewriter = new Rewriter();
+
+  private Path[] filteredPaths;
+  private String directSql;
 
   @Override
   public String getName() {
@@ -122,10 +128,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
 
     PathFilter [] filters;
+    String sql = null;
     if (conjunctiveForms == null) {
       filters = buildAllAcceptingPathFilters(partitionColumns);
     } else {
       filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+      sql = buildSQLFromFilterConditionsForAllLevels(partitionColumns, conjunctiveForms);
     }
 
     // loop from one to the number of partition columns
@@ -136,8 +144,102 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
 
+    setFilteredPaths(filteredPaths);
+    setDirectSql(sql);
+
     LOG.info("Filtered directory or files: " + filteredPaths.length);
     return filteredPaths;
+  }
+
+  /**
+   * Build SQL statements for all levels with a list of filter conditions.
+   *
+   * This will convert filter conditions to sql which consist of CatalogConstant.COL_COLUMN_NAME-CatalogConstants
+   * .COL_PARTITION_VALUE pair.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   *
+   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
+   * There is no filter condition corresponding to col2.
+   * Then, the SQL statement are corresponding to the followings:
+   *
+   * The first sql: PARTITION_VALUE = 'A' AND COLUMN_NAME = 'col1'
+   * The second sql: PARTITION_VALUE = 'A' AND COLUMN_NAME = 'col1'
+   *                     OR PARTITION_VALUE IS NOT NULL AND COLUMN_NAME = 'col2'
+   * The third sql: PARTITION_VALUE = 'A' AND COLUMN_NAME = 'col1'
+   *                     OR PARTITION_VALUE IS NOT NULL AND COLUMN_NAME = 'col2'
+   *                     OR PARTITION_VALUE = 'C' AND COLUMN_NAME = 'col3'
+   *
+   * 'IS NOT NULL' predicate is always true against the partition path.
+   *
+   * Finally, this will DNF which consist of ready-made SQL statements.
+   *
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @return
+   */
+  private String buildSQLFromFilterConditionsForAllLevels(Schema partitionColumns,
+                                                                 EvalNode [] conjunctiveForms) {
+    // Building partition path filters for all levels
+    Column target;
+
+    List<EvalNode> accumulatedFilters = Lists.newArrayList();
+
+    EvalNode colColumnName = new FieldEval(new Column(CatalogConstants.COL_COLUMN_NAME, TajoDataTypes.Type.TEXT));
+    EvalNode colPartitionValue = new FieldEval(new Column(CatalogConstants.COL_PARTITION_VALUE,
+      TajoDataTypes.Type.TEXT));
+
+    EvalNode singletonExpr = null;
+    List<EvalNode> filters  = Lists.newArrayList();
+
+    for (int i = 0; i < partitionColumns.size(); i++) { // loop from one to level
+
+      target = partitionColumns.getColumn(i);
+
+      EvalNode rightExpr = new BinaryEval(EvalType.EQUAL, colColumnName,
+        new ConstEval(DatumFactory.createText(target.getSimpleName())));
+
+      EvalNode leftExpr = null;
+
+      for (EvalNode expr : conjunctiveForms) {
+        if (EvalTreeUtil.findUniqueColumns(expr).contains(target)) {
+          // Accumulate one qual per level
+          try {
+            leftExpr = (EvalNode)expr.clone();
+            EvalTreeUtil.replace(leftExpr, new FieldEval(target), colPartitionValue  );
+            accumulatedFilters.add(new BinaryEval(EvalType.AND, leftExpr, rightExpr));
+          } catch (CloneNotSupportedException e) {
+
+          }
+        }
+      }
+
+      if (accumulatedFilters.size() < (i + 1)) {
+        leftExpr = new IsNullEval(true, colPartitionValue);
+        accumulatedFilters.add(new BinaryEval(EvalType.AND, leftExpr, rightExpr));
+      }
+
+//      filters.add(AlgebraicUtil.createSingletonExprFromDNF(
+//        accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()])));
+      filters.add(AlgebraicUtil.createSingletonExprFromCNF(
+        accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()])));
+    }
+
+    singletonExpr = AlgebraicUtil.createSingletonExprFromDNF(filters.toArray(new EvalNode[filters.size()]));
+    return creatingSQLToGetPartitionsInforms(singletonExpr);
+  }
+
+  /**
+   * Create SQL statements for getting partitions informs on CatalogStore.
+   * This will convert each EvalNode to each SQL statement.
+   *
+   * @param expr
+   * @return
+   */
+  public String creatingSQLToGetPartitionsInforms(EvalNode expr) {
+    SQLFinderWithPartitionFilter finder = new SQLFinderWithPartitionFilter();
+    finder.visit(null, expr, new Stack<EvalNode>());
+    return finder.getResult();
   }
 
   /**
@@ -187,6 +289,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
           accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
       filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
+      LOG.info("## filters[" + i + "] = " + filters[i].toString());
     }
     return filters;
   }
@@ -219,7 +322,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return paths;
   }
 
-  private Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
+  public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
@@ -421,5 +524,21 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
       return null;
     }
+  }
+
+  public void setFilteredPaths(Path[] filteredPaths) {
+    this.filteredPaths = filteredPaths;
+  }
+
+  public Path[] getFilteredPaths() {
+    return filteredPaths;
+  }
+
+  public String getDirectSql() {
+    return directSql;
+  }
+
+  public void setDirectSql(String directSql) {
+    this.directSql = directSql;
   }
 }

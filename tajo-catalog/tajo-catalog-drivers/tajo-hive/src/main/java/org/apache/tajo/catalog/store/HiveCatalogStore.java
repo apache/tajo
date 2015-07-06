@@ -54,6 +54,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
 import java.io.IOException;
@@ -788,6 +789,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     throw new UnsupportedOperationException();
   }
 
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(String databaseName,
+                                                      String tableName, String directSql) throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,

@@ -580,6 +580,16 @@ public class MemStore implements CatalogStore {
     }
   }
 
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(String databaseName,
+                                                    String tableName, String directSql) throws CatalogException {
+
+    // The filter parameter is WHERE clause. So, it just can be applied to AbstractDBStore, such as,
+    // DerbyStore, MySQLStore. To apply in this class, we need to parse WHERE clause. But it looks like a unnecessary
+    // work because this is just a test class.
+    throw new UnsupportedOperationException();
+  }
+
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
     List<TablePartitionProto> protos = new ArrayList<TablePartitionProto>();
     Set<String> tables = partitions.keySet();

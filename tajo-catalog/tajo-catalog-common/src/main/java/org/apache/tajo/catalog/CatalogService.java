@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -189,6 +190,8 @@ public interface CatalogService {
 
   List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName);
 
+  List<TablePartitionProto> getPartitionsByDirectSql(String databaseName, String tableName,
+                                                         String directSql) throws CatalogException;
   List<TablePartitionProto> getAllPartitions();
 
   boolean createIndex(IndexDesc index);

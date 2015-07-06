@@ -330,6 +330,25 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       return new ArrayList<PartitionDescProto>();
     }
   }
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(final String databaseName,
+                                                                     final String tableName,
+                                                                     final String directSql) {
+    try {
+        PartitionIdentifierProto.Builder builder = PartitionIdentifierProto.newBuilder();
+        builder.setDatabaseName(databaseName);
+        builder.setTableName(tableName);
+        builder.setDirectSql(directSql);
+
+        CatalogProtocolService.BlockingInterface stub = getStub();
+        GetTablePartitionsProto response = stub.getPartitionsByDirectSql(null, builder.build());
+        return response.getPartList();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
   @Override
   public List<TablePartitionProto> getAllPartitions() {
     try {

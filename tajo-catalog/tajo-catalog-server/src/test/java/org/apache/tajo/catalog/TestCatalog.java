@@ -909,14 +909,30 @@ public class TestCatalog {
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
     testAddPartition(tableName, "id=10/name=aaa");
-    testAddPartition(tableName, "id=20/name=bbb");
+    testAddPartition(tableName, "id=10/name=bbb");
+    testAddPartition(tableName, "id=20/name=ccc");
+    testAddPartition(tableName, "id=20/name=ddd");
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
-    assertEquals(partitions.size(), 2);
+    assertEquals(partitions.size(), 4);
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(" ( COLUMN_NAME = 'id' AND PARTITION_VALUE = '10') ");
+    sb.append("\n OR (COLUMN_NAME = 'id' AND PARTITION_VALUE = '10'");
+    sb.append(" AND COLUMN_NAME = 'name' AND PARTITION_VALUE IS NOT NULL)");
+    List<CatalogProtos.TablePartitionProto> partitionProtos = catalog.getPartitionsByDirectSql
+      (DEFAULT_DATABASE_NAME, "addedtable", sb.toString());
+
+    assertNotNull(partitionProtos);
+    assertEquals(partitionProtos.size(), 2);
+    assertEquals(partitionProtos.get(0).getPath(), "hdfs://xxx.com/warehouse/id=10/name=aaa");
+    assertEquals(partitionProtos.get(1).getPath(), "hdfs://xxx.com/warehouse/id=10/name=bbb");
 
     testDropPartition(tableName, "id=10/name=aaa");
-    testDropPartition(tableName, "id=20/name=bbb");
+    testDropPartition(tableName, "id=10/name=bbb");
+    testDropPartition(tableName, "id=20/name=ccc");
+    testDropPartition(tableName, "id=20/name=ddd");
 
     partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
@@ -938,8 +954,8 @@ public class TestCatalog {
 
     List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
     for(int i = 0; i < partitionNames.length; i++) {
-      String columnName = partitionNames[i].split("=")[0];
-      partitionKeyList.add(new PartitionKey(partitionNames[i], columnName));
+      String[] eachPartitionKey = partitionNames[i].split("\\=");
+      partitionKeyList.add(new PartitionKey(eachPartitionKey[0], eachPartitionKey[1]));
     }
 
     partitionDesc.setPartitionKeys(partitionKeyList);

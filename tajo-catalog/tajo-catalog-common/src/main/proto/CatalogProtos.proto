@@ -309,6 +309,7 @@ message PartitionIdentifierProto {
   required string databaseName = 1;
   required string tableName = 2;
   optional string partitionName = 3;
+  optional string directSql = 4;
 }
 
 message TablespaceProto {
