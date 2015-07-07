@@ -74,6 +74,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   private int nextTaskId = 0;
   private int scheduledObjectNum = 0;
+  boolean isLeaf;
 
   public DefaultTaskScheduler(TaskSchedulerContext context, Stage stage) {
     super(DefaultTaskScheduler.class.getName());
@@ -85,7 +86,18 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   public void init(Configuration conf) {
 
     scheduledRequests = new ScheduledRequests();
-    taskRequests  = new TaskRequests();
+    taskRequests = new TaskRequests();
+
+    isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
+    if (!isLeaf) {
+
+      //find assigned hosts for interQuery locality in children executionBlock
+      List<ExecutionBlock> executionBlockList = stage.getMasterPlan().getChilds(stage.getBlock());
+      for (ExecutionBlock executionBlock : executionBlockList) {
+        Stage childStage = stage.getContext().getStage(executionBlock.getId());
+        assignedHosts.addAll(childStage.getTaskScheduler().getAssignedWorker());
+      }
+    }
 
     super.init(conf);
   }
@@ -268,7 +280,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           QueryCoordinatorProtocol.ResourceType.INTERMEDIATE);
       request.setUserId(context.getMasterContext().getQueryContext().getUser());
       request.setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount());
-      request.addAllCandidateNodes(getWorkerIds(getLeafTaskHosts()));
+      request.addAllCandidateNodes(getWorkerIds(getAssignedWorker()));
       masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
       QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
 
@@ -311,7 +323,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
 
       if(stopEventHandling.get()) {
-        //event.getCallback().run(stopTaskRunnerReq);
         return;
       }
       int qSize = taskRequestQueue.size();
@@ -655,7 +666,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       for (DataLocation location : locations) {
         String host = location.getHost();
-        leafTaskHosts.add(host);
+        assignedHosts.add(host);
 
         HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
         if (hostVolumeMapping == null) {
@@ -913,6 +924,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
 
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
+          //TODO change to debug
+          LOG.info("Assigned task: " + attemptId + " to " + connectionInfo.getHostAndPeerRpcPort());
           assignedRequest.add(attemptId);
           scheduledObjectNum--;
 
@@ -1014,6 +1027,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             }
 
             context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
+            //TODO change to debug
+            LOG.info("Assigned task: " + attemptId + " to " + connectionInfo.getHostAndPeerRpcPort());
             totalAssigned++;
             scheduledObjectNum--;
           } catch (Exception e) {

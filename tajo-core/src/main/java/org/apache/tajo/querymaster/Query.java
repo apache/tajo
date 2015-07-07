@@ -174,7 +174,12 @@ public class Query implements EventHandler<QueryEvent> {
               QueryEventType.KILL,
               QUERY_COMPLETED_TRANSITION)
 
-          // Transitions from FAILED state
+              // Transitions from KILLED state
+              // ignore-able transitions
+          .addTransition(QueryState.QUERY_KILLED, QueryState.QUERY_KILLED,
+              EnumSet.of(QueryEventType.QUERY_COMPLETED, QueryEventType.KILL))
+
+              // Transitions from FAILED state
           .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
               QueryEventType.DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)

@@ -267,7 +267,8 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_KILL,
                   StageEventType.SQ_FAILED,
                   StageEventType.SQ_INTERNAL_ERROR,
-                  StageEventType.SQ_STAGE_COMPLETED))
+                  StageEventType.SQ_STAGE_COMPLETED,
+                  StageEventType.SQ_SHUFFLE_REPORT))
 
           .installTopology();
 
@@ -674,7 +675,7 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   /**
-   * Get the task launched worker
+   * Get the launched worker address
    */
   protected Map<Integer, InetSocketAddress> getWorkerMap() {
     return workerMap;

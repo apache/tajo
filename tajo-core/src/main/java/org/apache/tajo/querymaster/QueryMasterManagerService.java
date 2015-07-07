@@ -190,27 +190,30 @@ public class QueryMasterManagerService extends CompositeService
 
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
         new QueryId(request.getExecutionBlockId().getQueryId()));
+    if (queryMasterTask != null) {
 
-    Stage stage = queryMasterTask.getQuery().getStage(new ExecutionBlockId(request.getExecutionBlockId()));
+      Stage stage = queryMasterTask.getQuery().getStage(new ExecutionBlockId(request.getExecutionBlockId()));
 
-    // first request with starting ExecutionBlock
-    PlanProto.ShuffleType shuffleType = stage.getDataChannel().getShuffleType();
+      // first request with starting ExecutionBlock
+      PlanProto.ShuffleType shuffleType = stage.getDataChannel().getShuffleType();
 
-    TajoWorkerProtocol.ExecutionBlockContextProto.Builder
-        ebRequestProto = TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
-    ebRequestProto.setExecutionBlockId(request.getExecutionBlockId())
-        .setQueryContext(stage.getContext().getQueryContext().getProto())
-        .setQueryOutputPath(stage.getContext().getStagingDir().toString())
-        .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
-        .setShuffleType(shuffleType);
+      TajoWorkerProtocol.ExecutionBlockContextProto.Builder
+          ebRequestProto = TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+      ebRequestProto.setExecutionBlockId(request.getExecutionBlockId())
+          .setQueryContext(stage.getContext().getQueryContext().getProto())
+          .setQueryOutputPath(stage.getContext().getStagingDir().toString())
+          .setPlanJson(CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
+          .setShuffleType(shuffleType);
 
-    //Set assigned worker to stage
-    if (!stage.getWorkerMap().containsKey(request.getWorker().getId())) {
-      stage.getWorkerMap().put(request.getWorker().getId(),
-          NetUtils.createSocketAddr(request.getWorker().getHost(), request.getWorker().getPeerRpcPort()));
+      //Set assigned worker to stage
+      if (!stage.getWorkerMap().containsKey(request.getWorker().getId())) {
+        stage.getWorkerMap().put(request.getWorker().getId(),
+            NetUtils.createSocketAddr(request.getWorker().getHost(), request.getWorker().getPeerRpcPort()));
+      }
+      done.run(ebRequestProto.build());
+    } else {
+      controller.setFailed("Can't find query. request: " + request);
     }
-
-    done.run(ebRequestProto.build());
   }
 
   @Override

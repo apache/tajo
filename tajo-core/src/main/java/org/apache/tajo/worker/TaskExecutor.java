@@ -123,11 +123,19 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     return task;
   }
 
-  @SuppressWarnings("unchecked")
   protected void stopTask(TaskAttemptId taskId) {
     runningTasks.decrementAndGet();
-    workerContext.getNodeResourceManager().getDispatcher().getEventHandler().handle(
-        new NodeResourceDeallocateEvent(allocatedResourceMap.remove(taskId), NodeResourceEvent.ResourceType.TASK));
+    releaseResource(taskId);
+  }
+
+  @SuppressWarnings("unchecked")
+  protected void releaseResource(TaskAttemptId taskId) {
+    NodeResource resource =  allocatedResourceMap.remove(taskId);
+
+    if(resource != null) {
+      workerContext.getNodeResourceManager().getDispatcher().getEventHandler().handle(
+          new NodeResourceDeallocateEvent(resource, NodeResourceEvent.ResourceType.TASK));
+    }
   }
 
   protected ExecutorService getFetcherExecutor() {
@@ -177,7 +185,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
       if (!isStopped) {
         LOG.fatal(e.getMessage(), e);
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       stopTask(event.getTaskAttemptId());
     }
   }

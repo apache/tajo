@@ -177,17 +177,21 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
       case TASK_START: {
         //receive event from NodeResourceManager
         TaskStartEvent taskStartEvent = TUtil.checkTypeAndGet(event, TaskStartEvent.class);
-        if (!executionBlockContextMap.containsKey(taskStartEvent.getExecutionBlockId())) {
-          ExecutionBlockContext context = createExecutionBlock(taskStartEvent.getExecutionBlockId(),
-              taskStartEvent.getTaskRequest().getQueryMasterHostAndPort());
+        try {
+          if (!executionBlockContextMap.containsKey(taskStartEvent.getExecutionBlockId())) {
+            ExecutionBlockContext context = createExecutionBlock(taskStartEvent.getExecutionBlockId(),
+                taskStartEvent.getTaskRequest().getQueryMasterHostAndPort());
 
-          executionBlockContextMap.put(context.getExecutionBlockId(), context);
-          LOG.info("Running ExecutionBlocks: " + executionBlockContextMap.size()
-              + ", running tasks:" + getRunningTasks() + ", availableResource: "
-              + workerContext.getNodeResourceManager().getAvailableResource());
+            executionBlockContextMap.put(context.getExecutionBlockId(), context);
+            LOG.info("Running ExecutionBlocks: " + executionBlockContextMap.size()
+                + ", running tasks:" + getRunningTasks() + ", availableResource: "
+                + workerContext.getNodeResourceManager().getAvailableResource());
+          }
+          getTaskExecutor().handle(taskStartEvent);
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+          getTaskExecutor().releaseResource(taskStartEvent.getTaskAttemptId());
         }
-
-        getTaskExecutor().handle(taskStartEvent);
         break;
       }
       case EB_STOP: {
