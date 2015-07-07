@@ -91,7 +91,7 @@ public class ExecutionBlockContext {
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final ConcurrentMap<TaskAttemptId, Task> tasks = Maps.newConcurrentMap();
 
-  private final Map<TaskId, TaskHistory> taskHistories = Maps.newTreeMap();
+  private final Map<TaskId, TaskHistory> taskHistories = Maps.newConcurrentMap();
 
   public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, ExecutionBlockContextProto request,
                                AsyncRpcClient queryMasterClient)
