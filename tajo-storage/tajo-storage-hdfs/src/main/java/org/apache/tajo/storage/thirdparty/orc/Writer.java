@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.thirdparty.orc;
 
+import org.apache.tajo.storage.Tuple;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -35,12 +37,7 @@ public interface Writer {
    */
   void addUserMetadata(String key, ByteBuffer value);
 
-  /**
-   * Add a row to the ORC file.
-   * @param row the row to add
-   * @throws IOException
-   */
-  void addRow(Object row) throws IOException;
+  void addTuple(Tuple tuple) throws IOException;
 
   /**
    * Flush all of the buffers and close the file. No methods on this writer

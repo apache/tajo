@@ -21,8 +21,7 @@ import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.tajo.datum.BlobDatum;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -358,8 +357,8 @@ class ColumnStatisticsImpl implements ColumnStatistics {
 
   protected static final class StringStatisticsImpl extends ColumnStatisticsImpl
       implements StringColumnStatistics {
-    private Text minimum = null;
-    private Text maximum = null;
+    private String minimum = null;
+    private String maximum = null;
     private long sum = 0;
 
     StringStatisticsImpl() {
@@ -369,10 +368,10 @@ class ColumnStatisticsImpl implements ColumnStatistics {
       super(stats);
       OrcProto.StringStatistics str = stats.getStringStatistics();
       if (str.hasMaximum()) {
-        maximum = new Text(str.getMaximum());
+        maximum = str.getMaximum();
       }
       if (str.hasMinimum()) {
-        minimum = new Text(str.getMinimum());
+        minimum = str.getMinimum();
       }
       if(str.hasSum()) {
         sum = str.getSum();
@@ -388,15 +387,15 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     }
 
     @Override
-    void updateString(Text value) {
+    void updateString(String value) {
       if (minimum == null) {
-        maximum = minimum = new Text(value);
+        maximum = minimum = value;
       } else if (minimum.compareTo(value) > 0) {
-        minimum = new Text(value);
+        minimum = value;
       } else if (maximum.compareTo(value) < 0) {
-        maximum = new Text(value);
+        maximum = value;
       }
-      sum += value.getLength();
+      sum += value.length();
     }
 
     @Override
@@ -405,18 +404,18 @@ class ColumnStatisticsImpl implements ColumnStatistics {
         StringStatisticsImpl str = (StringStatisticsImpl) other;
         if (minimum == null) {
           if (str.minimum != null) {
-            maximum = new Text(str.getMaximum());
-            minimum = new Text(str.getMinimum());
+            maximum = str.getMaximum();
+            minimum = str.getMinimum();
           } else {
           /* both are empty */
             maximum = minimum = null;
           }
         } else if (str.minimum != null) {
           if (minimum.compareTo(str.minimum) > 0) {
-            minimum = new Text(str.getMinimum());
+            minimum = str.getMinimum();
           }
           if (maximum.compareTo(str.maximum) < 0) {
-            maximum = new Text(str.getMaximum());
+            maximum = str.getMaximum();
           }
         }
         sum += str.sum;
@@ -444,12 +443,12 @@ class ColumnStatisticsImpl implements ColumnStatistics {
 
     @Override
     public String getMinimum() {
-      return minimum == null ? null : minimum.toString();
+      return minimum;
     }
 
     @Override
     public String getMaximum() {
-      return maximum == null ? null : maximum.toString();
+      return maximum;
     }
 
     @Override
@@ -495,8 +494,8 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     }
 
     @Override
-    void updateBinary(BytesWritable value) {
-      sum += value.getLength();
+    void updateBinary(BlobDatum value) {
+      sum += value.size();
     }
 
     @Override
@@ -877,11 +876,7 @@ class ColumnStatisticsImpl implements ColumnStatistics {
       count = stats.getNumberOfValues();
     }
 
-    if (stats.hasHasNull()) {
-      hasNull = stats.getHasNull();
-    } else {
-      hasNull = true;
-    }
+    hasNull = !stats.hasHasNull() || stats.getHasNull();
   }
 
   ColumnStatisticsImpl() {
@@ -907,11 +902,11 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     throw new UnsupportedOperationException("Can't update double");
   }
 
-  void updateString(Text value) {
+  void updateString(String value) {
     throw new UnsupportedOperationException("Can't update string");
   }
 
-  void updateBinary(BytesWritable value) {
+  void updateBinary(BlobDatum value) {
     throw new UnsupportedOperationException("Can't update binary");
   }
 
@@ -928,7 +923,7 @@ class ColumnStatisticsImpl implements ColumnStatistics {
   }
 
   boolean isStatsExists() {
-    return (count > 0 || hasNull == true);
+    return (count > 0 || hasNull);
   }
 
   void merge(ColumnStatisticsImpl stats) {

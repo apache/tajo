@@ -29,11 +29,18 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.Int2Datum;
+import org.apache.tajo.datum.Int4Datum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.orc.objectinspector.ObjectInspectorFactory;
+import org.apache.tajo.storage.thirdparty.orc.OrcFile;
+import org.apache.tajo.storage.thirdparty.orc.CompressionKind;
+import org.apache.tajo.storage.thirdparty.orc.Writer;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.After;
 import org.junit.Before;
@@ -48,14 +55,24 @@ import java.util.List;
 public class TestOrc {
   private OrcScanner orcScanner;
 
+  private static Configuration conf = new TajoConf();
+  private static FileSystem fs;
+
+  static {
+    try {
+      fs = FileSystem.getLocal(conf);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   public static Path getResourcePath(String path, String suffix) {
     URL resultBaseURL = ClassLoader.getSystemResource(path);
     return new Path(resultBaseURL.toString(), suffix);
   }
 
-  private static FileFragment getFileFragment(Configuration conf, String fileName) throws IOException {
+  private static FileFragment getFileFragment(String fileName) throws IOException {
     Path tablePath = new Path(getResourcePath("dataset", "."), fileName);
-    FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(tablePath);
     return new FileFragment("table", tablePath, 0, status.getLen());
   }
@@ -69,11 +86,9 @@ public class TestOrc {
     schema.addColumn("unixtimestamp", TajoDataTypes.Type.TEXT);
     schema.addColumn("faketime", TajoDataTypes.Type.TIMESTAMP);
 
-    Configuration conf = new TajoConf();
-
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
 
-    Fragment fragment = getFileFragment(conf, "u_data_20.orc");
+    Fragment fragment = getFileFragment("u_data_20.orc");
 
     orcScanner = new OrcScanner(conf, schema, meta, fragment);
 
@@ -114,6 +129,40 @@ public class TestOrc {
     StructField midField = fieldList.get(0);
 
     assertEquals("movieid", midField.getFieldName());
+
+    Path writePath = new Path(getResourcePath("dataset", "."), "temp_test.orc");
+
+    try {
+      if (fs.exists(writePath)) {
+        fs.delete(writePath);
+      }
+
+      Writer orcWriter = OrcFile.createWriter(fs, writePath, conf, structOI, 1000, CompressionKind.NONE, 100, 1000);
+
+      Tuple tuple = new VTuple(schema.size());
+      tuple.put(0, new Int4Datum(100));
+      tuple.put(1, new Int2Datum((short)7));
+      tuple.put(2, new TextDatum("good"));
+      tuple.put(3, new TimestampDatum(System.currentTimeMillis() * 1000));
+
+      orcWriter.addTuple(tuple);
+
+      orcWriter.close();
+
+      TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
+      Fragment fragment = getFileFragment("temp_test.orc");
+      OrcScanner orcScanner = new OrcScanner(conf, schema, meta, fragment);
+      orcScanner.init();
+
+      tuple = orcScanner.next();
+
+      assertEquals(100, tuple.getInt4(0));
+
+      orcScanner.close();
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   @After

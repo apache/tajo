@@ -29,7 +29,7 @@ import java.io.OutputStream;
 class StringRedBlackTree extends RedBlackTree {
   private final DynamicByteArray byteArray = new DynamicByteArray();
   private final DynamicIntArray keyOffsets;
-  private final Text newKey = new Text();
+  private String newKey;
 
   public StringRedBlackTree(int initialCapacity) {
     super(initialCapacity);
@@ -37,21 +37,21 @@ class StringRedBlackTree extends RedBlackTree {
   }
 
   public int add(String value) {
-    newKey.set(value);
+    newKey = value;
     return addNewKey();
   }
 
   private int addNewKey() {
     // if the newKey is actually new, add it to our byteArray and store the offset & length
     if (add()) {
-      int len = newKey.getLength();
+      int len = newKey.length();
       keyOffsets.add(byteArray.add(newKey.getBytes(), 0, len));
     }
     return lastAdd;
   }
 
   public int add(Text value) {
-    newKey.set(value);
+    newKey = value.toString();
     return addNewKey();
   }
 
@@ -64,7 +64,7 @@ class StringRedBlackTree extends RedBlackTree {
     } else {
       end = keyOffsets.get(position+1);
     }
-    return byteArray.compare(newKey.getBytes(), 0, newKey.getLength(),
+    return byteArray.compare(newKey.getBytes(), 0, newKey.length(),
                              start, end - start);
   }
 
