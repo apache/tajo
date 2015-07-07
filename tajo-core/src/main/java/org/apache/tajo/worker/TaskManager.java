@@ -37,10 +37,7 @@ import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
-import org.apache.tajo.worker.event.NodeStatusEvent;
-import org.apache.tajo.worker.event.TaskManagerEvent;
-import org.apache.tajo.worker.event.TaskStartEvent;
+import org.apache.tajo.worker.event.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -201,6 +198,22 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
             .handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
         stopExecutionBlock(executionBlockContextMap.remove(executionBlockStopEvent.getExecutionBlockId()),
             ((ExecutionBlockStopEvent) event).getCleanupList());
+        break;
+      }
+      case QUERY_STOP: {
+        QueryStopEvent queryStopEvent = TUtil.checkTypeAndGet(event, QueryStopEvent.class);
+
+        //cleanup failure ExecutionBlock
+        for (ExecutionBlockId ebId : executionBlockContextMap.keySet()) {
+          if (ebId.getQueryId().equals(queryStopEvent.getQueryId())) {
+            try {
+              executionBlockContextMap.remove(ebId).stop();
+            } catch (Exception e) {
+              LOG.fatal(e.getMessage(), e);
+            }
+          }
+        }
+        workerContext.cleanup(queryStopEvent.getQueryId().toString());
         break;
       }
     }

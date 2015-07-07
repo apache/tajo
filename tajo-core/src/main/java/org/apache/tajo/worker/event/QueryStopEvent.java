@@ -18,23 +18,18 @@
 
 package org.apache.tajo.worker.event;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
+import org.apache.tajo.QueryId;
 
-public class TaskManagerEvent extends AbstractEvent<TaskManagerEvent.EventType> {
-  // producer: NodeResourceManager, consumer: TaskManager
-  public enum EventType {
-    TASK_START,
-    TASK_KILL,
-    TASK_ABORT,
+public class QueryStopEvent extends TaskManagerEvent {
 
-    //cleanup events
-    EB_STOP,
-    QUERY_STOP
+
+  private QueryId queryId;
+  public QueryStopEvent(QueryId queryId) {
+    super(EventType.QUERY_STOP);
+    this.queryId = queryId;
   }
 
-
-
-  public TaskManagerEvent(EventType eventType) {
-    super(eventType);
+  public QueryId getQueryId() {
+    return queryId;
   }
 }

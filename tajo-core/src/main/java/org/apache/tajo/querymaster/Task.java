@@ -174,6 +174,7 @@ public class Task implements EventHandler<TaskEvent> {
               EnumSet.of(
                   TaskEventType.T_KILL,
                   TaskEventType.T_SCHEDULE,
+                  TaskEventType.T_ATTEMPT_LAUNCHED,
                   TaskEventType.T_ATTEMPT_SUCCEEDED,
                   TaskEventType.T_ATTEMPT_FAILED))
 

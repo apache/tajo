@@ -35,6 +35,7 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
+import org.apache.tajo.worker.event.QueryStopEvent;
 
 import java.net.InetSocketAddress;
 
@@ -140,7 +141,8 @@ public class TajoWorkerManagerService extends CompositeService
   @Override
   public void cleanup(RpcController controller, TajoIdProtos.QueryIdProto request,
                       RpcCallback<PrimitiveProtos.BoolProto> done) {
-    workerContext.cleanup(new QueryId(request).toString());
+
+    workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new QueryStopEvent(new QueryId(request)));
     done.run(TajoWorker.TRUE_PROTO);
   }
 }

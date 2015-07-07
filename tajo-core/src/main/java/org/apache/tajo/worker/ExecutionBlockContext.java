@@ -76,7 +76,6 @@ public class ExecutionBlockContext {
   private TajoQueryEngine queryEngine;
   private RpcClientManager connManager;
   private AsyncRpcClient queryMasterClient;
-  private NettyClientBase client;
   private QueryMasterProtocol.QueryMasterProtocolService.Interface stub;
   private TajoConf systemConf;
   // for the doAs block
@@ -185,7 +184,7 @@ public class ExecutionBlockContext {
     tasks.clear();
     taskHistories.clear();
     resource.release();
-    RpcClientManager.cleanup(client);
+    RpcClientManager.cleanup(queryMasterClient);
   }
 
   public TajoConf getConf() {
