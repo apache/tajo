@@ -90,10 +90,6 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       .addTransition(TaskAttemptState.TA_UNASSIGNED, TaskAttemptState.TA_KILL_WAIT,
           TaskAttemptEventType.TA_KILL,
           new KillUnassignedTaskTransition())
-          // Ignore-able transitions
-      .addTransition(TaskAttemptState.TA_UNASSIGNED, TaskAttemptState.TA_UNASSIGNED,
-          EnumSet.of(
-              TaskAttemptEventType.TA_UPDATE))
 
       // Transitions from TA_ASSIGNED state
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_ASSIGNED,
@@ -312,6 +308,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       }
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
       taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
+      taskAttempt.eventHandler.handle(
+          new TaskTAttemptEvent(taskAttempt.getId(),
+              TaskEventType.T_ATTEMPT_LAUNCHED));
     }
   }
 

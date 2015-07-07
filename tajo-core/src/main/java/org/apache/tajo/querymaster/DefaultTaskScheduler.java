@@ -916,10 +916,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               }
               LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount());
               continue;
-            } else {
-              context.getMasterContext().getEventHandler().handle(
-                  new TaskTAttemptEvent(attemptId,
-                      TaskEventType.T_ATTEMPT_LAUNCHED));
             }
           } catch (Exception e) {
             LOG.error(e);
@@ -1023,10 +1019,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               }
               LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount());
               continue;
-            } else {
-              context.getMasterContext().getEventHandler().handle(
-                  new TaskTAttemptEvent(attemptId,
-                      TaskEventType.T_ATTEMPT_LAUNCHED));
             }
 
             totalAssigned++;
@@ -1034,7 +1026,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           } catch (Exception e) {
             LOG.error(e);
           }
-
         }
       }
     }
