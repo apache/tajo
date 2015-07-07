@@ -453,7 +453,6 @@ public class DDLExecutor {
       break;
     case ADD_PARTITION:
       existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
-
       Path partitionPath = null;
 
       if (alterTable.getLocation() != null) {
@@ -478,7 +477,6 @@ public class DDLExecutor {
       break;
     case DROP_PARTITION:
       existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
-
       desc = catalog.getTableDesc(databaseName, simpleTableName);
 
       Pair<List<PartitionKey>, String> pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(),
@@ -486,6 +484,10 @@ public class DDLExecutor {
 
       CatalogProtos.PartitionDescProto partitionDescProto = catalog.getPartition(databaseName, simpleTableName,
         pair.getSecond());
+
+      if (partitionDescProto == null) {
+        throw new NoSuchPartitionException(tableName, pair.getSecond());
+      }
 
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
@@ -517,7 +519,7 @@ public class DDLExecutor {
   private boolean existPartitionColumnNames(String tableName, String[] columnNames) {
     for(String columnName : columnNames) {
       if (!existPartitionColumnName(tableName, columnName)) {
-        throw new NoSuchPartitionKeyException(columnName);
+        throw new NoSuchPartitionKeyException(tableName, columnName);
       }
     }
     return true;

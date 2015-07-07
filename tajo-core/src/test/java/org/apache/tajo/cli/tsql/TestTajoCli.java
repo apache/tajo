@@ -435,7 +435,9 @@ public class TestTajoCli {
     String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
 
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");
     tajoCli.executeScript("alter table " + tableName + " add partition (key = 0.1)");
+    tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
     tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
 
     String consoleResult = new String(out.toByteArray());

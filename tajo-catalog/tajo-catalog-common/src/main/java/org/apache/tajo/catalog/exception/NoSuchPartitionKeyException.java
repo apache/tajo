@@ -32,8 +32,13 @@ public class NoSuchPartitionKeyException extends RuntimeException {
     super(message);
   }
 
+  public NoSuchPartitionKeyException(String tableName, String partitionKey) {
+    super(String.format("ERROR: partition column \"%s\" does not exist in \"%s\".", partitionKey, tableName));
+  }
+
   public NoSuchPartitionKeyException(String databaseName, String tableName, String partitionKey) {
-    super(String.format("ERROR: \"%s\" does not exist in \"%s.%s\".", partitionKey, databaseName, tableName));
+    super(String.format("ERROR: partition column \"%s\" does not exist in \"%s.%s\".", partitionKey,
+      databaseName, tableName));
   }
 
 }

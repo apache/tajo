@@ -1,3 +1,5 @@
 OK
+ERROR: partition column "key2" does not exist in "default.testaltertableaddpartition".
 OK
 OK
+ERROR: "key=0.1" does not exist in "testaltertableaddpartition".
