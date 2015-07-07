@@ -708,8 +708,17 @@ public class Query implements EventHandler<QueryEvent> {
             !executeNextBlock(query, castEvent.getExecutionBlockId())) {
           return;
         }
-         // if a query is completed due to finished, kill, failure, or error
-        query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+
+        //wait for stages is completed
+        if (query.completedStagesCount == query.stages.size()) {
+          // if a query is completed due to finished, kill, failure, or error
+          query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+        }
+        LOG.info(String.format("Complete Stage[%s], State: %s, %d/%d. ",
+            castEvent.getExecutionBlockId().toString(),
+            castEvent.getState().toString(),
+            query.completedStagesCount,
+            query.stages.size()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));

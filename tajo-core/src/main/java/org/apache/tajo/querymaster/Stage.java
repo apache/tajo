@@ -789,10 +789,6 @@ public class Stage implements EventHandler<StageEvent> {
     }
   }
 
-  public void handleTaskRequestEvent(TaskRequestEvent event) {
-    taskScheduler.handleTaskRequestEvent(event);
-  }
-
   private static class InitAndRequestContainer implements MultipleArcTransition<Stage,
       StageEvent, StageState> {
 
@@ -1166,7 +1162,7 @@ public class Stage implements EventHandler<StageEvent> {
         stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
       } else {
         stage.completedTaskCount++;
-        stage.getTaskScheduler().releaseTaskAttempt(task.getLastAttempt()); //FIXME
+        stage.getTaskScheduler().releaseTaskAttempt(task.getLastAttempt());
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
           stage.succeededObjectCount++;

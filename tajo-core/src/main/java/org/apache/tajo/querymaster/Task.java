@@ -46,7 +46,6 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
@@ -627,10 +626,7 @@ public class Task implements EventHandler<TaskEvent> {
       if (!(event instanceof TaskTAttemptEvent)) {
         throw new IllegalArgumentException("event should be a TaskTAttemptEvent type.");
       }
-      TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
-      TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
-      task.succeededWorker = attempt.getWorkerConnectionInfo();
     }
   }
 

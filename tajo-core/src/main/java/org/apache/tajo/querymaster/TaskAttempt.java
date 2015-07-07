@@ -111,6 +111,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
           TaskAttemptEventType.TA_DONE, new SucceededTransition())
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
+      .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_UNASSIGNED,
+          TaskAttemptEventType.TA_ASSIGN_CANCEL, new CancelTransition())
 
       // Transitions from TA_RUNNING state
       .addTransition(TaskAttemptState.TA_RUNNING,
@@ -310,9 +312,17 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       }
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
       taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
-      taskAttempt.eventHandler.handle(
-          new TaskTAttemptEvent(taskAttempt.getId(),
-              TaskEventType.T_ATTEMPT_LAUNCHED));
+    }
+  }
+
+  private static class CancelTransition
+      implements SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
+
+    @Override
+    public void transition(TaskAttempt taskAttempt,
+                           TaskAttemptEvent event) {
+
+      taskAttempt.workerConnectionInfo = null;
     }
   }
 

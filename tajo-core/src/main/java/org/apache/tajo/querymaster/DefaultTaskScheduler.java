@@ -148,7 +148,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
-    handleTaskRequestEvent(null);
+    reserveNodeResource();
 
     if (taskRequests.size() > 0) {
       if (scheduledRequests.leafTaskNum() > 0) {
@@ -254,8 +254,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     return workerIds;
   }
 
-  @Override
-  public void handleTaskRequestEvent(TaskRequestEvent event) {
+
+  private void reserveNodeResource() {
 
     boolean isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
     int taskMem = context.getMasterContext().getConf().getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
@@ -292,7 +292,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       if(responseProto.getResourceCount() == 0) {
         if(remainingScheduledObjectNum() == 0) {
-          // all task assigned complete
+          // all task is assigned, wait for stopping message
           synchronized (schedulingThread){
             schedulingThread.wait(500);
           }
@@ -649,6 +649,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     } else {
       scheduledRequests.nonLeafTasks.add(taskAttempt.getId());
     }
+
+    context.getMasterContext().getEventHandler().handle(
+        new TaskAttemptEvent(taskAttempt.getId(), TaskAttemptEventType.TA_ASSIGN_CANCEL));
   }
 
   private class ScheduledRequests {
@@ -818,10 +821,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         // checking if this container is still alive.
         // If not, ignore the task request and stop the task runner
         WorkerConnectionInfo connectionInfo = context.getMasterContext().getWorkerMap().get(taskRequest.getWorkerId());
-        if(connectionInfo == null) {
-          //taskRequest.getCallback().run(stopTaskRunnerReq);
-          continue;
-        }
+        if(connectionInfo == null) continue;
 
         // getting the hostname of requested node
         String host = connectionInfo.getHost();
@@ -872,7 +872,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
 
-
         if (attemptId != null) {
           Task task = stage.getTask(attemptId.getTaskId());
           TaskRequest taskAssign = new TaskRequestImpl(
@@ -897,35 +896,34 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               .setTaskRequest(taskAssign.getProto()).build());
 
           requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
-
-          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
 
           InetSocketAddress addr = stage.getWorkerMap().get(connectionInfo.getId());
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
 
           AsyncRpcClient tajoWorkerRpc = null;
+          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
-            TajoWorkerProtocol.BatchAllocationResponseProto responseProto = callFuture.get();
 
-            if(responseProto.getCancellationTaskCount() > 0) {
+            TajoWorkerProtocol.BatchAllocationResponseProto responseProto = callFuture.get();
+            if (responseProto.getCancellationTaskCount() > 0) {
               for (TajoWorkerProtocol.TaskAllocationRequestProto proto : responseProto.getCancellationTaskList()) {
                 cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
                 cancellation++;
               }
               LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount());
               continue;
+            } else {
+              context.getMasterContext().getEventHandler().handle(
+                  new TaskTAttemptEvent(attemptId,
+                      TaskEventType.T_ATTEMPT_LAUNCHED));
             }
-
           } catch (Exception e) {
             LOG.error(e);
           }
-
-          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
-          //TODO change to debug
-          LOG.info("Assigned task: " + attemptId + " to " + connectionInfo.getHostAndPeerRpcPort());
           assignedRequest.add(attemptId);
           scheduledObjectNum--;
 
@@ -1003,6 +1001,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               .setTaskRequest(taskAssign.getProto()).build());
 
           requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
+          context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
 
           CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
 
@@ -1024,11 +1023,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               }
               LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount());
               continue;
+            } else {
+              context.getMasterContext().getEventHandler().handle(
+                  new TaskTAttemptEvent(attemptId,
+                      TaskEventType.T_ATTEMPT_LAUNCHED));
             }
 
-            context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
-            //TODO change to debug
-            LOG.info("Assigned task: " + attemptId + " to " + connectionInfo.getHostAndPeerRpcPort());
             totalAssigned++;
             scheduledObjectNum--;
           } catch (Exception e) {

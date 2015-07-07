@@ -49,10 +49,8 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.resource.NodeResource;
-import org.apache.tajo.rpc.AsyncRpcClient;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
@@ -205,11 +203,6 @@ public class QueryMasterTask extends CompositeService {
     super.serviceStop();
     LOG.info("Stopped QueryMasterTask:" + queryId);
   }
-  //FIXME remove
-  public void handleTaskRequestEvent(TaskRequestEvent event) {
-    ExecutionBlockId id = event.getExecutionBlockId();
-    query.getStage(id).handleTaskRequestEvent(event);
-  }
 
   public void handleTaskFailed(TajoWorkerProtocol.TaskFatalErrorReport report) {
     synchronized(diagnostics) {
@@ -283,7 +276,13 @@ public class QueryMasterTask extends CompositeService {
     try {
       tajoWorkerRpc = RpcClientManager.getInstance().getClient(workerAddress, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
-      tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
+      CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+      tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), callFuture);
+
+      if(!callFuture.get().getValue()){
+        queryMasterContext.getEventHandler().handle(
+            new TaskFatalErrorEvent(taskAttemptId, "Can't kill task :" + taskAttemptId));
+      }
     } catch (Exception e) {
       /* Worker RPC failure */
       LOG.error(e.getMessage(), e);
