@@ -24,12 +24,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
-import org.apache.tajo.catalog.exception.NoSuchColumnException;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -405,6 +404,25 @@ public class DDLExecutor {
       throw new NoSuchTableException(qualifiedName);
     }
 
+    Path partitionPath = null;
+    TableDesc desc = null;
+    Pair<List<PartitionKey>, String> pair = null;
+    CatalogProtos.PartitionDescProto partitionDescProto = null;
+
+    if (alterTable.getAlterTableOpType() == AlterTableOpType.RENAME_TABLE
+      || alterTable.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
+      || alterTable.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
+      desc = catalog.getTableDesc(databaseName, simpleTableName);
+    }
+
+    // When adding a partition or dropping a partition, check existing partition column information.
+    if (alterTable.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
+      || alterTable.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
+      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
+      partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
+      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
+    }
+
     switch (alterTable.getAlterTableOpType()) {
     case RENAME_TABLE:
       if (!catalog.existsTable(databaseName, simpleTableName)) {
@@ -413,8 +431,6 @@ public class DDLExecutor {
       if (catalog.existsTable(databaseName, alterTable.getNewTableName())) {
         throw new AlreadyExistsTableException(alterTable.getNewTableName());
       }
-
-      TableDesc desc = catalog.getTableDesc(databaseName, simpleTableName);
 
       if (!desc.isExternal()) { // if the table is the managed table
         Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
@@ -452,16 +468,14 @@ public class DDLExecutor {
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
     case ADD_PARTITION:
-      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
-      Path partitionPath = null;
+      if (partitionDescProto != null) {
+        throw new AlreadyExistsPartitionException(tableName, pair.getSecond());
+      }
 
       if (alterTable.getLocation() != null) {
         partitionPath = new Path(alterTable.getLocation());
       } else {
         // If location is not specified, the partition's location will be set using the table location.
-        desc = catalog.getTableDesc(databaseName, simpleTableName);
-        Pair<List<PartitionKey>, String> pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(),
-          alterTable.getPartitionValues());
         partitionPath = new Path(desc.getUri().toString(), pair.getSecond());
         alterTable.setLocation(partitionPath.toString());
       }
@@ -476,15 +490,6 @@ public class DDLExecutor {
       }
       break;
     case DROP_PARTITION:
-      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
-      desc = catalog.getTableDesc(databaseName, simpleTableName);
-
-      Pair<List<PartitionKey>, String> pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(),
-        alterTable.getPartitionValues());
-
-      CatalogProtos.PartitionDescProto partitionDescProto = catalog.getPartition(databaseName, simpleTableName,
-        pair.getSecond());
-
       if (partitionDescProto == null) {
         throw new NoSuchPartitionException(tableName, pair.getSecond());
       }
