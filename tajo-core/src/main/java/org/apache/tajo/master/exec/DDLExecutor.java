@@ -483,8 +483,8 @@ public class DDLExecutor {
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
 
-      FileSystem fs = partitionPath.getFileSystem(context.getConf());
       // If the partition's path doesn't exist, this would make the directory by force.
+      FileSystem fs = partitionPath.getFileSystem(context.getConf());
       if (!fs.exists(partitionPath)) {
         fs.mkdirs(partitionPath);
       }
