@@ -132,6 +132,9 @@
       "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
 
   NumberFormat nf = NumberFormat.getInstance(Locale.US);
+
+  String masterLabel = master.getContext().getTajoMasterService().getBindAddress().getHostName()+ ":"
+          + master.getContext().getTajoMasterService().getBindAddress().getPort();
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -144,7 +147,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
   <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId.toString()%></a></h3>
   <hr/>

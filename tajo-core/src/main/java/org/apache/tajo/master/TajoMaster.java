@@ -203,7 +203,7 @@ public class TajoMaster extends CompositeService {
       super.serviceInit(systemConf);
     } catch (Throwable t) {
       t.printStackTrace();
-      System.exit(1);
+      Runtime.getRuntime().halt(-1);
     }
     LOG.info("Tajo Master is initialized.");
   }

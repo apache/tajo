@@ -129,8 +129,8 @@
     <tr><td width='150'>System dir:</td><td><%=TajoConf.getSystemDir(master.getContext().getConf())%></td></tr>
     <tr><td width='150'>Warehouse dir:</td><td><%=TajoConf.getWarehouseDir(master.getContext().getConf())%></td></tr>
     <tr><td width='150'>Staging dir:</td><td><%=TajoConf.getDefaultRootStagingDir(master.getContext().getConf())%></td></tr>
-    <tr><td width='150'>Client Service:</td><td><%=NetUtils.normalizeInetSocketAddress(master.getTajoMasterClientService().getBindAddress())%></td></tr>
-    <tr><td width='150'>Catalog Service:</td><td><%=master.getCatalogServer().getCatalogServerName()%></td></tr>
+    <tr><td width='150'>Client Service:</td><td><%=master.getTajoMasterClientService().getBindAddress().getHostName() + ":" + master.getTajoMasterClientService().getBindAddress().getPort()%></td></tr>
+    <tr><td width='150'>Catalog Service:</td><td><%=master.getCatalogServer().getBindAddress().getHostName() + ":" + master.getCatalogServer().getBindAddress().getPort()%></td></tr>
     <tr><td width='150'>Heap(Free/Total/Max): </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB / <%=Runtime.getRuntime().totalMemory()/1024/1024%> MB / <%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
     <tr><td width='150'>Configuration:</td><td><a href='conf.jsp'>detail...</a></td></tr>
     <tr><td width='150'>Environment:</td><td><a href='env.jsp'>detail...</a></td></tr>

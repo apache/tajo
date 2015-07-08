@@ -59,7 +59,8 @@
             .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId);
 
     if(queryMasterTask == null) {
-        out.write("<script type='text/javascript'>alert('no query'); history.back(0); </script>");
+        String tajoMasterHttp = request.getScheme() + "://" + JSPUtil.getTajoMasterHttpAddr(tajoWorker.getConfig());
+        response.sendRedirect(tajoMasterHttp + request.getRequestURI() + "?" + request.getQueryString());
         return;
     }
 

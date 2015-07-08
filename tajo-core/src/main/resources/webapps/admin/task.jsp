@@ -106,12 +106,15 @@
     shuffleKey = task.getShuffleKey();
     shuffleFileName = task.getShuffleFileName();
   }
+
+  String masterLabel = master.getContext().getTajoMasterService().getBindAddress().getHostName()+ ":"
+          + master.getContext().getTajoMasterService().getBindAddress().getPort();
 %>
 
 
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
   <h3><a href='<%=backUrl%>'><%=ebId%></a></h3>
   <hr/>

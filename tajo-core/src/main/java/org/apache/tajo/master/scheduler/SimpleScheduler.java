@@ -20,11 +20,9 @@ package org.apache.tajo.master.scheduler;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
@@ -127,7 +125,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     NodeResource qmResource = NodeResources.createResource(qmMemory);
 
     //find idle node for QM
-    Set<Integer> idleNode = Sets.newHashSet();
+    List<Integer> idleNode = Lists.newArrayList();
     int containers = 1;
     for (Worker worker : getRMContext().getWorkers().values()) {
       if (worker.getNumRunningQueryMaster() == 0 && NodeResources.fitsIn(qmResource, worker.getAvailableResource())) {
@@ -137,6 +135,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       if (idleNode.size() > containers * 3) break;
     }
 
+    Collections.shuffle(idleNode);
     QueryCoordinatorProtocol.NodeResourceRequestProto.Builder builder =
         QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
 
