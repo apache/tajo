@@ -37,4 +37,4 @@ before_install: ulimit -t 514029
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
-  mvn clean install -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2
+  mvn clean install -B -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2
