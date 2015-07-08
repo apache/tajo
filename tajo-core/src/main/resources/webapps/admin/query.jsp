@@ -58,6 +58,12 @@
   }
 
   List<QueryInfo> allFinishedQueries = new ArrayList<QueryInfo>(master.getContext().getQueryJobManager().getFinishedQueries());
+  Collections.sort(allFinishedQueries, new Comparator<QueryInfo>() {
+      @Override
+      public int compare(QueryInfo query1, QueryInfo query2) {
+          return query2.getQueryId().toString().compareTo(query1.getQueryId().toString());
+      }
+  });
 
   int numOfFinishedQueries = allFinishedQueries.size();
   int totalPage = numOfFinishedQueries % pageSize == 0 ?
