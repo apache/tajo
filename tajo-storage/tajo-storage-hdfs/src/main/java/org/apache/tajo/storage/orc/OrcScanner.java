@@ -115,7 +115,6 @@ public class OrcScanner extends FileScanner {
       fis = fs.open(path);
     }
 
-    // TODO: max merge distance should be fetched from conf
     OrcDataSource orcDataSource = new HdfsOrcDataSource(
         this.fragment.getPath().toString(),
         fis,
