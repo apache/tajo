@@ -128,8 +128,8 @@ public class TajoSystemMetrics extends TajoMetrics {
     Map<String, String> reporters = new HashMap<String, String>();
 
     List<String> reporterNames = metricsProps.getList(groupName + ".reporters");
-    if(reporterNames.isEmpty()) {
-      LOG.warn("No property " + groupName + ".reporters in " + metricsPropertyFileName);
+    if(reporterNames.isEmpty() && LOG.isDebugEnabled()) {
+      LOG.debug("No property " + groupName + ".reporters in " + metricsPropertyFileName);
       return;
     }
 

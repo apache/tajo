@@ -407,6 +407,7 @@ public class TestTajoClient {
     assertTrue(desc.getStats().getNumBytes() > 0);
   }
 
+  /*
   //@Test
   public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException,
       ServiceException, SQLException {
@@ -529,6 +530,7 @@ public class TestTajoClient {
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
+  */
 
   @Test
   public final void testFailCreateTablePartitionedOtherExceptColumn() throws IOException,
