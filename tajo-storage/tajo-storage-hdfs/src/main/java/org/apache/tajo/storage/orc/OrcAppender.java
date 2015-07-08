@@ -54,7 +54,7 @@ public class OrcAppender extends FileAppender {
         StorageConstants.DEFAULT_ORC_STRIPE_SIZE)), // default 1000
       getCompressionKind(), // default 'none'
       Integer.parseInt(meta.getOption(StorageConstants.ORC_BUFFER_SIZE,
-        StorageConstants.DEFAULT_ORC_BUFFER_SIZE)), // default 100
+        StorageConstants.DEFAULT_ORC_BUFFER_SIZE)), // default 1024 bytes
       Integer.parseInt(meta.getOption(StorageConstants.ORC_ROW_INDEX_STRIDE,
         StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE))); // default 1000
 

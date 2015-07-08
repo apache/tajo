@@ -96,7 +96,7 @@ public class StorageConstants {
   public static final String DEFAULT_ORC_COMPRESSION_KIND = ORC_COMPRESSION_KIND_NONE;
 
   public static final String ORC_BUFFER_SIZE = "orc.buffer.size";
-  public static final String DEFAULT_ORC_BUFFER_SIZE = "000";
+  public static final String DEFAULT_ORC_BUFFER_SIZE = "1024";
 
   public static final String ORC_ROW_INDEX_STRIDE = "orc.rowindex.stride";
   public static final String DEFAULT_ORC_ROW_INDEX_STRIDE = "1000";

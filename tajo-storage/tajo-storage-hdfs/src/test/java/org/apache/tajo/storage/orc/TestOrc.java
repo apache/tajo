@@ -38,9 +38,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.orc.objectinspector.ObjectInspectorFactory;
-import org.apache.tajo.storage.thirdparty.orc.OrcFile;
-import org.apache.tajo.storage.thirdparty.orc.CompressionKind;
-import org.apache.tajo.storage.thirdparty.orc.Writer;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.After;
@@ -138,7 +135,11 @@ public class TestOrc {
         fs.delete(writePath);
       }
 
-      Writer orcWriter = OrcFile.createWriter(fs, writePath, conf, structOI, 1000, CompressionKind.NONE, 100, 1000);
+      TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
+
+      OrcAppender appender = new OrcAppender(conf, null, schema, meta, writePath);
+
+      appender.init();
 
       Tuple tuple = new VTuple(schema.size());
       tuple.put(0, new Int4Datum(100));
@@ -146,11 +147,10 @@ public class TestOrc {
       tuple.put(2, new TextDatum("good"));
       tuple.put(3, new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis())));
 
-      orcWriter.addTuple(tuple);
+      appender.addTuple(tuple);
 
-      orcWriter.close();
+      appender.close();
 
-      TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
       Fragment fragment = getFileFragment("temp_test.orc");
       OrcScanner orcScanner = new OrcScanner(conf, schema, meta, fragment);
       orcScanner.init();
