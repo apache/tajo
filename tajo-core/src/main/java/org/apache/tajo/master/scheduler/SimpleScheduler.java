@@ -20,6 +20,7 @@ package org.apache.tajo.master.scheduler;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -92,8 +93,10 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     NodeResources.update(maxResource, totalResource);
     NodeResources.update(clusterResource, resource);
 
-    LOG.info("Cluster Resource. available : " + getClusterResource()
-        + " maximum: " + getMaximumResourceCapability());
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("Cluster Resource. available : " + getClusterResource()
+          + " maximum: " + getMaximumResourceCapability());
+    }
   }
 
   @Override
@@ -121,16 +124,29 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
   private QueryCoordinatorProtocol.NodeResourceRequestProto createQMResourceRequest(QueryInfo queryInfo) {
     int qmMemory = tajoConf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
+    NodeResource qmResource = NodeResources.createResource(qmMemory);
+
+    //find idle node for QM
+    Set<Integer> idleNode = Sets.newHashSet();
+    int containers = 1;
+    for (Worker worker : getRMContext().getWorkers().values()) {
+      if (worker.getNumRunningQueryMaster() == 0 && NodeResources.fitsIn(qmResource, worker.getAvailableResource())) {
+        idleNode.add(worker.getWorkerId());
+      }
+
+      if (idleNode.size() > containers * 3) break;
+    }
 
     QueryCoordinatorProtocol.NodeResourceRequestProto.Builder builder =
         QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
 
     builder.setQueryId(queryInfo.getQueryId().getProto())
-        .setCapacity(NodeResources.createResource(qmMemory).getProto())
+        .setCapacity(qmResource.getProto())
         .setType(QueryCoordinatorProtocol.ResourceType.QUERYMASTER)
         .setPriority(1)
-        .setNumContainers(1)
+        .setNumContainers(containers)
         .setRunningTasks(1)
+        .addAllCandidateNodes(idleNode)
         .setUserId(queryInfo.getQueryContext().getUser());
     //TODO .setQueue(queryInfo.getQueue());
     return builder.build();
@@ -330,6 +346,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
             LOG.info("No Available Resources for QueryMaster :" + queryInfo.getQueryId() + "," + queryInfo);
           } else {
             try {
+              //if QM resource can't be allocated to a node, it should retry
               boolean started = masterContext.getQueryJobManager().startQueryJob(query.getQueryId(), allocation.get(0));
               if(!started) {
                 queryQueue.put(query);
