@@ -407,6 +407,7 @@ public class TestTajoClient {
     assertTrue(desc.getStats().getNumBytes() > 0);
   }
 
+  // TODO: If tajo support hash, list, rage partition, following codes would be used.
   /*
   //@Test
   public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException,
