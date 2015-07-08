@@ -42,6 +42,7 @@ import org.apache.tajo.storage.thirdparty.orc.OrcFile;
 import org.apache.tajo.storage.thirdparty.orc.CompressionKind;
 import org.apache.tajo.storage.thirdparty.orc.Writer;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -143,7 +144,7 @@ public class TestOrc {
       tuple.put(0, new Int4Datum(100));
       tuple.put(1, new Int2Datum((short)7));
       tuple.put(2, new TextDatum("good"));
-      tuple.put(3, new TimestampDatum(System.currentTimeMillis() * 1000));
+      tuple.put(3, new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis())));
 
       orcWriter.addTuple(tuple);
 
