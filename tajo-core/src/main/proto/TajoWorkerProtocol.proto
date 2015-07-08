@@ -233,7 +233,7 @@ service TajoWorkerProtocolService {
   rpc allocateTasks(BatchAllocationRequestProto) returns (BatchAllocationResponseProto);
   rpc stopExecutionBlock(StopExecutionBlockRequestProto) returns (BoolProto);
   rpc killTaskAttempt(TaskAttemptIdProto) returns (BoolProto);
-  rpc cleanup(QueryIdProto) returns (BoolProto);
+  rpc stopQuery(QueryIdProto) returns (BoolProto);
 }
 
 message EnforceProperty {

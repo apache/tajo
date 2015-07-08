@@ -271,7 +271,7 @@ public class QueryMasterTask extends CompositeService {
   protected void killTaskAttempt(int workerId, TaskAttemptId taskAttemptId) {
     NettyClientBase tajoWorkerRpc;
     ExecutionBlockId ebId = taskAttemptId.getTaskId().getExecutionBlockId();
-    InetSocketAddress workerAddress = getQuery().getStage(ebId).getWorkerMap().get(workerId);
+    InetSocketAddress workerAddress = getQuery().getStage(ebId).getAssignedWorkerMap().get(workerId);
 
     try {
       tajoWorkerRpc = RpcClientManager.getInstance().getClient(workerAddress, TajoWorkerProtocol.class, true);
@@ -474,7 +474,7 @@ public class QueryMasterTask extends CompositeService {
   private void cleanupQuery(final QueryId queryId) {
     Set<InetSocketAddress> workers = Sets.newHashSet();
     for (Stage stage : getQuery().getStages()) {
-      workers.addAll(stage.getWorkerMap().values());
+      workers.addAll(stage.getAssignedWorkerMap().values());
     }
 
     LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
@@ -485,7 +485,7 @@ public class QueryMasterTask extends CompositeService {
           try {
             AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
-            tajoWorkerProtocolService.cleanup(null, queryId.getProto(), NullCallback.get());
+            tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
           } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
           }

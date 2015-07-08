@@ -139,7 +139,7 @@ public class TajoWorkerManagerService extends CompositeService
   }
 
   @Override
-  public void cleanup(RpcController controller, TajoIdProtos.QueryIdProto request,
+  public void stopQuery(RpcController controller, TajoIdProtos.QueryIdProto request,
                       RpcCallback<PrimitiveProtos.BoolProto> done) {
 
     workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new QueryStopEvent(new QueryId(request)));

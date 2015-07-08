@@ -206,8 +206,8 @@ public class QueryMasterManagerService extends CompositeService
           .setShuffleType(shuffleType);
 
       //Set assigned worker to stage
-      if (!stage.getWorkerMap().containsKey(request.getWorker().getId())) {
-        stage.getWorkerMap().put(request.getWorker().getId(),
+      if (!stage.getAssignedWorkerMap().containsKey(request.getWorker().getId())) {
+        stage.getAssignedWorkerMap().put(request.getWorker().getId(),
             NetUtils.createSocketAddr(request.getWorker().getHost(), request.getWorker().getPeerRpcPort()));
       }
       done.run(ebRequestProto.build());

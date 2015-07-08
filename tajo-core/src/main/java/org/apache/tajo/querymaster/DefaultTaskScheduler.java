@@ -20,6 +20,7 @@ package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -55,7 +56,6 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -67,7 +67,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private Stage stage;
 
   private Thread schedulingThread;
-  private AtomicBoolean stopEventHandling = new AtomicBoolean(false);
+  private volatile boolean isStopped;
 
   private ScheduledRequests scheduledRequests;
   private TaskRequests taskRequests;
@@ -75,6 +75,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private int nextTaskId = 0;
   private int scheduledObjectNum = 0;
   boolean isLeaf;
+  private Set<Integer> candidateWorkers = Sets.newHashSet();
 
   public DefaultTaskScheduler(TaskSchedulerContext context, Stage stage) {
     super(DefaultTaskScheduler.class.getName());
@@ -84,20 +85,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void init(Configuration conf) {
-
     scheduledRequests = new ScheduledRequests();
     taskRequests = new TaskRequests();
-
-    isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
-    if (!isLeaf) {
-
-      //find assigned hosts for interQuery locality in children executionBlock
-      List<ExecutionBlock> executionBlockList = stage.getMasterPlan().getChilds(stage.getBlock());
-      for (ExecutionBlock executionBlock : executionBlockList) {
-        Stage childStage = stage.getContext().getStage(executionBlock.getId());
-        assignedHosts.addAll(childStage.getTaskScheduler().getAssignedWorker());
-      }
-    }
 
     super.init(conf);
   }
@@ -105,11 +94,23 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void start() {
     LOG.info("Start TaskScheduler");
+    isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
+
+    if (!isLeaf) {
+      candidateWorkers.addAll(getWorkerIds(getLeafTaskHosts()));
+    } else {
+      //find assigned hosts for Non-Leaf locality in children executionBlock
+      List<ExecutionBlock> executionBlockList = stage.getMasterPlan().getChilds(stage.getBlock());
+      for (ExecutionBlock executionBlock : executionBlockList) {
+        Stage childStage = stage.getContext().getStage(executionBlock.getId());
+        candidateWorkers.addAll(childStage.getAssignedWorkerMap().keySet());
+      }
+    }
 
     this.schedulingThread = new Thread() {
       public void run() {
 
-        while (!stopEventHandling.get() && !Thread.currentThread().isInterrupted()) {
+        while (!isStopped && !Thread.currentThread().isInterrupted()) {
 
           try {
             schedule();
@@ -129,9 +130,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void stop() {
-    if(stopEventHandling.getAndSet(true)){
-      return;
-    }
+    isStopped = true;
 
     if (schedulingThread != null) {
       synchronized (schedulingThread) {
@@ -242,8 +241,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
   }
 
-  private List<Integer> getWorkerIds(Collection<String> hosts){
-    List<Integer> workerIds = Lists.newArrayList();
+  private Set<Integer> getWorkerIds(Collection<String> hosts){
+    Set<Integer> workerIds = Sets.newHashSet();
     if(hosts.isEmpty()) return workerIds;
 
     for (WorkerConnectionInfo worker : stage.getContext().getWorkerMap().values()) {
@@ -257,9 +256,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   private void reserveNodeResource() {
 
-    boolean isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
     int taskMem = context.getMasterContext().getConf().getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
-    NettyClientBase tmClient = null;
+    NettyClientBase tmClient;
     try {
       ServiceTracker serviceTracker =
           context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
@@ -270,17 +268,17 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
       QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request =
           QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
-      request.setCapacity(NodeResources.createResource(taskMem, isLeaf ? 1 : 0).getProto());
-      request.setNumContainers(Math.max(remainingScheduledObjectNum(), 1));
-      request.setPriority(stage.getPriority());
-      request.setQueryId(context.getMasterContext().getQueryId().getProto());
-      //TODO set queue
-      request.setQueue(context.getMasterContext().getQueryContext().get("queue", "default"));
-      request.setType(isLeaf ? QueryCoordinatorProtocol.ResourceType.LEAF:
-          QueryCoordinatorProtocol.ResourceType.INTERMEDIATE);
-      request.setUserId(context.getMasterContext().getQueryContext().getUser());
-      request.setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount());
-      request.addAllCandidateNodes(getWorkerIds(getAssignedWorker()));
+      request.setCapacity(NodeResources.createResource(taskMem, isLeaf ? 1 : 0).getProto())
+          .setNumContainers(Math.max(remainingScheduledObjectNum(), 1))
+          .setPriority(stage.getPriority())
+          .setQueryId(context.getMasterContext().getQueryId().getProto())
+          .setType(isLeaf ? QueryCoordinatorProtocol.ResourceType.LEAF :
+              QueryCoordinatorProtocol.ResourceType.INTERMEDIATE)
+          .setUserId(context.getMasterContext().getQueryContext().getUser())
+          .setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount())
+          .addAllCandidateNodes(candidateWorkers)
+          .setQueue(context.getMasterContext().getQueryContext().get("queue", "default")); //TODO set queue
+
       masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
       QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
 
@@ -322,7 +320,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         LOG.debug("TaskRequest: " + event.getResponseProto().getWorkerId() + "," + event.getExecutionBlockId());
       }
 
-      if(stopEventHandling.get()) {
+      if(isStopped) {
         return;
       }
       int qSize = taskRequestQueue.size();
@@ -663,13 +661,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private Map<String, HostVolumeMapping> leafTaskHostMapping = Maps.newConcurrentMap();
     private final Map<String, HashSet<TaskAttemptId>> leafTasksRackMapping = Maps.newConcurrentMap();
 
-    private synchronized void addLeafTask(TaskAttemptToSchedulerEvent event) {
+    private void addLeafTask(TaskAttemptToSchedulerEvent event) {
       TaskAttempt taskAttempt = event.getTaskAttempt();
       List<DataLocation> locations = taskAttempt.getTask().getDataLocations();
 
       for (DataLocation location : locations) {
         String host = location.getHost();
-        assignedHosts.add(host);
+        leafTaskHosts.add(host);
 
         HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
         if (hostVolumeMapping == null) {
@@ -898,7 +896,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
 
-          InetSocketAddress addr = stage.getWorkerMap().get(connectionInfo.getId());
+          InetSocketAddress addr = stage.getAssignedWorkerMap().get(connectionInfo.getId());
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
 
           AsyncRpcClient tajoWorkerRpc = null;
@@ -1001,10 +999,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
           CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
 
-          InetSocketAddress addr = stage.getWorkerMap().get(connectionInfo.getId());
+          InetSocketAddress addr = stage.getAssignedWorkerMap().get(connectionInfo.getId());
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
 
-          AsyncRpcClient tajoWorkerRpc = null;
+          AsyncRpcClient tajoWorkerRpc;
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();

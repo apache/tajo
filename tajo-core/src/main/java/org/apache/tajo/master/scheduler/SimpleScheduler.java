@@ -159,7 +159,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     }
 
     int requiredContainers = request.getNumContainers();
-    // reserve resource to the candidate workers for locality
+    // reserve resource from candidate workers for locality
     reservedResources = reserveClusterResource(workers, capacity, requiredContainers);
 
     // reserve resource in random workers
@@ -229,6 +229,9 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       case RESOURCE_UPDATE:
         updateResource();
         break;
+      default:
+        break;
+
     }
   }
 

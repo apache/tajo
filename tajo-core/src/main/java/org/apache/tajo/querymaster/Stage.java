@@ -677,13 +677,13 @@ public class Stage implements EventHandler<StageEvent> {
   /**
    * Get the launched worker address
    */
-  protected Map<Integer, InetSocketAddress> getWorkerMap() {
+  protected Map<Integer, InetSocketAddress> getAssignedWorkerMap() {
     return workerMap;
   }
 
   private void sendStopExecutionBlockEvent(final TajoWorkerProtocol.StopExecutionBlockRequestProto requestProto) {
 
-    for (final InetSocketAddress worker : getWorkerMap().values()) {
+    for (final InetSocketAddress worker : getAssignedWorkerMap().values()) {
       getContext().getQueryMasterContext().getEventExecutor().submit(new Runnable() {
         @Override
         public void run() {
@@ -1071,8 +1071,6 @@ public class Stage implements EventHandler<StageEvent> {
       TableDesc table = stage.context.getTableDescMap().get(scan.getCanonicalName());
 
       Collection<Fragment> fragments;
-      TableMeta meta = table.getMeta();
-
       Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri()).get();
 
       // Depending on scanner node's type, it creates fragments. If scan is for

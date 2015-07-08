@@ -57,9 +57,7 @@
     }
   }
 
-  String keyword = request.getParameter("keyword");
-  HistoryReader historyReader = master.getContext().getHistoryReader();
-  List<QueryInfo> allFinishedQueries = historyReader.getQueries(keyword);
+  List<QueryInfo> allFinishedQueries = new ArrayList<QueryInfo>(master.getContext().getQueryJobManager().getFinishedQueries());
 
   int numOfFinishedQueries = allFinishedQueries.size();
   int totalPage = numOfFinishedQueries % pageSize == 0 ?
