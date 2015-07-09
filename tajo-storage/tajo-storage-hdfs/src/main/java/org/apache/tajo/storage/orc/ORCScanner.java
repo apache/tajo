@@ -270,6 +270,9 @@ public class ORCScanner extends FileScanner {
       case NULL_TYPE:
         return NullDatum.get();
 
+      case DATE:
+        return new DateDatum((int)((LongVector)vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
+
       default:
         throw new UnsupportedException("This data type is not supported currently: "+type.toString());
     }

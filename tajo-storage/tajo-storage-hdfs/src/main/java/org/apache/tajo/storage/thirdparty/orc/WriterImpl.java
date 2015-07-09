@@ -1544,10 +1544,9 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
 
     @Override
     void write(Datum datum) throws IOException {
-      final int DAYS_FROM_JULIAN_TO_EPOCH = 2440588;
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
-        int daysSinceEpoch = datum.asInt4() - DAYS_FROM_JULIAN_TO_EPOCH;
+        int daysSinceEpoch = datum.asInt4() - DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH;
         // Using the Writable here as it's used directly for writing as well as for stats.
         indexStatistics.updateDate(daysSinceEpoch);
         writer.write(daysSinceEpoch);
