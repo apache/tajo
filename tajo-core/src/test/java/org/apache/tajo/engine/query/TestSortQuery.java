@@ -68,7 +68,6 @@ public class TestSortQuery extends QueryTestCaseBase {
   @Test
   public final void testSortWithAlias3() throws Exception {
     ResultSet res = executeQuery();
-    System.out.println(resultSetToString(res));
     cleanupQuery(res);
   }
 

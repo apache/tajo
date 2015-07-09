@@ -19,6 +19,8 @@
 package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -45,6 +47,8 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 
 public class TestRowFile {
+  private static final Log LOG = LogFactory.getLog(TestRowFile.class);
+
   private TajoTestingCluster cluster;
   private TajoConf conf;
 
@@ -126,8 +130,8 @@ public class TestRowFile {
       scanner = new RowFile.RowFileScanner(conf, schema, meta, fragment);
       scanner.init();
       while ((tuple=scanner.next()) != null) {
-        if (!idSet.remove(tuple.getInt4(0))) {
-          System.out.println("duplicated! " + tuple.getInt4(0));
+        if (!idSet.remove(tuple.getInt4(0)) && LOG.isDebugEnabled()) {
+          LOG.debug("duplicated! " + tuple.getInt4(0));
         }
         tupleCnt++;
       }

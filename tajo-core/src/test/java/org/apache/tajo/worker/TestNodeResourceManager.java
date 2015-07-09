@@ -19,6 +19,8 @@
 package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
@@ -43,6 +45,7 @@ import static org.junit.Assert.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 public class TestNodeResourceManager {
+  private static final Log LOG = LogFactory.getLog(TestNodeResourceManager.class);
 
   private MockNodeResourceManager resourceManager;
   private NodeStatusUpdater statusUpdater;
@@ -253,7 +256,9 @@ public class TestNodeResourceManager {
                   fail(e.getMessage());
                 }
               }
-              System.out.println(Thread.currentThread().getName() + " complete requests: " + complete);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug(Thread.currentThread().getName() + " complete requests: " + complete);
+              }
               totalComplete.addAndGet(complete);
             }
           })
@@ -264,8 +269,10 @@ public class TestNodeResourceManager {
       future.get();
     }
 
-    System.out.println(parallelCount + " Thread, completed requests: " + totalComplete.get() + ", canceled requests:"
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(parallelCount + " Thread, completed requests: " + totalComplete.get() + ", canceled requests:"
         + totalCanceled.get() + ", " + +(System.currentTimeMillis() - startTime) + " ms elapsed");
+    }
     executor.shutdown();
     assertEquals(taskSize, totalComplete.get());
   }
