@@ -66,6 +66,6 @@ public class TajoStringObjectInspector extends TajoPrimitiveObjectInspector impl
 
   @Override
   public String getTypeName() {
-    return "TEXT";
+    return "STRING";
   }
 }

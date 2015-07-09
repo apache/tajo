@@ -71,6 +71,6 @@ public class TajoIntObjectInspector extends TajoPrimitiveObjectInspector impleme
 
   @Override
   public String getTypeName() {
-    return "INT4";
+    return "INT";
   }
 }

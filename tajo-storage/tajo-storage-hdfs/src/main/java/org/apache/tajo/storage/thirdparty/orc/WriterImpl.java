@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.io.IOConstants;
+import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.shims.ShimLoader;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
@@ -966,9 +967,6 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
 
   private static class IntegerTreeWriter extends TreeWriter {
     private final IntegerWriter writer;
-    private final ShortObjectInspector shortInspector;
-    private final IntObjectInspector intInspector;
-    private final LongObjectInspector longInspector;
     private boolean isDirectV2 = true;
 
     IntegerTreeWriter(int columnId,
@@ -980,20 +978,6 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
           OrcProto.Stream.Kind.DATA);
       this.isDirectV2 = isNewWriteFormat(writer);
       this.writer = createIntegerWriter(out, true, isDirectV2, writer);
-      if (inspector instanceof IntObjectInspector) {
-        intInspector = (IntObjectInspector) inspector;
-        shortInspector = null;
-        longInspector = null;
-      } else {
-        intInspector = null;
-        if (inspector instanceof LongObjectInspector) {
-          longInspector = (LongObjectInspector) inspector;
-          shortInspector = null;
-        } else {
-          shortInspector = (ShortObjectInspector) inspector;
-          longInspector = null;
-        }
-      }
       recordPosition(rowIndexPosition);
     }
 
@@ -1542,6 +1526,62 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     }
   }
 
+  private static class DateTreeWriter extends TreeWriter {
+    private final IntegerWriter writer;
+    private final boolean isDirectV2;
+
+    DateTreeWriter(int columnId,
+                   ObjectInspector inspector,
+                   StreamFactory writer,
+                   boolean nullable) throws IOException {
+      super(columnId, inspector, writer, nullable);
+      OutStream out = writer.createStream(id,
+        OrcProto.Stream.Kind.DATA);
+      this.isDirectV2 = isNewWriteFormat(writer);
+      this.writer = createIntegerWriter(out, true, isDirectV2, writer);
+      recordPosition(rowIndexPosition);
+    }
+
+    @Override
+    void write(Datum datum) throws IOException {
+      final int DAYS_FROM_JULIAN_TO_EPOCH = 2440588;
+      super.write(datum);
+      if (datum != null && datum.isNotNull()) {
+        int daysSinceEpoch = datum.asInt4() - DAYS_FROM_JULIAN_TO_EPOCH;
+        // Using the Writable here as it's used directly for writing as well as for stats.
+        indexStatistics.updateDate(daysSinceEpoch);
+        writer.write(daysSinceEpoch);
+        if (createBloomFilter) {
+          bloomFilter.addLong(daysSinceEpoch);
+        }
+      }
+    }
+
+    @Override
+    void writeStripe(OrcProto.StripeFooter.Builder builder,
+                     int requiredIndexEntries) throws IOException {
+      super.writeStripe(builder, requiredIndexEntries);
+      writer.flush();
+      recordPosition(rowIndexPosition);
+    }
+
+    @Override
+    void recordPosition(PositionRecorder recorder) throws IOException {
+      super.recordPosition(recorder);
+      writer.getPosition(recorder);
+    }
+
+    @Override
+    OrcProto.ColumnEncoding getEncoding() {
+      if (isDirectV2) {
+        return OrcProto.ColumnEncoding.newBuilder()
+          .setKind(OrcProto.ColumnEncoding.Kind.DIRECT_V2).build();
+      }
+      return OrcProto.ColumnEncoding.newBuilder()
+        .setKind(OrcProto.ColumnEncoding.Kind.DIRECT).build();
+    }
+  }
+
   private static class StructTreeWriter extends TreeWriter {
     private final List<? extends StructField> fields;
     StructTreeWriter(int columnId,
@@ -1623,6 +1663,9 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
           case TIMESTAMP:
             return new TimestampTreeWriter(streamFactory.getNextColumnId(),
                 inspector, streamFactory, nullable);
+          case DATE:
+            return new DateTreeWriter(streamFactory.getNextColumnId(),
+              inspector, streamFactory, nullable);
           default:
             throw new IllegalArgumentException("Bad primitive category " +
               ((PrimitiveObjectInspector) inspector).getPrimitiveCategory());

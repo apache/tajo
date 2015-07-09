@@ -36,7 +36,7 @@ public class TajoLongObjectInspector extends TajoPrimitiveObjectInspector implem
 
   @Override
   public PrimitiveCategory getPrimitiveCategory() {
-    return PrimitiveCategory.SHORT;
+    return PrimitiveCategory.LONG;
   }
 
   @Override
@@ -51,7 +51,7 @@ public class TajoLongObjectInspector extends TajoPrimitiveObjectInspector implem
 
   @Override
   public Class<?> getJavaPrimitiveClass() {
-    return Integer.class;
+    return Long.class;
   }
 
   @Override
@@ -71,6 +71,6 @@ public class TajoLongObjectInspector extends TajoPrimitiveObjectInspector implem
 
   @Override
   public String getTypeName() {
-    return "INT8";
+    return "LONG";
   }
 }

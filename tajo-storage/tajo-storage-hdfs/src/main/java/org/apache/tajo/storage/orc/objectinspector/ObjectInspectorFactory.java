@@ -63,6 +63,10 @@ public class ObjectInspectorFactory {
         oi = new TajoTimestampObjectInspector();
         break;
 
+      case DATE:
+        oi = new TajoDateObjectInspector();
+        break;
+
       default:
         throw new UnsupportedException(dataType.name()+" is not supported yet in OrcAppender");
     }

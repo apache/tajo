@@ -51,7 +51,7 @@ public class TajoShortObjectInspector extends TajoPrimitiveObjectInspector imple
 
   @Override
   public Class<?> getJavaPrimitiveClass() {
-    return Integer.class;
+    return Short.class;
   }
 
   @Override
@@ -71,6 +71,6 @@ public class TajoShortObjectInspector extends TajoPrimitiveObjectInspector imple
 
   @Override
   public String getTypeName() {
-    return "INT2";
+    return "SHORT";
   }
 }

@@ -52,7 +52,7 @@ public class TajoFloatObjectInspector extends TajoPrimitiveObjectInspector imple
 
   @Override
   public Class<?> getJavaPrimitiveClass() {
-    return null;
+    return Float.class;
   }
 
   @Override
@@ -72,6 +72,6 @@ public class TajoFloatObjectInspector extends TajoPrimitiveObjectInspector imple
 
   @Override
   public String getTypeName() {
-    return "FLOAT4";
+    return "FLOAT";
   }
 }

@@ -51,7 +51,7 @@ public class TajoDoubleObjectInspector extends TajoPrimitiveObjectInspector impl
 
   @Override
   public Class<?> getJavaPrimitiveClass() {
-    return null;
+    return Double.class;
   }
 
   @Override
@@ -71,6 +71,6 @@ public class TajoDoubleObjectInspector extends TajoPrimitiveObjectInspector impl
 
   @Override
   public String getTypeName() {
-    return "FLOAT8";
+    return "DOUBLE";
   }
 }

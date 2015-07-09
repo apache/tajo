@@ -112,7 +112,7 @@ public class TajoStructObjectInspector extends StructObjectInspector {
 
   @Override
   public String getTypeName() {
-    return "struct";
+    return "STRUCT";
   }
 
   @Override

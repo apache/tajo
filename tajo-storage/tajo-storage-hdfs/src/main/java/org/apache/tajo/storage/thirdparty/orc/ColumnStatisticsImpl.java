@@ -22,6 +22,7 @@ import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.tajo.datum.BlobDatum;
+import org.apache.tajo.datum.DateDatum;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -689,14 +690,14 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     }
 
     @Override
-    void updateDate(DateWritable value) {
+    void updateDate(int daysSinceEpoch) {
       if (minimum == null) {
-        minimum = value.getDays();
-        maximum = value.getDays();
-      } else if (minimum > value.getDays()) {
-        minimum = value.getDays();
-      } else if (maximum < value.getDays()) {
-        maximum = value.getDays();
+        minimum = daysSinceEpoch;
+        maximum = daysSinceEpoch;
+      } else if (minimum > daysSinceEpoch) {
+        minimum = daysSinceEpoch;
+      } else if (maximum < daysSinceEpoch) {
+        maximum = daysSinceEpoch;
       }
     }
 
@@ -914,7 +915,7 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     throw new UnsupportedOperationException("Can't update decimal");
   }
 
-  void updateDate(DateWritable value) {
+  void updateDate(int days) {
     throw new UnsupportedOperationException("Can't update date");
   }
 
