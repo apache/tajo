@@ -18,11 +18,11 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoPartitionedTableException extends CatalogException {
+public class NoPartitionFoundException extends CatalogException {
 
-  public NoPartitionedTableException() {}
+  public NoPartitionFoundException() {}
 
-  public NoPartitionedTableException(String databaseName, String relName) {
-    super(String.format("ERROR: \"%s.%s\" is not a partitioned table", databaseName, relName));
+  public NoPartitionFoundException(String databaseName, String relName) {
+    super(String.format("ERROR: No partition found in \"%s.%s\"", databaseName, relName));
   }
 }

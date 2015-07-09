@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
@@ -35,6 +36,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
@@ -96,7 +98,7 @@ public class DDLExecutor {
       return true;
     case MSCK_TABLE:
       MsckTableNode msckTableNode = (MsckTableNode) root;
-      msckTable(context, queryContext, msckTableNode);
+      msckRepairTable(context, queryContext, msckTableNode);
       return true;
     default:
       throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
@@ -449,7 +451,17 @@ public class DDLExecutor {
     }
   }
 
-  public void msckTable(TajoMaster.MasterContext context, final QueryContext queryContext,
+  /**
+   * Run MSCK REPAIR TABLE table_name statement.
+   * This will recovery all partitions which exists on table directory.
+   *
+   *
+   * @param context
+   * @param queryContext
+   * @param msckTable
+   * @throws IOException
+   */
+  public void msckRepairTable(TajoMaster.MasterContext context, final QueryContext queryContext,
                          final MsckTableNode msckTable) throws IOException {
 
     final CatalogService catalog = context.getCatalog();
@@ -472,9 +484,45 @@ public class DDLExecutor {
     }
 
     TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
-    Path tablePath = new Path(tableDesc.getUri());
 
-    // TODO: Implement to make directories recursively comparing partition column name.
+    if(!tableDesc.hasPartition()) {
+      throw new NoPartitionedTableException(databaseName, simpleTableName);
+    }
+
+    if(tableDesc.getPartitionMethod() == null) {
+      throw new NoPartitionFoundException(databaseName, simpleTableName);
+    }
+
+    Path tablePath = new Path(tableDesc.getUri());
+    FileSystem fs = tablePath.getFileSystem(context.getConf());
+
+    PartitionMethodDesc partitionDesc = tableDesc.getPartitionMethod();
+    Schema partitionColumns = new Schema();
+    for (Column column : partitionDesc.getExpressionSchema().getRootColumns()) {
+      partitionColumns.addColumn(column);
+    }
+
+    // Get the array of path filter, accepting all partition paths.
+    PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
+
+    // loop from one to the number of partition columns
+    Path [] filteredPaths = PartitionedTableRewriter.toPathArray(fs.listStatus(tablePath, filters[0]));
+
+    // Get all file status matched to a ith level path filter.
+    for (int i = 1; i < partitionColumns.size(); i++) {
+      filteredPaths = PartitionedTableRewriter.toPathArray(fs.listStatus(filteredPaths, filters[i]));
+    }
+
+    int partitionCount = 0;
+    for(Path filteredPath : filteredPaths) {
+      String partitionPath = filteredPath.toString();
+      int startIndex = partitionPath.indexOf(simpleTableName);
+      String partitionName = partitionPath.substring(startIndex + simpleTableName.length() + 1, partitionPath.length());
+      // TODO: check partition --> add partition
+      partitionCount++;
+    }
+
+    LOG.info("Added partition directories: " + partitionCount);
   }
 
   private boolean existColumnName(String tableName, String columnName) {
