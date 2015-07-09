@@ -50,7 +50,7 @@ public class TestTaskExecutor {
   private NodeResourceManager resourceManager;
   private NodeStatusUpdater statusUpdater;
   private TaskManager taskManager;
-  private TaskExecutor taskExecutor;
+  private MyTaskExecutor taskExecutor;
   private AsyncDispatcher dispatcher;
   private AsyncDispatcher taskDispatcher;
   private TajoWorker.WorkerContext workerContext;
@@ -102,7 +102,7 @@ public class TestTaskExecutor {
     barrier = new Semaphore(0);
     resourceManagerBarrier = new Semaphore(0);
     taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext);
-    taskExecutor = new TaskExecutor(barrier, workerContext);
+    taskExecutor = new MyTaskExecutor(barrier, workerContext);
     resourceManager = new MockNodeResourceManager(resourceManagerBarrier, dispatcher, workerContext);
     statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext);
 
@@ -192,11 +192,11 @@ public class TestTaskExecutor {
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
   }
 
-  class TaskExecutor extends MockTaskExecutor {
+  class MyTaskExecutor extends MockTaskExecutor {
     int completeTasks;
     AtomicBoolean throwException = new AtomicBoolean();
 
-    public TaskExecutor(Semaphore barrier, TajoWorker.WorkerContext workerContext) {
+    public MyTaskExecutor(Semaphore barrier, TajoWorker.WorkerContext workerContext) {
       super(barrier, workerContext);
     }
 

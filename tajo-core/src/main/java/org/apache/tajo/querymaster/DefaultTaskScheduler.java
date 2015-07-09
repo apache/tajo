@@ -292,8 +292,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           schedulingThread.wait(500);
         }
       } else {
-        synchronized (schedulingThread){
-          schedulingThread.wait(50);
+        if(responseProto.getResourceCount() == 0) {
+          synchronized (schedulingThread){
+            schedulingThread.wait(50);
+          }
         }
       }
     } catch (Throwable e) {

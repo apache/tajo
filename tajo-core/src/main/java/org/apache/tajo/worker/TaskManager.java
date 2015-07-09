@@ -186,8 +186,9 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
           }
           getTaskExecutor().handle(taskStartEvent);
         } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
           getTaskExecutor().releaseResource(taskStartEvent.getTaskAttemptId());
+          getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
+              .handle(new ExecutionBlockErrorEvent(taskStartEvent.getExecutionBlockId(), e));
         }
         break;
       }
@@ -215,6 +216,17 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
         }
         workerContext.cleanup(queryStopEvent.getQueryId().toString());
         break;
+      }
+      case EB_FAIL: {
+        ExecutionBlockErrorEvent errorEvent = TUtil.checkTypeAndGet(event, ExecutionBlockErrorEvent.class);
+        LOG.error(errorEvent.getError().getMessage(), errorEvent.getError());
+        ExecutionBlockContext context = executionBlockContextMap.remove(errorEvent.getExecutionBlockId());
+
+        if(context != null) {
+          context.getSharedResource().releaseBroadcastCache(context.getExecutionBlockId());
+          getWorkerContext().getTaskHistoryWriter().flushTaskHistories();
+          context.stop();
+        }
       }
     }
   }

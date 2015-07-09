@@ -40,6 +40,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.worker.event.ExecutionBlockErrorEvent;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -257,7 +258,15 @@ public class ExecutionBlockContext {
         .setId(taskAttemptId.getProto())
         .setErrorMessage(message);
 
-    getStub().fatalError(null, builder.build(), NullCallback.get());
+    try {
+      //If QueryMaster does not responding, current execution block should be stop
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+      getStub().fatalError(callFuture.getController(), builder.build(), callFuture);
+      callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
+          .handle(new ExecutionBlockErrorEvent(taskAttemptId.getTaskId().getExecutionBlockId(), e));
+    }
   }
 
   public TajoWorker.WorkerContext getWorkerContext(){

@@ -68,6 +68,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     super(SimpleScheduler.class.getName());
     this.masterContext = context;
     this.rmContext = context.getResourceManager().getRMContext();
+    //Copy default array capacity from PriorityBlockingQueue.
     this.queryQueue = new PriorityBlockingQueue<QuerySchedulingInfo>(11, COMPARATOR);
     this.queryProcessor = new Thread(new QueryProcessor());
   }
@@ -127,7 +128,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     //find idle node for QM
     List<Integer> idleNode = Lists.newArrayList();
     int containers = 1;
-    for (Worker worker : getRMContext().getWorkers().values()) {
+    ArrayList<Worker> workers = new ArrayList<Worker>();
+    workers.addAll(getRMContext().getWorkers().values());
+
+    Collections.shuffle(workers);
+    for (Worker worker : workers) {
       if (worker.getNumRunningQueryMaster() == 0 && NodeResources.fitsIn(qmResource, worker.getAvailableResource())) {
         idleNode.add(worker.getWorkerId());
       }
@@ -135,7 +140,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       if (idleNode.size() > containers * 3) break;
     }
 
-    Collections.shuffle(idleNode);
     QueryCoordinatorProtocol.NodeResourceRequestProto.Builder builder =
         QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
 
