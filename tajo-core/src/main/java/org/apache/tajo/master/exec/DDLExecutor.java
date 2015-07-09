@@ -384,7 +384,6 @@ public class DDLExecutor {
    */
   public void alterTable(TajoMaster.MasterContext context, final QueryContext queryContext,
                          final AlterTableNode alterTable) throws IOException {
-
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
 
