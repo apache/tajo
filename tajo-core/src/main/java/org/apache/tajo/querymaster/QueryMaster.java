@@ -72,7 +72,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private Map<QueryId, QueryMasterTask> queryMasterTasks = Maps.newConcurrentMap();
 
-  private final LRUMap finishedQueryMasterTasksCache = new LRUMap(HistoryReader.DEFAULT_PAGE_SIZE);
+  private final LRUMap
+      finishedQueryMasterTasksCache = new LRUMap(HistoryReader.DEFAULT_PAGE_SIZE);
 
   private ClientSessionTimeoutCheckThread clientSessionTimeoutCheckThread;
 
@@ -451,26 +452,24 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     private void cleanExpiredFinishedQueryMasterTask(long expireTime) {
-      synchronized(finishedQueryMasterTasksCache) {
-        List<QueryId> expiredQueryIds = new ArrayList<QueryId>();
-        for(Object key: finishedQueryMasterTasksCache.keySet()) {
-          QueryId queryId = (QueryId) key;
+      List<QueryId> expiredQueryIds = new ArrayList<QueryId>();
+      for(Object key: new ArrayList<Object>(finishedQueryMasterTasksCache.keySet())) {
+        QueryId queryId = (QueryId) key;
           /* If a query are abnormal termination, the finished time will be zero. */
-          QueryMasterTask queryMasterTask = (QueryMasterTask) finishedQueryMasterTasksCache.get(queryId);
-          long finishedTime = queryMasterTask.getStartTime();
-          Query query = queryMasterTask.getQuery();
-          if (query != null && query.getFinishTime() > 0) {
-            finishedTime = query.getFinishTime();
-          }
-
-          if(finishedTime < expireTime) {
-            expiredQueryIds.add(queryId);
-          }
+        QueryMasterTask queryMasterTask = (QueryMasterTask) finishedQueryMasterTasksCache.get(queryId);
+        long finishedTime = queryMasterTask.getStartTime();
+        Query query = queryMasterTask.getQuery();
+        if (query != null && query.getFinishTime() > 0) {
+          finishedTime = query.getFinishTime();
         }
 
-        for(QueryId eachId: expiredQueryIds) {
-          finishedQueryMasterTasksCache.remove(eachId);
+        if(finishedTime < expireTime) {
+          expiredQueryIds.add(queryId);
         }
+      }
+
+      for(QueryId eachId: expiredQueryIds) {
+        finishedQueryMasterTasksCache.remove(eachId);
       }
     }
   }

@@ -288,16 +288,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         taskRequests.handle(taskRequestEvent);
       }
 
-      if(responseProto.getResourceCount() == 0) {
-        if(remainingScheduledObjectNum() == 0) {
-          // all task is assigned, wait for stopping message
-          synchronized (schedulingThread){
-            schedulingThread.wait(500);
-          }
-        } else {
-          synchronized (schedulingThread){
-            schedulingThread.wait(50);
-          }
+      if(remainingScheduledObjectNum() == 0) {
+        // all task is assigned, wait for stopping message
+        synchronized (schedulingThread){
+          schedulingThread.wait(500);
+        }
+      } else {
+        synchronized (schedulingThread){
+          schedulingThread.wait(50);
         }
       }
     } catch (Throwable e) {
