@@ -2091,6 +2091,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
         }
       }
     }
+    memoryManager.addedRow();
   }
 
   @Override
