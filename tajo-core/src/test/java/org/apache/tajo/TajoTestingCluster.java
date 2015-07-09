@@ -147,9 +147,6 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM, 2);
     conf.setIntVar(ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
 
-    // Resource allocator
-    conf.setIntVar(ConfVars.$QUERY_EXECUTE_PARALLEL_MAX, 10);
-
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
 

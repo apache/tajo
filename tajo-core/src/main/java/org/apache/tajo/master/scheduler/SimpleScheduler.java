@@ -18,8 +18,10 @@
 
 package org.apache.tajo.master.scheduler;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -64,13 +66,18 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   private final Thread queryProcessor;
   private TajoConf tajoConf;
 
-  public SimpleScheduler(TajoMaster.MasterContext context) {
+  @VisibleForTesting
+  public SimpleScheduler(TajoMaster.MasterContext context, TajoRMContext rmContext) {
     super(SimpleScheduler.class.getName());
     this.masterContext = context;
-    this.rmContext = context.getResourceManager().getRMContext();
+    this.rmContext = rmContext;
     //Copy default array capacity from PriorityBlockingQueue.
     this.queryQueue = new PriorityBlockingQueue<QuerySchedulingInfo>(11, COMPARATOR);
     this.queryProcessor = new Thread(new QueryProcessor());
+  }
+
+  public SimpleScheduler(TajoMaster.MasterContext context) {
+    this(context, context.getResourceManager().getRMContext());
   }
 
   private void initScheduler(TajoConf conf) {
@@ -131,15 +138,15 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     int qmMemory = tajoConf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
     NodeResource qmResource = NodeResources.createResource(qmMemory);
 
-    //find idle node for QM
-    List<Integer> idleNode = Lists.newArrayList();
-    int containers = 1;
-    ArrayList<Worker> workers = new ArrayList<Worker>();
-    workers.addAll(getRMContext().getWorkers().values());
 
-    Collections.shuffle(workers);
-    for (Worker worker : workers) {
-      if (worker.getNumRunningQueryMaster() == 0 && NodeResources.fitsIn(qmResource, worker.getAvailableResource())) {
+    int containers = 1;
+    Set<Integer> assignedQMNodes = Sets.newHashSet(assignedQueryMasterMap.values());
+    List<Integer> idleNode = Lists.newArrayList();
+
+    for (Worker worker : getRMContext().getWorkers().values()) {
+
+      //find idle node for QM
+      if (!assignedQMNodes.contains(worker.getWorkerId())) {
         idleNode.add(worker.getWorkerId());
       }
 
@@ -181,6 +188,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
     if (request.getCandidateNodesCount() > 0) {
       workers.addAll(request.getCandidateNodesList());
+      Collections.shuffle(workers);
     }
 
     int requiredContainers = request.getNumContainers();
@@ -190,7 +198,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     // reserve resource in random workers
     if (reservedResources.size() < requiredContainers) {
       LinkedList<Integer> randomWorkers = new LinkedList<Integer>(getRMContext().getWorkers().keySet());
-      randomWorkers.removeAll(workers);
       Collections.shuffle(randomWorkers);
 
       reservedResources.addAll(reserveClusterResource(
@@ -281,6 +288,10 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     pendingQueryMap.put(schedulingInfo.getQueryId(), schedulingInfo);
   }
 
+  protected boolean startQuery(QueryId queryId, AllocationResourceProto allocation) {
+   return masterContext.getQueryJobManager().startQueryJob(queryId, allocation);
+  }
+
   public void stopQuery(QueryId queryId) {
     if(pendingQueryMap.containsKey(queryId)){
       queryQueue.remove(pendingQueryMap.remove(queryId));
@@ -305,6 +316,10 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       return rmContext.getWorkers().get(assignedQueryMasterMap.get(queryId)).getConnectionInfo();
     }
     return null;
+  }
+
+  protected QueryInfo getQueryInfo(QueryId queryId) {
+    return masterContext.getQueryJobManager().getQueryInProgress(queryId).getQueryInfo();
   }
 
   private final class QueryProcessor implements Runnable {
@@ -338,8 +353,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
             }
           }
         } else {
-          QueryInfo queryInfo =
-              masterContext.getQueryJobManager().getQueryInProgress(query.getQueryId()).getQueryInfo();
+          QueryInfo queryInfo = getQueryInfo(query.getQueryId());
           List<QueryCoordinatorProtocol.AllocationResourceProto> allocation =
               reserve(query.getQueryId(), createQMResourceRequest(queryInfo));
 
@@ -356,7 +370,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           } else {
             try {
               //if QM resource can't be allocated to a node, it should retry
-              boolean started = masterContext.getQueryJobManager().startQueryJob(query.getQueryId(), allocation.get(0));
+              boolean started = startQuery(query.getQueryId(), allocation.get(0));
               if(!started) {
                 queryQueue.put(query);
               } else {
