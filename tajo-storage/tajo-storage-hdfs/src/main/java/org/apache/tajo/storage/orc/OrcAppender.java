@@ -47,16 +47,14 @@ public class OrcAppender extends FileAppender {
 
   @Override
   public void init() throws IOException {
-    writer = OrcFile.createWriter(workDir.getFileSystem(conf),
-      path, conf,
+    writer = OrcFile.createWriter(workDir.getFileSystem(conf), path, conf,
       ObjectInspectorFactory.buildStructObjectInspector(schema),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_STRIPE_SIZE,
-        StorageConstants.DEFAULT_ORC_STRIPE_SIZE)), // default 1000
-      getCompressionKind(), // default 'none'
+      Long.parseLong(meta.getOption(StorageConstants.ORC_STRIPE_SIZE,
+        StorageConstants.DEFAULT_ORC_STRIPE_SIZE)), getCompressionKind(),
       Integer.parseInt(meta.getOption(StorageConstants.ORC_BUFFER_SIZE,
-        StorageConstants.DEFAULT_ORC_BUFFER_SIZE)), // default 1024 bytes
+        StorageConstants.DEFAULT_ORC_BUFFER_SIZE)),
       Integer.parseInt(meta.getOption(StorageConstants.ORC_ROW_INDEX_STRIDE,
-        StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE))); // default 1000
+        StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)));
 
     if (enabledStats) {
       this.stats = new TableStatistics(schema);
