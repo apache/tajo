@@ -61,7 +61,6 @@ public class TestSystemMetrics {
 
     out.write(("test-file-group.file.filename=" + metricsOutputFile.toUri().getPath() + "\n").getBytes());
     out.write("test-file-group.file.period=5\n".getBytes());
-
     out.close();
   }
 
