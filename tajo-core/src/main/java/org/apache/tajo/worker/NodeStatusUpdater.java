@@ -81,7 +81,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     this.workerContext.getNodeResourceManager().getDispatcher().register(NodeStatusEvent.EventType.class, this);
     this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
-
+    this.updaterThread.setName("NodeStatusUpdater");
     super.serviceInit(conf);
   }
 
@@ -102,10 +102,9 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   @Override
   public void serviceStop() throws Exception {
     this.isStopped = true;
-
     synchronized (updaterThread) {
       updaterThread.interrupt();
-      updaterThread.join();
+      updaterThread.join(100);
     }
     super.serviceStop();
     LOG.info("NodeStatusUpdater stopped.");

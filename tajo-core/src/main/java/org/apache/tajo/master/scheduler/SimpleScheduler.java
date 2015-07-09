@@ -112,6 +112,12 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   }
 
   @Override
+  protected void serviceStop() throws Exception {
+    this.isStopped = true;
+    super.serviceStop();
+  }
+
+  @Override
   public int getRunningQuery() {
     return assignedQueryMasterMap.size();
   }
