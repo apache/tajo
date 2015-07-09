@@ -40,6 +40,8 @@ public class DateTimeUtil {
   /** maximum possible number of fields in a date * string */
   private static int MAXDATEFIELDS = 25;
 
+  public final static int DAYS_FROM_JULIAN_TO_EPOCH = 2440588;
+
   public static boolean isJulianCalendar(int year, int month, int day) {
     return year <= 1752 && month <= 9 && day < 14;
   }

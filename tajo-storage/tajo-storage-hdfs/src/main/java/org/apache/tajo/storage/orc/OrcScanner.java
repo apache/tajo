@@ -64,6 +64,7 @@ public class OrcScanner extends FileScanner {
       case INT1: case INT2: case INT4: case INT8:
       case UINT1: case UINT2: case UINT4: case UINT8:
       case TIMESTAMP:
+      case DATE:
         return new LongVector();
 
       case FLOAT4:
@@ -212,6 +213,9 @@ public class OrcScanner extends FileScanner {
 
       case TIMESTAMP:
         return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(((LongVector) vector).vector[currentPosInBatch]));
+
+      case DATE:
+        return new DateDatum((int)((LongVector)vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
 
       default:
         throw new UnsupportedException("This data type is not supported currently: "+type.toString());
