@@ -29,6 +29,10 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1672: Removing rest api to create table
+    POST /databases/{database-name}/tables interface
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1638: Remove offset parameter from rest api result/{cacheId}.
     (Contributed by DaeMyung Kang, Committed by jaehwa)
 
