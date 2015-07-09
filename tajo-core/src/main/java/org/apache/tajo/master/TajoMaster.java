@@ -255,15 +255,15 @@ public class TajoMaster extends CompositeService {
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
     this.tajoRootPath = TajoConf.getTajoRootDir(systemConf);
-    LOG.info("Tajo Root Directory: " + tajoRootPath);
 
     // Check and Create Tajo root dir
     this.defaultFS = tajoRootPath.getFileSystem(systemConf);
     systemConf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, defaultFS.getUri().toString());
-    LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
     if (!defaultFS.exists(tajoRootPath)) {
       defaultFS.mkdirs(tajoRootPath, new FsPermission(TAJO_ROOT_DIR_PERMISSION));
       LOG.info("Tajo Root Directory '" + tajoRootPath + "' is created.");
+    } else {
+      LOG.info("FileSystem (" + this.defaultFS.getUri() + ") is initialized.");
     }
 
     // Check and Create system and system resource dir
@@ -280,19 +280,21 @@ public class TajoMaster extends CompositeService {
 
     // Get Warehouse dir
     this.wareHousePath = TajoConf.getWarehouseDir(systemConf);
-    LOG.info("Tajo Warehouse dir: " + wareHousePath);
 
     // Check and Create Warehouse dir
     if (!defaultFS.exists(wareHousePath)) {
       defaultFS.mkdirs(wareHousePath, new FsPermission(WAREHOUSE_DIR_PERMISSION));
       LOG.info("Warehouse dir '" + wareHousePath + "' is created");
+    } else {
+      LOG.info("Tajo Warehouse dir: " + wareHousePath);
     }
 
     Path stagingPath = TajoConf.getDefaultRootStagingDir(systemConf);
-    LOG.info("Staging dir: " + wareHousePath);
     if (!defaultFS.exists(stagingPath)) {
       defaultFS.mkdirs(stagingPath, new FsPermission(STAGING_ROOTDIR_PERMISSION));
       LOG.info("Staging dir '" + stagingPath + "' is created");
+    } else {
+      LOG.info("Staging dir: " + wareHousePath);
     }
   }
   
