@@ -22,6 +22,7 @@
 package org.apache.tajo.plan.logical;
 
 
+
 /**
  * This indicates a logical node type.
  */
@@ -55,6 +56,7 @@ public enum NodeType {
   DROP_TABLE(DropTableNode.class),
   ALTER_TABLESPACE (AlterTablespaceNode.class),
   ALTER_TABLE (AlterTableNode.class),
+  MSCK_TABLE (MsckTableNode.class),
   TRUNCATE_TABLE (TruncateTableNode.class);
 
   private final Class<? extends LogicalNode> baseClass;

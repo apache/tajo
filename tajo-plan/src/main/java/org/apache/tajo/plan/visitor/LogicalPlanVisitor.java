@@ -104,4 +104,7 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
 
   RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, TruncateTableNode node,
                          Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitMsckTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, MsckTableNode node,
+                            Stack<LogicalNode> stack) throws PlanningException;
 }

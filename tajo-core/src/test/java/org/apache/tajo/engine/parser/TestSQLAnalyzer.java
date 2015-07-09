@@ -524,6 +524,16 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testMsckRepairTable() throws IOException {
+    String sql = FileUtil.readTextFileFromResource("queries/default/msck_repair_table.sql");
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.MsckTable, expr.getType());
+    MsckTable msck = (MsckTable)expr;
+    assertEquals(msck.getMsckTableOpType(), MsckTableOpType.REPAIR_TABLE);
+    assertEquals(msck.getTableName(), "table1");
+  }
+
+  @Test
   public void testTableSubQuery1() throws IOException {
     String sql = FileUtil.readTextFileFromResource("queries/default/table_subquery1.sql");
     parseQuery(sql);

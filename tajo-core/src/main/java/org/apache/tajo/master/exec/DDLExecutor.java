@@ -70,8 +70,6 @@ public class DDLExecutor {
       AlterTablespaceNode alterTablespace = (AlterTablespaceNode) root;
       alterTablespace(context, queryContext, alterTablespace);
       return true;
-
-
     case CREATE_DATABASE:
       CreateDatabaseNode createDatabase = (CreateDatabaseNode) root;
       createDatabase(queryContext, createDatabase.getDatabaseName(), null, createDatabase.isIfNotExists());
@@ -80,8 +78,6 @@ public class DDLExecutor {
       DropDatabaseNode dropDatabaseNode = (DropDatabaseNode) root;
       dropDatabase(queryContext, dropDatabaseNode.getDatabaseName(), dropDatabaseNode.isIfExists());
       return true;
-
-
     case CREATE_TABLE:
       CreateTableNode createTable = (CreateTableNode) root;
       createTable(queryContext, createTable, createTable.isIfNotExists());
@@ -94,12 +90,14 @@ public class DDLExecutor {
       TruncateTableNode truncateTable = (TruncateTableNode) root;
       truncateTable(queryContext, truncateTable);
       return true;
-
     case ALTER_TABLE:
       AlterTableNode alterTable = (AlterTableNode) root;
       alterTable(context, queryContext, alterTable);
       return true;
-
+    case MSCK_TABLE:
+      MsckTableNode msckTableNode = (MsckTableNode) root;
+      msckTable(context, queryContext, msckTableNode);
+      return true;
     default:
       throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -449,6 +447,34 @@ public class DDLExecutor {
     default:
       //TODO
     }
+  }
+
+  public void msckTable(TajoMaster.MasterContext context, final QueryContext queryContext,
+                         final MsckTableNode msckTable) throws IOException {
+
+    final CatalogService catalog = context.getCatalog();
+    final String tableName = msckTable.getTableName();
+
+    String databaseName;
+    String simpleTableName;
+    if (CatalogUtil.isFQTableName(tableName)) {
+      String[] split = CatalogUtil.splitFQTableName(tableName);
+      databaseName = split[0];
+      simpleTableName = split[1];
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleTableName = tableName;
+    }
+    final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+
+    if (!catalog.existsTable(databaseName, simpleTableName)) {
+      throw new NoSuchTableException(qualifiedName);
+    }
+
+    TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
+    Path tablePath = new Path(tableDesc.getUri());
+
+    // TODO: Implement to make directories recursively comparing partition column name.
   }
 
   private boolean existColumnName(String tableName, String columnName) {

@@ -1935,4 +1935,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return null;
     }
   }
+
+  @Override
+  public Expr visitMsck_table_statement(@NotNull Msck_table_statementContext ctx) {
+    MsckTable msck = new MsckTable(ctx.table_name().getText());
+
+    for (int i = 1; i < ctx.getChildCount(); i++) {
+      if (ctx.getChild(i) instanceof TerminalNode) {
+        if (((TerminalNode) ctx.getChild(i)).getSymbol().getType() == REPAIR) {
+          msck.setMsckTableOpType(MsckTableOpType.REPAIR_TABLE);
+        }
+      }
+    }
+    return msck;
+  }
 }

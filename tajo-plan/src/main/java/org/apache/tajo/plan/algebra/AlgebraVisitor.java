@@ -53,6 +53,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitAlterTablespace(CONTEXT ctx, Stack<Expr> stack, AlterTablespace expr) throws PlanningException;
   RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException;
   RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws PlanningException;
+  RESULT visitMsckTable(CONTEXT ctx, Stack<Expr> stack, MsckTable expr) throws PlanningException;
 
     // Insert or Update
   RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException;

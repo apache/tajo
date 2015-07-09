@@ -125,6 +125,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case TruncateTable:
       current = visitTruncateTable(ctx, stack, (TruncateTable)expr);
       break;
+    case MsckTable:
+      current = visitMsckTable(ctx, stack, (MsckTable)expr);
+      break;
 
     case Insert:
       current = visitInsert(ctx, stack, (Insert) expr);
@@ -484,6 +487,12 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws PlanningException {
     return null;
   }
+
+  @Override
+  public RESULT visitMsckTable(CONTEXT ctx, Stack<Expr> stack, MsckTable expr) throws PlanningException {
+    return null;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -27,6 +27,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.algebra.MsckTableOpType;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -1229,5 +1230,24 @@ public class TestLogicalPlanner {
     LogicalRootNode root = plan.getRootBlock().getRoot();
     assertEquals(NodeType.INSERT, root.getChild().getType());
     return root.getChild();
+  }
+
+  @Test
+  public final void testMsckRepairTable() throws PlanningException {
+    QueryContext qc = createQueryContext();
+
+    String sql = "MSCK REPAIR TABLE table1";
+    Expr expr = sqlAnalyzer.parse(sql);
+    LogicalPlan rootNode = planner.createPlan(qc, expr);
+    LogicalNode plan = rootNode.getRootBlock().getRoot();
+    testJsonSerDerObject(plan);
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(NodeType.MSCK_TABLE, root.getChild().getType());
+
+    MsckTableNode msckNode = root.getChild();
+
+    assertEquals(msckNode.getMsckTableOpType(), MsckTableOpType.REPAIR_TABLE);
+    assertEquals(msckNode.getTableName(), "table1");
   }
 }
