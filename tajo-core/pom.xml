@@ -583,9 +583,8 @@
               </execution>
             </executions>
             <configuration combine.self="override">
-              <parallel>methods</parallel>
-              <threadCountClasses>1</threadCountClasses>
-              <threadCountMethods>${maven.fork.count}</threadCountMethods>
+              <forkCount>${maven.fork.count}</forkCount>
+              <reuseForks>true</reuseForks>
               <trimStackTrace>false</trimStackTrace>
               <argLine>-Xms512m -Xmx1200m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
               <useSystemClassLoader>true</useSystemClassLoader>
