@@ -76,11 +76,11 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   private static PlanProto.LogicalNode.Builder createNodeBuilder(SerializeContext context, LogicalNode node) {
     int selfId;
-    if (context.idMap.containsKey(node)) {
-      selfId = context.idMap.get(node);
+    if (context.idMap.containsKey(node.getPID())) {
+      selfId = context.idMap.get(node.getPID());
     } else {
       selfId = context.seqId++;
-      context.idMap.put(node, selfId);
+      context.idMap.put(node.getPID(), selfId);
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = PlanProto.LogicalNode.newBuilder();
@@ -100,7 +100,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   public static class SerializeContext {
     private int seqId = 0;
-    private Map<LogicalNode, Integer> idMap = Maps.newHashMap();
+    private Map<Integer, Integer> idMap = Maps.newHashMap(); // map for PID and visit sequence
     private LogicalNodeTree.Builder treeBuilder = LogicalNodeTree.newBuilder();
   }
 
@@ -485,18 +485,16 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   public LogicalNode visitCreateTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitCreateTable(context, plan, block, node, stack);
-
     int [] childIds = registerGetChildIds(context, node);
 
     PlanProto.PersistentStoreNode.Builder persistentStoreBuilder = buildPersistentStoreBuilder(node, childIds);
     PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = buildStoreTableNodeSpec(node);
 
     PlanProto.CreateTableNodeSpec.Builder createTableBuilder = PlanProto.CreateTableNodeSpec.newBuilder();
-    createTableBuilder.setSchema(node.getTableSchema().getProto());
-    createTableBuilder.setExternal(node.isExternal());
-    if (node.isExternal() && node.hasPath()) {
-      createTableBuilder.setPath(node.getPath().toString());
+    if (node.hasTableSpaceName()) {
+      createTableBuilder.setTablespaceName(node.getTableSpaceName());
     }
+    createTableBuilder.setExternal(node.isExternal());
     createTableBuilder.setIfNotExists(node.isIfNotExists());
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
@@ -606,15 +604,12 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
     PlanProto.InsertNodeSpec.Builder insertNodeSpec = PlanProto.InsertNodeSpec.newBuilder();
     insertNodeSpec.setOverwrite(node.isOverwrite());
-    insertNodeSpec.setTableSchema(node.getTableSchema().getProto());
+
     if (node.hasProjectedSchema()) {
       insertNodeSpec.setProjectedSchema(node.getProjectedSchema().getProto());
     }
     if (node.hasTargetSchema()) {
       insertNodeSpec.setTargetSchema(node.getTargetSchema().getProto());
-    }
-    if (node.hasPath()) {
-      insertNodeSpec.setPath(node.getPath().toString());
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
@@ -629,7 +624,10 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   private static PlanProto.PersistentStoreNode.Builder buildPersistentStoreBuilder(PersistentStoreNode node,
                                                                                    int [] childIds) {
     PlanProto.PersistentStoreNode.Builder persistentStoreBuilder = PlanProto.PersistentStoreNode.newBuilder();
-    persistentStoreBuilder.setChildSeq(childIds[0]);
+    if (childIds.length > 0) {
+      // Simple create table may not have any children. This should be improved at TAJO-1589.
+      persistentStoreBuilder.setChildSeq(childIds[0]);
+    }
     persistentStoreBuilder.setStorageType(node.getStorageType());
     if (node.hasOptions()) {
       persistentStoreBuilder.setTableProperties(node.getOptions().getProto());
@@ -639,11 +637,18 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   private static PlanProto.StoreTableNodeSpec.Builder buildStoreTableNodeSpec(StoreTableNode node) {
     PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = PlanProto.StoreTableNodeSpec.newBuilder();
-    if (node.hasPartition()) {
-      storeTableBuilder.setPartitionMethod(node.getPartitionMethod().getProto());
-    }
+
     if (node.hasTableName()) { // It will be false if node is for INSERT INTO LOCATION '...'
       storeTableBuilder.setTableName(node.getTableName());
+    }
+
+    if (node.hasUri()) {
+      storeTableBuilder.setUri(node.getUri().toString());
+    }
+    storeTableBuilder.setTableSchema(node.getTableSchema().getProto());
+
+    if (node.hasPartition()) {
+      storeTableBuilder.setPartitionMethod(node.getPartitionMethod().getProto());
     }
     return storeTableBuilder;
   }
@@ -719,8 +724,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   private int [] registerGetChildIds(SerializeContext context, LogicalNode node) {
     int [] childIds = new int[node.childNum()];
     for (int i = 0; i < node.childNum(); i++) {
-      if (context.idMap.containsKey(node.getChild(i))) {
-        childIds[i] = context.idMap.get(node.getChild(i));
+      if (node.getChild(i) != null && context.idMap.containsKey(node.getChild(i).getPID())) {
+        childIds[i] = context.idMap.get(node.getChild(i).getPID());
       } else {
         childIds[i] = context.seqId++;
       }

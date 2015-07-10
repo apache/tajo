@@ -60,8 +60,8 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TableSpaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
@@ -712,7 +712,7 @@ public class Stage implements EventHandler<StageEvent> {
    */
   private void finalizeStats() {
     TableStats[] statsArray;
-    if (block.hasUnion()) {
+    if (block.isUnionOnly()) {
       statsArray = computeStatFromUnionBlock(this);
     } else {
       statsArray = computeStatFromTasks();
@@ -784,7 +784,7 @@ public class Stage implements EventHandler<StageEvent> {
 
       try {
         // Union operator does not require actual query processing. It is performed logically.
-        if (execBlock.hasUnion()) {
+        if (execBlock.isUnionOnly()) {
           // Though union operator does not be processed at all, but it should handle the completion event.
           stage.complete();
           state = StageState.SUCCEEDED;
@@ -883,7 +883,7 @@ public class Stage implements EventHandler<StageEvent> {
       }
 
       // We assume this execution block the first stage of join if two or more tables are included in this block,
-      if (parent != null && parent.getScanNodes().length >= 2) {
+      if (parent != null && (parent.getNonBroadcastRelNum()) >= 2) {
         List<ExecutionBlock> childs = masterPlan.getChilds(parent);
 
         // for outer
@@ -990,6 +990,7 @@ public class Stage implements EventHandler<StageEvent> {
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock execBlock = stage.getBlock();
       if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
+        // Some execution blocks can have broadcast table even though they don't have any join nodes
         scheduleFragmentsForLeafQuery(stage);
       } else if (execBlock.getScanNodes().length > 1) { // Case 2: Join
         Repartitioner.scheduleFragmentsForJoinQuery(stage.schedulerContext, stage);
@@ -1083,18 +1084,18 @@ public class Stage implements EventHandler<StageEvent> {
       Collection<Fragment> fragments;
       TableMeta meta = table.getMeta();
 
+      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri()).get();
+
       // Depending on scanner node's type, it creates fragments. If scan is for
       // a partitioned table, It will creates lots fragments for all partitions.
       // Otherwise, it creates at least one fragments for a table, which may
       // span a number of blocks or possibly consists of a number of files.
+      //
+      // Also, we can ensure FileTableSpace if the type of ScanNode is PARTITIONS_SCAN.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        FileTablespace storageManager =
-            (FileTablespace) TableSpaceManager.getFileStorageManager(stage.getContext().getConf());
-        fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
+        fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table);
       } else {
-        Tablespace tablespace =
-            TableSpaceManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
         fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan);
       }
 

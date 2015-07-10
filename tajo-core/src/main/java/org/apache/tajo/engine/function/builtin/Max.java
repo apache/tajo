@@ -38,11 +38,11 @@ public abstract class Max extends AggFunction<Datum> {
     @Override
     public void eval(FunctionContext ctx, Tuple params) {
         MaxContext maxCtx = (MaxContext) ctx;
-        Datum datum = params.get(0);
-        if (datum.isNotNull()) {
-            if (maxCtx.max == null || maxCtx.max.compareTo(datum) < 0) {
-                maxCtx.max = datum;
-            }
+        if (!params.isBlankOrNull(0)) {
+          Datum datum = params.asDatum(0);
+          if (maxCtx.max == null || maxCtx.max.compareTo(datum) < 0) {
+            maxCtx.max = datum;
+          }
         }
     }
 

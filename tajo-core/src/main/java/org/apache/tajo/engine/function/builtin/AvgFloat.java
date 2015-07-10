@@ -44,9 +44,8 @@ public class AvgFloat extends AvgDouble {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    Datum datum = params.get(0);
-    if (datum.isNotNull()) {
-      avgCtx.sum += datum.asFloat4();
+    if (!params.isBlankOrNull(0)) {
+      avgCtx.sum += params.getFloat4(0);
       avgCtx.count++;
     }
   }

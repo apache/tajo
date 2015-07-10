@@ -46,7 +46,7 @@ public class BackendTestingUtil {
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)
       throws IOException {
-    FileTablespace sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
+    FileTablespace sm = TablespaceManager.getDefault();
     Appender appender;
 
     Path filePath = new Path(tablePath, "table.csv");

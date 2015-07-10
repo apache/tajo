@@ -5,15 +5,47 @@ Overview of Tajo Tables
 Overview
 ========
 
+Tablespaces
+===========
+
+Tablespaces is a physical location where files or data objects representing data rows can be stored. Once defined, a tablespace can be referred to by a name when creating a database or a table. Especially, it is very useful when a Tajo cluster instance should use heterogeneous storage systems such as HDFS, MySQL, and Oracle because each tablespace can be specified to use a different storage system. 
+
+Please refer to :doc:`/table_management/tablespaces` if you want to know more information about tablespaces.
+
 Managed Table
 ================
 
-.. todo::
+``CREATE TABLE`` statement with ``EXTERNAL`` keyword lets you create a table located in the warehouse directory specified by the configuration property ``tajo.warehouse.directory`` or ``${tajo.root}/warehouse`` by default. For example: 
+
+.. code-block:: sql
+
+ CREATE TABLE employee (
+  id int,
+  name text,
+  age
+ );
+
 
 External Table
 ================
 
-.. todo::
+``CREATE EXTERNAL TABLE`` statement lets you create a table located in a specify location so that Tajo does not use a default data warehouse location for the table. External tables are in common used if you already have data generated. LOCATION clause must be required for an external table. 
+
+.. code-block:: sql
+
+ CREATE EXTERNAL TABLE employee (
+  id int,
+  name text,
+  age
+ ) LOCATION 'hdfs://table/path';
+
+
+The location can be a directory located in HDFS, Amazon S3, HBase, or local file system (if a Tajo cluster runs in a single machine). URI examples are as follows:
+
+ * HDFS - ``hdfs://hostname:8020/table1``
+ * Amazon S3 - ``s3://bucket-name/table1``
+ * local file system - ``file:///dir/table1``
+ * Openstack Swift - ``swift://bucket-name/table1``
 
 Table Properties
 ================

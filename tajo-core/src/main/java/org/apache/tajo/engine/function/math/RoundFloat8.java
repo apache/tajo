@@ -56,15 +56,12 @@ public class RoundFloat8 extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    Datum roundDatum = params.get(1);
-
-    if(valueDatum instanceof NullDatum || roundDatum instanceof  NullDatum) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(1)) {
       return NullDatum.get();
     }
 
-    double value = valueDatum.asFloat8();
-    int rountPoint = roundDatum.asInt4();
+    double value = params.getFloat8(0);
+    int rountPoint = params.getInt4(1);
 
     if (Double.isNaN(value)) {
       throw new InvalidOperationException("value is not a number.");

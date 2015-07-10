@@ -8,5 +8,6 @@ In Tajo, a table is a logical view of one data sources. Logically, one table con
     :maxdepth: 1
 
     table_management/table_overview
+    table_management/tablespaces
     table_management/file_formats
     table_management/compression

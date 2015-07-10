@@ -33,9 +33,9 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -149,6 +149,7 @@ public class CSVFile {
         String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
             TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+        serde.init(schema);
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -163,12 +164,10 @@ public class CSVFile {
 
     @Override
     public void addTuple(Tuple tuple) throws IOException {
-      Datum datum;
       int rowBytes = 0;
 
       for (int i = 0; i < columnNum; i++) {
-        datum = tuple.get(i);
-        rowBytes += serde.serialize(schema.getColumn(i), datum, os, nullChars);
+        rowBytes += serde.serialize(i, tuple, os, nullChars);
 
         if(columnNum - 1 > i){
           os.write(delimiter);
@@ -176,7 +175,7 @@ public class CSVFile {
         }
         if (isShuffle) {
           // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, datum);
+          stats.analyzeField(i, tuple);
         }
       }
       os.write(LF);
@@ -358,6 +357,7 @@ public class CSVFile {
         String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
             TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+        serde.init(schema);
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -537,7 +537,8 @@ public class CSVFile {
     }
 
     @Override
-    public void setSearchCondition(Object expr) {
+    public void setFilter(EvalNode filter) {
+      throw new UnsupportedException();
     }
 
     @Override

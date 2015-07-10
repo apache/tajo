@@ -46,10 +46,9 @@ public class ToTimestampInt extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum value = params.get(0);
-    if (value instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
-    return DatumFactory.createTimestmpDatumWithUnixTime(value.asInt4());
+    return DatumFactory.createTimestmpDatumWithUnixTime(params.getInt4(0));
   }
 }

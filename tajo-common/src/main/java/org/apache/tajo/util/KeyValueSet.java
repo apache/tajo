@@ -21,7 +21,10 @@ package org.apache.tajo.util;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.ConfigKey;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
 
@@ -37,7 +40,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public static final String FALSE_STR = "false";
 
   @Expose private Map<String,String> keyVals;
-	
+
 	public KeyValueSet() {
     keyVals = TUtil.newHashMap();
 	}
@@ -46,23 +49,23 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     this();
     putAll(keyVals);
   }
-	
+
 	public KeyValueSet(KeyValueSetProto proto) {
     this.keyVals = TUtil.newHashMap();
     for(KeyValueProto keyval : proto.getKeyvalList()) {
       this.keyVals.put(keyval.getKey(), keyval.getValue());
     }
 	}
-	
+
 	public KeyValueSet(KeyValueSet keyValueSet) {
 	  this();
 	  this.keyVals.putAll(keyValueSet.keyVals);
 	}
-	
+
 	public static KeyValueSet create() {
 	  return new KeyValueSet();
 	}
-	
+
 	public static KeyValueSet create(KeyValueSet keyValueSet) {
     return new KeyValueSet(keyValueSet);
   }
@@ -112,6 +115,10 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     return get(key, null);
   }
 
+  public boolean isTrue(String key) {
+    return getBool(key, false);
+  }
+
   public void setBool(String key, boolean val) {
     set(key, val ? TRUE_STR : FALSE_STR);
   }
@@ -119,7 +126,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public boolean getBool(String key, Boolean defaultVal) {
     if (containsKey(key)) {
       String strVal = get(key, null);
-      return strVal != null ? strVal.equalsIgnoreCase(TRUE_STR) : false;
+      return strVal != null && strVal.equalsIgnoreCase(TRUE_STR);
     } else if (defaultVal != null) {
       return defaultVal;
     } else {
@@ -129,6 +136,16 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 
   public boolean getBool(String key) {
     return getBool(key, null);
+  }
+
+  public boolean getBool(ConfigKey key) {
+    String keyName = key.keyname();
+    if (key instanceof SessionVars) {
+      return getBool(keyName, ((SessionVars) key).getConfVars().defaultBoolVal);
+    } else if (key instanceof TajoConf.ConfVars) {
+      return getBool(keyName, ((TajoConf.ConfVars) key).defaultBoolVal);
+    }
+    return getBool(keyName);
   }
 
   public void setInt(String key, int val) {
@@ -150,6 +167,16 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     return getInt(key, null);
   }
 
+  public int getInt(ConfigKey key) {
+    String keyName = key.keyname();
+    if (key instanceof SessionVars) {
+      return getInt(keyName, ((SessionVars) key).getConfVars().defaultIntVal);
+    } else if (key instanceof TajoConf.ConfVars) {
+      return getInt(keyName, ((TajoConf.ConfVars) key).defaultIntVal);
+    }
+    return getInt(keyName);
+  }
+
   public void setLong(String key, long val) {
     set(key, String.valueOf(val));
   }
@@ -169,6 +196,16 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     return getLong(key, null);
   }
 
+  public long getLong(ConfigKey key) {
+    String keyName = key.keyname();
+    if (key instanceof SessionVars) {
+      return getLong(keyName, ((SessionVars) key).getConfVars().defaultLongVal);
+    } else if (key instanceof TajoConf.ConfVars) {
+      return getLong(keyName, ((TajoConf.ConfVars) key).defaultLongVal);
+    }
+    return getLong(keyName);
+  }
+
   public void setFloat(String key, float val) {
     set(key, String.valueOf(val));
   }
@@ -185,7 +222,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
         throw new IllegalArgumentException("No such a config key: "  + key);
       }
     } else if (defaultVal != null) {
-      return defaultVal.floatValue();
+      return defaultVal;
     } else {
       throw new IllegalArgumentException("No such a config key: "  + key);
     }
@@ -194,7 +231,17 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public float getFloat(String key) {
     return getFloat(key, null);
   }
-	
+
+  public float getFloat(ConfigKey key) {
+    String keyName = key.keyname();
+    if (key instanceof SessionVars) {
+      return getFloat(keyName, ((SessionVars) key).getConfVars().defaultFloatVal);
+    } else if (key instanceof TajoConf.ConfVars) {
+      return getFloat(keyName, ((TajoConf.ConfVars) key).defaultFloatVal);
+    }
+    return getFloat(keyName);
+  }
+
 	public String remove(String key) {
 		return keyVals.remove(key);
 	}

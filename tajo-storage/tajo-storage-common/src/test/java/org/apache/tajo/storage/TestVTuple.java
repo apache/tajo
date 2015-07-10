@@ -121,34 +121,15 @@ public class TestVTuple {
 	}
 
   @Test
-  public void testPutTuple() {
-    Tuple t1 = new VTuple(5);
-
-    t1.put(0, DatumFactory.createInt4(1));
-    t1.put(1, DatumFactory.createInt4(2));
-    t1.put(2, DatumFactory.createInt4(3));
-
-    Tuple t2 = new VTuple(2);
-    t2.put(0, DatumFactory.createInt4(4));
-    t2.put(1, DatumFactory.createInt4(5));
-
-    t1.put(3, t2);
-
-    for (int i = 0; i < 5; i++) {
-      assertEquals(i+1, t1.get(i).asInt4());
-    }
-  }
-
-  @Test
   public void testClone() throws CloneNotSupportedException {
-    Tuple t1 = new VTuple(5);
+    VTuple t1 = new VTuple(5);
 
     t1.put(0, DatumFactory.createInt4(1));
     t1.put(1, DatumFactory.createInt4(2));
     t1.put(3, DatumFactory.createInt4(2));
     t1.put(4, DatumFactory.createText("str"));
 
-    VTuple t2 = (VTuple) t1.clone();
+    VTuple t2 = t1.clone();
     assertNotSame(t1, t2);
     assertEquals(t1, t2);
 

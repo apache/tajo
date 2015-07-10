@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.function.python;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
@@ -32,8 +31,8 @@ import java.net.URI;
  */
 public abstract class TajoScriptEngine {
 
-  protected boolean intermediatePhase = false;
-  protected boolean finalPhase = false;
+  protected boolean firstPhase = false;
+  protected boolean lastPhase = false;
 
   /**
    * Open a stream load a script locally or in the classpath
@@ -92,11 +91,11 @@ public abstract class TajoScriptEngine {
 
   public abstract Datum getFinalResult(FunctionContext functionContext);
 
-  public void setIntermediatePhase(boolean flag) {
-    this.intermediatePhase = flag;
+  public void setFirstPhase(boolean flag) {
+    this.firstPhase = flag;
   }
 
-  public void setFinalPhase(boolean flag) {
-    this.finalPhase = flag;
+  public void setLastPhase(boolean flag) {
+    this.lastPhase = flag;
   }
 }

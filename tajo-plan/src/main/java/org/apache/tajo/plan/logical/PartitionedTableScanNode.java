@@ -63,7 +63,7 @@ public class PartitionedTableScanNode extends ScanNode {
     if (hasQual()) {
       sb.append(", filter=").append(qual);
     }
-    sb.append(", path=").append(getTableDesc().getPath()).append(")");
+    sb.append(", uri=").append(getTableDesc().getUri()).append(")");
 	  return sb.toString();
 	}
 

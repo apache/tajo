@@ -54,12 +54,11 @@ public class ToBin extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum datum = params.get(0);
-    if(datum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    return  DatumFactory.createText(Long.toBinaryString(datum.asInt8()));
+    return DatumFactory.createText(Long.toBinaryString(params.getInt8(0)));
   }
 
 }

@@ -258,17 +258,7 @@ public class QueryClientImpl implements QueryClient {
       return createNullResultSet(queryId);
     }
 
-    QueryStatus status = getQueryStatus(queryId);
-
-    while(status != null && !TajoClientUtil.isQueryComplete(status.getState())) {
-      try {
-        Thread.sleep(500);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-
-      status = getQueryStatus(queryId);
-    }
+    QueryStatus status = TajoClientUtil.waitCompletion(this, queryId);
 
     if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
       if (status.hasResult()) {
@@ -437,8 +427,8 @@ public class QueryClientImpl implements QueryClient {
     connection.checkSessionAndGet(client);
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetQueryListRequest.Builder builder = ClientProtos.GetQueryListRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
+    TajoIdProtos.SessionIdProto.Builder builder = TajoIdProtos.SessionIdProto.newBuilder();
+    builder.setId(connection.sessionId.getId());
     ClientProtos.GetQueryListResponse res = tajoMasterService.getRunningQueryList(null, builder.build());
     return res.getQueryListList();
   }
@@ -450,8 +440,8 @@ public class QueryClientImpl implements QueryClient {
     connection.checkSessionAndGet(client);
     TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
-    ClientProtos.GetQueryListRequest.Builder builder = ClientProtos.GetQueryListRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
+    TajoIdProtos.SessionIdProto.Builder builder = TajoIdProtos.SessionIdProto.newBuilder();
+    builder.setId(connection.sessionId.getId());
     ClientProtos.GetQueryListResponse res = tajoMasterService.getFinishedQueryList(null, builder.build());
     return res.getQueryListList();
   }

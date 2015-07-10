@@ -52,12 +52,11 @@ public class Ceil extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    return DatumFactory.createInt8((long)Math.ceil(valueDatum.asFloat8()));
+    return DatumFactory.createInt8((long)Math.ceil(params.getFloat8(0)));
   }
 
 }

@@ -21,11 +21,13 @@ package org.apache.tajo.jdbc;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.client.CatalogAdminClient;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
@@ -33,7 +35,9 @@ import org.apache.tajo.util.KeyValueSet;
 import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,6 +56,8 @@ public class JdbcConnection implements Connection {
   @SuppressWarnings("unused")
   /** it will be used soon. */
   private final Map<String, List<String>> params;
+
+  private final KeyValueSet clientProperties;
 
   public JdbcConnection(String rawURI, Properties properties) throws SQLException {
     this.rawURI = rawURI;
@@ -99,7 +105,7 @@ public class JdbcConnection implements Connection {
       throw new SQLException("Invalid JDBC URI: " + rawURI, "TAJO-001");
     }
 
-    KeyValueSet clientProperties = new KeyValueSet();
+    clientProperties = new KeyValueSet();
     if(properties != null) {
       for(Map.Entry<Object, Object> entry: properties.entrySet()) {
         clientProperties.set(entry.getKey().toString(), entry.getValue().toString());
@@ -358,7 +364,7 @@ public class JdbcConnection implements Connection {
 
   @Override
   public void setAutoCommit(boolean autoCommit) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setAutoCommit");
+    LOG.warn("Tajo does not support setAutoCommit, so this invocation is ignored.");
   }
 
   @Override

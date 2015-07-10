@@ -33,11 +33,12 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
-  @Expose boolean intermediatePhase = false;
-  @Expose boolean finalPhase = true;
-  @Expose String alias;
 
-//  protected AggFunction instance;
+  // Both firstPhase and lastPhase flags should be true before global planning.
+  @Expose private boolean firstPhase = true;
+  @Expose private boolean lastPhase = true;
+  @Expose private String alias;
+
   @Expose protected FunctionInvokeContext invokeContext;
   protected transient AggFunctionInvoke functionInvoke;
 
@@ -66,8 +67,8 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     try {
       if (evalContext != null && evalContext.hasScriptEngine(this)) {
         this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
-        this.invokeContext.getScriptEngine().setIntermediatePhase(intermediatePhase);
-        this.invokeContext.getScriptEngine().setFinalPhase(finalPhase);
+        this.invokeContext.getScriptEngine().setFirstPhase(firstPhase);
+        this.invokeContext.getScriptEngine().setLastPhase(lastPhase);
       }
       this.functionInvoke.init(invokeContext);
     } catch (IOException e) {
@@ -85,7 +86,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   protected void mergeParam(FunctionContext context, Tuple params) {
-    if (!intermediatePhase && !finalPhase) {
+    if (firstPhase) {
       // firstPhase
       functionInvoke.eval(context, params);
     } else {
@@ -102,7 +103,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     if (!isBound) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
-    if (!finalPhase) {
+    if (!lastPhase) {
       return functionInvoke.getPartialResult(context);
     } else {
       return functionInvoke.terminate(context);
@@ -111,7 +112,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   @Override
   public DataType getValueType() {
-    if (!finalPhase) {
+    if (!lastPhase) {
       return functionInvoke.getPartialResultType();
     } else {
       return funcDesc.getReturnType();
@@ -129,8 +130,8 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   public Object clone() throws CloneNotSupportedException {
     AggregationFunctionCallEval clone = (AggregationFunctionCallEval)super.clone();
 
-    clone.finalPhase = finalPhase;
-    clone.intermediatePhase = intermediatePhase;
+    clone.lastPhase = lastPhase;
+    clone.firstPhase = firstPhase;
     clone.alias = alias;
     clone.invokeContext = (FunctionInvokeContext) invokeContext.clone();
     if (functionInvoke != null) {
@@ -140,35 +141,31 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     return clone;
   }
 
-  public boolean isIntermediatePhase() {
-    return intermediatePhase;
+  public boolean isFirstPhase() {
+    return firstPhase;
   }
 
-  public void setIntermediatePhase(boolean flag) {
-    this.intermediatePhase = flag;
-  }
-
-  public void setFinalPhase(boolean flag) {
-    this.finalPhase = flag;
-  }
-
-  public boolean isFinalPhase() {
-    return finalPhase;
+  public boolean isLastPhase() {
+    return lastPhase;
   }
 
   public void setFirstPhase() {
-    this.finalPhase = false;
-    this.intermediatePhase = false;
+    this.firstPhase = true;
+    this.lastPhase = false;
   }
 
-  public void setFinalPhase() {
-    this.finalPhase = true;
-    this.intermediatePhase = false;
+  public void setLastPhase() {
+    this.firstPhase = false;
+    this.lastPhase = true;
+  }
+
+  public void setFirstAndLastPhase() {
+    this.lastPhase = this.firstPhase = true;
   }
 
   public void setIntermediatePhase() {
-    this.finalPhase = false;
-    this.intermediatePhase = true;
+    this.firstPhase = false;
+    this.lastPhase = false;
   }
 
   @Override
@@ -176,8 +173,8 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     final int prime = 31;
     int result = super.hashCode();
     result = prime * result + ((alias == null) ? 0 : alias.hashCode());
-    result = prime * result + (finalPhase ? 1231 : 1237);
-    result = prime * result + (intermediatePhase ? 1231 : 1237);
+    result = prime * result + (lastPhase ? 1231 : 1237);
+    result = prime * result + (firstPhase ? 1249 : 1259);
     return result;
   }
 
@@ -187,8 +184,8 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       AggregationFunctionCallEval other = (AggregationFunctionCallEval) obj;
 
       boolean eq = super.equals(other);
-      eq &= intermediatePhase == other.intermediatePhase;
-      eq &= finalPhase == other.finalPhase;
+      eq &= firstPhase == other.firstPhase;
+      eq &= lastPhase == other.lastPhase;
       eq &= TUtil.checkEquals(alias, other.alias);
       return eq;
     }

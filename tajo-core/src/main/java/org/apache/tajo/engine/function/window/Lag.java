@@ -45,20 +45,20 @@ public abstract class Lag extends WindowAggFunc<Datum> {
       if (params.size() == 1) {
         lagNum = 1;
       } else {
-        lagNum = params.get(1).asInt4();
+        lagNum = params.getInt4(1);
       }
       lagCtx.lagBuffer = new CircularFifoBuffer(lagNum+1);
     }
 
-    if (params.get(0).isNotNull()) {
-      lagCtx.lagBuffer.add(params.get(0));
+    if (!params.isBlankOrNull(0)) {
+      lagCtx.lagBuffer.add(params.asDatum(0));
     } else {
       lagCtx.lagBuffer.add(NullDatum.get());
     }
 
     if (lagCtx.defaultDatum == null) {
      if (params.size() == 3) {
-       lagCtx.defaultDatum = params.get(2);
+       lagCtx.defaultDatum = params.asDatum(2);
      } else {
        lagCtx.defaultDatum = NullDatum.get();
      }

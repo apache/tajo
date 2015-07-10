@@ -262,9 +262,9 @@ public class TestJoinQuery extends QueryTestCaseBase {
           appender.flush();
           appender.close();
         }
-        Path dataPath = new Path(table.getPath().toString(), fileIndex + ".csv");
+        Path dataPath = new Path(table.getUri().toString(), fileIndex + ".csv");
         fileIndex++;
-        appender = ((FileTablespace) TableSpaceManager.getFileStorageManager(conf))
+        appender = (((FileTablespace) TablespaceManager.getLocalFs()))
             .getAppender(tableMeta, schema, dataPath);
         appender.init();
       }
@@ -279,7 +279,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
   protected static void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {
     TableDesc table = client.getTableDesc(tableName);
 
-    Path path = new Path(table.getPath());
+    Path path = new Path(table.getUri());
     FileSystem fs = path.getFileSystem(conf);
     if (isPartitioned) {
       List<Path> partitionPathList = getPartitionPathList(fs, path);

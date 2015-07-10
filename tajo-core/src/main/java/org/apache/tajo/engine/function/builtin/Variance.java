@@ -44,23 +44,22 @@ public abstract class Variance extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     VarianceContext varianceCtx = (VarianceContext) ctx;
-    Datum datum = params.get(0);
-    if (datum.isNotNull()) {
-      double delta = datum.asFloat8() - varianceCtx.avg;
+    if (!params.isBlankOrNull(0)) {
+      double value = params.getFloat8(0);
+      double delta = value - varianceCtx.avg;
       varianceCtx.count++;
       varianceCtx.avg += delta/varianceCtx.count;
-      varianceCtx.squareSumOfDiff += delta * (datum.asFloat8() - varianceCtx.avg);
+      varianceCtx.squareSumOfDiff += delta * (value - varianceCtx.avg);
     }
   }
 
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
     VarianceContext varianceCtx = (VarianceContext) ctx;
-    Datum d = part.get(0);
-    if (d instanceof NullDatum) {
+    if (part.isBlankOrNull(0)) {
       return;
     }
-    ProtobufDatum datum = (ProtobufDatum) d;
+    ProtobufDatum datum = (ProtobufDatum) part.getProtobufDatum(0);
     VarianceProto proto = (VarianceProto) datum.get();
     double delta = proto.getAvg() - varianceCtx.avg;
     varianceCtx.avg += delta * proto.getCount() / (varianceCtx.count + proto.getCount());

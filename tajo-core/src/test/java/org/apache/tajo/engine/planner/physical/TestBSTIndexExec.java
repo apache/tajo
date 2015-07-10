@@ -90,7 +90,7 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = (FileTablespace) TableSpaceManager.getFileStorageManager(conf);
+    sm = TablespaceManager.getLocalFs();
 
     idxPath = new Path(workDir, "test.idx");
 
@@ -118,10 +118,10 @@ public class TestBSTIndexExec {
 
     FileAppender appender = (FileAppender)sm.getAppender(meta, schema, tablePath);
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 10000; i++) {
       
-      Tuple key = new VTuple(this.idxSchema.size());
+      VTuple key = new VTuple(this.idxSchema.size());
       int rndKey = rnd.nextInt(250);
       if(this.randomValues.containsKey(rndKey)) {
         int t = this.randomValues.remove(rndKey) + 1;
@@ -144,11 +144,11 @@ public class TestBSTIndexExec {
 
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        sm.getTablePath("employee").toUri());
+        sm.getTableUri(TajoConstants.DEFAULT_DATABASE_NAME, "employee"));
     catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();
-    planner = new LogicalPlanner(catalog);
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
     optimizer = new LogicalOptimizer(conf);
   }
 

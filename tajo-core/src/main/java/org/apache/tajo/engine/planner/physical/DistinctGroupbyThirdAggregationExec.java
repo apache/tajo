@@ -156,7 +156,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
         }
 
         for (int i = 0; i < numGroupingColumns; i++) {
-          resultTuple.put(resultTupleIndexes[i], prevTuple.get(i + 1));
+          resultTuple.put(resultTupleIndexes[i], prevTuple.asDatum(i + 1));
         }
         for (DistinctFinalAggregator eachAggr: aggregators) {
           eachAggr.terminate(resultTuple);
@@ -171,7 +171,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
         throw new IOException(e.getMessage(), e);
       }
 
-      int distinctSeq = tuple.get(0).asInt2();
+      int distinctSeq = tuple.getInt2(0);
       Tuple keyTuple = getGroupingKeyTuple(tuple);
 
       // First tuple
@@ -186,7 +186,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       if (!prevKeyTuple.equals(keyTuple)) {
         // new grouping key
         for (int i = 0; i < numGroupingColumns; i++) {
-          resultTuple.put(resultTupleIndexes[i], prevTuple.get(i + 1));
+          resultTuple.put(resultTupleIndexes[i], prevTuple.asDatum(i + 1));
         }
         for (DistinctFinalAggregator eachAggr: aggregators) {
           eachAggr.terminate(resultTuple);
@@ -219,7 +219,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
   private Tuple getGroupingKeyTuple(Tuple tuple) {
     Tuple keyTuple = new VTuple(numGroupingColumns);
     for (int i = 0; i < numGroupingColumns; i++) {
-      keyTuple.put(i, tuple.get(i + 1));
+      keyTuple.put(i, tuple.asDatum(i + 1));
     }
 
     return keyTuple;
@@ -253,7 +253,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       if (aggrFunctions != null) {
         for (AggregationFunctionCallEval eachFunction: aggrFunctions) {
           eachFunction.bind(context.getEvalContext(), inSchema);
-          eachFunction.setFinalPhase();
+          eachFunction.setLastPhase();
         }
       }
       newFunctionContext();
@@ -272,7 +272,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       }
 
       if (seq == 0 && nonDistinctAggr != null) {
-        if (!tuple.get(nonDistinctAggr.inTupleIndex).isNull()) {
+        if (!tuple.isBlankOrNull(nonDistinctAggr.inTupleIndex)) {
           nonDistinctAggr.merge(tuple);
         }
       }

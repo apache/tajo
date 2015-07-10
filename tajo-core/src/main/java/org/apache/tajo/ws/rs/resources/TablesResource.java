@@ -18,36 +18,20 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/databases/{databaseName}/tables")
 public class TablesResource {
@@ -64,7 +48,8 @@ public class TablesResource {
   String databaseName;
   
   JerseyResourceDelegateContext context;
-  
+
+  private static final String tablesKeyName = "tables";
   private static final String databaseNameKeyName = "databaseName";
   private static final String tableNameKeyName = "tableName";
   private static final String tableDescKeyName = "tableDesc";
@@ -86,79 +71,6 @@ public class TablesResource {
   
   public void setApplication(Application application) {
     this.application = application;
-  }
-  
-  /**
-   * 
-   * @param databaseName
-   * @param tableMeta
-   * @return
-   */
-  @POST
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response createNewTable(TableDesc tableDesc) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Client sent a create table request on " + databaseName + " database.");
-    }
-    
-    Response response = null;
-    try {
-      initializeContext();
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      context.put(databaseNameKey, databaseName);
-      JerseyResourceDelegateContextKey<TableDesc> tableDescKey =
-          JerseyResourceDelegateContextKey.valueOf(tableDescKeyName, TableDesc.class);
-      context.put(tableDescKey, tableDesc);
-      
-      response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
-          new CreateNewTableDelegate(),
-          application,
-          context,
-          LOG);
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
-      
-      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
-    }
-    
-    return response;
-  }
-  
-  private static class CreateNewTableDelegate implements JerseyResourceDelegate {
-
-    @Override
-    public Response run(JerseyResourceDelegateContext context) {
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      String databaseName = context.get(databaseNameKey);
-      JerseyResourceDelegateContextKey<TableDesc> tableDescKey =
-          JerseyResourceDelegateContextKey.valueOf(tableDescKeyName, TableDesc.class);
-      TableDesc tableDesc = context.get(tableDescKey);
-      JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
-      MasterContext masterContext = context.get(masterContextKey);
-      
-      if (!CatalogUtil.isFQTableName(tableDesc.getName())) {
-        tableDesc.setName(CatalogUtil.getCanonicalTableName(databaseName, tableDesc.getName()));
-      }
-      
-      CatalogService catalogService = masterContext.getCatalog();
-      boolean tableCreated = catalogService.createTable(tableDesc);
-      if (tableCreated) {
-        JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
-        UriInfo uriInfo = context.get(uriInfoKey);
-        
-        URI tableUri = uriInfo.getBaseUriBuilder()
-            .path(TablesResource.class)
-            .path(TablesResource.class, "getTable")
-            .build(databaseName, CatalogUtil.extractSimpleName(tableDesc.getName()));
-        return Response.created(tableUri).build();
-      } else {
-        return ResourcesUtil.createExceptionResponse(LOG, "Table Creation has been failed.");
-      }
-    }
   }
   
   @GET
@@ -206,15 +118,11 @@ public class TablesResource {
       if (!catalogService.existDatabase(databaseName)) {
         return Response.status(Status.NOT_FOUND).build();
       }
-      
+
       Collection<String> tableNames = catalogService.getAllTableNames(databaseName);
-      List<TableDesc> tables = new ArrayList<TableDesc>();
-      
-      for (String tableName: tableNames) {
-        tables.add(new TableDesc(tableName, null, null, null));
-      }
-      
-      return Response.ok(tables).build();
+      Map<String, Collection<String>> tableNamesMap = new HashMap<String, Collection<String>>();
+      tableNamesMap.put(tablesKeyName, tableNames);
+      return Response.ok(tableNamesMap).build();
     }
     
   }
@@ -257,10 +165,10 @@ public class TablesResource {
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<String> databaseNameKey =
           JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      String databaseName = context.get(databaseNameKey);
+      String databaseName = context.get(databaseNameKey).toLowerCase();
       JerseyResourceDelegateContextKey<String> tableNameKey =
           JerseyResourceDelegateContextKey.valueOf(tableNameKeyName, String.class);
-      String tableName = context.get(tableNameKey);
+      String tableName = context.get(tableNameKey).toLowerCase();
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
@@ -270,7 +178,7 @@ public class TablesResource {
       }
       
       CatalogService catalogService = masterContext.getCatalog();
-      if (!catalogService.existDatabase(databaseName) || 
+      if (!catalogService.existDatabase(databaseName) ||
           !catalogService.existsTable(databaseName, tableName)) {
         return Response.status(Status.NOT_FOUND).build();
       }

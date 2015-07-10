@@ -79,7 +79,7 @@ public abstract class PhysicalExec implements SchemaObject {
   }
 
   protected Path getExecutorTmpDir() {
-    return new Path(context.getQueryId().getTaskId().getExecutionBlockId().getQueryId().toString(),
+    return new Path(context.getTaskId().getTaskId().getExecutionBlockId().getQueryId().toString(),
         UUID.randomUUID().toString());
   }
 

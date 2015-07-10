@@ -47,7 +47,7 @@ public final class CountValue extends CountRows {
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    if (!(params.get(0) instanceof NullDatum)) {
+    if (!params.isBlankOrNull(0)) {
       ((CountRowContext) ctx).count++;
     }
   }

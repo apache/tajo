@@ -57,9 +57,8 @@ public class AvgLong extends AggFunction<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    Datum datum = params.get(0);
-    if (datum.isNotNull()) {
-      avgCtx.sum += datum.asInt8();
+    if (!params.isBlankOrNull(0)) {
+      avgCtx.sum += params.getInt8(0);
       avgCtx.count++;
     }
   }
@@ -67,11 +66,10 @@ public class AvgLong extends AggFunction<Datum> {
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
-    Datum d = part.get(0);
-    if (d instanceof NullDatum) {
+    if (part.isBlankOrNull(0)) {
       return;
     }
-    ProtobufDatum datum = (ProtobufDatum) d;
+    ProtobufDatum datum = (ProtobufDatum) part.getProtobufDatum(0);
     AvgLongProto proto = (AvgLongProto) datum.get();
     avgCtx.sum += proto.getSum();
     avgCtx.count += proto.getCount();

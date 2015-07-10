@@ -31,6 +31,8 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BytesUtils;
@@ -117,6 +119,7 @@ public class SequenceFileScanner extends FileScanner {
     try {
       String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+      serde.init(schema);
 
       if (serde instanceof BinarySerializerDeserializer) {
         hasBinarySerDe = true;
@@ -225,7 +228,7 @@ public class SequenceFileScanner extends FileScanner {
 
         for (int j = 0; j < projectionMap.length; j++) {
           if (projectionMap[j] == i) {
-            Datum datum = serde.deserialize(schema.getColumn(i), bytes, fieldStart[i], fieldLength[i], nullChars);
+            Datum datum = serde.deserialize(i, bytes, fieldStart[i], fieldLength[i], nullChars);
             tuple.put(i, datum);
           }
         }
@@ -328,6 +331,11 @@ public class SequenceFileScanner extends FileScanner {
   @Override
   public boolean isSelectable() {
     return false;
+  }
+
+  @Override
+  public void setFilter(EvalNode filter) {
+    throw new UnsupportedException();
   }
 
   @Override

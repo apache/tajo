@@ -58,7 +58,7 @@ public class FieldEval extends EvalNode implements Cloneable {
   @SuppressWarnings("unchecked")
 	public Datum eval(Tuple tuple) {
     super.eval(tuple);
-	  return tuple.get(fieldId);
+	  return tuple.asDatum(fieldId);
   }
 
   @Override

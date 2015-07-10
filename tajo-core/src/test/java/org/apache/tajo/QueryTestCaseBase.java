@@ -306,22 +306,30 @@ public class QueryTestCaseBase {
     return state;
   }
 
-  public void assertValidSQL(String fileName) throws PlanningException, IOException {
-    Path queryFilePath = getQueryFilePath(fileName);
-    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+  public void assertValidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
     if (state.getErrorMessages().size() > 0) {
       fail(state.getErrorMessages().get(0));
     }
   }
 
-  public void assertInvalidSQL(String fileName) throws PlanningException, IOException {
+  public void assertValidSQLFromFile(String fileName) throws PlanningException, IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    assertValidSQL(query);
+  }
+
+  public void assertInvalidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
     if (state.getErrorMessages().size() == 0) {
       fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
     }
+  }
+
+  public void assertInvalidSQLFromFile(String fileName) throws PlanningException, IOException {
+    Path queryFilePath = getQueryFilePath(fileName);
+    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    assertInvalidSQL(query);
   }
 
   public void assertPlanError(String fileName) throws PlanningException, IOException {
@@ -337,6 +345,41 @@ public class QueryTestCaseBase {
 
   protected ResultSet executeString(String sql) throws Exception {
     return client.executeQueryAndGetResult(sql);
+  }
+
+  /**
+   * It executes the query file and compare the result against the the result file.
+   *
+   * @throws Exception
+   */
+  public void assertQuery() throws Exception {
+    ResultSet res = null;
+    try {
+      res = executeQuery();
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  /**
+   * It executes a given query statement and verifies the result against the the result file.
+   *
+   * @param query A query statement
+   * @throws Exception
+   */
+  public void assertQueryStr(String query) throws Exception {
+    ResultSet res = null;
+    try {
+      res = executeString(query);
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+    }
   }
 
   /**
@@ -937,7 +980,7 @@ public class QueryTestCaseBase {
       return null;
     }
 
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
     return getTableFileContents(path);
   }
 
@@ -947,7 +990,7 @@ public class QueryTestCaseBase {
       return null;
     }
 
-    Path path = new Path(tableDesc.getPath());
+    Path path = new Path(tableDesc.getUri());
     FileSystem fs = path.getFileSystem(conf);
 
     return listFiles(fs, path);

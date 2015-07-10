@@ -18,21 +18,16 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.primitives.Longs;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.util.NumberUtil;
-import org.apache.tajo.util.NumberUtil.PrimitiveLongs;
+import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,12 +42,12 @@ public class HashShuffleAppender implements Appender {
   private TableStats tableStats;
 
   //<taskId,<page start offset,<task start, task end>>>
-  private Map<TaskAttemptId, PrimitiveLongs> taskTupleIndexes;
+  private Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> taskTupleIndexes;
 
   //page start offset, length
-  private PrimitiveLongs pages = new PrimitiveLongs(100);
+  private List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
 
-  private long[] currentPage;
+  private Pair<Long, Integer> currentPage;
 
   private int pageSize; //MB
 
@@ -73,8 +68,8 @@ public class HashShuffleAppender implements Appender {
 
   @Override
   public void init() throws IOException {
-    currentPage = new long[2];
-    taskTupleIndexes = new HashMap<TaskAttemptId, PrimitiveLongs>();
+    currentPage = new Pair(0L, 0);
+    taskTupleIndexes = new HashMap<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>>();
     rowNumInPage = 0;
   }
 
@@ -101,16 +96,16 @@ public class HashShuffleAppender implements Appender {
       int writtenBytes = (int)(posAfterWritten - currentPos);
 
       int nextRowNum = rowNumInPage + tuples.size();
-      PrimitiveLongs taskIndexes = taskTupleIndexes.get(taskId);
+      List<Pair<Long, Pair<Integer, Integer>>> taskIndexes = taskTupleIndexes.get(taskId);
       if (taskIndexes == null) {
-        taskIndexes = new PrimitiveLongs(100);
+        taskIndexes = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
         taskTupleIndexes.put(taskId, taskIndexes);
       }
-      taskIndexes.add(currentPage[0]);
-      taskIndexes.add(NumberUtil.mergeToLong(rowNumInPage, nextRowNum));
+      taskIndexes.add(
+          new Pair<Long, Pair<Integer, Integer>>(currentPage.getFirst(), new Pair(rowNumInPage, nextRowNum)));
       rowNumInPage = nextRowNum;
 
-      if (posAfterWritten - currentPage[0] > pageSize) {
+      if (posAfterWritten - currentPage.getFirst() > pageSize) {
         nextPage(posAfterWritten);
         rowNumInPage = 0;
       }
@@ -129,9 +124,9 @@ public class HashShuffleAppender implements Appender {
   }
 
   private void nextPage(long pos) {
-    currentPage[1] = pos - currentPage[0];
+    currentPage.setSecond((int) (pos - currentPage.getFirst()));
     pages.add(currentPage);
-    currentPage = new long[] {pos, 0};
+    currentPage = new Pair(pos, 0);
   }
 
   @Override
@@ -162,18 +157,16 @@ public class HashShuffleAppender implements Appender {
       }
       appender.flush();
       offset = appender.getOffset();
-      if (offset > currentPage[0]) {
+      if (offset > currentPage.getFirst()) {
         nextPage(offset);
       }
       appender.close();
       if (LOG.isDebugEnabled()) {
-        int size = pages.size();
-        if (size > 0) {
-          long[] array = pages.backingArray();
-          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + size
-              + ", lastPage=" + array[size - 2] + ", " + array[size - 1]);
+        if (!pages.isEmpty()) {
+          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size()
+              + ", lastPage=" + pages.get(pages.size() - 1));
         } else {
-          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + size);
+          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size());
         }
       }
       closed.set(true);
@@ -192,48 +185,22 @@ public class HashShuffleAppender implements Appender {
     }
   }
 
-  public PrimitiveLongs getPages() {
+  public List<Pair<Long, Integer>> getPages() {
     return pages;
   }
 
-  public Map<TaskAttemptId, PrimitiveLongs> getTaskTupleIndexes() {
+  public Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> getTaskTupleIndexes() {
     return taskTupleIndexes;
   }
 
-  public Iterable<Long> getMergedTupleIndexes() {
-    return getIterable(taskTupleIndexes.values());
-  }
+  public List<Pair<Long, Pair<Integer, Integer>>> getMergedTupleIndexes() {
+    List<Pair<Long, Pair<Integer, Integer>>> merged = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
 
-  public Iterable<Long> getIterable(final Collection<PrimitiveLongs> values) {
-    return new Iterable<Long>() {
-      @Override
-      public Iterator<Long> iterator() {
-        final Iterator<PrimitiveLongs> iterator1 = values.iterator();
-        return new Iterator<Long>() {
-          Iterator<Long> iterator2 = null;
-          @Override
-          public boolean hasNext() {
-            while (iterator2 == null || !iterator2.hasNext()) {
-              if (!iterator1.hasNext()) {
-                return false;
-              }
-              iterator2 = iterator1.next().iterator();
-            }
-            return true;
-          }
+    for (List<Pair<Long, Pair<Integer, Integer>>> eachFailureIndex: taskTupleIndexes.values()) {
+      merged.addAll(eachFailureIndex);
+    }
 
-          @Override
-          public Long next() {
-            return iterator2.next();
-          }
-
-          @Override
-          public void remove() {
-            throw new UnsupportedOperationException();
-          }
-        };
-      }
-    };
+    return merged;
   }
 
   public void taskFinished(TaskAttemptId taskId) {

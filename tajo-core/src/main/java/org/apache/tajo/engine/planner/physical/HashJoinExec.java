@@ -23,7 +23,10 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
 
@@ -50,6 +53,7 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
         projector.eval(frameTuple, outTuple);
         return outTuple;
       }
+
       Tuple leftTuple = leftChild.next(); // it comes from a disk
       if (leftTuple == null || leftFiltered(leftTuple)) { // if no more tuples in left tuples on disk, a join is completed.
         finished = leftTuple == null;

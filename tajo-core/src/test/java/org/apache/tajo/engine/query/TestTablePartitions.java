@@ -56,6 +56,7 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_SHUFFLE;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class TestTablePartitions extends QueryTestCaseBase {
@@ -236,7 +237,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   private void assertPartitionDirectories(TableDesc desc) throws IOException {
     FileSystem fs = FileSystem.get(conf);
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
@@ -361,7 +362,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
 
     FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.isDirectory(path));
@@ -434,21 +435,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.isDirectory(path));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2/col3=38.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
+    verifyDirectoriesForThreeColumns(fs, path, 1);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
@@ -486,24 +476,13 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    path = new Path(desc.getPath());
+    path = new Path(desc.getUri());
 
-    assertTrue(fs.isDirectory(path));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2/col3=38.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
-
+    verifyDirectoriesForThreeColumns(fs, path, 2);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+
     String expected = "N\n" +
         "N\n" +
         "N\n" +
@@ -515,7 +494,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "R\n" +
         "R\n";
 
-    String tableData = getTableFileContents(new Path(desc.getPath()));
+    String tableData = getTableFileContents(new Path(desc.getUri()));
     assertEquals(expected, tableData);
 
     res = executeString("select * from " + tableName + " where col2 = 2");
@@ -548,12 +527,53 @@ public class TestTablePartitions extends QueryTestCaseBase {
         + " where l_orderkey = 1 and l_partkey = 1 and  l_linenumber = 1");
     res.close();
 
-    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyDirectoriesForThreeColumns(fs, path, 3);
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
+      // TODO: If there is existing another partition directory, we must add its rows number to result row numbers.
+      // desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+      // assertEquals(6, desc.getStats().getNumRows().intValue());
+    }
+
+    verifyKeptExistingData(res, tableName);
+
+    // insert overwrite empty result to partitioned table
+    res = executeString("insert overwrite into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey > 100");
+    res.close();
+
+    verifyDirectoriesForThreeColumns(fs, path, 4);
+    verifyKeptExistingData(res, tableName);
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+  }
+
+  private final void verifyKeptExistingData(ResultSet res, String tableName) throws Exception {
+    res = executeString("select * from " + tableName + " where col2 = 1");
+    String resultSetData = resultSetToString(res);
+    res.close();
+    String expected = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n" +
+      "N,1,1,17.0\n" +
+      "N,1,1,30.0\n" +
+      "N,1,1,36.0\n" +
+      "N,1,1,36.0\n";
+
+    assertEquals(expected, resultSetData);
+  }
+
+  private final void verifyDirectoriesForThreeColumns(FileSystem fs, Path path, int step) throws Exception {
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=30.0")));
+
+    if (step == 1 || step == 2) {
+      assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
+    } else {
+      assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
+      assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=30.0")));
+    }
+
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2/col3=38.0")));
@@ -562,40 +582,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
-
-    if (!testingCluster.isHiveCatalogStoreRunning()) {
-      // TODO: If there is existing another partition directory, we must add its rows number to result row numbers.
-      // assertEquals(6, desc.getStats().getNumRows().intValue());
-    }
-
-    res = executeString("select * from " + tableName + " where col2 = 1");
-    resultSetData = resultSetToString(res);
-    res.close();
-    expected = "col4,col1,col2,col3\n" +
-        "-------------------------------\n" +
-        "N,1,1,17.0\n" +
-        "N,1,1,17.0\n" +
-        "N,1,1,30.0\n" +
-        "N,1,1,36.0\n" +
-        "N,1,1,36.0\n";
-
-    assertEquals(expected, resultSetData);
-
-    // insert overwrite empty result to partitioned table
-    res = executeString("insert overwrite into " + tableName
-      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey" +
-      " > 100");
-    res.close();
-
-    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-
-    ContentSummary summary = fs.getContentSummary(new Path(desc.getPath()));
-
-    assertEquals(summary.getDirectoryCount(), 1L);
-    assertEquals(summary.getFileCount(), 0L);
-    assertEquals(summary.getLength(), 0L);
-
-    executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
   @Test
@@ -627,10 +613,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(new Path(desc.getPath())));
+    assertTrue(fs.exists(new Path(desc.getUri())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
@@ -676,10 +662,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(new Path(desc.getPath())));
+    assertTrue(fs.exists(new Path(desc.getUri())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
@@ -733,10 +719,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(new Path(desc.getPath())));
+    assertTrue(fs.exists(new Path(desc.getUri())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
@@ -828,10 +814,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(new Path(desc.getPath())));
+    assertTrue(fs.exists(new Path(desc.getUri())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = new Path(desc.getPath());
+    Path path = new Path(desc.getUri());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));

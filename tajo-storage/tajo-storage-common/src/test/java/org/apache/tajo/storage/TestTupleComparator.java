@@ -51,17 +51,14 @@ public class TestTupleComparator {
     schema.addColumn("col4", Type.INT4);
     schema.addColumn("col5", Type.TEXT);
     
-    Tuple tuple1 = new VTuple(5);
-    Tuple tuple2 = new VTuple(5);
-
-    tuple1.put(
+    VTuple tuple1 = new VTuple(
         new Datum[] {
         DatumFactory.createInt4(9),
         DatumFactory.createInt4(3),
         DatumFactory.createInt4(33),
         DatumFactory.createInt4(4),
         DatumFactory.createText("abc")});
-    tuple2.put(
+    VTuple tuple2 = new VTuple(
         new Datum[] {
         DatumFactory.createInt4(1),
         DatumFactory.createInt4(25),

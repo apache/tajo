@@ -33,6 +33,8 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
@@ -426,6 +428,11 @@ public class RawFile {
     }
 
     @Override
+    public void setFilter(EvalNode filter) {
+      throw new UnsupportedException();
+    }
+
+    @Override
     public boolean isSplittable(){
       return false;
     }
@@ -634,10 +641,10 @@ public class RawFile {
       nullFlags.clear();
       for (int i = 0; i < schema.size(); i++) {
         if (enabledStats) {
-          stats.analyzeField(i, t.get(i));
+          stats.analyzeField(i, t);
         }
 
-        if (t.isNull(i)) {
+        if (t.isBlankOrNull(i)) {
           nullFlags.set(i);
           continue;
         }

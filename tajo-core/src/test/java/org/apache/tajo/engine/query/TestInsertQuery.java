@@ -277,7 +277,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
       TableDesc tableDesc = testingCluster.getMaster().getCatalog().getTableDesc(getCurrentDatabase(), tableName);
       assertNotNull(tableDesc);
 
-      Path path = new Path(tableDesc.getPath());
+      Path path = new Path(tableDesc.getUri());
       FileSystem fs = path.getFileSystem(testingCluster.getConfiguration());
 
       FileStatus[] files = fs.listStatus(path);
@@ -484,10 +484,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(testingCluster.getConfiguration());
-    assertTrue(fs.exists(new Path(desc.getPath())));
+    assertTrue(fs.exists(new Path(desc.getUri())));
     CompressionCodecFactory factory = new CompressionCodecFactory(testingCluster.getConfiguration());
 
-    for (FileStatus file : fs.listStatus(new Path(desc.getPath()))) {
+    for (FileStatus file : fs.listStatus(new Path(desc.getUri()))) {
       CompressionCodec codec = factory.getCodec(file.getPath());
       assertTrue(codec instanceof DeflateCodec);
     }

@@ -18,18 +18,7 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
+import com.google.gson.internal.StringMap;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -38,6 +27,7 @@ import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
+import org.apache.tajo.ws.rs.responses.GetSubmitQueryResponse;
 import org.apache.tajo.ws.rs.responses.NewSessionResponse;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.filter.LoggingFilter;
@@ -45,7 +35,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.gson.internal.StringMap;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -67,7 +66,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     sessionsURI = new URI(restServiceURI + "/sessions");
-    queriesURI = new URI(restServiceURI + "/databases/" + TajoConstants.DEFAULT_DATABASE_NAME + "/queries");
+    queriesURI = new URI(restServiceURI + "/queries");
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
@@ -106,18 +105,19 @@ public class TestQueryResource extends QueryTestCaseBase {
   public void testGetAllQueries() throws Exception {
     String sessionId = generateNewSessionAndGetId();
     SubmitQueryRequest queryRequest = createNewQueryRequest("select * from lineitem");
-    
-    Response response = restClient.target(queriesURI)
+
+    GetSubmitQueryResponse response = restClient.target(queriesURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
-        .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON));
-    
+        .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
+            new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+
     assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
-    String locationHeader = response.getHeaderString("Location");
-    assertTrue(locationHeader != null && !locationHeader.isEmpty());
+    assertEquals(ResultCode.OK, response.getResultCode());
+    String location = response.getUri().toString();
+    assertTrue(location != null && !location.isEmpty());
     
-    String queryId = locationHeader.lastIndexOf('/') >= 0?
-        locationHeader.substring(locationHeader.lastIndexOf('/')+1):null;
+    String queryId = location.lastIndexOf('/') >= 0?
+			location.substring(location.lastIndexOf('/')+1):null;
         
     assertTrue(queryId != null && !queryId.isEmpty());
     
@@ -143,18 +143,19 @@ public class TestQueryResource extends QueryTestCaseBase {
   public void testSubmitQuery() throws Exception {
     String sessionId = generateNewSessionAndGetId();
     SubmitQueryRequest queryRequest = createNewQueryRequest("select * from lineitem");
-    
-    Response response = restClient.target(queriesURI)
+
+    GetSubmitQueryResponse response = restClient.target(queriesURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
-        .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON));
-    
+        .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
+            new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+
     assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
-    String locationHeader = response.getHeaderString("Location");
-    assertTrue(locationHeader != null && !locationHeader.isEmpty());
+    assertEquals(ResultCode.OK, response.getResultCode());
+    String location = response.getUri().toString();
+    assertTrue(location != null && !location.isEmpty());
     
-    String queryId = locationHeader.lastIndexOf('/') >= 0?
-        locationHeader.substring(locationHeader.lastIndexOf('/')+1):null;
+    String queryId = location.lastIndexOf('/') >= 0?
+			location.substring(location.lastIndexOf('/')+1):null;
         
     assertTrue(queryId != null && !queryId.isEmpty());
     
@@ -164,6 +165,35 @@ public class TestQueryResource extends QueryTestCaseBase {
         .queryParam("print", "BRIEF")
         .request().get(new GenericType<QueryInfo>(QueryInfo.class));
     
+    assertNotNull(queryInfo);
+    assertEquals(queryId, queryInfo.getQueryIdStr());
+  }
+
+  @Test
+  public void testGetQueryInfoWithDefault() throws Exception {
+    String sessionId = generateNewSessionAndGetId();
+    SubmitQueryRequest queryRequest = createNewQueryRequest("select * from lineitem");
+
+    GetSubmitQueryResponse response = restClient.target(queriesURI)
+      .request().header(tajoSessionIdHeaderName, sessionId)
+      .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
+          new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+
+    assertNotNull(response);
+    assertEquals(ResultCode.OK, response.getResultCode());
+    String location = response.getUri().toString();
+    assertTrue(location != null && !location.isEmpty());
+
+    String queryId = location.lastIndexOf('/') >= 0?
+			location.substring(location.lastIndexOf('/')+1):null;
+
+    assertTrue(queryId != null && !queryId.isEmpty());
+
+    QueryInfo queryInfo = restClient.target(queriesURI)
+      .path("/{queryId}")
+      .resolveTemplate("queryId", queryId)
+      .request().get(new GenericType<QueryInfo>(QueryInfo.class));
+
     assertNotNull(queryInfo);
     assertEquals(queryId, queryInfo.getQueryIdStr());
   }

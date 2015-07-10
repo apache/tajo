@@ -25,19 +25,26 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class TestQueryValidation extends QueryTestCaseBase {
+
+  @Test
+  public void testInsertWithWrongTargetColumn() throws Exception {
+    executeString("CREATE TABLE T1 (col1 int, col2 int)").close();
+    assertInvalidSQL("INSERT INTO T1 (col1, col3) select l_orderkey, l_partkey from default.lineitem");
+  }
+
   @Test
   public void testLimitClauses() throws PlanningException, IOException {
     // select * from lineitem limit 3;
-    assertValidSQL("valid_limit_1.sql");
+    assertValidSQLFromFile("valid_limit_1.sql");
 
     // select * from lineitem limit l_orderkey;
-    assertInvalidSQL("invalid_limit_1.sql");
+    assertInvalidSQLFromFile("invalid_limit_1.sql");
   }
 
   @Test
   public void testGroupByClauses() throws PlanningException, IOException {
     // select l_orderkey from lineitem group by l_orderkey;
-    assertValidSQL("valid_groupby_1.sql");
+    assertValidSQLFromFile("valid_groupby_1.sql");
 
     // select * from lineitem group by l_orderkey;
     assertPlanError("error_groupby_1.sql");
@@ -48,12 +55,12 @@ public class TestQueryValidation extends QueryTestCaseBase {
   @Test
   public void testCaseWhenExprs() throws PlanningException, IOException {
     // See TAJO-1098
-    assertInvalidSQL("invalid_casewhen_1.sql");
+    assertInvalidSQLFromFile("invalid_casewhen_1.sql");
   }
 
   @Test
   public void testUnsupportedStoreType() throws PlanningException, IOException {
     // See TAJO-1249
-    assertInvalidSQL("invalid_store_format.sql");
+    assertInvalidSQLFromFile("invalid_store_format.sql");
   }
 }

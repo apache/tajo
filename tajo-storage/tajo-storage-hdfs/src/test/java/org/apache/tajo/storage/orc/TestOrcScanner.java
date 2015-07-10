@@ -86,7 +86,7 @@ public class TestOrcScanner {
       assertEquals(tuple.getText(3), "881250949");
 
       // Timestamp test
-      TimestampDatum timestamp = (TimestampDatum)tuple.get(4);
+      TimestampDatum timestamp = (TimestampDatum)tuple.asDatum(4);
 
       assertEquals(timestamp.getYear(), 2008);
       assertEquals(timestamp.getMonthOfYear(), 12);

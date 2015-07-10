@@ -33,7 +33,6 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
@@ -104,7 +103,7 @@ public class AvroAppender extends FileAppender {
   }
 
   private Object getPrimitive(Tuple tuple, int i, Schema.Type avroType) {
-    if (tuple.get(i) instanceof NullDatum) {
+    if (tuple.isBlankOrNull(i)) {
       return null;
     }
     switch (avroType) {
@@ -141,7 +140,7 @@ public class AvroAppender extends FileAppender {
     for (int i = 0; i < schema.size(); ++i) {
       Column column = schema.getColumn(i);
       if (enabledStats) {
-        stats.analyzeField(i, tuple.get(i));
+        stats.analyzeField(i, tuple);
       }
       Object value;
       Schema.Field avroField = avroFields.get(i);

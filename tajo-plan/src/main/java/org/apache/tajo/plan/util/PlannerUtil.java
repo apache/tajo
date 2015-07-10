@@ -26,7 +26,6 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
@@ -40,9 +39,6 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.CSV;
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.TEXTFILE;
 
 public class PlannerUtil {
 
@@ -854,34 +850,6 @@ public class PlannerUtil {
     return explains.toString();
   }
 
-  public static void applySessionToTableProperties(OverridableConf sessionVars,
-                                                   String storeType,
-                                                   KeyValueSet tableProperties) {
-    if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("TEXT")) {
-      if (sessionVars.containsKey(SessionVars.NULL_CHAR)) {
-        tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
-      }
-
-      if (sessionVars.containsKey(SessionVars.TIMEZONE)) {
-        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TIMEZONE));
-      }
-    }
-  }
-
-  /**
-   * This method sets a set of table properties by System default configs.
-   * These properties are implicitly used to read or write rows in Table.
-   * Don't use this method for TableMeta to be stored in Catalog.
-   *
-   * @param systemConf System configuration
-   * @param meta TableMeta to be set
-   */
-  public static void applySystemDefaultToTableProperties(OverridableConf systemConf, TableMeta meta) {
-    if (!meta.containsOption(StorageConstants.TIMEZONE)) {
-      meta.putOption(StorageConstants.TIMEZONE, systemConf.get(SessionVars.TIMEZONE));
-    }
-  }
-
   public static boolean isFileStorageType(String storageType) {
     if (storageType.equalsIgnoreCase("hbase")) {
       return false;
@@ -914,7 +882,27 @@ public class PlannerUtil {
     }
   }
 
+  public static TableDesc getOutputTableDesc(LogicalPlan plan) {
+    LogicalNode [] found = findAllNodes(plan.getRootNode().getChild(), NodeType.CREATE_TABLE, NodeType.INSERT);
+
+    if (found.length == 0) {
+      return new TableDesc(null, plan.getRootNode().getOutSchema(), "TEXT", new KeyValueSet(), null);
+    } else {
+      StoreTableNode storeNode = (StoreTableNode) found[0];
+      return new TableDesc(
+          storeNode.getTableName(),
+          storeNode.getOutSchema(),
+          storeNode.getStorageType(),
+          storeNode.getOptions(),
+          storeNode.getUri());
+    }
+  }
+
   public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.ROOT) {
+      node = ((LogicalRootNode)node).getChild();
+    }
+
     if (node.getType() == NodeType.CREATE_TABLE) {
       return createTableDesc((CreateTableNode)node);
     }
@@ -935,7 +923,7 @@ public class PlannerUtil {
         }
       }
     } else {
-      if (insertNode.getPath() != null) {
+      if (insertNode.getUri() != null) {
         //insert ... location
         return createTableDesc(insertNode);
       }
@@ -951,7 +939,7 @@ public class PlannerUtil {
             createTableNode.getTableName(),
             createTableNode.getTableSchema(),
             meta,
-            createTableNode.getPath() != null ? createTableNode.getPath().toUri() : null);
+            createTableNode.getUri() != null ? createTableNode.getUri() : null);
 
     tableDescTobeCreated.setExternal(createTableNode.isExternal());
 
@@ -970,7 +958,7 @@ public class PlannerUtil {
             insertNode.getTableName(),
             insertNode.getTableSchema(),
             meta,
-            insertNode.getPath() != null ? insertNode.getPath().toUri() : null);
+            insertNode.getUri() != null ? insertNode.getUri() : null);
 
     if (insertNode.hasPartition()) {
       tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());

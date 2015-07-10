@@ -28,6 +28,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -242,6 +243,11 @@ public class OrcScanner extends FileScanner {
   @Override
   public boolean isSelectable() {
     return false;
+  }
+
+  @Override
+  public void setFilter(EvalNode filter) {
+    // TODO: implement it
   }
 
   @Override

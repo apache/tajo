@@ -122,7 +122,20 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       Tuple keyTuple = new VTuple(joinKeyPairs.size());
       for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(rightKeyList[i]));
+        keyTuple.put(i, tuple.asDatum(rightKeyList[i]));
+      }
+
+      /*
+       * TODO
+       * Currently, some physical executors can return new instances of tuple, but others not.
+       * This sometimes causes wrong results due to the singleton Tuple instance.
+       * The below line is a temporal solution to fix this problem.
+       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
+       */
+      try {
+        tuple = tuple.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e);
       }
 
       List<Tuple> newValue = map.get(keyTuple);
@@ -141,7 +154,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected Tuple toKey(final Tuple outerTuple) {
     for (int i = 0; i < leftKeyList.length; i++) {
-      keyTuple.put(i, outerTuple.get(leftKeyList[i]));
+      keyTuple.put(i, outerTuple.asDatum(leftKeyList[i]));
     }
     return keyTuple;
   }

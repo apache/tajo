@@ -18,25 +18,7 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.InputStream;
-import java.net.URI;
-import java.security.MessageDigest;
-import java.util.List;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.compress.compressors.CompressorInputStream;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -48,12 +30,28 @@ import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
 import org.apache.tajo.ws.rs.responses.GetQueryResultDataResponse;
+import org.apache.tajo.ws.rs.responses.GetSubmitQueryResponse;
 import org.apache.tajo.ws.rs.responses.NewSessionResponse;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.filter.LoggingFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.Status;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.InputStream;
+import java.net.URI;
+import java.security.MessageDigest;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -63,20 +61,23 @@ public class TestQueryResultResource extends QueryTestCaseBase {
   private URI sessionsURI;
   private URI queriesURI;
   private Client restClient;
-  
+
   private static final String tajoSessionIdHeaderName = "X-Tajo-Session";
   private static final String tajoDigestHeaderName = "X-Tajo-Digest";
-  
+	private static final String tajoOffsetHeaderName = "X-Tajo-Offset";
+	private static final String tajoCountHeaderName = "X-Tajo-Count";
+	private static final String tajoEOSHeaderName = "X-Tajo-EOS";
+
   public TestQueryResultResource() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
-  
+
   @Before
   public void setUp() throws Exception {
     int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     sessionsURI = new URI(restServiceURI + "/sessions");
-    queriesURI = new URI(restServiceURI + "/databases/" + TajoConstants.DEFAULT_DATABASE_NAME + "/queries");
+    queriesURI = new URI(restServiceURI + "/queries");
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
@@ -84,45 +85,46 @@ public class TestQueryResultResource extends QueryTestCaseBase {
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)
         .build();
   }
-  
+
   @After
   public void tearDown() throws Exception {
     restClient.close();
   }
-  
+
   private String generateNewSessionAndGetId() throws Exception {
     NewSessionRequest request = new NewSessionRequest();
     request.setUserName("tajo-user");
     request.setDatabaseName(TajoConstants.DEFAULT_DATABASE_NAME);
-    
+
     NewSessionResponse response = restClient.target(sessionsURI)
         .request().post(Entity.entity(request, MediaType.APPLICATION_JSON), NewSessionResponse.class);
-    
+
     assertNotNull(response);
     assertTrue(ResultCode.OK.equals(response.getResultCode()));
     assertTrue(response.getId() != null && !response.getId().isEmpty());
-    
+
     return response.getId();
   }
-  
+
   private URI sendNewQueryResquest(String sessionId, String query) throws Exception {
-    
+
     SubmitQueryRequest request = new SubmitQueryRequest();
     request.setQuery(query);
-    
-    Response response = restClient.target(queriesURI)
+
+    GetSubmitQueryResponse response = restClient.target(queriesURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
-        .post(Entity.entity(request, MediaType.APPLICATION_JSON));
-    
+        .post(Entity.entity(request, MediaType.APPLICATION_JSON),
+					new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+
     assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
-    String locationHeader = response.getHeaderString("Location");
-    assertTrue(locationHeader != null && !locationHeader.isEmpty());
-    
-    URI queryIdURI = new URI(locationHeader);
+    assertEquals(ResultCode.OK, response.getResultCode());
+    String location = response.getUri().toString();
+    assertTrue(location != null && !location.isEmpty());
+
+    URI queryIdURI = new URI(location);
 
     assertNotNull(queryIdURI);
-    
+
     return queryIdURI;
   }
 
@@ -223,7 +225,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
   }
 
   @Test
-  public void testGetQueryResultSetWithOffset() throws Exception {
+  public void testGetQueryResultSetWithDefaultCount() throws Exception {
     String sessionId = generateNewSessionAndGetId();
     URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
     URI queryResultURI = new URI(queryIdURI + "/result");
@@ -244,14 +246,19 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     URI queryResultSetURI = response.getResultset().getLink();
 
     Response queryResultSetResponse = restClient.target(queryResultSetURI)
-        .queryParam("count", 100)
-        .queryParam("offset", 3)
         .request().header(tajoSessionIdHeaderName, sessionId)
         .get();
 
     assertNotNull(queryResultSetResponse);
     String tajoDigest = queryResultSetResponse.getHeaderString(tajoDigestHeaderName);
+    int offset = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoOffsetHeaderName));
+    int count = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoCountHeaderName));
+    boolean eos = Boolean.valueOf(queryResultSetResponse.getHeaderString(tajoEOSHeaderName));
+
     assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
+    assertTrue(eos);
+    assertEquals(0, offset);
+    assertEquals(5, count);
 
     DataInputStream queryResultSetInputStream =
         new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
@@ -277,7 +284,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       }
     }
 
-    assertEquals(3, tupleList.size());
+    assertEquals(5, tupleList.size());
     assertEquals(tajoDigest, Base64.encodeBase64String(messageDigest.digest()));
 
     for (Tuple aTuple: tupleList) {

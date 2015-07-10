@@ -69,7 +69,7 @@ public class TestJsonSerDe {
     FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TableSpaceManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple tuple = scanner.next();
@@ -77,8 +77,7 @@ public class TestJsonSerDe {
     assertNull(scanner.next());
     scanner.close();
 
-    Tuple baseTuple = new VTuple(11);
-    baseTuple.put(new Datum[] {
+    Tuple baseTuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),                  // 0
         DatumFactory.createChar("hyunsik"),             // 1
         DatumFactory.createInt2((short) 17),            // 2

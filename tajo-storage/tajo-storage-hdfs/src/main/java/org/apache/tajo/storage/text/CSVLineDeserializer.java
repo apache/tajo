@@ -19,8 +19,8 @@
 package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.tajo.catalog.Column;
 import io.netty.buffer.ByteBufProcessor;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
@@ -38,12 +38,10 @@ public class CSVLineDeserializer extends TextLineDeserializer {
   private int delimiterCompensation;
 
   private int [] targetColumnIndexes;
-  private Column [] projected;
 
   public CSVLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
 
-    this.projected = projected;
     targetColumnIndexes = new int[projected.length];
     for (int i = 0; i < projected.length; i++) {
       targetColumnIndexes[i] = schema.getColumnId(projected[i].getQualifiedName());
@@ -67,13 +65,14 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     nullChars = TextLineSerDe.getNullChars(meta);
 
     fieldSerDer = new TextFieldSerializerDeserializer(meta);
+    fieldSerDer.init(schema);
   }
 
   public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException, TextLineParsingError {
-    int[] projection = targetColumnIndexes;
     if (lineBuf == null || targetColumnIndexes == null || targetColumnIndexes.length == 0) {
       return;
     }
+    int[] projection = targetColumnIndexes;
 
     final int rowLength = lineBuf.readableBytes();
     int start = 0, fieldLength = 0, end = 0;
@@ -93,14 +92,12 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
-
         try {
-          Datum datum = fieldSerDer.deserialize(lineBuf, projected[currentTarget], currentIndex, nullChars);
+          Datum datum = fieldSerDer.deserialize(currentIndex, lineBuf, nullChars);
           output.put(currentTarget, datum);
         } catch (Exception e) {
           output.put(currentTarget, NullDatum.get());
         }
-
         currentTarget++;
       }
 

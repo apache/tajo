@@ -47,19 +47,19 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolServ
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
+import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.NoSuchSessionVariableException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
@@ -307,11 +307,6 @@ public class TajoMasterClientService extends AbstractService {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
-        if (queryContext.getCurrentDatabase() == null) {
-          for (Map.Entry<String,String> e : queryContext.getAllKeyValus().entrySet()) {
-            System.out.println(e.getKey() + "=" + e.getValue());
-          }
-        }
 
         UpdateQueryResponse.Builder builder = UpdateQueryResponse.newBuilder();
         try {
@@ -379,12 +374,12 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryListResponse getRunningQueryList(RpcController controller, GetQueryListRequest request)
+    public GetQueryListResponse getRunningQueryList(RpcController controller, TajoIdProtos.SessionIdProto request)
 
         throws ServiceException {
 
       try {
-        context.getSessionManager().touch(request.getSessionId().getId());
+        context.getSessionManager().touch(request.getId());
         GetQueryListResponse.Builder builder= GetQueryListResponse.newBuilder();
 
         Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
@@ -416,11 +411,11 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryListResponse getFinishedQueryList(RpcController controller, GetQueryListRequest request)
+    public GetQueryListResponse getFinishedQueryList(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
 
       try {
-        context.getSessionManager().touch(request.getSessionId().getId());
+        context.getSessionManager().touch(request.getId());
         GetQueryListResponse.Builder builder = GetQueryListResponse.newBuilder();
 
         Collection<QueryInfo> queries
@@ -623,6 +618,12 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
+
+        QueryInProgress progress = context.getQueryJobManager().getQueryInProgress(queryId);
+        if (progress == null || progress.isFinishState() || progress.isKillWait()) {
+          return BOOL_TRUE;
+        }
+
         QueryManager queryManager = context.getQueryJobManager();
         queryManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
             new QueryInfo(queryId)));
@@ -723,7 +724,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public PrimitiveProtos.StringListProto getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
+    public StringListProto getAllDatabases(RpcController controller, TajoIdProtos.SessionIdProto
         request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getId());
@@ -749,10 +750,6 @@ public class TajoMasterClientService extends AbstractService {
           tableName = request.getValue();
         }
 
-        if (databaseName == null) {
-          System.out.println("A");
-        }
-
         if (catalog.existsTable(databaseName, tableName)) {
           return BOOL_TRUE;
         } else {
@@ -764,19 +761,19 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetTableListResponse getTableList(RpcController controller,
-                                             GetTableListRequest request) throws ServiceException {
+    public StringListProto getTableList(RpcController controller,
+                                             SessionedStringProto request) throws ServiceException {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         String databaseName;
-        if (request.hasDatabaseName()) {
-          databaseName = request.getDatabaseName();
+        if (request.hasValue()) {
+          databaseName = request.getValue();
         } else {
           databaseName = session.getCurrentDatabase();
         }
         Collection<String> tableNames = catalog.getAllTableNames(databaseName);
-        GetTableListResponse.Builder builder = GetTableListResponse.newBuilder();
-        builder.addAllTables(tableNames);
+        StringListProto.Builder builder = StringListProto.newBuilder();
+        builder.addAllValues(tableNames);
         return builder.build();
       } catch (Throwable t) {
         throw new ServiceException(t);
@@ -784,19 +781,27 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public TableResponse getTableDesc(RpcController controller, GetTableDescRequest request) throws ServiceException {
+    public TableResponse getTableDesc(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
+
+        if (!request.hasValue()) {
+          return TableResponse.newBuilder()
+              .setResultCode(ResultCode.ERROR)
+              .setErrorMessage("table name is required.")
+              .build();
+        }
+
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String databaseName;
         String tableName;
-        if (CatalogUtil.isFQTableName(request.getTableName())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
           databaseName = session.getCurrentDatabase();
-          tableName = request.getTableName();
+          tableName = request.getValue();
         }
 
         if (catalog.existsTable(databaseName, tableName)) {
@@ -807,7 +812,7 @@ public class TajoMasterClientService extends AbstractService {
         } else {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.ERROR)
-              .setErrorMessage("ERROR: no such a table: " + request.getTableName())
+              .setErrorMessage("ERROR: no such a table: " + request.getValue())
               .build();
         }
       } catch (Throwable t) {
@@ -839,8 +844,7 @@ public class TajoMasterClientService extends AbstractService {
         TableDesc desc;
         try {
           desc = context.getGlobalEngine().getDDLExecutor().createTable(queryContext, request.getName(),
-              meta.getStoreType(), schema,
-              meta, path, true, partitionDesc, false);
+              null, meta.getStoreType(), schema, meta, path.toUri(), true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.ERROR)

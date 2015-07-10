@@ -98,6 +98,7 @@ public class OverridableConf extends KeyValueSet {
     }
   }
 
+  @Override
   public boolean getBool(ConfigKey key) {
     return getBool(key, null);
   }
@@ -123,6 +124,7 @@ public class OverridableConf extends KeyValueSet {
     }
   }
 
+  @Override
   public int getInt(ConfigKey key) {
     return getInt(key, null);
   }
@@ -148,6 +150,7 @@ public class OverridableConf extends KeyValueSet {
     }
   }
 
+  @Override
   public long getLong(ConfigKey key) {
     return getLong(key, null);
   }
@@ -173,6 +176,7 @@ public class OverridableConf extends KeyValueSet {
     }
   }
 
+  @Override
   public float getFloat(ConfigKey key) {
     return getLong(key, null);
   }

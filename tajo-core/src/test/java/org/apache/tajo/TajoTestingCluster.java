@@ -33,7 +33,6 @@ import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
@@ -48,16 +47,19 @@ import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
+import java.net.URI;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -133,7 +135,7 @@ public class TajoTestingCluster {
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));
       conf.set(ConfVars.RESOURCE_MANAGER_CLASS.varname, System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname));
     }
-    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 1024);
+    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2048);
     conf.setFloat(ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS.varname, 2.0f);
 
 
@@ -156,14 +158,15 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
 
     // Resource allocator
-    conf.setIntVar(ConfVars.YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM, 2);
+    conf.setIntVar(ConfVars.$QUERY_EXECUTE_PARALLEL_MAX, 3);
+    conf.setIntVar(ConfVars.YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM, 6);   // make twice of parallel_max
 
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
 
     conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
 
-    /* Since Travi CI limits the size of standard output log up to 4MB */
+    /* Since Travis CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
       Level defaultLevel = Logger.getRootLogger().getLevel();
       Logger.getLogger("org.apache.tajo").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
@@ -254,7 +257,7 @@ public class TajoTestingCluster {
     builder.waitSafeMode(true);
     this.dfsCluster = builder.build();
 
-    // Set this just-started cluser as our filesystem.
+    // Set this just-started cluster as our filesystem.
     this.defaultFS = this.dfsCluster.getFileSystem();
     this.conf.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, defaultFS.getUri().toString());
     this.conf.setVar(TajoConf.ConfVars.ROOT_DIR, defaultFS.getUri() + "/tajo");
@@ -344,10 +347,17 @@ public class TajoTestingCluster {
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
     if (!local) {
-      c.setVar(ConfVars.ROOT_DIR,
-          getMiniDFSCluster().getFileSystem().getUri() + "/tajo");
+      String tajoRootDir = getMiniDFSCluster().getFileSystem().getUri().toString() + "/tajo";
+      c.setVar(ConfVars.ROOT_DIR, tajoRootDir);
+
+      URI defaultTsUri = TajoConf.getWarehouseDir(c).toUri();
+      FileTablespace defaultTableSpace =
+          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri);
+      defaultTableSpace.init(conf);
+      TablespaceManager.addTableSpaceForTest(defaultTableSpace);
+
     } else {
-      c.setVar(ConfVars.ROOT_DIR, testBuildDir.getAbsolutePath() + "/tajo");
+      c.setVar(ConfVars.ROOT_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo");
     }
 
     setupCatalogForTesting(c, testBuildDir);
@@ -440,13 +450,6 @@ public class TajoTestingCluster {
     }
   }
 
-  public void restartTajoCluster(int numSlaves) throws Exception {
-    tajoMaster.stop();
-    tajoMaster.start();
-
-    LOG.info("Minicluster has been restarted");
-  }
-
   public TajoMaster getMaster() {
     return this.tajoMaster;
   }
@@ -509,6 +512,7 @@ public class TajoTestingCluster {
     startMiniDFSCluster(numDataNodes, clusterTestBuildDir, dataNodeHosts);
     this.dfsCluster.waitClusterUp();
 
+    conf.setInt("hbase.hconnection.threads.core", 50);
     hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
 
     startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, false);
@@ -651,7 +655,14 @@ public class TajoTestingCluster {
       if (!fs.exists(rootDir)) {
         fs.mkdirs(rootDir);
       }
-      Path tablePath = new Path(rootDir, tableName);
+      Path tablePath;
+      if (CatalogUtil.isFQTableName(tableName)) {
+        Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
+        tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
+      } else {
+        tablePath = new Path(rootDir, tableName);
+      }
+
       fs.mkdirs(tablePath);
       if (tableDatas.length > 0) {
         int recordPerFile = tableDatas.length / numDataFiles;

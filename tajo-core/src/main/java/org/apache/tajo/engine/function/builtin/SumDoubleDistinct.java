@@ -65,10 +65,12 @@ public class SumDoubleDistinct extends AggFunction<Datum> {
   @Override
   public void merge(FunctionContext context, Tuple params) {
     SumContext distinctContext = (SumContext) context;
-    Datum value = params.get(0);
-    if ((distinctContext.latest == null || (!distinctContext.latest.equals(value)) && !(value instanceof NullDatum))) {
-      distinctContext.latest = value;
-      distinctContext.sum += value.asFloat8();
+    if (!params.isBlankOrNull(0)) {
+      Datum value = params.asDatum(0);
+      if (distinctContext.latest == null || !distinctContext.latest.equals(value)) {
+        distinctContext.latest = value;
+        distinctContext.sum += value.asFloat8();
+      }
     }
   }
 

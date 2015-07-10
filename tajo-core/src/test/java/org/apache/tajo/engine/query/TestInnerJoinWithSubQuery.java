@@ -122,4 +122,11 @@ public class TestInnerJoinWithSubQuery extends TestJoinQuery {
   public final void testBroadcastSubquery2() throws Exception {
     runSimpleTests();
   }
+
+  @Test
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @SimpleTest()
+  public final void testThetaJoinKeyPairs() throws Exception {
+    runSimpleTests();
+  }
 }

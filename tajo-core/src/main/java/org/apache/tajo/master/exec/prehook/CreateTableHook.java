@@ -19,13 +19,11 @@
 package org.apache.tajo.master.exec.prehook;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.storage.StorageUtil;
 
 public class CreateTableHook implements DistributedQueryHook {
 
@@ -43,8 +41,10 @@ public class CreateTableHook implements DistributedQueryHook {
     String databaseName = splitted[0];
     String tableName = splitted[1];
     queryContext.setOutputTable(tableName);
-    queryContext.setOutputPath(
-        StorageUtil.concatPath(TajoConf.getWarehouseDir(queryContext.getConf()), databaseName, tableName));
+
+    // set the final output table uri
+    queryContext.setOutputPath(createTableNode.getUri());
+
     if(createTableNode.getPartitionMethod() != null) {
       queryContext.setPartitionMethod(createTableNode.getPartitionMethod());
     }
