@@ -33,6 +33,7 @@ import java.sql.ResultSet;
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
 @NamedTest("TestJoinQuery")
+@net.jcip.annotations.NotThreadSafe
 public class TestInnerJoinQuery extends TestJoinQuery {
 
   public TestInnerJoinQuery(String joinOption) throws Exception {

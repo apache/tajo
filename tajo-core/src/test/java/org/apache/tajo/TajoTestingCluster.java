@@ -47,10 +47,8 @@ import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.*;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.File;
@@ -71,6 +69,7 @@ public class TajoTestingCluster {
   private MiniDFSCluster dfsCluster;
 	private MiniCatalogServer catalogServer;
   private HBaseTestClusterUtil hbaseUtil;
+  private TajoClient tajoClient;
 
   private TajoMaster tajoMaster;
   private List<TajoWorker> tajoWorkers = new ArrayList<TajoWorker>();
@@ -126,8 +125,9 @@ public class TajoTestingCluster {
     conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
 
-    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2000);
-    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 3);
+    conf.setInt(ConfVars.TASK_RESOURCE_MINIMUM_MEMORY.varname, 150);
+    conf.setInt(ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY.varname, 100);
+    conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 4);
 
     // Client API RPC
     conf.setIntVar(ConfVars.RPC_CLIENT_WORKER_THREAD_NUM, 2);
@@ -452,6 +452,8 @@ public class TajoTestingCluster {
       eachWorker.stopWorkerForce();
     }
     tajoWorkers.clear();
+
+    FileUtil.cleanup(null, this.tajoClient);
     this.tajoMaster= null;
   }
 
@@ -615,15 +617,19 @@ public class TajoTestingCluster {
     }
   }
 
-  public static TajoClient newTajoClient(TajoTestingCluster util) throws InterruptedException, IOException {
-    while(true) {
-      if(util.getMaster().isMasterRunning()) {
-        break;
+  public TajoClient getTajoClient() throws InterruptedException, IOException {
+    if(tajoClient == null) {
+      while(true) {
+        if(getMaster().isMasterRunning()) {
+          break;
+        }
+        Thread.sleep(1000);
       }
-      Thread.sleep(1000);
+
+      this.tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(getConfiguration()));
     }
-    TajoConf conf = util.getConfiguration();
-    return new TajoClientImpl(ServiceTrackerFactory.get(conf));
+
+    return tajoClient;
   }
 
   public static void createTable(String tableName, Schema schema,
@@ -635,47 +641,44 @@ public class TajoTestingCluster {
                                  KeyValueSet tableOption, String[] tableDatas, int numDataFiles) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
     TajoTestingCluster util = instance.getTestingCluster();
-    TajoClient client = newTajoClient(util);
-    try {
-      FileSystem fs = util.getDefaultFileSystem();
-      Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
-      if (!fs.exists(rootDir)) {
-        fs.mkdirs(rootDir);
-      }
-      Path tablePath;
-      if (CatalogUtil.isFQTableName(tableName)) {
-        Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
-        tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
-      } else {
-        tablePath = new Path(rootDir, tableName);
-      }
+    TajoClient client = util.getTajoClient();
+    FileSystem fs = util.getDefaultFileSystem();
+    Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
 
-      fs.mkdirs(tablePath);
-      if (tableDatas.length > 0) {
-        int recordPerFile = tableDatas.length / numDataFiles;
-        if (recordPerFile == 0) {
-          recordPerFile = 1;
-        }
-        FSDataOutputStream out = null;
-        for (int j = 0; j < tableDatas.length; j++) {
-          if (out == null || j % recordPerFile == 0) {
-            if (out != null) {
-              out.close();
-            }
-            Path dfsPath = new Path(tablePath, tableName + j + ".tbl");
-            out = fs.create(dfsPath);
-          }
-          out.write((tableDatas[j] + "\n").getBytes());
-        }
-        if (out != null) {
-          out.close();
-        }
-      }
-      TableMeta meta = CatalogUtil.newTableMeta("CSV", tableOption);
-      client.createExternalTable(tableName, schema, tablePath.toUri(), meta);
-    } finally {
-      client.close();
+    if (!fs.exists(rootDir)) {
+      fs.mkdirs(rootDir);
     }
+    Path tablePath;
+    if (CatalogUtil.isFQTableName(tableName)) {
+      Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
+      tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
+    } else {
+      tablePath = new Path(rootDir, tableName);
+    }
+
+    fs.mkdirs(tablePath);
+    if (tableDatas.length > 0) {
+      int recordPerFile = tableDatas.length / numDataFiles;
+      if (recordPerFile == 0) {
+        recordPerFile = 1;
+      }
+      FSDataOutputStream out = null;
+      for (int j = 0; j < tableDatas.length; j++) {
+        if (out == null || j % recordPerFile == 0) {
+          if (out != null) {
+            out.close();
+          }
+          Path dfsPath = new Path(tablePath, tableName + j + ".tbl");
+          out = fs.create(dfsPath);
+        }
+        out.write((tableDatas[j] + "\n").getBytes());
+      }
+      if (out != null) {
+        out.close();
+      }
+    }
+    TableMeta meta = CatalogUtil.newTableMeta("CSV", tableOption);
+    client.createExternalTable(tableName, schema, tablePath.toUri(), meta);
   }
 
     /**

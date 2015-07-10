@@ -46,6 +46,7 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestGroupByQuery extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestGroupByQuery.class);
 
@@ -432,12 +433,12 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     schema.addColumn("qty", Type.INT4);
     schema.addColumn("qty2", Type.FLOAT8);
     String[] data = new String[]{"1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0"};
-    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+    TajoTestingCluster.createTable("testdistinctaggregationcasebycase11", schema, tableOptions, data);
 
     res = executeString("select id, count(distinct code), " +
         "avg(qty), min(qty), max(qty), sum(qty), " +
         "cast(avg(qty2) as INT8), cast(min(qty2) as INT8), cast(max(qty2) as INT8), cast(sum(qty2) as INT8) " +
-        "from table10 group by id");
+        "from testdistinctaggregationcasebycase11 group by id");
 
     String expected = "id,?count_4,?avg_5,?min_6,?max_7,?sum_8,?cast_9,?cast_10,?cast_11,?cast_12\n" +
         "-------------------------------\n" +
@@ -448,7 +449,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     // multiple distinct with expression
     res = executeString(
-        "select count(distinct code) + count(distinct qty) from table10"
+        "select count(distinct code) + count(distinct qty) from testdistinctaggregationcasebycase11"
     );
 
     expected = "?plus_2\n" +
@@ -459,7 +460,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     res.close();
 
     res = executeString(
-        "select id, count(distinct code) + count(distinct qty) from table10 group by id"
+        "select id, count(distinct code) + count(distinct qty) from testdistinctaggregationcasebycase11 group by id"
     );
 
     expected = "id,?plus_2\n" +
@@ -470,7 +471,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertEquals(expected, resultSetToString(res));
     res.close();
 
-    executeString("DROP TABLE table10 PURGE").close();
+    executeString("DROP TABLE testdistinctaggregationcasebycase11 PURGE").close();
   }
 
   @Test
@@ -494,13 +495,13 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         "a|b-3|\\N"
     };
 
-    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+    TajoTestingCluster.createTable("testdistinctaggregationcasebycase3", schema, tableOptions, data);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
 
-    executeString("DROP TABLE table10 PURGE").close();
+    executeString("DROP TABLE testdistinctaggregationcasebycase3 PURGE").close();
   }
 
   @Test
