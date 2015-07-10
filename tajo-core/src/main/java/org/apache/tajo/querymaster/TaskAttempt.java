@@ -167,6 +167,10 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
               TaskAttemptEventType.TA_ASSIGNED,
               TaskAttemptEventType.TA_DONE),
           new TaskKilledCompleteTransition())
+
+          // Transitions from TA_FAILED state
+      .addTransition(TaskAttemptState.TA_FAILED, TaskAttemptState.TA_FAILED,
+          TaskAttemptEventType.TA_KILL)
       .installTopology();
 
   private final StateMachine<TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
