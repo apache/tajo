@@ -20,8 +20,8 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -39,53 +39,53 @@ import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.*;
 
 public class TestFullOuterMergeJoinExec {
-  private TajoConf conf;
-  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestFullOuterMergeJoinExec";
-  private TajoTestingCluster util;
-  private CatalogService catalog;
-  private SQLAnalyzer analyzer;
-  private LogicalPlanner planner;
-  private Path testDir;
-  private QueryContext defaultContext;
+  private static TajoConf conf;
+  private static final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestFullOuterMergeJoinExec";
+  private static TajoTestingCluster util;
+  private static CatalogService catalog;
+  private static SQLAnalyzer analyzer;
+  private static LogicalPlanner planner;
+  private static Path testDir;
+  private static QueryContext defaultContext;
 
-  private TableDesc dep3;
-  private TableDesc dep4;
-  private TableDesc job3;
-  private TableDesc emp3;
-  private TableDesc phone3;
+  private static TableDesc dep3;
+  private static TableDesc dep4;
+  private static TableDesc job3;
+  private static TableDesc emp3;
+  private static TableDesc phone3;
 
-  private final String DEP3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dep3");
-  private final String DEP4_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dep4");
-  private final String JOB3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "job3");
-  private final String EMP3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "emp3");
-  private final String PHONE3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "phone3");
+  private static final String DATABASENAME = "testfulloutermergejoinexec";
+  private static final String DEP3_NAME = CatalogUtil.buildFQName(DATABASENAME, "dep3");
+  private static final String DEP4_NAME = CatalogUtil.buildFQName(DATABASENAME, "dep4");
+  private static final String JOB3_NAME = CatalogUtil.buildFQName(DATABASENAME, "job3");
+  private static final String EMP3_NAME = CatalogUtil.buildFQName(DATABASENAME, "emp3");
+  private static final String PHONE3_NAME = CatalogUtil.buildFQName(DATABASENAME, "phone3");
 
-  @Before
-  public void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    util.initTestDir();
-    catalog = util.startCatalogCluster().getCatalog();
+  @BeforeClass
+  public static void setUp() throws Exception {
+    util = TpchTestBase.getInstance().getTestingCluster();
+    catalog = util.getMaster().getCatalog();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
-    catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-
+    catalog.createDatabase(DATABASENAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
     //----------------- dep3 ------------------------------
@@ -283,24 +283,32 @@ public class TestFullOuterMergeJoinExec {
     defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    catalog.dropDatabase(DATABASENAME);
+    testDir.getFileSystem(conf).delete(testDir, true);
   }
 
   String[] QUERIES = {
       // [0] no nulls
-      "select dep3.dep_id, dep_name, emp_id, salary from emp3 full outer join dep3 on dep3.dep_id = emp3.dep_id",
+      String.format("select %s.dep3.dep_id, dep_name, emp_id, salary from %s.emp3 full outer join %s.dep3 on %s.dep3.dep_id = %s.emp3.dep_id",
+          DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME),
       // [1] nulls on the left operand
-      "select job3.job_id, job_title, emp_id, salary from emp3 full outer join job3 on job3.job_id=emp3.job_id",
+      String.format("select %s.job3.job_id, job_title, emp_id, salary from %s.emp3 full outer join %s.job3 on %s.job3.job_id=%s.emp3.job_id",
+          DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME),
       // [2] nulls on the right side
-      "select job3.job_id, job_title, emp_id, salary from job3 full outer join emp3 on job3.job_id=emp3.job_id",
+      String.format("select %s.job3.job_id, job_title, emp_id, salary from %s.job3 full outer join %s.emp3 on %s.job3.job_id=%s.emp3.job_id",
+          DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME),
       // [3] no nulls, right continues after left
-      "select dep4.dep_id, dep_name, emp_id, salary from emp3 full outer join dep4 on dep4.dep_id = emp3.dep_id",
+      String.format("select %s.dep4.dep_id, dep_name, emp_id, salary from %s.emp3 full outer join %s.dep4 on %s.dep4.dep_id = %s.emp3.dep_id",
+          DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME),
       // [4] one operand is empty
-      "select emp3.emp_id, first_name, phone_number from emp3 full outer join phone3 on emp3.emp_id = phone3.emp_id",
+      String.format("select %s.emp3.emp_id, first_name, phone_number from %s.emp3 full outer join %s.phone3 on %s.emp3.emp_id = %s.phone3.emp_id",
+          DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME),
       // [5] one operand is empty
-      "select emp3.emp_id, first_name, phone_number from phone3 full outer join emp3 on emp3.emp_id = phone3.emp_id",
+      String.format("select %s.emp3.emp_id, first_name, phone_number from %s.phone3 full outer join %s.emp3 on %s.emp3.emp_id = %s.phone3.emp_id",
+          DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME, DATABASENAME),
   };
 
   @Test

@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -28,54 +29,53 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestBNLJoinExec {
-  private TajoConf conf;
-  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestBNLJoinExec";
-  private TajoTestingCluster util;
-  private CatalogService catalog;
-  private SQLAnalyzer analyzer;
-  private LogicalPlanner planner;
-  private Path testDir;
+  private static TajoConf conf;
+  private static final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestBNLJoinExec";
+  private static TajoTestingCluster util;
+  private static CatalogService catalog;
+  private static LogicalPlanner planner;
+  private static Path testDir;
 
   private static int OUTER_TUPLE_NUM = 1000;
   private static int INNER_TUPLE_NUM = 1000;
 
-  private TableDesc employee;
-  private TableDesc people;
+  private static TableDesc employee;
+  private static TableDesc people;
 
-  @Before
-  public void setUp() throws Exception {
-    util = new TajoTestingCluster();
+  @BeforeClass
+  public static void setUp() throws Exception {
+    util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.startCatalogCluster().getCatalog();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
-    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
+    catalog.createDatabase("testbnljoinexec", DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
     Schema schema = new Schema();
@@ -98,7 +98,7 @@ public class TestBNLJoinExec {
     }
     appender.flush();
     appender.close();
-    employee = CatalogUtil.newTableDesc("default.employee", schema, employeeMeta, employeePath);
+    employee = CatalogUtil.newTableDesc("testbnljoinexec.employee", schema, employeeMeta, employeePath);
     catalog.createTable(employee);
 
     Schema peopleSchema = new Schema();
@@ -121,26 +121,27 @@ public class TestBNLJoinExec {
     appender.flush();
     appender.close();
 
-    people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
+    people = CatalogUtil.newTableDesc("testbnljoinexec.people", peopleSchema, peopleMeta, peoplePath);
     catalog.createTable(people);
-    analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
   }
 
-  @After
-  public void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
+  @AfterClass
+  public static void tearDown() throws Exception {
+    catalog.dropDatabase("testbnljoinexec");
+    testDir.getFileSystem(conf).delete(testDir, true);
   }
 
   // employee (managerId, empId, memId, deptName)
   // people (empId, fk_memId, name, age)
   String[] QUERIES = {
-      "select managerId, e.empId, deptName, e.memId from employee as e, people p",
-      "select managerId, e.empId, deptName, e.memId from employee as e " +
-          "inner join people as p on e.empId = p.empId and e.memId = p.fk_memId" };
+      "select managerId, e.empId, deptName, e.memId from testbnljoinexec.employee as e, testbnljoinexec.people p",
+      "select managerId, e.empId, deptName, e.memId from testbnljoinexec.employee as e " +
+          "inner join testbnljoinexec.people as p on e.empId = p.empId and e.memId = p.fk_memId" };
 
   @Test
   public final void testBNLCrossJoin() throws IOException, PlanningException {
+    SQLAnalyzer analyzer = new SQLAnalyzer();
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
         expr).getRootBlock().getRoot();
@@ -148,10 +149,10 @@ public class TestBNLJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
-    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "testbnljoinexec.e", employee.getMeta(),
         new Path(employee.getUri()),
         Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "testbnljoinexec.p", people.getMeta(),
         new Path(people.getUri()),
         Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
@@ -177,13 +178,14 @@ public class TestBNLJoinExec {
 
   @Test
   public final void testBNLInnerJoin() throws IOException, PlanningException {
+    SQLAnalyzer analyzer = new SQLAnalyzer();
     Expr context = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
         context).getRootBlock().getRoot();
 
-    FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
+    FileFragment[] empFrags = FileTablespace.splitNG(conf, "testbnljoinexec.e", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
+    FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "testbnljoinexec.p", people.getMeta(),
         new Path(people.getUri()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 

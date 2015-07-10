@@ -43,17 +43,17 @@ public class TestConditionalExpressions extends ExprTestBase {
     schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
     schema.addColumn("col9", TajoDataTypes.Type.INT4);
 
-    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
-        "select case when col1 between 1 and 3 then 10 else 100 end from table1;",
+    testEval(schema, "testcasewhens1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case when col1 between 1 and 3 then 10 else 100 end from testcasewhens1;",
         new String [] {"10"});
-    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
-        "select case when col1 > 1 then 10 when col1 > 2 then 20 else 100 end from table1;",
+    testEval(schema, "testcasewhens1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case when col1 > 1 then 10 when col1 > 2 then 20 else 100 end from testcasewhens1;",
         new String [] {"100"});
-    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
-        "select case col1 when 1 then 10 when 2 then 20 else 100 end from table1;",
+    testEval(schema, "testcasewhens1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case col1 when 1 then 10 when 2 then 20 else 100 end from testcasewhens1;",
         new String [] {"10"});
-    testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
-        "select case col9 when 1 then 10 when 2 then 20 else 100 end is null from table1;",
+    testEval(schema, "testcasewhens1", "1,2,3,4,5.0,6.0,text,abc,",
+        "select case col9 when 1 then 10 when 2 then 20 else 100 end is null from testcasewhens1;",
         new String [] {"f"});
   }
 
@@ -63,11 +63,11 @@ public class TestConditionalExpressions extends ExprTestBase {
     schema.addColumn("col1", TajoDataTypes.Type.TEXT);
     schema.addColumn("col2", TajoDataTypes.Type.TEXT);
 
-    testEval(schema, "table1", "str1,str2",
-        "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
+    testEval(schema, "testcasewhenswithnullreturn", "str1,str2",
+        "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM testcasewhenswithnullreturn",
         new String[]{"str2"});
-    testEval(schema, "table1", ",str2",
-        "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
+    testEval(schema, "testcasewhenswithnullreturn", ",str2",
+        "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM testcasewhenswithnullreturn",
         new String[]{""});
   }
 
@@ -78,34 +78,34 @@ public class TestConditionalExpressions extends ExprTestBase {
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT4);
 
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE WHEN col1 = 1 THEN 1 WHEN col1 = 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE WHEN col1 = 1 THEN 1 WHEN col1 = 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpression",
         new String [] {"1"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE WHEN col2 = 1 THEN 1 WHEN col2 = 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE WHEN col2 = 1 THEN 1 WHEN col2 = 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpression",
         new String [] {"2"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE WHEN col3 = 1 THEN 1 WHEN col3 = 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE WHEN col3 = 1 THEN 1 WHEN col3 = 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpression",
         new String [] {"3"});
 
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col1 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpression",
         new String [] {"1"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col2 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpression",
         new String [] {"2"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col3 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpression",
         new String [] {"3"});
 
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col1 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM testcasewhenswithcommonexpression",
         new String [] {"aaa"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col2 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM testcasewhenswithcommonexpression",
         new String [] {"bbb"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col3 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpression", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN 'aaa' WHEN 2 THEN 'bbb' ELSE 'ccc' END FROM testcasewhenswithcommonexpression",
         new String [] {"ccc"});
   }
 
@@ -116,24 +116,24 @@ public class TestConditionalExpressions extends ExprTestBase {
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT4);
 
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col1 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpressionandnull", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpressionandnull",
         new String [] {""});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpressionandnull", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpressionandnull",
         new String [] {"2"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpressionandnull", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM testcasewhenswithcommonexpressionandnull",
         new String [] {"3"});
 
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col1 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE NULL END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpressionandnull", "1,2,3",
+        "SELECT CASE col1 WHEN 1 THEN 1 WHEN 2 THEN 2 ELSE NULL END FROM testcasewhenswithcommonexpressionandnull",
         new String [] {"1"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpressionandnull", "1,2,3",
+        "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM testcasewhenswithcommonexpressionandnull",
         new String [] {"2"});
-    testEval(schema, "table1", "1,2,3",
-        "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM table1",
+    testEval(schema, "testcasewhenswithcommonexpressionandnull", "1,2,3",
+        "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM testcasewhenswithcommonexpressionandnull",
         new String [] {""});
   }
 

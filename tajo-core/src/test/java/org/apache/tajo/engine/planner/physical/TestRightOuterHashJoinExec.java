@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -40,43 +41,42 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 
 // this is not a physical operator in itself, but it uses the HashLeftOuterJoinExec with switched inputs order
 public class TestRightOuterHashJoinExec {
-  private TajoConf conf;
-  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestRightOuterHashJoinExec";
-  private TajoTestingCluster util;
-  private CatalogService catalog;
-  private SQLAnalyzer analyzer;
-  private LogicalPlanner planner;
-  private Path testDir;
-  private QueryContext defaultContext;
 
-  private TableDesc dep3;
-  private TableDesc job3;
-  private TableDesc emp3;
+  private static TajoConf conf;
+  private static final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestRightOuterHashJoinExec";
+  private static TajoTestingCluster util;
+  private static CatalogService catalog;
+  private static SQLAnalyzer analyzer;
+  private static LogicalPlanner planner;
+  private static Path testDir;
+  private static QueryContext defaultContext;
 
-  private final String DEP3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dep3");
-  private final String JOB3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "job3");
-  private final String EMP3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "emp3");
+  private static TableDesc dep3;
+  private static TableDesc job3;
+  private static TableDesc emp3;
 
-  @Before
-  public void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    util.initTestDir();
-    catalog = util.startCatalogCluster().getCatalog();
+  private static final String DATABASENAME = "testrightouterhashjoinexec";
+  private static final String DEP3_NAME = CatalogUtil.buildFQName(DATABASENAME, "dep3");
+  private static final String JOB3_NAME = CatalogUtil.buildFQName(DATABASENAME, "job3");
+  private static final String EMP3_NAME = CatalogUtil.buildFQName(DATABASENAME, "emp3");
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+    util = TpchTestBase.getInstance().getTestingCluster();
+    catalog = util.getMaster().getCatalog();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
-    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
+    catalog.createDatabase(DATABASENAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
     //----------------- dep3 ------------------------------
@@ -216,15 +216,22 @@ public class TestRightOuterHashJoinExec {
     defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
+  @AfterClass
+  public static void tearDown() throws Exception {
+    catalog.dropDatabase(DATABASENAME);
+    testDir.getFileSystem(conf).delete(testDir, true);
   }
 
   String[] QUERIES = {
-      "select dep3.dep_id, dep_name, emp_id, salary from emp3 right outer join dep3 on dep3.dep_id = emp3.dep_id", //0 no nulls
-      "select job3.job_id, job_title, emp_id, salary from emp3 right outer join job3 on job3.job_id=emp3.job_id", //1 nulls on the left operand
-      "select job3.job_id, job_title, emp_id, salary from job3 right outer join emp3 on job3.job_id=emp3.job_id" //2 nulls on the right side
+      //0 no nulls
+      String.format("select dep3.dep_id, dep_name, emp_id, salary from %s.emp3 right outer join %s.dep3 on dep3.dep_id = emp3.dep_id",
+          DATABASENAME, DATABASENAME),
+      //1 nulls on the left operand
+      String.format("select job3.job_id, job_title, emp_id, salary from %s.emp3 right outer join %s.job3 on job3.job_id=emp3.job_id",
+          DATABASENAME, DATABASENAME),
+      //2 nulls on the right side
+      String.format("select job3.job_id, job_title, emp_id, salary from %s.job3 right outer join %s.emp3 on job3.job_id=emp3.job_id",
+          DATABASENAME, DATABASENAME)
   };
 
   @Test

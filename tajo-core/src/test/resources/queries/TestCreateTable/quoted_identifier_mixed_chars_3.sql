@@ -6,7 +6,7 @@ FROM (
     "tb1"."teXt",
     "Number"
   FROM
-    "TABLE1" "tb1"
+    "TESTDELIMITEDIDENTIFIERWITHMIXEDCHARACTERS" "tb1"
 
   UNION
 
@@ -15,7 +15,7 @@ FROM (
     "teXt",
     "Number"
   FROM
-    "tablE1"
+    "testDelimitedIdentifierWithMixedCharacters"
 ) T1
 ORDER BY
   "aGe";

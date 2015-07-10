@@ -34,27 +34,27 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
     schema.addColumn("col1", TEXT);
 
     // test for null values
-    testEval(schema, "table1", ",", "select col1 like 'a%' from table1", new String[]{""});
+    testEval(schema, "testlike", ",", "select col1 like 'a%' from testlike", new String[]{""});
     testSimpleEval("select null like 'a%'", new String[]{""});
 
-    testEval(schema, "table1", "abc", "select col1 like '%c' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 like 'a%' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 like '_bc' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 like 'ab_' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 like '_b_' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 like '%b%' from table1", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 like '%c' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 like 'a%' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 like '_bc' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 like 'ab_' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 like '_b_' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 like '%b%' from testlike", new String[]{"t"});
 
     // test for escaping regular expressions
-    testEval(schema, "table1", "abc", "select col1 not like '.bc' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 not like '.*bc' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 not like '.bc' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 not like '*bc' from table1", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '.bc' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '.*bc' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '.bc' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '*bc' from testlike", new String[]{"t"});
 
     // test for case sensitive
-    testEval(schema, "table1", "abc", "select col1 not like '%C' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 not like 'A%' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 not like '_BC' from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc", "select col1 not like '_C_' from table1", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '%C' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like 'A%' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '_BC' from testlike", new String[]{"t"});
+    testEval(schema, "testlike", "abc", "select col1 not like '_C_' from testlike", new String[]{"t"});
   }
 
   @Test

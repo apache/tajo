@@ -106,69 +106,69 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select cast (1 as char)", new String[]{"1"});
     testSimpleEval("select cast (119 as char)", new String[] {"1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::int1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::int1 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::int1 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::int1 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::int1 from table1;", new String [] {"5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::int1 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::int1 from table1;", new String [] {"7"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::int1 from testexplicitcast;", new String [] {"0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::int1 from testexplicitcast;", new String [] {"1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::int1 from testexplicitcast;", new String [] {"2"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::int1 from testexplicitcast;", new String [] {"3"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::int1 from testexplicitcast;", new String [] {"4"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::int1 from testexplicitcast;", new String [] {"5"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::int1 from testexplicitcast;", new String [] {"6"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::int1 from testexplicitcast;", new String [] {"7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::int2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::int2 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::int2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::int2 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::int2 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::int2 from table1;", new String [] {"5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::int2 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::int2 from table1;", new String [] {"7"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::int2 from testexplicitcast;", new String [] {"0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::int2 from testexplicitcast;", new String [] {"1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::int2 from testexplicitcast;", new String [] {"2"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::int2 from testexplicitcast;", new String [] {"3"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::int2 from testexplicitcast;", new String [] {"4"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::int2 from testexplicitcast;", new String [] {"5"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::int2 from testexplicitcast;", new String [] {"6"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::int2 from testexplicitcast;", new String [] {"7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::int4 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::int4 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::int4 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::int4 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::int4 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::int4 from table1;", new String [] {"5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::int4 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::int4 from table1;", new String [] {"7"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::int4 from testexplicitcast;", new String [] {"0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::int4 from testexplicitcast;", new String [] {"1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::int4 from testexplicitcast;", new String [] {"2"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::int4 from testexplicitcast;", new String [] {"3"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::int4 from testexplicitcast;", new String [] {"4"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::int4 from testexplicitcast;", new String [] {"5"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::int4 from testexplicitcast;", new String [] {"6"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::int4 from testexplicitcast;", new String [] {"7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::int8 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::int8 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::int8 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::int8 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::int8 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::int8 from table1;", new String [] {"5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::int8 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::int8 from table1;", new String [] {"7"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::int8 from testexplicitcast;", new String [] {"0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::int8 from testexplicitcast;", new String [] {"1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::int8 from testexplicitcast;", new String [] {"2"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::int8 from testexplicitcast;", new String [] {"3"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::int8 from testexplicitcast;", new String [] {"4"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::int8 from testexplicitcast;", new String [] {"5"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::int8 from testexplicitcast;", new String [] {"6"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::int8 from testexplicitcast;", new String [] {"7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::float4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::float4 from table1;", new String [] {"1.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::float4 from table1;", new String [] {"2.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::float4 from table1;", new String [] {"3.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::float4 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::float4 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::float4 from table1;", new String [] {"6.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::float4 from table1;", new String [] {"7.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::float4 from testexplicitcast;", new String [] {"0.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::float4 from testexplicitcast;", new String [] {"1.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::float4 from testexplicitcast;", new String [] {"2.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::float4 from testexplicitcast;", new String [] {"3.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::float4 from testexplicitcast;", new String [] {"4.1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::float4 from testexplicitcast;", new String [] {"5.1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::float4 from testexplicitcast;", new String [] {"6.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::float4 from testexplicitcast;", new String [] {"7.0"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::float8 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::float8 from table1;", new String [] {"1.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::float8 from table1;", new String [] {"2.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::float8 from table1;", new String [] {"3.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::float8 from table1;", new String[]
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::float8 from testexplicitcast;", new String [] {"0.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::float8 from testexplicitcast;", new String [] {"1.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::float8 from testexplicitcast;", new String [] {"2.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::float8 from testexplicitcast;", new String [] {"3.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::float8 from testexplicitcast;", new String[]
         {Double.valueOf(4.1f).toString()});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::float8 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::float8 from table1;", new String [] {"6.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::float8 from table1;", new String [] {"7.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::float8 from testexplicitcast;", new String [] {"5.1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::float8 from testexplicitcast;", new String [] {"6.0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::float8 from testexplicitcast;", new String [] {"7.0"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::text from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1::text from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2::text from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3::text from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4::text from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5::text from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col6::text from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col7::text from table1;", new String [] {"7"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col0::text from testexplicitcast;", new String [] {"0"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col1::text from testexplicitcast;", new String [] {"1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col2::text from testexplicitcast;", new String [] {"2"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col3::text from testexplicitcast;", new String [] {"3"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col4::text from testexplicitcast;", new String [] {"4.1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col5::text from testexplicitcast;", new String [] {"5.1"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col6::text from testexplicitcast;", new String [] {"6"});
+    testEval(schema, "testexplicitcast", "0,1,2,3,4.1,5.1,6,7", "select col7::text from testexplicitcast;", new String [] {"7"});
   }
 
   @Test
@@ -183,94 +183,94 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col4 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col5 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col6::int1 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col7::int1 from table1;", new String [] {"7"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col0 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col1 from testimplicitcastforint1;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col2 from testimplicitcastforint1;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col3 from testimplicitcastforint1;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col4 from testimplicitcastforint1;", new String [] {"4.1"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col5 from testimplicitcastforint1;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col6::int1 from testimplicitcastforint1;", new String [] {"6"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col7::int1 from testimplicitcastforint1;", new String [] {"7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col4 from table1;", new String [] {"-4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col5 from table1;", new String [] {"-5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col6::int1 from table1;", new String [] {"-6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col7::int1 from table1;", new String [] {"-7"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col0 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col1 from testimplicitcastforint1;", new String [] {"-1"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col2 from testimplicitcastforint1;", new String [] {"-2"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col3 from testimplicitcastforint1;", new String [] {"-3"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col4 from testimplicitcastforint1;", new String [] {"-4.1"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col5 from testimplicitcastforint1;", new String [] {"-5.1"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col6::int1 from testimplicitcastforint1;", new String [] {"-6"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 - col7::int1 from testimplicitcastforint1;", new String [] {"-7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col6::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col7::int1 from table1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col0 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col1 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col2 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col3 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col4 from testimplicitcastforint1;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col5 from testimplicitcastforint1;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col6::int1 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 * col7::int1 from testimplicitcastforint1;", new String [] {"0"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col6::int1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col7::int1 from table1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col1 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col2 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col3 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col4 from testimplicitcastforint1;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col5 from testimplicitcastforint1;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col6::int1 from testimplicitcastforint1;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 % col7::int1 from testimplicitcastforint1;", new String [] {"0"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col0 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col1 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col2 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col3 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col4 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col5 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col6::int1 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 = col7::int1 from testimplicitcastforint1;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col0 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col1 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col2 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col3 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col4 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col5 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col6::int1 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <> col7::int1 from testimplicitcastforint1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col0 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col1 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col2 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col3 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col4 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col5 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col6::int1 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 > col7::int1 from testimplicitcastforint1;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col0 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col1 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col2 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col3 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col4 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col5 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col6::int1 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 >= col7::int1 from testimplicitcastforint1;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col0 from testimplicitcastforint1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col1 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col2 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col3 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col4 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col5 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col6::int1 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 < col7::int1 from testimplicitcastforint1;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col0 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col1 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col2 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col3 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col4 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col5 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col6::int1 from testimplicitcastforint1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint1", "0,1,2,3,4.1,5.1,6,7", "select col0 <= col7::int1 from testimplicitcastforint1;", new String [] {"t"});
   }
 
   @Test
@@ -285,94 +285,94 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col0 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col1 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col2 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col3 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col4 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col5 from table1;", new String [] {"6.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col6::int2 from table1;", new String [] {"7"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col7::int2 from table1;", new String [] {"8"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col0 from testimplicitcastforint2;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col1 from testimplicitcastforint2;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col2 from testimplicitcastforint2;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col3 from testimplicitcastforint2;", new String [] {"4"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col4 from testimplicitcastforint2;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col5 from testimplicitcastforint2;", new String [] {"6.1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col6::int2 from testimplicitcastforint2;", new String [] {"7"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 + col7::int2 from testimplicitcastforint2;", new String [] {"8"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col0 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col2 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col3 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col4 from table1;", new String [] {"-3.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col5 from table1;", new String [] {"-4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col6::int2 from table1;", new String [] {"-5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 - col7::int2 from table1;", new String [] {"-6"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col0 from testimplicitcastforint2;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col1 from testimplicitcastforint2;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col2 from testimplicitcastforint2;", new String [] {"-1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col3 from testimplicitcastforint2;", new String [] {"-2"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col4 from testimplicitcastforint2;", new String [] {"-3.1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col5 from testimplicitcastforint2;", new String [] {"-4.1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col6::int2 from testimplicitcastforint2;", new String [] {"-5"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 - col7::int2 from testimplicitcastforint2;", new String [] {"-6"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col4 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col5 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col6::int2 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 * col7::int2 from table1;", new String [] {"7"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col0 from testimplicitcastforint2;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col1 from testimplicitcastforint2;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col2 from testimplicitcastforint2;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col3 from testimplicitcastforint2;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col4 from testimplicitcastforint2;", new String [] {"4.1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col5 from testimplicitcastforint2;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col6::int2 from testimplicitcastforint2;", new String [] {"6"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 * col7::int2 from testimplicitcastforint2;", new String [] {"7"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col2 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col3 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col4 from table1;", new String [] {"1.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col5 from table1;", new String [] {"1.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col6::int2 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 % col7::int2 from table1;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col1 from testimplicitcastforint2;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col2 from testimplicitcastforint2;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col3 from testimplicitcastforint2;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col4 from testimplicitcastforint2;", new String [] {"1.0"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col5 from testimplicitcastforint2;", new String [] {"1.0"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col6::int2 from testimplicitcastforint2;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 % col7::int2 from testimplicitcastforint2;", new String [] {"1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col6::int2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 = col7::int2 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col0 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col1 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col2 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col3 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col4 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col5 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col6::int2 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 = col7::int2 from testimplicitcastforint2;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col6::int2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col7::int2 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col0 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col1 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col2 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col3 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col4 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col5 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col6::int2 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <> col7::int2 from testimplicitcastforint2;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col6::int2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 > col7::int2 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col0 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col1 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col2 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col3 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col4 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col5 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col6::int2 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 > col7::int2 from testimplicitcastforint2;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col6::int2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col7::int2 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col0 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col1 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col2 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col3 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col4 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col5 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col6::int2 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 >= col7::int2 from testimplicitcastforint2;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col6::int2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 < col7::int2 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col0 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col1 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col2 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col3 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col4 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col5 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col6::int2 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 < col7::int2 from testimplicitcastforint2;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col6::int2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col7::int2 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col0 from testimplicitcastforint2;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col1 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col2 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col3 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col4 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col5 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col6::int2 from testimplicitcastforint2;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint2", "0,1,2,3,4.1,5.1,6,7", "select col1 <= col7::int2 from testimplicitcastforint2;", new String [] {"t"});
   }
 
   @Test
@@ -387,95 +387,95 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col0 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col1 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col2 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col3 from table1;", new String [] {"5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col4 from table1;", new String [] {"6.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col5 from table1;", new String [] {"7.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col6::int4 from table1;", new String [] {"8"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col7::int4 from table1;", new String [] {"9"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col0 from testimplicitcastforint4;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col1 from testimplicitcastforint4;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col2 from testimplicitcastforint4;", new String [] {"4"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col3 from testimplicitcastforint4;", new String [] {"5"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col4 from testimplicitcastforint4;", new String [] {"6.1"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col5 from testimplicitcastforint4;", new String [] {"7.1"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col6::int4 from testimplicitcastforint4;", new String [] {"8"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 + col7::int4 from testimplicitcastforint4;", new String [] {"9"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col0 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col3 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col4 from table1;", new String [] {"-2.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col0 from testimplicitcastforint4;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col1 from testimplicitcastforint4;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col2 from testimplicitcastforint4;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col3 from testimplicitcastforint4;", new String [] {"-1"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col4 from testimplicitcastforint4;", new String [] {"-2.1"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col5 from testimplicitcastforint4;", new String [] {
         (new Integer(2) - 5.1d) +""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col6::int4 from table1;", new String [] {"-4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 - col7::int4 from table1;", new String [] {"-5"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col6::int4 from testimplicitcastforint4;", new String [] {"-4"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 - col7::int4 from testimplicitcastforint4;", new String [] {"-5"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col1 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col2 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col3 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col4 from table1;", new String [] {"8.2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col5 from table1;", new String [] {"10.2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col6::int4 from table1;", new String [] {"12"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 * col7::int4 from table1;", new String [] {"14"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col0 from testimplicitcastforint4;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col1 from testimplicitcastforint4;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col2 from testimplicitcastforint4;", new String [] {"4"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col3 from testimplicitcastforint4;", new String [] {"6"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col4 from testimplicitcastforint4;", new String [] {"8.2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col5 from testimplicitcastforint4;", new String [] {"10.2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col6::int4 from testimplicitcastforint4;", new String [] {"12"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 * col7::int4 from testimplicitcastforint4;", new String [] {"14"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col2 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col3 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col4 from table1;", new String [] {"2.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col5 from table1;", new String [] {"2.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col6::int4 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 % col7::int4 from table1;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col1 from testimplicitcastforint4;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col2 from testimplicitcastforint4;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col3 from testimplicitcastforint4;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col4 from testimplicitcastforint4;", new String [] {"2.0"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col5 from testimplicitcastforint4;", new String [] {"2.0"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col6::int4 from testimplicitcastforint4;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 % col7::int4 from testimplicitcastforint4;", new String [] {"2"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col6::int4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 = col7::int4 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col0 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col1 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col2 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col3 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col4 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col5 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col6::int4 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 = col7::int4 from testimplicitcastforint4;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col6::int4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col7::int4 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col0 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col1 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col2 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col3 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col4 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col5 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col6::int4 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <> col7::int4 from testimplicitcastforint4;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col6::int4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 > col7::int4 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col0 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col1 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col2 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col3 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col4 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col5 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col6::int4 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 > col7::int4 from testimplicitcastforint4;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col6::int4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col7::int4 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col0 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col1 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col2 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col3 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col4 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col5 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col6::int4 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 >= col7::int4 from testimplicitcastforint4;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col6::int4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 < col7::int4 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col0 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col1 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col2 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col3 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col4 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col5 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col6::int4 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 < col7::int4 from testimplicitcastforint4;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col6::int4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col7::int4 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col0 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col1 from testimplicitcastforint4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col2 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col3 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col4 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col5 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col6::int4 from testimplicitcastforint4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint4", "0,1,2,3,4.1,5.1,6,7", "select col2 <= col7::int4 from testimplicitcastforint4;", new String [] {"t"});
   }
 
   @Test
@@ -490,99 +490,99 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col0 from table1;", new String[]{"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col1 from table1;", new String [] {"4"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col2 from table1;", new String [] {"5"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col3 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col0 from testimplicitcastforint8;", new String[]{"3"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col1 from testimplicitcastforint8;", new String [] {"4"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col2 from testimplicitcastforint8;", new String [] {"5"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col3 from testimplicitcastforint8;", new String [] {"6"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col4 from testimplicitcastforint8;", new String [] {
         (new Long(3) + new Float(4.1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col5 from table1;", new String [] {"8.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col6::int8 from table1;", new String [] {"9"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col7::int8 from table1;", new String [] {"10"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col5 from testimplicitcastforint8;", new String [] {"8.1"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col6::int8 from testimplicitcastforint8;", new String [] {"9"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 + col7::int8 from testimplicitcastforint8;", new String [] {"10"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col0 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col1 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col2 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col0 from testimplicitcastforint8;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col1 from testimplicitcastforint8;", new String [] {"2"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col2 from testimplicitcastforint8;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col3 from testimplicitcastforint8;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col4 from testimplicitcastforint8;", new String [] {
         (new Long(3) - new Float(4.1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col5 from testimplicitcastforint8;", new String [] {
         (new Long(3) - 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col6::int8 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 - col7::int8 from table1;", new String [] {"-4"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col6::int8 from testimplicitcastforint8;", new String [] {"-3"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 - col7::int8 from testimplicitcastforint8;", new String [] {"-4"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col0 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col1 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col2 from table1;", new String [] {"6"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col3 from table1;", new String [] {"9"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col0 from testimplicitcastforint8;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col1 from testimplicitcastforint8;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col2 from testimplicitcastforint8;", new String [] {"6"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col3 from testimplicitcastforint8;", new String [] {"9"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col4 from testimplicitcastforint8;", new String [] {
         (new Long(3) * new Float("4.1"))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col5 from testimplicitcastforint8;", new String [] {
         (new Long(3) * new Double("5.1"))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col6::int8 from table1;", new String [] {"18"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 * col7::int8 from table1;", new String [] {"21"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col6::int8 from testimplicitcastforint8;", new String [] {"18"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 * col7::int8 from testimplicitcastforint8;", new String [] {"21"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col1 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col2 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col3 from table1;", new String [] {"0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col4 from table1;", new String [] {"3.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col5 from table1;", new String [] {"3.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col6::int8 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 % col7::int8 from table1;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col1 from testimplicitcastforint8;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col2 from testimplicitcastforint8;", new String [] {"1"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col3 from testimplicitcastforint8;", new String [] {"0"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col4 from testimplicitcastforint8;", new String [] {"3.0"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col5 from testimplicitcastforint8;", new String [] {"3.0"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col6::int8 from testimplicitcastforint8;", new String [] {"3"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 % col7::int8 from testimplicitcastforint8;", new String [] {"3"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col6::int8 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 = col7::int8 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col0 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col1 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col2 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col3 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col4 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col5 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col6::int8 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 = col7::int8 from testimplicitcastforint8;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col6::int8 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col7::int8 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col0 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col1 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col2 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col3 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col4 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col5 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col6::int8 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <> col7::int8 from testimplicitcastforint8;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col6::int8 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 > col7::int8 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col0 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col1 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col2 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col3 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col4 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col5 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col6::int8 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 > col7::int8 from testimplicitcastforint8;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col6::int8 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col7::int8 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col0 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col1 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col2 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col3 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col4 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col5 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col6::int8 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 >= col7::int8 from testimplicitcastforint8;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col6::int8 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 < col7::int8 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col0 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col1 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col2 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col3 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col4 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col5 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col6::int8 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 < col7::int8 from testimplicitcastforint8;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col6::int8 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col7::int8 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col0 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col1 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col2 from testimplicitcastforint8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col3 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col4 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col5 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col6::int8 from testimplicitcastforint8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforint8", "0,1,2,3,4.1,5.1,6,7", "select col3 <= col7::int8 from testimplicitcastforint8;", new String [] {"t"});
   }
 
   @Test
@@ -597,111 +597,111 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col0 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col1 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col2 from table1;", new String [] {"6.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col3 from table1;", new String [] {"7.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col4 from table1;", new String [] {"8.2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col0 from testimplicitcastforfloat4;", new String [] {"4.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col1 from testimplicitcastforfloat4;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col2 from testimplicitcastforfloat4;", new String [] {"6.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col3 from testimplicitcastforfloat4;", new String [] {"7.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col4 from testimplicitcastforfloat4;", new String [] {"8.2"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col5 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) + 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col6::float4 from table1;", new String [] {"10.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col7::float4 from table1;", new String [] {"11.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col6::float4 from testimplicitcastforfloat4;", new String [] {"10.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 + col7::float4 from testimplicitcastforfloat4;", new String [] {"11.1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col0 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col1 from table1;", new String [] {"3.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col2 from table1;", new String [] {"2.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col3 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col0 from testimplicitcastforfloat4;", new String [] {"4.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col1 from testimplicitcastforfloat4;", new String [] {"3.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col2 from testimplicitcastforfloat4;", new String [] {"2.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col3 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) - new Long(3))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col4 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col4 from testimplicitcastforfloat4;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col5 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) - 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col6::float4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col6::float4 from testimplicitcastforfloat4;", new String [] {
         (4.1f - 6f)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 - col7::float4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 - col7::float4 from testimplicitcastforfloat4;", new String [] {
         (4.1f - 7f)+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col0 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col1 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col2 from table1;", new String [] {"8.2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col3 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col0 from testimplicitcastforfloat4;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col1 from testimplicitcastforfloat4;", new String [] {"4.1"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col2 from testimplicitcastforfloat4;", new String [] {"8.2"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col3 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) * new Long(3))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col4 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) * new Float(4.1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col5 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) * 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col6::float4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col6::float4 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) * 6f)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 * col7::float4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 * col7::float4 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) * 7f)+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col1 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col1 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % new Integer(1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col2 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col2 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % new Integer(2))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col3 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col3 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % new Long(3))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col4 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % new Float(4.1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col5 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col6::float4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col6::float4 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % 6f)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 % col7::int1 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 % col7::int1 from testimplicitcastforfloat4;", new String [] {
         (new Float(4.1) % 7f)+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 = col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col0 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col1 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col2 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col3 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col4 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col5 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col6::int1 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 = col7::int1 from testimplicitcastforfloat4;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col0 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col1 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col2 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col3 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col4 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col5 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col6::int1 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <> col7::int1 from testimplicitcastforfloat4;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 > col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col0 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col1 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col2 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col3 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col4 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col5 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col6::int1 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 > col7::int1 from testimplicitcastforfloat4;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col6::int1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col7::int1 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col0 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col1 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col2 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col3 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col4 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col5 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col6::int1 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 >= col7::int1 from testimplicitcastforfloat4;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 < col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col0 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col1 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col2 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col3 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col4 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col5 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col6::int1 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 < col7::int1 from testimplicitcastforfloat4;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col6::int1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col7::int1 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col0 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col1 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col2 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col3 from testimplicitcastforfloat4;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col4 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col5 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col6::int1 from testimplicitcastforfloat4;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat4", "0,1,2,3,4.1,5.1,6,7", "select col4 <= col7::int1 from testimplicitcastforfloat4;", new String [] {"t"});
   }
 
   @Test
@@ -716,112 +716,112 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col6", TajoDataTypes.Type.TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col0 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col1 from table1;", new String [] {"6.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col2 from table1;", new String [] {"7.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col3 from table1;", new String [] {"8.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col0 from testimplicitcastforfloat8;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col1 from testimplicitcastforfloat8;", new String [] {"6.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col2 from testimplicitcastforfloat8;", new String [] {"7.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col3 from testimplicitcastforfloat8;", new String [] {"8.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col4 from testimplicitcastforfloat8;", new String [] {
         (5.1d + 4.1f)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col5 from table1;", new String [] {"10.2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col6::int1 from table1;", new String [] {"11.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col7::int1 from table1;", new String [] {"12.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col5 from testimplicitcastforfloat8;", new String [] {"10.2"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col6::int1 from testimplicitcastforfloat8;", new String [] {"11.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 + col7::int1 from testimplicitcastforfloat8;", new String [] {"12.1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col0 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col1 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col2 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col0 from testimplicitcastforfloat8;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col1 from testimplicitcastforfloat8;", new String [] {"4.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col2 from testimplicitcastforfloat8;", new String [] {
         (5.1d - new Integer(2))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col3 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col3 from testimplicitcastforfloat8;", new String [] {
         (5.1d - 3l)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col4 from testimplicitcastforfloat8;", new String [] {
         (5.1d - 4.1f)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col5 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col6::float8 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col5 from testimplicitcastforfloat8;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col6::float8 from testimplicitcastforfloat8;", new String [] {
         (5.1d - 6d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 - col7::float8 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 - col7::float8 from testimplicitcastforfloat8;", new String [] {
         (5.1d - 7d)+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col0 from table1;", new String [] {"0.0"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col1 from table1;", new String [] {"5.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col2 from table1;", new String [] {"10.2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col3 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col0 from testimplicitcastforfloat8;", new String [] {"0.0"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col1 from testimplicitcastforfloat8;", new String [] {"5.1"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col2 from testimplicitcastforfloat8;", new String [] {"10.2"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col3 from testimplicitcastforfloat8;", new String [] {
         (5.1d * new Long(3))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col4 from testimplicitcastforfloat8;", new String [] {
         (5.1d * new Float(4.1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col5 from testimplicitcastforfloat8;", new String [] {
         (5.1d * 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col6::float8 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col6::float8 from testimplicitcastforfloat8;", new String [] {
         (5.1d * 6d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 * col7::float8 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 * col7::float8 from testimplicitcastforfloat8;", new String [] {
         (5.1d * 7d)+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col1 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col1 from testimplicitcastforfloat8;", new String [] {
         (5.1d % new Integer(1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col2 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col2 from testimplicitcastforfloat8;", new String [] {
         (5.1d % new Integer(2))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col3 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col3 from testimplicitcastforfloat8;", new String [] {
         (5.1d % new Long(3))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col4 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col4 from testimplicitcastforfloat8;", new String [] {
         (5.1d % new Float(4.1))+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col5 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col5 from testimplicitcastforfloat8;", new String [] {
         (5.1d % 5.1d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col6::float8 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col6::float8 from testimplicitcastforfloat8;", new String [] {
         (5.1d % 6d)+""});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 % col7::float8 from table1;", new String [] {
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 % col7::float8 from testimplicitcastforfloat8;", new String [] {
         (5.1d % 7d)+""});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col6::float8 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 = col7::float8 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col0 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col1 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col2 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col3 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col4 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col5 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col6::float8 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 = col7::float8 from testimplicitcastforfloat8;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col6::float8 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col7::float8 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col0 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col1 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col2 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col3 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col4 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col5 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col6::float8 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <> col7::float8 from testimplicitcastforfloat8;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col6::float8 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 > col7::float8 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col0 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col1 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col2 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col3 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col4 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col5 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col6::float8 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 > col7::float8 from testimplicitcastforfloat8;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col0 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col1 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col2 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col3 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col4 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col6::float8 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col7::float8 from table1;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col0 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col1 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col2 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col3 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col4 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col5 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col6::float8 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 >= col7::float8 from testimplicitcastforfloat8;", new String [] {"f"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col5 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col6::float8 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 < col7::float8 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col0 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col1 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col2 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col3 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col4 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col5 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col6::float8 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 < col7::float8 from testimplicitcastforfloat8;", new String [] {"t"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col0 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col1 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col2 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col3 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col4 from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col5 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col6::float8 from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col7::float8 from table1;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col0 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col1 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col2 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col3 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col4 from testimplicitcastforfloat8;", new String [] {"f"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col5 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col6::float8 from testimplicitcastforfloat8;", new String [] {"t"});
+    testEval(schema, "testimplicitcastforfloat8", "0,1,2,3,4.1,5.1,6,7", "select col5 <= col7::float8 from testimplicitcastforfloat8;", new String [] {"t"});
   }
 
   @Test
@@ -839,17 +839,17 @@ public class TestSQLExpression extends ExprTestBase {
 
 
     // sign test
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col1 from table1;", new String [] {"1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col2 from table1;", new String [] {"2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col3 from table1;", new String [] {"3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col4 from table1;", new String [] {"4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col5 from table1;", new String [] {"5.1"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select +col1 from testsigned;", new String [] {"1"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select +col2 from testsigned;", new String [] {"2"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select +col3 from testsigned;", new String [] {"3"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select +col4 from testsigned;", new String [] {"4.1"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select +col5 from testsigned;", new String [] {"5.1"});
 
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col1 from table1;", new String [] {"-1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col2 from table1;", new String [] {"-2"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col3 from table1;", new String [] {"-3"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col4 from table1;", new String [] {"-4.1"});
-    testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select -col5 from table1;", new String [] {"-5.1"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select -col1 from testsigned;", new String [] {"-1"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select -col2 from testsigned;", new String [] {"-2"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select -col3 from testsigned;", new String [] {"-3"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select -col4 from testsigned;", new String [] {"-4.1"});
+    testEval(schema, "testsigned", "0,1,2,3,4.1,5.1,6,7,t", "select -col5 from testsigned;", new String [] {"-5.1"});
   }
 
   @Test
@@ -875,18 +875,18 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col2", TEXT);
 
     testEval(queryContext, schema,
-        "table1",
+        "testcastfromtable",
         "123,234",
-        "select cast(col1 as float) as b, cast(col2 as float) as a from table1",
+        "select cast(col1 as float) as b, cast(col2 as float) as a from testcastfromtable",
         new String[]{"123.0", "234.0"});
-    testEval(queryContext, schema, "table1", "123,234", "select col1::float, col2::float from table1",
+    testEval(queryContext, schema, "testcastfromtable", "123,234", "select col1::float, col2::float from testcastfromtable",
         new String[]{"123.0", "234.0"});
 
     TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01" +
         DateTimeUtil.getTimeZoneDisplayTime(tz));
 
-    testEval(queryContext, schema, "table1", "1980-04-01 01:50:01,234",
-        "select col1::timestamp as t1, col2::float from table1 where t1 = '1980-04-01 01:50:01'::timestamp",
+    testEval(queryContext, schema, "testcastfromtable", "1980-04-01 01:50:01,234",
+        "select col1::timestamp as t1, col2::float from testcastfromtable where t1 = '1980-04-01 01:50:01'::timestamp",
         new String[]{TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false), "234.0"}
     );
 
@@ -905,7 +905,7 @@ public class TestSQLExpression extends ExprTestBase {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
-    testEval(schema, "table1", "123,234", "select col1, col2 from table1 where true", new String[]{"123", "234"});
+    testEval(schema, "testbooleanliteral", "123,234", "select col1, col2 from testbooleanliteral where true", new String[]{"123", "234"});
   }
 
   @Test

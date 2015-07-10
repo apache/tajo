@@ -19,6 +19,7 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.Event;
@@ -61,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
+@NotThreadSafe
 public class TestKillQuery {
   private static TajoTestingCluster cluster;
   private static TajoConf conf;

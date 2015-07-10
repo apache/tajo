@@ -67,7 +67,7 @@ public class TestFetcher {
   @Test
   public void testGet() throws IOException {
     Random rnd = new Random();
-    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     String sid = "1";
     String partId = "1";
 
@@ -116,7 +116,7 @@ public class TestFetcher {
   @Test
   public void testStatus() throws Exception {
     Random rnd = new Random();
-    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     String sid = "1";
     String ta = "1_0";
     String partId = "1";
@@ -145,7 +145,7 @@ public class TestFetcher {
   @Test
   public void testNoContentFetch() throws Exception {
 
-    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     String sid = "1";
     String ta = "1_0";
     String partId = "1";
@@ -176,7 +176,7 @@ public class TestFetcher {
   public void testFailureStatus() throws Exception {
     Random rnd = new Random();
 
-    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     String sid = "1";
     String ta = "1_0";
     String partId = "1";
@@ -208,7 +208,7 @@ public class TestFetcher {
 
   @Test
   public void testServerFailure() throws Exception {
-    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     String sid = "1";
     String ta = "1_0";
     String partId = "1";
