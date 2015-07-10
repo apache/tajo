@@ -17,13 +17,17 @@
  */
 package org.apache.tajo.ws.rs.resources;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
+import org.apache.tajo.ws.rs.requests.NewSessionRequest;
+import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
+import org.apache.tajo.ws.rs.responses.GetSubmitQueryResponse;
+import org.apache.tajo.ws.rs.responses.NewSessionResponse;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.filter.LoggingFilter;
 import org.junit.After;
@@ -48,11 +52,15 @@ public class TestTablesResource extends QueryTestCaseBase {
   
   private URI restServiceURI;
   private URI tablesURI;
-  private Client restClient;
-  
-  private static final String defaultDatabaseName = "TestTablesDB";
+	private URI queriesURI;
+	private URI sessionsURI;
 
-  public TestTablesResource() {
+	private Client restClient;
+  
+  private static final String defaultDatabaseName = "testtablesdb";
+	private static final String tajoSessionIdHeaderName = "X-Tajo-Session";
+
+	public TestTablesResource() {
     super(defaultDatabaseName);
   }
 
@@ -61,7 +69,9 @@ public class TestTablesResource extends QueryTestCaseBase {
     int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     tablesURI = new URI(restServiceURI + "/databases/" + defaultDatabaseName + "/tables");
-    restClient = ClientBuilder.newBuilder()
+		queriesURI = new URI(restServiceURI + "/queries");
+		sessionsURI = new URI(restServiceURI + "/sessions");
+		restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
@@ -73,37 +83,47 @@ public class TestTablesResource extends QueryTestCaseBase {
   public void tearDown() throws Exception {
     restClient.close();
   }
-  
-  private TableDesc createNewTableForTestCreateTable(String tableName) throws Exception {
-    Schema tableSchema = new Schema(new Column[] {new Column("column1", TajoDataTypes.Type.TEXT)});
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    TableMeta tableMeta = new TableMeta("CSV", tableOptions);
-    return new TableDesc(tableName, tableSchema, tableMeta, null);
-  }
-  
-  @Test
-  public void testCreateTable() throws Exception {
-    String tableName = "TestCreateTable";
-    TableDesc tableDesc = createNewTableForTestCreateTable(tableName);
-    
-    Response response = restClient.target(tablesURI)
-        .request().post(Entity.entity(tableDesc, MediaType.APPLICATION_JSON));
-    
-    assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
-  }
-  
+
+	private SubmitQueryRequest createNewQueryRequest(String query) throws Exception {
+		SubmitQueryRequest request = new SubmitQueryRequest();
+		request.setQuery(query);
+		return request;
+	}
+
+	private String generateNewSessionAndGetId() throws Exception {
+		NewSessionRequest request = new NewSessionRequest();
+		request.setUserName("tajo-user");
+		request.setDatabaseName(defaultDatabaseName);
+
+		NewSessionResponse response = restClient.target(sessionsURI)
+			.request().post(Entity.entity(request, MediaType.APPLICATION_JSON), NewSessionResponse.class);
+
+		assertNotNull(response);
+		assertTrue(ClientProtos.ResultCode.OK.equals(response.getResultCode()));
+		assertTrue(response.getId() != null && !response.getId().isEmpty());
+
+		return response.getId();
+	}
+
+	private void createNewTableForTestCreateTable(String tableName, String sessionId) throws Exception {
+		String query = "create table " + tableName + " (column1 text)";
+		SubmitQueryRequest queryRequest = createNewQueryRequest(query);
+
+		GetSubmitQueryResponse response = restClient.target(queriesURI)
+			.request().header(tajoSessionIdHeaderName, sessionId)
+			.post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
+				new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+
+		assertNotNull(response);
+		assertEquals(ClientProtos.ResultCode.OK, response.getResultCode());
+	}
+
   @Test
   public void testGetAllTable() throws Exception {
-    String tableName = "TestGetAllTable";
-    TableDesc tableDesc = createNewTableForTestCreateTable(tableName);
-    
-    Response response = restClient.target(tablesURI)
-        .request().post(Entity.entity(tableDesc, MediaType.APPLICATION_JSON));
-    
-    assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
+    String tableName = "testgetalltable";
+		String sessionId = generateNewSessionAndGetId();
+
+		createNewTableForTestCreateTable(tableName, sessionId);
 
     Map<String, Collection<String>> tables = restClient.target(tablesURI)
         .request().get(new GenericType<Map<String, Collection<String>>>(Map.class));
@@ -114,7 +134,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 
     boolean tableFound = false;
     for (String table: tableNames) {
-      if (tableName.equals(CatalogUtil.extractSimpleName(table))) {
+      if (StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(table))) {
         tableFound = true;
         break;
       }
@@ -125,21 +145,17 @@ public class TestTablesResource extends QueryTestCaseBase {
   
   @Test
   public void testGetTable() throws Exception {
-    String tableName = "TestGetTable";
-    TableDesc tableDesc = createNewTableForTestCreateTable(tableName);
-    
-    Response response = restClient.target(tablesURI)
-        .request().post(Entity.entity(tableDesc, MediaType.APPLICATION_JSON));
-    
-    assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
+    String tableName = "testgettable";
+		String sessionId = generateNewSessionAndGetId();
+
+		createNewTableForTestCreateTable(tableName, sessionId);
     
     TableDesc selectedTable = restClient.target(tablesURI)
         .path("/{tableName}").resolveTemplate("tableName", tableName)
         .request().get(new GenericType<TableDesc>(TableDesc.class));
     
     assertNotNull(selectedTable);
-    assertEquals(tableName, CatalogUtil.extractSimpleName(selectedTable.getName()));
+    assertTrue(StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(selectedTable.getName())));
   }
   
   @Test
@@ -154,23 +170,19 @@ public class TestTablesResource extends QueryTestCaseBase {
   
   @Test
   public void testDropTable() throws Exception {
-    String tableName = "TestDropTable";
-    TableDesc tableDesc = createNewTableForTestCreateTable(tableName);
-    
-    Response response = restClient.target(tablesURI)
-        .request().post(Entity.entity(tableDesc, MediaType.APPLICATION_JSON));
-    
-    assertNotNull(response);
-    assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
+    String tableName = "testdroptable";
+		String sessionId = generateNewSessionAndGetId();
+
+		createNewTableForTestCreateTable(tableName, sessionId);
     
     TableDesc selectedTable = restClient.target(tablesURI)
         .path("/{tableName}").resolveTemplate("tableName", tableName)
         .request().get(new GenericType<TableDesc>(TableDesc.class));
     
     assertNotNull(selectedTable);
-    assertEquals(tableName, CatalogUtil.extractSimpleName(selectedTable.getName()));
+    assertTrue(StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(selectedTable.getName())));
     
-    response = restClient.target(tablesURI)
+    Response response = restClient.target(tablesURI)
         .path("/{tableName}").resolveTemplate("tableName", tableName)
         .request().delete();
     
