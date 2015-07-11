@@ -27,6 +27,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@net.jcip.annotations.NotThreadSafe
 public class TestSelectNestedRecord extends QueryTestCaseBase {
 
   @Test

@@ -48,6 +48,7 @@ import static org.junit.Assert.*;
  * Test CREATE TABLE AS SELECT statements
  */
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestCTASQuery extends QueryTestCaseBase {
 
   public TestCTASQuery() {

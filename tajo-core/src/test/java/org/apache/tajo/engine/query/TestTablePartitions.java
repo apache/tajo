@@ -59,6 +59,7 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestTablePartitions extends QueryTestCaseBase {
 
   private NodeType nodeType;

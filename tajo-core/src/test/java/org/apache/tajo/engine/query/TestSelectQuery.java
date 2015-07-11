@@ -48,6 +48,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestSelectQuery extends QueryTestCaseBase {
 
   public TestSelectQuery() {

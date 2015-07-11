@@ -34,6 +34,7 @@ import java.sql.ResultSet;
 import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   public TestBuiltinFunctions() {

@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.util.List;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestAlterTable extends QueryTestCaseBase {
   @Test
   public final void testAlterTableName() throws Exception {

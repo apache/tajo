@@ -150,7 +150,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <version>1.2</version>
         <executions>
           <execution>
             <id>generate-sources</id>
@@ -573,6 +572,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.18.1</version>
             <executions>
               <execution>
                 <phase>test</phase>
@@ -584,8 +584,11 @@
             <configuration combine.self="override">
               <forkCount>${maven.fork.count}</forkCount>
               <reuseForks>true</reuseForks>
+              <parallel>classesAndMethods</parallel>
+              <threadCountClasses>1</threadCountClasses>
+              <threadCountMethods>${maven.fork.count}</threadCountMethods>
               <trimStackTrace>false</trimStackTrace>
-              <argLine>-Xms512m -Xmx1200m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
+              <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
               <useSystemClassLoader>true</useSystemClassLoader>
               <useManifestOnlyJar>true</useManifestOnlyJar>
               <systemProperties>

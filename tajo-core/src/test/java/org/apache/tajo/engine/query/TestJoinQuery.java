@@ -51,6 +51,7 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+@net.jcip.annotations.NotThreadSafe
 public class TestJoinQuery extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestJoinQuery.class);
   private static int reference = 0;

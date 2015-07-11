@@ -66,6 +66,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestHBaseTable extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestHBaseTable.class);
 

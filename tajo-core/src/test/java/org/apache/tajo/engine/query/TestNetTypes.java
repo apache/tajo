@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.sql.ResultSet;
 
+@net.jcip.annotations.NotThreadSafe
 public class TestNetTypes extends QueryTestCaseBase {
 
   @Before

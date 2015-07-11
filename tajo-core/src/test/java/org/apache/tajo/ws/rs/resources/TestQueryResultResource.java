@@ -54,6 +54,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
+@net.jcip.annotations.NotThreadSafe
 public class TestQueryResultResource extends QueryTestCaseBase {
 
   private URI restServiceURI;

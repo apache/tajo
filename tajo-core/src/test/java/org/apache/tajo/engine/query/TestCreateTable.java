@@ -36,6 +36,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestCreateTable extends QueryTestCaseBase {
 
   @Test

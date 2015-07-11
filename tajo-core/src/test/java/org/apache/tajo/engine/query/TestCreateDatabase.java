@@ -27,6 +27,7 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestCreateDatabase extends QueryTestCaseBase {
 
   @Test

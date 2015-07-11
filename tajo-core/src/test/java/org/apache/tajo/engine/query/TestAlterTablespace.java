@@ -27,6 +27,7 @@ import org.junit.experimental.categories.Category;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestAlterTablespace extends QueryTestCaseBase {
 
   @Test

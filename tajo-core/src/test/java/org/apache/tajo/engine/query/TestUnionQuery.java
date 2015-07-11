@@ -37,6 +37,7 @@ import static org.junit.Assert.assertEquals;
  * - O - order by
  */
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestUnionQuery extends QueryTestCaseBase {
 
   public TestUnionQuery() {

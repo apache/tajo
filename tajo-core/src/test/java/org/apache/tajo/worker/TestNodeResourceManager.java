@@ -42,6 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import static org.junit.Assert.*;
+
+@net.jcip.annotations.NotThreadSafe
 public class TestNodeResourceManager {
 
   private MockNodeResourceManager resourceManager;

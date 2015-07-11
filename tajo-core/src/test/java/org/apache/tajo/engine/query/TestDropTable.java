@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import java.util.List;
 
 @Category(IntegrationTest.class)
+@net.jcip.annotations.NotThreadSafe
 public class TestDropTable extends QueryTestCaseBase {
 
   @Test

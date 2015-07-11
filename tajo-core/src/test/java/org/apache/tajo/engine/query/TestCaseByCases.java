@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
 
+@net.jcip.annotations.NotThreadSafe
 public class TestCaseByCases extends QueryTestCaseBase {
 
   public TestCaseByCases() {

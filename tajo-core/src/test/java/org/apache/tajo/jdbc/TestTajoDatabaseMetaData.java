@@ -33,6 +33,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
+@net.jcip.annotations.NotThreadSafe
 public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
   private static InetSocketAddress tajoMasterAddress;
 
