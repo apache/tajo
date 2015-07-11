@@ -898,7 +898,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
 
           AsyncRpcClient tajoWorkerRpc = null;
-          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>
+              callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
@@ -996,7 +997,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
 
-          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto> callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>
+              callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
 
           InetSocketAddress addr = stage.getAssignedWorkerMap().get(connectionInfo.getId());
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
@@ -1007,7 +1009,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
 
-            TajoWorkerProtocol.BatchAllocationResponseProto responseProto = callFuture.get();
+            TajoWorkerProtocol.BatchAllocationResponseProto
+                responseProto = callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             if(responseProto.getCancellationTaskCount() > 0) {
               for (TajoWorkerProtocol.TaskAllocationRequestProto proto : responseProto.getCancellationTaskList()) {

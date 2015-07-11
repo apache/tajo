@@ -104,7 +104,6 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     this.isStopped = true;
     synchronized (updaterThread) {
       updaterThread.interrupt();
-      updaterThread.join(100);
     }
     super.serviceStop();
     LOG.info("NodeStatusUpdater stopped.");
@@ -255,9 +254,10 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           LOG.fatal(cnfe.getMessage(), cnfe);
           Runtime.getRuntime().halt(-1);
         } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
           if (isStopped) {
               break;
+          } else {
+            LOG.error(e.getMessage(), e);
           }
         }
       }
