@@ -135,7 +135,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         schedulingThread.notifyAll();
       }
     }
-
+    candidateWorkers.clear();
+    scheduledRequests.clear();
     LOG.info("Task Scheduler stopped");
     super.stop();
   }
@@ -659,6 +660,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private Map<String, HostVolumeMapping> leafTaskHostMapping = Maps.newConcurrentMap();
     private final Map<String, HashSet<TaskAttemptId>> leafTasksRackMapping = Maps.newConcurrentMap();
 
+    protected void clear() {
+      leafTasks.clear();
+      nonLeafTasks.clear();
+      leafTaskHostMapping.clear();
+      leafTasksRackMapping.clear();
+    }
+
     private void addLeafTask(TaskAttemptToSchedulerEvent event) {
       TaskAttempt taskAttempt = event.getTaskAttempt();
       List<DataLocation> locations = taskAttempt.getTask().getDataLocations();
@@ -706,8 +714,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     public int nonLeafTaskNum() {
       return nonLeafTasks.size();
     }
-
-    public Set<TaskAttemptId> assignedRequest = new HashSet<TaskAttemptId>();
 
     private TaskAttemptId allocateLocalTask(String host){
       HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
@@ -918,7 +924,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           } catch (Exception e) {
             LOG.error(e);
           }
-          assignedRequest.add(attemptId);
           scheduledObjectNum--;
 
         } else {

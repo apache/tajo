@@ -810,7 +810,7 @@ public class Stage implements EventHandler<StageEvent> {
           setShuffleIfNecessary(stage, channel);
           initTaskScheduler(stage);
           // execute pre-processing asyncronously
-          stage.getContext().getQueryMasterContext().getEventExecutor()
+          stage.getContext().getQueryMasterContext().getSingleEventExecutor()
               .submit(new Runnable() {
                         @Override
                         public void run() {

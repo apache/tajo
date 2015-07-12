@@ -93,6 +93,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private ExecutorService eventExecutor;
 
+  private ExecutorService singleEventExecutor;
+
   public QueryMaster(TajoWorker.WorkerContext workerContext) {
     super(QueryMaster.class.getName());
     this.workerContext = workerContext;
@@ -132,6 +134,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     finishedQueryMasterTaskCleanThread.start();
 
     eventExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    singleEventExecutor = Executors.newSingleThreadExecutor();
     super.serviceStart();
     LOG.info("QueryMaster started");
   }
@@ -154,6 +157,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     if(eventExecutor != null){
       eventExecutor.shutdown();
+    }
+
+    if(singleEventExecutor != null){
+      singleEventExecutor.shutdown();
     }
 
     super.serviceStop();
@@ -239,6 +246,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public ExecutorService getEventExecutor(){
       return eventExecutor;
+    }
+
+    public ExecutorService getSingleEventExecutor(){
+      return singleEventExecutor;
     }
 
     public AsyncDispatcher getDispatcher() {
