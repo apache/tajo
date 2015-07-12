@@ -37,7 +37,6 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestHAServiceHDFSImpl  {
   private TajoTestingCluster cluster;
 

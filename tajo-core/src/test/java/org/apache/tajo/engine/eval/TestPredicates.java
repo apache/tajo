@@ -93,8 +93,8 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
 
     testEval(schema1,
-        "testnot", "123,123,456,-123",
-        "select col1 = col2, col1 = col3 from testnot",
+        "table1", "123,123,456,-123",
+        "select col1 = col2, col1 = col3 from table1",
         new String[]{"t", "f"});
   }
 
@@ -132,12 +132,12 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
     schema1.addColumn("col4", INT4);
     testEval(schema1,
-        "testcomparisonequal", "123,123,456,-123",
-        "select col1 = col2, col1 = col3, col1 = col4 from testcomparisonequal",
+        "table1", "123,123,456,-123",
+        "select col1 = col2, col1 = col3, col1 = col4 from table1",
         new String[]{"t", "f", "f"});
     testEval(schema1,
-        "testcomparisonequal", "123,123,,",
-        "select col1 = col2, (col1 = col3) is null, (col3 = col2) is null from testcomparisonequal",
+        "table1", "123,123,,",
+        "select col1 = col2, (col1 = col3) is null, (col3 = col2) is null from table1",
         new String[]{"t", "t", "t"});
   }
 
@@ -149,12 +149,12 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
     schema1.addColumn("col4", INT4);
     testEval(schema1,
-        "testcomparisonnotequal", "123,123,456,-123",
-        "select col1 <> col2, col1 <> col3, col1 <> col4 from testcomparisonnotequal",
+        "table1", "123,123,456,-123",
+        "select col1 <> col2, col1 <> col3, col1 <> col4 from table1",
         new String[]{"f", "t", "t"});
     testEval(schema1,
-        "testcomparisonnotequal", "123,123,,",
-        "select col1 <> col2, (col1 <> col3) is null, (col3 <> col2) is null from testcomparisonnotequal",
+        "table1", "123,123,,",
+        "select col1 <> col2, (col1 <> col3) is null, (col3 <> col2) is null from table1",
         new String[]{"f", "t", "t"});
   }
 
@@ -166,12 +166,12 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
     schema1.addColumn("col4", INT4);
     testEval(schema1,
-        "testcomparisonlessthan", "123,123,456,-123",
-        "select col1 < col2, col1 < col3, col1 < col4 from testcomparisonlessthan",
+        "table1", "123,123,456,-123",
+        "select col1 < col2, col1 < col3, col1 < col4 from table1",
         new String[]{"f", "t", "f"});
     testEval(schema1,
-        "testcomparisonlessthan", "123,456,,",
-        "select col1 < col2, (col1 = col3) is null, (col4 = col1) is null from testcomparisonlessthan",
+        "table1", "123,456,,",
+        "select col1 < col2, (col1 = col3) is null, (col4 = col1) is null from table1",
         new String[]{"t", "t", "t"});
   }
 
@@ -183,12 +183,12 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
     schema1.addColumn("col4", INT4);
     testEval(schema1,
-        "testcomparisonlessthanequal", "123,123,456,-123",
-        "select col1 <= col2, col1 <= col3, col1 <= col4 from testcomparisonlessthanequal",
+        "table1", "123,123,456,-123",
+        "select col1 <= col2, col1 <= col3, col1 <= col4 from table1",
         new String[]{"t", "t", "f"});
     testEval(schema1,
-        "testcomparisonlessthanequal", "123,456,,",
-        "select col1 <= col2, (col1 <= col3) is null, (col4 <= col1) is null from testcomparisonlessthanequal",
+        "table1", "123,456,,",
+        "select col1 <= col2, (col1 <= col3) is null, (col4 <= col1) is null from table1",
         new String[]{"t", "t", "t"});
   }
 
@@ -200,12 +200,12 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
     schema1.addColumn("col4", INT4);
     testEval(schema1,
-        "testcomparisongreaterthan", "123,123,456,-123",
-        "select col1 > col2, col3 > col2, col1 > col4 from testcomparisongreaterthan",
+        "table1", "123,123,456,-123",
+        "select col1 > col2, col3 > col2, col1 > col4 from table1",
         new String[]{"f", "t", "t"});
     testEval(schema1,
-        "testcomparisongreaterthan", "123,456,,",
-        "select col2 > col1, col1 > col2, (col1 > col3) is null, (col4 > col1) is null from testcomparisongreaterthan",
+        "table1", "123,456,,",
+        "select col2 > col1, col1 > col2, (col1 > col3) is null, (col4 > col1) is null from table1",
         new String[]{"t", "f", "t", "t"});
   }
 
@@ -217,12 +217,12 @@ public class TestPredicates extends ExprTestBase {
     schema1.addColumn("col3", INT4);
     schema1.addColumn("col4", INT4);
     testEval(schema1,
-        "testcomparisongreaterthanequal", "123,123,456,-123",
-        "select col1 >= col2, col3 >= col2, col1 >= col4 from testcomparisongreaterthanequal",
+        "table1", "123,123,456,-123",
+        "select col1 >= col2, col3 >= col2, col1 >= col4 from table1",
         new String[]{"t", "t", "t"});
     testEval(schema1,
-        "testcomparisongreaterthanequal", "123,456,,",
-        "select col2 >= col1, col1 >= col2, (col1 >= col3) is null, (col4 >= col1) is null from testcomparisongreaterthanequal",
+        "table1", "123,456,,",
+        "select col2 >= col1, col1 >= col2, (col1 >= col3) is null, (col4 >= col1) is null from table1",
         new String[]{"t", "f", "t", "t"});
   }
 
@@ -238,20 +238,20 @@ public class TestPredicates extends ExprTestBase {
     schema2.addColumn("col3", TEXT);
 
     // constant checker
-    testEval(schema2, "testbetween", "b,a,c", "select col1 between 'a' and 'c' from testbetween", new String[]{"t"});
-    testEval(schema2, "testbetween", "b,a,c", "select col1 between 'c' and 'a' from testbetween", new String[]{"f"});
-    testEval(schema2, "testbetween", "b,a,c", "select col1 between symmetric 'c' and 'a' from testbetween", new String[]{"t"});
-    testEval(schema2, "testbetween", "d,a,c", "select col1 between 'a' and 'c' from testbetween", new String[]{"f"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between 'a' and 'c' from table1", new String[]{"t"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between 'c' and 'a' from table1", new String[]{"f"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between symmetric 'c' and 'a' from table1", new String[]{"t"});
+    testEval(schema2, "table1", "d,a,c", "select col1 between 'a' and 'c' from table1", new String[]{"f"});
 
     // tests for inclusive
-    testEval(schema2, "testbetween", "a,a,c", "select col1 between col2 and col3 from testbetween", new String[]{"t"});
-    testEval(schema2, "testbetween", "b,a,c", "select col1 between col2 and col3 from testbetween", new String[]{"t"});
-    testEval(schema2, "testbetween", "c,a,c", "select col1 between col2 and col3 from testbetween", new String[]{"t"});
-    testEval(schema2, "testbetween", "d,a,c", "select col1 between col2 and col3 from testbetween", new String[]{"f"});
+    testEval(schema2, "table1", "a,a,c", "select col1 between col2 and col3 from table1", new String[]{"t"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between col2 and col3 from table1", new String[]{"t"});
+    testEval(schema2, "table1", "c,a,c", "select col1 between col2 and col3 from table1", new String[]{"t"});
+    testEval(schema2, "table1", "d,a,c", "select col1 between col2 and col3 from table1", new String[]{"f"});
 
     // tests for asymmetric and symmetric
-    testEval(schema2, "testbetween", "b,a,c", "select col1 between col3 and col2 from testbetween", new String[]{"f"});
-    testEval(schema2, "testbetween", "b,a,c", "select col1 between symmetric col3 and col2 from testbetween", new String[]{"t"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between col3 and col2 from table1", new String[]{"f"});
+    testEval(schema2, "table1", "b,a,c", "select col1 between symmetric col3 and col2 from table1", new String[]{"t"});
   }
 
   @Test
@@ -266,27 +266,27 @@ public class TestPredicates extends ExprTestBase {
         "case " +
         "when date_a BETWEEN 20130705 AND 20130715 AND ((date_b BETWEEN 20100101 AND 20120601) OR date_b > 20130715) " +
         "AND (date_c < 20120601 OR date_c > 20130715) AND date_d > 20130715" +
-        "then 1 else 0 end from testbetween2";
+        "then 1 else 0 end from table1";
 
-    testEval(schema3, "testbetween2", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
-    testEval(schema3, "testbetween2", "20130716,20100102,20120525,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130716,20100102,20120525,20130716", query, new String [] {"0"});
 
     // date_b
-    testEval(schema3, "testbetween2", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
-    testEval(schema3, "testbetween2", "20130715,20120602,20120525,20130716", query, new String [] {"0"});
-    testEval(schema3, "testbetween2", "20130715,20091201,20120525,20130716", query, new String [] {"0"});
-    testEval(schema3, "testbetween2", "20130715,20130716,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20120602,20120525,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20091201,20120525,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20130716,20120525,20130716", query, new String [] {"1"});
 
     // date_c
-    testEval(schema3, "testbetween2", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
-    testEval(schema3, "testbetween2", "20130715,20100102,20120602,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20120602,20130716", query, new String [] {"0"});
 
-    testEval(schema3, "testbetween2", "20130715,20100102,20130716,20130716", query, new String [] {"1"});
-    testEval(schema3, "testbetween2", "20130715,20100102,20130714,20130716", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20100102,20130716,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20130714,20130716", query, new String [] {"0"});
 
     // date_d
-    testEval(schema3, "testbetween2", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
-    testEval(schema3, "testbetween2", "20130715,20100102,20120525,20130705", query, new String [] {"0"});
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130716", query, new String [] {"1"});
+    testEval(schema3, "table1", "20130715,20100102,20120525,20130705", query, new String [] {"0"});
   }
 
   //////////////////////////////////////////////////////////////////
@@ -300,21 +300,21 @@ public class TestPredicates extends ExprTestBase {
     schema2.addColumn("col2", TEXT);
     schema2.addColumn("col3", TEXT);
 
-    testEval(schema2, "testinpredicatewithconstant", "a,b,c", "select col1 in ('a'), col2 in ('a', 'c') from testinpredicatewithconstant", new String[]{"t","f"});
-    testEval(schema2, "testinpredicatewithconstant", "a,,c", "select col1 in ('a','b','c'), (col2 in ('a', 'c')) is null from testinpredicatewithconstant",
+    testEval(schema2, "table1", "a,b,c", "select col1 in ('a'), col2 in ('a', 'c') from table1", new String[]{"t","f"});
+    testEval(schema2, "table1", "a,,c", "select col1 in ('a','b','c'), (col2 in ('a', 'c')) is null from table1",
         new String[]{"t","t"});
 
     testEval(schema2,
-        "testinpredicatewithconstant",
+        "table1",
         "2014-03-21,2015-04-01,2016-04-01",
-        "select substr(col1,1,4) in ('2014','2015','2016'), substr(col1,6,2)::int4 in (1,2,3) from testinpredicatewithconstant",
+        "select substr(col1,1,4) in ('2014','2015','2016'), substr(col1,6,2)::int4 in (1,2,3) from table1",
         new String[]{"t", "t"});
 
     // null handling test
     testEval(schema2,
-        "testinpredicatewithconstant",
+        "table1",
         "2014-03-21,,2015-04-01",
-        "select (substr(col2,1,4)::int4 in (2014,2015,2016)) is null from testinpredicatewithconstant",
+        "select (substr(col2,1,4)::int4 in (2014,2015,2016)) is null from table1",
         new String[]{"t"});
   }
 
@@ -325,16 +325,16 @@ public class TestPredicates extends ExprTestBase {
     schema2.addColumn("col2", INT4);
     schema2.addColumn("col3", TEXT);
 
-    testEval(schema2, "testinpredicatewithsimpleexprs", "abc,2,3", "select col1 in ('a'||'b'||'c'), col2 in (1 + 1, 2 * 10, 2003) from testinpredicatewithsimpleexprs",
+    testEval(schema2, "table1", "abc,2,3", "select col1 in ('a'||'b'||'c'), col2 in (1 + 1, 2 * 10, 2003) from table1",
         new String[]{"t","t"});
 
-    testEval(schema2, "testinpredicatewithsimpleexprs", "abc,2,3", "select col1 in ('a'||'b'), col2 in ('1'::int, '2'::int, 3) from testinpredicatewithsimpleexprs",
+    testEval(schema2, "table1", "abc,2,3", "select col1 in ('a'||'b'), col2 in ('1'::int, '2'::int, 3) from table1",
         new String[]{"f","t"});
 
     testEval(schema2,
-        "testinpredicatewithsimpleexprs",
+        "table1",
         "abc,,3",
-        "select col1 in (reverse('cba')), (col2 in ('1'::int, '2'::int, 3)) is null from testinpredicatewithsimpleexprs",
+        "select col1 in (reverse('cba')), (col2 in ('1'::int, '2'::int, 3)) is null from table1",
         new String[]{"t","t"});
   }
 
@@ -347,9 +347,9 @@ public class TestPredicates extends ExprTestBase {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
-    testEval(schema1, "testisnullpredicate", "123,", "select col1 is null, col2 is null as a from testisnullpredicate",
+    testEval(schema1, "table1", "123,", "select col1 is null, col2 is null as a from table1",
         new String[]{"f", "t"});
-    testEval(schema1, "testisnullpredicate", "123,", "select col1 is not null, col2 is not null as a from testisnullpredicate",
+    testEval(schema1, "table1", "123,", "select col1 is not null, col2 is not null as a from table1",
         new String[]{"t", "f"});
   }
 
@@ -358,11 +358,11 @@ public class TestPredicates extends ExprTestBase {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
-    testEval(schema2, "testisnullpredicatewithfunction", "_123,", "select ltrim(col1, '_') is null, upper(col2) is null as a from testisnullpredicatewithfunction",
+    testEval(schema2, "table1", "_123,", "select ltrim(col1, '_') is null, upper(col2) is null as a from table1",
         new String[]{"f", "t"});
 
-    testEval(schema2, "testisnullpredicatewithfunction", "_123,",
-        "select ltrim(col1, '_') is not null, upper(col2) is not null as a from testisnullpredicatewithfunction", new String[]{"t", "f"});
+    testEval(schema2, "table1", "_123,",
+        "select ltrim(col1, '_') is not null, upper(col2) is not null as a from table1", new String[]{"t", "f"});
   }
 
   //////////////////////////////////////////////////////////////////
@@ -397,10 +397,10 @@ public class TestPredicates extends ExprTestBase {
     Schema schema = new Schema();
     schema.addColumn("col1", BOOLEAN);
     schema.addColumn("col2", BOOLEAN);
-    testEval(schema, "testbooleantestontable", "t,f", "select col1 is true, col2 is false from testbooleantestontable", new String [] {"t", "t"});
-    testEval(schema, "testbooleantestontable", "t,f", "select col1 is not true, col2 is not false from testbooleantestontable",
+    testEval(schema, "table1", "t,f", "select col1 is true, col2 is false from table1", new String [] {"t", "t"});
+    testEval(schema, "table1", "t,f", "select col1 is not true, col2 is not false from table1",
         new String [] {"f", "f"});
-    testEval(schema, "testbooleantestontable", "t,f", "select not col1 is not true, not col2 is not false from testbooleantestontable",
+    testEval(schema, "table1", "t,f", "select not col1 is not true, not col2 is not false from table1",
         new String [] {"t", "t"});
   }
 }

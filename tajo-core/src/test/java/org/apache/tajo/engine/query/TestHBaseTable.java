@@ -23,10 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
@@ -41,8 +38,8 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
@@ -58,12 +55,10 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 @net.jcip.annotations.NotThreadSafe
@@ -103,7 +98,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testVerifyCreateHBaseTableRequiredMeta() throws Exception {
     try {
-      executeString("CREATE TABLE testverifycreatehbasetablerequiredmeta (col1 text, col2 text) TABLESPACE cluster1 USING hbase").close();
+      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) TABLESPACE cluster1 USING hbase").close();
 
       fail("hbase table must have 'table' meta");
     } catch (Exception e) {
@@ -111,9 +106,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
 
     try {
-      executeString("CREATE TABLE testverifycreatehbasetablerequiredmeta (col1 text, col2 text) TABLESPACE cluster1 " +
+      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) TABLESPACE cluster1 " +
           "USING hbase " +
-          "WITH ('table'='testverifycreatehbasetablerequiredmeta')").close();
+          "WITH ('table'='hbase_table')").close();
 
       fail("hbase table must have 'columns' meta");
     } catch (Exception e) {
@@ -124,14 +119,14 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testCreateHBaseTable() throws Exception {
     executeString(
-        "CREATE TABLE testcreatehbasetable (col1 text, col2 text, col3 text, col4 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testcreatehbasetable', 'columns'=':key,col2:a,col3:,col2:b')").close();
+        "CREATE TABLE hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:a,col3:,col2:b')").close();
 
-    assertTableExists("testcreatehbasetable");
+    assertTableExists("hbase_mapped_table1");
 
-    HTableDescriptor hTableDesc = testingCluster.getHBaseUtil().getTableDescriptor("testcreatehbasetable");
+    HTableDescriptor hTableDesc = testingCluster.getHBaseUtil().getTableDescriptor("hbase_table");
     assertNotNull(hTableDesc);
-    assertEquals("testcreatehbasetable", hTableDesc.getNameAsString());
+    assertEquals("hbase_table", hTableDesc.getNameAsString());
 
     HColumnDescriptor[] hColumns = hTableDesc.getColumnFamilies();
     // col1 is mapped to rowkey
@@ -139,11 +134,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertEquals("col2", hColumns[0].getNameAsString());
     assertEquals("col3", hColumns[1].getNameAsString());
 
-    executeString("DROP TABLE testcreatehbasetable PURGE").close();
+    executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
 
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     try {
-      assertFalse(hAdmin.tableExists("testcreatehbasetable"));
+      assertFalse(hAdmin.tableExists("hbase_table"));
     } finally {
       hAdmin.close();
     }
@@ -152,8 +147,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testCreateNotExistsExternalHBaseTable() throws Exception {
     String sql = String.format(
-        "CREATE EXTERNAL TABLE testcreatenotexistsexternalhbasetable (col1 text, col2 text, col3 text, col4 text) " +
-        "USING hbase WITH ('table'='testcreatenotexistsexternalhbasetable', 'columns'=':key,col2:a,col3:,col2:b') " +
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b') " +
             "LOCATION '%s/external_hbase_table'", tableSpaceUri);
     try {
       executeString(sql).close();
@@ -166,8 +161,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testCreateRowFieldWithNonText() throws Exception {
     try {
-      executeString("CREATE TABLE testcreaterowfieldwithnontext (rk1 int4, rk2 text, col3 text, col4 text) " +
-          "TABLESPACE cluster1 USING hbase WITH ('table'='testcreaterowfieldwithnontext', 'columns'='0:key#b,1:key,col3:,col2:b', " +
+      executeString("CREATE TABLE hbase_mapped_table2 (rk1 int4, rk2 text, col3 text, col4 text) " +
+          "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'='0:key#b,1:key,col3:,col2:b', " +
           "'hbase.rowkey.delimiter'='_')").close();
       fail("Key field type should be TEXT type");
     } catch (Exception e) {
@@ -177,27 +172,27 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateExternalHBaseTable() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("testcreateexternalhbasetable"));
+    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table_not_purge"));
     hTableDesc.addFamily(new HColumnDescriptor("col1"));
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
     String sql = String.format(
-        "CREATE EXTERNAL TABLE testcreateexternalhbasetable (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='testcreateexternalhbasetable', 'columns'=':key,col1:a,col2:,col3:b') " +
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b') " +
         "LOCATION '%s/external_hbase_table'", tableSpaceUri);
     executeString(sql).close();
 
-    assertTableExists("testcreateexternalhbasetable");
+    assertTableExists("external_hbase_mapped_table");
 
-    executeString("DROP TABLE testcreateexternalhbasetable").close();
+    executeString("DROP TABLE external_hbase_mapped_table").close();
 
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     try {
-      assertTrue(hAdmin.tableExists("testcreateexternalhbasetable"));
-      hAdmin.disableTable("testcreateexternalhbasetable");
-      hAdmin.deleteTable("testcreateexternalhbasetable");
+      assertTrue(hAdmin.tableExists("external_hbase_table_not_purge"));
+      hAdmin.disableTable("external_hbase_table_not_purge");
+      hAdmin.deleteTable("external_hbase_table_not_purge");
     } finally {
       hAdmin.close();
     }
@@ -205,23 +200,23 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testSimpleSelectQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("testsimpleselectquery"));
+    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
     hTableDesc.addFamily(new HColumnDescriptor("col1"));
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
     String sql = String.format(
-        "CREATE EXTERNAL TABLE testsimpleselectquery (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='testsimpleselectquery', 'columns'=':key,col1:a,col2:,col3:b') " +
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b') " +
         "LOCATION '%s/external_hbase_table'", tableSpaceUri);
     executeString(sql).close();
 
-    assertTableExists("testsimpleselectquery");
+    assertTableExists("external_hbase_mapped_table");
 
     HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("testsimpleselectquery");
+    HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
       for (int i = 0; i < 100; i++) {
@@ -234,34 +229,34 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from testsimpleselectquery where rk > '20'");
+      ResultSet res = executeString("select * from external_hbase_mapped_table where rk > '20'");
       assertResultSet(res);
       cleanupQuery(res);
     } finally {
-      executeString("DROP TABLE testsimpleselectquery PURGE").close();
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
       htable.close();
     }
   }
 
   @Test
   public void testBinaryMappedQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("testbinarymappedquery"));
+    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
     hTableDesc.addFamily(new HColumnDescriptor("col1"));
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
     String sql = String.format(
-        "CREATE EXTERNAL TABLE testbinarymappedquery (rk int8, col1 text, col2 text, col3 int4)\n " +
-        "USING hbase WITH ('table'='testbinarymappedquery', 'columns'=':key#b,col1:a,col2:,col3:b#b') " +
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk int8, col1 text, col2 text, col3 int4)\n " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key#b,col1:a,col2:,col3:b#b') " +
         "LOCATION '%s/external_hbase_table'", tableSpaceUri);
     executeString(sql).close();
 
-    assertTableExists("testbinarymappedquery");
+    assertTableExists("external_hbase_mapped_table");
 
     HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("testbinarymappedquery");
+    HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
       for (int i = 0; i < 100; i++) {
@@ -274,12 +269,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from testbinarymappedquery where rk > 20");
+      ResultSet res = executeString("select * from external_hbase_mapped_table where rk > 20");
       assertResultSet(res);
       res.close();
 
       //Projection
-      res = executeString("select col3, col2, rk from testbinarymappedquery where rk > 95");
+      res = executeString("select col3, col2, rk from external_hbase_mapped_table where rk > 95");
 
       String expected = "col3,col2,rk\n" +
           "-------------------------------\n" +
@@ -292,29 +287,29 @@ public class TestHBaseTable extends QueryTestCaseBase {
       res.close();
 
     } finally {
-      executeString("DROP TABLE testbinarymappedquery PURGE").close();
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
       htable.close();
     }
   }
 
   @Test
   public void testColumnKeyValueSelectQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("testcolumnkeyvalueselectquery"));
+    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
     String sql = String.format(
-        "CREATE EXTERNAL TABLE testcolumnkeyvalueselectquery (rk1 text, col2_key text, col2_value text, col3 text) " +
-        "USING hbase WITH ('table'='testcolumnkeyvalueselectquery', 'columns'=':key,col2:key:,col2:value:,col3:', " +
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, col2_key text, col2_value text, col3 text) " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
         "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
     executeString(sql).close();
 
-    assertTableExists("testcolumnkeyvalueselectquery");
+    assertTableExists("external_hbase_mapped_table");
 
     HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("testcolumnkeyvalueselectquery");
+    HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
       for (int i = 0; i < 10; i++) {
@@ -326,32 +321,32 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from testcolumnkeyvalueselectquery where rk1 >= 'rk-0'");
+      ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 >= 'rk-0'");
       assertResultSet(res);
       cleanupQuery(res);
     } finally {
-      executeString("DROP TABLE testcolumnkeyvalueselectquery PURGE").close();
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
       htable.close();
     }
   }
 
   @Test
   public void testRowFieldSelectQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("testrowfieldselectquery"));
+    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
     String sql = String.format(
-        "CREATE EXTERNAL TABLE testrowfieldselectquery (rk1 text, rk2 text, col3 text) " +
-        "USING hbase WITH ('table'='testrowfieldselectquery', 'columns'='0:key,1:key,col3:a', " +
+        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, rk2 text, col3 text) " +
+        "USING hbase WITH ('table'='external_hbase_table', 'columns'='0:key,1:key,col3:a', " +
         "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
     executeString(sql).close();
 
-    assertTableExists("testrowfieldselectquery");
+    assertTableExists("external_hbase_mapped_table");
 
     HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
     HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("testrowfieldselectquery");
+    HTableInterface htable = hconn.getTable("external_hbase_table");
 
     try {
       for (int i = 0; i < 100; i++) {
@@ -360,11 +355,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from testrowfieldselectquery where rk1 > 'field1-20'");
+      ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 > 'field1-20'");
       assertResultSet(res);
       cleanupQuery(res);
     } finally {
-      executeString("DROP TABLE testrowfieldselectquery PURGE").close();
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
       htable.close();
     }
   }
@@ -372,17 +367,17 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testIndexPredication() throws Exception {
     String sql =
-        "CREATE TABLE testindexpredication (rk text, col1 text, col2 text, col3 text) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='testindexpredication', 'columns'=':key,col1:a,col2:,col3:b', " +
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080') ";
     executeString(sql).close();
 
 
-    assertTableExists("testindexpredication");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
-    hAdmin.tableExists("testindexpredication");
+    hAdmin.tableExists("hbase_table");
 
-    HTable htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testindexpredication");
+    HTable htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
     try {
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
@@ -397,13 +392,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
         put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
         htable.put(put);
       }
-      assertIndexPredication(false, "testindexpredication");
+      assertIndexPredication(false);
 
-      ResultSet res = executeString("select * from testindexpredication where rk >= '020' and rk <= '055'");
+      ResultSet res = executeString("select * from hbase_mapped_table where rk >= '020' and rk <= '055'");
       assertResultSet(res);
       res.close();
 
-      res = executeString("select * from testindexpredication where rk = '021'");
+      res = executeString("select * from hbase_mapped_table where rk = '021'");
       String expected = "rk,col1,col2,col3\n" +
           "-------------------------------\n" +
           "021,a-21,{\"k1\":\"k1-21\", \"k2\":\"k2-21\"},b-21\n";
@@ -411,7 +406,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       res.close();
     } finally {
-      executeString("DROP TABLE testindexpredication PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
       htable.close();
       hAdmin.close();
     }
@@ -420,16 +415,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testCompositeRowIndexPredication() throws Exception {
 
-    executeString("CREATE TABLE testcompositerowindexpredication (rk text, rk2 text, col1 text, col2 text, col3 text) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='testcompositerowindexpredication', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, rk2 text, col1 text, col2 text, col3 text) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'hbase.rowkey.delimiter'='_')").close();
 
-    assertTableExists("testcompositerowindexpredication");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
-    hAdmin.tableExists("testcompositerowindexpredication");
+    hAdmin.tableExists("hbase_table");
 
-    HTable htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testcompositerowindexpredication");
+    HTable htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
     try {
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
@@ -457,9 +452,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertEquals("021_021", new String(result.getRow()));
       scanner.close();
 
-      assertIndexPredication(true, "testcompositerowindexpredication");
+      assertIndexPredication(true);
 
-      ResultSet res = executeString("select * from testcompositerowindexpredication where rk = '021'");
+      ResultSet res = executeString("select * from hbase_mapped_table where rk = '021'");
       String expected = "rk,rk2,col1,col2,col3\n" +
           "-------------------------------\n" +
           "021,021,a-21,{\"k1\":\"k1-21\", \"k2\":\"k2-21\"},b-21\n";
@@ -467,15 +462,15 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       res.close();
     } finally {
-      executeString("DROP TABLE testcompositerowindexpredication PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
       htable.close();
       hAdmin.close();
     }
   }
 
-  private void assertIndexPredication(boolean isCompositeRowKey, String table) throws Exception {
+  private void assertIndexPredication(boolean isCompositeRowKey) throws Exception {
     String postFix = isCompositeRowKey ? "_" + new String(new char[]{Character.MAX_VALUE}) : "";
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), table);
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     ScanNode scanNode = new ScanNode(1);
 
@@ -484,7 +479,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         new ConstEval(new TextDatum("021")));
     scanNode.setQual(evalNodeEq);
     Tablespace tablespace = TablespaceManager.getByName("cluster1").get();
-    List<Fragment> fragments = tablespace.getSplits(table, tableDesc, scanNode);
+    List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));
     assertEquals("021" + postFix, new String(((HBaseFragment)fragments.get(0)).getStopRow()));
@@ -497,7 +492,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeA = new BinaryEval(EvalType.AND, evalNode1, evalNode2);
     scanNode.setQual(evalNodeA);
 
-    fragments = tablespace.getSplits(table, tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(2, fragments.size());
     HBaseFragment fragment1 = (HBaseFragment) fragments.get(0);
     assertEquals("020", new String(fragment1.getStartRow()));
@@ -512,7 +507,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         new ConstEval(new TextDatum("075")));
     EvalNode evalNodeB = new BinaryEval(EvalType.OR, evalNodeA, evalNode3);
     scanNode.setQual(evalNodeB);
-    fragments = tablespace.getSplits(table, tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(3, fragments.size());
     fragment1 = (HBaseFragment) fragments.get(0);
     assertEquals("020", new String(fragment1.getStartRow()));
@@ -535,7 +530,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
     EvalNode evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
     scanNode.setQual(evalNodeD);
-    fragments = tablespace.getSplits(table, tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(3, fragments.size());
 
     fragment1 = (HBaseFragment) fragments.get(0);
@@ -558,7 +553,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
     evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
     scanNode.setQual(evalNodeD);
-    fragments = tablespace.getSplits(table, tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(2, fragments.size());
 
     fragment1 = (HBaseFragment) fragments.get(0);
@@ -572,16 +567,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testNonForwardQuery() throws Exception {
-    executeString("CREATE TABLE testnonforwardquery (rk text, col1 text, col2 text, col3 int) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='testnonforwardquery', 'columns'=':key,col1:a,col2:,col3:#b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:#b', " +
         "'hbase.split.rowkeys'='010,040,060,080')").close();
 
-    assertTableExists("testnonforwardquery");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     HTable htable = null;
     try {
-      hAdmin.tableExists("testnonforwardquery");
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testnonforwardquery");
+      hAdmin.tableExists("hbase_table");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
 
@@ -596,11 +591,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from testnonforwardquery");
+      ResultSet res = executeString("select * from hbase_mapped_table");
       assertResultSet(res);
       res.close();
     } finally {
-      executeString("DROP TABLE testnonforwardquery PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
       hAdmin.close();
       if (htable == null) {
         htable.close();
@@ -610,16 +605,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testJoin() throws Exception {
-    executeString("CREATE TABLE testjoin (rk text, col1 text, col2 text, col3 int8) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='testjoin', 'columns'=':key,col1:a,col2:,col3:b#b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int8) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
         "'hbase.split.rowkeys'='010,040,060,080')").close();
 
-    assertTableExists("testjoin");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     HTable htable = null;
     try {
-      hAdmin.tableExists("testjoin");
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testjoin");
+      hAdmin.tableExists("hbase_table");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
 
@@ -635,12 +630,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
       }
 
       ResultSet res = executeString("select a.rk, a.col1, a.col2, a.col3, b.l_orderkey, b.l_linestatus " +
-          "from testjoin a " +
+          "from hbase_mapped_table a " +
           "join default.lineitem b on a.col3 = b.l_orderkey");
       assertResultSet(res);
       res.close();
     } finally {
-      executeString("DROP TABLE testjoin PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
       hAdmin.close();
       if (htable != null) {
         htable.close();
@@ -650,19 +645,19 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertInto() throws Exception {
-    executeString("CREATE TABLE testinsertinto (rk text, col1 text, col2 text, col3 int4) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='testinsertinto', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
 
-    assertTableExists("testinsertinto");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertinto");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
-    executeString("insert into testinsertinto " +
+    executeString("insert into hbase_mapped_table " +
         "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertinto");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -676,7 +671,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false, false, true}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE testinsertinto PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -690,21 +685,21 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertValues1() throws Exception {
-    executeString("CREATE TABLE testinsertvalues1 (rk text, col1 text, col2 text, col3 int4) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='testinsertvalues1', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
 
-    assertTableExists("testinsertvalues1");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertvalues1");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
-    executeString("insert into testinsertvalues1 select 'aaa', 'a12', 'a34', 1").close();
-    executeString("insert into testinsertvalues1 select 'bbb', 'b12', 'b34', 2").close();
-    executeString("insert into testinsertvalues1 select 'ccc', 'c12', 'c34', 3").close();
-    executeString("insert into testinsertvalues1 select 'ddd', 'd12', 'd34', 4").close();
+    executeString("insert into hbase_mapped_table select 'aaa', 'a12', 'a34', 1").close();
+    executeString("insert into hbase_mapped_table select 'bbb', 'b12', 'b34', 2").close();
+    executeString("insert into hbase_mapped_table select 'ccc', 'c12', 'c34', 3").close();
+    executeString("insert into hbase_mapped_table select 'ddd', 'd12', 'd34', 4").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertvalues1");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -718,7 +713,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false, false, true}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE testinsertvalues1 PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -732,12 +727,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegion() throws Exception {
-    executeString("CREATE TABLE testinsertintomultiregion (rk text, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintomultiregion', 'columns'=':key,col1:a', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='010,040,060,080')").close();
 
-    assertTableExists("testinsertintomultiregion");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintomultiregion");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -752,16 +747,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintomultiregion",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("insert into testinsertintomultiregion " +
-        "select id, name from base_testinsertintomultiregion ").close();
+    executeString("insert into hbase_mapped_table " +
+        "select id, name from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintomultiregion");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -773,8 +768,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE base_testinsertintomultiregion PURGE").close();
-      executeString("DROP TABLE testinsertintomultiregion PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -788,12 +783,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegion2() throws Exception {
-    executeString("CREATE TABLE testinsertintomultiregion2 (rk text, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintomultiregion2', 'columns'=':key,col1:a', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9')").close();
 
-    assertTableExists("testinsertintomultiregion2");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintomultiregion2");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -807,16 +802,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintomultiregion2",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("insert into testinsertintomultiregion2 " +
-        "select id, name from base_testinsertintomultiregion2 ").close();
+    executeString("insert into hbase_mapped_table " +
+        "select id, name from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintomultiregion2");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -828,8 +823,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE base_testinsertintomultiregion2 PURGE").close();
-      executeString("DROP TABLE testinsertintomultiregion2 PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -846,12 +841,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     String splitFilePath = currentDatasetPath + "/splits.data";
 
     executeString(
-        "CREATE TABLE testinsertintomultiregionwithsplitfile (rk text, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintomultiregionwithsplitfile', 'columns'=':key,col1:a', " +
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys.file'='" + splitFilePath + "')").close();
 
-    assertTableExists("testinsertintomultiregionwithsplitfile");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintomultiregionwithsplitfile");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -866,16 +861,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintomultiregionwithsplitfile",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("insert into testinsertintomultiregionwithsplitfile " +
-        "select id, name from base_testinsertintomultiregionwithsplitfile ").close();
+    executeString("insert into hbase_mapped_table " +
+        "select id, name from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintomultiregionwithsplitfile");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -887,8 +882,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE base_testinsertintomultiregionwithsplitfile PURGE").close();
-      executeString("DROP TABLE testinsertintomultiregionwithsplitfile PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -903,13 +898,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testInsertIntoMultiRegionMultiRowFields() throws Exception {
     executeString(
-        "CREATE TABLE testinsertintomultiregionmultirowfields (rk1 text, rk2 text, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintomultiregionmultirowfields', 'columns'='0:key,1:key,col1:a', " +
+        "CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a', " +
         "'hbase.split.rowkeys'='001,002,003,004,005,006,007,008,009', " +
         "'hbase.rowkey.delimiter'='_')").close();
 
-    assertTableExists("testinsertintomultiregionmultirowfields");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintomultiregionmultirowfields");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -925,16 +920,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintomultiregionmultirowfields",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("insert into testinsertintomultiregionmultirowfields " +
-        "select id1, id2, name from base_testinsertintomultiregionmultirowfields ").close();
+    executeString("insert into hbase_mapped_table " +
+        "select id1, id2, name from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintomultiregionmultirowfields");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -946,8 +941,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE base_testinsertintomultiregionmultirowfields PURGE").close();
-      executeString("DROP TABLE testinsertintomultiregionmultirowfields PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -961,12 +956,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoBinaryMultiRegion() throws Exception {
-    executeString("CREATE TABLE testinsertintobinarymultiregion (rk int4, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintobinarymultiregion', 'columns'=':key#b,col1:a', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk int4, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key#b,col1:a', " +
         "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9')").close();
 
-    assertTableExists("testinsertintobinarymultiregion");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintobinarymultiregion");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -980,16 +975,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintobinarymultiregion",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("insert into testinsertintobinarymultiregion " +
-        "select id, name from base_testinsertintobinarymultiregion ").close();
+    executeString("insert into hbase_mapped_table " +
+        "select id, name from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintobinarymultiregion");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -1001,8 +996,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{true, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE base_testinsertintobinarymultiregion PURGE").close();
-      executeString("DROP TABLE testinsertintobinarymultiregion PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -1017,12 +1012,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testInsertIntoColumnKeyValue() throws Exception {
     executeString(
-        "CREATE TABLE testinsertintocolumnkeyvalue (rk text, col2_key text, col2_value text, col3 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintocolumnkeyvalue', 'columns'=':key,col2:key:,col2:value:,col3:', " +
+        "CREATE TABLE hbase_mapped_table (rk text, col2_key text, col2_value text, col3 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
         "'hbase.rowkey.delimiter'='_')").close();
 
-    assertTableExists("testinsertintocolumnkeyvalue");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintocolumnkeyvalue");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -1040,16 +1035,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
         datas.add(i + "|ck-" + j + "|value-" + j + "|col3-" + i);
       }
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintocolumnkeyvalue",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
-    executeString("insert into testinsertintocolumnkeyvalue " +
-        "select rk, col2_key, col2_value, col3 from base_testinsertintocolumnkeyvalue ").close();
+    executeString("insert into hbase_mapped_table " +
+        "select rk, col2_key, col2_value, col3 from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintocolumnkeyvalue");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col2"));
@@ -1061,7 +1056,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new byte[][]{null, null, null},
           new boolean[]{false, false, false}, tableDesc.getSchema()));
 
-      ResultSet res = executeString("select * from testinsertintocolumnkeyvalue");
+      ResultSet res = executeString("select * from hbase_mapped_table");
 
       String expected = "rk,col2_key,col2_value,col3\n" +
           "-------------------------------\n" +
@@ -1091,8 +1086,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
       res.close();
 
     } finally {
-      executeString("DROP TABLE base_testinsertintocolumnkeyvalue PURGE").close();
-      executeString("DROP TABLE testinsertintocolumnkeyvalue PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -1107,11 +1102,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testInsertIntoDifferentType() throws Exception {
     executeString(
-        "CREATE TABLE testinsertintodifferenttype (rk text, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintodifferenttype', 'columns'=':key,col1:a', " +
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9')").close();
 
-    assertTableExists("testinsertintodifferenttype");
+    assertTableExists("hbase_mapped_table");
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
@@ -1125,39 +1120,39 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintodifferenttype",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
     try {
-      executeString("insert into testinsertintodifferenttype " +
-          "select id, name from base_testinsertintodifferenttype ").close();
+      executeString("insert into hbase_mapped_table " +
+          "select id, name from base_table ").close();
       fail("If inserting data type different with target table data type, should throw exception");
     } catch (Exception e) {
       assertTrue(e.getMessage().indexOf("is different column type with") >= 0);
     } finally {
-      executeString("DROP TABLE base_testinsertintodifferenttype PURGE").close();
-      executeString("DROP TABLE testinsertintodifferenttype PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     }
   }
 
   @Test
   public void testInsertIntoRowField() throws Exception {
     executeString(
-        "CREATE TABLE testinsertintorowfield (rk1 text, rk2 text, col1 text, col2 text, col3 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintorowfield', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
+        "CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text, col2 text, col3 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
         "'hbase.rowkey.delimiter'='_')").close();
 
 
-    assertTableExists("testinsertintorowfield");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintorowfield");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
-    executeString("insert into testinsertintorowfield " +
+    executeString("insert into hbase_mapped_table " +
         "select l_orderkey::text, l_partkey::text, l_shipdate, l_returnflag, l_suppkey::text from default.lineitem ");
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintorowfield");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -1171,7 +1166,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false, false, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE testinsertintorowfield PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -1198,23 +1193,23 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testctas",
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
     executeString(
-        "CREATE TABLE testctas (rk text, col1 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testctas', 'columns'=':key,col1:a', " +
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='010,040,060,080') as" +
-        " select id, name from base_testctas"
+        " select id, name from base_table"
     ).close();
 
-    assertTableExists("testctas");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testctas");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     HTable htable = null;
     ResultScanner scanner = null;
     try {
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testctas");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -1226,8 +1221,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE base_testctas PURGE").close();
-      executeString("DROP TABLE testctas PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
         scanner.close();
@@ -1239,9 +1234,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       // TODO - rollback should support its corresponding hbase table
       HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
-      if (hAdmin.tableExists("testctas")) {
-        hAdmin.disableTable("testctas");
-        hAdmin.deleteTable("testctas");
+      if (hAdmin.tableExists("hbase_table")) {
+        hAdmin.disableTable("hbase_table");
+        hAdmin.deleteTable("hbase_table");
       }
     }
   }
@@ -1249,11 +1244,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testInsertIntoUsingPut() throws Exception {
     executeString(
-        "CREATE TABLE testinsertintousingput (rk text, col1 text, col2 text, col3 int4) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintousingput', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
 
-    assertTableExists("testinsertintousingput");
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "testinsertintousingput");
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     Map<String, String> sessions = new HashMap<String, String>();
     sessions.put(HBaseStorageConstants.INSERT_PUT_MODE, "true");
@@ -1263,11 +1258,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
     ResultScanner scanner = null;
     try {
       executeString(
-          "insert into testinsertintousingput " +
+          "insert into hbase_mapped_table " +
           "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem"
       ).close();
 
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "testinsertintousingput");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
 
       Scan scan = new Scan();
       scan.addFamily(Bytes.toBytes("col1"));
@@ -1282,7 +1277,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new boolean[]{false, false, false, true}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE testinsertintousingput PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       client.unsetSessionVariables(TUtil.newList(HBaseStorageConstants.INSERT_PUT_MODE));
 
@@ -1299,11 +1294,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testInsertIntoLocation() throws Exception {
     executeString(
-        "CREATE TABLE testinsertintolocation (rk text, col1 text, col2 text) TABLESPACE cluster1 " +
-        "USING hbase WITH ('table'='testinsertintolocation', 'columns'=':key,col1:a,col2:', " +
+        "CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text) TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:', " +
         "'hbase.split.rowkeys'='010,040,060,080')").close();
 
-    assertTableExists("testinsertintolocation");
+    assertTableExists("hbase_mapped_table");
 
     try {
       // create test table
@@ -1320,11 +1315,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
       for (int i = 99; i >= 0; i--) {
         datas.add(df.format(i) + "|value" + i + "|comment-" + i);
       }
-      TajoTestingCluster.createTable(getCurrentDatabase() + ".base_testinsertintolocation",
+      TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
           schema, tableOptions, datas.toArray(new String[]{}), 2);
 
       executeString("insert into location '/tmp/hfile_test' " +
-          "select id, name, comment from base_testinsertintolocation ").close();
+          "select id, name, comment from base_table ").close();
 
       FileSystem fs = testingCluster.getDefaultFileSystem();
       Path path = new Path("/tmp/hfile_test");
@@ -1344,8 +1339,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
         index++;
       }
     } finally {
-      executeString("DROP TABLE base_testinsertintolocation PURGE").close();
-      executeString("DROP TABLE testinsertintolocation PURGE").close();
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     }
   }
 

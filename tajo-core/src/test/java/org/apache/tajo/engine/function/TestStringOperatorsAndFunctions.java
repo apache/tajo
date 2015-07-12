@@ -47,8 +47,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
     testSimpleEval("select (1+3) || 2 as col1 ", new String[]{"42"});
 
-    testEval(schema, "testconcatenateonexpressions", "abc,2,3.14", "select col1 || col2 || col3 from testconcatenateonexpressions", new String[]{"abc23.14"});
-    testEval(schema, "testconcatenateonexpressions", "abc,2,3.14", "select col1 || '---' || col3 from testconcatenateonexpressions", new String[]{"abc---3.14"});
+    testEval(schema, "table1", "abc,2,3.14", "select col1 || col2 || col3 from table1", new String[]{"abc23.14"});
+    testEval(schema, "table1", "abc,2,3.14", "select col1 || '---' || col3 from table1", new String[]{"abc---3.14"});
   }
 
   @Test
@@ -72,11 +72,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select trim(leading from '  trim') ", new String[]{"trim"});
     testSimpleEval("select trim('  trim') ", new String[]{"trim"});
 
-    testEval(schema, "testLTrim", "  trim,abc", "select ltrim(col1) from testltrim", new String[]{"trim"});
-    testEval(schema, "testLTrim", "xxtrim,abc", "select ltrim(col1, 'xx') from testltrim", new String[]{"trim"});
-    testEval(schema, "testLTrim", "xxtrim,abc", "select trim(leading 'xx' from col1) from testltrim", new String[]{"trim"});
+    testEval(schema, "table1", "  trim,abc", "select ltrim(col1) from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrim,abc", "select ltrim(col1, 'xx') from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrim,abc", "select trim(leading 'xx' from col1) from table1", new String[]{"trim"});
 
-    testEval(schema, "testLTrim", "  trim,  abc", "select ltrim(col1) || ltrim(col2) from testltrim",
+    testEval(schema, "table1", "  trim,  abc", "select ltrim(col1) || ltrim(col2) from table1",
         new String[]{"trimabc"});
   }
 
@@ -93,11 +93,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select trim(trailing from 'trim  ') ", new String[]{"trim"});
     testSimpleEval("select trim('trim  ') ", new String[]{"trim"});
 
-    testEval(schema, "testRTrim", "trim  ,abc", "select rtrim(col1) from testRTrim", new String[]{"trim"});
-    testEval(schema, "testRTrim", "trimxx,abc", "select rtrim(col1, 'xx') from testRTrim", new String[]{"trim"});
-    testEval(schema, "testRTrim", "trimxx,abc", "select trim(trailing 'xx' from col1) from testRTrim", new String[]{"trim"});
+    testEval(schema, "table1", "trim  ,abc", "select rtrim(col1) from table1", new String[]{"trim"});
+    testEval(schema, "table1", "trimxx,abc", "select rtrim(col1, 'xx') from table1", new String[]{"trim"});
+    testEval(schema, "table1", "trimxx,abc", "select trim(trailing 'xx' from col1) from table1", new String[]{"trim"});
 
-    testEval(schema, "testRTrim", "trim  ,abc  ", "select rtrim(col1) || rtrim(col2) from testRTrim",
+    testEval(schema, "table1", "trim  ,abc  ", "select rtrim(col1) || rtrim(col2) from table1",
         new String[]{"trimabc"});
   }
 
@@ -114,11 +114,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select trim(both from '  trim  ') ", new String[]{"trim"});
     testSimpleEval("select trim('  trim  ') ", new String[]{"trim"});
 
-    testEval(schema, "testtrim", "  trim  ,abc", "select trim(col1) from testtrim", new String[]{"trim"});
-    testEval(schema, "testtrim", "xxtrimxx,abc", "select trim(col1, 'xx') from testtrim", new String[]{"trim"});
-    testEval(schema, "testtrim", "xxtrimxx,abc", "select trim(both 'xx' from col1) from testtrim", new String[]{"trim"});
+    testEval(schema, "table1", "  trim  ,abc", "select trim(col1) from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrimxx,abc", "select trim(col1, 'xx') from table1", new String[]{"trim"});
+    testEval(schema, "table1", "xxtrimxx,abc", "select trim(both 'xx' from col1) from table1", new String[]{"trim"});
 
-    testEval(schema, "testtrim", "  trim  ,xxabcxx", "select trim(col1) || trim(col2,'xx') from testtrim",
+    testEval(schema, "table1", "  trim  ,xxabcxx", "select trim(col1) || trim(col2,'xx') from table1",
         new String[]{"trimabc"});
   }
 
@@ -137,13 +137,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
 
     // find matches and replace from column values
-    testEval(schema, "testregexreplace", "------,(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from testregexreplace",
+    testEval(schema, "table1", "------,(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{"ab--ab"});
 
     // null test from a table
-    testEval(schema, "testregexreplace", ",(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from testregexreplace",
+    testEval(schema, "table1", ",(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{""});
-    testEval(schema, "testregexreplace", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from testregexreplace",
+    testEval(schema, "table1", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{""});
   }
 
@@ -170,10 +170,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
 
     // for null tests
-    testEval(schema, "testleft", ",1,ghi", "select left(col1,1) is null from testleft", new String[]{"t"});
-    testEval(schema, "testleft", "abc,,ghi", "select left(col1,col2) is null from testleft", new String[]{"t"});
+    testEval(schema, "table1", ",1,ghi", "select left(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "abc,,ghi", "select left(col1,col2) is null from table1", new String[]{"t"});
 
-    testEval(schema, "testleft", "abc,1,ghi", "select left(col1,1) || left(col3,3) from testleft", new String[]{"aghi"});
+    testEval(schema, "table1", "abc,1,ghi", "select left(col1,1) || left(col3,3) from table1", new String[]{"aghi"});
   }
 
   @Test
@@ -199,10 +199,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
 
     // for null tests
-    testEval(schema, "testright", ",1,ghi", "select right(col1,1) is null from testright", new String[]{"t"});
-    testEval(schema, "testright", "abc,,ghi", "select right(col1,col2) is null from testright", new String[]{"t"});
+    testEval(schema, "table1", ",1,ghi", "select right(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "abc,,ghi", "select right(col1,col2) is null from table1", new String[]{"t"});
 
-    testEval(schema, "testright", "abc,1,ghi", "select right(col1,1) || right(col3,3) from testright", new String[]{"cghi"});
+    testEval(schema, "table1", "abc,1,ghi", "select right(col1,1) || right(col3,3) from table1", new String[]{"cghi"});
   }
 
   @Test
@@ -214,7 +214,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testReverse", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from testReverse",
+    testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1",
         new String[]{"cbagfe"});
   }
 
@@ -228,7 +228,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testrepeat", "abc,efg,3.14", "select repeat(col1,2) from testrepeat", new String[]{"abcabc"});
+    testEval(schema, "table1", "abc,efg,3.14", "select repeat(col1,2) from table1", new String[]{"abcabc"});
   }
 
 
@@ -240,9 +240,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testupper", "abc,efg,3.14", "select upper(col1), upper(col2) from testupper",
+    testEval(schema, "table1", "abc,efg,3.14", "select upper(col1), upper(col2) from table1",
         new String[]{"ABC", "EFG"});
-    testEval(schema, "testupper", "abc,efg,3.14", "select upper(col1) || upper(col2) from testupper", new String[]{"ABCEFG"});
+    testEval(schema, "table1", "abc,efg,3.14", "select upper(col1) || upper(col2) from table1", new String[]{"ABCEFG"});
   }
 
   @Test
@@ -253,9 +253,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testlower", "ABC,DEF,3.14", "select lower(col1), lower(col2) from testlower",
+    testEval(schema, "table1", "ABC,DEF,3.14", "select lower(col1), lower(col2) from table1",
         new String[]{"abc", "def"});
-    testEval(schema, "testlower", "ABC,DEF,3.14", "select lower(col1) || lower(col2) from testlower", new String[]{"abcdef"});
+    testEval(schema, "table1", "ABC,DEF,3.14", "select lower(col1) || lower(col2) from table1", new String[]{"abcdef"});
   }
 
   @Test
@@ -266,7 +266,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testcharlength", "ABC,DEF,3.14", "select character_length(lower(col1) || lower(col2)) from testcharlength",
+    testEval(schema, "table1", "ABC,DEF,3.14", "select character_length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
 
@@ -278,7 +278,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testlength", "ABC,DEF,3.14", "select length(lower(col1) || lower(col2)) from testlength",
+    testEval(schema, "table1", "ABC,DEF,3.14", "select length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
 
@@ -291,7 +291,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testmd5", "abc,efg,3.14", "select md5(col1) from testmd5",
+    testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1",
         new String[]{"900150983cd24fb0d6963f7d28e17f72"});
   }
 
@@ -320,7 +320,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testhex", ",abcdef,3.14", "select to_hex(10) from testhex",
+    testEval(schema, "table1", ",abcdef,3.14", "select to_hex(10) from table1",
         new String[]{"a"});
   }
 
@@ -334,7 +334,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testbin", ",abcdef,3.14", "select to_bin(20) from testbin",
+    testEval(schema, "table1", ",abcdef,3.14", "select to_bin(20) from table1",
         new String[]{"10100"});
   }
 
@@ -348,7 +348,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testoctetlength", "ABC,DEF,3.14", "select octet_length(lower(col1) || lower(col2)) from testoctetlength",
+    testEval(schema, "table1", "ABC,DEF,3.14", "select octet_length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
 
@@ -364,10 +364,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testsplitpart", ",.,1", "select split_part(col1, col2, col3::int) is null from testsplitpart", new String[]{"t"});
-    testEval(schema, "testsplitpart", "1386577650.123,,1", "select split_part(col1, col2, col3::int) from testsplitpart",
+    testEval(schema, "t1", ",.,1", "select split_part(col1, col2, col3::int) is null from t1", new String[]{"t"});
+    testEval(schema, "t1", "1386577650.123,,1", "select split_part(col1, col2, col3::int) from t1",
         new String[]{"1386577650.123"});
-    testEval(schema, "testsplitpart", "1386577650.123,.,", "select split_part(col1, col2, col3::int) is null from testsplitpart",
+    testEval(schema, "t1", "1386577650.123,.,", "select split_part(col1, col2, col3::int) is null from t1",
         new String[]{"t"});
   }
 
@@ -393,7 +393,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testsubstr", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from testsubstr",
+    testEval(schema, "table1", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from table1",
         new String[]{"bcd"});
   }
   
@@ -436,14 +436,14 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testlocate", ",abcdef,3.14", "select locate(col2, 'cd') from testlocate", new String[]{"3"});
-    testEval(schema, "testlocate", ",abcdef,3.14", "select locate(col2, 'cd', 1) from testlocate", new String[]{"3"});
-    testEval(schema, "testlocate", ",abcdef,3.14", "select locate(col2, 'cd', 4) from testlocate", new String[]{"0"});
-    testEval(schema, "testlocate", ",abcdef,3.14", "select locate(col2, 'xy') from testlocate", new String[]{"0"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd') from table1", new String[]{"3"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 1) from table1", new String[]{"3"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 4) from table1", new String[]{"0"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'xy') from table1", new String[]{"0"});
     // null string
-    testEval(schema, "testlocate", ",abcdef,3.14", "select locate(col1, 'cd') is null from testlocate", new String[]{"t"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
     // nul substring
-    testEval(schema, "testlocate", ",abcdef,3.14", "select locate('cd', col1) is null from testlocate", new String[]{"t"});
+    testEval(schema, "table1", ",abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
   }
 
   @Test
@@ -454,7 +454,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "testbitlength", "ABC,DEF,3.14", "select bit_length(lower(col1) || lower(col2)) from testbitlength",
+    testEval(schema, "table1", "ABC,DEF,3.14", "select bit_length(lower(col1) || lower(col2)) from table1",
         new String[]{"48"});
   }
 
@@ -470,7 +470,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "teststrpos", "ABCDEF,HIJKLMN,3.14", "select strpos(lower(col1) || lower(col2), 'fh') from teststrpos",
+    testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strpos(lower(col1) || lower(col2), 'fh') from table1",
         new String[]{"6"});
   }
 
@@ -486,7 +486,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     schema.addColumn("col3", TEXT);
-    testEval(schema, "teststrposb", "ABCDEF,HIJKLMN,3.14", "select strposb(lower(col1) || lower(col2), 'fh') from teststrposb",
+    testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strposb(lower(col1) || lower(col2), 'fh') from table1",
         new String[]{"6"});
   }
 
@@ -502,9 +502,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
-    testEval(schema, "testascii", "abc", "select ascii(col1) from testascii",
+    testEval(schema, "table1", "abc", "select ascii(col1) from table1",
             new String[]{"97"});
-    testEval(schema, "testascii", "12", "select ascii(col1) from testascii",
+    testEval(schema, "table1", "12", "select ascii(col1) from table1",
             new String[]{"49"});
 
   }
@@ -518,9 +518,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
     Schema schema = new Schema();
     schema.addColumn("col1", INT4);
-    testEval(schema, "testchr", "65", "select chr(col1) from testchr", new String[]{"A"});
-    testEval(schema, "testchr", "66", "select chr(col1) from testchr", new String[]{"B"});
-    testEval(schema, "testchr", "52512", "select chr(col1) from testchr", new String[]{"촠"});
+    testEval(schema, "table1", "65", "select chr(col1) from table1", new String[]{"A"});
+    testEval(schema, "table1", "66", "select chr(col1) from table1", new String[]{"B"});
+    testEval(schema, "table1", "52512", "select chr(col1) from table1", new String[]{"촠"});
   }
 
   @Test
@@ -590,9 +590,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
-    testEval(schema, "testfindinset", "|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from testfindinset",
+    testEval(schema, "table1", "|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
         new String[]{"t"}, '|', true);
-    testEval(schema, "testfindinset", "cr|", "select find_in_set(col1, col2) is null from testfindinset",
+    testEval(schema, "table1", "cr|", "select find_in_set(col1, col2) is null from table1",
         new String[]{"t"}, '|', true);
   }
 

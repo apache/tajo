@@ -59,35 +59,35 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testCreateTable2() throws Exception {
-    executeString("CREATE DATABASE testcreatetable2;").close();
-    executeString("CREATE DATABASE testcreatetable2_2;").close();
+    executeString("CREATE DATABASE D1;").close();
+    executeString("CREATE DATABASE D2;").close();
 
-    executeString("CREATE TABLE testcreatetable2.table1 (age int);").close();
-    executeString("CREATE TABLE testcreatetable2.table2 (age int);").close();
-    executeString("CREATE TABLE testcreatetable2_2.table3 (age int);").close();
-    executeString("CREATE TABLE testcreatetable2_2.table4 (age int);").close();
+    executeString("CREATE TABLE D1.table1 (age int);").close();
+    executeString("CREATE TABLE D1.table2 (age int);").close();
+    executeString("CREATE TABLE d2.table3 (age int);").close();
+    executeString("CREATE TABLE d2.table4 (age int);").close();
 
-    assertTableExists("testcreatetable2.table1");
-    assertTableExists("testcreatetable2.table2");
-    assertTableNotExists("testcreatetable2_2.table1");
-    assertTableNotExists("testcreatetable2_2.table2");
+    assertTableExists("d1.table1");
+    assertTableExists("d1.table2");
+    assertTableNotExists("d2.table1");
+    assertTableNotExists("d2.table2");
 
-    assertTableExists("testcreatetable2_2.table3");
-    assertTableExists("testcreatetable2_2.table4");
-    assertTableNotExists("testcreatetable2.table3");
-    assertTableNotExists("testcreatetable2.table4");
+    assertTableExists("d2.table3");
+    assertTableExists("d2.table4");
+    assertTableNotExists("d1.table3");
+    assertTableNotExists("d1.table4");
 
-    executeString("DROP TABLE testcreatetable2.table1");
-    executeString("DROP TABLE testcreatetable2.table2");
-    executeString("DROP TABLE testcreatetable2_2.table3");
-    executeString("DROP TABLE testcreatetable2_2.table4");
+    executeString("DROP TABLE D1.table1");
+    executeString("DROP TABLE D1.table2");
+    executeString("DROP TABLE D2.table3");
+    executeString("DROP TABLE D2.table4");
 
-    assertDatabaseExists("testcreatetable2");
-    assertDatabaseExists("testcreatetable2_2");
-    executeString("DROP DATABASE testcreatetable2").close();
-    executeString("DROP DATABASE testcreatetable2_2").close();
-    assertDatabaseNotExists("testcreatetable2");
-    assertDatabaseNotExists("testcreatetable2_2");
+    assertDatabaseExists("d1");
+    assertDatabaseExists("d2");
+    executeString("DROP DATABASE D1").close();
+    executeString("DROP DATABASE D2").close();
+    assertDatabaseNotExists("d1");
+    assertDatabaseNotExists("d2");
   }
 
   private final void assertPathOfCreatedTable(final String databaseName,
@@ -212,15 +212,13 @@ public class TestCreateTable extends QueryTestCaseBase {
       ResultSet res = null;
 
       try {
-        List<String> tableNames = executeDDL("quoted_identifier_mixed_chars_ddl_1.sql", "table1",
-            "\"TESTDELIMITEDIDENTIFIERWITHMIXEDCHARACTERS\"");
+        List<String> tableNames = executeDDL("quoted_identifier_mixed_chars_ddl_1.sql", "table1", "\"TABLE1\"");
         assertTableExists(tableNames.get(0));
 
-        tableNames = executeDDL("quoted_identifier_mixed_chars_ddl_1.sql", "table2",
-            "\"testDelimitedIdentifierWithMixedCharacters\"");
+        tableNames = executeDDL("quoted_identifier_mixed_chars_ddl_1.sql", "table2", "\"tablE1\"");
         assertTableExists(tableNames.get(0));
 
-        // SELECT "aGe", "tExt", "Number" FROM "TESTDELIMITEDIDENTIFIERWITHMIXEDCHARACTERS";
+        // SELECT "aGe", "tExt", "Number" FROM "TABLE1";
         res = executeFile("quoted_identifier_mixed_chars_1.sql");
         assertResultSet(res, "quoted_identifier_mixed_chars_1.result");
       } finally {
@@ -606,25 +604,25 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testNestedRecord1() throws Exception {
-    executeString("CREATE DATABASE d9;").close();
+    executeString("CREATE DATABASE D9;").close();
 
     assertTableNotExists("d9.nested_table");
     executeQuery().close();
     assertTableExists("d9.nested_table");
 
-    executeString("DROP TABLE d9.nested_table");
-    executeString("DROP DATABASE d9").close();
+    executeString("DROP TABLE D9.nested_table");
+    executeString("DROP DATABASE D9").close();
   }
 
   @Test
   public final void testNestedRecord2() throws Exception {
-    executeString("CREATE DATABASE d10;").close();
+    executeString("CREATE DATABASE D9;").close();
 
-    assertTableNotExists("d10.nested_table2");
+    assertTableNotExists("d9.nested_table2");
     executeQuery();
-    assertTableExists("d10.nested_table2");
+    assertTableExists("d9.nested_table2");
 
-    executeString("DROP TABLE d10.nested_table2");
-    executeString("DROP DATABASE d10").close();
+    executeString("DROP TABLE D9.nested_table2");
+    executeString("DROP DATABASE D9").close();
   }
 }
