@@ -60,7 +60,6 @@ import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestLogicalPlanner {
   private static TajoTestingCluster util;
   private static CatalogService catalog;
