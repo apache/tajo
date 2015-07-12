@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestTajoDump extends QueryTestCaseBase {
 
   @Test

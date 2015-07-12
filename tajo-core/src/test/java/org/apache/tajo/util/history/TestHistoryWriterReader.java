@@ -42,7 +42,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestHistoryWriterReader extends QueryTestCaseBase {
   public static final String HISTORY_DIR = "/tmp/tajo-test-history";
   TajoConf tajoConf;

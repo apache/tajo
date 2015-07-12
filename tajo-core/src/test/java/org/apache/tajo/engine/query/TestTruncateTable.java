@@ -31,7 +31,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
-@net.jcip.annotations.NotThreadSafe
 public class TestTruncateTable extends QueryTestCaseBase {
   public TestTruncateTable() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);

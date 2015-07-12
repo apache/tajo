@@ -44,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import static org.junit.Assert.*;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestTaskManager {
 
   private NodeResourceManager resourceManager;

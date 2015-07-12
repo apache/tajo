@@ -38,7 +38,6 @@ import java.util.List;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestFunctionsResource extends QueryTestCaseBase {
   
   private URI restServiceURI;

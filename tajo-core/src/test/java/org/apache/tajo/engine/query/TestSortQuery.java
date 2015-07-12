@@ -24,6 +24,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -31,11 +32,11 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
-@net.jcip.annotations.NotThreadSafe
 public class TestSortQuery extends QueryTestCaseBase {
 
   public TestSortQuery() {

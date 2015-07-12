@@ -57,13 +57,22 @@ import org.junit.runner.Description;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.*;
+import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -135,8 +144,7 @@ import static org.junit.Assert.*;
  *  <li>Each query file must have the file extension '.sql'.</li>
  * </ul>
  */
-@net.jcip.annotations.NotThreadSafe
-public abstract class QueryTestCaseBase {
+public class QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(QueryTestCaseBase.class);
   protected static final TpchTestBase testBase;
   protected static final TajoTestingCluster testingCluster;
@@ -223,7 +231,7 @@ public abstract class QueryTestCaseBase {
     /* protect a travis stalled build */
     System.out.println("Run: " + name.getMethodName() +
         " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
-        / (1024 * 1024)) + " MBytes, Running threads:" + Thread.activeCount());
+        / (1024 * 1024)) + "MBytes");
   }
 
   public QueryTestCaseBase() {

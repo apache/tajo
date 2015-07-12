@@ -38,7 +38,6 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
-@net.jcip.annotations.NotThreadSafe
 public class TestTajoJdbc extends QueryTestCaseBase {
   private static InetSocketAddress tajoMasterAddress;
 

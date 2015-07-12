@@ -18,6 +18,15 @@
 
 package org.apache.tajo.ws.rs.resources;
 
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.GenericType;
+
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -28,16 +37,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.GenericType;
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
 import static org.junit.Assert.*;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestClusterResource extends QueryTestCaseBase {
   
   private URI restServiceURI;

@@ -24,8 +24,9 @@ import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.sql.ResultSet;
+
 @Category(IntegrationTest.class)
-@net.jcip.annotations.NotThreadSafe
 public class TestTPCH extends QueryTestCaseBase {
 
   public TestTPCH() {

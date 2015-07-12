@@ -45,7 +45,6 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationResponseProt
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestTaskExecutor {
 
   private NodeResourceManager resourceManager;

@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.sql.ResultSet;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestTableSubQuery extends QueryTestCaseBase {
 
   public TestTableSubQuery() {

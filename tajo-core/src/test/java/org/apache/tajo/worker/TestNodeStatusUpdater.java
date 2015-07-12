@@ -35,7 +35,6 @@ import java.util.concurrent.Semaphore;
 
 import static org.junit.Assert.*;
 
-@net.jcip.annotations.NotThreadSafe
 public class TestNodeStatusUpdater {
 
   private NodeResourceManager resourceManager;

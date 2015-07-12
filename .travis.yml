@@ -35,6 +35,7 @@ notifications:
   irc: "chat.freenode.net#tajo"
 
 before_install: ulimit -t 514029 -n 3000
+before_install: ulimit -a
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
