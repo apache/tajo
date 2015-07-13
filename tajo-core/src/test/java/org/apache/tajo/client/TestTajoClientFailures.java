@@ -83,8 +83,6 @@ public class TestTajoClientFailures {
   public final void testCreateDatabase() throws SQLException {
     assertFalse(client.createDatabase("12345")); // invalid name
     assertFalse(client.createDatabase("default")); // duplicate database
-
-    assertFalse(client.dropDatabase("default")); // duplicate database
   }
 
   @Test
