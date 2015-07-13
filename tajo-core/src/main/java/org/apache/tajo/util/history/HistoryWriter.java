@@ -53,6 +53,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class HistoryWriter extends AbstractService {
   private static final Log LOG = LogFactory.getLog(HistoryWriter.class);
+  public static final String HISTORY_QUERY_REPLICATION = "tajo.history.query.replication";
+  public static final String HISTORY_TASK_REPLICATION = "tajo.history.task.replication";
+
   public static final String QUERY_LIST = "query-list";
   public static final String QUERY_DETAIL = "query-detail";
   public static final String HISTORY_FILE_POSTFIX = ".hist";
@@ -87,13 +90,15 @@ public class HistoryWriter extends AbstractService {
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("conf should be a TajoConf type.");
     }
-    tajoConf = (TajoConf)conf;
+    tajoConf = (TajoConf) conf;
     historyParentPath = tajoConf.getQueryHistoryDir(tajoConf);
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
     writerThread = new WriterThread();
     historyCleaner = new HistoryCleaner(tajoConf, isMaster);
-    queryReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_REPLICATION);
-    taskReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_TASK_REPLICATION);
+    queryReplication = (short) tajoConf.getInt(HISTORY_QUERY_REPLICATION,
+        FileSystem.get(tajoConf).getDefaultReplication(historyParentPath));
+    taskReplication = (short) tajoConf.getInt(HISTORY_TASK_REPLICATION,
+        FileSystem.get(tajoConf).getDefaultReplication(taskHistoryParentPath));
     super.serviceInit(conf);
   }
 
