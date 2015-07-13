@@ -24,6 +24,8 @@ import org.apache.tajo.util.Pair;
 
 import java.util.Map;
 
+import static org.apache.tajo.error.Errors.ResultCode.*;
+
 public class ErrorMessages {
   public static final Map<ResultCode, Pair<String, Integer>> MESSAGES;
 
@@ -33,57 +35,58 @@ public class ErrorMessages {
     // Warnings
 
     // General Errors
-    ADD_MESSAGE(ResultCode.INTERNAL_ERROR, "internal error: %s", 1);
-    ADD_MESSAGE(ResultCode.NOT_IMPLEMENTED, "not implemented feature: %s", 1);
-    ADD_MESSAGE(ResultCode.FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
-    ADD_MESSAGE(ResultCode.INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
+    ADD_MESSAGE(INTERNAL_ERROR, "internal error: %s", 1);
+    ADD_MESSAGE(NOT_IMPLEMENTED, "not implemented feature: %s", 1);
+    ADD_MESSAGE(FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
+    ADD_MESSAGE(INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
 
     // Query Management and Scheduler
-    ADD_MESSAGE(ResultCode.NO_SUCH_QUERYID, "query %s does not exist", 1);
-    ADD_MESSAGE(ResultCode.NO_DATA, "no data for %s due to query failure or error", 1);
-    ADD_MESSAGE(ResultCode.INCOMPLETE_QUERY, "query %s is stilling running", 1);
+    ADD_MESSAGE(NO_SUCH_QUERYID, "query %s does not exist", 1);
+    ADD_MESSAGE(NO_DATA, "no data for %s due to query failure or error", 1);
+    ADD_MESSAGE(INCOMPLETE_QUERY, "query %s is stilling running", 1);
 
     // Session
-    ADD_MESSAGE(ResultCode.INVALID_SESSION, "invalid Session '%s'", 1);
-    ADD_MESSAGE(ResultCode.NO_SUCH_SESSION_VARIABLE, "no such session variable '%s", 1);
-    ADD_MESSAGE(ResultCode.INVALID_SESSION_VARIABLE, "invalid session variable '%s': %s", 2);
+    ADD_MESSAGE(INVALID_SESSION, "invalid Session '%s'", 1);
+    ADD_MESSAGE(NO_SUCH_SESSION_VARIABLE, "no such session variable '%s", 1);
+    ADD_MESSAGE(INVALID_SESSION_VARIABLE, "invalid session variable '%s': %s", 2);
 
 
 
-    ADD_MESSAGE(ResultCode.SYNTAX_ERROR, "%s", 1);
-    ADD_MESSAGE(ResultCode.INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
+    ADD_MESSAGE(SYNTAX_ERROR, "%s", 1);
+    ADD_MESSAGE(INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
+    ADD_MESSAGE(INVALID_NAME, "Invalid name '%s'");
 
-    ADD_MESSAGE(ResultCode.UNDEFINED_TABLESPACE, "tablespace '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_DATABASE, "database '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_SCHEMA, "schema '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_TABLE, "relation '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_COLUMN, "column '%s' does not exist", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_FUNCTION, "function does not exist: %s", 1);
-    ADD_MESSAGE(ResultCode.UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
+    ADD_MESSAGE(UNDEFINED_TABLESPACE, "tablespace '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_DATABASE, "database '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_SCHEMA, "schema '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_TABLE, "relation '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_COLUMN, "column '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_FUNCTION, "function does not exist: %s", 1);
+    ADD_MESSAGE(UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
 
-    ADD_MESSAGE(ResultCode.DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_DATABASE, "database '%s' already exists", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_SCHEMA, "schema '%s' already exists", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_TABLE, "table '%s' already exists", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_COLUMN, "column '%s' already exists", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_ALIAS, "table name '%s' specified more than once", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_INDEX, "index '%s' already exists", 1);
-    ADD_MESSAGE(ResultCode.DUPLICATE_PARTITION, "partition '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_DATABASE, "database '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_SCHEMA, "schema '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_TABLE, "table '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_COLUMN, "column '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_ALIAS, "table name '%s' specified more than once", 1);
+    ADD_MESSAGE(DUPLICATE_INDEX, "index '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_PARTITION, "partition '%s' already exists", 1);
 
-    ADD_MESSAGE(ResultCode.DIVISION_BY_ZERO, "Division by zero: %s", 1);
+    ADD_MESSAGE(DIVISION_BY_ZERO, "Division by zero: %s", 1);
 
-    ADD_MESSAGE(ResultCode.DATATYPE_MISMATCH,
+    ADD_MESSAGE(DATATYPE_MISMATCH,
         "column \"%s\" is of type %s but expression %s is of type %s", 4);
 
-    ADD_MESSAGE(ResultCode.SET_OPERATION_SCHEMA_MISMATCH, "each %s query must have the same number of columns", 1);
-    ADD_MESSAGE(ResultCode.SET_OPERATION_DATATYPE_MISMATCH, "%s types %s and %s cannot be matched");
+    ADD_MESSAGE(SET_OPERATION_SCHEMA_MISMATCH, "each %s query must have the same number of columns", 1);
+    ADD_MESSAGE(SET_OPERATION_DATATYPE_MISMATCH, "%s types %s and %s cannot be matched");
 
-    ADD_MESSAGE(ResultCode.CAT_UPGRADE_REQUIRED, "catalog must be upgraded");
-    ADD_MESSAGE(ResultCode.CAT_CANNOT_CONNECT, "cannot connect metadata store '%s': %s", 2);
+    ADD_MESSAGE(CAT_UPGRADE_REQUIRED, "catalog must be upgraded");
+    ADD_MESSAGE(CAT_CANNOT_CONNECT, "cannot connect metadata store '%s': %s", 2);
 
-    ADD_MESSAGE(ResultCode.TMC_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
+    ADD_MESSAGE(TMC_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
-    ADD_MESSAGE(ResultCode.UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
+    ADD_MESSAGE(UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {
@@ -95,12 +98,12 @@ public class ErrorMessages {
   }
 
   public static String getInternalErrorMessage() {
-    return MESSAGES.get(ResultCode.INTERNAL_ERROR).getFirst();
+    return MESSAGES.get(INTERNAL_ERROR).getFirst();
   }
 
   public static String getInternalErrorMessage(Throwable t) {
     if (t.getMessage() != null) {
-      return MESSAGES.get(ResultCode.INTERNAL_ERROR).getFirst() + ": " + t.getMessage();
+      return MESSAGES.get(INTERNAL_ERROR).getFirst() + ": " + t.getMessage();
     } else {
       return getInternalErrorMessage();
     }

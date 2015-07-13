@@ -21,6 +21,8 @@ option java_package = "org.apache.tajo.error";
 
 import "stacktrace.proto";
 
+// Unstable - this is still evolving.
+
 enum ResultCode {
   // Class
   // 00 - Successful Completion
@@ -47,8 +49,12 @@ enum ResultCode {
   // Data Exception (SQLState Class - 22)
   DIVISION_BY_ZERO              = 451; // SQLState: 22012 - Division by zero
 
-  // Query and Catalog Errors
+
   // Section: Class 42 - Syntax Error or Access Rule Violation
+  SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 601; // SQLState: 42000
+  SYNTAX_ERROR                          = 602; // SQLState: 42601
+  INSUFFICIENT_PRIVILEGE                = 603; // SQLState: 42501
+
   UNDEFINED_TABLESPACE                  = 500; // ?
   UNDEFINED_DATABASE                    = 501; // ?
   UNDEFINED_SCHEMA                      = 502; // ?
@@ -75,25 +81,21 @@ enum ResultCode {
   AMBIGUOUS_COLUMN                      = 522; // SQLState: 42702;
   AMBIGUOUS_FUNCTION                    = 523; // SQLState: 42725;
 
-  // Section: Syntax Error or Access Rule Violation
-  SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 601; // SQLState: 42000
-  SYNTAX_ERROR                          = 602; // SQLState: 42601
-  INSUFFICIENT_PRIVILEGE                = 603; // SQLState: 42501
   CANNOT_CAST                           = 604; // SQLState: 42846 - Cast from source type to target type is not supported.
   GROUPING_ERROR                        = 605; // SQLState: 42803
   WINDOWING_ERROR                       = 606; // SQLState: 42P20 - PgSQL implementation-defined
   INVALID_RECURSION                     = 607; // SQLState: 42P19 - PgSQL implementation-defined
   SET_OPERATION_SCHEMA_MISMATCH         = 608; // SQLState: 42601 (=SYNTAX_ERROR)
   SET_OPERATION_DATATYPE_MISMATCH       = 609; // SQLState: 42601 (=SYNTAX_ERROR)
-
   INVALID_FOREIGN_KEY                   = 621; // SQLState: 42830
   INVALID_NAME                          = 622; // SQLState: 42602
+  INVALID_COLUMN_DEFINITION             = 631; // SQLState: 42611
   NAME_TOO_LONG                         = 623; // SQLState: 42622
   RESERVED_NAME                         = 624; // SQLState: 42939
-  DATATYPE_MISMATCH                     = 625; // SQLState: 42804;
-  INDETERMINATE_DATATYPE                = 626; // SQLState: 42P18; - PgSQL implementation -defined
+  DATATYPE_MISMATCH                     = 625; // SQLState: 42804
+  INDETERMINATE_DATATYPE                = 626; // SQLState: 42P18 - PgSQL implementation -defined
 
-  INVALID_COLUMN_DEFINITION             = 631; // SQLState: 42611;
+
 
   // Expressions
   INVALID_EXPRESSION                    = 701;

@@ -19,10 +19,11 @@
 package org.apache.tajo.catalog.exception;
 
 
+import org.apache.tajo.error.Errors;
+
 public class InvalidNameException extends CatalogException {
-	public InvalidNameException() {}
 
 	public InvalidNameException(String databaseName) {
-		super("ERROR: invalid name \"" + databaseName + "\"");
+		super(Errors.ResultCode.INVALID_NAME, databaseName);
 	}
 }
