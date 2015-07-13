@@ -91,26 +91,24 @@
   long totalWriteBytes = 0;
   long totalWriteRows = 0;
 
-  List<TaskHistory> allTasks = null;
   if (stage != null) {
     totalInputBytes = stage.getTotalInputBytes();
     totalReadBytes = stage.getTotalReadBytes();
     totalReadRows = stage.getTotalReadRows();
     totalWriteBytes = stage.getTotalWriteBytes();
     totalWriteRows = stage.getTotalWriteRows();
-    allTasks = stage.getTasks();
   }
 
+  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId, NumberUtils.toLong(startTime, 0));
+  int numTasks = allTasks.size();
   int numShuffles = 0;
   float totalProgress = 0.0f;
-  int numTasks = 0;
 
   if (allTasks != null) {
     for(TaskHistory eachTask: allTasks) {
       totalProgress += eachTask.getProgress();
       numShuffles = eachTask.getNumShuffles();
     }
-    numTasks = allTasks.size();
   }
 
   int currentPage = 1;

@@ -192,7 +192,11 @@ public class HistoryReader {
   }
 
   public List<TaskHistory> getTaskHistory(String queryId, String ebId) throws IOException {
-    Path queryHistoryFile = getQueryHistoryFilePath(queryId, 0);
+    return getTaskHistory(queryId, ebId, 0);
+  }
+
+  public List<TaskHistory> getTaskHistory(String queryId, String ebId, long startTime) throws IOException {
+    Path queryHistoryFile = getQueryHistoryFilePath(queryId, startTime);
     if (queryHistoryFile == null) {
       return new ArrayList<TaskHistory>();
     }
