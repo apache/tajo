@@ -92,10 +92,6 @@ public class StringUtils {
     return "\"" + str + "\"";
   }
 
-  public static boolean isValidFirstIdentifierChar(char character) {
-    return isLowerCaseAlphabet(character) || isUpperCaseAlphabet(character) || isUndersscore(character);
-  }
-
   public static boolean isPartOfAnsiSQLIdentifier(char character) {
     return
         isLowerCaseAlphabet(character) ||
