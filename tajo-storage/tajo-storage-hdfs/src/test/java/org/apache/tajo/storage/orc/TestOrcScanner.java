@@ -40,8 +40,8 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.net.URL;
 
-public class TestOrcScanner {
-  private OrcScanner orcScanner;
+public class TestORCScanner {
+  private ORCScanner orcScanner;
 
   public static Path getResourcePath(String path, String suffix) {
     URL resultBaseURL = ClassLoader.getSystemResource(path);
@@ -70,7 +70,7 @@ public class TestOrcScanner {
 
     Fragment fragment = getFileFragment(conf, "u_data_20.orc");
 
-    orcScanner = new OrcScanner(conf, schema, meta, fragment);
+    orcScanner = new ORCScanner(conf, schema, meta, fragment);
 
     orcScanner.init();
   }

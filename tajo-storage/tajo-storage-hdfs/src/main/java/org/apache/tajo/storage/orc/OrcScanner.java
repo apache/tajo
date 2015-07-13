@@ -49,14 +49,14 @@ import java.util.Set;
 /**
  * OrcScanner for reading ORC files
  */
-public class OrcScanner extends FileScanner {
-  private static final Log LOG = LogFactory.getLog(OrcScanner.class);
+public class ORCScanner extends FileScanner {
+  private static final Log LOG = LogFactory.getLog(ORCScanner.class);
   private OrcRecordReader recordReader;
   private Vector [] vectors;
   private int currentPosInBatch = 0;
   private int batchSize = 0;
 
-  public OrcScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
+  public ORCScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
     super(conf, schema, meta, fragment);
   }
 
