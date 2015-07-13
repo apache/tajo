@@ -25,7 +25,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
@@ -52,7 +51,6 @@ import org.apache.tajo.worker.FetchImpl;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,8 +66,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private volatile boolean isStopped;
 
   private ScheduledRequests scheduledRequests;
-  private TaskRequests taskRequests;
 
+  private int minTaskMemory;
   private int nextTaskId = 0;
   private int scheduledObjectNum = 0;
   boolean isLeaf;
@@ -84,7 +82,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void init(Configuration conf) {
     scheduledRequests = new ScheduledRequests();
-    taskRequests = new TaskRequests();
+    minTaskMemory = context.getMasterContext().getConf().getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
 
     super.init(conf);
   }
@@ -144,35 +142,38 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private Fragment[] fragmentsForNonLeafTask;
   private Fragment[] broadcastFragmentsForNonLeafTask;
 
-  LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
-    reserveNodeResource();
+    try {
+      LinkedList<TaskRequestEvent> taskRequests = createTaskRequest();
 
-    if (taskRequests.size() > 0) {
-      if (scheduledRequests.leafTaskNum() > 0) {
-        LOG.debug("Try to schedule tasks with taskRequestEvents: " +
-            taskRequests.size() + ", LeafTask Schedule Request: " +
-            scheduledRequests.leafTaskNum());
-        taskRequests.getTaskRequests(taskRequestEvents,
-            scheduledRequests.leafTaskNum());
-        LOG.debug("Get " + taskRequestEvents.size() + " taskRequestEvents ");
-        if (taskRequestEvents.size() > 0) {
-          scheduledRequests.assignToLeafTasks(taskRequestEvents);
-          taskRequestEvents.clear();
+      if (remainingScheduledObjectNum() == 0) {
+        // all task is done, wait for stopping message
+        synchronized (schedulingThread) {
+          schedulingThread.wait(500);
+        }
+      } else {
+        if (taskRequests.size() == 0) {
+          synchronized (schedulingThread) {
+            schedulingThread.wait(50);
+          }
+        } else {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Get " + taskRequests.size() + " taskRequestEvents ");
+          }
+
+          if (isLeaf) {
+            if (scheduledRequests.leafTaskNum() > 0) {
+              scheduledRequests.assignToLeafTasks(taskRequests);
+            }
+          } else {
+            if (scheduledRequests.nonLeafTaskNum() > 0) {
+              scheduledRequests.assignToNonLeafTasks(taskRequests);
+            }
+          }
         }
       }
-    }
-
-    if (taskRequests.size() > 0) {
-      if (scheduledRequests.nonLeafTaskNum() > 0) {
-        LOG.debug("Try to schedule tasks with taskRequestEvents: " +
-            taskRequests.size() + ", NonLeafTask Schedule Request: " +
-            scheduledRequests.nonLeafTaskNum());
-        taskRequests.getTaskRequests(taskRequestEvents,
-            scheduledRequests.nonLeafTaskNum());
-        scheduledRequests.assignToNonLeafTasks(taskRequestEvents);
-        taskRequestEvents.clear();
-      }
+    } catch (Throwable e) {
+      LOG.error(e.getMessage(), e);
     }
   }
 
@@ -253,96 +254,48 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
 
-  private void reserveNodeResource() {
+  protected LinkedList<TaskRequestEvent> createTaskRequest() throws Exception {
+    LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
 
-    int taskMem = context.getMasterContext().getConf().getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
-    NettyClientBase tmClient;
-    try {
-      ServiceTracker serviceTracker =
-          context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
-      tmClient = RpcClientManager.getInstance().
-          getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
-      QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-
-      CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
-      QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request =
-          QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
-      request.setCapacity(NodeResources.createResource(taskMem, isLeaf ? 1 : 0).getProto())
-          .setNumContainers(Math.max(remainingScheduledObjectNum(), 1))
-          .setPriority(stage.getPriority())
-          .setQueryId(context.getMasterContext().getQueryId().getProto())
-          .setType(isLeaf ? QueryCoordinatorProtocol.ResourceType.LEAF :
-              QueryCoordinatorProtocol.ResourceType.INTERMEDIATE)
-          .setUserId(context.getMasterContext().getQueryContext().getUser())
-          .setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount())
-          .addAllCandidateNodes(candidateWorkers)
-          .setQueue(context.getMasterContext().getQueryContext().get("queue", "default")); //TODO set queue
-
-      masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
-      QueryCoordinatorProtocol.NodeResourceResponseProto responseProto = callBack.get();
-
-      for (QueryCoordinatorProtocol.AllocationResourceProto proto : responseProto.getResourceList()) {
-
-        TaskRequestEvent taskRequestEvent = new TaskRequestEvent(proto.getWorkerId(), proto, context.getBlockId());
-        taskRequests.handle(taskRequestEvent);
-      }
-
-      if(remainingScheduledObjectNum() == 0) {
-        // all task is assigned, wait for stopping message
-        synchronized (schedulingThread){
-          schedulingThread.wait(500);
-        }
-      } else {
-        if(responseProto.getResourceCount() == 0) {
-          synchronized (schedulingThread){
-            schedulingThread.wait(50);
-          }
-        }
-      }
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
+    int requestContainerNum = Math.max(remainingScheduledObjectNum(), 1);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Try to schedule task resources: " + requestContainerNum);
     }
+
+    ServiceTracker serviceTracker =
+        context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
+    NettyClientBase tmClient = RpcClientManager.getInstance().
+        getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+    QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+
+    CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
+    QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request =
+        QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
+    request.setCapacity(NodeResources.createResource(minTaskMemory, isLeaf ? 1 : 0).getProto())
+        .setNumContainers(requestContainerNum)
+        .setPriority(stage.getPriority())
+        .setQueryId(context.getMasterContext().getQueryId().getProto())
+        .setType(isLeaf ? QueryCoordinatorProtocol.ResourceType.LEAF :
+            QueryCoordinatorProtocol.ResourceType.INTERMEDIATE)
+        .setUserId(context.getMasterContext().getQueryContext().getUser())
+        .setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount())
+        .addAllCandidateNodes(candidateWorkers)
+        .setQueue(context.getMasterContext().getQueryContext().get("queue", "default")); //TODO set queue
+
+    masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
+    QueryCoordinatorProtocol.NodeResourceResponseProto
+        responseProto = callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+    for (QueryCoordinatorProtocol.AllocationResourceProto proto : responseProto.getResourceList()) {
+      taskRequestEvents.add(new TaskRequestEvent(proto.getWorkerId(), proto, context.getBlockId()));
+    }
+
+    return taskRequestEvents;
   }
 
   @Override
   public int remainingScheduledObjectNum() {
     return scheduledObjectNum;
-  }
-
-  private class TaskRequests implements EventHandler<TaskRequestEvent> {
-    private final LinkedBlockingQueue<TaskRequestEvent> taskRequestQueue =
-        new LinkedBlockingQueue<TaskRequestEvent>();
-
-    @Override
-    public void handle(TaskRequestEvent event) {
-      if(LOG.isDebugEnabled()){
-        LOG.debug("TaskRequest: " + event.getResponseProto().getWorkerId() + "," + event.getExecutionBlockId());
-      }
-
-      if(isStopped) {
-        return;
-      }
-      int qSize = taskRequestQueue.size();
-      if (qSize != 0 && qSize % 1000 == 0) {
-        LOG.info("Size of event-queue in DefaultTaskScheduler is " + qSize);
-      }
-      int remCapacity = taskRequestQueue.remainingCapacity();
-      if (remCapacity < 1000) {
-        LOG.warn("Very low remaining capacity in the event-queue "
-            + "of DefaultTaskScheduler: " + remCapacity);
-      }
-
-      taskRequestQueue.add(event);
-    }
-
-    public void getTaskRequests(final Collection<TaskRequestEvent> taskRequests,
-                                int num) {
-      taskRequestQueue.drainTo(taskRequests, num);
-    }
-
-    public int size() {
-      return taskRequestQueue.size();
-    }
   }
 
   public void releaseTaskAttempt(TaskAttempt taskAttempt) {
