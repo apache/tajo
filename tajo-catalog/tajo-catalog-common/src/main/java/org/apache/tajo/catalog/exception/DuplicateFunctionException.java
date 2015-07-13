@@ -18,12 +18,15 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
+
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
 public class DuplicateFunctionException extends CatalogException {
 	private static final long serialVersionUID = 3224521585413794703L;
 
-	public DuplicateFunctionException(String funcName) {
-		super(Errors.ResultCode.DUPLICATE_FUNCTION, funcName);
+	public DuplicateFunctionException(String funcName, DataType[] parameters) {
+		super(Errors.ResultCode.DUPLICATE_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
 	}
 }

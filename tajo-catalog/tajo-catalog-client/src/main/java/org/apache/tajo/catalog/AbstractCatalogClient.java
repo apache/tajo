@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
+import org.apache.tajo.catalog.exception.DuplicateFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -652,20 +653,26 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       builder.addParameterTypes(type);
     }
 
+    FunctionDescResponse response = null;
     try {
       final BlockingInterface stub = getStub();
-      final FunctionDescResponse response = stub.getFunctionMeta(null, builder.build());
+      response = stub.getFunctionMeta(null, builder.build());
+    } catch (ServiceException se) {
+      throw new RuntimeException(se);
+    }
 
-      if (isThisError(response.getState(), ResultCode.UNDEFINED_FUNCTION)) {
-        throw new UndefinedFunctionException(signature, paramTypes);
-      }
-      ensureOk(response.getState());
+    if (isThisError(response.getState(), ResultCode.UNDEFINED_FUNCTION)) {
+      throw new UndefinedFunctionException(signature, paramTypes);
+    } else if (isThisError(response.getState(), ResultCode.AMBIGUOUS_FUNCTION)) {
+      throw new DuplicateFunctionException(signature, paramTypes);
+    }
 
+    ensureOk(response.getState());
+
+    try {
       return new FunctionDesc(response.getFunction());
-
-    } catch (Throwable t) {
-      printStackTraceIfError(LOG, t);
-      throw new RuntimeException(t);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
     }
   }
 
