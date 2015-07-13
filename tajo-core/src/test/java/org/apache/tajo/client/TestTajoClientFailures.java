@@ -18,60 +18,32 @@
 
 package org.apache.tajo.client;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
-import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.ErrorUtil;
-import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
-import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
-import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 @Category(IntegrationTest.class)
 @NotThreadSafe
 public class TestTajoClientFailures {
   private static TajoTestingCluster cluster;
-  private static TajoConf conf;
   private static TajoClient client;
-  private static Path testDir;
 
   @BeforeClass
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
-    conf = cluster.getConfiguration();
     client = cluster.newTajoClient();
-    testDir = CommonTestingUtil.getTestDir();
   }
 
   @AfterClass
@@ -86,7 +58,12 @@ public class TestTajoClientFailures {
 
   @Test
   public final void testDropDatabase() throws SQLException {
-    assertFalse(client.dropDatabase("unknown-database")); // duplicate database
+    assertFalse(client.dropDatabase("unknown-database")); // unknown database
+  }
+
+  @Test
+  public final void testDropTable() throws SQLException {
+    assertFalse(client.dropTable("unknown-table")); // unknown table
   }
 
   @Test
