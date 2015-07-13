@@ -643,6 +643,8 @@ public class ExternalSortExec extends SortExec {
     private Tuple leftTuple;
     private Tuple rightTuple;
 
+    private final Tuple outTuple;
+
     private float mergerProgress;
     private TableStats mergerInputStats;
 
@@ -654,6 +656,7 @@ public class ExternalSortExec extends SortExec {
       this.leftScan = leftScanner;
       this.rightScan = rightScanner;
       this.comparator = comparator;
+      this.outTuple = new VTuple(schema.size());
     }
 
     private void setState(State state) {
@@ -683,25 +686,26 @@ public class ExternalSortExec extends SortExec {
     }
 
     protected Tuple prepare(int index, Tuple tuple) {
-      return tuple == null ? null : new VTuple(tuple);
+      return tuple == null ? null : tuple;
     }
 
     protected int compare() {
       return comparator.compare(leftTuple, rightTuple);
     }
 
+    @Override
     public Tuple next() throws IOException {
       if (leftTuple == null && rightTuple == null) {
         return null;
       }
       if (rightTuple == null || (leftTuple != null && compare() < 0)) {
-        Tuple tuple = leftTuple;
+        outTuple.put(leftTuple.getValues());
         leftTuple = prepare(0, leftScan.next());
-        return tuple;
+        return outTuple;
       }
-      Tuple tuple = rightTuple;
+      outTuple.put(rightTuple.getValues());
       rightTuple = prepare(1, rightScan.next());
-      return tuple;
+      return outTuple;
     }
 
     @Override

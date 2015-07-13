@@ -49,7 +49,7 @@ public class MemSortExec extends SortExec {
     if (!sorted) {
       Tuple tuple;
       while (!context.isStopped() && (tuple = child.next()) != null) {
-        tupleSlots.add(new VTuple(tuple));
+        tupleSlots.add(tuple);
       }
       iterator = getSorter(tupleSlots).sort().iterator();
       sorted = true;

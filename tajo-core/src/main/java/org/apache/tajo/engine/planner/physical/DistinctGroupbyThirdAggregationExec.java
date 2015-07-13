@@ -174,10 +174,8 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
       // First tuple
       if (prevKeyTuple == null) {
-        prevKeyTuple = new VTuple(numGroupingColumns);
-        prevKeyTuple.put(keyTuple.getValues());
-        prevTuple = new VTuple(resultTupleLength);
-        prevTuple.put(tuple.getValues());
+        prevKeyTuple = new VTuple(keyTuple.getValues());
+        prevTuple = new VTuple(tuple.getValues());
 //        prevKeyTuple = keyTuple;
 //        prevTuple = tuple;
 
@@ -194,8 +192,6 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
           eachAggr.terminate(outTuple);
         }
 
-        prevKeyTuple.clear();
-        prevTuple.clear();
         prevKeyTuple.put(keyTuple.getValues());
         prevTuple.put(tuple.getValues());
 //        prevKeyTuple = keyTuple;
@@ -207,8 +203,6 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       } else {
 //        prevKeyTuple = keyTuple;
 //        prevTuple = tuple;
-        prevKeyTuple.clear();
-        prevTuple.clear();
         prevKeyTuple.put(keyTuple.getValues());
         prevTuple.put(tuple.getValues());
         aggregators[distinctSeq].merge(tuple);

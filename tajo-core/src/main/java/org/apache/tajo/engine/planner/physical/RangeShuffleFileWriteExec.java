@@ -110,7 +110,6 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
       if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
         indexWriter.write(keyTuple, offset);
 //          prevKeyTuple = keyTuple;
-        prevKeyTuple.clear();
         prevKeyTuple.put(keyTuple.getValues());
       }
     }
