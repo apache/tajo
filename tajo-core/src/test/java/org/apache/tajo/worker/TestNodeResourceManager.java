@@ -256,9 +256,6 @@ public class TestNodeResourceManager {
                   fail(e.getMessage());
                 }
               }
-              if (LOG.isDebugEnabled()) {
-                LOG.debug(Thread.currentThread().getName() + " complete requests: " + complete);
-              }
               totalComplete.addAndGet(complete);
             }
           })
@@ -269,10 +266,6 @@ public class TestNodeResourceManager {
       future.get();
     }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(parallelCount + " Thread, completed requests: " + totalComplete.get() + ", canceled requests:"
-        + totalCanceled.get() + ", " + +(System.currentTimeMillis() - startTime) + " ms elapsed");
-    }
     executor.shutdown();
     assertEquals(taskSize, totalComplete.get());
   }
