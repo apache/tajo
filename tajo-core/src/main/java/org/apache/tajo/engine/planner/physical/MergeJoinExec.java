@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -34,6 +35,8 @@ public class MergeJoinExec extends CommonJoinExec {
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
   private Tuple outerNext = null;
+  private final Tuple prevOuterTuple;
+  private final Tuple prevInnerTuple;
 
   private TupleList outerTupleSlots;
   private TupleList innerTupleSlots;
@@ -65,10 +68,12 @@ public class MergeJoinExec extends CommonJoinExec {
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
     this.outerIterator = outerTupleSlots.iterator();
     this.innerIterator = innerTupleSlots.iterator();
+
+    prevOuterTuple = new VTuple(leftChild.getSchema().size());
+    prevInnerTuple = new VTuple(rightChild.getSchema().size());
   }
 
   public Tuple next() throws IOException {
-    Tuple previous;
 
     while (!context.isStopped()) {
       if (!outerIterator.hasNext() && !innerIterator.hasNext()) {
@@ -98,32 +103,28 @@ public class MergeJoinExec extends CommonJoinExec {
           }
         }
 
-        try {
-          previous = outerTuple.clone();
-          do {
-            outerTupleSlots.add(outerTuple.clone());
-            outerTuple = leftChild.next();
-            if (outerTuple == null) {
-              end = true;
-              break;
-            }
-          } while (tupleComparator[0].compare(previous, outerTuple) == 0);
-          outerIterator = outerTupleSlots.iterator();
-          outerNext = outerIterator.next();
+        prevOuterTuple.put(outerTuple.getValues());
+        do {
+          outerTupleSlots.add(outerTuple);
+          outerTuple = leftChild.next();
+          if (outerTuple == null) {
+            end = true;
+            break;
+          }
+        } while (tupleComparator[0].compare(prevOuterTuple, outerTuple) == 0);
+        outerIterator = outerTupleSlots.iterator();
+        outerNext = outerIterator.next();
 
-          previous = innerTuple.clone();
-          do {
-            innerTupleSlots.add(innerTuple.clone());
-            innerTuple = rightChild.next();
-            if (innerTuple == null) {
-              end = true;
-              break;
-            }
-          } while (tupleComparator[1].compare(previous, innerTuple) == 0);
-          innerIterator = innerTupleSlots.iterator();
-        } catch (CloneNotSupportedException e) {
-
-        }
+        prevInnerTuple.put(innerTuple.getValues());
+        do {
+          innerTupleSlots.add(innerTuple);
+          innerTuple = rightChild.next();
+          if (innerTuple == null) {
+            end = true;
+            break;
+          }
+        } while (tupleComparator[1].compare(prevInnerTuple, innerTuple) == 0);
+        innerIterator = innerTupleSlots.iterator();
       }
 
       if(!innerIterator.hasNext()){

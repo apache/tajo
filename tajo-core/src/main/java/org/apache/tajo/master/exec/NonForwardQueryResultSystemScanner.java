@@ -698,8 +698,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     @Override
     public Tuple next() throws IOException {
       Tuple aTuple;
-      Tuple outTuple = new VTuple(outColumnNum);
-      
+
       if (isClosed) {
         return null;
       }
@@ -711,7 +710,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       if (!scanNode.hasQual()) {
         if (currentRow < cachedData.size()) {
           aTuple = cachedData.get(currentRow++);
-          projector.eval(aTuple, outTuple);
+          Tuple outTuple = projector.eval(aTuple);
           outTuple.setOffset(aTuple.getOffset());
           return outTuple;
         }
@@ -720,7 +719,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         while (currentRow < cachedData.size()) {
           aTuple = cachedData.get(currentRow++);
           if (qual.eval(aTuple).isTrue()) {
-            projector.eval(aTuple, outTuple);
+            Tuple outTuple = projector.eval(aTuple);
+            outTuple.setOffset(aTuple.getOffset());
             return outTuple;
           }
         }

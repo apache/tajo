@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.planner.SimpleProjector;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -341,6 +342,9 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     private TupleMap<TupleMap<FunctionContext[]>> hashTable;
     private Iterator<Entry<Tuple, TupleMap<FunctionContext[]>>> iterator = null;
 
+    private SimpleProjector outerKeyExtractor;
+    private SimpleProjector innerKeyExtractor;
+
 //    private int groupingKeyIds[];
     private Column[] groupingKeyColumns;
     private final int aggFunctionsNum;
@@ -352,7 +356,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
     public HashAggregator(GroupbyNode groupbyNode, Schema schema) throws IOException {
 
-      hashTable = new TupleMap<TupleMap<FunctionContext[]>>(schema, groupbyNode.getGroupingColumns(), 10000);
+      outerKeyExtractor = new SimpleProjector(schema, groupbyNode.getGroupingColumns());
+      hashTable = new TupleMap<TupleMap<FunctionContext[]>>();
 
 //      List<Integer> distinctGroupingKeyIdSet = new ArrayList<Integer>();
 //      for (int i = 0; i < distinctGroupingKeyIds.length; i++) {
@@ -410,14 +415,15 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public void compute(Tuple tuple) throws IOException {
-      Tuple outerKeyTuple = hashTable.getKey(tuple);
+      Tuple outerKeyTuple = outerKeyExtractor.project(tuple);
       TupleMap<FunctionContext[]> distinctEntry = hashTable.get(outerKeyTuple);
 
       if (distinctEntry == null) {
-        distinctEntry = new TupleMap<FunctionContext[]>(inSchema, groupingKeyColumns);
+        innerKeyExtractor = new SimpleProjector(inSchema, groupingKeyColumns);
+        distinctEntry = new TupleMap<FunctionContext[]>();
         hashTable.put(outerKeyTuple, distinctEntry);
       }
-      Tuple keyTuple = distinctEntry.getKey(tuple);
+      Tuple keyTuple = innerKeyExtractor.project(tuple);
       FunctionContext[] contexts = distinctEntry.get(keyTuple);
       if (contexts != null) {
         for (int i = 0; i < aggFunctions.length; i++) {

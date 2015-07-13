@@ -109,10 +109,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
           partitionTupleList = new TupleList(1000);
           partitionTuples.put(partId, partitionTupleList);
         }
-        try {
-          partitionTupleList.add(tuple.clone());
-        } catch (CloneNotSupportedException e) {
-        }
+        partitionTupleList.add(tuple);
         if (tupleCount >= numHashShuffleBufferTuples) {
           for (Map.Entry<Integer, TupleList> entry : partitionTuples.entrySet()) {
             int appendPartId = entry.getKey();

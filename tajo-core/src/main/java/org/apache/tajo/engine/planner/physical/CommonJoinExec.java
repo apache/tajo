@@ -33,7 +33,6 @@ import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -59,7 +58,6 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
   protected final Schema rightSchema;
 
   protected final FrameTuple frameTuple;
-  protected final Tuple outTuple;
 
   // projection
   protected Projector projector;
@@ -83,7 +81,6 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
 
     // for join
     this.frameTuple = new FrameTuple();
-    this.outTuple = new VTuple(outSchema.size());
   }
 
   /**

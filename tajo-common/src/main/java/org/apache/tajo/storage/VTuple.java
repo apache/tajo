@@ -73,6 +73,7 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public void clear() {
+    this.offset = -1;
     for (int i=0; i < values.length; i++) {
       values[i] = null;
     }

@@ -16,40 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
-import java.util.HashMap;
+public class SimpleProjector {
 
-public class TupleMap<E> extends HashMap<Tuple, E> {
+  private final Tuple outTuple;
+  private final int projectIds[];
 
-  private static final int DEFAULT_INIT_CAPACITY = 100000;
-
-  public TupleMap() {
-    this(DEFAULT_INIT_CAPACITY);
-  }
-
-  public TupleMap(int initialCapacity) {
-    super(initialCapacity);
-  }
-
-  public TupleMap(TupleMap tupleMap){
-    super(tupleMap);
-  }
-
-  @Override
-  public E put(@Nullable Tuple key, E value) {
-    if (key != null) {
-      return super.put(new VTuple(key), value);
-    } else {
-      return super.put(null, value);
+  public SimpleProjector(Schema inSchema, Column[] keyColumns) {
+    outTuple = new VTuple(keyColumns.length);
+    projectIds = new int[keyColumns.length];
+    for (int i = 0; i < keyColumns.length; i++) {
+      projectIds[i] = inSchema.getColumnId(keyColumns[i].getQualifiedName());
     }
   }
 
-  public E putWihtoutKeyCopy(@Nullable Tuple key, E value) {
-    return super.put(key, value);
+  public Tuple project(Tuple tuple) {
+    outTuple.clear();
+    RowStoreUtil.project(tuple, outTuple, projectIds);
+    return outTuple;
   }
 }

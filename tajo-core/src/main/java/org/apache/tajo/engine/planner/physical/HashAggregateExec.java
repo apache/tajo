@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.planner.SimpleProjector;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -25,9 +26,7 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -36,12 +35,14 @@ import java.util.Map.Entry;
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
   private TupleMap<FunctionContext[]> hashTable;
+  private SimpleProjector hashKeyExtractor;
   private boolean computed = false;
   private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
 
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
-    hashTable = new TupleMap<FunctionContext []>(inSchema, plan.getGroupingColumns());
+    hashKeyExtractor = new SimpleProjector(inSchema, plan.getGroupingColumns());
+    hashTable = new TupleMap<FunctionContext []>();
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 
@@ -54,7 +55,7 @@ public class HashAggregateExec extends AggregationExec {
 //      for(int i = 0; i < groupingKeyIds.length; i++) {
 //        keyTuple.put(i, tuple.asDatum(groupingKeyIds[i]));
 //      }
-      keyTuple = hashTable.getKey(tuple);
+      keyTuple = hashKeyExtractor.project(tuple);
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
       if(contexts != null) {

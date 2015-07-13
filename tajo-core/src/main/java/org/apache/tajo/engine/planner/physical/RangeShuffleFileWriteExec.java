@@ -44,7 +44,7 @@ import java.io.IOException;
  * specified order of shuffle keys.
  */
 public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
-  private static Log LOG = LogFactory.getLog(RangeShuffleFileWriteExec.class);
+  private final static Log LOG = LogFactory.getLog(RangeShuffleFileWriteExec.class);
   private final SortSpec[] sortSpecs;
 //  private int [] indexKeys = null;
   private Schema keySchema;
@@ -68,7 +68,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
 
 //    indexKeys = new int[sortSpecs.length];
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    projector = new Projector(context, inSchema, outSchema, null);
+    projector = new Projector(context, inSchema, keySchema, null);
 
 //    Column col;
 //    for (int i = 0 ; i < sortSpecs.length; i++) {
@@ -107,7 +107,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
 //        keyTuple = new VTuple(keySchema.size());
 //        RowStoreUtil.project(tuple, keyTuple, indexKeys);
       keyTuple = projector.eval(tuple);
-      if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
+      if (!prevKeyTuple.equals(keyTuple)) {
         indexWriter.write(keyTuple, offset);
 //          prevKeyTuple = keyTuple;
         prevKeyTuple.put(keyTuple.getValues());

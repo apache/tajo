@@ -60,7 +60,8 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
       }
 
       // getting corresponding right
-      TupleList hashed = tupleSlots.get(toKey(leftTuple));
+//      TupleList hashed = tupleSlots.get(toKey(leftTuple));
+      TupleList hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (!rightTuples.hasNext()) {
         //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway

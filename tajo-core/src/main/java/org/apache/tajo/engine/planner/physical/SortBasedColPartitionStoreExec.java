@@ -22,7 +22,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -85,7 +84,8 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
           StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
           appender = getNextPartitionAppender(getSubdirectory(currentKey));
-          prevKey = new VTuple(currentKey);
+//          prevKey = new VTuple(currentKey);
+          prevKey.put(currentKey.getValues());
 
           // reset all states for file rotating
           writtenFileNum = 0;

@@ -296,12 +296,15 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     prevTuple = null;
     finished = false;
     keyTupleMap.clear();
+    prevKeyTupleMap.clear();
   }
 
   @Override
   public void close() throws IOException {
     super.close();
     keyTupleMap.clear();
-    prevKeyTuple.clear();
+    prevKeyTupleMap.clear();
+    prevKeyTuple = null;
+    prevTuple = null;
   }
 }

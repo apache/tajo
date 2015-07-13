@@ -36,6 +36,8 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
   private Tuple leftTuple = null;
   private Tuple rightTuple = null;
   private Tuple leftNext = null;
+  private Tuple prevLeftTuple = null;
+  private Tuple prevRightTuple = null;
 
   private TupleList leftTupleSlots;
   private TupleList rightTupleSlots;
@@ -72,10 +74,12 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
     leftNumCols = leftChild.getSchema().size();
     rightNumCols = rightChild.getSchema().size();
+
+    prevLeftTuple = new VTuple(leftChild.getSchema().size());
+    prevRightTuple = new VTuple(rightChild.getSchema().size());
   }
 
   public Tuple next() throws IOException {
-    Tuple previous;
 
     while (!context.isStopped()) {
       boolean newRound = false;
@@ -206,28 +210,29 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           boolean endLeft = false;
           boolean endRight = false;
 
-          previous = new VTuple(leftTuple);
+//          previous = new VTuple(leftTuple);
+          prevLeftTuple.put(leftTuple.getValues());
           do {
-            leftTupleSlots.add(new VTuple(leftTuple));
+            leftTupleSlots.add(leftTuple);
             leftTuple = leftChild.next();
             if(leftTuple == null) {
               endLeft = true;
             }
 
 
-          } while ((endLeft != true) && (tupleComparator[0].compare(previous, leftTuple) == 0));
+          } while ((endLeft != true) && (tupleComparator[0].compare(prevLeftTuple, leftTuple) == 0));
           posLeftTupleSlots = 0;
 
-
-          previous = new VTuple(rightTuple);
+//          prevRightTuple = new VTuple(rightTuple);
+          prevRightTuple.put(rightTuple.getValues());
           do {
-            rightTupleSlots.add(new VTuple(rightTuple));
+            rightTupleSlots.add(rightTuple);
             rightTuple = rightChild.next();
             if(rightTuple == null) {
               endRight = true;
             }
 
-          } while ((endRight != true) && (tupleComparator[1].compare(previous, rightTuple) == 0) );
+          } while ((endRight != true) && (tupleComparator[1].compare(prevRightTuple, rightTuple) == 0) );
           posRightTupleSlots = 0;
 
           if ((endLeft == true) || (endRight == true)) {
@@ -248,12 +253,12 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
       // (i.e. refers to next round)
       if(!end || (end && endInPopulationStage)){
         if(posLeftTupleSlots == 0){
-          leftNext = new VTuple (leftTupleSlots.get(posLeftTupleSlots));
+          leftNext = leftTupleSlots.get(posLeftTupleSlots);
           posLeftTupleSlots = posLeftTupleSlots + 1;
         }
 
         if(posRightTupleSlots <= (rightTupleSlots.size() -1)) {
-          Tuple aTuple = new VTuple(rightTupleSlots.get(posRightTupleSlots));
+          Tuple aTuple = rightTupleSlots.get(posRightTupleSlots);
           posRightTupleSlots = posRightTupleSlots + 1;
           frameTuple.set(leftNext, aTuple);
           joinQual.eval(frameTuple);
@@ -263,9 +268,9 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           if(posLeftTupleSlots <= (leftTupleSlots.size()-1)) {
             //rewind the right slots position
             posRightTupleSlots = 0;
-            Tuple aTuple = new VTuple(rightTupleSlots.get(posRightTupleSlots));
+            Tuple aTuple = rightTupleSlots.get(posRightTupleSlots);
             posRightTupleSlots = posRightTupleSlots + 1;
-            leftNext = new VTuple (leftTupleSlots.get(posLeftTupleSlots));
+            leftNext = leftTupleSlots.get(posLeftTupleSlots);
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
             frameTuple.set(leftNext, aTuple);
