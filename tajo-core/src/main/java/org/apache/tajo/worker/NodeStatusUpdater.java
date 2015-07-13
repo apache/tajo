@@ -79,7 +79,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
     this.serviceTracker = ServiceTrackerFactory.get(tajoConf);
     this.workerContext.getNodeResourceManager().getDispatcher().register(NodeStatusEvent.EventType.class, this);
-    this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL);
+    this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_IDLE_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
     this.updaterThread.setName("NodeStatusUpdater");
     super.serviceInit(conf);

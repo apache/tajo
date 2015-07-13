@@ -46,12 +46,14 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -70,7 +72,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private int minTaskMemory;
   private int nextTaskId = 0;
   private int scheduledObjectNum = 0;
-  boolean isLeaf;
+  private boolean isLeaf;
+  private int schedulerDelay;
+
+  //candidate workers for locality of high priority
   private Set<Integer> candidateWorkers = Sets.newHashSet();
 
   public DefaultTaskScheduler(TaskSchedulerContext context, Stage stage) {
@@ -81,8 +86,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void init(Configuration conf) {
+    TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     scheduledRequests = new ScheduledRequests();
-    minTaskMemory = context.getMasterContext().getConf().getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
+    minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
+    schedulerDelay= tajoConf.getIntVar(TajoConf.ConfVars.QUERYMASTER_TASK_SCHEDULER_DELAY);
 
     super.init(conf);
   }
@@ -142,7 +149,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private Fragment[] fragmentsForNonLeafTask;
   private Fragment[] broadcastFragmentsForNonLeafTask;
 
-  public void schedule() {
+  public void schedule() throws Exception{
     try {
       LinkedList<TaskRequestEvent> taskRequests = createTaskRequest();
 
@@ -154,7 +161,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       } else {
         if (taskRequests.size() == 0) {
           synchronized (schedulingThread) {
-            schedulingThread.wait(50);
+            schedulingThread.wait(schedulerDelay);
           }
         } else {
           if (LOG.isDebugEnabled()) {
@@ -172,8 +179,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
       }
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
+    } catch (TimeoutException e) {
+      LOG.error(e.getMessage());
     }
   }
 
@@ -871,7 +878,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
                 cancellation++;
               }
-              LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount());
+
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
+              }
               continue;
             }
           } catch (Exception e) {
@@ -943,7 +953,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             }
           }
 
-          WorkerConnectionInfo connectionInfo = context.getMasterContext().getWorkerMap().get(taskRequest.getWorkerId());
+          WorkerConnectionInfo connectionInfo =
+              context.getMasterContext().getWorkerMap().get(taskRequest.getWorkerId());
 
           //TODO send batch request
           TajoWorkerProtocol.BatchAllocationRequestProto.Builder
@@ -975,7 +986,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
                 cancellation++;
               }
-              LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount());
+
+              if(LOG.isDebugEnabled()) {
+                LOG.debug("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
+              }
               continue;
             }
 

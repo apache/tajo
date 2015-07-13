@@ -20,6 +20,7 @@ package org.apache.tajo.master.rm;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -31,11 +32,11 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.scheduler.AbstractQueryScheduler;
 import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
-import org.apache.tajo.master.scheduler.SimpleScheduler;
 import org.apache.tajo.master.scheduler.event.SchedulerEventType;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -46,6 +47,8 @@ import java.util.Map;
 public class TajoResourceManager extends CompositeService {
   /** class logger */
   private static final Log LOG = LogFactory.getLog(TajoResourceManager.class);
+
+  protected static final Map<String, Class<? extends AbstractQueryScheduler>> SCHEDULER_CLASS_CACHE = Maps.newHashMap();
 
   private TajoMaster.MasterContext masterContext;
 
@@ -85,7 +88,6 @@ public class TajoResourceManager extends CompositeService {
 
     this.queryIdSeed = String.valueOf(System.currentTimeMillis());
 
-
     this.workerLivelinessMonitor = new WorkerLivelinessMonitor(this.rmContext.getDispatcher());
     addIfService(this.workerLivelinessMonitor);
 
@@ -95,12 +97,29 @@ public class TajoResourceManager extends CompositeService {
     resourceTracker = new TajoResourceTracker(this, workerLivelinessMonitor);
     addIfService(resourceTracker);
 
-    //TODO configuable
-    scheduler = new SimpleScheduler(masterContext);
+    String schedulerClassName = systemConf.getVar(TajoConf.ConfVars.RESOURCE_SCHEDULER_CLASS);
+    scheduler = loadScheduler(schedulerClassName);
+    LOG.info("Loaded resource scheduler : " + scheduler.getClass());
     addIfService(scheduler);
     rmContext.getDispatcher().register(SchedulerEventType.class, scheduler);
 
     super.serviceInit(systemConf);
+  }
+
+  protected synchronized AbstractQueryScheduler loadScheduler(String schedulerClassName) throws Exception {
+    Class<? extends AbstractQueryScheduler> schedulerClass;
+    if (SCHEDULER_CLASS_CACHE.containsKey(schedulerClassName)) {
+      schedulerClass = SCHEDULER_CLASS_CACHE.get(schedulerClassName);
+    } else {
+      schedulerClass = (Class<? extends AbstractQueryScheduler>) Class.forName(schedulerClassName);
+      SCHEDULER_CLASS_CACHE.put(schedulerClassName, schedulerClass);
+    }
+
+    Constructor<? extends AbstractQueryScheduler>
+        constructor = schedulerClass.getDeclaredConstructor(new Class[]{TajoMaster.MasterContext.class});
+    constructor.setAccessible(true);
+
+    return constructor.newInstance(new Object[]{masterContext});
   }
 
   @InterfaceAudience.Private
@@ -126,15 +145,15 @@ public class TajoResourceManager extends CompositeService {
     }
   }
 
-  @Deprecated
+
   public Map<Integer, Worker> getWorkers() {
     return ImmutableMap.copyOf(rmContext.getWorkers());
   }
-  @Deprecated
+
   public Map<Integer, Worker> getInactiveWorkers() {
     return ImmutableMap.copyOf(rmContext.getInactiveWorkers());
   }
-  @Deprecated
+
   public Collection<Integer> getQueryMasters() {
     return Collections.unmodifiableSet(rmContext.getQueryMasterWorker());
   }

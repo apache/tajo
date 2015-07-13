@@ -34,19 +34,18 @@ import java.util.List;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class TaskRequestImpl implements TaskRequest {
-	
-  private TaskAttemptId id;
-  private List<FragmentProto> fragments;
-  private String outputTable;
+
+	private TaskAttemptId id;
+	private List<FragmentProto> fragments;
+	private String outputTable;
 	private boolean isUpdated;
 	private boolean clusteredOutput;
 	private PlanProto.LogicalNodeTree plan;     // logical node
 	private Boolean interQuery;
 	private List<FetchImpl> fetches;
-  private Boolean shouldDie;
-  private QueryContext queryContext;
-  private DataChannel dataChannel;
-  private Enforcer enforcer;
+	private QueryContext queryContext;
+	private DataChannel dataChannel;
+	private Enforcer enforcer;
 	private String queryMasterHostAndPort;
 	
 	private TaskRequestProto proto = TajoWorkerProtocol.TaskRequestProto.getDefaultInstance();

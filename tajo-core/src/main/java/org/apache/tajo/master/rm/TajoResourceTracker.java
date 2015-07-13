@@ -68,6 +68,9 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   /** The bind address of RPC server of worker resource tracker */
   private InetSocketAddress bindAddress;
 
+  /** worker heartbeat interval in query running */
+  private int activeInterval;
+
   public TajoResourceTracker(TajoResourceManager manager, WorkerLivelinessMonitor workerLivelinessMonitor) {
     super(TajoResourceTracker.class.getSimpleName());
     this.manager = manager;
@@ -79,6 +82,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   public void serviceInit(Configuration conf) throws Exception {
 
     TajoConf systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    activeInterval = systemConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_ACTIVE_INTERVAL);
 
     String confMasterServiceAddr = systemConf.getVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
@@ -188,7 +192,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
       }
     } finally {
       if(manager.getScheduler().getRunningQuery() > 0) {
-        response.setHeartBeatInterval(1000); //1 sec
+        response.setHeartBeatInterval(activeInterval);
       }
       done.run(response.setCommand(responseCommand).build());
     }

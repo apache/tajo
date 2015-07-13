@@ -83,7 +83,7 @@ public class TestNodeStatusUpdater {
       }
     };
 
-    conf.setIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL, 1000);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_IDLE_INTERVAL, 1000);
     dispatcher = new AsyncDispatcher();
     resourceManager = new NodeResourceManager(dispatcher, workerContext);
     taskDispatcher = new AsyncDispatcher();

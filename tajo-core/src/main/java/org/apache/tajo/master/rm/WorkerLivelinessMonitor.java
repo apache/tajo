@@ -43,7 +43,7 @@ public class WorkerLivelinessMonitor extends AbstractLivelinessMonitor<Integer> 
     Preconditions.checkArgument(conf instanceof TajoConf);
     TajoConf systemConf = (TajoConf) conf;
     // milliseconds
-    int expireIntvl = systemConf.getIntVar(TajoConf.ConfVars.RESOURCE_TRACKER_HEARTBEAT_TIMEOUT);
+    int expireIntvl = systemConf.getIntVar(TajoConf.ConfVars.RESOURCE_TRACKER_HEARTBEAT_TIMEOUT) * 1000;
     setExpireInterval(expireIntvl);
     setMonitorInterval(expireIntvl/3);
     super.serviceInit(conf);

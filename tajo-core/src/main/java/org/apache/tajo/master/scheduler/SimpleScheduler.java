@@ -337,7 +337,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
         int maxAvailable = getResourceCalculator().computeAvailableContainers(
             getMaximumResourceCapability(), getQMMinimumResourceCapability());
 
-        // check maximum running queries
+        // check maximum parallel running queries
         if (assignedQueryMasterMap.size() * 2 >= maxAvailable) {
           queryQueue.add(query);
           synchronized (this) {
