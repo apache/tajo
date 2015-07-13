@@ -145,6 +145,10 @@ public class DDLExecutor {
       tablespaceName = tablespace;
     }
 
+    if (!CatalogUtil.isValidSimplIdentifier(databaseName)) {
+      throw new InvalidNameException(databaseName);
+    }
+
     // CREATE DATABASE IF NOT EXISTS
     boolean exists = catalog.existDatabase(databaseName);
     if (exists) {
@@ -192,8 +196,8 @@ public class DDLExecutor {
   //--------------------------------------------------------------------------
   private TableDesc createTable(QueryContext queryContext, CreateTableNode createTable, boolean ifNotExists)
       throws IOException {
-    TableMeta meta;
 
+    TableMeta meta;
     if (createTable.hasOptions()) {
       meta = CatalogUtil.newTableMeta(createTable.getStorageType(), createTable.getOptions());
     } else {
@@ -226,6 +230,17 @@ public class DDLExecutor {
                                boolean isExternal,
                                @Nullable PartitionMethodDesc partitionDesc,
                                boolean ifNotExists) throws IOException {
+
+    // Validate identifiers
+    if (!CatalogUtil.isValidQualifiedIdentifier(tableName)) {
+      throw new InvalidNameException(tableName);
+    }
+    for (Column c :schema.getAllColumns()) {
+      if (!CatalogUtil.isValidQualifiedIdentifier(c.getQualifiedName())) {
+        throw new InvalidNameException(tableName);
+      }
+    }
+
     String databaseName;
     String simpleTableName;
     if (CatalogUtil.isFQTableName(tableName)) {
