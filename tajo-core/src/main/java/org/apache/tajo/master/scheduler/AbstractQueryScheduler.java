@@ -29,10 +29,12 @@ public abstract class AbstractQueryScheduler extends AbstractService implements 
   protected final NodeResource clusterResource;
   protected final NodeResource minResource;
   protected final NodeResource maxResource;
+  protected final NodeResource qmMinResource;
 
   public AbstractQueryScheduler(String name) {
     super(name);
     this.minResource = NodeResources.createResource(0);
+    this.qmMinResource = NodeResources.createResource(0);
     this.maxResource = NodeResources.createResource(0);
     this.clusterResource = NodeResources.createResource(0);
   }
@@ -50,6 +52,11 @@ public abstract class AbstractQueryScheduler extends AbstractService implements 
   @Override
   public NodeResource getMaximumResourceCapability() {
     return maxResource;
+  }
+
+  @Override
+  public NodeResource getQMMinimumResourceCapability() {
+    return qmMinResource;
   }
 
   public abstract int getRunningQuery();

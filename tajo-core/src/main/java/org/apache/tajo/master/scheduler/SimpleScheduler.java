@@ -81,8 +81,8 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   }
 
   private void initScheduler(TajoConf conf) {
-    int minQMMem = conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
-    this.minResource.setMemory(minQMMem).setVirtualCores(1);
+    this.minResource.setMemory(conf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY)).setVirtualCores(1);
+    this.qmMinResource.setMemory(conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY)).setVirtualCores(1);
     updateResource();
     this.queryProcessor.setName("Query Processor");
   }
@@ -135,9 +135,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   }
 
   private QueryCoordinatorProtocol.NodeResourceRequestProto createQMResourceRequest(QueryInfo queryInfo) {
-    int qmMemory = tajoConf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
-    NodeResource qmResource = NodeResources.createResource(qmMemory);
-
+    NodeResource qmResource = getQMMinimumResourceCapability();
 
     int containers = 1;
     Set<Integer> assignedQMNodes = Sets.newHashSet(assignedQueryMasterMap.values());
@@ -337,10 +335,10 @@ public class SimpleScheduler extends AbstractQueryScheduler {
         }
         //TODO get by assigned queue
         int maxAvailable = getResourceCalculator().computeAvailableContainers(
-            getMaximumResourceCapability(), getMinimumResourceCapability());
+            getMaximumResourceCapability(), getQMMinimumResourceCapability());
 
         // check maximum running queries
-        if (assignedQueryMasterMap.size() * 2 > maxAvailable) {
+        if (assignedQueryMasterMap.size() * 2 >= maxAvailable) {
           queryQueue.add(query);
           synchronized (this) {
             try {
@@ -359,6 +357,8 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
           if(allocation.size() == 0) {
             queryQueue.add(query);
+            LOG.info("No Available Resources for QueryMaster :" + queryInfo.getQueryId() + "," + queryInfo);
+
             synchronized (this) {
               try {
                 this.wait(100);
@@ -366,7 +366,6 @@ public class SimpleScheduler extends AbstractQueryScheduler {
                 LOG.fatal(e);
               }
             }
-            LOG.info("No Available Resources for QueryMaster :" + queryInfo.getQueryId() + "," + queryInfo);
           } else {
             try {
               //if QM resource can't be allocated to a node, it should retry

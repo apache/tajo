@@ -38,11 +38,13 @@
   InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
-  List<QueryInProgress> runningQueries =
+  List<QueryInProgress> submittedQueries =
           new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getSubmittedQueries());
+  JSPUtil.sortQueryInProgress(submittedQueries, true);
 
-  runningQueries.addAll(master.getContext().getQueryJobManager().getRunningQueries());
-          JSPUtil.sortQueryInProgress(runningQueries, true);
+  List<QueryInProgress> runningQueries =
+          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getRunningQueries());
+  JSPUtil.sortQueryInProgress(runningQueries, true);
 
   int currentPage = 1;
   if (request.getParameter("page") != null && !request.getParameter("page").isEmpty()) {
@@ -118,7 +120,39 @@
 <%@ include file="header.jsp"%>
 <div class='contents'>
   <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
-  <hr/>
+    <p />
+    <hr />
+    <h3>Submitted Queries</h3>
+    <%
+        if(submittedQueries.isEmpty()) {
+            out.write("No submitted queries");
+        } else {
+    %>
+    <table width="100%" border="1" class='border_table'>
+        <tr></tr><th>QueryId</th><th>Query Master</th><th>Submitted</th><th>Progress</th><th>Time</th><th>Status</th></th><th>sql</th><th>Kill Query</th></tr>
+        <%
+            for(QueryInProgress eachQuery: submittedQueries) {
+                long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
+        %>
+        <tr>
+            <td><%=eachQuery.getQueryId()%></td>
+            <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
+            <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
+            <td><%=(int)(eachQuery.getQueryInfo().getProgress() * 100.0f)%>%</td>
+            <td><%=StringUtils.formatTime(time)%></td>
+            <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
+            <td><%=eachQuery.getQueryInfo().getSql()%></td>
+            <td><input type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
+        </tr>
+        <%
+            }
+        %>
+    </table>
+    <%
+        }
+    %>
+    <p/>
+    <hr/>
   <h3>Running Queries</h3>
 <%
   if(runningQueries.isEmpty()) {
@@ -141,7 +175,7 @@
       <td><%=StringUtils.formatTime(time)%></td>
       <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
-      <td><input id="btnSubmit" type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
+      <td><input type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
     </tr>
     <%
       }

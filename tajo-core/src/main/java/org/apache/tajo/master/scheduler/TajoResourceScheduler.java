@@ -45,6 +45,12 @@ public interface TajoResourceScheduler extends EventHandler<SchedulerEvent> {
   NodeResource getMinimumResourceCapability();
 
   /**
+   * Get minimum allocatable {@link NodeResource} of QueryMaster.
+   * @return minimum allocatable resource
+   */
+  NodeResource getQMMinimumResourceCapability();
+
+  /**
    * Get maximum allocatable {@link NodeResource}.
    * @return maximum allocatable resource
    */
