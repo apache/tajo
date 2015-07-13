@@ -64,4 +64,15 @@ public class TestTajoDump extends QueryTestCaseBase {
       executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName2\"");
     }
   }
+
+	@Test
+	public void testDump3() throws Exception {
+		if (!testingCluster.isHiveCatalogStoreRunning()) {
+			UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			PrintWriter printWriter = new PrintWriter(bos);
+
+			TajoDump.dump(client, userInfo, null, false, false, false, printWriter);
+		}
+	}
 }
