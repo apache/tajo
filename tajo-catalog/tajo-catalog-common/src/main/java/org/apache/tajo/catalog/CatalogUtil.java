@@ -51,6 +51,37 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class CatalogUtil {
 
   public static final String TEXTFILE_NAME = "TEXT";
+
+  public static boolean isValidQualifiedIdentifier(String identifier) {
+    return isValidIdentifier(identifier, true);
+  }
+
+  public static boolean isValidSimplIdentifier(String identifier) {
+    return isValidIdentifier(identifier, false);
+  }
+
+  private static boolean isValidIdentifier(String identifier, boolean inclusiveDot) {
+    Preconditions.checkNotNull("isValidIdentifier cannot null value");
+
+    boolean valid = identifier.length() > 0;
+    valid &= StringUtils.isValidFirstIdentifierChar(identifier.charAt(0));
+
+    for (int i = 0; i < identifier.length(); i++) {
+      if (inclusiveDot) {
+        valid &= StringUtils.isPartOfAnsiSQLIdentifier(identifier.charAt(i)) ||
+            identifier.charAt(i) == CatalogConstants.IDENTIFIER_DELIMITER_REGEXP.charAt(0);
+      } else {
+        valid &= StringUtils.isPartOfAnsiSQLIdentifier(identifier.charAt(i));
+      }
+
+      if (!valid) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
    *
