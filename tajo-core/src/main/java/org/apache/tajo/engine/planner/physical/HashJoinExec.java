@@ -23,12 +23,9 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
-public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
+public class HashJoinExec extends CommonHashJoinExec<TupleList> {
 
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
@@ -36,9 +33,9 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
   }
 
   @Override
-  protected Map<Tuple, List<Tuple>> convert(Map<Tuple, List<Tuple>> hashed, boolean fromCache)
+  protected TupleMap<TupleList> convert(TupleMap<TupleList> hashed, boolean fromCache)
       throws IOException {
-    return fromCache ? new HashMap<Tuple, List<Tuple>>(hashed) : hashed;
+    return fromCache ? new TupleMap<TupleList>(hashed) : hashed;
   }
 
   @Override
@@ -50,8 +47,7 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
     while (!context.isStopped() && !finished) {
       if (iterator != null && iterator.hasNext()) {
         frameTuple.setRight(iterator.next());
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        return projector.eval(frameTuple);
       }
 
       Tuple leftTuple = leftChild.next(); // it comes from a disk
@@ -63,7 +59,7 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
       frameTuple.setLeft(leftTuple);
 
       // getting corresponding right
-      Iterable<Tuple> hashed = getRights(toKey(leftTuple));
+      Iterable<Tuple> hashed = tupleSlots.getWithImplicitKeyConversion(leftTuple);
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (rightTuples.hasNext()) {
         iterator = rightTuples;
@@ -72,9 +68,4 @@ public class HashJoinExec extends CommonHashJoinExec<List<Tuple>> {
 
     return null;
   }
-
-  private Iterable<Tuple> getRights(Tuple key) {
-    return tupleSlots.get(key);
-  }
-
 }

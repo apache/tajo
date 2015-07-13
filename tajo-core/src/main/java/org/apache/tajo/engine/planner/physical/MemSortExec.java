@@ -18,19 +18,17 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class MemSortExec extends SortExec {
   private SortNode plan;
-  private List<Tuple> tupleSlots;
+  private TupleList tupleSlots;
   private boolean sorted = false;
   private Iterator<Tuple> iterator;
 
@@ -42,7 +40,7 @@ public class MemSortExec extends SortExec {
 
   public void init() throws IOException {
     super.init();
-    this.tupleSlots = new ArrayList<Tuple>(10000);
+    this.tupleSlots = new TupleList(10000);
   }
 
   @Override

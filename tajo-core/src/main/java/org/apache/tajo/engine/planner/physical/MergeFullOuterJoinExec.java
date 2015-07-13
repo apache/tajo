@@ -22,28 +22,23 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 
 public class MergeFullOuterJoinExec extends CommonJoinExec {
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
   private Tuple rightTuple = null;
-  private Tuple outTuple = null;
   private Tuple leftNext = null;
 
-  private List<Tuple> leftTupleSlots;
-  private List<Tuple> rightTupleSlots;
+  private TupleList leftTupleSlots;
+  private TupleList rightTupleSlots;
 
   private JoinTupleComparator joincomparator = null;
   private TupleComparator[] tupleComparator = null;
@@ -64,8 +59,8 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
     super(context, plan, leftChild, rightChild);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.leftTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
-    this.rightTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
+    this.leftTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
+    this.rightTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = leftSortKey;
     sortSpecs[1] = rightSortKey;
@@ -74,10 +69,6 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
         rightChild.getSchema(), sortSpecs);
     this.tupleComparator = PhysicalPlanUtil.getComparatorsFromJoinQual(
         plan.getJoinQual(), leftChild.getSchema(), rightChild.getSchema());
-
-    // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
 
     leftNumCols = leftChild.getSchema().size();
     rightNumCols = rightChild.getSchema().size();
@@ -124,20 +115,18 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, rightTuple);
-            projector.eval(frameTuple, outTuple);
             // we simulate we found a match, which is exactly the null padded one
             rightTuple = rightChild.next();
-            return outTuple;
+            return projector.eval(frameTuple);
           }
 
           if((leftTuple != null) && (rightTuple == null)){
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
             frameTuple.set(leftTuple, nullPaddedTuple);
-            projector.eval(frameTuple, outTuple);
             // we simulate we found a match, which is exactly the null padded one
             leftTuple = leftChild.next();
-            return outTuple;
+            return projector.eval(frameTuple);
           }
         } // if end
 
@@ -180,21 +169,19 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
             //output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, rightTuple);
-            projector.eval(frameTuple, outTuple);
             // BEFORE RETURN, MOVE FORWARD
             rightTuple = rightChild.next();
             if(rightTuple == null) {
               end = true;
             }
 
-            return outTuple;
+            return projector.eval(frameTuple);
 
           } else if (cmp < 0) {
             // before getting a new tuple from the left,  a rightnullpadded tuple should be built
             // output a tuple with the nulls padded rightTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
             frameTuple.set(leftTuple, nullPaddedTuple);
-            projector.eval(frameTuple, outTuple);
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
             leftTuple = leftChild.next();
@@ -202,7 +189,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
               end = true;
             }
 
-            return outTuple;
+            return projector.eval(frameTuple);
 
           } // if (cmp < 0)
         } //while
@@ -270,8 +257,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           posRightTupleSlots = posRightTupleSlots + 1;
           frameTuple.set(leftNext, aTuple);
           joinQual.eval(frameTuple);
-          projector.eval(frameTuple, outTuple);
-          return outTuple;
+          return projector.eval(frameTuple);
         } else {
           // right (inner) slots reached end and should be rewind if there are still tuples in the outer slots
           if(posLeftTupleSlots <= (leftTupleSlots.size()-1)) {
@@ -284,8 +270,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
             frameTuple.set(leftNext, aTuple);
             joinQual.eval(frameTuple);
-            projector.eval(frameTuple, outTuple);
-            return outTuple;
+            return projector.eval(frameTuple);
           }
         }
       } // the second if end false

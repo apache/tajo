@@ -20,42 +20,44 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 public class Projector {
   private final TaskAttemptContext context;
   private final Schema inSchema;
-  private final Target[] targets;
 
   // for projection
-  private final int targetNum;
   private final EvalNode[] evals;
+
+  private final Tuple outTuple;
 
   public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, Target [] targets) {
     this.context = context;
     this.inSchema = inSchema;
+    Target[] realTargets;
     if (targets == null) {
-      this.targets = PlannerUtil.schemaToTargets(outSchema);
+      realTargets = PlannerUtil.schemaToTargets(outSchema);
     } else {
-      this.targets = targets;
+      realTargets = targets;
     }
 
-    this.targetNum = this.targets.length;
-    evals = new EvalNode[targetNum];
+    outTuple = new VTuple(realTargets.length);
+    evals = new EvalNode[realTargets.length];
 
     if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
       EvalNode eval;
-      for (int i = 0; i < targetNum; i++) {
-        eval = this.targets[i].getEvalTree();
+      for (int i = 0; i < realTargets.length; i++) {
+        eval = realTargets[i].getEvalTree();
         evals[i] = context.getPrecompiledEval(inSchema, eval);
       }
     } else {
-      for (int i = 0; i < targetNum; i++) {
-        evals[i] = this.targets[i].getEvalTree();
+      for (int i = 0; i < realTargets.length; i++) {
+        evals[i] = realTargets[i].getEvalTree();
       }
     }
     init();
@@ -67,9 +69,11 @@ public class Projector {
     }
   }
 
-  public void eval(Tuple in, Tuple out) {
+  public Tuple eval(Tuple in) {
+    outTuple.clear();
     for (int i = 0; i < evals.length; i++) {
-      out.put(i, evals[i].eval(in));
+      outTuple.put(i, evals[i].eval(in));
     }
+    return outTuple;
   }
 }

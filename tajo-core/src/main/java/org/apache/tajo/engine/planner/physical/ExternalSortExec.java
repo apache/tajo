@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -31,13 +30,11 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.unit.StorageUnit;
@@ -47,7 +44,9 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.*;
 
 import static org.apache.tajo.storage.RawFile.RawFileAppender;
@@ -81,7 +80,7 @@ public class ExternalSortExec extends SortExec {
   /** If there are available multiple cores, it tries parallel merge. */
   private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
-  private List<Tuple> inMemoryTable;
+  private TupleList inMemoryTable;
   /** temporal dir */
   private final Path sortTmpDir;
   /** It enables round-robin disks allocation */
@@ -120,7 +119,7 @@ public class ExternalSortExec extends SortExec {
     this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
-    this.inMemoryTable = new ArrayList<Tuple>(100000);
+    this.inMemoryTable = new TupleList(100000);
 
     this.sortTmpDir = getExecutorTmpDir();
     localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -161,7 +160,7 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Path sortAndStoreChunk(int chunkId, List<Tuple> tupleBlock)
+  private Path sortAndStoreChunk(int chunkId, TupleList tupleBlock)
       throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("RAW");
     int rowNum = tupleBlock.size();
@@ -203,9 +202,8 @@ public class ExternalSortExec extends SortExec {
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while (!context.isStopped() && (tuple = child.next()) != null) { // partition sort start
-      Tuple vtuple = new VTuple(tuple);
-      inMemoryTable.add(vtuple);
-      memoryConsumption += MemoryUtil.calculateMemorySize(vtuple);
+      inMemoryTable.add(tuple);
+      memoryConsumption += MemoryUtil.calculateMemorySize(tuple);
 
       if (memoryConsumption > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();

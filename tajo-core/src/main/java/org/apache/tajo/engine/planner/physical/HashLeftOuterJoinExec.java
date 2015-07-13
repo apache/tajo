@@ -26,7 +26,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 
 public class HashLeftOuterJoinExec extends HashJoinExec {
 
@@ -46,8 +45,7 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
     while (!context.isStopped() && !finished) {
       if (iterator != null && iterator.hasNext()) {
         frameTuple.setRight(iterator.next());
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        return projector.eval(frameTuple);
       }
       Tuple leftTuple = leftChild.next(); // it comes from a disk
       if (leftTuple == null) { // if no more tuples in left tuples on disk, a join is completed.
@@ -62,7 +60,7 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
       }
 
       // getting corresponding right
-      List<Tuple> hashed = tupleSlots.get(toKey(leftTuple));
+      TupleList hashed = tupleSlots.get(toKey(leftTuple));
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (!rightTuples.hasNext()) {
         //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway

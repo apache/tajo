@@ -18,12 +18,11 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Prepare a hash table of the NOT IN side of the join. Scan the FROM side table.
@@ -59,8 +58,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
     while(!context.isStopped() && !finished) {
       if (iterator != null && iterator.hasNext()) {
         frameTuple.setRight(iterator.next());
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        return projector.eval(frameTuple);
       }
       // getting new outer
       Tuple leftTuple = leftChild.next(); // it comes from a disk
@@ -72,7 +70,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       frameTuple.setLeft(leftTuple);
 
       // Try to find a hash bucket in in-memory hash table
-      List<Tuple> hashed = tupleSlots.get(toKey(leftTuple));
+      TupleList hashed = tupleSlots.get(toKey(leftTuple));
       if (hashed != null && rightFiltered(hashed).hasNext()) {
         // if found, it gets a hash bucket from the hash table.
         iterator = nullIterator(0);

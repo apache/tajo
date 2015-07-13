@@ -35,7 +35,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -79,10 +78,10 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
   // Transient state
   boolean firstTime = true;
-  List<Tuple> evaluatedTuples = null;
-  List<Tuple> accumulatedInTuples = null;
-  List<Tuple> nextAccumulatedProjected = null;
-  List<Tuple> nextAccumulatedInTuples = null;
+  TupleList evaluatedTuples = null;
+  TupleList accumulatedInTuples = null;
+  TupleList nextAccumulatedProjected = null;
+  TupleList nextAccumulatedInTuples = null;
   WindowState state = WindowState.NEW_WINDOW;
   Iterator<Tuple> tupleInFrameIterator = null;
 
@@ -244,7 +243,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
   private void initWindow() {
     if (firstTime) {
-      accumulatedInTuples = Lists.newArrayList();
+      accumulatedInTuples = new TupleList();
 
       contexts = new FunctionContext[functionNum];
       for(int evalIdx = 0; evalIdx < functionNum; evalIdx++) {
@@ -275,16 +274,16 @@ public class WindowAggExec extends UnaryPhysicalExec {
     for(int idx = 0; idx < nonFunctionColumnNum; idx++) {
       projectedTuple.put(idx, inTuple.asDatum(nonFunctionColumns[idx]));
     }
-    nextAccumulatedProjected = Lists.newArrayList();
+    nextAccumulatedProjected = new TupleList();
     nextAccumulatedProjected.add(projectedTuple);
-    nextAccumulatedInTuples = Lists.newArrayList();
+    nextAccumulatedInTuples = new TupleList();
     nextAccumulatedInTuples.add(new VTuple(inTuple));
   }
 
   private void evaluationWindowFrame() {
     TupleComparator comp;
 
-    evaluatedTuples = new ArrayList<Tuple>();
+    evaluatedTuples = new TupleList();
 
     for (int i = 0; i <accumulatedInTuples.size(); i++) {
       Tuple inTuple = accumulatedInTuples.get(i);

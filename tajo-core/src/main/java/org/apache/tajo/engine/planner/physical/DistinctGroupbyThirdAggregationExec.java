@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.function.FunctionContext;
@@ -51,6 +52,11 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
   private int[] resultTupleIndexes;
 
+  private Tuple outTuple;
+  private Tuple keyTuple;
+  private Tuple prevKeyTuple = null;
+  private Tuple prevTuple = null;
+
   public DistinctGroupbyThirdAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, SortExec sortExec)
       throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), sortExec);
@@ -63,6 +69,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
     numGroupingColumns = plan.getGroupingColumns().length;
     resultTupleLength = numGroupingColumns;
+    keyTuple = new VTuple(numGroupingColumns);
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
@@ -86,6 +93,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       resultTupleLength += eachGroupby.getAggFunctions().length;
     }
     aggregators = aggregatorList.toArray(new DistinctFinalAggregator[]{});
+    outTuple = new VTuple(resultTupleLength);
 
     // make output schema mapping index
     resultTupleIndexes = new int[outSchema.size()];
@@ -128,21 +136,17 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
   }
 
-  Tuple prevKeyTuple = null;
-  Tuple prevTuple = null;
-
   @Override
   public Tuple next() throws IOException {
     if (finished) {
       return null;
     }
 
-    Tuple resultTuple = new VTuple(resultTupleLength);
-
     while (!context.isStopped()) {
-      Tuple childTuple = child.next();
+      Tuple tuple = child.next();
+      outTuple.clear();
       // Last tuple
-      if (childTuple == null) {
+      if (tuple == null) {
         finished = true;
 
         if (prevTuple == null) {
@@ -156,19 +160,13 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
         }
 
         for (int i = 0; i < numGroupingColumns; i++) {
-          resultTuple.put(resultTupleIndexes[i], prevTuple.asDatum(i + 1));
+          outTuple.put(resultTupleIndexes[i], prevTuple.asDatum(i + 1));
         }
         for (DistinctFinalAggregator eachAggr: aggregators) {
-          eachAggr.terminate(resultTuple);
+          eachAggr.terminate(outTuple);
         }
-        break;
-      }
-
-      Tuple tuple = null;
-      try {
-        tuple = childTuple.clone();
-      } catch (CloneNotSupportedException e) {
-        throw new IOException(e.getMessage(), e);
+//        break;
+        return outTuple;
       }
 
       int distinctSeq = tuple.getInt2(0);
@@ -176,8 +174,12 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
       // First tuple
       if (prevKeyTuple == null) {
-        prevKeyTuple = keyTuple;
-        prevTuple = tuple;
+        prevKeyTuple = new VTuple(numGroupingColumns);
+        prevKeyTuple.put(keyTuple.getValues());
+        prevTuple = new VTuple(resultTupleLength);
+        prevTuple.put(tuple.getValues());
+//        prevKeyTuple = keyTuple;
+//        prevTuple = tuple;
 
         aggregators[distinctSeq].merge(tuple);
         continue;
@@ -186,38 +188,47 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       if (!prevKeyTuple.equals(keyTuple)) {
         // new grouping key
         for (int i = 0; i < numGroupingColumns; i++) {
-          resultTuple.put(resultTupleIndexes[i], prevTuple.asDatum(i + 1));
+          outTuple.put(resultTupleIndexes[i], prevTuple.asDatum(i + 1));
         }
         for (DistinctFinalAggregator eachAggr: aggregators) {
-          eachAggr.terminate(resultTuple);
+          eachAggr.terminate(outTuple);
         }
 
-        prevKeyTuple = keyTuple;
-        prevTuple = tuple;
+        prevKeyTuple.clear();
+        prevTuple.clear();
+        prevKeyTuple.put(keyTuple.getValues());
+        prevTuple.put(tuple.getValues());
+//        prevKeyTuple = keyTuple;
+//        prevTuple = tuple;
 
         aggregators[distinctSeq].merge(tuple);
-        break;
+        return outTuple;
+//        break;
       } else {
-        prevKeyTuple = keyTuple;
-        prevTuple = tuple;
+//        prevKeyTuple = keyTuple;
+//        prevTuple = tuple;
+        prevKeyTuple.clear();
+        prevTuple.clear();
+        prevKeyTuple.put(keyTuple.getValues());
+        prevTuple.put(tuple.getValues());
         aggregators[distinctSeq].merge(tuple);
       }
     }
 
-    return resultTuple;
+    return null;
   }
 
   private Tuple makeEmptyTuple() {
-    Tuple resultTuple = new VTuple(resultTupleLength);
+    outTuple.clear();
     for (DistinctFinalAggregator eachAggr: aggregators) {
-      eachAggr.terminateEmpty(resultTuple);
+      eachAggr.terminateEmpty(outTuple);
     }
 
-    return resultTuple;
+    return outTuple;
   }
 
   private Tuple getGroupingKeyTuple(Tuple tuple) {
-    Tuple keyTuple = new VTuple(numGroupingColumns);
+    keyTuple.clear();
     for (int i = 0; i < numGroupingColumns; i++) {
       keyTuple.put(i, tuple.asDatum(i + 1));
     }

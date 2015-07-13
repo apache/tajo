@@ -41,12 +41,12 @@ public class BSTIndexScanExec extends PhysicalExec {
   private BSTIndex.BSTIndexReader reader;
   
   private Projector projector;
-  
-  private Datum[] datum = null;
-  
+
   private boolean initialize = true;
 
   private float progress;
+
+  private Tuple indexLookupKey;
 
   public BSTIndexScanExec(TaskAttemptContext context, ScanNode scanNode ,
        FileFragment fragment, Path fileName , Schema keySchema,
@@ -54,7 +54,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
     this.qual = scanNode.getQual();
-    this.datum = datum;
+    indexLookupKey = new VTuple(datum);
 
     this.fileScanner = OldStorageManager.getSeekableScanner(context.getConf(),
         scanNode.getTableDesc().getMeta(), scanNode.getInSchema(), fragment, outSchema);
@@ -80,8 +80,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   public Tuple next() throws IOException {
     if(initialize) {
       //TODO : more complicated condition
-      Tuple key = new VTuple(datum);
-      long offset = reader.find(key);
+      long offset = reader.find(indexLookupKey);
       if (offset == -1) {
         reader.close();
         fileScanner.close();
@@ -104,19 +103,16 @@ public class BSTIndexScanExec extends PhysicalExec {
       }
     }
     Tuple tuple;
-    Tuple outTuple = new VTuple(this.outSchema.size());
     if (!scanNode.hasQual()) {
       if ((tuple = fileScanner.next()) != null) {
-        projector.eval(tuple, outTuple);
-        return outTuple;
+        return projector.eval(tuple);
       } else {
         return null;
       }
     } else {
        while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
          if (qual.eval(tuple).isTrue()) {
-           projector.eval(tuple, outTuple);
-           return outTuple;
+           return projector.eval(tuple);
          } else {
            long offset = reader.next();
            if (offset == -1) return null;
@@ -140,6 +136,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     scanNode = null;
     qual = null;
     projector = null;
+    indexLookupKey = null;
   }
 
   @Override

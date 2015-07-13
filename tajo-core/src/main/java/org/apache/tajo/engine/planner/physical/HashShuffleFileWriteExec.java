@@ -33,9 +33,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,7 +45,6 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private ShuffleFileWriteNode plan;
   private final TableMeta meta;
   private Partitioner partitioner;
-//  private final Path storeTablePath;
   private Map<Integer, HashShuffleAppender> appenderMap = new HashMap<Integer, HashShuffleAppender>();
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
@@ -92,8 +89,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     return appender;
   }
 
-//  Map<Integer, Long> partitionStats = new HashMap<Integer, Long>();
-  Map<Integer, List<Tuple>> partitionTuples = new HashMap<Integer, List<Tuple>>();
+  Map<Integer, TupleList> partitionTuples = new HashMap<Integer, TupleList>();
   long writtenBytes = 0L;
 
   @Override
@@ -108,9 +104,9 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         numRows++;
 
         partId = partitioner.getPartition(tuple);
-        List<Tuple> partitionTupleList = partitionTuples.get(partId);
+        TupleList partitionTupleList = partitionTuples.get(partId);
         if (partitionTupleList == null) {
-          partitionTupleList = new ArrayList<Tuple>(1000);
+          partitionTupleList = new TupleList(1000);
           partitionTuples.put(partId, partitionTupleList);
         }
         try {
@@ -118,7 +114,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         } catch (CloneNotSupportedException e) {
         }
         if (tupleCount >= numHashShuffleBufferTuples) {
-          for (Map.Entry<Integer, List<Tuple>> entry : partitionTuples.entrySet()) {
+          for (Map.Entry<Integer, TupleList> entry : partitionTuples.entrySet()) {
             int appendPartId = entry.getKey();
             HashShuffleAppender appender = getAppender(appendPartId);
             int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
@@ -130,7 +126,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       }
 
       // processing remained tuples
-      for (Map.Entry<Integer, List<Tuple>> entry : partitionTuples.entrySet()) {
+      for (Map.Entry<Integer, TupleList> entry : partitionTuples.entrySet()) {
         int appendPartId = entry.getKey();
         HashShuffleAppender appender = getAppender(appendPartId);
         int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());

@@ -35,13 +35,13 @@ import java.util.Map.Entry;
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
-  private Map<Tuple, FunctionContext[]> hashTable;
+  private TupleMap<FunctionContext[]> hashTable;
   private boolean computed = false;
   private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
 
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
-    hashTable = new HashMap<Tuple, FunctionContext []>(100000);
+    hashTable = new TupleMap<FunctionContext []>(inSchema, plan.getGroupingColumns());
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 
@@ -49,11 +49,12 @@ public class HashAggregateExec extends AggregationExec {
     Tuple tuple;
     Tuple keyTuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      keyTuple = new VTuple(groupingKeyIds.length);
-      // build one key tuple
-      for(int i = 0; i < groupingKeyIds.length; i++) {
-        keyTuple.put(i, tuple.asDatum(groupingKeyIds[i]));
-      }
+//      keyTuple = new VTuple(groupingKeyIds.length);
+//      // build one key tuple
+//      for(int i = 0; i < groupingKeyIds.length; i++) {
+//        keyTuple.put(i, tuple.asDatum(groupingKeyIds[i]));
+//      }
+      keyTuple = hashTable.getKey(tuple);
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
       if(contexts != null) {

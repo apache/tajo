@@ -24,8 +24,12 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -42,13 +46,15 @@ import java.io.IOException;
 public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(RangeShuffleFileWriteExec.class);
   private final SortSpec[] sortSpecs;
-  private int [] indexKeys = null;
+//  private int [] indexKeys = null;
   private Schema keySchema;
 
   private BSTIndex.BSTIndexWriter indexWriter;
   private TupleComparator comp;
   private FileAppender appender;
   private TableMeta meta;
+
+  private Projector projector;
 
   public RangeShuffleFileWriteExec(final TaskAttemptContext context,
                                    final PhysicalExec child, final Schema inSchema, final Schema outSchema,
@@ -60,14 +66,15 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    indexKeys = new int[sortSpecs.length];
+//    indexKeys = new int[sortSpecs.length];
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
+    projector = new Projector(context, inSchema, outSchema, null);
 
-    Column col;
-    for (int i = 0 ; i < sortSpecs.length; i++) {
-      col = sortSpecs[i].getSortKey();
-      indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
-    }
+//    Column col;
+//    for (int i = 0 ; i < sortSpecs.length; i++) {
+//      col = sortSpecs[i].getSortKey();
+//      indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
+//    }
 
     BSTIndex bst = new BSTIndex(new TajoConf());
     this.comp = new BaseTupleComparator(keySchema, sortSpecs);
@@ -91,24 +98,21 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   public Tuple next() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    Tuple prevKeyTuple = null;
+    Tuple prevKeyTuple = new VTuple(keySchema.size());
     long offset;
 
-
-    try {
-      while(!context.isStopped() && (tuple = child.next()) != null) {
-        offset = appender.getOffset();
-        appender.addTuple(tuple);
-        keyTuple = new VTuple(keySchema.size());
-        RowStoreUtil.project(tuple, keyTuple, indexKeys);
-        if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
-          indexWriter.write(keyTuple, offset);
-          prevKeyTuple = keyTuple;
-        }
+    while(!context.isStopped() && (tuple = child.next()) != null) {
+      offset = appender.getOffset();
+      appender.addTuple(tuple);
+//        keyTuple = new VTuple(keySchema.size());
+//        RowStoreUtil.project(tuple, keyTuple, indexKeys);
+      keyTuple = projector.eval(tuple);
+      if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
+        indexWriter.write(keyTuple, offset);
+//          prevKeyTuple = keyTuple;
+        prevKeyTuple.clear();
+        prevKeyTuple.put(keyTuple.getValues());
       }
-    } catch (RuntimeException e) {
-      e.printStackTrace();
-      throw e;
     }
 
     return null;

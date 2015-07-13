@@ -21,28 +21,22 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class MergeJoinExec extends CommonJoinExec {
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
-  private Tuple outTuple = null;
   private Tuple outerNext = null;
 
-  private List<Tuple> outerTupleSlots;
-  private List<Tuple> innerTupleSlots;
+  private TupleList outerTupleSlots;
+  private TupleList innerTupleSlots;
   private Iterator<Tuple> outerIterator;
   private Iterator<Tuple> innerIterator;
 
@@ -59,8 +53,8 @@ public class MergeJoinExec extends CommonJoinExec {
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
 
-    this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
-    this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
+    this.outerTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
+    this.innerTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = outerSortKey;
     sortSpecs[1] = innerSortKey;
@@ -71,10 +65,6 @@ public class MergeJoinExec extends CommonJoinExec {
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
     this.outerIterator = outerTupleSlots.iterator();
     this.innerIterator = innerTupleSlots.iterator();
-    
-    // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
   }
 
   public Tuple next() throws IOException {
@@ -144,8 +134,7 @@ public class MergeJoinExec extends CommonJoinExec {
       frameTuple.set(outerNext, innerIterator.next());
 
       if (joinQual.eval(frameTuple).isTrue()) {
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        return projector.eval(frameTuple);
       }
     }
     return null;
