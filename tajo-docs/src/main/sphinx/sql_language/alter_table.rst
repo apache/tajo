@@ -96,4 +96,5 @@ You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The loca
   ALTER TABLE table1 DROP PARTITION (col1 = '2015' , col2 = '01', col3 = '11' )
   ALTER TABLE table1 DROP PARTITION (col1 = 'TAJO' ) PURGE
 
-You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This removes the data for a managed table and this doesn't remove the data for an external table. But if ``PURGE`` is specified for an external table, the partition data will be removed. For your information, the metadata is completely lost in all cases.
+You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This removes the data for a managed table
+ and this doesn't remove the data for an external table. But if ``PURGE`` is specified for an external table, the partition data will be removed. The metadata is completely lost in all cases.
