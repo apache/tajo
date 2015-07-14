@@ -18,27 +18,11 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.function.FunctionUtil;
-import org.codehaus.jackson.schema.JsonSerializableSchema;
-
-import java.util.Collection;
-
 public class NoSuchPartitionKeyException extends RuntimeException {
 
   private static final long serialVersionUID = 277182608283894939L;
 
-  public NoSuchPartitionKeyException(String message) {
-    super(message);
-  }
-
   public NoSuchPartitionKeyException(String tableName, String partitionKey) {
     super(String.format("ERROR: partition column \"%s\" does not exist in \"%s\".", partitionKey, tableName));
   }
-
-  public NoSuchPartitionKeyException(String databaseName, String tableName, String partitionKey) {
-    super(String.format("ERROR: partition column \"%s\" does not exist in \"%s.%s\".", partitionKey,
-      databaseName, tableName));
-  }
-
 }

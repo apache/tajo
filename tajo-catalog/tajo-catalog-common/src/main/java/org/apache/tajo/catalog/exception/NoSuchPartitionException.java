@@ -18,12 +18,6 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.function.FunctionUtil;
-import org.codehaus.jackson.schema.JsonSerializableSchema;
-
-import java.util.Collection;
-
 public class NoSuchPartitionException extends RuntimeException {
 
   private static final long serialVersionUID = 277182608283894938L;
