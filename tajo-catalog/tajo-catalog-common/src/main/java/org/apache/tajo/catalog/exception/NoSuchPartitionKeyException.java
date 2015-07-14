@@ -23,6 +23,7 @@ public class NoSuchPartitionKeyException extends RuntimeException {
   private static final long serialVersionUID = 277182608283894939L;
 
   public NoSuchPartitionKeyException(String tableName, String partitionKey) {
-    super(String.format("ERROR: partition column \"%s\" does not exist in \"%s\".", partitionKey, tableName));
+    super(String.format("ERROR: \"%s\" column is not the partition key of \"%s\".",
+      partitionKey, tableName));
   }
 }
