@@ -173,7 +173,7 @@ public class TajoMaster extends CompositeService {
       RpcClientManager rpcManager = RpcClientManager.getInstance();
       rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
       rpcManager.setTimeoutSeconds(
-        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
+          systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
       initResourceManager();
 
@@ -202,7 +202,7 @@ public class TajoMaster extends CompositeService {
 
       tajoMasterService = new QueryCoordinatorService(context);
       addIfService(tajoMasterService);
-
+      
       restServer = new TajoRestService(context);
       addIfService(restServer);
     } catch (Exception e) {
@@ -236,7 +236,7 @@ public class TajoMaster extends CompositeService {
 
   private void initResourceManager() throws Exception {
     Class<WorkerResourceManager>  resourceManagerClass = (Class<WorkerResourceManager>)
-      systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoWorkerResourceManager.class);
+        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoWorkerResourceManager.class);
     Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
     resourceManager = constructor.newInstance(context);
     addIfService(resourceManager);
@@ -246,7 +246,7 @@ public class TajoMaster extends CompositeService {
     if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
       InetSocketAddress address = systemConf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
       webServer = StaticHttpServer.getInstance(this ,"admin", address.getHostName(), address.getPort(),
-        true, null, context.getConf(), null);
+          true, null, context.getConf(), null);
       webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
       webServer.start();
     }
@@ -295,14 +295,14 @@ public class TajoMaster extends CompositeService {
       LOG.info("Staging dir '" + stagingPath + "' is created");
     }
   }
-
+  
   private void diagnoseTajoMaster() throws EvaluationFailedException {
     SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
-
+    
     context.addParameter(TajoConf.class.getName(), systemConf);
-
+    
     ruleSession.withCategoryNames("base", "master").fireRules(context);
   }
 
@@ -328,7 +328,7 @@ public class TajoMaster extends CompositeService {
 
     // Setting the system global configs
     systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
-      NetUtils.getConnectAddress(catalogServer.getBindAddress()));
+        NetUtils.getConnectAddress(catalogServer.getBindAddress()));
 
     try {
       writeSystemConf();
@@ -399,7 +399,7 @@ public class TajoMaster extends CompositeService {
         LOG.error(e, e);
       }
     }
-
+    
     if (restServer != null) {
       try {
         restServer.stop();
@@ -502,7 +502,7 @@ public class TajoMaster extends CompositeService {
     public HistoryReader getHistoryReader() {
       return historyReader;
     }
-
+    
     public TajoRestService getRestServer() {
       return restServer;
     }
@@ -531,7 +531,7 @@ public class TajoMaster extends CompositeService {
       stream.println("Thread " + getThreadTaskName(info.getThreadId(), info.getThreadName()) + ":");
       Thread.State state = info.getThreadState();
       stream.println("  State: " + state + ", Blocked count: " + info.getBlockedCount() +
-        ", Waited count: " + info.getWaitedCount());
+          ", Waited count: " + info.getWaitedCount());
       if (contention) {
         stream.println("  Blocked time: " + info.getBlockedTime() + ", Waited time: " + info.getWaitedTime());
       }
@@ -539,7 +539,7 @@ public class TajoMaster extends CompositeService {
         stream.println("  Waiting on " + info.getLockName());
       } else if (state == Thread.State.BLOCKED) {
         stream.println("  Blocked on " + info.getLockName() +
-          ", Blocked by " + getThreadTaskName(info.getLockOwnerId(), info.getLockOwnerName()));
+            ", Blocked by " + getThreadTaskName(info.getLockOwnerId(), info.getLockOwnerName()));
       }
       stream.println("  Stack:");
       for (StackTraceElement frame : info.getStackTrace()) {
