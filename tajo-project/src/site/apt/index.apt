@@ -61,6 +61,8 @@ Features
 
 Releases
 
+  * <<[2015-06-29]>> {{{./downloads.html}Tajo 0.10.1}} ({{{./releases/0.10.1/announcement.html}Announcement}}, {{{./releases/0.10.1/relnotes.html}Release Notes}})
+
   * <<[2015-03-08]>> {{{./downloads.html}Tajo 0.10.0}} ({{{./releases/0.10.0/announcement.html}Announcement}}, {{{./releases/0.10.0/relnotes.html}Release Notes}})
 
   * <<[2014-10-21]>> {{{./downloads.html}Tajo 0.9.0}} ({{{./releases/0.9.0/announcement.html}Announcement}}, {{{./releases/0.9.0/relnotes.html}Release Notes}})
@@ -70,6 +72,10 @@ Releases
   * <<[2013-11-20]>> {{{./downloads.html}Tajo 0.2.0-incubating}} ({{{http://s.apache.org/tajo-0.2-release-notes}Release Notes}})
 
 News
+
+  * <<[2015-06-27]>> Hyunsik Choi had a talk at Big Data Day LA 2015.
+
+  * <<[2015-06-17]>> Hyunsik Choi had a talk at Hadoop Summit North America  ({{{http://www.slideshare.net/hyunsikchoi/efficient-in-situ-processing-of-various-storage-types-on-apache-tajo}Slide}}). 
 
   * <<[2014-12-05]>> Hyoung Jun Kim was elected as a Tajo PMC member.
 
