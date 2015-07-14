@@ -74,7 +74,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-//      {NodeType.CREATE_TABLE},
+      {NodeType.CREATE_TABLE},
     });
   }
 
@@ -430,7 +430,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     res = executeString("SELECT col1, col2, col3 FROM " + tableName);
     String result = resultSetToString(res);
-    System.out.println("### RESULT ### \n:" + result);
     res.close();
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
