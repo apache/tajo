@@ -593,6 +593,9 @@ public class LogicalNodeDeserializer {
     case SET_PROPERTY:
       alterTable.setProperties(new KeyValueSet(alterTableProto.getProperties()));
       break;
+    case REPAIR_PARTITION:
+      alterTable.setTableName(alterTableProto.getTableName());
+      break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());
     }

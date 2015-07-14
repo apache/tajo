@@ -20,14 +20,24 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
+
+  public TestAlterTable() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
+
   @Test
   public final void testAlterTableName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "ABC");
@@ -62,5 +72,29 @@ public class TestAlterTable extends QueryTestCaseBase {
     ResultSet after_res = executeQuery();
     assertResultSet(after_res, "after_set_property_delimiter.result");
     cleanupQuery(after_res);
+  }
+
+  @Test
+  public final void testAlterTableRepairPartition1() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testMsckRepairTable1");
+
+    res = executeString(
+    "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(TajoConstants.DEFAULT_DATABASE_NAME, tableName));
+    assertEquals(2, catalog.getTableDesc(TajoConstants.DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+    assertEquals(3, catalog.getTableDesc(TajoConstants.DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+    res = testBase.execute(
+    "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+    "l_quantity from lineitem");
+    res.close();
+
+    res = testBase.execute("ALTER TABLE " + tableName + " REPAIR PARTITION");
+    res.close();
+
+    // TODO: Check partition directories and catalog informs.
   }
 }

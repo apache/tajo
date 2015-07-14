@@ -56,7 +56,6 @@ enum NodeType {
   ALTER_TABLESPACE = 25;
   ALTER_TABLE = 26;
   TRUNCATE_TABLE = 27;
-  MSCK_TABLE = 28;
 }
 
 message LogicalNodeTree {
@@ -97,7 +96,6 @@ message LogicalNode {
   optional AlterTablespaceNode alterTablespace = 28;
   optional AlterTableNode alterTable = 29;
   optional TruncateTableNode truncateTableNode = 30;
-  optional MsckTableNode msckTableNode = 31;
 }
 
 message ScanNode {
@@ -282,6 +280,7 @@ message AlterTableNode {
     RENAME_COLUMN = 1;
     ADD_COLUMN = 2;
     SET_PROPERTY = 3;
+    REPAIR_PARTITION = 4;
   }
 
   message RenameTable {
@@ -304,16 +303,6 @@ message AlterTableNode {
   optional AddColumn addColumn = 5;
   optional KeyValueSetProto properties = 6;
 }
-
-message MsckTableNode {
-  enum Type {
-    REPAIR_TABLE = 0;
-  }
-
-  required string tableName = 1;
-  required Type setType = 2;
-}
-
 
 enum EvalType {
   NOT = 0;
