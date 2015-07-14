@@ -477,13 +477,6 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     return truncateTableNode;
   }
 
-  @Override
-  public LogicalNode visitMsckTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack,
-                                    MsckTable expr) throws PlanningException {
-    MsckTableNode msckTableNode = ctx.plan.createNode(MsckTableNode.class);
-    return msckTableNode;
-  }
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

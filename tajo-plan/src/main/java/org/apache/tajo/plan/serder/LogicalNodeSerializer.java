@@ -593,28 +593,6 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return node;
   }
 
-  @Override
-  public LogicalNode visitMsckTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                          MsckTableNode node, Stack<LogicalNode> stack) throws PlanningException {
-    PlanProto.MsckTableNode.Builder msckTableBuilder = PlanProto.MsckTableNode.newBuilder();
-    msckTableBuilder.setTableName(node.getTableName());
-
-    switch (node.getMsckTableOpType()) {
-      case REPAIR_TABLE:
-        msckTableBuilder.setSetType(PlanProto.MsckTableNode.Type.REPAIR_TABLE);
-        break;
-
-      default:
-        throw new UnimplementedException("Unknown SET type in MSCK TABLE: " + node.getMsckTableOpType().name());
-    }
-
-    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
-    nodeBuilder.setMsckTableNode(msckTableBuilder);
-    context.treeBuilder.addNodes(nodeBuilder);
-
-    return node;
-  }
-
   public LogicalNode visitInsert(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitInsert(context, plan, block, node, stack);

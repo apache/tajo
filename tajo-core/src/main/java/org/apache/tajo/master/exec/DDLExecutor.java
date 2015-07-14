@@ -96,10 +96,6 @@ public class DDLExecutor {
       AlterTableNode alterTable = (AlterTableNode) root;
       alterTable(context, queryContext, alterTable);
       return true;
-    case MSCK_TABLE:
-      MsckTableNode msckTableNode = (MsckTableNode) root;
-      msckRepairTable(context, queryContext, msckTableNode);
-      return true;
     default:
       throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
@@ -446,26 +442,28 @@ public class DDLExecutor {
     case SET_PROPERTY:
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
-    default:
+    case REPAIR_PARTITION:
+      repairPartition(context, queryContext, alterTable);
+      default:
       //TODO
     }
   }
 
   /**
-   * Run MSCK REPAIR TABLE table_name statement.
+   * Run ALTER TABLE table_name REPAIR TABLE  statement.
    * This will recovery all partitions which exists on table directory.
    *
    *
    * @param context
    * @param queryContext
-   * @param msckTable
+   * @param alterTable
    * @throws IOException
    */
-  public void msckRepairTable(TajoMaster.MasterContext context, final QueryContext queryContext,
-                         final MsckTableNode msckTable) throws IOException {
+  public void repairPartition(TajoMaster.MasterContext context, final QueryContext queryContext,
+                         final AlterTableNode alterTable) throws IOException {
 
     final CatalogService catalog = context.getCatalog();
-    final String tableName = msckTable.getTableName();
+    final String tableName = alterTable.getTableName();
 
     String databaseName;
     String simpleTableName;

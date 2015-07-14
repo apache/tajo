@@ -25,9 +25,9 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.algebra.MsckTableOpType;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -1233,21 +1233,21 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testMsckRepairTable() throws PlanningException {
+  public final void testAlterTableRepairPartiton() throws PlanningException {
     QueryContext qc = createQueryContext();
 
-    String sql = "MSCK REPAIR TABLE table1";
+    String sql = "ALTER TABLE table1 REPAIR PARTITION";
     Expr expr = sqlAnalyzer.parse(sql);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
     testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    assertEquals(NodeType.MSCK_TABLE, root.getChild().getType());
+    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
 
-    MsckTableNode msckNode = root.getChild();
+    AlterTableNode msckNode = root.getChild();
 
-    assertEquals(msckNode.getMsckTableOpType(), MsckTableOpType.REPAIR_TABLE);
+    assertEquals(msckNode.getAlterTableOpType(), AlterTableOpType.REPAIR_PARTITION);
     assertEquals(msckNode.getTableName(), "table1");
   }
 }

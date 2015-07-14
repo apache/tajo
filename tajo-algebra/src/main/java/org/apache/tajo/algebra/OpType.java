@@ -54,7 +54,6 @@ public enum OpType {
   AlterTablespace(AlterTablespace.class),
   AlterTable(AlterTable.class),
   TruncateTable(TruncateTable.class),
-  MsckTable(MsckTable.class),
 
   // Insert or Update
   Insert(Insert.class),

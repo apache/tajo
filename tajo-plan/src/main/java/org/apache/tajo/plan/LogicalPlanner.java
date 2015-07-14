@@ -2016,15 +2016,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return truncateTableNode;
   }
 
-  @Override
-  public LogicalNode visitMsckTable(PlanContext context, Stack<Expr> stack, MsckTable msck)
-    throws PlanningException {
-    MsckTableNode msckTableNode = context.queryBlock.getNodeFromExpr(msck);
-    msckTableNode.setTableName(msck.getTableName());
-    msckTableNode.setMsckTableOpType(msck.getMsckTableOpType());
-    return msckTableNode;
-  }
-
   /*===============================================================================================
     Util SECTION
   ===============================================================================================*/

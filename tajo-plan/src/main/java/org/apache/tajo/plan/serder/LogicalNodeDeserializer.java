@@ -23,7 +23,6 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.algebra.MsckTableOpType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -151,9 +150,6 @@ public class LogicalNodeDeserializer {
         break;
       case TRUNCATE_TABLE:
         current = convertTruncateTable(protoNode);
-        break;
-      case MSCK_TABLE:
-        current = convertMsckTable(protoNode);
         break;
 
       default:
@@ -613,23 +609,6 @@ public class LogicalNodeDeserializer {
     return truncateTable;
   }
 
-  private static MsckTableNode convertMsckTable(PlanProto.LogicalNode protoNode) {
-    MsckTableNode msckTableNode = new MsckTableNode(protoNode.getNodeId());
-
-    PlanProto.MsckTableNode protoNodeMsckNode = protoNode.getMsckTableNode();
-    msckTableNode.setTableName(protoNodeMsckNode.getTableName());
-
-    switch (protoNodeMsckNode.getSetType()) {
-      case REPAIR_TABLE:
-        msckTableNode.setMsckTableOpType(MsckTableOpType.REPAIR_TABLE);
-        break;
-      default:
-        throw new UnimplementedException("Unknown SET type in MSCK TABLE: " + protoNodeMsckNode.getSetType().name());
-    }
-
-    return msckTableNode;
-  }
-  
   private static AggregationFunctionCallEval [] convertAggFuncCallEvals(OverridableConf context, EvalContext evalContext,
                                                                        List<PlanProto.EvalNodeTree> evalTrees) {
     AggregationFunctionCallEval [] aggFuncs = new AggregationFunctionCallEval[evalTrees.size()];

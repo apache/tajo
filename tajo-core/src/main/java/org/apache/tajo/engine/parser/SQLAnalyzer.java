@@ -1815,6 +1815,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     if (tables.size() == 2) {
       alterTable.setNewTableName(tables.get(1).getText());
+    } else if (tables.size() == 1) {
+      alterTable.setTableName(tables.get(0).getText());
     }
 
     if (checkIfExist(ctx.column_name()) && ctx.column_name().size() == 2) {
@@ -1877,6 +1879,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     final int PARTITION_MASK = 00000020;
     final int SET_MASK = 00000002;
     final int PROPERTY_MASK = 00010000;
+    final int REPAIR_MASK = 00000003;
 
     int val = 00000000;
 
@@ -1908,6 +1911,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           case PROPERTY:
             val = val | PROPERTY_MASK;
             break;
+          case REPAIR:
+            val = val | REPAIR_MASK;
+            break;
           default:
             break;
         }
@@ -1919,6 +1925,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   private AlterTableOpType evaluateAlterTableOperationTye(final int value) {
 
     switch (value) {
+      case 19:
+        return AlterTableOpType.REPAIR_PARTITION;
       case 65:
         return AlterTableOpType.RENAME_TABLE;
       case 73:
@@ -1934,19 +1942,5 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       default:
         return null;
     }
-  }
-
-  @Override
-  public Expr visitMsck_table_statement(@NotNull Msck_table_statementContext ctx) {
-    MsckTable msck = new MsckTable(ctx.table_name().getText());
-
-    for (int i = 1; i < ctx.getChildCount(); i++) {
-      if (ctx.getChild(i) instanceof TerminalNode) {
-        if (((TerminalNode) ctx.getChild(i)).getSymbol().getType() == REPAIR) {
-          msck.setMsckTableOpType(MsckTableOpType.REPAIR_TABLE);
-        }
-      }
-    }
-    return msck;
   }
 }

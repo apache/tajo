@@ -73,7 +73,6 @@ schema_statement
   | drop_table_statement
   | alter_tablespace_statement
   | alter_table_statement
-  | msck_table_statement
   | truncate_table_statement
   ;
 
@@ -282,7 +281,6 @@ nonreserved_keywords
   | MIN
   | MINUTE
   | MONTH
-  | MSCK
   | NATIONAL
   | NO
   | NULLIF
@@ -1608,10 +1606,7 @@ alter_table_statement
   | ALTER TABLE table_name (if_not_exists)? ADD PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
   | ALTER TABLE table_name (if_exists)? DROP PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN
   | ALTER TABLE table_name SET PROPERTY property_list
-  ;
-
-msck_table_statement
-  : MSCK REPAIR TABLE table_name
+  | ALTER TABLE table_name REPAIR PARTITION
   ;
 
 partition_column_value_list
