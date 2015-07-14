@@ -198,7 +198,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
         workerContext.getNodeResourceManager().getDispatcher().getEventHandler()
             .handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
         stopExecutionBlock(executionBlockContextMap.remove(executionBlockStopEvent.getExecutionBlockId()),
-            ((ExecutionBlockStopEvent) event).getCleanupList());
+            executionBlockStopEvent.getCleanupList());
         break;
       }
       case QUERY_STOP: {
@@ -222,12 +222,15 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
         LOG.error(errorEvent.getError().getMessage(), errorEvent.getError());
         ExecutionBlockContext context = executionBlockContextMap.remove(errorEvent.getExecutionBlockId());
 
-        if(context != null) {
+        if (context != null) {
           context.getSharedResource().releaseBroadcastCache(context.getExecutionBlockId());
           getWorkerContext().getTaskHistoryWriter().flushTaskHistories();
           context.stop();
         }
+        break;
       }
+      default:
+        break;
     }
   }
 

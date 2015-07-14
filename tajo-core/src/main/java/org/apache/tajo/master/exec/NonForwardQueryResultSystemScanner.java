@@ -424,8 +424,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   private Tuple getQueryMasterTuple(Schema outSchema, Worker aWorker) {
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple = new VTuple(outSchema.size());
-    NodeResource aResource = aWorker.getAvailableResource();
-    
+
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
       Column column = columns.get(fieldId);
       

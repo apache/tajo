@@ -91,7 +91,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     DefaultResourceCalculator calculator = new DefaultResourceCalculator();
     int maxContainer = calculator.computeAvailableContainers(workerContext.getNodeResourceManager().getTotalResource(),
         NodeResources.createResource(tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY)));
-    this.queueingThreshold = (int) Math.ceil(maxContainer / 2);
+    this.queueingThreshold = (int) Math.floor(maxContainer * 0.5);
     LOG.info("Queueing threshold:" + queueingThreshold);
 
     updaterThread.start();
@@ -229,13 +229,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
                 break;
               }
 
-              if (!events.isEmpty()) {
-                // send current available resource;
-                lastResponse = sendHeartbeat(createResourceReport().build());
-              } else {
-                // send ping;
-                lastResponse = sendHeartbeat(createResourceReport().build());
-              }
+              // send current available resource;
+              lastResponse = sendHeartbeat(createResourceReport().build());
 
             } else if (lastResponse.getCommand() == ResponseCommand.MEMBERSHIP) {
               // Membership changed

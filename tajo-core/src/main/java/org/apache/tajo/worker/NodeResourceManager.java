@@ -73,7 +73,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
       case ALLOCATE: {
         if (event.getResourceType() == NodeResourceEvent.ResourceType.TASK) {
           // allocate task resource
-          NodeResourceAllocateEvent allocateEvent = (NodeResourceAllocateEvent) event;
+          NodeResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, NodeResourceAllocateEvent.class);
           BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
           for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
             NodeResource resource = new NodeResource(request.getResource());
@@ -102,7 +102,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
         break;
       }
       case DEALLOCATE: {
-        NodeResourceDeallocateEvent deallocateEvent = (NodeResourceDeallocateEvent) event;
+        NodeResourceDeallocateEvent deallocateEvent = TUtil.checkTypeAndGet(event, NodeResourceDeallocateEvent.class);
         release(deallocateEvent.getResource());
 
         if (deallocateEvent.getResourceType() == NodeResourceEvent.ResourceType.QUERY_MASTER) {
