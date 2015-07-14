@@ -181,7 +181,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private void validateConf(TajoConf conf) {
     // validate node memory allocation setting
     int minMem = conf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
-    int minQMMem = conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY);
+    int minQMMem = conf.getIntVar(TajoConf.ConfVars.QUERYMASTER_MINIMUM_MEMORY);
     int maxMem = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB);
 
     if (minMem <= 0 || minQMMem <= 0 || minMem + minQMMem > maxMem) {
@@ -189,7 +189,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
           + " allocation configuration"
           + ", " + TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY.varname
           + "=" + minMem
-          + ", " + TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY.varname
+          + ", " + TajoConf.ConfVars.QUERYMASTER_MINIMUM_MEMORY.varname
           + "=" + minQMMem
           + ", " + TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname
           + "=" + maxMem + ", min and max should be greater than 0"

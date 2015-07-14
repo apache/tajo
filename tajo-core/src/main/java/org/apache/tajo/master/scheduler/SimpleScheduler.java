@@ -50,7 +50,7 @@ import static org.apache.tajo.ipc.QueryCoordinatorProtocol.AllocationResourcePro
 public class SimpleScheduler extends AbstractQueryScheduler {
 
   private static final Log LOG = LogFactory.getLog(SimpleScheduler.class);
-
+  private static final float PARALLEL_QUERY_LIMIT = 0.5f;
   private static final Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 
   private volatile boolean isStopped = false;
@@ -82,7 +82,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
   private void initScheduler(TajoConf conf) {
     this.minResource.setMemory(conf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY)).setVirtualCores(1);
-    this.qmMinResource.setMemory(conf.getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MINIMUM_MEMORY)).setVirtualCores(1);
+    this.qmMinResource.setMemory(conf.getIntVar(TajoConf.ConfVars.QUERYMASTER_MINIMUM_MEMORY)).setVirtualCores(1);
     updateResource();
     this.queryProcessor.setName("Query Processor");
   }
@@ -330,15 +330,15 @@ public class SimpleScheduler extends AbstractQueryScheduler {
         try {
           query = queryQueue.take();
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          LOG.warn(e.getMessage(), e);
           break;
         }
         //TODO get by assigned queue
         int maxAvailable = getResourceCalculator().computeAvailableContainers(
             getMaximumResourceCapability(), getQMMinimumResourceCapability());
 
-        // check maximum parallel running queries
-        if (assignedQueryMasterMap.size() * 2 >= maxAvailable) {
+        // check maximum parallel running queries. allow 50% parallel running
+        if (assignedQueryMasterMap.size() >= Math.floor(maxAvailable * PARALLEL_QUERY_LIMIT)) {
           queryQueue.add(query);
           synchronized (this) {
             try {

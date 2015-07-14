@@ -155,7 +155,7 @@ public class TajoConf extends Configuration {
     RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120), // seconds
 
     // QueryMaster resource
-    TAJO_QUERYMASTER_MINIMUM_MEMORY("tajo.qm.resource.min.memory-mb", 500, Validators.min("64")),
+    QUERYMASTER_MINIMUM_MEMORY("tajo.qm.resource.min.memory-mb", 500, Validators.min("64")),
 
     // Worker task resource
     TASK_RESOURCE_MINIMUM_MEMORY("tajo.task.resource.min.memory-mb", 500, Validators.min("64")),
