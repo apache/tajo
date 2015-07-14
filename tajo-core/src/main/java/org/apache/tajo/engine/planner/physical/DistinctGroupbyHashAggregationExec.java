@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -35,19 +37,18 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
+
+  private static final Log LOG = LogFactory.getLog(DistinctGroupbyHashAggregationExec.class);
   private boolean finished = false;
 
   private final DistinctGroupbyNode plan;
   private HashAggregator[] hashAggregators;
-//  private int distinctGroupingKeyIds[];
-  private Column[] distinctGroupingKeyColumns;
+
+  private Set<Column> distinctGroupingKeyColumnSet;
   private boolean first = true;
   private int groupbyNodeNum;
   private int outputColumnNum;
@@ -57,6 +58,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   private int[] resultColumnIdIndexes;
 
   private Tuple outTuple;
+
+  private SimpleProjector outerKeyExtractor;
 
   public DistinctGroupbyHashAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
       throws IOException {
@@ -68,27 +71,17 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-//    List<Integer> distinctGroupingKeyIdList = new ArrayList<Integer>();
-    List<Column> distinctGroupingKeyColumnList = new ArrayList<Column>();
-    for (Column col: plan.getGroupingColumns()) {
-//      int keyIndex;
-//      if (col.hasQualifier()) {
-//        keyIndex = inSchema.getColumnId(col.getQualifiedName());
-//      } else {
-//        keyIndex = inSchema.getColumnIdByName(col.getSimpleName());
+    distinctGroupingKeyColumnSet = TUtil.newHashSet(plan.getGroupingColumns());
+//    distinctGroupingKeyColumnSet = TUtil.newHashSet();
+//    for (Column col: plan.getGroupingColumns()) {
+//      if (!distinctGroupingKeyColumnSet.contains(col)) {
+//        distinctGroupingKeyColumnSet.add(col);
 //      }
-      if (!distinctGroupingKeyColumnList.contains(col)) {
-//        distinctGroupingKeyIdList.add(keyIndex);
-        distinctGroupingKeyColumnList.add(col);
-      }
-    }
-    distinctGroupingKeyColumns = new Column[distinctGroupingKeyColumnList.size()];
-    distinctGroupingKeyColumns = distinctGroupingKeyColumnList.toArray(distinctGroupingKeyColumns);
-//    int idx = 0;
-//    distinctGroupingKeyIds = new int[distinctGroupingKeyIdList.size()];
-//    for (Integer intVal: distinctGroupingKeyIdList) {
-//      distinctGroupingKeyIds[idx++] = intVal;
 //    }
+    Column[] distinctGroupingKeyColumns = new Column[distinctGroupingKeyColumnSet.size()];
+    distinctGroupingKeyColumns = distinctGroupingKeyColumnSet.toArray(distinctGroupingKeyColumns);
+
+    outerKeyExtractor = new SimpleProjector(inSchema, distinctGroupingKeyColumns);
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
     groupbyNodeNum = groupbyNodes.size();
@@ -160,16 +153,17 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
     // aggregation with single grouping key
     for (int i = 0; i < hashAggregators.length; i++) {
-      if (!hashAggregators[i].iterator.hasNext()) {
+      HashAggregator hashAggregator = hashAggregators[i];
+      if (!hashAggregator.iterator.hasNext()) {
         nullCount++;
         tupleSlots.add(new TupleList());
         continue;
       }
-      Entry<Tuple, TupleMap<FunctionContext[]>> entry = hashAggregators[i].iterator.next();
+      Entry<Tuple, TupleMap<FunctionContext[]>> entry = hashAggregator.iterator.next();
       if (distinctGroupingKey == null) {
         distinctGroupingKey = entry.getKey();
       }
-      TupleList aggregatedTuples = hashAggregators[i].aggregate(entry.getValue());
+      TupleList aggregatedTuples = hashAggregator.aggregate(entry.getValue());
       tupleSlots.add(aggregatedTuples);
     }
 
@@ -215,11 +209,15 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     */
 
     // currentAggregatedTuples has tuples which has same group key.
-    currentAggregatedTuples = new TupleList();
+    if (currentAggregatedTuples == null) {
+      currentAggregatedTuples = new TupleList();
+    } else {
+      currentAggregatedTuples.clear();
+    }
     int listIndex = 0;
+    Tuple[] tuples = new Tuple[hashAggregators.length];
     while (true) {
       // Each item in tuples is VTuple. So the tuples variable is two dimensions(tuple[aggregator][datum]).
-      Tuple[] tuples = new Tuple[hashAggregators.length];
       for (int i = 0; i < hashAggregators.length; i++) {
         TupleList aggregatedTuples = tupleSlots.get(i);
         if (aggregatedTuples.size() > listIndex) {
@@ -245,14 +243,11 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
               // set group key tuple
               // Because each hashAggregator has different number of tuples,
               // sometimes getting group key from each hashAggregator will be null value.
-//              mergedTuple.put(mergeTupleIndex, distinctGroupingKey.asDatum(mergeTupleIndex));
               outTuple.put(mergeTupleIndex, distinctGroupingKey.asDatum(mergeTupleIndex));
             } else {
               if (tuples[i] != null) {
-//                mergedTuple.put(mergeTupleIndex, tuples[i].asDatum(j));
                 outTuple.put(mergeTupleIndex, tuples[i].asDatum(j));
               } else {
-//                mergedTuple.put(mergeTupleIndex, NullDatum.get());
                 outTuple.put(mergeTupleIndex, NullDatum.get());
               }
             }
@@ -285,7 +280,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   }
 
   private void loadChildHashTable() throws IOException {
-    Tuple tuple = null;
+    Tuple tuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
       for (int i = 0; i < hashAggregators.length; i++) {
         hashAggregators[i].compute(tuple);
@@ -308,12 +303,22 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     if (child != null) {
       child.close();
     }
+    if (currentAggregatedTuples != null) {
+      currentAggregatedTuples.clear();
+      currentAggregatedTuples = null;
+    }
+    if (distinctGroupingKeyColumnSet != null) {
+      distinctGroupingKeyColumnSet.clear();
+    }
   }
 
   public void rescan() throws IOException {
     finished = false;
     for (int i = 0; i < hashAggregators.length; i++) {
       hashAggregators[i].initFetch();
+    }
+    if (currentAggregatedTuples != null) {
+      currentAggregatedTuples.clear();
     }
   }
 
@@ -342,57 +347,31 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     private TupleMap<TupleMap<FunctionContext[]>> hashTable;
     private Iterator<Entry<Tuple, TupleMap<FunctionContext[]>>> iterator = null;
 
-    private SimpleProjector outerKeyExtractor;
-    private SimpleProjector innerKeyExtractor;
+    private final SimpleProjector innerKeyExtractor;
 
-//    private int groupingKeyIds[];
-    private Column[] groupingKeyColumns;
+//    private final Column[] groupingKeyColumns;
     private final int aggFunctionsNum;
     private final AggregationFunctionCallEval aggFunctions[];
 
     private final Tuple aggregatedTuple;
 
-    int tupleSize;
+    private final int tupleSize;
 
     public HashAggregator(GroupbyNode groupbyNode, Schema schema) throws IOException {
 
-      outerKeyExtractor = new SimpleProjector(schema, groupbyNode.getGroupingColumns());
       hashTable = new TupleMap<TupleMap<FunctionContext[]>>();
 
-//      List<Integer> distinctGroupingKeyIdSet = new ArrayList<Integer>();
-//      for (int i = 0; i < distinctGroupingKeyIds.length; i++) {
-//        distinctGroupingKeyIdSet.add(distinctGroupingKeyIds[i]);
-//      }
+      List<Column> groupingKeyColumnList = new ArrayList<Column>(distinctGroupingKeyColumnSet);
 
-      List<Column> distinctGroupingKeyColumnList = TUtil.newList(distinctGroupingKeyColumns);
-      List<Column> groupingKeyColumnList = new ArrayList<Column>(distinctGroupingKeyColumnList);
-
-//      List<Integer> groupingKeyIdList = new ArrayList<Integer>(distinctGroupingKeyIdSet);
       Column[] keyColumns = groupbyNode.getGroupingColumns();
       Column col;
       for (int idx = 0; idx < keyColumns.length; idx++) {
         col = keyColumns[idx];
-//        int keyIndex;
-//        if (col.hasQualifier()) {
-//          keyIndex = inSchema.getColumnId(col.getQualifiedName());
-//        } else {
-//          keyIndex = inSchema.getColumnIdByName(col.getSimpleName());
-//        }
-//        if (!distinctGroupingKeyIdSet.contains(keyIndex)) {
-//          groupingKeyIdList.add(keyIndex);
-//        }
-
-        if (!distinctGroupingKeyColumnList.contains(col)) {
+        if (!distinctGroupingKeyColumnSet.contains(col)) {
           groupingKeyColumnList.add(col);
         }
       }
-//      int index = 0;
-//      groupingKeyIds = new int[groupingKeyIdList.size()];
-//      for (Integer eachId : groupingKeyIdList) {
-//        groupingKeyIds[index++] = eachId;
-//      }
-      groupingKeyColumns = new Column[groupingKeyColumnList.size()];
-      groupingKeyColumns = groupingKeyColumnList.toArray(groupingKeyColumns);
+      Column[] groupingKeyColumns = groupingKeyColumnList.toArray(new Column[groupingKeyColumnList.size()]);
 
       if (groupbyNode.hasAggFunctions()) {
         aggFunctions = groupbyNode.getAggFunctions();
@@ -408,6 +387,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
       tupleSize = groupingKeyColumns.length + aggFunctionsNum;
       aggregatedTuple = new VTuple(groupingKeyColumns.length + aggFunctionsNum);
+      innerKeyExtractor = new SimpleProjector(inSchema, groupingKeyColumns);
     }
 
     public int getTupleSize() {
@@ -415,16 +395,18 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public void compute(Tuple tuple) throws IOException {
+//      LOG.info("hashTable.size(): " + hashTable.size());
       Tuple outerKeyTuple = outerKeyExtractor.project(tuple);
       TupleMap<FunctionContext[]> distinctEntry = hashTable.get(outerKeyTuple);
 
       if (distinctEntry == null) {
-        innerKeyExtractor = new SimpleProjector(inSchema, groupingKeyColumns);
         distinctEntry = new TupleMap<FunctionContext[]>();
         hashTable.put(outerKeyTuple, distinctEntry);
       }
-      Tuple keyTuple = innerKeyExtractor.project(tuple);
-      FunctionContext[] contexts = distinctEntry.get(keyTuple);
+
+//      LOG.info("distinctEntry.size(): " + distinctEntry.size());
+      Tuple innerKeyTuple = innerKeyExtractor.project(tuple);
+      FunctionContext[] contexts = distinctEntry.get(innerKeyTuple);
       if (contexts != null) {
         for (int i = 0; i < aggFunctions.length; i++) {
           aggFunctions[i].merge(contexts[i], tuple);
@@ -435,7 +417,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
           contexts[i] = aggFunctions[i].newContext();
           aggFunctions[i].merge(contexts[i], tuple);
         }
-        distinctEntry.put(keyTuple, contexts);
+        distinctEntry.put(innerKeyTuple, contexts);
       }
     }
 
