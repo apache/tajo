@@ -792,14 +792,15 @@ public class CatalogUtil {
   }
 
   /**
-   * Add partition or Drop partition
+   * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
+   * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
    *
    * @param tableName table name
    * @param columns partition column names
    * @param values partition values
    * @param location partition location
    * @param alterTableType ADD_PARTITION or DROP_PARTITION
-   * @return
+   * @return AlterTableDesc
    */
   public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
                                             String[] values, String location, AlterTableType alterTableType) {
