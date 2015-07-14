@@ -19,7 +19,6 @@
 package org.apache.tajo.client;
 
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.error.Errors;
@@ -27,14 +26,12 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.sql.SQLException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-@Category(IntegrationTest.class)
 @NotThreadSafe
 public class TestTajoClientFailures {
   private static TajoTestingCluster cluster;
