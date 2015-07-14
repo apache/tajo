@@ -18,8 +18,6 @@
 
 package org.apache.tajo.plan.joinorder;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
@@ -36,12 +34,11 @@ import java.util.Set;
 /**
  * This is a greedy heuristic algorithm to find a bushy join tree. This algorithm finds
  * the best join order with join conditions and pushed-down join conditions to
- * all join operators.
+ * appropriate join operators.
  */
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
   public static final double DEFAULT_SELECTION_FACTOR = 0.1;
-  private static final Log LOG = LogFactory.getLog(GreedyHeuristicJoinOrderAlgorithm.class);
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
@@ -51,16 +48,21 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     for (RelationNode relationNode : block.getRelations()) {
       vertexes.add(new RelationVertex(relationNode));
     }
+
+    // As illustrated at LogicalOptimizer.JoinGraphBuilder, the join graph initially forms a kind of tree.
+    // This join graph can be updated by adding new join edges or removing existing join edges
+    // during join order optimization.
     JoinEdgeFinderContext context = new JoinEdgeFinderContext();
     JoinGraph joinGraph = graphContext.getJoinGraph();
     while (vertexes.size() > 1) {
       JoinEdge bestPair = getBestPair(context, graphContext, vertexes);
       JoinedRelationsVertex newVertex = new JoinedRelationsVertex(bestPair);
 
-      // Update root vertex if the previous root vertex is merged into a new one
+      // A root vertex is the join vertex where the graph traverse is started.
+      // The root vertex should be updated if the previous root vertex is merged into a new one.
       if (graphContext.getRootVertexes().contains(bestPair.getLeftVertex())) {
         graphContext.replaceRootVertexes(bestPair.getLeftVertex(), newVertex);
-      } else if (PlannerUtil.isSymmetricJoin(bestPair.getJoinType())
+      } else if (PlannerUtil.isCommutativeJoinType(bestPair.getJoinType())
           && graphContext.getRootVertexes().contains(bestPair.getRightVertex())) {
         graphContext.replaceRootVertexes(bestPair.getRightVertex(), newVertex);
       }
@@ -80,8 +82,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       // Find every join edges which should be updated.
       prepareGraphUpdate(graphContext, joinGraph, bestPair, newVertex, willBeAdded, willBeRemoved);
 
+      // Update the join graph
       updateGraph(graphContext, joinGraph, bestPair, willBeAdded, willBeRemoved);
 
+      // Update the join vertex set
       vertexes.remove(bestPair.getLeftVertex());
       vertexes.remove(bestPair.getRightVertex());
       vertexes.add(newVertex);
@@ -144,7 +148,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   /**
-   * Find the best join pair among all joinable operators in candidate set.
+   * Find the best join pair among all joinable operators in the candidate set.
    *
    * @param context
    * @param graphContext a join graph which consists of vertices and edges, where vertex is relation and
@@ -161,6 +165,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     double minNonCrossJoinCost = Double.MAX_VALUE;
     JoinEdge bestNonCrossJoin = null;
 
+    // Brute-force algorithm
+    // check every possible combination of join vertexes.
     for (JoinVertex outer : vertexes) {
       for (JoinVertex inner : vertexes) {
         if (outer.equals(inner)) {
@@ -169,6 +175,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
         context.reset();
         JoinEdge foundJoin = null;
+
+        // A root vertex is the join vertex where the graph traverse is started.
+        // For each root vertex, find possible joins between inner and outer join vertexes.
         for (JoinVertex eachRoot : graphContext.getRootVertexes()) {
           foundJoin = findJoin(context, graphContext, eachRoot, outer, inner);
           if (foundJoin != null) break;
@@ -214,7 +223,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
-    if (PlannerUtil.isSymmetricJoin(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
+    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
       double leftCost = getCost(edge.getLeftVertex());
       double rightCost = getCost(edge.getRightVertex());
       if (leftCost < rightCost) {
@@ -257,14 +266,21 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     JoinGraph joinGraph = graphContext.getJoinGraph();
 
-    // Find the matched edge from begin
+    // Get all interchangeable vertexes of the begin vertex.
+    // Please see JoinOrderingUtil.getAllInterchangeableVertexes() for interchangeable vertexes.
     Set<JoinVertex> interchangeableWithBegin = JoinOrderingUtil.getAllInterchangeableVertexes(graphContext, begin);
 
+    // If the left search target is interchangeable with the begin vertex, check every outgoing edges
+    // from the left target to find the join edge who has the right search target as its right vertex.
     if (interchangeableWithBegin.contains(leftTarget)) {
       List<JoinEdge> edgesFromLeftTarget = joinGraph.getOutgoingEdges(leftTarget);
       if (edgesFromLeftTarget != null) {
         for (JoinEdge edgeFromLeftTarget : edgesFromLeftTarget) {
           edgeFromLeftTarget = JoinOrderingUtil.updateQualIfNecessary(graphContext, edgeFromLeftTarget);
+
+          // Find all interchangeable vertexes with the right vertex of the current edge.
+          // If the right target vertex is interchangeable with the right vertex of the current edge,
+          // we've successfully found a join edge between the left and right targets.
           Set<JoinVertex> interchangeableWithRightVertex;
           if (edgeFromLeftTarget.getJoinType() == JoinType.INNER || edgeFromLeftTarget.getJoinType() == JoinType.CROSS) {
             interchangeableWithRightVertex = JoinOrderingUtil.getAllInterchangeableVertexes(graphContext,
@@ -279,6 +295,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
               if (joinGraph.isSymmetricJoinOnly()) {
                 // Since the targets of the both sides are searched with symmetric characteristics,
                 // the join type is assumed as CROSS.
+                // TODO: This must be improved to consider a case when a query involves multiple commutative and
+                // TODO: non-commutative joins. It will be done at TAJO-1683.
                 joinGraph.addJoin(graphContext, new JoinSpec(JoinType.CROSS), leftTarget, rightTarget);
                 return JoinOrderingUtil.updateQualIfNecessary(graphContext, joinGraph.getEdge(leftTarget, rightTarget));
               }
@@ -291,6 +309,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       }
     }
 
+    // If the left search target is NOT interchangeable with the begin vertex,
+    // we cannot find any join edges from the current begin vertex, so search from other vertexes.
+    // Here, we should consider the associativity to check whether other joins can be executed earlier than the join
+    // who has the begin vertex as its left vertex.
     for (JoinVertex interchangeableVertex : interchangeableWithBegin) {
         List<JoinEdge> edges = joinGraph.getOutgoingEdges(interchangeableVertex);
         if (edges != null) {
@@ -331,27 +353,27 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         // TODO - improve cost estimation
         // for outer joins, filter factor does not matter
         case LEFT_OUTER:
-          factor *= SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
-              SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema());
+          factor *= SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
           break;
         case RIGHT_OUTER:
-          factor *= SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
-              SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema());
+          factor *= SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema());
           break;
         case FULL_OUTER:
-          factor *= Math.max(SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
-              SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema()),
-                  SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
-                  SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
+          factor *= Math.max(SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema()),
+                  SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+                  SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
           break;
         case INNER:
         default:
           // by default, do the same operation with that of inner join
           // filter factor * output tuple width / input tuple width
           factor *= Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size())
-              * SchemaUtil.estimateSchemaSize(joinEdge.getSchema())
-              / (SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema())
-              + SchemaUtil.estimateSchemaSize(joinEdge.getRightVertex().getSchema()));
+              * SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema())
+              / (SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema())
+              + SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
           break;
       }
       // cost = estimated input size * filter factor * (output tuple width / input tuple width)

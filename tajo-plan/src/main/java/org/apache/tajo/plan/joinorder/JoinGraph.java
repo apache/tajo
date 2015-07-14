@@ -34,7 +34,7 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
   public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) throws PlanningException {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
-    isSymmetricJoinOnly = PlannerUtil.isSymmetricJoin(edge.getJoinType());
+    isSymmetricJoinOnly &= PlannerUtil.isCommutativeJoinType(edge.getJoinType());
     this.addEdge(left, right, edge);
     List<JoinEdge> incomeToLeft = getIncomingEdges(left);
     if (incomeToLeft == null || incomeToLeft.isEmpty()) {

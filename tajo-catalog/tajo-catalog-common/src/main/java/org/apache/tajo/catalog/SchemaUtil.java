@@ -162,7 +162,13 @@ public class SchemaUtil {
     return sb.toString();
   }
 
-  public static int estimateSchemaSize(Schema schema) {
+  /**
+   * Calculate the row size from the given schema.
+   *
+   * @param schema input schema
+   * @return estimated row size in bytes
+   */
+  public static int estimateRowByteSizeWithSchema(Schema schema) {
     int size = 0;
     for (Column column : schema.fields) {
       size += getColByteSize(column);
@@ -170,6 +176,12 @@ public class SchemaUtil {
     return size;
   }
 
+  /**
+   * Return the size of the given column. For the variable-length columns, it returns a prefixed value.
+   *
+   * @param col input column
+   * @return column length in bytes
+   */
   public static int getColByteSize(Column col) {
     if (col.getDataType().getLength() > 0) {
       return col.getDataType().getLength();
