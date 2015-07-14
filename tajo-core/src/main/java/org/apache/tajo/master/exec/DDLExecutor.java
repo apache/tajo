@@ -29,10 +29,10 @@ import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
-import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster;
@@ -405,7 +405,7 @@ public class DDLExecutor {
 
     Path partitionPath = null;
     TableDesc desc = null;
-    Pair<List<PartitionKey>, String> pair = null;
+    Pair<List<PartitionKeyProto>, String> pair = null;
     CatalogProtos.PartitionDescProto partitionDescProto = null;
 
     if (alterTable.getAlterTableOpType() == AlterTableOpType.RENAME_TABLE

@@ -24,11 +24,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
@@ -808,7 +808,7 @@ public class CatalogUtil {
     alterTableDesc.setTableName(tableName);
 
     PartitionDesc partitionDesc = new PartitionDesc();
-    Pair<List<PartitionKey>, String> pair = getPartitionKeyNamePair(columns, values);
+    Pair<List<PartitionKeyProto>, String> pair = getPartitionKeyNamePair(columns, values);
 
     partitionDesc.setPartitionKeys(pair.getFirst());
     partitionDesc.setPartitionName(pair.getSecond());
@@ -834,24 +834,24 @@ public class CatalogUtil {
    * @param values partition values
    * @return partition key/value list and partition name
    */
-  public static Pair<List<PartitionKey>, String> getPartitionKeyNamePair(String[] columns, String[] values) {
-    Pair<List<PartitionKey>, String> pair = null;
-    List<PartitionKey> partitionKeyList = TUtil.newList();
+  public static Pair<List<PartitionKeyProto>, String> getPartitionKeyNamePair(String[] columns, String[] values) {
+    Pair<List<PartitionKeyProto>, String> pair = null;
+    List<PartitionKeyProto> partitionKeyList = TUtil.newList();
 
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < columns.length; i++) {
-      PartitionKey partitionKey = new PartitionKey();
-      partitionKey.setColumnName(columns[i]);
-      partitionKey.setPartitionValue(values[i]);
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(columns[i]);
+      builder.setPartitionValue(values[i]);
 
       if (i > 0) {
         sb.append("/");
       }
       sb.append(columns[i]).append("=").append(values[i]);
-      partitionKeyList.add(partitionKey);
+      partitionKeyList.add(builder.build());
     }
 
-    pair = new Pair<List<PartitionKey>, String>(partitionKeyList, sb.toString());
+    pair = new Pair<List<PartitionKeyProto>, String>(partitionKeyList, sb.toString());
     return pair;
   }
 
