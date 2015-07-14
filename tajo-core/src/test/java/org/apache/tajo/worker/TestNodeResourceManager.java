@@ -258,7 +258,6 @@ public class TestNodeResourceManager {
                   fail(e.getMessage());
                 }
               }
-              System.out.println(Thread.currentThread().getName() + " complete requests: " + complete);
               totalComplete.addAndGet(complete);
             }
           })
@@ -269,8 +268,6 @@ public class TestNodeResourceManager {
       future.get();
     }
 
-    System.out.println(parallelCount + " Thread, completed requests: " + totalComplete.get() + ", canceled requests:"
-        + totalCanceled.get() + ", " + +(System.currentTimeMillis() - startTime) + " ms elapsed");
     executor.shutdown();
     assertEquals(taskSize, totalComplete.get());
   }
