@@ -19,8 +19,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
@@ -57,8 +55,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestProgressExternalSortExec {
-  private static final Log LOG = LogFactory.getLog(TestProgressExternalSortExec.class);
-
   private TajoConf conf;
   private TajoTestingCluster util;
   private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestProgressExternalSortExec";
