@@ -143,8 +143,8 @@ public class TestBSTIndexExec {
     writer.close();
 
     TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        sm.getTableUri(TajoConstants.DEFAULT_DATABASE_NAME, "employee"));
+      CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
+      tablePath.toUri());
     catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();

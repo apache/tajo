@@ -42,16 +42,22 @@ public class NettyRestServerListener implements RpcEventListener {
 
   @Override
   public void onAfterShutdown(Object obj) {
-    ApplicationHandler applicationHandler = new ApplicationHandler(container.getConfiguration());
-    ContainerLifecycleListener lifecycleListener = ConfigHelper.getContainerLifecycleListener(applicationHandler);
-    lifecycleListener.onShutdown(container);
+    if (container instanceof NettyRestHandlerContainer) {
+      NettyRestHandlerContainer restHandlerContainer = ((NettyRestHandlerContainer) container);
+      ApplicationHandler applicationHandler = restHandlerContainer.getApplicationHandler();
+      ContainerLifecycleListener lifecycleListener = ConfigHelper.getContainerLifecycleListener(applicationHandler);
+      lifecycleListener.onShutdown(container);
+    }
   }
 
   @Override
   public void onAfterStart(Object obj) {
-    ApplicationHandler applicationHandler = new ApplicationHandler(container.getConfiguration());
-    ContainerLifecycleListener lifecycleListener = ConfigHelper.getContainerLifecycleListener(applicationHandler);
-    lifecycleListener.onStartup(container);
+    if (container instanceof NettyRestHandlerContainer) { 
+      NettyRestHandlerContainer restHandlerContainer = ((NettyRestHandlerContainer) container);
+      ApplicationHandler applicationHandler = restHandlerContainer.getApplicationHandler();
+      ContainerLifecycleListener lifecycleListener = ConfigHelper.getContainerLifecycleListener(applicationHandler);
+      lifecycleListener.onStartup(container);
+    }
   }
 
   @Override
