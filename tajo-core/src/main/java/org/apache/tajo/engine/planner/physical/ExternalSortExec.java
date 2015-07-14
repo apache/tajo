@@ -686,7 +686,7 @@ public class ExternalSortExec extends SortExec {
     }
 
     protected Tuple prepare(int index, Tuple tuple) {
-      return tuple == null ? null : tuple;
+      return tuple;
     }
 
     protected int compare() {
@@ -728,6 +728,8 @@ public class ExternalSortExec extends SortExec {
       IOUtils.cleanup(LOG, leftScan, rightScan);
       getInputStats();
       mergerProgress = 1.0f;
+      leftTuple = null;
+      rightTuple = null;
       setState(State.CLOSED);
     }
 

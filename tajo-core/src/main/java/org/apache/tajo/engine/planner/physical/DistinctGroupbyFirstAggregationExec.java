@@ -23,13 +23,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Int2Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.planner.SimpleProjector;
-import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.DistinctGroupbyNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
+import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
@@ -182,14 +181,17 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
   private void prepareInputData() throws IOException {
     Tuple tuple;
+    Column[] groupingColumns = plan.getGroupingColumns();
+    SimpleProjector projector = new SimpleProjector(inSchema, groupingColumns);
+
     while(!context.isStopped() && (tuple = child.next()) != null) {
 
       // TODO
       // distinctAggrDatas and nonDistinctAggrDatas have the same grouping key (please see the instantiation of them),
       // so the grouping key can be extracted by either distinctAggrDatas or nonDistinctAggrDatas.
       // Here, we use nonDistinctHashAggregator.
-//      Tuple groupingKey = nonDistinctHashAggregator.nonDistinctAggrDatas.getKey(tuple);
-      Tuple groupingKey = nonDistinctGroupingKeyExtractor.project(tuple);
+
+      Tuple groupingKey = projector.project(tuple);
       for (int i = 0; i < distinctAggregators.length; i++) {
         distinctAggregators[i].compute(groupingKey, tuple);
       }
@@ -270,10 +272,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       }
 
       outTuple = new VTuple(aggFunctionsNum);
-      dummyTuple = new VTuple(aggFunctionsNum);
-      for (int i = 0; i < aggFunctionsNum; i++) {
-        dummyTuple.put(i, NullDatum.get());
-      }
+      dummyTuple = NullTuple.create(aggFunctionsNum);
       tupleLength = aggFunctionsNum;
     }
 
@@ -360,7 +359,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 //      this.distinctKeyIndexes = new int[distinctGroupingKeyIndexSet.size()];
       Column[] distinctKeyColumns = new Column[distinctGroupingKeyIndexSet.size()];
       distinctKeyColumns = distinctGroupingKeyIndexSet.toArray(distinctKeyColumns);
-      this.dummyTuple = TupleUtil.createNullPaddedTuple(distinctGroupingKeyIndexSet.size());
+      this.dummyTuple = NullTuple.create(distinctGroupingKeyIndexSet.size());
 //      for (Integer eachId : distinctGroupingKeyIndexSet) {
 //        this.distinctKeyIndexes[index++] = eachId;
 //      }
