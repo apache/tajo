@@ -75,6 +75,10 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
     lifecycleListener = ConfigHelper.getContainerLifecycleListener(applicationHandler);
   }
 
+  public ApplicationHandler getApplicationHandler() {
+    return applicationHandler;
+  }
+
   @Override
   public ResourceConfig getConfiguration() {
     return applicationHandler.getConfiguration();
