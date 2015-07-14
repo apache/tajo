@@ -29,6 +29,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
@@ -36,9 +38,12 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.List;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
@@ -156,7 +161,43 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     openAppender(0);
 
+    addPartition(partition);
+
     return appender;
+  }
+
+  /**
+   * Add partition information to TableStats for storing to CatalogStore.
+   *
+   * @param partition partition name
+   * @throws IOException
+   */
+  private void addPartition(String partition) throws IOException {
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partition);
+
+    String[] partitionKeyPairs = partition.split("/");
+    List<PartitionKey> partitionKeyList = TUtil.newList();
+    for(String partitionKeyPair: partitionKeyPairs) {
+      String[] keyValue = partitionKeyPair.split("=");
+      PartitionKey partitionKey = new PartitionKey(keyValue[0], keyValue[1]);
+      partitionKeyList.add(partitionKey);
+    }
+    partitionDesc.setPartitionKeys(partitionKeyList);
+
+    if (this.plan.getUri() == null) {
+      // In CTAS, the uri would be null. So,
+      String[] split = CatalogUtil.splitTableName(plan.getTableName());
+      int endIndex = storeTablePath.toString().indexOf(split[1]) + split[1].length();
+      String outputPath = storeTablePath.toString().substring(0, endIndex);
+      partitionDesc.setPath(outputPath + "/" + partition);
+    } else {
+      partitionDesc.setPath(this.plan.getUri().toString() + "/" + partition);
+    }
+
+    if(!appender.getStats().getPartitions().contains(partitionDesc)) {
+      appender.getStats().addPartition(partitionDesc);
+    }
   }
 
   public void openAppender(int suffixId) throws IOException {
