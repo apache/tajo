@@ -379,8 +379,14 @@ public class DDLExecutor {
     }
   }
 
+
   /**
-   * ALTER TABLE SET ...
+   * Execute alter table statement using catalog api.
+   *
+   * @param context
+   * @param queryContext
+   * @param alterTable
+   * @throws IOException
    */
   public void alterTable(TajoMaster.MasterContext context, final QueryContext queryContext,
                          final AlterTableNode alterTable) throws IOException {
@@ -479,11 +485,21 @@ public class DDLExecutor {
         alterTable.setLocation(partitionPath.toString());
       }
 
+      FileSystem fs = partitionPath.getFileSystem(context.getConf());
+
+      // If there is a directory which was assumed to be a partitioned directory and users don't input another
+      // location, this will throw exception.
+      Path assumedDirectory = new Path(desc.getUri().toString(), pair.getSecond());
+      boolean result1 = fs.exists(assumedDirectory);
+      boolean result2 = fs.exists(partitionPath);
+      if (fs.exists(assumedDirectory) && !assumedDirectory.equals(partitionPath)) {
+        throw new AlreadyExistsAssumedPartitionDirectoryException(assumedDirectory.toString());
+      }
+
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
         alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
 
       // If the partition's path doesn't exist, this would make the directory by force.
-      FileSystem fs = partitionPath.getFileSystem(context.getConf());
       if (!fs.exists(partitionPath)) {
         fs.mkdirs(partitionPath);
       }
