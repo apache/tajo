@@ -23,6 +23,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
 import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.datum.DateDatum;
+import org.apache.tajo.datum.Datum;
 
 import java.sql.Date;
 import java.sql.Timestamp;
@@ -495,7 +496,7 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     }
 
     @Override
-    void updateBinary(BlobDatum value) {
+    void updateBinary(Datum value) {
       sum += value.size();
     }
 
@@ -907,7 +908,7 @@ class ColumnStatisticsImpl implements ColumnStatistics {
     throw new UnsupportedOperationException("Can't update string");
   }
 
-  void updateBinary(BlobDatum value) {
+  void updateBinary(Datum value) {
     throw new UnsupportedOperationException("Can't update binary");
   }
 

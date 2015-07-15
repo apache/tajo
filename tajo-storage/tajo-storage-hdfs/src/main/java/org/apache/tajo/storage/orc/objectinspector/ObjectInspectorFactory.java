@@ -32,13 +32,18 @@ public class ObjectInspectorFactory {
   }
 
   public static ObjectInspector buildObjectInspectorByType(TajoDataTypes.Type dataType) throws UnsupportedException {
-    ObjectInspector oi;
+    ObjectInspector oi = null;
 
     switch(dataType) {
+      case BOOLEAN:
+        oi = new TajoBooleanObjectInspector();
+        break;
+
       case INT2:
         oi = new TajoShortObjectInspector();
         break;
 
+      case INET4:
       case INT4:
         oi = new TajoIntObjectInspector();
         break;
@@ -56,6 +61,7 @@ public class ObjectInspectorFactory {
         break;
 
       case TEXT:
+      case CHAR:
         oi = new TajoStringObjectInspector();
         break;
 
@@ -65,6 +71,15 @@ public class ObjectInspectorFactory {
 
       case DATE:
         oi = new TajoDateObjectInspector();
+        break;
+
+      case BLOB:
+      case PROTOBUF:
+        oi = new TajoBlobObjectInspector();
+        break;
+
+      case NULL_TYPE:
+        oi = new TajoNullObjectInspector();
         break;
 
       default:

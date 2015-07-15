@@ -139,6 +139,7 @@ public class TestStorages {
         {"RAW", false, true, true},
         {"RCFILE", true, true, false},
         {"PARQUET", false, false, false},
+        {"ORC", true, true, false},
         {"SEQUENCEFILE", true, true, false},
         {"AVRO", false, false, false},
         {"TEXT", true, true, true},

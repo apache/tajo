@@ -996,7 +996,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
         long val;
-        if (datum instanceof Int4Datum) {
+        if (datum instanceof Int4Datum || datum instanceof Inet4Datum) {
           val = datum.asInt4();
         } else if (datum instanceof Int8Datum) {
           val = datum.asInt8();
@@ -1418,12 +1418,11 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     void write(Datum datum) throws IOException {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
-        BlobDatum val = (BlobDatum)datum;
-        stream.write(val.asByteArray(), 0, val.size());
-        length.write(val.size());
-        indexStatistics.updateBinary(val);
+        stream.write(datum.asByteArray(), 0, datum.size());
+        length.write(datum.size());
+        indexStatistics.updateBinary(datum);
         if (createBloomFilter) {
-          bloomFilter.addBytes(val.asByteArray(), val.size());
+          bloomFilter.addBytes(datum.asByteArray(), datum.size());
         }
       }
     }
@@ -1631,6 +1630,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       case PRIMITIVE:
         switch (((PrimitiveObjectInspector) inspector).getPrimitiveCategory()) {
           case BOOLEAN:
+          case VOID:
             return new BooleanTreeWriter(streamFactory.getNextColumnId(),
                 inspector, streamFactory, nullable);
           case BYTE:
@@ -1685,6 +1685,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       case PRIMITIVE:
         switch (((PrimitiveObjectInspector) treeWriter.inspector).
                  getPrimitiveCategory()) {
+          case VOID:
           case BOOLEAN:
             type.setKind(OrcProto.Type.Kind.BOOLEAN);
             break;

@@ -247,6 +247,15 @@ public class ORCScanner extends FileScanner {
 
         return DatumFactory.createBlob(((SliceVector) vector).vector[currentPosInBatch].getBytes());
 
+      case PROTOBUF:
+        try {
+          return ProtobufDatumFactory.createDatum(type,
+            ((SliceVector) vector).vector[currentPosInBatch].getBytes());
+        } catch (InvalidProtocolBufferException e) {
+          LOG.error("ERROR", e);
+          return NullDatum.get();
+        }
+
       case TIMESTAMP:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
@@ -269,9 +278,6 @@ public class ORCScanner extends FileScanner {
 
       case NULL_TYPE:
         return NullDatum.get();
-
-      case DATE:
-        return new DateDatum((int)((LongVector)vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
 
       default:
         throw new UnsupportedException("This data type is not supported currently: "+type.toString());
