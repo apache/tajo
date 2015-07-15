@@ -45,7 +45,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   private final DistinctGroupbyNode plan;
   private HashAggregator[] hashAggregators;
 
-  private Set<Column> distinctGroupingKeyColumnSet;
+//  private Set<Column> distinctGroupingKeyColumnSet;
+  private List<Column> distinctGroupingKeyColumnSet;
   private boolean first = true;
   private int groupbyNodeNum;
   private int outputColumnNum;
@@ -68,7 +69,13 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    distinctGroupingKeyColumnSet = TUtil.newHashSet(plan.getGroupingColumns());
+//    distinctGroupingKeyColumnSet = TUtil.newHashSet(plan.getGroupingColumns());
+    distinctGroupingKeyColumnSet = TUtil.newList();
+    for (Column col : plan.getGroupingColumns()) {
+      if (!distinctGroupingKeyColumnSet.contains(col)) {
+        distinctGroupingKeyColumnSet.add(col);
+      }
+    }
 //    distinctGroupingKeyColumnSet = TUtil.newHashSet();
 //    for (Column col: plan.getGroupingColumns()) {
 //      if (!distinctGroupingKeyColumnSet.contains(col)) {
