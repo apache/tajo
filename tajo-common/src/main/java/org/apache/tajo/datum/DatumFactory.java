@@ -143,11 +143,8 @@ public class DatumFactory {
       case INET4:
         return createInet4(bytes);
       case PROTOBUF:
-        ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
-        Message.Builder builder = factory.newBuilder();
         try {
-          builder.mergeFrom(bytes);
-          return factory.createDatum(builder.build());
+          return ProtobufDatumFactory.createDatum(dataType, bytes);
         } catch (IOException e) {
           e.printStackTrace();
           throw new RuntimeException(e);
