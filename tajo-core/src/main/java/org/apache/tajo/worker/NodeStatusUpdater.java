@@ -90,8 +90,9 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     // if resource changed over than 50%, send reports
     DefaultResourceCalculator calculator = new DefaultResourceCalculator();
     int maxContainer = calculator.computeAvailableContainers(workerContext.getNodeResourceManager().getTotalResource(),
-        NodeResources.createResource(tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY)));
-    this.queueingThreshold = (int) Math.floor(maxContainer * 0.5);
+        NodeResources.createResource(tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY), 1));
+
+    this.queueingThreshold = Math.max((int) Math.floor(maxContainer * 0.5), 1);
     LOG.info("Queueing threshold:" + queueingThreshold);
 
     updaterThread.start();
@@ -188,7 +189,6 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
       long deadline = System.nanoTime() + unit.toNanos(timeout);
       int added = 0;
       while (added < numElements) {
-        added += heartBeatRequestQueue.drainTo(buffer, numElements - added);
         if (added < numElements) { // not enough elements immediately available; will have to wait
           NodeStatusEvent e = heartBeatRequestQueue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
           if (e == null) {
@@ -198,6 +198,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
           added++;
 
           if (e.getType() == NodeStatusEvent.EventType.FLUSH_REPORTS) {
+            added += heartBeatRequestQueue.drainTo(buffer, numElements - added);
             break;
           }
         }
@@ -224,7 +225,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
               try {
                 /* batch update to ResourceTracker */
-                drain(events, Math.max(queueingThreshold, 1), nextHeartBeatInterval, TimeUnit.MILLISECONDS);
+                drain(events, queueingThreshold, nextHeartBeatInterval, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
                 break;
               }
