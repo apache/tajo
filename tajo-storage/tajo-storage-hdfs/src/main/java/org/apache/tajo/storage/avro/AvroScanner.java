@@ -54,6 +54,7 @@ public class AvroScanner extends FileScanner {
   private List<Schema.Field> avroFields;
   private DataFileReader<GenericRecord> dataFileReader;
   private int[] projectionMap;
+  private Tuple outTuple;
 
   /**
    * Creates a new AvroScanner.
@@ -78,6 +79,7 @@ public class AvroScanner extends FileScanner {
       targets = schema.toArray();
     }
     prepareProjection(targets);
+    outTuple = new VTuple(projectionMap.length);
 
     avroSchema = AvroUtil.getAvroSchema(meta, conf);
     avroFields = avroSchema.getFields();
@@ -176,13 +178,13 @@ public class AvroScanner extends FileScanner {
       return null;
     }
 
-    Tuple tuple = new VTuple(projectionMap.length);
+    outTuple.clear();
     GenericRecord record = dataFileReader.next();
     for (int i = 0; i < projectionMap.length; ++i) {
       int columnIndex = projectionMap[i];
       Object value = record.get(columnIndex);
       if (value == null) {
-        tuple.put(i, NullDatum.get());
+        outTuple.put(i, NullDatum.get());
         continue;
       }
 
@@ -197,28 +199,28 @@ public class AvroScanner extends FileScanner {
       TajoDataTypes.Type tajoType = dataType.getType();
       switch (avroType) {
         case NULL:
-          tuple.put(i, NullDatum.get());
+          outTuple.put(i, NullDatum.get());
           break;
         case BOOLEAN:
-          tuple.put(i, DatumFactory.createBool((Boolean)value));
+          outTuple.put(i, DatumFactory.createBool((Boolean) value));
           break;
         case INT:
-          tuple.put(i, convertInt(value, tajoType));
+          outTuple.put(i, convertInt(value, tajoType));
           break;
         case LONG:
-          tuple.put(i, DatumFactory.createInt8((Long)value));
+          outTuple.put(i, DatumFactory.createInt8((Long) value));
           break;
         case FLOAT:
-          tuple.put(i, DatumFactory.createFloat4((Float)value));
+          outTuple.put(i, DatumFactory.createFloat4((Float) value));
           break;
         case DOUBLE:
-          tuple.put(i, DatumFactory.createFloat8((Double)value));
+          outTuple.put(i, DatumFactory.createFloat8((Double) value));
           break;
         case BYTES:
-          tuple.put(i, convertBytes(value, tajoType, dataType));
+          outTuple.put(i, convertBytes(value, tajoType, dataType));
           break;
         case STRING:
-          tuple.put(i, convertString(value, tajoType));
+          outTuple.put(i, convertString(value, tajoType));
           break;
         case RECORD:
           throw new RuntimeException("Avro RECORD not supported.");
@@ -229,13 +231,13 @@ public class AvroScanner extends FileScanner {
         case UNION:
           throw new RuntimeException("Avro UNION not supported.");
         case FIXED:
-          tuple.put(i, new BlobDatum(((GenericFixed)value).bytes()));
+          outTuple.put(i, new BlobDatum(((GenericFixed) value).bytes()));
           break;
         default:
           throw new RuntimeException("Unknown type.");
       }
     }
-    return tuple;
+    return outTuple;
   }
 
   /**
@@ -253,6 +255,7 @@ public class AvroScanner extends FileScanner {
     if (dataFileReader != null) {
       dataFileReader.close();
     }
+    outTuple = null;
   }
 
   /**

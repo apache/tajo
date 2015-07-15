@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -42,7 +40,6 @@ import java.util.Map.Entry;
 
 public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
-  private static final Log LOG = LogFactory.getLog(DistinctGroupbyHashAggregationExec.class);
   private boolean finished = false;
 
   private final DistinctGroupbyNode plan;
@@ -215,8 +212,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       currentAggregatedTuples.clear();
     }
     int listIndex = 0;
-    Tuple[] tuples = new Tuple[hashAggregators.length];
     while (true) {
+      Tuple[] tuples = new Tuple[hashAggregators.length];
       // Each item in tuples is VTuple. So the tuples variable is two dimensions(tuple[aggregator][datum]).
       for (int i = 0; i < hashAggregators.length; i++) {
         TupleList aggregatedTuples = tupleSlots.get(i);
@@ -274,9 +271,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     fetchedRows++;
-    Tuple tuple = currentAggregatedTuples.get(currentAggregatedTupleIndex++);
-
-    return tuple;
+    return currentAggregatedTuples.get(currentAggregatedTupleIndex++);
   }
 
   private void loadChildHashTable() throws IOException {
@@ -395,7 +390,6 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public void compute(Tuple tuple) throws IOException {
-//      LOG.info("hashTable.size(): " + hashTable.size());
       Tuple outerKeyTuple = outerKeyExtractor.project(tuple);
       TupleMap<FunctionContext[]> distinctEntry = hashTable.get(outerKeyTuple);
 
@@ -404,7 +398,6 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
         hashTable.put(outerKeyTuple, distinctEntry);
       }
 
-//      LOG.info("distinctEntry.size(): " + distinctEntry.size());
       Tuple innerKeyTuple = innerKeyExtractor.project(tuple);
       FunctionContext[] contexts = distinctEntry.get(innerKeyTuple);
       if (contexts != null) {

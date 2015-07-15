@@ -119,6 +119,8 @@ public class RowFile {
         buffer.flip();
       }
 
+      tuple = new VTuple(schema.size());
+
       super.init();
     }
 
@@ -182,7 +184,6 @@ public class RowFile {
       }
 
       int i;
-      tuple = new VTuple(schema.size());
 
       int nullFlagSize = buffer.getShort();
       byte[] nullFlagBytes = new byte[nullFlagSize];
@@ -196,6 +197,7 @@ public class RowFile {
         }
       }
 
+      tuple.clear();
       Datum datum;
       Column col;
       for (i = 0; i < schema.size(); i++) {

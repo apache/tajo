@@ -85,6 +85,8 @@ public class HBaseScanner implements Scanner {
   private int[] rowKeyFieldIndexes;
   private char rowKeyDelimiter;
 
+  private Tuple outTuple;
+
   public HBaseScanner (Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
     Preconditions.checkNotNull(conf);
     Preconditions.checkNotNull(schema);
@@ -118,6 +120,8 @@ public class HBaseScanner implements Scanner {
     if (targets == null) {
       targets = schema.toArray();
     }
+
+    outTuple = new VTuple(targets.length);
 
     columnMapping = new ColumnMapping(schema, meta.getOptions());
     targetIndexes = new int[targets.length];
@@ -205,13 +209,13 @@ public class HBaseScanner implements Scanner {
       scanResultIndex = 0;
     }
 
+    outTuple.clear();
     Result result = scanResults[scanResultIndex++];
-    Tuple resultTuple = new VTuple(targetIndexes.length);
     for (int i = 0; i < targetIndexes.length; i++) {
-      resultTuple.put(i, getDatum(result, targetIndexes[i]));
+      outTuple.put(i, getDatum(result, targetIndexes[i]));
     }
     numRows++;
-    return resultTuple;
+    return outTuple;
   }
 
   private Datum getDatum(Result result, int fieldId) throws IOException {

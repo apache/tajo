@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ByteBufLineReader implements Closeable {
-  private static int DEFAULT_BUFFER = 64 * 1024;
+  public static int DEFAULT_BUFFER = 64 * 1024;
 
   private int bufferSize;
   private long readBytes;

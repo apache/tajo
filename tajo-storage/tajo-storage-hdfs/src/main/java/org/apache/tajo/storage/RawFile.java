@@ -58,7 +58,7 @@ public class RawFile {
 
     private ByteBuffer buffer;
     private ByteBuf buf;
-    private Tuple tuple;
+    private Tuple outTuple;
 
     private int headerSize = 0; // Header size of a tuple
     private BitArray nullFlags;
@@ -105,7 +105,7 @@ public class RawFile {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      tuple = new VTuple(columnTypes.length);
+      outTuple = new VTuple(columnTypes.length);
       nullFlags = new BitArray(schema.size());
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength(); // The middle 2 bytes is for NullFlagSize
 
@@ -271,54 +271,56 @@ public class RawFile {
         }
       }
 
+      outTuple.clear();
+
       for (int i = 0; i < columnTypes.length; i++) {
         // check if the i'th column is null
         if (nullFlags.get(i)) {
-          tuple.put(i, DatumFactory.createNullDatum());
+          outTuple.put(i, DatumFactory.createNullDatum());
           continue;
         }
 
         switch (columnTypes[i].getType()) {
           case BOOLEAN :
-            tuple.put(i, DatumFactory.createBool(buffer.get()));
+            outTuple.put(i, DatumFactory.createBool(buffer.get()));
             break;
 
           case BIT :
-            tuple.put(i, DatumFactory.createBit(buffer.get()));
+            outTuple.put(i, DatumFactory.createBit(buffer.get()));
             break;
 
           case CHAR :
             int realLen = readRawVarint32();
             byte[] buf = new byte[realLen];
             buffer.get(buf);
-            tuple.put(i, DatumFactory.createChar(buf));
+            outTuple.put(i, DatumFactory.createChar(buf));
             break;
 
           case INT2 :
-            tuple.put(i, DatumFactory.createInt2(buffer.getShort()));
+            outTuple.put(i, DatumFactory.createInt2(buffer.getShort()));
             break;
 
           case INT4 :
-            tuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
+            outTuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
             break;
 
           case INT8 :
-            tuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
+            outTuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
             break;
 
           case FLOAT4 :
-            tuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
+            outTuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
             break;
 
           case FLOAT8 :
-            tuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
+            outTuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
             break;
 
           case TEXT : {
             int len = readRawVarint32();
             byte [] strBytes = new byte[len];
             buffer.get(strBytes);
-            tuple.put(i, DatumFactory.createText(strBytes));
+            outTuple.put(i, DatumFactory.createText(strBytes));
             break;
           }
 
@@ -326,7 +328,7 @@ public class RawFile {
             int len = readRawVarint32();
             byte [] rawBytes = new byte[len];
             buffer.get(rawBytes);
-            tuple.put(i, DatumFactory.createBlob(rawBytes));
+            outTuple.put(i, DatumFactory.createBlob(rawBytes));
             break;
           }
 
@@ -338,22 +340,22 @@ public class RawFile {
             ProtobufDatumFactory factory = ProtobufDatumFactory.get(columnTypes[i]);
             Message.Builder builder = factory.newBuilder();
             builder.mergeFrom(rawBytes);
-            tuple.put(i, factory.createDatum(builder.build()));
+            outTuple.put(i, factory.createDatum(builder.build()));
             break;
           }
 
           case INET4 :
             byte [] ipv4Bytes = new byte[4];
             buffer.get(ipv4Bytes);
-            tuple.put(i, DatumFactory.createInet4(ipv4Bytes));
+            outTuple.put(i, DatumFactory.createInet4(ipv4Bytes));
             break;
 
           case DATE: {
             int val = buffer.getInt();
             if (val < Integer.MIN_VALUE + 1) {
-              tuple.put(i, DatumFactory.createNullDatum());
+              outTuple.put(i, DatumFactory.createNullDatum());
             } else {
-              tuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
+              outTuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
             }
             break;
           }
@@ -361,14 +363,14 @@ public class RawFile {
           case TIMESTAMP: {
             long val = buffer.getLong();
             if (val < Long.MIN_VALUE + 1) {
-              tuple.put(i, DatumFactory.createNullDatum());
+              outTuple.put(i, DatumFactory.createNullDatum());
             } else {
-              tuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
+              outTuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
             }
             break;
           }
           case NULL_TYPE:
-            tuple.put(i, NullDatum.get());
+            outTuple.put(i, NullDatum.get());
             break;
 
           default:
@@ -380,7 +382,7 @@ public class RawFile {
       if(filePosition - buffer.remaining() >= endOffset){
         eos = true;
       }
-      return new VTuple(tuple);
+      return outTuple;
     }
 
     private void reSizeBuffer(int writableBytes){

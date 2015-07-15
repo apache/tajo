@@ -1230,4 +1230,14 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.INSERT, root.getChild().getType());
     return root.getChild();
   }
+
+  @Test
+  public final void test() {
+    QueryContext qc = createQueryContext();
+
+    Expr expr = sqlAnalyzer.parse(" select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey\n" +
+        " having total >= 2 or num = 3 order by l_orderkey, total, num");
+
+    System.out.println(expr.toJson());
+  }
 }

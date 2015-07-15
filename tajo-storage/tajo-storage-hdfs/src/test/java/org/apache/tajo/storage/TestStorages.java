@@ -420,8 +420,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
     meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
     if (storeType.equalsIgnoreCase("AVRO")) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
-                     TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");

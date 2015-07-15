@@ -26,10 +26,8 @@ import java.util.HashMap;
 
 public class TupleMap<E> extends HashMap<Tuple, E> {
 
-  private static final int DEFAULT_INIT_CAPACITY = 100000;
-
   public TupleMap() {
-    this(DEFAULT_INIT_CAPACITY);
+    super();
   }
 
   public TupleMap(int initialCapacity) {
@@ -43,7 +41,7 @@ public class TupleMap<E> extends HashMap<Tuple, E> {
   @Override
   public E put(@Nullable Tuple key, E value) {
     if (key != null) {
-      return super.put(new VTuple(key), value);
+      return super.put(new VTuple(key.getValues()), value);
     } else {
       return super.put(null, value);
     }

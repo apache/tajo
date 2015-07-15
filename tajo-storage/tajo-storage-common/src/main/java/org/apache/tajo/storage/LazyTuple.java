@@ -29,6 +29,7 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.Arrays;
 
+@Deprecated
 public class LazyTuple implements Tuple, Cloneable {
   private long offset;
   private Datum[] values;
