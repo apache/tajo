@@ -151,14 +151,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   public void schedule() throws Exception{
     try {
-      LinkedList<TaskRequestEvent> taskRequests = createTaskRequest();
-
       if (remainingScheduledObjectNum() == 0) {
         // all task is done, wait for stopping message
         synchronized (schedulingThread) {
           schedulingThread.wait(500);
         }
       } else {
+        LinkedList<TaskRequestEvent> taskRequests = createTaskRequest();
+
         if (taskRequests.size() == 0) {
           synchronized (schedulingThread) {
             schedulingThread.wait(schedulerDelay);
