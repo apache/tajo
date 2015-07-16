@@ -26,14 +26,17 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 
 public class HashLeftOuterJoinExec extends HashJoinExec {
 
   private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
+  private final List<Tuple> nullTupleList;
 
   public HashLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                PhysicalExec rightChild) {
     super(context, plan, leftChild, rightChild);
+    nullTupleList = nullTupleList(rightNumCols);
   }
 
   @Override
@@ -55,18 +58,17 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
       frameTuple.setLeft(leftTuple);
 
       if (leftFiltered(leftTuple)) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
 
       // getting corresponding right
-//      TupleList hashed = tupleSlots.get(toKey(leftTuple));
       TupleList hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (!rightTuples.hasNext()) {
         //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway
         //output a tuple with the nulls padded rightTuple
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       iterator = rightTuples;

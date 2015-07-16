@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -70,7 +71,8 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
 
     leftNumCols = outer.getSchema().size();
-    nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
+//    nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
+    nullPaddedTuple = NullTuple.create(leftNumCols);
   }
 
   /**
@@ -84,7 +86,9 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
    * @return
    * @throws IOException
    */
+  @Override
   public Tuple next() throws IOException {
+    Tuple outTuple;
 
     while (!context.isStopped()) {
       boolean newRound = false;
@@ -114,11 +118,12 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
           } else {
             // output a tuple with the nulls padded leftTuple
             frameTuple.set(nullPaddedTuple, rightTuple);
+            outTuple = projector.eval(frameTuple);
 
             // we simulate we found a match, which is exactly the null padded one
             rightTuple = rightChild.next();
 
-            return projector.eval(frameTuple);
+            return outTuple;
           }
         }
         //////////////////////////////////////////////////////////////////////
@@ -150,9 +155,10 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         }
         if (rightFiltered(rightTuple)) {
           frameTuple.set(nullPaddedTuple, rightTuple);
+          outTuple = projector.eval(frameTuple);
           rightTuple = null;
 
-          return projector.eval(frameTuple);
+          return outTuple;
         }
         initRightDone = true;
 
@@ -182,11 +188,12 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
             // before getting a new tuple from the right,  a left null padded tuple should be built
             // output a tuple with the nulls padded left tuple
             frameTuple.set(nullPaddedTuple, rightTuple);
+            outTuple = projector.eval(frameTuple);
 
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
             rightTuple = null;
-            return projector.eval(frameTuple);
+            return outTuple;
 
           } else if (cmp < 0) {
             // If the left tuple is lower than the right tuple, just move forward the left tuple cursor.
@@ -245,6 +252,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         } // if end false
         if (prevRightTuple != null && rightFiltered(prevRightTuple)) {
           frameTuple.set(nullPaddedTuple, prevRightTuple);
+          outTuple = projector.eval(frameTuple);
 
           // reset tuple slots for a new round
           leftTupleSlots.clear();
@@ -252,7 +260,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
           posRightTupleSlots = -1;
           posLeftTupleSlots = -1;
 
-          return projector.eval(frameTuple);
+          return outTuple;
         }
       } // if newRound
 

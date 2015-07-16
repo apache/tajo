@@ -24,12 +24,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.engine.planner.SimpleProjector;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -54,7 +51,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  private Projector projector;
+  private SimpleProjector keyProjector;
 
   public RangeShuffleFileWriteExec(final TaskAttemptContext context,
                                    final PhysicalExec child, final Schema inSchema, final Schema outSchema,
@@ -68,7 +65,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
 
 //    indexKeys = new int[sortSpecs.length];
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    projector = new Projector(context, inSchema, keySchema, null);
+    keyProjector = new SimpleProjector(inSchema, keySchema.toArray());
 
 //    Column col;
 //    for (int i = 0 ; i < sortSpecs.length; i++) {
@@ -104,12 +101,9 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     while(!context.isStopped() && (tuple = child.next()) != null) {
       offset = appender.getOffset();
       appender.addTuple(tuple);
-//        keyTuple = new VTuple(keySchema.size());
-//        RowStoreUtil.project(tuple, keyTuple, indexKeys);
-      keyTuple = projector.eval(tuple);
+      keyTuple = keyProjector.project(tuple);
       if (!prevKeyTuple.equals(keyTuple)) {
         indexWriter.write(keyTuple, offset);
-//          prevKeyTuple = keyTuple;
         prevKeyTuple.put(keyTuple.getValues());
       }
     }

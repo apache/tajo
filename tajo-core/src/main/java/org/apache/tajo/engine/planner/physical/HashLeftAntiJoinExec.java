@@ -23,6 +23,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Prepare a hash table of the NOT IN side of the join. Scan the FROM side table.
@@ -30,6 +31,8 @@ import java.io.IOException;
  * If not found, it returns the tuple of the FROM side table with null padding.
  */
 public class HashLeftAntiJoinExec extends HashJoinExec {
+
+  private final List<Tuple> nullTupleList = nullTupleList(0);
 
   public HashLeftAntiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec fromSideChild,
                               PhysicalExec notInSideChild) {
@@ -71,7 +74,7 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
 //      TupleList hashed = tupleSlots.get(toKey(leftTuple));
       TupleList hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       if (hashed == null || !rightFiltered(hashed).hasNext()) {
-        iterator = nullIterator(0);
+        iterator = nullTupleList.iterator();
       }
     }
     return null;

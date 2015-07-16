@@ -180,13 +180,13 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
   }
 
   /**
-   * Return an tuple iterator, containing a single NullTuple
+   * Create a list that contains a single null tuple.
    *
-   * @param width the width of tuple
-   * @return an tuple iterator, containing a single NullTuple
+   * @param width the width of null tuple which will be created.
+   * @return created list of a null tuple
    */
-  protected Iterator<Tuple> nullIterator(int width) {
-    return Arrays.asList(NullTuple.create(width)).iterator();
+  protected List<Tuple> nullTupleList(int width) {
+    return Arrays.asList(NullTuple.create(width));
   }
 
   @Override

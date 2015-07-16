@@ -26,15 +26,18 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, TupleList>> {
 
   private boolean finalLoop; // final loop for right unmatched
+  private final List<Tuple> nullTupleList;
 
   public HashFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                PhysicalExec inner) {
     super(context, plan, outer, inner);
+    nullTupleList = nullTupleList(rightNumCols);
   }
 
   public Iterator<Tuple> getUnmatchedRight() {
@@ -100,18 +103,18 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, Tupl
       frameTuple.setLeft(leftTuple);
 
       if (leftFiltered(leftTuple)) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       // getting corresponding right
       Pair<Boolean, TupleList> hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       if (hashed == null) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       Iterator<Tuple> rightTuples = rightFiltered(hashed.getSecond());
       if (!rightTuples.hasNext()) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       iterator = rightTuples;

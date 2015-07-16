@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -56,6 +57,9 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
   boolean endInPopulationStage = false;
   private boolean initRightDone = false;
 
+  private final Tuple leftNullTuple;
+  private final Tuple rightNullTuple;
+
   public MergeFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                 PhysicalExec rightChild, SortSpec[] leftSortKey, SortSpec[] rightSortKey) {
     super(context, plan, leftChild, rightChild);
@@ -77,9 +81,13 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
     prevLeftTuple = new VTuple(leftChild.getSchema().size());
     prevRightTuple = new VTuple(rightChild.getSchema().size());
+
+    leftNullTuple = NullTuple.create(leftNumCols);
+    rightNullTuple = NullTuple.create(rightNumCols);
   }
 
   public Tuple next() throws IOException {
+    Tuple outTuple;
 
     while (!context.isStopped()) {
       boolean newRound = false;
@@ -117,20 +125,22 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
           if((leftTuple == null) && (rightTuple != null)){
             // output a tuple with the nulls padded leftTuple
-            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-            frameTuple.set(nullPaddedTuple, rightTuple);
+//            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
+            frameTuple.set(leftNullTuple, rightTuple);
+            outTuple = projector.eval(frameTuple);
             // we simulate we found a match, which is exactly the null padded one
             rightTuple = rightChild.next();
-            return projector.eval(frameTuple);
+            return outTuple;
           }
 
           if((leftTuple != null) && (rightTuple == null)){
             // output a tuple with the nulls padded leftTuple
-            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-            frameTuple.set(leftTuple, nullPaddedTuple);
+//            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
+            frameTuple.set(leftTuple, rightNullTuple);
+            outTuple = projector.eval(frameTuple);
             // we simulate we found a match, which is exactly the null padded one
             leftTuple = leftChild.next();
-            return projector.eval(frameTuple);
+            return outTuple;
           }
         } // if end
 
@@ -173,19 +183,21 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
             //output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, rightTuple);
+            outTuple = projector.eval(frameTuple);
             // BEFORE RETURN, MOVE FORWARD
             rightTuple = rightChild.next();
             if(rightTuple == null) {
               end = true;
             }
 
-            return projector.eval(frameTuple);
+            return outTuple;
 
           } else if (cmp < 0) {
             // before getting a new tuple from the left,  a rightnullpadded tuple should be built
             // output a tuple with the nulls padded rightTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
             frameTuple.set(leftTuple, nullPaddedTuple);
+            outTuple = projector.eval(frameTuple);
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
             leftTuple = leftChild.next();
@@ -193,7 +205,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
               end = true;
             }
 
-            return projector.eval(frameTuple);
+            return outTuple;
 
           } // if (cmp < 0)
         } //while

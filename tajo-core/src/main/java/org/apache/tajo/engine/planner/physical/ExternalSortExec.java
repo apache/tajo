@@ -278,6 +278,7 @@ public class ExternalSortExec extends SortExec {
 
         if (memoryResident) { // if all sorted data reside in a main-memory table.
           TupleSorter sorter = getSorter(inMemoryTable);
+          LOG.info("inMemoryTable.size(): " + inMemoryTable.size());
           result = new MemTableScanner(sorter.sort(), inMemoryTable.size(), sortAndStoredBytes);
         } else { // if input data exceeds main-memory at least once
 

@@ -273,9 +273,9 @@ public class CSVFile {
 //          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)))
 //          .getBytes(Bytes.UTF8_CHARSET);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(
-          meta.getOption(StorageConstants.TEXT_NULL,
-          meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
+//      String nullCharacters = StringEscapeUtils.unescapeJava(
+//          meta.getOption(StorageConstants.TEXT_NULL,
+//          meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
 
 //      if (StringUtils.isEmpty(nullCharacters)) {
 //        nullChars = NullDatum.get().asTextBytes();
