@@ -526,8 +526,11 @@ public class QueryExecutor {
           if (masterAddress.getAddress().getHostName().equals("localhost")
             || masterAddress.getAddress().getHostAddress().equals("127.0.0.1")) {
             masterHostList.add(masterAddress.getAddress().getLocalHost().getHostAddress());
+            LOG.info(">>> host:" + masterAddress.getAddress().getLocalHost().getHostAddress() + ", " +
+              "file:" + localFileUri.toString());
           } else {
             masterHostList.add(masterAddress.getHostName());
+            LOG.info(">>> host:" + masterAddress.getHostName() + ", file:" + localFileUri.toString());
           }
 
         } else {
@@ -548,13 +551,26 @@ public class QueryExecutor {
         }
 
         if (distributedWorkerCount > 0) {
+          /// Debug codes
+          LOG.info(">>> start >>> file:" + localFileUri.toString());
+
+          for(String master: masterHostList) {
+            LOG.info(">>> master:" + master);
+          }
+
+          for(Worker worker : workers.values()) {
+            WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
+            LOG.info(">>> worker:" + connectionInfo.getHost());
+          }
+          LOG.info(">>> end >>> file:" + localFileUri.toString());
+
           throw new VerifyException(
             String.format("The table data should be on all hosts to run TajoWorker or be on distributed file system. " +
                 ": %s", localFileUri.toString()));
         }
       }
-
     }
+
     context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
     hookManager.doHooks(queryContext, plan);
 
