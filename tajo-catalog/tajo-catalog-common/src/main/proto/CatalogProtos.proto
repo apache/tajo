@@ -169,6 +169,12 @@ message GetTablePartitionsProto {
   repeated TablePartitionProto part = 1;
 }
 
+message AddTablePartitionsProto {
+  required TableIdentifierProto tableIdentifier = 1;
+  repeated PartitionDescProto partitionDesc = 2;
+}
+
+
 message IndexProto {
   required int32 dbId = 1;
   required int32 tId = 2;

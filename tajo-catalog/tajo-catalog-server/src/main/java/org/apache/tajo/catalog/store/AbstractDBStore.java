@@ -2175,6 +2175,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return partitions;
   }
 
+  @Override
+  public void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException {
+
+  }
 
   @Override
   public void createIndex(final IndexDescProto proto) throws CatalogException {

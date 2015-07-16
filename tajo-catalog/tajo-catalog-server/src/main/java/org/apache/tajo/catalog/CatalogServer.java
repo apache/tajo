@@ -33,6 +33,7 @@ import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -41,6 +42,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -743,7 +745,7 @@ public class CatalogServer extends AbstractService {
       String tableName = request.getTableName();
 
       if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+        throw new ServiceException(databaseName + " is a system database. It does not contain any partitioned tables.");
       }
       
       rlock.lock();
@@ -826,7 +828,7 @@ public class CatalogServer extends AbstractService {
       String partitionName = request.getPartitionName();
 
       if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+        throw new ServiceException(databaseName + " is a system database. It does not contain any partitioned tables.");
       }
 
       rlock.lock();
@@ -868,7 +870,7 @@ public class CatalogServer extends AbstractService {
       String tableName = request.getTableName();
 
       if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+        throw new ServiceException(databaseName + " is a system database. It does not contain any partitioned tables.");
       }
 
       rlock.lock();
@@ -909,6 +911,47 @@ public class CatalogServer extends AbstractService {
       try {
         return GetTablePartitionsProto.newBuilder().addAllPart(store.getAllPartitions()).build();
       } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public BoolProto addTablePartitions(RpcController controller, AddTablePartitionsProto request)
+      throws ServiceException {
+
+      TableIdentifierProto identifier = request.getTableIdentifier();
+      String databaseName = identifier.getDatabaseName();
+      String tableName = identifier.getTableName();
+
+
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system database. It does not contain any partitioned tables.");
+      }
+
+      rlock.lock();
+      try {
+        boolean contain;
+
+        contain = store.existDatabase(databaseName);
+        if (contain) {
+          contain = store.existTable(databaseName, tableName);
+          if (contain) {
+            if (store.existPartitionMethod(databaseName, tableName)) {
+              store.addPartitions(request.getPartitionDescList());
+              return ProtoUtil.TRUE;
+            } else {
+              throw new NoPartitionedTableException(databaseName, tableName);
+            }
+          } else {
+            throw new NoSuchTableException(tableName);
+          }
+        } else {
+          throw new NoSuchDatabaseException(databaseName);
+        }
+      } catch (Exception e) {
+        LOG.error(e);
         throw new ServiceException(e);
       } finally {
         rlock.unlock();

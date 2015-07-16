@@ -115,6 +115,8 @@ public interface CatalogStore extends Closeable {
 
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
 
+  void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException;
+
   /**************************** INDEX *******************************/
   void createIndex(IndexDescProto proto) throws CatalogException;
   

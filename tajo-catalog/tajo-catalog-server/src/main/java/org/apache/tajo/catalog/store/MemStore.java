@@ -613,6 +613,11 @@ public class MemStore implements CatalogStore {
     return protos;
   }
 
+  @Override
+  public void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException {
+
+  }
+
   /* (non-Javadoc)
    * @see CatalogStore#createIndex(nta.catalog.proto.CatalogProtos.IndexDescProto)
    */

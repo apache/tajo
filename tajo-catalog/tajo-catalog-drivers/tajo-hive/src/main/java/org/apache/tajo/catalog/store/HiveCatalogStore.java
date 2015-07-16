@@ -944,6 +944,11 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
+  public void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException {
+
+  }
+
+  @Override
   public List<TableOptionProto> getAllTableOptions() throws CatalogException {
     throw new UnsupportedOperationException();
   }
