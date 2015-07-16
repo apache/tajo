@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.orc;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -60,10 +61,11 @@ public class ORCScanner extends FileScanner {
     super(conf, schema, meta, fragment);
   }
 
-  private Vector createOrcVector(TajoDataTypes.Type type) {
-    switch (type) {
+  private Vector createOrcVector(TajoDataTypes.DataType type) {
+    switch (type.getType()) {
       case INT1: case INT2: case INT4: case INT8:
       case UINT1: case UINT2: case UINT4: case UINT8:
+      case INET4:
       case TIMESTAMP:
       case DATE:
         return new LongVector();
@@ -73,10 +75,13 @@ public class ORCScanner extends FileScanner {
         return new DoubleVector();
 
       case BOOLEAN:
+      case NULL_TYPE:
         return new BooleanVector();
 
       case BLOB:
       case TEXT:
+      case CHAR:
+      case PROTOBUF:
         return new SliceVector();
 
       default:
@@ -88,7 +93,7 @@ public class ORCScanner extends FileScanner {
   private FSDataInputStream fis;
 
   private static class ColumnInfo {
-    TajoDataTypes.Type type;
+    TajoDataTypes.DataType type;
     int id;
   }
 
@@ -127,7 +132,7 @@ public class ORCScanner extends FileScanner {
     targetColInfo = new ColumnInfo[targets.length];
     for (int i=0; i<targets.length; i++) {
       ColumnInfo cinfo = new ColumnInfo();
-      cinfo.type = targets[i].getDataType().getType();
+      cinfo.type = targets[i].getDataType();
       cinfo.id = schema.getColumnId(targets[i].getQualifiedName());
       targetColInfo[i] = cinfo;
     }
@@ -169,10 +174,10 @@ public class ORCScanner extends FileScanner {
       }
     }
 
-    Tuple tuple = new VTuple(schema.size());
+    Tuple tuple = new VTuple(targets.length);
 
     for (int i=0; i<targetColInfo.length; i++) {
-      tuple.put(targetColInfo[i].id, createValueDatum(vectors[i], targetColInfo[i].type));
+      tuple.put(i, createValueDatum(vectors[i], targetColInfo[i].type));
     }
 
     currentPosInBatch++;
@@ -181,42 +186,89 @@ public class ORCScanner extends FileScanner {
   }
 
   // TODO: support more types
-  private Datum createValueDatum(Vector vector, TajoDataTypes.Type type) {
-    switch (type) {
+  private Datum createValueDatum(Vector vector, TajoDataTypes.DataType type) {
+    switch (type.getType()) {
       case INT1:
       case UINT1:
       case INT2:
       case UINT2:
-        return new Int2Datum((short)((LongVector)vector).vector[currentPosInBatch]);
+        if (((LongVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createInt2((short) ((LongVector) vector).vector[currentPosInBatch]);
 
       case INT4:
       case UINT4:
-        return new Int4Datum((int)((LongVector)vector).vector[currentPosInBatch]);
+        if (((LongVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createInt4((int) ((LongVector) vector).vector[currentPosInBatch]);
 
       case INT8:
       case UINT8:
-        return new Int8Datum(((LongVector)vector).vector[currentPosInBatch]);
+        if (((LongVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createInt8(((LongVector) vector).vector[currentPosInBatch]);
 
       case FLOAT4:
-        return new Float4Datum((float)((DoubleVector)vector).vector[currentPosInBatch]);
+        if (((DoubleVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createFloat4((float) ((DoubleVector) vector).vector[currentPosInBatch]);
 
       case FLOAT8:
-        return new Float8Datum(((DoubleVector)vector).vector[currentPosInBatch]);
+        if (((DoubleVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createFloat8(((DoubleVector) vector).vector[currentPosInBatch]);
 
       case BOOLEAN:
-        return ((BooleanVector)vector).vector[currentPosInBatch] ? BooleanDatum.TRUE : BooleanDatum.FALSE;
+        if (((BooleanVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return ((BooleanVector) vector).vector[currentPosInBatch] ? BooleanDatum.TRUE : BooleanDatum.FALSE;
+
+      case CHAR:
+        if (((SliceVector) vector).vector[currentPosInBatch] == null)
+          return NullDatum.get();
+
+        return DatumFactory.createChar(((SliceVector) vector).vector[currentPosInBatch].toStringUtf8());
 
       case TEXT:
-        return new TextDatum(((SliceVector)vector).vector[currentPosInBatch].getBytes());
+        if (((SliceVector) vector).vector[currentPosInBatch] == null)
+          return NullDatum.get();
+
+        return DatumFactory.createText(((SliceVector) vector).vector[currentPosInBatch].getBytes());
 
       case BLOB:
-        return new BlobDatum(((SliceVector)vector).vector[currentPosInBatch].getBytes());
+        if (((SliceVector) vector).vector[currentPosInBatch] == null)
+          return NullDatum.get();
+
+        return DatumFactory.createBlob(((SliceVector) vector).vector[currentPosInBatch].getBytes());
 
       case TIMESTAMP:
-        return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(((LongVector) vector).vector[currentPosInBatch]));
+        if (((LongVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createTimestamp(
+          DateTimeUtil.javaTimeToJulianTime(((LongVector) vector).vector[currentPosInBatch]));
 
       case DATE:
-        return new DateDatum((int)((LongVector)vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
+        if (((LongVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createDate(
+          (int) ((LongVector) vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
+
+      case INET4:
+        if (((LongVector) vector).isNull[currentPosInBatch])
+          return NullDatum.get();
+
+        return DatumFactory.createInet4((int) ((LongVector) vector).vector[currentPosInBatch]);
+
+      case NULL_TYPE:
+        return NullDatum.get();
 
       default:
         throw new UnsupportedException("This data type is not supported currently: "+type.toString());
