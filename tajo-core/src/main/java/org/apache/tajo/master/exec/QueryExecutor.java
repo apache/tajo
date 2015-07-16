@@ -47,9 +47,11 @@ import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.QueryManager;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
+import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
@@ -61,15 +63,20 @@ import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class QueryExecutor {
   private static final Log LOG = LogFactory.getLog(QueryExecutor.class);
@@ -489,6 +496,65 @@ public class QueryExecutor {
 
       space.prepareTable(rootNode.getChild());
     }
+
+    LogicalNode[] scans = PlannerUtil.findAllNodes(rootNode, NodeType.SCAN, NodeType.PARTITIONS_SCAN);
+
+    // Tajo allows that the location of table would be set the path of local file system, for example,
+    // “file:///home/tajo/xyz”. When querying above table data on pseudo distributed mode,
+    // the query would finished successfully. Pseudo distributed mode for tajo means that TajoMaster and TajoWorker
+    // just run on the same host. But when querying the data on fully distribute mode,
+    // the query would failed because the data was’t located on all hosts for running TajoWorker. This will throw an
+    // exception with a well-defined message for avoiding users confusion.
+    if (scans.length > 0) {
+      URI localFileUri = null;
+      for (int i = 0; i < scans.length; i++) {
+        ScanNode scanNode = (ScanNode) scans[i];
+        if(scanNode.getTableDesc().getUri().getScheme().equals("file")) {
+          localFileUri = scanNode.getTableDesc().getUri();
+          break;
+        }
+      }
+
+      if (localFileUri != null) {
+        ServiceTracker haService = context.getHAService();
+        List<String> masterHostList = TUtil.newList();
+        if (!haService.isHighAvailable()) {
+          InetSocketAddress masterAddress = context.getTajoMasterService().getBindAddress();
+          // If users don't setup cluster mode in tajo-site.xml, default configuration would be used and host address
+          // would be set to localhost. But in this case, address for TajoMaster is different from address for
+          // TajoWorker on pseudo distributed mode. Thus, this need to find right host address for comparing TajoWorker.
+          if (masterAddress.getAddress().getHostName().equals("localhost")
+            || masterAddress.getAddress().getHostAddress().equals("127.0.0.1")) {
+            masterHostList.add(masterAddress.getAddress().getLocalHost().getHostAddress());
+          } else {
+            masterHostList.add(masterAddress.getHostName());
+          }
+
+        } else {
+          for(TajoMasterInfo masterInfo : context.getHAService().getMasters()) {
+            masterHostList.add(masterInfo.getTajoClientAddress().getAddress().getHostAddress());
+          }
+        }
+
+        int distributedWorkerCount = 0;
+        // Get hosts to run as TajoWorker.
+        Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
+        for(Worker worker : workers.values()) {
+          WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
+          // If TajoWorker run on host different from host to run TajoMaster, it couldn't get the table data.
+          if (!masterHostList.contains(connectionInfo.getHost())) {
+            distributedWorkerCount++;
+          }
+        }
+
+        if (distributedWorkerCount > 0) {
+          throw new VerifyException(
+            String.format("The table data should be on all hosts to run TajoWorker or be on distributed file system. " +
+                ": %s", localFileUri.toString()));
+        }
+      }
+
+    }
     context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
     hookManager.doHooks(queryContext, plan);
 
@@ -496,7 +562,6 @@ public class QueryExecutor {
     QueryInfo queryInfo;
 
     queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
-
     if(queryInfo == null) {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
