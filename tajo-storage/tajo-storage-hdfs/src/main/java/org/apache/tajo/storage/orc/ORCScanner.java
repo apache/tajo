@@ -249,6 +249,9 @@ public class ORCScanner extends FileScanner {
 
       case PROTOBUF:
         try {
+          if (((SliceVector) vector).vector[currentPosInBatch] == null)
+            return NullDatum.get();
+
           return ProtobufDatumFactory.createDatum(type,
             ((SliceVector) vector).vector[currentPosInBatch].getBytes());
         } catch (InvalidProtocolBufferException e) {

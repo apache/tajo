@@ -26,7 +26,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Int2Datum;
@@ -51,7 +50,7 @@ import java.net.URL;
 import java.util.List;
 
 public class TestOrc {
-  private OrcScanner orcScanner;
+  private ORCScanner orcScanner;
 
   private static Configuration conf = new TajoConf();
   private static FileSystem fs;
@@ -84,11 +83,11 @@ public class TestOrc {
     schema.addColumn("unixtimestamp", TajoDataTypes.Type.TEXT);
     schema.addColumn("faketime", TajoDataTypes.Type.TIMESTAMP);
 
-    TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
+    TableMeta meta = new TableMeta("ORC", new KeyValueSet());
 
     Fragment fragment = getFileFragment("u_data_20.orc");
 
-    orcScanner = new OrcScanner(conf, schema, meta, fragment);
+    orcScanner = new ORCScanner(conf, schema, meta, fragment);
 
     orcScanner.init();
   }
@@ -104,7 +103,7 @@ public class TestOrc {
       assertEquals(tuple.getText(3), "881250949");
 
       // Timestamp test
-      TimestampDatum timestamp = (TimestampDatum)tuple.get(4);
+      TimestampDatum timestamp = (TimestampDatum)tuple.asDatum(4);
 
       assertEquals(timestamp.getYear(), 2008);
       assertEquals(timestamp.getMonthOfYear(), 12);
@@ -135,9 +134,9 @@ public class TestOrc {
         fs.delete(writePath);
       }
 
-      TableMeta meta = new TableMeta(CatalogProtos.StoreType.ORC, new KeyValueSet());
+      TableMeta meta = new TableMeta("ORC", new KeyValueSet());
 
-      OrcAppender appender = new OrcAppender(conf, null, schema, meta, writePath);
+      ORCAppender appender = new ORCAppender(conf, null, schema, meta, writePath);
 
       appender.init();
 
@@ -152,7 +151,7 @@ public class TestOrc {
       appender.close();
 
       Fragment fragment = getFileFragment("temp_test.orc");
-      OrcScanner orcScanner = new OrcScanner(conf, schema, meta, fragment);
+      ORCScanner orcScanner = new ORCScanner(conf, schema, meta, fragment);
       orcScanner.init();
 
       tuple = orcScanner.next();

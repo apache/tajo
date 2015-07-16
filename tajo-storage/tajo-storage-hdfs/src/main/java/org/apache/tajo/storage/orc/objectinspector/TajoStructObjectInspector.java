@@ -35,7 +35,6 @@ import java.util.List;
 
 public class TajoStructObjectInspector extends StructObjectInspector {
   private final static Log LOG = LogFactory.getLog(TajoStructObjectInspector.class);
-  private Schema schema;
   private List<TajoStructField> structFields;
 
   static class TajoStructField implements StructField {
@@ -70,10 +69,9 @@ public class TajoStructObjectInspector extends StructObjectInspector {
   }
 
   TajoStructObjectInspector(Schema schema) {
-    this.schema = schema;
     structFields = new ArrayList<TajoStructField>(schema.size());
 
-    for (Column c: schema.getColumns()) {
+    for (Column c: schema.getRootColumns()) {
       try {
         TajoStructField field = new TajoStructField(c.getSimpleName(),
           ObjectInspectorFactory.buildObjectInspectorByType(c.getDataType().getType()));

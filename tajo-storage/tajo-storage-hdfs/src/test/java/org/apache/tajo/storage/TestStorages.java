@@ -139,7 +139,7 @@ public class TestStorages {
         {"RAW", false, true, true},
         {"RCFILE", true, true, false},
         {"PARQUET", false, false, false},
-        {"ORC", true, true, false},
+        {"ORC", false, true, false},
         {"SEQUENCEFILE", true, true, false},
         {"AVRO", false, false, false},
         {"TEXT", true, true, true},
@@ -959,7 +959,7 @@ public class TestStorages {
   public void testLessThanSchemaSize() throws IOException {
     /* RAW is internal storage. It must be same with schema size */
     if (storeType.equalsIgnoreCase("RAW") || storeType.equalsIgnoreCase("AVRO")
-        || storeType.equalsIgnoreCase("PARQUET")){
+        || storeType.equalsIgnoreCase("PARQUET") || storeType.equalsIgnoreCase("ORC")){
       return;
     }
 

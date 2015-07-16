@@ -1607,7 +1607,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       if (tuple != null) {
         for(int i = 0; i < fields.size(); ++i) {
           TreeWriter writer = childrenWriters[i];
-          writer.write(tuple.get(i));
+          writer.write(tuple.asDatum(i));
         }
       }
     }

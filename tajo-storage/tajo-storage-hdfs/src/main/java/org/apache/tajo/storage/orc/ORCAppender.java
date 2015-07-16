@@ -35,13 +35,13 @@ import org.apache.tajo.storage.thirdparty.orc.Writer;
 
 import java.io.IOException;
 
-public class OrcAppender extends FileAppender {
+public class ORCAppender extends FileAppender {
   private Writer writer;
   private TableStatistics stats;
 
 
-  public OrcAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
-                      TableMeta meta, Path workDir) {
+  public ORCAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
+                     TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
   }
 
@@ -72,7 +72,7 @@ public class OrcAppender extends FileAppender {
   public void addTuple(Tuple tuple) throws IOException {
     if (enabledStats) {
       for (int i = 0; i < schema.size(); ++i) {
-        stats.analyzeField(i, tuple.get(i));
+        stats.analyzeField(i, tuple);
       }
     }
     writer.addTuple(tuple);
