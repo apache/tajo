@@ -114,6 +114,9 @@ public class QueryCoordinatorService extends AbstractService {
       done.run(builder.build());
     }
 
+    /**
+     * Reserve a node resources to TajoMaster
+     */
     @Override
     public void reserveNodeResources(RpcController controller, NodeResourceRequest request,
                                      RpcCallback<NodeResourceResponse> done) {
@@ -121,6 +124,9 @@ public class QueryCoordinatorService extends AbstractService {
       dispatcher.getEventHandler().handle(new ResourceReserveSchedulerEvent(request, done));
     }
 
+    /**
+     * Get all worker connection information
+     */
     @Override
     public void getAllWorkers(RpcController controller, PrimitiveProtos.NullProto request,
                                      RpcCallback<WorkerConnectionsResponse> done) {

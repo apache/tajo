@@ -46,6 +46,10 @@ import java.util.concurrent.PriorityBlockingQueue;
 
 import static org.apache.tajo.ResourceProtos.*;
 
+/**
+ * SimpleScheduler can execute query and stages simultaneously.
+ * Each query and the stage competes to get the resource
+ */
 public class SimpleScheduler extends AbstractQueryScheduler {
 
   private static final Log LOG = LogFactory.getLog(SimpleScheduler.class);

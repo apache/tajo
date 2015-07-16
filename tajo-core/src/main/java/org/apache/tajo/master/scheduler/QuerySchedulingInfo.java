@@ -20,12 +20,22 @@ package org.apache.tajo.master.scheduler;
 
 import com.google.common.base.Objects;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.util.NumberUtil;
+
+/**
+ * A QuerySchedulingInfo represents an scheduling information.
+ * It provides a common interface for queue and priority
+ */
 
 public class QuerySchedulingInfo implements Comparable<QuerySchedulingInfo> {
+  /** Name of queue */
   private String queue;
+  /** Query owner */
   private String user;
   private QueryId queryId;
+  /** Query priority for queries in same queue */
   private int priority;
+  /** Start time for query in same queue */
   private long startTime;
 
   public QuerySchedulingInfo(String queue, String user, QueryId queryId, int priority, long startTime) {
@@ -63,9 +73,9 @@ public class QuerySchedulingInfo implements Comparable<QuerySchedulingInfo> {
 
   @Override
   public int compareTo(QuerySchedulingInfo o) {
-    int ret = Integer.compare(priority, o.priority);
+    int ret = NumberUtil.compare(priority, o.priority);
     if(ret == 0) {
-      ret = Long.compare(startTime, o.startTime);
+      ret = NumberUtil.compare(startTime, o.startTime);
     }
     return ret;
   }

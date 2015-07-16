@@ -184,6 +184,9 @@ public class QueryInProgress {
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
+  /**
+   * Launch the allocated query to QueryMaster
+   */
   public boolean submitToQueryMaster() {
     if(querySubmitted) {
       return false;
