@@ -502,7 +502,7 @@ public class QueryExecutor {
     // Tajo allows that the location of table would be set the path of local file system. When querying above table
     // data on pseudo distributed mode, the query would finished successfully. Pseudo distributed mode for tajo means
     // that TajoMaster and TajoWorker just run on the same host. But when querying the data on fully distribute mode,
-    // the query would failed because the data was’t located on all hosts for running TajoWorker. This will throw an 
+    // the query would failed because the data was’t located on all hosts for running TajoWorker. This will throw an
     // exception with a well-defined message for avoiding users confusion.
     if (scans.length > 0) {
       URI localFileUri = null;
@@ -517,6 +517,7 @@ public class QueryExecutor {
       if (localFileUri != null) {
         ServiceTracker haService = context.getHAService();
         List<String> masterHostList = TUtil.newList();
+
         if (!haService.isHighAvailable()) {
           InetSocketAddress masterAddress = context.getTajoMasterService().getBindAddress();
           // When specify localhost or 127.0.0.1 for TajoMaster in tajo-site.xml, skip checking local file existence.
