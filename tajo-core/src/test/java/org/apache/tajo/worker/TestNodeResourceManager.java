@@ -118,6 +118,12 @@ public class TestNodeResourceManager {
         addIfService(statusUpdater);
         super.serviceInit(conf);
       }
+
+      @Override
+      protected void serviceStop() throws Exception {
+        workerContext.getWorkerSystemMetrics().stop();
+        super.serviceStop();
+      }
     };
 
     service.init(conf);

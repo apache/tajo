@@ -22,7 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -33,7 +32,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
-import static org.apache.tajo.ResourceProtos.*;
+import static org.apache.tajo.ResourceProtos.NodeHeartbeatRequest;
 import static org.junit.Assert.*;
 
 public class TestNodeStatusUpdater {
@@ -104,6 +103,12 @@ public class TestNodeStatusUpdater {
         addIfService(resourceManager);
         addIfService(statusUpdater);
         super.serviceInit(conf);
+      }
+
+      @Override
+      protected void serviceStop() throws Exception {
+        workerContext.getWorkerSystemMetrics().stop();
+        super.serviceStop();
       }
     };
 
