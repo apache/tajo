@@ -552,17 +552,17 @@ public class QueryExecutor {
 
         if (distributedWorkerCount > 0) {
           /// Debug codes
-          LOG.info(">>> start >>> file:" + localFileUri.toString());
+          LOG.warn(">>> start >>> file:" + localFileUri.toString());
 
           for(String master: masterHostList) {
-            LOG.info(">>> master:" + master);
+            LOG.warn(">>> master:" + master);
           }
 
           for(Worker worker : workers.values()) {
             WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
-            LOG.info(">>> worker:" + connectionInfo.getHost());
+            LOG.warn(">>> worker:" + connectionInfo.getHost());
           }
-          LOG.info(">>> end >>> file:" + localFileUri.toString());
+          LOG.warn(">>> end >>> file:" + localFileUri.toString());
 
           throw new VerifyException(
             String.format("The table data should be on all hosts to run TajoWorker or be on distributed file system. " +
