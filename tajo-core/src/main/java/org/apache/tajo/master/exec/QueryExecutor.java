@@ -520,53 +520,34 @@ public class QueryExecutor {
         List<String> masterHostList = TUtil.newList();
         if (!haService.isHighAvailable()) {
           InetSocketAddress masterAddress = context.getTajoMasterService().getBindAddress();
-          // If users don't setup cluster mode in tajo-site.xml, default configuration would be used and host address
-          // would be set to localhost. But in this case, address for TajoMaster is different from address for
-          // TajoWorker on pseudo distributed mode. Thus, this need to find right host address for comparing TajoWorker.
-          if (masterAddress.getAddress().getHostName().equals("localhost")
-            || masterAddress.getAddress().getHostAddress().equals("127.0.0.1")) {
-            masterHostList.add(masterAddress.getAddress().getLocalHost().getHostAddress());
-            LOG.info(">>> host:" + masterAddress.getAddress().getLocalHost().getHostAddress() + ", " +
-              "file:" + localFileUri.toString());
-          } else {
+          // When specify localhost or 127.0.0.1 for TajoMaster in tajo-site.xml, skip checking local file existence.
+          if (!masterAddress.getAddress().getHostName().equals("localhost")
+            && !masterAddress.getAddress().getHostAddress().equals("127.0.0.1")) {
             masterHostList.add(masterAddress.getHostName());
-            LOG.info(">>> host:" + masterAddress.getHostName() + ", file:" + localFileUri.toString());
           }
-
         } else {
           for(TajoMasterInfo masterInfo : context.getHAService().getMasters()) {
             masterHostList.add(masterInfo.getTajoClientAddress().getAddress().getHostAddress());
           }
         }
 
-        int distributedWorkerCount = 0;
-        // Get hosts to run as TajoWorker.
-        Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
-        for(Worker worker : workers.values()) {
-          WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
-          // If TajoWorker run on host different from host to run TajoMaster, it couldn't get the table data.
-          if (!masterHostList.contains(connectionInfo.getHost())) {
-            distributedWorkerCount++;
-          }
-        }
-
-        if (distributedWorkerCount > 0) {
-          /// Debug codes
-          LOG.warn(">>> start >>> file:" + localFileUri.toString());
-
-          for(String master: masterHostList) {
-            LOG.warn(">>> master:" + master);
-          }
-
+        if (masterHostList.size() > 0) {
+          int distributedWorkerCount = 0;
+          // Get hosts to run as TajoWorker.
+          Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
           for(Worker worker : workers.values()) {
             WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
-            LOG.warn(">>> worker:" + connectionInfo.getHost());
+            // If TajoWorker run on host different from host to run TajoMaster, it couldn't get the table data.
+            if (!masterHostList.contains(connectionInfo.getHost())) {
+              distributedWorkerCount++;
+            }
           }
-          LOG.warn(">>> end >>> file:" + localFileUri.toString());
 
-          throw new VerifyException(
-            String.format("The table data should be on all hosts to run TajoWorker or be on distributed file system. " +
+          if (distributedWorkerCount > 0) {
+            throw new VerifyException(
+              String.format("The table data should be on all hosts to run TajoWorker or be on distributed file system. " +
                 ": %s", localFileUri.toString()));
+          }
         }
       }
     }
