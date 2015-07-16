@@ -20,22 +20,22 @@ package org.apache.tajo.worker.event;
 
 
 import com.google.protobuf.RpcCallback;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ResourceProtos.AllocationResourceProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 public class QMResourceAllocateEvent extends NodeResourceEvent {
 
-  private QueryCoordinatorProtocol.AllocationResourceProto request;
+  private AllocationResourceProto request;
   private RpcCallback<PrimitiveProtos.BoolProto> callback;
 
-  public QMResourceAllocateEvent(QueryCoordinatorProtocol.AllocationResourceProto request,
+  public QMResourceAllocateEvent(AllocationResourceProto request,
                                  RpcCallback<PrimitiveProtos.BoolProto> callback) {
     super(EventType.ALLOCATE, ResourceType.QUERY_MASTER);
     this.callback = callback;
     this.request = request;
   }
 
-  public QueryCoordinatorProtocol.AllocationResourceProto getRequest() {
+  public AllocationResourceProto getRequest() {
     return request;
   }
 

@@ -29,10 +29,13 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.ResourceProtos;
+import org.apache.tajo.ResourceProtos.AllocationResourceProto;
+import org.apache.tajo.ResourceProtos.TajoHeartbeatRequest;
+import org.apache.tajo.ResourceProtos.TajoHeartbeatResponse;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
 import org.apache.tajo.plan.logical.LogicalRootNode;
@@ -184,7 +187,7 @@ public class QueryManager extends CompositeService {
   /**
    * Can start query or not
    */
-  public boolean startQueryJob(QueryId queryId, QueryCoordinatorProtocol.AllocationResourceProto allocation) {
+  public boolean startQueryJob(QueryId queryId, AllocationResourceProto allocation) {
 
     if (submittedQueries.get(queryId).allocateToQueryMaster(allocation)) {
       QueryInProgress queryInProgress = submittedQueries.remove(queryId);
@@ -282,8 +285,8 @@ public class QueryManager extends CompositeService {
     return executedQuerySize.get();
   }
 
-  public synchronized QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand queryHeartbeat(
-      QueryCoordinatorProtocol.TajoHeartbeat queryHeartbeat) {
+  public synchronized TajoHeartbeatResponse.ResponseCommand queryHeartbeat(
+      TajoHeartbeatRequest queryHeartbeat) {
     QueryInProgress queryInProgress = getQueryInProgress(new QueryId(queryHeartbeat.getQueryId()));
     if(queryInProgress == null) {
       return null;
@@ -295,7 +298,7 @@ public class QueryManager extends CompositeService {
     return null;
   }
 
-  private QueryInfo makeQueryInfoFromHeartbeat(QueryCoordinatorProtocol.TajoHeartbeat queryHeartbeat) {
+  private QueryInfo makeQueryInfoFromHeartbeat(ResourceProtos.TajoHeartbeatRequest queryHeartbeat) {
     QueryInfo queryInfo = new QueryInfo(new QueryId(queryHeartbeat.getQueryId()));
     WorkerConnectionInfo connectionInfo = new WorkerConnectionInfo(queryHeartbeat.getConnectionInfo());
 

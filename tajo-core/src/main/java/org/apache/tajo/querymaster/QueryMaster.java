@@ -30,15 +30,16 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.QueryId;
+
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeat;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerConnectionsProto;
+import org.apache.tajo.ResourceProtos.TajoHeartbeatRequest;
+import org.apache.tajo.ResourceProtos.TajoHeartbeatResponse;
+import org.apache.tajo.ResourceProtos.WorkerConnectionsResponse;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.master.event.QueryStopEvent;
 import org.apache.tajo.rpc.*;
@@ -180,11 +181,11 @@ public class QueryMaster extends CompositeService implements EventHandler {
       rpc = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
       QueryCoordinatorProtocolService masterService = rpc.getStub();
 
-      CallFuture<WorkerConnectionsProto> callBack = new CallFuture<WorkerConnectionsProto>();
+      CallFuture<WorkerConnectionsResponse> callBack = new CallFuture<WorkerConnectionsResponse>();
       masterService.getAllWorkers(callBack.getController(),
           PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
-      WorkerConnectionsProto connectionsProto =
+      WorkerConnectionsResponse connectionsProto =
           callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       return connectionsProto.getWorkerList();
     } catch (Exception e) {
@@ -285,7 +286,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       finishedQueryMasterTasksCache.put(queryId, queryMasterTask);
 
-      TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
+      TajoHeartbeatRequest queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
       CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
 
       NettyClientBase tmClient;
@@ -323,8 +324,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
   }
 
-  private TajoHeartbeat buildTajoHeartBeat(QueryMasterTask queryMasterTask) {
-    TajoHeartbeat.Builder builder = TajoHeartbeat.newBuilder();
+  private TajoHeartbeatRequest buildTajoHeartBeat(QueryMasterTask queryMasterTask) {
+    TajoHeartbeatRequest.Builder builder = TajoHeartbeatRequest.newBuilder();
 
     builder.setConnectionInfo(workerContext.getConnectionInfo().getProto());
     builder.setQueryId(queryMasterTask.getQueryId().getProto());
@@ -390,7 +391,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
                 QueryCoordinatorProtocol.class, true);
             QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
-            TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(eachTask);
+            TajoHeartbeatRequest queryHeartbeat = buildTajoHeartBeat(eachTask);
             masterClientService.heartbeat(null, queryHeartbeat, NullCallback.get());
           } catch (Throwable t) {
             t.printStackTrace();

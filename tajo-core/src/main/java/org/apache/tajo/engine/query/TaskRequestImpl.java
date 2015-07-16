@@ -22,9 +22,9 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProtoOrBuilder;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
+import org.apache.tajo.ResourceProtos.FetchProto;
+import org.apache.tajo.ResourceProtos.TaskRequestProtoOrBuilder;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -48,8 +48,8 @@ public class TaskRequestImpl implements TaskRequest {
 	private Enforcer enforcer;
 	private String queryMasterHostAndPort;
 	
-	private TaskRequestProto proto = TajoWorkerProtocol.TaskRequestProto.getDefaultInstance();
-	private TajoWorkerProtocol.TaskRequestProto.Builder builder = null;
+	private TaskRequestProto proto = TaskRequestProto.getDefaultInstance();
+	private TaskRequestProto.Builder builder = null;
 	private boolean viaProto = false;
 	
 	public TaskRequestImpl() {
@@ -263,14 +263,14 @@ public class TaskRequestImpl implements TaskRequest {
     }
     TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     this.fetches = new ArrayList<FetchImpl>();
-    for(TajoWorkerProtocol.FetchProto fetch : p.getFetchesList()) {
+    for(FetchProto fetch : p.getFetchesList()) {
       fetches.add(new FetchImpl(fetch));
     }
 	}
 
   private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
-			builder = TajoWorkerProtocol.TaskRequestProto.newBuilder(proto);
+			builder = TaskRequestProto.newBuilder(proto);
 		}
 		viaProto = true;
 	}

@@ -79,7 +79,7 @@ public class StringUtils {
     return buf.toString();
   }
   /**
-   * or "ISO-8859-1" for ISO Latin 1
+   * Check Seven-bit ASCII
    */
   public static boolean isPureAscii(String v) {
     // get thread-safe encoder

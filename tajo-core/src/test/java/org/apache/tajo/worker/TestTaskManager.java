@@ -41,7 +41,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.*;
 
 public class TestTaskManager {
@@ -146,8 +146,8 @@ public class TestTaskManager {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
-    CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     requestProto.setExecutionBlockId(ebId.getProto());
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
@@ -165,7 +165,7 @@ public class TestTaskManager {
 
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
-    TaskAllocationRequestProto requestProto =
+    TaskAllocationProto requestProto =
         MockNodeResourceManager.createTaskRequests(ebId, taskMemory, 1).poll();
 
     taskDispatcher.getEventHandler().handle(new TaskStartEvent(requestProto.getTaskRequest(),

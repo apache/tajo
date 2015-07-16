@@ -24,7 +24,6 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -40,8 +39,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationRequestProto;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationResponseProto;
+import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -142,8 +140,8 @@ public class TestTaskExecutor {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
-    CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     requestProto.setExecutionBlockId(ebId.getProto());
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
@@ -170,8 +168,8 @@ public class TestTaskExecutor {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
-    CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     requestProto.setExecutionBlockId(ebId.getProto());
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
@@ -207,7 +205,7 @@ public class TestTaskExecutor {
     }
 
     @Override
-    protected Task createTask(final ExecutionBlockContext context, TajoWorkerProtocol.TaskRequestProto taskRequest) {
+    protected Task createTask(final ExecutionBlockContext context, TaskRequestProto taskRequest) {
       final TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
       final TaskAttemptContext taskAttemptContext = new TaskAttemptContext(null, context, taskAttemptId, null, null);
 
@@ -288,8 +286,8 @@ public class TestTaskExecutor {
         }
 
         @Override
-        public TajoWorkerProtocol.TaskStatusProto getReport() {
-          TajoWorkerProtocol.TaskStatusProto.Builder builder = TajoWorkerProtocol.TaskStatusProto.newBuilder();
+        public TaskStatusProto getReport() {
+          TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
           builder.setWorkerName("localhost:0");
           builder.setId(taskAttemptContext.getTaskId().getProto())
               .setProgress(taskAttemptContext.getProgress())

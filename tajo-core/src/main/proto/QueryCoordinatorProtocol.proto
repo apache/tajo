@@ -23,67 +23,13 @@ option java_outer_classname = "QueryCoordinatorProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "yarn_protos.proto";
-import "tajo_protos.proto";
-import "TajoIdProtos.proto";
-import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "ResourceProtos.proto";
 
 package hadoop.yarn;
 
-//deplecated
-message TajoHeartbeat {
-  required WorkerConnectionInfoProto connectionInfo = 1;
-  optional QueryIdProto queryId = 2;
-  optional QueryState state = 3;
-  optional TableDescProto resultDesc = 4;
-  optional string statusMessage = 5;
-  optional float queryProgress = 6;
-}
-//deplecated
-message TajoHeartbeatResponse {
-  message ResponseCommand {
-      required string command = 1;
-      repeated string params = 2;
-  }
-  required BoolProto heartbeatResult = 1;
-  optional ResponseCommand responseCommand = 3;
-}
-
-enum ResourceType {
-    LEAF = 1;
-    INTERMEDIATE = 2;
-    QUERYMASTER = 3;
-}
-
-message WorkerConnectionsProto {
-    repeated WorkerConnectionInfoProto worker = 1;
-}
-
-message AllocationResourceProto {
-    required int32 workerId = 1;
-    required NodeResourceProto resource = 2;
-}
-
-message NodeResourceRequestProto {
-    optional string queue = 1;
-    required string userId = 2;
-    required ResourceType type = 3;
-    required int32 priority = 4;
-    required QueryIdProto queryId = 5;
-    required int32 numContainers = 6;
-    required NodeResourceProto capacity = 7;
-    required int32 runningTasks = 8;
-    repeated int32 candidateNodes = 9;
-}
-
-message NodeResourceResponseProto {
-    required QueryIdProto queryId = 1;
-    repeated AllocationResourceProto resource = 2;
-}
-
 service QueryCoordinatorProtocolService {
-  rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
-  rpc reserveNodeResources(NodeResourceRequestProto) returns (NodeResourceResponseProto);
-  rpc getAllWorkers(NullProto) returns (WorkerConnectionsProto);
+  rpc heartbeat(TajoHeartbeatRequest) returns (TajoHeartbeatResponse);
+  rpc reserveNodeResources(NodeResourceRequest) returns (NodeResourceResponse);
+  rpc getAllWorkers(NullProto) returns (WorkerConnectionsResponse);
 }

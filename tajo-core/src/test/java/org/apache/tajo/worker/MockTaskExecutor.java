@@ -18,10 +18,11 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
+import org.apache.tajo.ResourceProtos.TaskStatusProto;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class MockTaskExecutor extends TaskExecutor {
   }
 
   @Override
-  protected Task createTask(final ExecutionBlockContext context, TajoWorkerProtocol.TaskRequestProto taskRequest) {
+  protected Task createTask(final ExecutionBlockContext context, TaskRequestProto taskRequest) {
     final TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
 
     //ignore status changed log
@@ -126,8 +127,8 @@ public class MockTaskExecutor extends TaskExecutor {
       }
 
       @Override
-      public TajoWorkerProtocol.TaskStatusProto getReport() {
-        TajoWorkerProtocol.TaskStatusProto.Builder builder = TajoWorkerProtocol.TaskStatusProto.newBuilder();
+      public TaskStatusProto getReport() {
+        TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
       builder.setWorkerName("localhost:0");
       builder.setId(taskAttemptContext.getTaskId().getProto())
           .setProgress(taskAttemptContext.getProgress())

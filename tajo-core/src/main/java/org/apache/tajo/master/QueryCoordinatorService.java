@@ -38,6 +38,8 @@ import org.apache.tajo.util.NetUtils;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
+import static org.apache.tajo.ResourceProtos.*;
+
 public class QueryCoordinatorService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(QueryCoordinatorService.class);
 
@@ -93,7 +95,7 @@ public class QueryCoordinatorService extends AbstractService {
     @Override
     public void heartbeat(
         RpcController controller,
-        TajoHeartbeat request, RpcCallback<TajoHeartbeatResponse> done) {
+        TajoHeartbeatRequest request, RpcCallback<TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
         LOG.debug("Received QueryHeartbeat:" + new WorkerConnectionInfo(request.getConnectionInfo()));
       }
@@ -113,17 +115,17 @@ public class QueryCoordinatorService extends AbstractService {
     }
 
     @Override
-    public void reserveNodeResources(RpcController controller, NodeResourceRequestProto request,
-                                     RpcCallback<NodeResourceResponseProto> done) {
+    public void reserveNodeResources(RpcController controller, NodeResourceRequest request,
+                                     RpcCallback<NodeResourceResponse> done) {
       Dispatcher dispatcher = context.getResourceManager().getRMContext().getDispatcher();
       dispatcher.getEventHandler().handle(new ResourceReserveSchedulerEvent(request, done));
     }
 
     @Override
     public void getAllWorkers(RpcController controller, PrimitiveProtos.NullProto request,
-                                     RpcCallback<WorkerConnectionsProto> done) {
+                                     RpcCallback<WorkerConnectionsResponse> done) {
 
-      WorkerConnectionsProto.Builder builder = WorkerConnectionsProto.newBuilder();
+      WorkerConnectionsResponse.Builder builder = WorkerConnectionsResponse.newBuilder();
       Collection<Worker> workers = context.getResourceManager().getRMContext().getWorkers().values();
 
       for(Worker worker: workers) {

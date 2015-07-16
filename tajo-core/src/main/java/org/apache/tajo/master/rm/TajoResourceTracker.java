@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
+import org.apache.tajo.ipc.TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.scheduler.event.SchedulerEvent;
 import org.apache.tajo.master.scheduler.event.SchedulerEventType;
@@ -36,7 +37,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.net.InetSocketAddress;
 
-import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 
 /**
  * It receives pings that workers periodically send. The ping messages contains the worker resources and their statuses.
@@ -109,7 +110,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     super.serviceStop();
   }
 
-  private static WorkerStatusEvent createStatusEvent(NodeHeartbeatRequestProto heartbeat) {
+  private static WorkerStatusEvent createStatusEvent(NodeHeartbeatRequest heartbeat) {
     return new WorkerStatusEvent(
         heartbeat.getWorkerId(),
         heartbeat.getRunningTasks(),
@@ -121,10 +122,10 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   @Override
   public void nodeHeartbeat(
       RpcController controller,
-      NodeHeartbeatRequestProto heartbeat,
-      RpcCallback<NodeHeartbeatResponseProto> done) {
+      NodeHeartbeatRequest heartbeat,
+      RpcCallback<NodeHeartbeatResponse> done) {
 
-    NodeHeartbeatResponseProto.Builder response = NodeHeartbeatResponseProto.newBuilder();
+    NodeHeartbeatResponse.Builder response = NodeHeartbeatResponse.newBuilder();
     ResponseCommand responseCommand = ResponseCommand.NORMAL;
     try {
       // get a workerId from the heartbeat
@@ -198,7 +199,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     }
   }
 
-  private Worker createWorkerResource(NodeHeartbeatRequestProto request) {
+  private Worker createWorkerResource(NodeHeartbeatRequest request) {
     return new Worker(rmContext, new NodeResource(request.getTotalResource()),
         new WorkerConnectionInfo(request.getConnectionInfo()));
   }

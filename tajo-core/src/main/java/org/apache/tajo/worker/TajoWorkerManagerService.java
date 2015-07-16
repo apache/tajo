@@ -25,6 +25,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.ResourceProtos.BatchAllocationRequest;
+import org.apache.tajo.ResourceProtos.BatchAllocationResponse;
+import org.apache.tajo.ResourceProtos.StopExecutionBlockRequest;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
@@ -104,8 +107,8 @@ public class TajoWorkerManagerService extends CompositeService
 
   @Override
   public void allocateTasks(RpcController controller,
-                            TajoWorkerProtocol.BatchAllocationRequestProto request,
-                            RpcCallback<TajoWorkerProtocol.BatchAllocationResponseProto> done) {
+                            BatchAllocationRequest request,
+                            RpcCallback<BatchAllocationResponse> done) {
     workerContext.getWorkerSystemMetrics().counter("query", "allocationRequestNum").inc();
     workerContext.getNodeResourceManager().getDispatcher().
         getEventHandler().handle(new NodeResourceAllocateEvent(request, done));
@@ -113,7 +116,7 @@ public class TajoWorkerManagerService extends CompositeService
 
   @Override
   public void stopExecutionBlock(RpcController controller,
-                                 TajoWorkerProtocol.StopExecutionBlockRequestProto requestProto,
+                                 StopExecutionBlockRequest requestProto,
                                  RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
 

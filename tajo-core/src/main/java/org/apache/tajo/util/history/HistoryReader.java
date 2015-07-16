@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
+import org.apache.tajo.ResourceProtos.TaskHistoryProto;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.Bytes;
 

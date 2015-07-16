@@ -51,8 +51,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.ResourceProtos.*;
 import static org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService.Interface;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
 public class ExecutionBlockContext {
   /** class logger */
@@ -93,7 +93,7 @@ public class ExecutionBlockContext {
 
   private final Map<TaskId, TaskHistory> taskHistories = Maps.newConcurrentMap();
 
-  public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, ExecutionBlockContextProto request,
+  public ExecutionBlockContext(TajoWorker.WorkerContext workerContext, ExecutionBlockContextResponse request,
                                AsyncRpcClient queryMasterClient)
       throws IOException {
     this.executionBlockId = new ExecutionBlockId(request.getExecutionBlockId());

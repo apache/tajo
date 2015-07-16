@@ -18,15 +18,15 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 import java.io.IOException;
 
 public class MockExecutionBlock extends ExecutionBlockContext {
 
   public MockExecutionBlock(TajoWorker.WorkerContext workerContext,
-                            TajoWorkerProtocol.ExecutionBlockContextProto request) throws IOException {
+                            ExecutionBlockContextResponse request) throws IOException {
     super(workerContext, request, null);
   }
 

@@ -22,39 +22,10 @@ option java_outer_classname = "TajoResourceTrackerProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "QueryCoordinatorProtocol.proto";
-import "tajo_protos.proto";
-import "TajoIdProtos.proto";
+import "ResourceProtos.proto";
 
 package hadoop.yarn;
 
-message NodeHeartbeatRequestProto {
-  required int32 workerId = 1;
-  optional NodeResourceProto totalResource = 2;
-  optional NodeResourceProto availableResource = 3;
-  optional int32 runningTasks = 4;
-  optional int32 runningQueryMasters = 5;
-  optional WorkerConnectionInfoProto connectionInfo = 6;
-  optional NodeStatusProto status = 7;
-}
-
-message NodeHeartbeatResponseProto {
-  required ResponseCommand command = 1 [default = NORMAL];
-  optional int32 heartBeatInterval = 2;
-  repeated QueryIdProto queryId = 3;
-}
-
-enum ResponseCommand {
-  NORMAL = 1; //ping
-  MEMBERSHIP = 2; // request membership to worker node
-  ABORT_QUERY = 3; //query master failure
-  SHUTDOWN = 4; // black list
-}
-
-//TODO add node health information
-message NodeStatusProto {
-}
-
 service TajoResourceTrackerProtocolService {
-  rpc nodeHeartbeat(NodeHeartbeatRequestProto) returns (NodeHeartbeatResponseProto);
+  rpc nodeHeartbeat(NodeHeartbeatRequest) returns (NodeHeartbeatResponse);
 }

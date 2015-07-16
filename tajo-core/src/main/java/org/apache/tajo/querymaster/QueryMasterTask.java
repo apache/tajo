@@ -70,6 +70,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.tajo.TajoProtos.QueryState;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
@@ -106,8 +107,7 @@ public class QueryMasterTask extends CompositeService {
 
   private NodeResource allocation;
 
-  private final List<TajoWorkerProtocol.TaskFatalErrorReport> diagnostics =
-      new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
+  private final List<TaskFatalErrorReport> diagnostics = new ArrayList<TaskFatalErrorReport>();
 
   private final ConcurrentMap<Integer, WorkerConnectionInfo> workerMap = Maps.newConcurrentMap();
 
@@ -204,7 +204,7 @@ public class QueryMasterTask extends CompositeService {
     LOG.info("Stopped QueryMasterTask:" + queryId);
   }
 
-  public void handleTaskFailed(TajoWorkerProtocol.TaskFatalErrorReport report) {
+  public void handleTaskFailed(TaskFatalErrorReport report) {
     synchronized(diagnostics) {
       if (diagnostics.size() < 10) {
         diagnostics.add(report);
@@ -214,7 +214,7 @@ public class QueryMasterTask extends CompositeService {
     getEventHandler().handle(new TaskFatalErrorEvent(report));
   }
 
-  public Collection<TajoWorkerProtocol.TaskFatalErrorReport> getDiagnostics() {
+  public Collection<TaskFatalErrorReport> getDiagnostics() {
     synchronized(diagnostics) {
       return Collections.unmodifiableCollection(diagnostics);
     }

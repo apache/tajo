@@ -20,7 +20,7 @@ package org.apache.tajo.master.event;
 
 import com.google.protobuf.RpcCallback;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.querymaster.TaskAttempt;
 
 public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
@@ -44,14 +44,14 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
 
   public static class TaskAttemptScheduleContext {
     private String host;
-    private RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback;
+    private RpcCallback<TaskRequestProto> callback;
 
     public TaskAttemptScheduleContext() {
 
     }
 
     public TaskAttemptScheduleContext(String host,
-                                      RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
+                                      RpcCallback<TaskRequestProto> callback) {
       this.host = host;
       this.callback = callback;
     }
@@ -64,11 +64,11 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
       this.host = host;
     }
 
-    public RpcCallback<TajoWorkerProtocol.TaskRequestProto> getCallback() {
+    public RpcCallback<TaskRequestProto> getCallback() {
       return callback;
     }
 
-    public void setCallback(RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
+    public void setCallback(RpcCallback<TaskRequestProto> callback) {
       this.callback = callback;
     }
   }

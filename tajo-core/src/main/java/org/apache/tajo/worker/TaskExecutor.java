@@ -35,6 +35,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.TaskStartEvent;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 
 import java.io.IOException;
 import java.util.Map;
@@ -144,7 +145,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
 
 
   protected Task createTask(ExecutionBlockContext executionBlockContext,
-                            TajoWorkerProtocol.TaskRequestProto taskRequest) throws IOException {
+                            TaskRequestProto taskRequest) throws IOException {
     Task task = null;
     TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
     if (executionBlockContext.getTasks().containsKey(taskAttemptId)) {

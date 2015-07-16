@@ -30,7 +30,6 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.ipc.QueryMasterProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.RpcClientManager;
@@ -45,8 +44,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockContextProto;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockContextRequestProto;
+import static org.apache.tajo.ResourceProtos.ExecutionBlockListProto;
+import static org.apache.tajo.ResourceProtos.ExecutionBlockContextRequest;
+import static org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 
 /**
  * A TaskManager is responsible for managing executionBlock resource and tasks.
@@ -115,16 +115,16 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     AsyncRpcClient client = null;
     try {
       InetSocketAddress address = NetUtils.createSocketAddr(queryMasterHostAndPort);
-      ExecutionBlockContextRequestProto.Builder request = ExecutionBlockContextRequestProto.newBuilder();
+      ExecutionBlockContextRequest.Builder request = ExecutionBlockContextRequest.newBuilder();
       request.setExecutionBlockId(executionBlockId.getProto())
           .setWorker(getWorkerContext().getConnectionInfo().getProto());
 
       client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true);
       QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-      CallFuture<ExecutionBlockContextProto> callback = new CallFuture<ExecutionBlockContextProto>();
+      CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<ExecutionBlockContextResponse>();
       stub.getExecutionBlockContext(callback.getController(), request.build(), callback);
 
-      ExecutionBlockContextProto contextProto =
+      ExecutionBlockContextResponse contextProto =
           callback.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), contextProto, client);
 
@@ -138,7 +138,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   }
 
   protected void stopExecutionBlock(ExecutionBlockContext context,
-                                    TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+                                    ExecutionBlockListProto cleanupList) {
 
     if (context != null) {
       try {

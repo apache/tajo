@@ -41,9 +41,8 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
-import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
@@ -75,6 +74,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import static org.apache.tajo.ResourceProtos.*;
 
 
 /**
@@ -681,7 +681,7 @@ public class Stage implements EventHandler<StageEvent> {
     return workerMap;
   }
 
-  private void sendStopExecutionBlockEvent(final TajoWorkerProtocol.StopExecutionBlockRequestProto requestProto) {
+  private void sendStopExecutionBlockEvent(final StopExecutionBlockRequest requestProto) {
 
     for (final InetSocketAddress worker : getAssignedWorkerMap().values()) {
       getContext().getQueryMasterContext().getEventExecutor().submit(new Runnable() {
@@ -716,10 +716,8 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
-    TajoWorkerProtocol.StopExecutionBlockRequestProto.Builder
-        stopRequest = TajoWorkerProtocol.StopExecutionBlockRequestProto.newBuilder();
-    TajoWorkerProtocol.ExecutionBlockListProto.Builder
-        cleanupList = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
+    StopExecutionBlockRequest.Builder stopRequest = StopExecutionBlockRequest.newBuilder();
+    ExecutionBlockListProto.Builder cleanupList = ExecutionBlockListProto.newBuilder();
 
     cleanupList.addAllExecutionBlockId(Lists.newArrayList(ebIds));
     stopRequest.setCleanupList(cleanupList.build());
@@ -1222,7 +1220,7 @@ public class Stage implements EventHandler<StageEvent> {
   private void finalizeShuffleReport(StageShuffleReportEvent event, ShuffleType type) {
     if(!checkIfNeedFinalizing(type)) return;
 
-    TajoWorkerProtocol.ExecutionBlockReport report = event.getReport();
+    ExecutionBlockReport report = event.getReport();
 
     if (!report.getReportSuccess()) {
       stopFinalization();

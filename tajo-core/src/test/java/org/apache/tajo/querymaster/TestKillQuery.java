@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.tajo.*;
+import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.CatalogService;
@@ -34,7 +35,6 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
@@ -243,8 +243,8 @@ public class TestKillQuery {
     taskRequest.setInterQuery();
 
 
-    TajoWorkerProtocol.ExecutionBlockContextProto.Builder requestProtoBuilder =
-        TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+    ExecutionBlockContextResponse.Builder requestProtoBuilder =
+        ExecutionBlockContextResponse.newBuilder();
     requestProtoBuilder.setExecutionBlockId(eid.getProto())
         .setPlanJson("test")
         .setQueryContext(new QueryContext(conf).getProto())

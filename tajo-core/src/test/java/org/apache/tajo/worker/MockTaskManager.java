@@ -20,6 +20,8 @@ package org.apache.tajo.worker;
 
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
+import org.apache.tajo.ResourceProtos.ExecutionBlockListProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -41,8 +43,7 @@ public class MockTaskManager extends TaskManager {
   @Override
   protected ExecutionBlockContext createExecutionBlock(ExecutionBlockId executionBlockId, String queryMaster) {
     try {
-      TajoWorkerProtocol.ExecutionBlockContextProto.Builder builder =
-          TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+      ExecutionBlockContextResponse.Builder builder = ExecutionBlockContextResponse.newBuilder();
       builder.setExecutionBlockId(executionBlockId.getProto())
           .setPlanJson("test")
           .setQueryContext(new QueryContext(new TajoConf()).getProto())
@@ -56,7 +57,7 @@ public class MockTaskManager extends TaskManager {
 
   @Override
   protected void stopExecutionBlock(ExecutionBlockContext context,
-                                    TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+                                    ExecutionBlockListProto cleanupList) {
     //skip for testing
   }
 

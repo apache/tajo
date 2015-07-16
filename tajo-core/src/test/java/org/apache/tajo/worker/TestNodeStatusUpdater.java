@@ -33,6 +33,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
+import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.*;
 
 public class TestNodeStatusUpdater {
@@ -143,7 +144,7 @@ public class TestNodeStatusUpdater {
     MockNodeStatusUpdater.MockResourceTracker resourceTracker = statusUpdater.getResourceTracker();
     barrier.await();
 
-    TajoResourceTrackerProtocol.NodeHeartbeatRequestProto lastRequest = resourceTracker.getLastRequest();
+    NodeHeartbeatRequest lastRequest = resourceTracker.getLastRequest();
     assertTrue(lastRequest.hasWorkerId());
     assertTrue(lastRequest.hasAvailableResource());
     assertTrue(lastRequest.hasRunningTasks());

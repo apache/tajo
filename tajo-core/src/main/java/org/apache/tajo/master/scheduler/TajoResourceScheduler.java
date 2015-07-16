@@ -20,7 +20,8 @@ package org.apache.tajo.master.scheduler;
 
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ResourceProtos.NodeResourceRequest;
+import org.apache.tajo.ResourceProtos.AllocationResourceProto;
 import org.apache.tajo.master.scheduler.event.SchedulerEvent;
 import org.apache.tajo.resource.NodeResource;
 
@@ -68,7 +69,7 @@ public interface TajoResourceScheduler extends EventHandler<SchedulerEvent> {
    * such as memory, CPU cores, and disk slots.
    * @return the number of reserved resources.
    */
-  List<QueryCoordinatorProtocol.AllocationResourceProto>
-  reserve(QueryId queryId, QueryCoordinatorProtocol.NodeResourceRequestProto ask);
+  List<AllocationResourceProto>
+  reserve(QueryId queryId, NodeResourceRequest ask);
 
 }

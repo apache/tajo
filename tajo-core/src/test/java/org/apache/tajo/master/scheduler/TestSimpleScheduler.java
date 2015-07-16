@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-import static org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -179,11 +179,11 @@ public class TestSimpleScheduler {
     assertEquals(totalResource, scheduler.getClusterResource());
 
     QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
-    CallFuture<NodeResourceResponseProto> callBack = new CallFuture<NodeResourceResponseProto>();
+    CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
     rmContext.getDispatcher().getEventHandler().handle(new ResourceReserveSchedulerEvent(
         createResourceRequest(queryId, requestNum, new ArrayList<Integer>()), callBack));
 
-    NodeResourceResponseProto responseProto = callBack.get();
+    NodeResourceResponse responseProto = callBack.get();
     assertEquals(queryId, new QueryId(responseProto.getQueryId()));
     assertEquals(requestNum, responseProto.getResourceCount());
 
@@ -209,12 +209,12 @@ public class TestSimpleScheduler {
     assertTrue(NodeResources.fitsIn(expectResource, workerEntry.getValue().getAvailableResource()));
 
     QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
-    NodeResourceRequestProto requestProto = createResourceRequest(queryId, requestNum, targetWorkers);
-    CallFuture<NodeResourceResponseProto> callBack = new CallFuture<NodeResourceResponseProto>();
+    NodeResourceRequest requestProto = createResourceRequest(queryId, requestNum, targetWorkers);
+    CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
     rmContext.getDispatcher().getEventHandler().handle(new ResourceReserveSchedulerEvent(
         requestProto, callBack));
 
-    NodeResourceResponseProto responseProto = callBack.get();
+    NodeResourceResponse responseProto = callBack.get();
     assertEquals(queryId, new QueryId(responseProto.getQueryId()));
     assertEquals(requestNum, responseProto.getResourceCount());
 
@@ -223,10 +223,10 @@ public class TestSimpleScheduler {
     }
   }
 
-  private NodeResourceRequestProto
+  private NodeResourceRequest
   createResourceRequest(QueryId queryId, int containerNum, List<Integer> candidateWorkers) {
-    NodeResourceRequestProto.Builder request =
-        NodeResourceRequestProto.newBuilder();
+    NodeResourceRequest.Builder request =
+        NodeResourceRequest.newBuilder();
     request.setCapacity(scheduler.getMinimumResourceCapability().getProto())
         .setNumContainers(containerNum)
         .setPriority(1)

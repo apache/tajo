@@ -28,9 +28,7 @@ import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -45,6 +43,8 @@ import org.apache.tajo.worker.TajoWorker;
 import org.apache.tajo.worker.event.QMResourceAllocateEvent;
 
 import java.net.InetSocketAddress;
+
+import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryMasterManagerService extends CompositeService
     implements QueryMasterProtocol.QueryMasterProtocolService.Interface {
@@ -112,7 +112,7 @@ public class QueryMasterManagerService extends CompositeService
   }
 
   @Override
-  public void statusUpdate(RpcController controller, TajoWorkerProtocol.TaskStatusProto request,
+  public void statusUpdate(RpcController controller, TaskStatusProto request,
                            RpcCallback<PrimitiveProtos.NullProto> done) {
     QueryId queryId = new QueryId(request.getId().getTaskId().getExecutionBlockId().getQueryId());
     TaskAttemptId attemptId = new TaskAttemptId(request.getId());
@@ -148,7 +148,7 @@ public class QueryMasterManagerService extends CompositeService
   }
 
   @Override
-  public void fatalError(RpcController controller, TajoWorkerProtocol.TaskFatalErrorReport report,
+  public void fatalError(RpcController controller, TaskFatalErrorReport report,
                          RpcCallback<PrimitiveProtos.NullProto> done) {
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
         new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
@@ -161,7 +161,7 @@ public class QueryMasterManagerService extends CompositeService
   }
 
   @Override
-  public void done(RpcController controller, TajoWorkerProtocol.TaskCompletionReport report,
+  public void done(RpcController controller, TaskCompletionReport report,
                    RpcCallback<PrimitiveProtos.NullProto> done) {
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
         new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
@@ -173,7 +173,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void doneExecutionBlock(
-      RpcController controller, TajoWorkerProtocol.ExecutionBlockReport request,
+      RpcController controller, ExecutionBlockReport request,
       RpcCallback<PrimitiveProtos.NullProto> done) {
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
     if (queryMasterTask != null) {
@@ -185,8 +185,8 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void getExecutionBlockContext(RpcController controller,
-                                       TajoWorkerProtocol.ExecutionBlockContextRequestProto request,
-                                       RpcCallback<TajoWorkerProtocol.ExecutionBlockContextProto> done) {
+                                       ExecutionBlockContextRequest request,
+                                       RpcCallback<ExecutionBlockContextResponse> done) {
 
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
         new QueryId(request.getExecutionBlockId().getQueryId()));
@@ -197,8 +197,7 @@ public class QueryMasterManagerService extends CompositeService
       // first request with starting ExecutionBlock
       PlanProto.ShuffleType shuffleType = stage.getDataChannel().getShuffleType();
 
-      TajoWorkerProtocol.ExecutionBlockContextProto.Builder
-          ebRequestProto = TajoWorkerProtocol.ExecutionBlockContextProto.newBuilder();
+      ExecutionBlockContextResponse.Builder ebRequestProto = ExecutionBlockContextResponse.newBuilder();
       ebRequestProto.setExecutionBlockId(request.getExecutionBlockId())
           .setQueryContext(stage.getContext().getQueryContext().getProto())
           .setQueryOutputPath(stage.getContext().getStagingDir().toString())
@@ -229,7 +228,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void executeQuery(RpcController controller,
-                           TajoWorkerProtocol.QueryExecutionRequestProto request,
+                           QueryExecutionRequest request,
                            RpcCallback<PrimitiveProtos.NullProto> done) {
     workerContext.getWorkerSystemMetrics().counter("querymaster", "numQuery").inc();
 
@@ -245,7 +244,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void allocateQueryMaster(RpcController controller,
-                               QueryCoordinatorProtocol.AllocationResourceProto request,
+                               AllocationResourceProto request,
                                RpcCallback<PrimitiveProtos.BoolProto> done) {
     CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
     workerContext.getNodeResourceManager().handle(new QMResourceAllocateEvent(request, callFuture));

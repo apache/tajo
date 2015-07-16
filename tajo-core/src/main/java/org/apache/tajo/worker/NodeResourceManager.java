@@ -35,7 +35,7 @@ import org.apache.tajo.worker.event.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class NodeResourceManager extends AbstractService implements EventHandler<NodeResourceEvent> {
   private static final Log LOG = LogFactory.getLog(NodeResourceManager.class);
@@ -74,8 +74,8 @@ public class NodeResourceManager extends AbstractService implements EventHandler
         if (event.getResourceType() == NodeResourceEvent.ResourceType.TASK) {
           // allocate task resource
           NodeResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, NodeResourceAllocateEvent.class);
-          BatchAllocationResponseProto.Builder response = BatchAllocationResponseProto.newBuilder();
-          for (TaskAllocationRequestProto request : allocateEvent.getRequest().getTaskRequestList()) {
+          BatchAllocationResponse.Builder response = BatchAllocationResponse.newBuilder();
+          for (TaskAllocationProto request : allocateEvent.getRequest().getTaskRequestList()) {
             NodeResource resource = new NodeResource(request.getResource());
             if (allocate(resource)) {
               //send task start event to TaskExecutor

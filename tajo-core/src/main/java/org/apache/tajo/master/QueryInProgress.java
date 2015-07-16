@@ -22,17 +22,19 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.ResourceProtos.AllocationResourceProto;
+import org.apache.tajo.ResourceProtos.QueryExecutionRequest;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.plan.logical.LogicalRootNode;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
@@ -66,7 +68,7 @@ public class QueryInProgress {
 
   private QueryMasterProtocolService queryMasterRpcClient;
 
-  private QueryCoordinatorProtocol.AllocationResourceProto allocationResource;
+  private AllocationResourceProto allocationResource;
 
   private final Lock readLock;
   private final Lock writeLock;
@@ -127,9 +129,11 @@ public class QueryInProgress {
 
   /**
    * Connect to QueryMaster and allocate QM resource.
-   * If there is no available resource, It returns false
+   *
+   * @param allocation QM resource
+   * @return If there is no available resource, It returns false
    */
-  protected boolean allocateToQueryMaster(QueryCoordinatorProtocol.AllocationResourceProto allocation) {
+  protected boolean allocateToQueryMaster(AllocationResourceProto allocation) {
     try {
       writeLock.lockInterruptibly();
     } catch (Exception e) {
@@ -197,7 +201,7 @@ public class QueryInProgress {
       LOG.info("Call executeQuery to :" +
           queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort() + "," + queryId);
 
-      QueryExecutionRequestProto.Builder builder = TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder();
+      QueryExecutionRequest.Builder builder = QueryExecutionRequest.newBuilder();
       builder.setQueryId(queryId.getProto())
           .setQueryContext(queryInfo.getQueryContext().getProto())
           .setSession(session.getProto())

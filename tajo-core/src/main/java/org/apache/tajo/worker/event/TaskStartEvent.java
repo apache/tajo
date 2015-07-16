@@ -22,7 +22,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.resource.NodeResource;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
+import static org.apache.tajo.ResourceProtos.TaskRequestProto;
 
 public class TaskStartEvent extends TaskManagerEvent {
 

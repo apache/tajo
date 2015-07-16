@@ -18,24 +18,21 @@
 
 package org.apache.tajo.engine.planner.enforce;
 
-
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.*;
+import static org.apache.tajo.plan.serder.PlanProto.GroupbyEnforce.GroupbyAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.*;
+import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
+import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 
 public class Enforcer implements ProtoObject<EnforcerProto> {
   Map<EnforceType, List<EnforceProperty>> properties;

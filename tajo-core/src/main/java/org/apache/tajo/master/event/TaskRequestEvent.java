@@ -20,7 +20,7 @@ package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ResourceProtos.AllocationResourceProto;
 import org.apache.tajo.master.event.TaskRequestEvent.TaskRequestEventType;
 
 public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
@@ -29,12 +29,12 @@ public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
     TASK_REQ
   }
 
-  private final QueryCoordinatorProtocol.AllocationResourceProto responseProto;
+  private final AllocationResourceProto responseProto;
   private final ExecutionBlockId executionBlockId;
   private final int workerId;
 
   public TaskRequestEvent(int workerId,
-                          QueryCoordinatorProtocol.AllocationResourceProto responseProto,
+                          AllocationResourceProto responseProto,
                           ExecutionBlockId executionBlockId) {
     super(TaskRequestEventType.TASK_REQ);
     this.workerId = workerId;
@@ -46,7 +46,7 @@ public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
     return executionBlockId;
   }
 
-  public QueryCoordinatorProtocol.AllocationResourceProto getResponseProto() {
+  public AllocationResourceProto getResponseProto() {
     return responseProto;
   }
 

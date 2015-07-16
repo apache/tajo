@@ -27,7 +27,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
@@ -45,12 +44,12 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 
-import static org.apache.tajo.ipc.QueryCoordinatorProtocol.AllocationResourceProto;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class SimpleScheduler extends AbstractQueryScheduler {
 
   private static final Log LOG = LogFactory.getLog(SimpleScheduler.class);
-  private static final float PARALLEL_QUERY_LIMIT = 0.5f;
+  private static final float MAXIMUM_RUNNING_QM_RATE = 0.5f;
   private static final Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 
   private volatile boolean isStopped = false;
@@ -134,7 +133,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     return resourceCalculator;
   }
 
-  private QueryCoordinatorProtocol.NodeResourceRequestProto createQMResourceRequest(QueryInfo queryInfo) {
+  private NodeResourceRequest createQMResourceRequest(QueryInfo queryInfo) {
     NodeResource qmResource = getQMMinimumResourceCapability();
 
     int containers = 1;
@@ -151,12 +150,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       if (idleNode.size() > containers * 3) break;
     }
 
-    QueryCoordinatorProtocol.NodeResourceRequestProto.Builder builder =
-        QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
+    NodeResourceRequest.Builder builder = NodeResourceRequest.newBuilder();
 
     builder.setQueryId(queryInfo.getQueryId().getProto())
         .setCapacity(qmResource.getProto())
-        .setType(QueryCoordinatorProtocol.ResourceType.QUERYMASTER)
+        .setType(ResourceType.QUERYMASTER)
         .setPriority(1)
         .setNumContainers(containers)
         .setRunningTasks(1)
@@ -174,7 +172,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
   @Override
   public List<AllocationResourceProto>
-  reserve(QueryId queryId, QueryCoordinatorProtocol.NodeResourceRequestProto request) {
+  reserve(QueryId queryId, NodeResourceRequest request) {
 
     List<AllocationResourceProto> reservedResources;
     NodeResource capacity = new NodeResource(request.getCapacity());
@@ -272,8 +270,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     List<AllocationResourceProto> resources =
         reserve(new QueryId(schedulerEvent.getRequest().getQueryId()), schedulerEvent.getRequest());
 
-    QueryCoordinatorProtocol.NodeResourceResponseProto.Builder response =
-        QueryCoordinatorProtocol.NodeResourceResponseProto.newBuilder();
+    NodeResourceResponse.Builder response = NodeResourceResponse.newBuilder();
     response.setQueryId(schedulerEvent.getRequest().getQueryId());
     schedulerEvent.getCallBack().run(response.addAllResource(resources).build());
   }
@@ -337,8 +334,8 @@ public class SimpleScheduler extends AbstractQueryScheduler {
         int maxAvailable = getResourceCalculator().computeAvailableContainers(
             getMaximumResourceCapability(), getQMMinimumResourceCapability());
 
-        // check maximum parallel running queries. allow 50% parallel running
-        if (assignedQueryMasterMap.size() >= Math.floor(maxAvailable * PARALLEL_QUERY_LIMIT)) {
+        // check maximum parallel running QM. allow 50% parallel running
+        if (assignedQueryMasterMap.size() >= Math.floor(maxAvailable * MAXIMUM_RUNNING_QM_RATE)) {
           queryQueue.add(query);
           synchronized (this) {
             try {
@@ -352,8 +349,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           }
         } else {
           QueryInfo queryInfo = getQueryInfo(query.getQueryId());
-          List<QueryCoordinatorProtocol.AllocationResourceProto> allocation =
-              reserve(query.getQueryId(), createQMResourceRequest(queryInfo));
+          List<AllocationResourceProto> allocation = reserve(query.getQueryId(), createQMResourceRequest(queryInfo));
 
           if(allocation.size() == 0) {
             queryQueue.add(query);

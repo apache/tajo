@@ -21,19 +21,19 @@
  */
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.List;
 
-public interface TaskRequest extends ProtoObject<TajoWorkerProtocol.TaskRequestProto> {
+public interface TaskRequest extends ProtoObject<TaskRequestProto> {
 
 	String getQueryMasterHostAndPort();
 	TaskAttemptId getId();

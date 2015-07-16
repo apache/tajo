@@ -72,11 +72,6 @@ public class TajoResourceManager extends CompositeService {
     this.masterContext = masterContext;
   }
 
-  @VisibleForTesting
-  public TajoResourceManager(TajoConf systemConf) {
-    super(TajoResourceManager.class.getSimpleName());
-  }
-
   @Override
   public void serviceInit(Configuration conf) throws Exception {
     this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);

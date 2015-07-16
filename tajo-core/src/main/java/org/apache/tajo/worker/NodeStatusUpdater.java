@@ -46,7 +46,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 
 /**
  * It periodically sends heartbeat to {@link org.apache.tajo.master.rm.TajoResourceTracker} via asynchronous rpc.
@@ -64,7 +64,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private final TajoWorker.WorkerContext workerContext;
   private AsyncRpcClient rmClient;
   private ServiceTracker serviceTracker;
-  private TajoResourceTrackerProtocolService.Interface resourceTracker;
+  private TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingThreshold;
 
   public NodeStatusUpdater(TajoWorker.WorkerContext workerContext) {
@@ -123,8 +123,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return queueingThreshold;
   }
 
-  private NodeHeartbeatRequestProto.Builder createResourceReport() {
-    NodeHeartbeatRequestProto.Builder requestProto = NodeHeartbeatRequestProto.newBuilder();
+  private NodeHeartbeatRequest.Builder createResourceReport() {
+    NodeHeartbeatRequest.Builder requestProto = NodeHeartbeatRequest.newBuilder();
     requestProto.setWorkerId(workerContext.getConnectionInfo().getId());
     requestProto.setAvailableResource(workerContext.getNodeResourceManager().getAvailableResource().getProto());
     requestProto.setRunningTasks(workerContext.getTaskManager().getRunningTasks());
@@ -133,8 +133,8 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return requestProto;
   }
 
-  private NodeHeartbeatRequestProto.Builder createNodeStatusReport() {
-    NodeHeartbeatRequestProto.Builder requestProto = createResourceReport();
+  private NodeHeartbeatRequest.Builder createNodeStatusReport() {
+    NodeHeartbeatRequest.Builder requestProto = createResourceReport();
     requestProto.setTotalResource(workerContext.getNodeResourceManager().getTotalResource().getProto());
     requestProto.setConnectionInfo(workerContext.getConnectionInfo().getProto());
 
@@ -142,7 +142,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return requestProto;
   }
 
-  protected TajoResourceTrackerProtocolService.Interface newStub()
+  protected TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService.Interface newStub()
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
     RpcClientManager.cleanup(rmClient);
 
@@ -153,15 +153,15 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     return rmClient.getStub();
   }
 
-  protected NodeHeartbeatResponseProto sendHeartbeat(NodeHeartbeatRequestProto requestProto)
+  protected NodeHeartbeatResponse sendHeartbeat(NodeHeartbeatRequest requestProto)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException, ExecutionException {
     if (resourceTracker == null) {
       resourceTracker = newStub();
     }
 
-    NodeHeartbeatResponseProto response = null;
+    NodeHeartbeatResponse response = null;
     try {
-      CallFuture<NodeHeartbeatResponseProto> callBack = new CallFuture<NodeHeartbeatResponseProto>();
+      CallFuture<NodeHeartbeatResponse> callBack = new CallFuture<NodeHeartbeatResponse>();
 
       resourceTracker.nodeHeartbeat(callBack.getController(), requestProto, callBack);
       response = callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -209,7 +209,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
     /* Node sends a heartbeats with its resource and status periodically to master. */
     @Override
     public void run() {
-      NodeHeartbeatResponseProto lastResponse = null;
+      NodeHeartbeatResponse lastResponse = null;
       while (!isStopped && !Thread.interrupted()) {
 
         try {

@@ -27,12 +27,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
@@ -56,7 +58,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private static final Log LOG = LogFactory.getLog(DefaultTaskScheduler.class);
@@ -273,28 +275,25 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
     NettyClientBase tmClient = RpcClientManager.getInstance().
         getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
-    QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+    QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
-    CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto> callBack = new CallFuture<QueryCoordinatorProtocol.NodeResourceResponseProto>();
-    QueryCoordinatorProtocol.NodeResourceRequestProto.Builder request =
-        QueryCoordinatorProtocol.NodeResourceRequestProto.newBuilder();
+    CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
+    NodeResourceRequest.Builder request = NodeResourceRequest.newBuilder();
     request.setCapacity(NodeResources.createResource(minTaskMemory, isLeaf ? 1 : 0).getProto())
         .setNumContainers(requestContainerNum)
         .setPriority(stage.getPriority())
         .setQueryId(context.getMasterContext().getQueryId().getProto())
-        .setType(isLeaf ? QueryCoordinatorProtocol.ResourceType.LEAF :
-            QueryCoordinatorProtocol.ResourceType.INTERMEDIATE)
+        .setType(isLeaf ? ResourceType.LEAF : ResourceType.INTERMEDIATE)
         .setUserId(context.getMasterContext().getQueryContext().getUser())
         .setRunningTasks(stage.getTotalScheduledObjectsCount() - stage.getCompletedTaskCount())
         .addAllCandidateNodes(candidateWorkers)
         .setQueue(context.getMasterContext().getQueryContext().get("queue", "default")); //TODO set queue
 
     masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
-    QueryCoordinatorProtocol.NodeResourceResponseProto
-        responseProto = callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    NodeResourceResponse response = callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-    for (QueryCoordinatorProtocol.AllocationResourceProto proto : responseProto.getResourceList()) {
-      taskRequestEvents.add(new TaskRequestEvent(proto.getWorkerId(), proto, context.getBlockId()));
+    for (AllocationResourceProto resource : response.getResourceList()) {
+      taskRequestEvents.add(new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId()));
     }
 
     return taskRequestEvents;
@@ -851,9 +850,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
 
           //TODO send batch request
-          TajoWorkerProtocol.BatchAllocationRequestProto.Builder
-              requestProto = TajoWorkerProtocol.BatchAllocationRequestProto.newBuilder();
-          requestProto.addTaskRequest(TajoWorkerProtocol.TaskAllocationRequestProto.newBuilder()
+          BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
+          requestProto.addTaskRequest(TaskAllocationProto.newBuilder()
               .setResource(taskRequest.getResponseProto().getResource())
               .setTaskRequest(taskAssign.getProto()).build());
 
@@ -864,17 +862,17 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
 
           AsyncRpcClient tajoWorkerRpc = null;
-          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>
-              callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+          CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
 
-            TajoWorkerProtocol.BatchAllocationResponseProto
-                responseProto = callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            BatchAllocationResponse responseProto =
+                callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
             if (responseProto.getCancellationTaskCount() > 0) {
-              for (TajoWorkerProtocol.TaskAllocationRequestProto proto : responseProto.getCancellationTaskList()) {
+              for (TaskAllocationProto proto : responseProto.getCancellationTaskList()) {
                 cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
                 cancellation++;
               }
@@ -957,17 +955,15 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               context.getMasterContext().getWorkerMap().get(taskRequest.getWorkerId());
 
           //TODO send batch request
-          TajoWorkerProtocol.BatchAllocationRequestProto.Builder
-              requestProto = TajoWorkerProtocol.BatchAllocationRequestProto.newBuilder();
-          requestProto.addTaskRequest(TajoWorkerProtocol.TaskAllocationRequestProto.newBuilder()
+          BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
+          requestProto.addTaskRequest(TaskAllocationProto.newBuilder()
               .setResource(taskRequest.getResponseProto().getResource())
               .setTaskRequest(taskAssign.getProto()).build());
 
           requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
 
-          CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>
-              callFuture = new CallFuture<TajoWorkerProtocol.BatchAllocationResponseProto>();
+          CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
 
           InetSocketAddress addr = stage.getAssignedWorkerMap().get(connectionInfo.getId());
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
@@ -978,11 +974,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
 
-            TajoWorkerProtocol.BatchAllocationResponseProto
+            BatchAllocationResponse
                 responseProto = callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
             if(responseProto.getCancellationTaskCount() > 0) {
-              for (TajoWorkerProtocol.TaskAllocationRequestProto proto : responseProto.getCancellationTaskList()) {
+              for (TaskAllocationProto proto : responseProto.getCancellationTaskList()) {
                 cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
                 cancellation++;
               }

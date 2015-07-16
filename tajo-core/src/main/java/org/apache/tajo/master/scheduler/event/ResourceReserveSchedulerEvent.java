@@ -19,27 +19,27 @@
 package org.apache.tajo.master.scheduler.event;
 
 import com.google.protobuf.RpcCallback;
-import static org.apache.tajo.ipc.QueryCoordinatorProtocol.NodeResourceRequestProto;
-import static org.apache.tajo.ipc.QueryCoordinatorProtocol.NodeResourceResponseProto;
+import static org.apache.tajo.ResourceProtos.NodeResourceRequest;
+import static org.apache.tajo.ResourceProtos.NodeResourceResponse;
 
 public class ResourceReserveSchedulerEvent extends SchedulerEvent {
 
-  private NodeResourceRequestProto request;
+  private NodeResourceRequest request;
 
-  private RpcCallback<NodeResourceResponseProto> callBack;
+  private RpcCallback<NodeResourceResponse> callBack;
 
-  public ResourceReserveSchedulerEvent(NodeResourceRequestProto request,
-                                       RpcCallback<NodeResourceResponseProto> callback) {
+  public ResourceReserveSchedulerEvent(NodeResourceRequest request,
+                                       RpcCallback<NodeResourceResponse> callback) {
     super(SchedulerEventType.RESOURCE_RESERVE);
     this.request = request;
     this.callBack = callback;
   }
 
-  public NodeResourceRequestProto getRequest() {
+  public NodeResourceRequest getRequest() {
     return request;
   }
 
-  public RpcCallback<NodeResourceResponseProto> getCallBack() {
+  public RpcCallback<NodeResourceResponse> getCallBack() {
     return callBack;
   }
 }
