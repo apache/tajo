@@ -6,7 +6,7 @@
     max(orders.o_orderdate)
   from
     customer left outer join orders on c_custkey = o_orderkey
-  union
+  union all
   select
     max(c_custkey),
     sum(empty_orders.o_orderkey),

@@ -320,12 +320,6 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   @Override
   public Expr visitAlterTable(Context context, Stack<Expr> stack, AlterTable expr) throws PlanningException {
     super.visitAlterTable(context, stack, expr);
-
-    if (expr.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
-      || expr.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
-      context.state.addVerification(expr.getAlterTableOpType().name() + " is not supported yet");
-    }
-
     return expr;
   }
 }

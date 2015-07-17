@@ -549,6 +549,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
                                      AlterTableNode node, Stack<LogicalNode> stack) {
     PlanProto.AlterTableNode.Builder alterTableBuilder = PlanProto.AlterTableNode.newBuilder();
     alterTableBuilder.setTableName(node.getTableName());
+    PlanProto.AlterTableNode.AlterPartition.Builder partitionBuilder = null;
 
     switch (node.getAlterTableOpType()) {
     case RENAME_TABLE:
@@ -568,6 +569,34 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     case SET_PROPERTY:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.SET_PROPERTY);
       alterTableBuilder.setProperties(node.getProperties().getProto());
+      break;
+    case ADD_PARTITION:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.ADD_PARTITION);
+      partitionBuilder = PlanProto.AlterTableNode.AlterPartition.newBuilder();
+      for (String columnName : node.getPartitionColumns()) {
+        partitionBuilder.addColumnNames(columnName);
+      }
+
+      for (String partitionValue : node.getPartitionValues()) {
+        partitionBuilder.addPartitionValues(partitionValue);
+      }
+      if (node.getLocation() != null) {
+        partitionBuilder.setLocation(node.getLocation());
+      }
+      alterTableBuilder.setAlterPartition(partitionBuilder);
+      break;
+    case DROP_PARTITION:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.DROP_PARTITION);
+      partitionBuilder = PlanProto.AlterTableNode.AlterPartition.newBuilder();
+      for (String columnName : node.getPartitionColumns()) {
+        partitionBuilder.addColumnNames(columnName);
+      }
+
+      for (String partitionValue : node.getPartitionValues()) {
+        partitionBuilder.addPartitionValues(partitionValue);
+      }
+      partitionBuilder.setPurge(node.isPurge());
+      alterTableBuilder.setAlterPartition(partitionBuilder);
       break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name());
