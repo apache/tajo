@@ -102,8 +102,6 @@ public class TestProgressExternalSortExec {
     appender.flush();
     appender.close();
 
-    System.out.println(appender.getStats().getNumRows() + " rows (" + appender.getStats().getNumBytes() + " Bytes)");
-
     testDataStats = appender.getStats();
     employee = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,

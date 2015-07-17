@@ -338,6 +338,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     unionNode.setRightChild(rightChild);
     unionNode.setInSchema(leftChild.getOutSchema());
     unionNode.setOutSchema(leftChild.getOutSchema());
+    unionNode.setDistinct(expr.isDistinct());
 
     return unionNode;
   }

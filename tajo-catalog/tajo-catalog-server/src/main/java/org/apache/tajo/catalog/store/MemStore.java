@@ -322,13 +322,11 @@ public class MemStore implements CatalogStore {
           builder.setPath(partitionDesc.getPath());
 
           if (partitionDesc.getPartitionKeysCount() > 0) {
-            int i = 0;
             for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
               CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
               keyBuilder.setColumnName(eachKey.getColumnName());
               keyBuilder.setPartitionValue(eachKey.getPartitionValue());
-              builder.setPartitionKeys(i, keyBuilder.build());
-              i++;
+              builder.addPartitionKeys(keyBuilder.build());
             }
           }
 
@@ -348,7 +346,7 @@ public class MemStore implements CatalogStore {
         if(!partitions.containsKey(tableName)) {
           throw new NoSuchPartitionException(databaseName, tableName, partitionName);
         } else {
-          partitions.remove(partitionName);
+          partitions.get(tableName).remove(partitionName);
         }
         break;
       case SET_PROPERTY:

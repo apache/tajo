@@ -30,10 +30,13 @@ import java.util.Set;
 public class JoinGraphContext {
   private Set<JoinVertex> rootVertexes = TUtil.newHashSet(); // most left vertex in the join plan
   private JoinGraph joinGraph = new JoinGraph();
+
   // New join edges are frequently created during join order optimization.
   // This cache is to reduce the overhead of join edge creation.
   private Map<Pair<JoinVertex,JoinVertex>, JoinEdge> edgeCache = TUtil.newHashMap();
-  private Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>(); // Join
+
+  // candidate predicates contain the predicates which are not pushed to any join nodes yet.
+  // evaluated predicates contain the predicates which are already pushed to some join nodes.
   private Set<EvalNode> candidateJoinConditions = TUtil.newHashSet(); // predicates from the on clause
   private Set<EvalNode> candidateJoinFilters = TUtil.newHashSet();    // predicates from the where clause
   private Set<EvalNode> evaluatedJoinConditions = TUtil.newHashSet(); // predicates from the on clause
@@ -124,7 +127,7 @@ public class JoinGraphContext {
   }
 
   public JoinEdge getCachedOrNewJoinEdge(JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
-    cacheKey.set(left, right);
+    Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>(left, right);
     if (edgeCache.containsKey(cacheKey)) {
       return edgeCache.get(cacheKey);
     } else {

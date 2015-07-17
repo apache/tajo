@@ -33,7 +33,6 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
@@ -66,12 +65,6 @@ public class LogicalOptimizer {
     rulesBeforeJoinOpt.addRewriteRule(provider.getPreRules());
     rulesAfterToJoinOpt = new BaseLogicalPlanRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(provider.getPostRules());
-  }
-
-  public void addRuleAfterToJoinOpt(LogicalPlanRewriteRule rewriteRule) {
-    if (rewriteRule != null) {
-      rulesAfterToJoinOpt.addRewriteRule(rewriteRule);
-    }
   }
 
   @VisibleForTesting
@@ -136,6 +129,18 @@ public class LogicalOptimizer {
     }
   }
 
+  /**
+   * During join order optimization, every condition is checked whether it is a join condition or not.
+   * So, after join order is optimized, there can be remaining conditions which are not join conditions.
+   * This function handles such remaining conditions. It creates a new selection node for those conditions if required
+   * or add them to the existing selection node.
+   *
+   * @param joinGraphContext join graph context
+   * @param plan logical plan
+   * @param block query block
+   * @param newJoinNode the top join node after join order optimization
+   * @return the top logical node after handling remaining conditions
+   */
   private static LogicalNode handleRemainingFiltersIfNecessary(JoinGraphContext joinGraphContext,
                                                                LogicalPlan plan,
                                                                LogicalPlan.QueryBlock block,
@@ -192,6 +197,23 @@ public class LogicalOptimizer {
     }
   }
 
+  /**
+   * The first phase of the join order optimization is building a join graph from the given query.
+   * This initial join graph forms a tree which consists of only relation vertexes in an order of their occurrences in
+   * the query. For example, let me suppose the following query.
+   *
+   * default> select * from t1 inner join t2 left outer join t3 inner join t4;
+   *
+   * In this example, the initial join graph is:
+   *
+   * t1 - (inner join) - t2 - (left outer join) - t3 - (inner join) - t4.
+   *
+   * This means that the default join order is left to right. Join queries can be always processed with the
+   * default join order. This join order will be optimized by {@link JoinOrderAlgorithm}.
+   *
+   * JoinGraphBuilder builds an initial join graph as illustrated above.
+   *
+   */
   private static class JoinGraphBuilder extends BasicLogicalPlanVisitor<JoinGraphContext, LogicalNode> {
     private final static JoinGraphBuilder instance;
 
@@ -259,8 +281,9 @@ public class LogicalOptimizer {
         context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
       } else {
 
-        RelationNode leftChild = JoinOrderingUtil.findMostRightRelation(plan, block, joinNode.getLeftChild());
-        RelationNode rightChild = JoinOrderingUtil.findMostLeftRelation(plan, block, joinNode.getRightChild());
+        // given a join node, find the relations which are nearest to the join in the query.
+        RelationNode leftChild = findMostRightRelation(plan, block, joinNode.getLeftChild());
+        RelationNode rightChild = findMostLeftRelation(plan, block, joinNode.getRightChild());
         RelationVertex leftVertex = new RelationVertex(leftChild);
         RelationVertex rightVertex = new RelationVertex(rightChild);
 
@@ -296,8 +319,8 @@ public class LogicalOptimizer {
         if (edge.getJoinType() == JoinType.INNER && edge.getJoinQual().isEmpty()) {
           edge.getJoinSpec().setType(JoinType.CROSS);
         }
-
-        if (PlannerUtil.isSymmetricJoin(edge.getJoinType())) {
+        
+        if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
           JoinEdge commutativeEdge = context.getCachedOrNewJoinEdge(edge.getJoinSpec(), edge.getRightVertex(),
               edge.getLeftVertex());
           commutativeEdge.addJoinPredicates(joinConditions);
@@ -406,6 +429,83 @@ public class LogicalOptimizer {
       }
 
       return joinNode;
+    }
+  }
+
+  /**
+   * Find the most left relation node in the join tree. For the join tree, please refer to {@link JoinGraphBuilder}.
+   *
+   * @param plan logical plan
+   * @param block query block in which the given join node is involved
+   * @param from logical node where the search starts
+   * @return found relation
+   * @throws PlanningException
+   */
+  public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
+      throws PlanningException {
+    RelationNodeFinderContext context = new RelationNodeFinderContext();
+    context.findMostLeft = true;
+    RelationNodeFinder finder = new RelationNodeFinder();
+    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    return context.founds.isEmpty() ? null : context.founds.iterator().next();
+  }
+
+  /**
+   * Find the most right relation node in the join tree. For the join tree, please refer to {@link JoinGraphBuilder}.
+   *
+   * @param plan logical plan
+   * @param block query block in which the given join node is involved
+   * @param from logical node where the search starts
+   * @return found relation
+   * @throws PlanningException
+   */
+  public static RelationNode findMostRightRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
+      throws PlanningException {
+    RelationNodeFinderContext context = new RelationNodeFinderContext();
+    context.findMostRight = true;
+    RelationNodeFinder finder = new RelationNodeFinder();
+    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    return context.founds.isEmpty() ? null : context.founds.iterator().next();
+  }
+
+  private static class RelationNodeFinderContext {
+    private Set<RelationNode> founds = TUtil.newHashSet();
+    private boolean findMostLeft;
+    private boolean findMostRight;
+  }
+
+  /**
+   * RelationNodeFinder finds the most left/right vertex from the given node in the join graph.
+   */
+  private static class RelationNodeFinder extends BasicLogicalPlanVisitor<RelationNodeFinderContext,LogicalNode> {
+
+    @Override
+    public LogicalNode visit(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+      if (node.getType() != NodeType.TABLE_SUBQUERY) {
+        super.visit(context, plan, block, node, stack);
+      }
+
+      if (node instanceof RelationNode) {
+        context.founds.add((RelationNode) node);
+      }
+
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitJoin(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+      stack.push(node);
+      LogicalNode result = null;
+      if (context.findMostLeft) {
+        result = visit(context, plan, block, node.getLeftChild(), stack);
+      }
+      if (context.findMostRight) {
+        result = visit(context, plan, block, node.getRightChild(), stack);
+      }
+      stack.pop();
+      return result;
     }
   }
 }
