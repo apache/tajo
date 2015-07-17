@@ -336,6 +336,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         String databaseName;
         String simpleTableName;
+
         if (CatalogUtil.isFQTableName(desc.getName())) {
           String[] split = CatalogUtil.splitFQTableName(desc.getName());
           databaseName = split[0];
