@@ -24,9 +24,12 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.SimpleProjector;
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -43,7 +46,6 @@ import java.io.IOException;
 public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private final static Log LOG = LogFactory.getLog(RangeShuffleFileWriteExec.class);
   private final SortSpec[] sortSpecs;
-//  private int [] indexKeys = null;
   private Schema keySchema;
 
   private BSTIndex.BSTIndexWriter indexWriter;
@@ -51,7 +53,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  private SimpleProjector keyProjector;
+  private KeyProjector keyProjector;
 
   public RangeShuffleFileWriteExec(final TaskAttemptContext context,
                                    final PhysicalExec child, final Schema inSchema, final Schema outSchema,
@@ -63,15 +65,8 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-//    indexKeys = new int[sortSpecs.length];
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    keyProjector = new SimpleProjector(inSchema, keySchema.toArray());
-
-//    Column col;
-//    for (int i = 0 ; i < sortSpecs.length; i++) {
-//      col = sortSpecs[i].getSortKey();
-//      indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
-//    }
+    keyProjector = new KeyProjector(inSchema, keySchema.toArray());
 
     BSTIndex bst = new BSTIndex(new TajoConf());
     this.comp = new BaseTupleComparator(keySchema, sortSpecs);

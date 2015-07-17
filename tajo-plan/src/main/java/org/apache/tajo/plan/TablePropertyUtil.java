@@ -44,8 +44,6 @@ public class TablePropertyUtil {
     if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("TEXT")) {
       setSessionToProperty(context, SessionVars.NULL_CHAR, property, StorageConstants.TEXT_NULL);
     }
-
-//    setSessionToProperty(context, SessionVars.TIMEZONE, property, StorageConstants.TIMEZONE);
   }
 
   private static void setSessionToProperty(OverridableConf context,

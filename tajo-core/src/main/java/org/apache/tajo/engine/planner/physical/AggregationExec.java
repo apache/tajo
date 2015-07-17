@@ -29,7 +29,6 @@ import java.io.IOException;
 public abstract class AggregationExec extends UnaryPhysicalExec {
 
   protected final int groupingKeyNum;
-//  protected final int groupingKeyIds[];
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
 
@@ -39,16 +38,6 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
 
     final Column [] keyColumns = plan.getGroupingColumns();
     groupingKeyNum = keyColumns.length;
-//    groupingKeyIds = new int[groupingKeyNum];
-//    Column col;
-//    for (int idx = 0; idx < plan.getGroupingColumns().length; idx++) {
-//      col = keyColumns[idx];
-//      if (col.hasQualifier()) {
-//        groupingKeyIds[idx] = inSchema.getColumnId(col.getQualifiedName());
-//      } else {
-//        groupingKeyIds[idx] = inSchema.getColumnIdByName(col.getSimpleName());
-//      }
-//    }
 
     if (plan.hasAggFunctions()) {
       aggFunctions = plan.getAggFunctions();

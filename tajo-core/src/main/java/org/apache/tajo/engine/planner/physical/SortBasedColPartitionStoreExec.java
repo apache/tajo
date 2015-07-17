@@ -84,7 +84,6 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
           StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
           appender = getNextPartitionAppender(getSubdirectory(currentKey));
-//          prevKey = new VTuple(currentKey);
           prevKey.put(currentKey.getValues());
 
           // reset all states for file rotating

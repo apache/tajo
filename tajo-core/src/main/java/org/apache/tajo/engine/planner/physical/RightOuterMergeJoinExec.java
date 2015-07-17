@@ -37,7 +37,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
   private Tuple prevLeftTuple;
   private Tuple prevRightTuple;
   private Tuple nextLeft = null;
-  private final Tuple nullPaddedTuple;
+  private Tuple nullPaddedTuple;
 
   private TupleList leftTupleSlots;
   private TupleList innerTupleSlots;
@@ -71,7 +71,6 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
 
     leftNumCols = outer.getSchema().size();
-//    nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
     nullPaddedTuple = NullTuple.create(leftNumCols);
   }
 
@@ -287,7 +286,6 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
             return projector.eval(frameTuple);
           } else {
             // padding null
-            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
             frameTuple.set(nullPaddedTuple, aTuple);
             return projector.eval(frameTuple);
           }
@@ -307,7 +305,6 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
               return projector.eval(frameTuple);
             } else {
               // padding null
-              Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
               frameTuple.set(nullPaddedTuple, aTuple);
               return projector.eval(frameTuple);
             }

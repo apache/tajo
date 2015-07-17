@@ -185,7 +185,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         if (prevSeq == 0 && nonDistinctAggrFunctions != null) {
           terminatedNonDistinctAggr(prevTuple);
         }
-//        result = prevTuple;
         outTuple.put(prevTuple.getValues());
         return outTuple;
       }
@@ -210,7 +209,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         if (prevSeq == 0 && nonDistinctAggrFunctions != null) {
           terminatedNonDistinctAggr(prevTuple);
         }
-//        result = prevTuple;
         outTuple.put(prevTuple.getValues());
 
         prevKeyTuple = getKeyTuple(prevKeyTupleMap, keyTuple.getValues());
@@ -232,7 +230,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       }
     }
 
-//    return result;
     return null;
   }
 

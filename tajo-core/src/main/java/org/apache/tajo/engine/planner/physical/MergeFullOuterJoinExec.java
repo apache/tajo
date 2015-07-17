@@ -125,7 +125,6 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
           if((leftTuple == null) && (rightTuple != null)){
             // output a tuple with the nulls padded leftTuple
-//            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
             frameTuple.set(leftNullTuple, rightTuple);
             outTuple = projector.eval(frameTuple);
             // we simulate we found a match, which is exactly the null padded one
@@ -135,7 +134,6 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
           if((leftTuple != null) && (rightTuple == null)){
             // output a tuple with the nulls padded leftTuple
-//            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
             frameTuple.set(leftTuple, rightNullTuple);
             outTuple = projector.eval(frameTuple);
             // we simulate we found a match, which is exactly the null padded one
@@ -181,7 +179,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
             //before getting a new tuple from the right,  a leftnullpadded tuple should be built
             //output a tuple with the nulls padded leftTuple
-            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
+            Tuple nullPaddedTuple = leftNullTuple;
             frameTuple.set(nullPaddedTuple, rightTuple);
             outTuple = projector.eval(frameTuple);
             // BEFORE RETURN, MOVE FORWARD
@@ -195,7 +193,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           } else if (cmp < 0) {
             // before getting a new tuple from the left,  a rightnullpadded tuple should be built
             // output a tuple with the nulls padded rightTuple
-            Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
+            Tuple nullPaddedTuple = rightNullTuple;
             frameTuple.set(leftTuple, nullPaddedTuple);
             outTuple = projector.eval(frameTuple);
             // we simulate we found a match, which is exactly the null padded one
@@ -222,7 +220,6 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           boolean endLeft = false;
           boolean endRight = false;
 
-//          previous = new VTuple(leftTuple);
           prevLeftTuple.put(leftTuple.getValues());
           do {
             leftTupleSlots.add(leftTuple);
@@ -235,7 +232,6 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           } while ((endLeft != true) && (tupleComparator[0].compare(prevLeftTuple, leftTuple) == 0));
           posLeftTupleSlots = 0;
 
-//          prevRightTuple = new VTuple(rightTuple);
           prevRightTuple.put(rightTuple.getValues());
           do {
             rightTupleSlots.add(rightTuple);

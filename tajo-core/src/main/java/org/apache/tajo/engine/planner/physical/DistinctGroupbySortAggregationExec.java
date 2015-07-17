@@ -112,8 +112,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
       return null;
     }
 
-//    Tuple mergedTuple = new VTuple(outColumnNum);
-
     int mergeTupleIndex = 0;
     outTuple.clear();
     for (int i = 0; i < currentTuples.length; i++) {
@@ -129,7 +127,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
   }
 
   private Tuple getEmptyTuple() {
-//    Tuple tuple = new VTuple(outSchema.size());\
     outTuple.clear();
     NullDatum nullDatum = DatumFactory.createNullDatum();
 

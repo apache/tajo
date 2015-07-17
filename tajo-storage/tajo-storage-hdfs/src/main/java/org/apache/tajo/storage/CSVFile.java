@@ -54,7 +54,6 @@ import java.util.Arrays;
 public class CSVFile {
 
   public static final byte LF = '\n';
-//  public static int EOF = -1;
 
   private static final Log LOG = LogFactory.getLog(CSVFile.class);
 
@@ -266,22 +265,6 @@ public class CSVFile {
       if (codec == null || codec instanceof SplittableCompressionCodec) {
         splittable = true;
       }
-
-      //Delimiter
-//      this.delimiter = StringEscapeUtils.unescapeJava(
-//          meta.getOption(StorageConstants.TEXT_DELIMITER,
-//          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)))
-//          .getBytes(Bytes.UTF8_CHARSET);
-
-//      String nullCharacters = StringEscapeUtils.unescapeJava(
-//          meta.getOption(StorageConstants.TEXT_NULL,
-//          meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
-
-//      if (StringUtils.isEmpty(nullCharacters)) {
-//        nullChars = NullDatum.get().asTextBytes();
-//      } else {
-//        nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
-//      }
     }
 
     private final static int DEFAULT_PAGE_SIZE = 256 * 1024;
@@ -297,13 +280,11 @@ public class CSVFile {
     private int currentIdx = 0, validIdx = 0, recordCount = 0;
     private int[] targetColumnIndexes;
     private boolean eof = false;
-//    private final byte[] nullChars;
     private SplitLineReader reader;
     private ArrayList<Long> fileOffsets;
     private ArrayList<Integer> rowLengthList;
     private ArrayList<Integer> startOffsets;
     private NonSyncByteArrayOutputStream buffer;
-//    private SerializerDeserializer serde;
     private Tuple outTuple;
     private TextLineDeserializer deserializer;
     private ByteBuf byteBuf = BufferPool.directBuffer(ByteBufLineReader.DEFAULT_BUFFER);
@@ -361,17 +342,6 @@ public class CSVFile {
       for (int i = 0; i < targets.length; i++) {
         targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
       }
-
-//      try {
-//        //FIXME
-//        String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
-//            TextSerializerDeserializer.class.getName());
-//        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
-//        serde.init(schema);
-//      } catch (Exception e) {
-//        LOG.error(e.getMessage(), e);
-//        throw new IOException(e);
-//      }
 
       super.init();
       Arrays.sort(targetColumnIndexes);
@@ -489,15 +459,7 @@ public class CSVFile {
         outTuple.clear();
         deserializer.deserialize(byteBuf, outTuple);
 
-//        long offset = -1;
-//        if(!isCompress()){
-//          offset = fileOffsets.get(currentIdx);
-//        }
-
-//        byte[][] cells = BytesUtils.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
-//            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes, schema.size());
         currentIdx++;
-//        return new LazyTuple(schema, cells, offset, nullChars, serde);
         return outTuple;
       } catch (Throwable t) {
         LOG.error("Tuple list length: " + (fileOffsets != null ? fileOffsets.size() : 0), t);

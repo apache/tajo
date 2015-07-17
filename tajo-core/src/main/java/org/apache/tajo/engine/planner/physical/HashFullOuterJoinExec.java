@@ -128,7 +128,7 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, Tupl
   protected TupleMap<Pair<Boolean, TupleList>> convert(TupleMap<TupleList> hashed,
                                                        boolean fromCache) throws IOException {
     TupleMap<Pair<Boolean, TupleList>> tuples = new TupleMap<Pair<Boolean, TupleList>>(hashed.size());
-    for (Map.Entry<Tuple, TupleList> entry : hashed.entrySet()) {
+    for (Map.Entry<KeyTuple, TupleList> entry : hashed.entrySet()) {
       // flag: initially false (whether this join key had at least one match on the counter part)
       tuples.putWihtoutKeyCopy(entry.getKey(), new Pair<Boolean, TupleList>(false, entry.getValue()));
     }

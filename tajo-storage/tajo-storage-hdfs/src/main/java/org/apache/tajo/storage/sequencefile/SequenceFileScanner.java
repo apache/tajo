@@ -40,7 +40,6 @@ import org.apache.tajo.storage.text.ByteBufLineReader;
 import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
-import org.apache.tajo.util.BytesUtils;
 
 import java.io.IOException;
 
@@ -178,9 +177,6 @@ public class SequenceFileScanner extends FileScanner {
     }
 
     if (more) {
-//      Tuple tuple = null;
-//      byte[][] cells;
-
       if (hasBinarySerDe) {
         BytesWritable bytesWritable = new BytesWritable();
         reader.getCurrentValue(bytesWritable);
@@ -198,10 +194,6 @@ public class SequenceFileScanner extends FileScanner {
         } catch (TextLineParsingError e) {
           throw new IOException(e);
         }
-//        cells = BytesUtils.splitPreserveAllTokens(text.getBytes(),
-//            delimiter, projectionMap, schema.getRootColumns().size());
-//        totalBytes += (long)text.getBytes().length;
-//        tuple = new LazyTuple(schema, cells, 0, nullChars, serde);
       }
       currentIdx++;
       return outTuple;
@@ -224,8 +216,6 @@ public class SequenceFileScanner extends FileScanner {
    * So, tajo must make a tuple after parsing hive style BinarySerDe.
    */
   private Tuple makeTuple(BytesWritable value) throws IOException{
-//    Tuple tuple = new VTuple(schema.getRootColumns().size());
-
     int start = 0;
     int length = value.getLength();
 

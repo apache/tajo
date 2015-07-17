@@ -82,7 +82,6 @@ public class WindowAggExec extends UnaryPhysicalExec {
   boolean firstTime = true;
   TupleList evaluatedTuples = null;
   TupleList accumulatedInTuples = null;
-//  TupleList nextAccumulatedProjected = null;
   TupleList nextAccumulatedInTuples = null;
   WindowState state = WindowState.NEW_WINDOW;
   Iterator<Tuple> tupleInFrameIterator = null;
@@ -275,12 +274,6 @@ public class WindowAggExec extends UnaryPhysicalExec {
   }
 
   private void preAccumulatingNextWindow(Tuple inTuple) {
-//    Tuple projectedTuple = new VTuple(outSchema.size());
-//    for(int idx = 0; idx < nonFunctionColumnNum; idx++) {
-//      projectedTuple.put(idx, inTuple.asDatum(nonFunctionColumns[idx]));
-//    }
-//    nextAccumulatedProjected = new TupleList();
-//    nextAccumulatedProjected.add(projectedTuple);
     nextAccumulatedInTuples = new TupleList();
     nextAccumulatedInTuples.add(inTuple);
   }

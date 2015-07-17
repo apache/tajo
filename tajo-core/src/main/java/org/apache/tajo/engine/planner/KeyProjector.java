@@ -20,26 +20,26 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.planner.physical.KeyTuple;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 
-public class SimpleProjector {
+public class KeyProjector {
 
-  private final Tuple outTuple;
+  private final KeyTuple keyTuple;
   private final int projectIds[];
 
-  public SimpleProjector(Schema inSchema, Column[] keyColumns) {
-    outTuple = new VTuple(keyColumns.length);
+  public KeyProjector(Schema inSchema, Column[] keyColumns) {
+    keyTuple = new KeyTuple(keyColumns.length);
     projectIds = new int[keyColumns.length];
     for (int i = 0; i < keyColumns.length; i++) {
       projectIds[i] = inSchema.getColumnId(keyColumns[i].getQualifiedName());
     }
   }
 
-  public Tuple project(Tuple tuple) {
-    outTuple.clear();
-    RowStoreUtil.project(tuple, outTuple, projectIds);
-    return outTuple;
+  public KeyTuple project(Tuple tuple) {
+    keyTuple.clear();
+    RowStoreUtil.project(tuple, keyTuple, projectIds);
+    return keyTuple;
   }
 }

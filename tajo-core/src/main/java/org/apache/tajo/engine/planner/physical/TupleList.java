@@ -23,6 +23,10 @@ import org.apache.tajo.storage.VTuple;
 
 import java.util.ArrayList;
 
+/**
+ * In TupleList, input tuples are automatically cloned whenever the add() method is called.
+ * This data structure is usually used in physical operators like hash join or hash aggregation.
+ */
 public class TupleList extends ArrayList<Tuple> {
 
   public TupleList() {

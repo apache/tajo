@@ -19,12 +19,17 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 
 import java.util.HashMap;
 
-public class TupleMap<E> extends HashMap<Tuple, E> {
+/**
+ * TupleMap is a map which uses KeyTuple with its key.
+ * Please note that every put() call creates a copy of input KeyTuple.
+ * This data structure is usually used in physical operators like hash join or hash aggregation.
+ *
+ * @param <E> value type
+ */
+public class TupleMap<E> extends HashMap<KeyTuple, E> {
 
   public TupleMap() {
     super();
@@ -38,16 +43,32 @@ public class TupleMap<E> extends HashMap<Tuple, E> {
     super(tupleMap);
   }
 
+  /**
+   * Add a pair of (key, value).
+   * The key is always copied.
+   *
+   * @param key
+   * @param value
+   * @return
+   */
   @Override
-  public E put(@Nullable Tuple key, E value) {
+  public E put(@Nullable KeyTuple key, E value) {
     if (key != null) {
-      return super.put(new VTuple(key.getValues()), value);
+      return super.put(new KeyTuple(key.getValues()), value);
     } else {
       return super.put(null, value);
     }
   }
 
-  public E putWihtoutKeyCopy(@Nullable Tuple key, E value) {
+  /**
+   * Add a pair of (key, value).
+   * The key is not copied.
+   *
+   * @param key
+   * @param value
+   * @return
+   */
+  public E putWihtoutKeyCopy(@Nullable KeyTuple key, E value) {
     return super.put(key, value);
   }
 }

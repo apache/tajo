@@ -20,7 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.SimpleProjector;
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.plan.logical.JoinNode;
@@ -44,23 +44,18 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   // temporal tuples and states for nested loop join
   protected boolean first = true;
-//  protected Map<Tuple, T> tupleSlots;
   protected TupleMap<T> tupleSlots;
 
   protected Iterator<Tuple> iterator;
 
-//  protected final Tuple keyTuple;
-
   protected final int rightNumCols;
   protected final int leftNumCols;
 
-//  protected final int[] leftKeyList;
-//  protected final int[] rightKeyList;
   protected final Column[] leftKeyList;
   protected final Column[] rightKeyList;
 
   protected boolean finished;
-  protected final SimpleProjector leftKeyExtractor;
+  protected final KeyProjector leftKeyExtractor;
 
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
@@ -72,14 +67,6 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     leftKeyList = new Column[joinKeyPairs.size()];
     rightKeyList = new Column[joinKeyPairs.size()];
 
-//    leftKeyList = new int[joinKeyPairs.size()];
-//    rightKeyList = new int[joinKeyPairs.size()];
-//
-//    for (int i = 0; i < joinKeyPairs.size(); i++) {
-//      leftKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
-//      rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
-//    }
-
     for (int i = 0; i < joinKeyPairs.size(); i++) {
       leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
       rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
@@ -88,7 +75,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     leftNumCols = outer.getSchema().size();
     rightNumCols = inner.getSchema().size();
 
-    leftKeyExtractor = new SimpleProjector(leftSchema, leftKeyList);
+    leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -123,12 +110,11 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
     Tuple tuple;
-//    Map<Tuple, TupleList> map = new HashMap<Tuple, TupleList>(100000);
     TupleMap<TupleList> map = new TupleMap<TupleList>(100000);
-    SimpleProjector keyExtractor = new SimpleProjector(rightSchema, rightKeyList);
+    KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-      Tuple keyTuple = keyExtractor.project(tuple);
+      KeyTuple keyTuple = keyProjector.project(tuple);
       TupleList newValue = map.get(keyTuple);
       if (newValue == null) {
         map.put(keyTuple, newValue = new TupleList());

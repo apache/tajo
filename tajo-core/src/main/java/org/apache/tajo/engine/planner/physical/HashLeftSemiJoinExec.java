@@ -73,7 +73,6 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       frameTuple.setLeft(leftTuple);
 
       // Try to find a hash bucket in in-memory hash table
-//      TupleList hashed = tupleSlots.get(toKey(leftTuple));
       TupleList hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       if (hashed != null && rightFiltered(hashed).hasNext()) {
         // if found, it gets a hash bucket from the hash table.
