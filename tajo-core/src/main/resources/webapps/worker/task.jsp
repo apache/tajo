@@ -21,15 +21,16 @@
 
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.QueryId" %>
+<%@ page import="org.apache.tajo.ResourceProtos.ShuffleFileOutput" %>
 <%@ page import="org.apache.tajo.TaskId" %>
 <%@ page import="org.apache.tajo.catalog.proto.CatalogProtos" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
-<%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
 <%@ page import="org.apache.tajo.querymaster.Query" %>
 <%@ page import="org.apache.tajo.querymaster.QueryMasterTask" %>
-<%@ page import="org.apache.tajo.querymaster.Task" %>
 <%@ page import="org.apache.tajo.querymaster.Stage" %>
+<%@ page import="org.apache.tajo.querymaster.Task" %>
 <%@ page import="org.apache.tajo.storage.DataLocation" %>
+<%@ page import="org.apache.tajo.storage.fragment.Fragment" %>
 <%@ page import="org.apache.tajo.storage.fragment.FragmentConvertor" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
@@ -40,7 +41,6 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
-<%@ page import="org.apache.tajo.storage.fragment.Fragment" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -131,7 +131,7 @@
     String shuffleKey = "-";
     String shuffleFileName = "-";
     if(numShuffles > 0) {
-        TajoWorkerProtocol.ShuffleFileOutput shuffleFileOutputs = task.getShuffleFileOutputs().get(0);
+        ShuffleFileOutput shuffleFileOutputs = task.getShuffleFileOutputs().get(0);
         shuffleKey = "" + shuffleFileOutputs.getPartId();
         shuffleFileName = shuffleFileOutputs.getFileName();
     }
