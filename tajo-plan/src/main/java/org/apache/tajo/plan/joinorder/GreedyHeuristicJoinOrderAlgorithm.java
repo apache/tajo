@@ -67,15 +67,13 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         graphContext.replaceRootVertexes(bestPair.getRightVertex(), newVertex);
       }
 
-      /*
-       * Once a best pair is chosen, some existing join edges should be removed and new join edges should be added.
-       *
-       * There can be some join edges which are equal to or symmetric with the best pair.
-       * They cannot be chosen anymore, and thus should be removed from the join graph.
-       *
-       * The chosen best pair will be regarded as a join vertex again.
-       * So, the join edges which share any vertexes with the best pair should be updated, too.
-       */
+      // Once a best pair is chosen, some existing join edges should be removed and new join edges should be added.
+      //
+      // There can be some join edges which are equal to or symmetric with the best pair.
+      // They cannot be chosen anymore, and thus should be removed from the join graph.
+      //
+      // The chosen best pair will be regarded as a join vertex again.
+      // So, the join edges which share any vertexes with the best pair should be updated, too.
       Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
       Set<JoinEdge> willBeAdded = TUtil.newHashSet();
 
@@ -115,6 +113,19 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     context.markAsEvaluatedJoinFilters(bestPair.getJoinQual());
   }
 
+  /**
+   * Once a best pair is found, some existing join edges which are equal to or symmetric with the best pair should be
+   * removed and new join edges should be added.
+   * They cannot be chosen as the best pair anymore, and thus should be removed from the join graph.
+   * This method finds such join edges to prepare updating the join graph.
+   *
+   * @param context
+   * @param graph
+   * @param bestPair
+   * @param vertex
+   * @param willBeAdded
+   * @param willBeRemoved
+   */
   private void prepareGraphUpdate(JoinGraphContext context, JoinGraph graph, JoinEdge bestPair,
                                   JoinedRelationsVertex vertex, Set<JoinEdge> willBeAdded, Set<JoinEdge> willBeRemoved) {
     prepareGraphUpdate(context, graph.getOutgoingEdges(bestPair.getLeftVertex()), vertex, true,

@@ -11,3 +11,4 @@ SQL Language
     sql_language/queries    
     sql_language/sql_expression
     sql_language/predicates
+    sql_language/alter_table

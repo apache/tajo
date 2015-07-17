@@ -16,15 +16,11 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.plan.logical;
 
 import org.apache.tajo.plan.PlanString;
 
-public class UnionNode extends BinaryNode {
-
+public class UnionNode extends SetOperationNode {
   public UnionNode(int pid) {
     super(pid, NodeType.UNION);
   }

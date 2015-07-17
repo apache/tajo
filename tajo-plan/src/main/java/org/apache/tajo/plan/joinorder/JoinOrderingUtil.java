@@ -20,22 +20,14 @@ package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.EvalType;
-import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
 
 public class JoinOrderingUtil {
 

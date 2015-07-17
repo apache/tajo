@@ -34,7 +34,6 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
@@ -131,6 +130,18 @@ public class LogicalOptimizer {
     }
   }
 
+  /**
+   * During join order optimization, every condition is checked whether it is a join condition or not.
+   * So, after join order is optimized, there can be remaining conditions which are not join conditions.
+   * This function handles such remaining conditions. It creates a new selection node for those conditions if required
+   * or add them to the existing selection node.
+   *
+   * @param joinGraphContext join graph context
+   * @param plan logical plan
+   * @param block query block
+   * @param newJoinNode the top join node after join order optimization
+   * @return the top logical node after handling remaining conditions
+   */
   private static LogicalNode handleRemainingFiltersIfNecessary(JoinGraphContext joinGraphContext,
                                                                LogicalPlan plan,
                                                                LogicalPlan.QueryBlock block,
