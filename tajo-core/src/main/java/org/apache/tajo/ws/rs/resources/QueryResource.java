@@ -18,6 +18,7 @@
 
 package org.apache.tajo.ws.rs.resources;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
@@ -34,6 +35,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
+import org.apache.tajo.ws.rs.responses.GetSubmitQueryResponse;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
@@ -260,21 +262,30 @@ public class QueryResource {
         return ResourcesUtil.createBadRequestResponse(LOG, "Provided session id (" + sessionId + ") is invalid.");
       }
       
-      SubmitQueryResponse response = 
+      SubmitQueryResponse response =
           masterContext.getGlobalEngine().executeQuery(session, request.getQuery(), false);
       if (response.getResult().hasResultCode() &&
           ClientProtos.ResultCode.ERROR.equals(response.getResult().getResultCode())) {
         return ResourcesUtil.createExceptionResponse(LOG, response.getResult().getErrorMessage());
       } else {
         JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
         UriInfo uriInfo = context.get(uriInfoKey);
-        
+
+        QueryId queryId = new QueryId(response.getQueryId());
         URI queryURI = uriInfo.getBaseUriBuilder()
-            .path(QueryResource.class)
-            .path(QueryResource.class, "getQuery")
-            .build(new QueryId(response.getQueryId()).toString());
-        return Response.created(queryURI).build();
+          .path(QueryResource.class)
+          .path(QueryResource.class, "getQuery")
+          .build(queryId.toString());
+
+        GetSubmitQueryResponse queryResponse = new GetSubmitQueryResponse();
+        if (queryId.isNull() == false) {
+          queryResponse.setUri(queryURI);
+        }
+
+        queryResponse.setResultCode(response.getResult().getResultCode());
+        queryResponse.setQuery(request.getQuery());
+        return Response.status(Status.OK).entity(queryResponse).build();
       }
     }
   }
