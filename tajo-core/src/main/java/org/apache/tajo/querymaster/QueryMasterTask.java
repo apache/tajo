@@ -284,7 +284,7 @@ public class QueryMasterTask extends CompositeService {
             new TaskFatalErrorEvent(taskAttemptId, "Can't kill task :" + taskAttemptId));
       }
     } catch (Exception e) {
-      /* NodeStatus RPC failure */
+      /* Node RPC failure */
       LOG.error(e.getMessage(), e);
       queryMasterContext.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
     }

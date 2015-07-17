@@ -76,10 +76,10 @@
 
   Collection<NodeStatus> allWorkers = master.getContext().getResourceManager().getNodes().values();
 
-  Map<String, NodeStatus> workerMap = new HashMap<String, NodeStatus>();
+  Map<String, NodeStatus> nodeMap = new HashMap<String, NodeStatus>();
   if(allWorkers != null) {
     for(NodeStatus eachWorker: allWorkers) {
-      workerMap.put(eachWorker.getConnectionInfo().getHostAndPeerRpcPort(), eachWorker);
+      nodeMap.put(eachWorker.getConnectionInfo().getHostAndPeerRpcPort(), eachWorker);
     }
   }
 
@@ -218,10 +218,10 @@
     }
     String taskHost = eachTask.getHostAndPort() == null ? "-" : eachTask.getHostAndPort();
     if (eachTask.getHostAndPort() != null) {
-      NodeStatus worker = workerMap.get(eachTask.getHostAndPort());
-      if (worker != null) {
+      NodeStatus nodeStatus = nodeMap.get(eachTask.getHostAndPort());
+      if (nodeStatus != null) {
         String[] hostTokens = eachTask.getHostAndPort().split(":");
-        taskHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +
+        taskHost = "<a href='http://" + hostTokens[0] + ":" + nodeStatus.getConnectionInfo().getHttpInfoPort() +
             "/taskhistory.jsp?taskAttemptId=" + eachTask.getId() + "&startTime=" + eachTask.getLaunchTime() +
             "'>" + eachTask.getHostAndPort() + "</a>";
       }
