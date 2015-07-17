@@ -379,8 +379,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           break;
         case LEFT_ANTI:
         case LEFT_SEMI:
-          factor *= DEFAULT_SELECTION_FACTOR * SchemaUtil.estimateSchemaSize(joinEdge.getSchema()) /
-              SchemaUtil.estimateSchemaSize(joinEdge.getLeftVertex().getSchema());
+          factor *= DEFAULT_SELECTION_FACTOR * SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
           break;
         case INNER:
         default:
