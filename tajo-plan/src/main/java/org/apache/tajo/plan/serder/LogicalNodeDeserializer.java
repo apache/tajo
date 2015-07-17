@@ -579,6 +579,8 @@ public class LogicalNodeDeserializer {
     PlanProto.AlterTableNode alterTableProto = protoNode.getAlterTable();
     alterTable.setTableName(alterTableProto.getTableName());
 
+    PlanProto.AlterTableNode.AlterPartition alterPartition = null;
+
     switch (alterTableProto.getSetType()) {
     case RENAME_TABLE:
       alterTable.setNewTableName(alterTableProto.getRenameTable().getNewName());
@@ -592,6 +594,23 @@ public class LogicalNodeDeserializer {
       break;
     case SET_PROPERTY:
       alterTable.setProperties(new KeyValueSet(alterTableProto.getProperties()));
+      break;
+    case ADD_PARTITION:
+      alterPartition = alterTableProto.getAlterPartition();
+      alterTable.setPartitionColumns(alterPartition.getColumnNamesList().toArray(new String[alterPartition
+      .getColumnNamesCount()]));
+      alterTable.setPartitionValues(alterPartition.getPartitionValuesList().toArray(new String[alterPartition
+        .getPartitionValuesCount()]));
+      if (alterPartition.getLocation() != null) {
+        alterTable.setLocation(alterPartition.getLocation());
+      }
+      break;
+    case DROP_PARTITION:
+      alterPartition = alterTableProto.getAlterPartition();
+      alterTable.setPartitionColumns(alterPartition.getColumnNamesList().toArray(new String[alterPartition
+        .getColumnNamesCount()]));
+      alterTable.setPartitionValues(alterPartition.getPartitionValuesList().toArray(new String[alterPartition
+        .getPartitionValuesCount()]));
       break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());

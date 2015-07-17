@@ -281,6 +281,8 @@ message AlterTableNode {
     RENAME_COLUMN = 1;
     ADD_COLUMN = 2;
     SET_PROPERTY = 3;
+    ADD_PARTITION = 4;
+    DROP_PARTITION = 5;
   }
 
   message RenameTable {
@@ -296,12 +298,20 @@ message AlterTableNode {
     required ColumnProto addColumn = 1;
   }
 
+  message AlterPartition {
+    repeated string columnNames = 1;
+    repeated string partitionValues = 21;
+    optional string location = 3;
+    optional bool purge = 4;
+  }
+
   required string tableName = 1;
   required Type setType = 2;
   optional RenameTable renameTable = 3;
   optional RenameColumn renameColumn = 4;
   optional AddColumn addColumn = 5;
   optional KeyValueSetProto properties = 6;
+  optional AlterPartition alterPartition = 7;
 }
 
 enum EvalType {

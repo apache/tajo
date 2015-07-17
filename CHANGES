@@ -172,8 +172,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
-    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
-    names only without invalid external table info. 
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
+    table names only without invalid external table info. 
     (Contributed by  DaeMyung Kang, Committed by jihoon)
 
     TAJO-1644: When inserting empty data into a partitioned table,
@@ -324,7 +324,10 @@ Release 0.11.0 - unreleased
   
   TASKS
 
-    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis, 
+    TAJO-1345: Implement logical plan part and DDL executor
+    for alter partition. (jaehwa)
+
+    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis,
     Committed by jihoon)
 
     TAJO-1583: Remove ServerCallable in RPC client. (jinho)
@@ -369,6 +372,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1514: Distinguish UNION and UNION ALL. (contributed by Keuntae Park,
+    committed by hyunsik)
 
     TAJO-1658: Filter push down to underlying storages. (hyunsik)
 
