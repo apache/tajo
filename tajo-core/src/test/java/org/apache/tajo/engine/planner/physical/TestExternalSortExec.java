@@ -98,9 +98,6 @@ public class TestExternalSortExec {
     appender.flush();
     appender.close();
 
-    System.out.println(appender.getStats().getNumRows() + " rows (" + (appender.getStats().getNumBytes() / 1048576) +
-        " MB)");
-
     employee = new TableDesc("default.employee", schema, employeeMeta, employeePath.toUri());
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();

@@ -227,8 +227,8 @@ public class TestTajoClient {
 
     assertFalse(client.existTable(tableName));
     String sql =
-        "create external table " + tableName + " (deptname text, score integer) "
-            + "using csv location '" + tablePath + "'";
+      "create external table " + tableName + " (deptname text, score integer) "
+        + "using csv location '" + tablePath + "'";
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
     client.dropTable(tableName);
@@ -300,7 +300,7 @@ public class TestTajoClient {
     assertFalse(client.existTable(tableName));
 
     String sql = "create external table " + tableName + " (deptname text, score int4) " + "using csv location '"
-        + tablePath + "'";
+      + tablePath + "'";
 
     client.executeQueryAndGetResult(sql);
     assertTrue(client.existTable(tableName));
@@ -684,14 +684,14 @@ public class TestTajoClient {
   public void testNullCharSessionInCTAS() throws Exception {
     String sql =
         "create table nullcharsession as select\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey,\n" +
-            "  orders.o_orderstatus \n" +
-            "from\n" +
-            "  orders full outer join customer on c_custkey = o_orderkey\n" +
-            "order by\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey;\n";
+          "  c_custkey,\n" +
+          "  orders.o_orderkey,\n" +
+          "  orders.o_orderstatus \n" +
+          "from\n" +
+          "  orders full outer join customer on c_custkey = o_orderkey\n" +
+          "order by\n" +
+          "  c_custkey,\n" +
+          "  orders.o_orderkey;\n";
 
     Map<String, String> variables = new HashMap<String, String>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
