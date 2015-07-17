@@ -57,9 +57,9 @@ public class TajoResourceManager extends CompositeService {
   private String queryIdSeed;
 
   /**
-   * Worker Liveliness monitor
+   * Node Liveliness monitor
    */
-  private WorkerLivelinessMonitor workerLivelinessMonitor;
+  private NodeLivelinessMonitor nodeLivelinessMonitor;
 
   private TajoConf systemConf;
   private AbstractQueryScheduler scheduler;
@@ -83,13 +83,13 @@ public class TajoResourceManager extends CompositeService {
 
     this.queryIdSeed = String.valueOf(System.currentTimeMillis());
 
-    this.workerLivelinessMonitor = new WorkerLivelinessMonitor(this.rmContext.getDispatcher());
-    addIfService(this.workerLivelinessMonitor);
+    this.nodeLivelinessMonitor = new NodeLivelinessMonitor(this.rmContext.getDispatcher());
+    addIfService(this.nodeLivelinessMonitor);
 
     // Register event handler for Workers
-    rmContext.getDispatcher().register(WorkerEventType.class, new WorkerEventDispatcher(rmContext));
+    rmContext.getDispatcher().register(NodeEventType.class, new WorkerEventDispatcher(rmContext));
 
-    resourceTracker = new TajoResourceTracker(this, workerLivelinessMonitor);
+    resourceTracker = new TajoResourceTracker(this, nodeLivelinessMonitor);
     addIfService(resourceTracker);
 
     String schedulerClassName = systemConf.getVar(TajoConf.ConfVars.RESOURCE_SCHEDULER_CLASS);
@@ -118,7 +118,7 @@ public class TajoResourceManager extends CompositeService {
   }
 
   @InterfaceAudience.Private
-  public static final class WorkerEventDispatcher implements EventHandler<WorkerEvent> {
+  public static final class WorkerEventDispatcher implements EventHandler<NodeEvent> {
 
     private final TajoRMContext rmContext;
 
@@ -127,9 +127,9 @@ public class TajoResourceManager extends CompositeService {
     }
 
     @Override
-    public void handle(WorkerEvent event) {
+    public void handle(NodeEvent event) {
       int workerId = event.getWorkerId();
-      Worker node = this.rmContext.getWorkers().get(workerId);
+      NodeStatus node = this.rmContext.getNodes().get(workerId);
       if (node != null) {
         try {
           node.handle(event);
@@ -141,12 +141,12 @@ public class TajoResourceManager extends CompositeService {
   }
 
 
-  public Map<Integer, Worker> getWorkers() {
-    return ImmutableMap.copyOf(rmContext.getWorkers());
+  public Map<Integer, NodeStatus> getNodes() {
+    return ImmutableMap.copyOf(rmContext.getNodes());
   }
 
-  public Map<Integer, Worker> getInactiveWorkers() {
-    return ImmutableMap.copyOf(rmContext.getInactiveWorkers());
+  public Map<Integer, NodeStatus> getInactiveNodes() {
+    return ImmutableMap.copyOf(rmContext.getInactiveNodes());
   }
 
   public Collection<Integer> getQueryMasters() {

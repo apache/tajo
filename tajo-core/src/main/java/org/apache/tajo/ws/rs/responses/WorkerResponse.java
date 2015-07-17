@@ -18,8 +18,7 @@
 
 package org.apache.tajo.ws.rs.responses;
 
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.rm.NodeStatus;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.resource.NodeResource;
@@ -41,13 +40,13 @@ public class WorkerResponse {
   
   @Expose private long lastHeartbeatTime;
   
-  public WorkerResponse(Worker worker) {
-    this(worker.getTotalResourceCapability(), worker.getAvailableResource(),
-        worker.getNumRunningTasks(), worker.getNumRunningQueryMaster());
+  public WorkerResponse(NodeStatus nodeStatus) {
+    this(nodeStatus.getTotalResourceCapability(), nodeStatus.getAvailableResource(),
+        nodeStatus.getNumRunningTasks(), nodeStatus.getNumRunningQueryMaster());
 
-    this.connectionInfo = new WorkerConnectionInfoResponse(worker.getConnectionInfo());
+    this.connectionInfo = new WorkerConnectionInfoResponse(nodeStatus.getConnectionInfo());
     
-    this.lastHeartbeatTime = worker.getLastHeartbeatTime();
+    this.lastHeartbeatTime = nodeStatus.getLastHeartbeatTime();
   }
 
   private WorkerResponse(NodeResource total, NodeResource available, int numRunningTasks, int numQueryMasterTasks) {

@@ -27,15 +27,15 @@ import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.conf.TajoConf;
 
 /**
- * It periodically checks the latest heartbeat time of {@link Worker}.
- * If the latest heartbeat time is expired, it produces EXPIRE event to a corresponding {@link Worker}.
+ * It periodically checks the latest heartbeat time of {@link NodeStatus}.
+ * If the latest heartbeat time is expired, it produces EXPIRE event to a corresponding {@link NodeStatus}.
  */
-public class WorkerLivelinessMonitor extends AbstractLivelinessMonitor<Integer> {
+public class NodeLivelinessMonitor extends AbstractLivelinessMonitor<Integer> {
 
   private EventHandler dispatcher;
 
-  public WorkerLivelinessMonitor(Dispatcher d) {
-    super(WorkerLivelinessMonitor.class.getSimpleName(), new SystemClock());
+  public NodeLivelinessMonitor(Dispatcher d) {
+    super(NodeLivelinessMonitor.class.getSimpleName(), new SystemClock());
     this.dispatcher = d.getEventHandler();
   }
 
@@ -51,6 +51,6 @@ public class WorkerLivelinessMonitor extends AbstractLivelinessMonitor<Integer> 
 
   @Override
   protected void expire(Integer id) {
-    dispatcher.handle(new WorkerEvent(id, WorkerEventType.EXPIRE));
+    dispatcher.handle(new NodeEvent(id, NodeEventType.EXPIRE));
   }
 }

@@ -24,6 +24,9 @@ import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.resource.ResourceCalculator;
 
+/**
+ * please refer to {@TajoResourceScheduler} for detailed information.
+ */
 public abstract class AbstractQueryScheduler extends AbstractService implements TajoResourceScheduler {
 
   protected final NodeResource clusterResource;

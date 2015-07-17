@@ -33,11 +33,11 @@ public class TajoRMContext {
 
   final Dispatcher rmDispatcher;
 
-  /** map between workerIds and running workers */
-  private final ConcurrentMap<Integer, Worker> workers = Maps.newConcurrentMap();
+  /** map between workerIds and running nodes */
+  private final ConcurrentMap<Integer, NodeStatus> nodes = Maps.newConcurrentMap();
 
-  /** map between workerIds and inactive workers */
-  private final ConcurrentMap<Integer, Worker> inactiveWorkers = Maps.newConcurrentMap();
+  /** map between workerIds and inactive nodes */
+  private final ConcurrentMap<Integer, NodeStatus> inactiveNodes = Maps.newConcurrentMap();
 
   private final Set<Integer> liveQueryMasterWorkerResources =
       Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
@@ -52,17 +52,17 @@ public class TajoRMContext {
   }
 
   /**
-   * @return The Map for active workers
+   * @return The Map for active nodes
    */
-  public ConcurrentMap<Integer, Worker> getWorkers() {
-    return workers;
+  public ConcurrentMap<Integer, NodeStatus> getNodes() {
+    return nodes;
   }
 
   /**
-   * @return The Map for inactive workers
+   * @return The Map for inactive nodes
    */
-  public ConcurrentMap<Integer, Worker> getInactiveWorkers() {
-    return inactiveWorkers;
+  public ConcurrentMap<Integer, NodeStatus> getInactiveNodes() {
+    return inactiveNodes;
   }
 
   public Set<Integer> getQueryMasterWorker() {

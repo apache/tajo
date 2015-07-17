@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class QueryManager extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryManager.class.getName());
+  private static final String EMPTY_QM_HOSTNAME = "";
 
   // TajoMaster Context
   private final TajoMaster.MasterContext masterContext;
@@ -174,7 +175,7 @@ public class QueryManager extends CompositeService {
     QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql,
         jsonExpr, plan);
 
-    queryInProgress.getQueryInfo().setQueryMaster("");
+    queryInProgress.getQueryInfo().setQueryMaster(EMPTY_QM_HOSTNAME);
     submittedQueries.put(queryInProgress.getQueryId(), queryInProgress);
     //TODO implement scheduler queue
     QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo("default", queryContext.getUser(),

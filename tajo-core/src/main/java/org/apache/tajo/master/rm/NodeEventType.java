@@ -18,18 +18,13 @@
 
 package org.apache.tajo.master.rm;
 
-/**
- * {@link TajoResourceTracker} produces this event, and it's destination is {@link Worker}.
- * This event occurs only when an inactive worker sends a ping again.
- */
-public class WorkerReconnectEvent extends WorkerEvent {
-  private final Worker worker;
-  public WorkerReconnectEvent(int workerId, Worker worker) {
-    super(workerId, WorkerEventType.RECONNECTED);
-    this.worker = worker;
-  }
+public enum NodeEventType {
 
-  public Worker getWorker() {
-    return worker;
-  }
+  /** Source : {@link TajoResourceTracker}, Destination: {@link NodeStatus} */
+  STARTED,
+  STATE_UPDATE,
+  RECONNECTED,
+
+  /** Source : {@link NodeLivelinessMonitor}, Destination: {@link NodeStatus} */
+  EXPIRE
 }

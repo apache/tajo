@@ -28,7 +28,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.master.scheduler.event.ResourceReserveSchedulerEvent;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -132,10 +132,10 @@ public class QueryCoordinatorService extends AbstractService {
                                      RpcCallback<WorkerConnectionsResponse> done) {
 
       WorkerConnectionsResponse.Builder builder = WorkerConnectionsResponse.newBuilder();
-      Collection<Worker> workers = context.getResourceManager().getRMContext().getWorkers().values();
+      Collection<NodeStatus> nodeStatuses = context.getResourceManager().getRMContext().getNodes().values();
 
-      for(Worker worker: workers) {
-        builder.addWorker(worker.getConnectionInfo().getProto());
+      for(NodeStatus nodeStatus : nodeStatuses) {
+        builder.addWorker(nodeStatus.getConnectionInfo().getProto());
       }
       done.run(builder.build());
     }

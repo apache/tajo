@@ -84,7 +84,7 @@ public class TestSimpleScheduler {
         addService(dispatcher);
 
         rmContext = new TajoRMContext(dispatcher);
-        rmContext.getDispatcher().register(WorkerEventType.class,
+        rmContext.getDispatcher().register(NodeEventType.class,
             new TajoResourceManager.WorkerEventDispatcher(rmContext));
 
         barrier = new Semaphore(0);
@@ -94,9 +94,9 @@ public class TestSimpleScheduler {
 
         for (int i = 0; i < workerNum; i++) {
           WorkerConnectionInfo conn = new WorkerConnectionInfo("host" + i, 28091 + i, 28092, 21000, 28093, 28080);
-          rmContext.getWorkers().putIfAbsent(conn.getId(),
-              new Worker(rmContext, NodeResources.clone(nodeResource), conn));
-          rmContext.getDispatcher().getEventHandler().handle(new WorkerEvent(conn.getId(), WorkerEventType.STARTED));
+          rmContext.getNodes().putIfAbsent(conn.getId(),
+              new NodeStatus(rmContext, NodeResources.clone(nodeResource), conn));
+          rmContext.getDispatcher().getEventHandler().handle(new NodeEvent(conn.getId(), NodeEventType.STARTED));
         }
         super.serviceInit(conf);
       }
@@ -104,10 +104,10 @@ public class TestSimpleScheduler {
     service.init(conf);
     service.start();
 
-    assertEquals(workerNum, rmContext.getWorkers().size());
+    assertEquals(workerNum, rmContext.getNodes().size());
     totalResource = NodeResources.createResource(0);
-    for(Worker worker : rmContext.getWorkers().values()) {
-      NodeResources.addTo(totalResource, worker.getTotalResourceCapability());
+    for(NodeStatus nodeStatus : rmContext.getNodes().values()) {
+      NodeResources.addTo(totalResource, nodeStatus.getTotalResourceCapability());
     }
   }
 
@@ -202,7 +202,7 @@ public class TestSimpleScheduler {
     assertEquals(totalResource, scheduler.getClusterResource());
 
     List<Integer> targetWorkers = Lists.newArrayList();
-    Map.Entry<Integer, Worker> workerEntry = rmContext.getWorkers().entrySet().iterator().next();
+    Map.Entry<Integer, NodeStatus> workerEntry = rmContext.getNodes().entrySet().iterator().next();
     targetWorkers.add(workerEntry.getKey());
 
     NodeResource expectResource = NodeResources.multiply(scheduler.getMinimumResourceCapability(), requestNum);
@@ -270,7 +270,7 @@ public class TestSimpleScheduler {
         @Override
         public void run() {
           barrier.release();
-          NodeResources.addTo(rmContext.getWorkers().get(allocation.getWorkerId()).getAvailableResource(),
+          NodeResources.addTo(rmContext.getNodes().get(allocation.getWorkerId()).getAvailableResource(),
               new NodeResource(allocation.getResource()));
           rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
         }

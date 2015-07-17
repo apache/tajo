@@ -19,22 +19,22 @@
 package org.apache.tajo.master.rm;
 
 /**
- * It presents the states of {@link Worker}.
+ * It presents the states of {@link NodeStatus}.
  */
-public enum WorkerState {
-  /** New worker */
+public enum NodeState {
+  /** New node */
   NEW,
 
-  /** Running worker */
+  /** Running node */
   RUNNING,
 
-  /** Worker is unhealthy */
+  /** Node is unhealthy */
   UNHEALTHY,
 
-  /** worker is out of service */
+  /** Node is out of service */
   DECOMMISSIONED,
 
-  /** worker has not sent a heartbeat for some configured time threshold */
+  /** Node has not sent a heartbeat for some configured time threshold */
   LOST;
 
   @SuppressWarnings("unused")

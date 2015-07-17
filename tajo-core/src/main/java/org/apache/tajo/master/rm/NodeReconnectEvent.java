@@ -18,20 +18,18 @@
 
 package org.apache.tajo.master.rm;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
-
 /**
- * WorkerEvent describes all kinds of events which sent to {@link Worker}.
+ * {@link TajoResourceTracker} produces this event, and it's destination is {@link NodeStatus}.
+ * This event occurs only when an inactive nodeStatus sends a ping again.
  */
-public class WorkerEvent extends AbstractEvent<WorkerEventType> {
-  private final int workerId;
-
-  public WorkerEvent(int workerId, WorkerEventType workerEventType) {
-    super(workerEventType);
-    this.workerId = workerId;
+public class NodeReconnectEvent extends NodeEvent {
+  private final NodeStatus nodeStatus;
+  public NodeReconnectEvent(int workerId, NodeStatus nodeStatus) {
+    super(workerId, NodeEventType.RECONNECTED);
+    this.nodeStatus = nodeStatus;
   }
 
-  public int getWorkerId() {
-    return workerId;
+  public NodeStatus getNodeStatus() {
+    return nodeStatus;
   }
 }

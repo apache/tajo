@@ -24,10 +24,8 @@
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
-<%@ page import="org.apache.tajo.master.rm.Worker" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerState" %>
-<%@ page import="org.apache.tajo.service.ServiceTracker" %>
-<%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
+<%@ page import="org.apache.tajo.master.rm.NodeStatus" %>
+<%@ page import="org.apache.tajo.master.rm.NodeState" %>
 <%@ page import="org.apache.tajo.storage.TablespaceManager" %>
 <%@ page import="org.apache.tajo.storage.Tablespace" %>
 <%@ page import="org.apache.tajo.util.NetUtils" %>
@@ -36,7 +34,6 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.net.InetSocketAddress" %>
 <%@ page import="java.util.Date" %>
-<%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 
 <%
@@ -46,8 +43,8 @@
   InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
-  Map<Integer, Worker> workers = master.getContext().getResourceManager().getWorkers();
-  Map<Integer, Worker> inactiveWorkers = master.getContext().getResourceManager().getInactiveWorkers();
+  Map<Integer, NodeStatus> workers = master.getContext().getResourceManager().getNodes();
+  Map<Integer, NodeStatus> inactiveWorkers = master.getContext().getResourceManager().getInactiveNodes();
 
   int numWorkers = 0;
   int numLiveWorkers = 0;
@@ -60,7 +57,7 @@
   int runningQueryMasterTask = 0;
 
 
-  for(Worker eachWorker: workers.values()) {
+  for(NodeStatus eachWorker: workers.values()) {
     numQueryMasters++;
     numLiveQueryMasters++;
     runningQueryMasterTask += eachWorker.getNumRunningQueryMaster();
@@ -68,13 +65,13 @@
     numLiveWorkers++;
   }
 
-  for (Worker eachWorker : inactiveWorkers.values()) {
-    if (eachWorker.getState() == WorkerState.LOST) {
+  for (NodeStatus eachWorker : inactiveWorkers.values()) {
+    if (eachWorker.getState() == NodeState.LOST) {
       numQueryMasters++;
       numDeadQueryMasters++;
       numWorkers++;
       numDeadWorkers++;
-    } else if(eachWorker.getState() == WorkerState.DECOMMISSIONED) {
+    } else if(eachWorker.getState() == NodeState.DECOMMISSIONED) {
       numDecommissionWorkers++;
     }
   }

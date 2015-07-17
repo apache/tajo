@@ -42,7 +42,6 @@ import org.apache.tajo.util.NetUtils;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -56,9 +55,9 @@ public class QueryInProgress {
 
   private LogicalRootNode plan;
 
-  private volatile boolean querySubmitted = false;
+  private volatile boolean querySubmitted;
 
-  private AtomicBoolean isStopped = new AtomicBoolean(false);
+  private volatile boolean isStopped;
 
   private QueryInfo queryInfo;
 
@@ -109,8 +108,10 @@ public class QueryInProgress {
   }
 
   public void stopProgress() {
-    if(isStopped.getAndSet(true)) {
+    if (isStopped) {
       return;
+    } else {
+      isStopped = true;
     }
 
     LOG.info("=========================================================");
@@ -143,7 +144,7 @@ public class QueryInProgress {
     try {
       TajoResourceManager resourceManager = masterContext.getResourceManager();
       WorkerConnectionInfo connectionInfo =
-          resourceManager.getRMContext().getWorkers().get(allocation.getWorkerId()).getConnectionInfo();
+          resourceManager.getRMContext().getNodes().get(allocation.getWorkerId()).getConnectionInfo();
       try {
         if(queryMasterRpcClient == null) {
           connectQueryMaster(connectionInfo);

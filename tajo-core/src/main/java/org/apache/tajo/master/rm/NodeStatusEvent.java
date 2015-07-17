@@ -23,17 +23,17 @@ import org.apache.tajo.resource.NodeResource;
 
 /**
  * {@link TajoResourceTracker} produces this event, and its destination is
- * {@link org.apache.tajo.master.rm.Worker.StatusUpdateTransition} of {@link Worker}.
+ * {@link NodeStatus.StatusUpdateTransition} of {@link NodeStatus}.
  */
-public class WorkerStatusEvent extends WorkerEvent {
+public class NodeStatusEvent extends NodeEvent {
   private final int runningTaskNum;
   private final int runningQMNum;
   private final NodeResource available;
   private final NodeResource total;
 
-  public WorkerStatusEvent(int workerId, int runningTaskNum, int runningQMNum,
-                           NodeResource available, @Nullable NodeResource total) {
-    super(workerId, WorkerEventType.STATE_UPDATE);
+  public NodeStatusEvent(int workerId, int runningTaskNum, int runningQMNum,
+                         NodeResource available, @Nullable NodeResource total) {
+    super(workerId, NodeEventType.STATE_UPDATE);
     this.runningTaskNum = runningTaskNum;
     this.runningQMNum = runningQMNum;
     this.available = available;

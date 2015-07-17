@@ -31,7 +31,7 @@ import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.TajoRMContext;
-import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.master.scheduler.event.ResourceReserveSchedulerEvent;
 import org.apache.tajo.master.scheduler.event.SchedulerEvent;
 import org.apache.tajo.resource.DefaultResourceCalculator;
@@ -93,9 +93,9 @@ public class SimpleScheduler extends AbstractQueryScheduler {
   private void updateResource() {
     NodeResource resource = NodeResources.createResource(0);
     NodeResource totalResource = NodeResources.createResource(0);
-    for (Worker worker : getRMContext().getWorkers().values()) {
-      NodeResources.addTo(resource, worker.getAvailableResource());
-      NodeResources.addTo(totalResource, worker.getTotalResourceCapability());
+    for (NodeStatus nodeStatus : getRMContext().getNodes().values()) {
+      NodeResources.addTo(resource, nodeStatus.getAvailableResource());
+      NodeResources.addTo(totalResource, nodeStatus.getTotalResourceCapability());
 
     }
 
@@ -144,11 +144,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     Set<Integer> assignedQMNodes = Sets.newHashSet(assignedQueryMasterMap.values());
     List<Integer> idleNode = Lists.newArrayList();
 
-    for (Worker worker : getRMContext().getWorkers().values()) {
+    for (NodeStatus nodeStatus : getRMContext().getNodes().values()) {
 
       //find idle node for QM
-      if (!assignedQMNodes.contains(worker.getWorkerId())) {
-        idleNode.add(worker.getWorkerId());
+      if (!assignedQMNodes.contains(nodeStatus.getWorkerId())) {
+        idleNode.add(nodeStatus.getWorkerId());
       }
 
       if (idleNode.size() > containers * 3) break;
@@ -171,7 +171,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
   @Override
   public int getNumClusterNodes() {
-    return rmContext.getWorkers().size();
+    return rmContext.getNodes().size();
   }
 
   @Override
@@ -197,11 +197,11 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
     // reserve resource in random workers
     if (reservedResources.size() < requiredContainers) {
-      LinkedList<Integer> randomWorkers = new LinkedList<Integer>(getRMContext().getWorkers().keySet());
-      Collections.shuffle(randomWorkers);
+      LinkedList<Integer> randomNodes = new LinkedList<Integer>(getRMContext().getNodes().keySet());
+      Collections.shuffle(randomNodes);
 
       reservedResources.addAll(reserveClusterResource(
-          randomWorkers, capacity, requiredContainers - reservedResources.size()));
+          randomNodes, capacity, requiredContainers - reservedResources.size()));
     }
 
     if (LOG.isDebugEnabled()) {
@@ -223,21 +223,21 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       while (iter.hasNext()) {
 
         int workerId = iter.next();
-        Worker worker = getRMContext().getWorkers().get(workerId);
-        if (worker == null) {
+        NodeStatus nodeStatus = getRMContext().getNodes().get(workerId);
+        if (nodeStatus == null) {
           iter.remove();
-          LOG.warn("Can't found the worker :" + workerId);
+          LOG.warn("Can't found the nodeStatus :" + workerId);
           continue;
         } else {
-          if (NodeResources.fitsIn(capacity, worker.getAvailableResource())) {
+          if (NodeResources.fitsIn(capacity, nodeStatus.getAvailableResource())) {
             NodeResources.subtractFrom(getClusterResource(), capacity);
-            NodeResources.subtractFrom(worker.getAvailableResource(), capacity);
+            NodeResources.subtractFrom(nodeStatus.getAvailableResource(), capacity);
             allocatedResources++;
             resourceBuilder.setResource(capacity.getProto());
             resourceBuilder.setWorkerId(workerId);
             reservedResources.add(resourceBuilder.build());
           } else {
-            // remove unavailable worker;
+            // remove unavailable nodeStatus;
             iter.remove();
           }
         }
@@ -302,8 +302,8 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     return queryQueue;
   }
 
-  private Worker getWorker(int workerId) {
-    return rmContext.getWorkers().get(workerId);
+  private NodeStatus getWorker(int workerId) {
+    return rmContext.getNodes().get(workerId);
   }
 
   protected TajoRMContext getRMContext() {
@@ -312,7 +312,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
   public WorkerConnectionInfo getQueryMaster(QueryId queryId) {
     if (assignedQueryMasterMap.containsKey(queryId)) {
-      return rmContext.getWorkers().get(assignedQueryMasterMap.get(queryId)).getConnectionInfo();
+      return rmContext.getNodes().get(assignedQueryMasterMap.get(queryId)).getConnectionInfo();
     }
     return null;
   }

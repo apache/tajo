@@ -18,13 +18,20 @@
 
 package org.apache.tajo.master.rm;
 
-public enum WorkerEventType {
+import org.apache.hadoop.yarn.event.AbstractEvent;
 
-  /** Source : {@link TajoResourceTracker}, Destination: {@link Worker} */
-  STARTED,
-  STATE_UPDATE,
-  RECONNECTED,
+/**
+ * NodeEvent describes all kinds of events which sent to {@link NodeStatus}.
+ */
+public class NodeEvent extends AbstractEvent<NodeEventType> {
+  private final int workerId;
 
-  /** Source : {@link WorkerLivelinessMonitor}, Destination: {@link Worker} */
-  EXPIRE
+  public NodeEvent(int workerId, NodeEventType nodeEventType) {
+    super(nodeEventType);
+    this.workerId = workerId;
+  }
+
+  public int getWorkerId() {
+    return workerId;
+  }
 }

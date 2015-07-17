@@ -26,7 +26,7 @@
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.history.QueryHistory" %>
 <%@ page import="org.apache.tajo.util.history.StageHistory" %>
-<%@ page import="org.apache.tajo.master.rm.Worker" %>
+<%@ page import="org.apache.tajo.master.rm.NodeStatus" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.util.history.TaskHistory" %>
 <%@ page import="org.apache.tajo.util.*" %>
@@ -74,11 +74,11 @@
     status = "ALL";
   }
 
-  Collection<Worker> allWorkers = master.getContext().getResourceManager().getWorkers().values();
+  Collection<NodeStatus> allWorkers = master.getContext().getResourceManager().getNodes().values();
 
-  Map<String, Worker> workerMap = new HashMap<String, Worker>();
+  Map<String, NodeStatus> workerMap = new HashMap<String, NodeStatus>();
   if(allWorkers != null) {
-    for(Worker eachWorker: allWorkers) {
+    for(NodeStatus eachWorker: allWorkers) {
       workerMap.put(eachWorker.getConnectionInfo().getHostAndPeerRpcPort(), eachWorker);
     }
   }
@@ -218,7 +218,7 @@
     }
     String taskHost = eachTask.getHostAndPort() == null ? "-" : eachTask.getHostAndPort();
     if (eachTask.getHostAndPort() != null) {
-      Worker worker = workerMap.get(eachTask.getHostAndPort());
+      NodeStatus worker = workerMap.get(eachTask.getHostAndPort());
       if (worker != null) {
         String[] hostTokens = eachTask.getHostAndPort().split(":");
         taskHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +

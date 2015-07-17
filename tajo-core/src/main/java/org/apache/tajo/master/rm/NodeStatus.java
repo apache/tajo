@@ -33,11 +33,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 /**
- * It contains resource and various information for a worker.
+ * It contains resource and various information for a node.
  */
-public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
+public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatus> {
   /** class logger */
-  private static final Log LOG = LogFactory.getLog(Worker.class);
+  private static final Log LOG = LogFactory.getLog(NodeStatus.class);
 
   /** context of {@link TajoResourceManager} */
   private final TajoRMContext rmContext;
@@ -54,14 +54,14 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   private static AtomicIntegerFieldUpdater RUNNING_QM_UPDATER;
 
   static {
-    HEARTBEAT_TIME_UPDATER = PlatformDependent.newAtomicLongFieldUpdater(Worker.class, "lastHeartbeatTime");
+    HEARTBEAT_TIME_UPDATER = PlatformDependent.newAtomicLongFieldUpdater(NodeStatus.class, "lastHeartbeatTime");
     if (HEARTBEAT_TIME_UPDATER == null) {
-      HEARTBEAT_TIME_UPDATER = AtomicLongFieldUpdater.newUpdater(Worker.class, "lastHeartbeatTime");
-      RUNNING_TASK_UPDATER = AtomicIntegerFieldUpdater.newUpdater(Worker.class, "numRunningTasks");
-      RUNNING_QM_UPDATER = AtomicIntegerFieldUpdater.newUpdater(Worker.class, "numRunningQueryMaster");
+      HEARTBEAT_TIME_UPDATER = AtomicLongFieldUpdater.newUpdater(NodeStatus.class, "lastHeartbeatTime");
+      RUNNING_TASK_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeStatus.class, "numRunningTasks");
+      RUNNING_QM_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeStatus.class, "numRunningQueryMaster");
     } else {
-      RUNNING_TASK_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(Worker.class, "numRunningTasks");
-      RUNNING_QM_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(Worker.class, "numRunningQueryMaster");
+      RUNNING_TASK_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeStatus.class, "numRunningTasks");
+      RUNNING_QM_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeStatus.class, "numRunningQueryMaster");
     }
   }
 
@@ -71,52 +71,52 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   /** Total resources on the node. */
   private final NodeResource totalResourceCapability;
 
-  /** Worker connection information */
+  /** Node connection information */
   private WorkerConnectionInfo connectionInfo;
 
   private static final ReconnectNodeTransition RECONNECT_NODE_TRANSITION = new ReconnectNodeTransition();
   private static final StatusUpdateTransition STATUS_UPDATE_TRANSITION = new StatusUpdateTransition();
 
-  private static final StateMachineFactory<Worker,
-      WorkerState,
-      WorkerEventType,
-      WorkerEvent> stateMachineFactory
-      = new StateMachineFactory<Worker,
-      WorkerState,
-      WorkerEventType,
-      WorkerEvent>(WorkerState.NEW)
+  private static final StateMachineFactory<NodeStatus,
+      NodeState,
+      NodeEventType,
+      NodeEvent> stateMachineFactory
+      = new StateMachineFactory<NodeStatus,
+      NodeState,
+      NodeEventType,
+      NodeEvent>(NodeState.NEW)
 
       // Transition from NEW
-      .addTransition(WorkerState.NEW, WorkerState.RUNNING,
-          WorkerEventType.STARTED,
+      .addTransition(NodeState.NEW, NodeState.RUNNING,
+          NodeEventType.STARTED,
           new AddNodeTransition())
 
       // Transition from RUNNING
-      .addTransition(WorkerState.RUNNING, EnumSet.of(WorkerState.RUNNING, WorkerState.UNHEALTHY),
-          WorkerEventType.STATE_UPDATE,
+      .addTransition(NodeState.RUNNING, EnumSet.of(NodeState.RUNNING, NodeState.UNHEALTHY),
+          NodeEventType.STATE_UPDATE,
           STATUS_UPDATE_TRANSITION)
-      .addTransition(WorkerState.RUNNING, WorkerState.LOST,
-          WorkerEventType.EXPIRE,
-          new DeactivateNodeTransition(WorkerState.LOST))
-      .addTransition(WorkerState.RUNNING, WorkerState.RUNNING,
-          WorkerEventType.RECONNECTED,
+      .addTransition(NodeState.RUNNING, NodeState.LOST,
+          NodeEventType.EXPIRE,
+          new DeactivateNodeTransition(NodeState.LOST))
+      .addTransition(NodeState.RUNNING, NodeState.RUNNING,
+          NodeEventType.RECONNECTED,
           RECONNECT_NODE_TRANSITION)
 
       // Transitions from UNHEALTHY state
-      .addTransition(WorkerState.UNHEALTHY, EnumSet.of(WorkerState.RUNNING, WorkerState.UNHEALTHY),
-          WorkerEventType.STATE_UPDATE,
+      .addTransition(NodeState.UNHEALTHY, EnumSet.of(NodeState.RUNNING, NodeState.UNHEALTHY),
+          NodeEventType.STATE_UPDATE,
           STATUS_UPDATE_TRANSITION)
-      .addTransition(WorkerState.UNHEALTHY, WorkerState.LOST,
-          WorkerEventType.EXPIRE,
-          new DeactivateNodeTransition(WorkerState.LOST))
-      .addTransition(WorkerState.UNHEALTHY, WorkerState.UNHEALTHY,
-          WorkerEventType.RECONNECTED,
+      .addTransition(NodeState.UNHEALTHY, NodeState.LOST,
+          NodeEventType.EXPIRE,
+          new DeactivateNodeTransition(NodeState.LOST))
+      .addTransition(NodeState.UNHEALTHY, NodeState.UNHEALTHY,
+          NodeEventType.RECONNECTED,
           RECONNECT_NODE_TRANSITION);
 
-  private final StateMachine<WorkerState, WorkerEventType, WorkerEvent> stateMachine =
-      stateMachineFactory.make(this, WorkerState.NEW);
+  private final StateMachine<NodeState, NodeEventType, NodeEvent> stateMachine =
+      stateMachineFactory.make(this, NodeState.NEW);
 
-  public Worker(TajoRMContext rmContext, NodeResource totalResourceCapability, WorkerConnectionInfo connectionInfo) {
+  public NodeStatus(TajoRMContext rmContext, NodeResource totalResourceCapability, WorkerConnectionInfo connectionInfo) {
     this.rmContext = rmContext;
 
     this.connectionInfo = connectionInfo;
@@ -159,9 +159,9 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
 
   /**
    *
-   * @return the current state of worker
+   * @return the current state of node
    */
-  public WorkerState getState() {
+  public NodeState getState() {
     return this.stateMachine.getCurrentState();
   }
 
@@ -184,7 +184,7 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   }
 
   @Override
-  public int compareTo(Worker o) {
+  public int compareTo(NodeStatus o) {
     if(o == null) {
       return 1;
     }
@@ -196,9 +196,9 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    Worker worker = (Worker) o;
+    NodeStatus nodeStatus = (NodeStatus) o;
 
-    if (connectionInfo != null ? !connectionInfo.equals(worker.connectionInfo) : worker.connectionInfo != null)
+    if (connectionInfo != null ? !connectionInfo.equals(nodeStatus.connectionInfo) : nodeStatus.connectionInfo != null)
       return false;
     return true;
   }
@@ -210,29 +210,29 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     return result;
   }
 
-  public static class AddNodeTransition implements SingleArcTransition<Worker, WorkerEvent> {
+  public static class AddNodeTransition implements SingleArcTransition<NodeStatus, NodeEvent> {
     @Override
-    public void transition(Worker worker, WorkerEvent workerEvent) {
+    public void transition(NodeStatus nodeStatus, NodeEvent nodeEvent) {
 
-      worker.rmContext.getQueryMasterWorker().add(worker.getWorkerId());
-      LOG.info("Worker with " + worker.getTotalResourceCapability() + " is joined to Tajo cluster");
+      nodeStatus.rmContext.getQueryMasterWorker().add(nodeStatus.getWorkerId());
+      LOG.info("Node with " + nodeStatus.getTotalResourceCapability() + " is joined to Tajo cluster");
     }
   }
 
   public static class StatusUpdateTransition implements
-      MultipleArcTransition<Worker, WorkerEvent, WorkerState> {
+      MultipleArcTransition<NodeStatus, NodeEvent, NodeState> {
 
     @Override
-    public WorkerState transition(Worker worker, WorkerEvent event) {
+    public NodeState transition(NodeStatus nodeStatus, NodeEvent event) {
 
-      WorkerStatusEvent statusEvent = TUtil.checkTypeAndGet(event, WorkerStatusEvent.class);
-      worker.updateStatus(statusEvent);
+      NodeStatusEvent statusEvent = TUtil.checkTypeAndGet(event, NodeStatusEvent.class);
+      nodeStatus.updateStatus(statusEvent);
 
-      return WorkerState.RUNNING;
+      return NodeState.RUNNING;
     }
   }
 
-  private void updateStatus(WorkerStatusEvent statusEvent) {
+  private void updateStatus(NodeStatusEvent statusEvent) {
     setLastHeartbeatTime(System.currentTimeMillis());
     setNumRunningTasks(statusEvent.getRunningTaskNum());
     setNumRunningQueryMaster(statusEvent.getRunningQMNum());
@@ -243,39 +243,39 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     }
   }
 
-  public static class DeactivateNodeTransition implements SingleArcTransition<Worker, WorkerEvent> {
-    private final WorkerState finalState;
+  public static class DeactivateNodeTransition implements SingleArcTransition<NodeStatus, NodeEvent> {
+    private final NodeState finalState;
 
-    public DeactivateNodeTransition(WorkerState finalState) {
+    public DeactivateNodeTransition(NodeState finalState) {
       this.finalState = finalState;
     }
 
     @Override
-    public void transition(Worker worker, WorkerEvent workerEvent) {
+    public void transition(NodeStatus nodeStatus, NodeEvent nodeEvent) {
 
-      worker.rmContext.getWorkers().remove(worker.getWorkerId());
-      LOG.info("Deactivating Node " + worker.getWorkerId() + " as it is now " + finalState);
-      worker.rmContext.getInactiveWorkers().putIfAbsent(worker.getWorkerId(), worker);
+      nodeStatus.rmContext.getNodes().remove(nodeStatus.getWorkerId());
+      LOG.info("Deactivating Node " + nodeStatus.getWorkerId() + " as it is now " + finalState);
+      nodeStatus.rmContext.getInactiveNodes().putIfAbsent(nodeStatus.getWorkerId(), nodeStatus);
     }
   }
 
-  public static class ReconnectNodeTransition implements SingleArcTransition<Worker, WorkerEvent> {
+  public static class ReconnectNodeTransition implements SingleArcTransition<NodeStatus, NodeEvent> {
 
     @Override
-    public void transition(Worker worker, WorkerEvent workerEvent) {
+    public void transition(NodeStatus nodeStatus, NodeEvent nodeEvent) {
 
-      WorkerReconnectEvent castedEvent = TUtil.checkTypeAndGet(workerEvent, WorkerReconnectEvent.class);
-      Worker newWorker = castedEvent.getWorker();
-      worker.rmContext.getWorkers().put(castedEvent.getWorkerId(), newWorker);
-      worker.rmContext.getDispatcher().getEventHandler().handle(
-          new WorkerEvent(worker.getWorkerId(), WorkerEventType.STARTED));
+      NodeReconnectEvent castedEvent = TUtil.checkTypeAndGet(nodeEvent, NodeReconnectEvent.class);
+      NodeStatus newNodeStatus = castedEvent.getNodeStatus();
+      nodeStatus.rmContext.getNodes().put(castedEvent.getWorkerId(), newNodeStatus);
+      nodeStatus.rmContext.getDispatcher().getEventHandler().handle(
+          new NodeEvent(nodeStatus.getWorkerId(), NodeEventType.STARTED));
     }
   }
 
   @Override
-  public void handle(WorkerEvent event) {
+  public void handle(NodeEvent event) {
     LOG.debug("Processing " + event.getWorkerId() + " of type " + event.getType());
-    WorkerState oldState = getState();
+    NodeState oldState = getState();
     try {
       stateMachine.doTransition(event.getType(), event);
     } catch (InvalidStateTransitonException e) {
@@ -284,7 +284,7 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
           + ", oldState:" + oldState.name()
           + ", nextState:" + getState().name()
           , e);
-      LOG.error("Invalid event " + event.getType() + " on Worker  " + getWorkerId());
+      LOG.error("Invalid event " + event.getType() + " on NodeStatus  " + getWorkerId());
     }
     if (oldState != getState()) {
       LOG.info(getWorkerId() + " Node Transitioned from " + oldState + " to " + getState());

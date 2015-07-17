@@ -47,7 +47,7 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolServ
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
-import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -633,20 +633,20 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetClusterInfoResponse.Builder builder= GetClusterInfoResponse.newBuilder();
 
-        List<Worker> workers = new ArrayList<Worker>(context.getResourceManager().getRMContext().getWorkers().values());
-        Collections.sort(workers);
+        List<NodeStatus> nodeStatusList = new ArrayList<NodeStatus>(context.getResourceManager().getRMContext().getNodes().values());
+        Collections.sort(nodeStatusList);
 
         WorkerResourceInfo.Builder workerBuilder = WorkerResourceInfo.newBuilder();
 
-        for(Worker worker: workers) {
-          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
-          workerBuilder.setAvailableResource(worker.getAvailableResource().getProto());
-          workerBuilder.setTotalResource(worker.getTotalResourceCapability().getProto());
+        for(NodeStatus nodeStatus : nodeStatusList) {
+          workerBuilder.setConnectionInfo(nodeStatus.getConnectionInfo().getProto());
+          workerBuilder.setAvailableResource(nodeStatus.getAvailableResource().getProto());
+          workerBuilder.setTotalResource(nodeStatus.getTotalResourceCapability().getProto());
 
-          workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
-          workerBuilder.setWorkerStatus(worker.getState().toString());
-          workerBuilder.setNumRunningTasks(worker.getNumRunningTasks());
-          workerBuilder.setNumQueryMasterTasks(worker.getNumRunningQueryMaster());
+          workerBuilder.setLastHeartbeat(nodeStatus.getLastHeartbeatTime());
+          workerBuilder.setWorkerStatus(nodeStatus.getState().toString());
+          workerBuilder.setNumRunningTasks(nodeStatus.getNumRunningTasks());
+          workerBuilder.setNumQueryMasterTasks(nodeStatus.getNumRunningQueryMaster());
 
           builder.addWorkerList(workerBuilder.build());
         }

@@ -101,7 +101,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     LOG.info("Start TaskScheduler");
     isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
 
-    if (!isLeaf) {
+    if (isLeaf) {
       candidateWorkers.addAll(getWorkerIds(getLeafTaskHosts()));
     } else {
       //find assigned hosts for Non-Leaf locality in children executionBlock
@@ -266,7 +266,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   protected LinkedList<TaskRequestEvent> createTaskRequest() throws Exception {
     LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
 
-    int requestContainerNum = Math.max(remainingScheduledObjectNum(), 1);
+    int requestContainerNum = remainingScheduledObjectNum();
     if (LOG.isDebugEnabled()) {
       LOG.debug("Try to schedule task resources: " + requestContainerNum);
     }
