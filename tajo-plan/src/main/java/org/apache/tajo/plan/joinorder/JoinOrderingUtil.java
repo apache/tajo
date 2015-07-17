@@ -39,6 +39,15 @@ import java.util.Stack;
 
 public class JoinOrderingUtil {
 
+  /**
+   * Find join conditions which can be evaluated at the given join edge. The result depends on the isOnPredicate flag
+   * which represents the given set of predicates is from the on clause of not.
+   *
+   * @param candidates set of predicates
+   * @param edge join edge
+   * @param isOnPredicates flag to represent the candidates from the on clause of not
+   * @return predicates which can be evaluated at the given join edge
+   */
   public static Set<EvalNode> findJoinConditionForJoinVertex(Set<EvalNode> candidates, JoinEdge edge,
                                                              boolean isOnPredicates) {
     Set<EvalNode> conditionsForThisJoin = TUtil.newHashSet();
@@ -51,6 +60,15 @@ public class JoinOrderingUtil {
     return conditionsForThisJoin;
   }
 
+  /**
+   * Check whether the given predicate can be evaluated at the given join edge or not. The result depends on
+   * the isOnPredicate flag which represents the given predicate is from the on clause of not.
+   *
+   * @param evalNode predicate
+   * @param edge join edge
+   * @param isOnPredicate flag to represent the candidates from the on clause of not
+   * @return true if the predicate can be evaluated at the given join edge
+   */
   public static boolean checkIfEvaluatedAtEdge(EvalNode evalNode, JoinEdge edge, boolean isOnPredicate) {
     Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
@@ -63,17 +81,27 @@ public class JoinOrderingUtil {
       return false;
     }
     // Currently, join filters cannot be evaluated at joins
-    if (PlannerUtil.isOuterJoin(edge.getJoinType()) && !isOnPredicate) {
+    if (PlannerUtil.isOuterJoinType(edge.getJoinType()) && !isOnPredicate) {
       return false;
     }
     return true;
   }
 
+  /**
+   * Check the associativity between the given two join edges.
+   * For the associativity rules, please refer to the below isAssociativeJoinType() function.
+   *
+   * @param context join graph context
+   * @param leftEdge left join edge
+   * @param rightEdge right join edge
+   * @return true if two given join edges are associative.
+   */
   public static boolean isAssociativeJoin(JoinGraphContext context, JoinEdge leftEdge, JoinEdge rightEdge) {
     if (isAssociativeJoinType(leftEdge.getJoinType(), rightEdge.getJoinType())) {
 
-      // NOTE: There will be more quals which are able to be evaluated at input join edges.
-      // In this case, the input edges are not associative to evaluate quals at proper join edges.
+      // NOTE: There will be more predicates which are able to be evaluated at input join edges.
+      // In this case, the input edges are not considered as associative joins to evaluate those predicates at proper
+      // join edges, even though they have the associative relationship.
 
       // Create a temporal left-deep join node to find the potentially evaluatable quals.
       JoinedRelationsVertex tempLeftChild = new JoinedRelationsVertex(leftEdge);
@@ -164,78 +192,6 @@ public class JoinOrderingUtil {
   }
 
   /**
-   * Find the most left relation node in the join tree.
-   * @param plan
-   * @param block
-   * @param from
-   * @return
-   * @throws PlanningException
-   */
-  public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
-      throws PlanningException {
-    RelationNodeFinderContext context = new RelationNodeFinderContext();
-    context.findMostLeft = true;
-    RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
-    return context.founds.isEmpty() ? null : context.founds.iterator().next();
-  }
-
-  /**
-   * Find the most right relation node in the join tree.
-   * @param plan
-   * @param block
-   * @param from
-   * @return
-   * @throws PlanningException
-   */
-  public static RelationNode findMostRightRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
-      throws PlanningException {
-    RelationNodeFinderContext context = new RelationNodeFinderContext();
-    context.findMostRight = true;
-    RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
-    return context.founds.isEmpty() ? null : context.founds.iterator().next();
-  }
-
-  private static class RelationNodeFinderContext {
-    private Set<RelationNode> founds = TUtil.newHashSet();
-    private boolean findMostLeft;
-    private boolean findMostRight;
-  }
-
-  private static class RelationNodeFinder extends BasicLogicalPlanVisitor<RelationNodeFinderContext,LogicalNode> {
-
-    @Override
-    public LogicalNode visit(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
-      if (node.getType() != NodeType.TABLE_SUBQUERY) {
-        super.visit(context, plan, block, node, stack);
-      }
-
-      if (node instanceof RelationNode) {
-        context.founds.add((RelationNode) node);
-      }
-
-      return node;
-    }
-
-    @Override
-    public LogicalNode visitJoin(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
-      stack.push(node);
-      LogicalNode result = null;
-      if (context.findMostLeft) {
-        result = visit(context, plan, block, node.getLeftChild(), stack);
-      }
-      if (context.findMostRight) {
-        result = visit(context, plan, block, node.getRightChild(), stack);
-      }
-      stack.pop();
-      return result;
-    }
-  }
-
-  /**
    * Find all interchangeable vertexes from the given vertex.
    * Join edges between relations are found at runtime.
    *
@@ -287,6 +243,13 @@ public class JoinOrderingUtil {
     }
   }
 
+  /**
+   * Check the given two join edges are equal or symmetric.
+   *
+   * @param edge1
+   * @param edge2
+   * @return True if two join edges are equal or symmetric.
+   */
   public static boolean isEqualsOrSymmetric(JoinEdge edge1, JoinEdge edge2) {
     if (edge1.equals(edge2) || isSymmetric(edge1, edge2)) {
       return true;
@@ -294,16 +257,36 @@ public class JoinOrderingUtil {
     return false;
   }
 
+  /**
+   * Given two join edges e1 and e2, they are <b>symmetric</b> whey they satisfy the follwing conditions.
+   *
+   * <ul>
+   *   <li>e1 and e2 have the same commutative join type.</li>
+   *   <li>e1 and e2 have the same join condition.</li>
+   *   <li>The left and right vertexes of e1 are the right and left vertexes of e2, respectively.</li>
+   * </ul>
+   *
+   * @param edge1
+   * @param edge2
+   * @return True if two join edges are symmetric.
+   */
   public static boolean isSymmetric(JoinEdge edge1, JoinEdge edge2) {
     if (edge1.getLeftVertex().equals(edge2.getRightVertex()) &&
         edge1.getRightVertex().equals(edge2.getLeftVertex()) &&
         edge1.getJoinSpec().equals(edge2.getJoinSpec()) &&
-        PlannerUtil.isSymmetricJoin(edge1.getJoinType())) {
+        PlannerUtil.isCommutativeJoinType(edge1.getJoinType())) {
       return true;
     }
     return false;
   }
 
+  /**
+   * If there are predicates which can be evaluated at the given join edge, push those predicates to the join edge.
+   *
+   * @param context
+   * @param edge
+   * @return
+   */
   public static JoinEdge updateQualIfNecessary(JoinGraphContext context, JoinEdge edge) {
     Set<EvalNode> additionalPredicates = findJoinConditionForJoinVertex(
         context.getCandidateJoinConditions(), edge, true);
