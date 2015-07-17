@@ -26,8 +26,12 @@ public class AlreadyExistsPartitionException extends RuntimeException {
     super(message);
   }
 
+  public AlreadyExistsPartitionException(String tableName, String partitionName) {
+    super(String.format("ERROR: partition \"%s already exist in \"%s\"", partitionName, tableName));
+  }
+
   public AlreadyExistsPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s already exist in \"%s.%s\"", partitionName, databaseName, tableName));
+    super(String.format("ERROR: partition \"%s already exist in \"%s.%s\"", partitionName, databaseName, tableName));
   }
 
 }

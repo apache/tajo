@@ -604,8 +604,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     // It is because HiveCatalogStore does not support Time data type.
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
-        String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-          DEFAULT_DATABASE_NAME);
+        String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
+          tajoMasterAddress.getPort(), "TestTajoJdbc");
+
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
 
@@ -615,12 +616,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         resultSet.close();
 
         stmt = conn.createStatement();
-        resultSet = stmt.executeQuery("alter table " + tableName + " add partition (key = 0.1)");
-      }
-    } catch (SQLException e) {
-      errorMessage = e.getMessage();
+        result  = stmt.executeUpdate("alter table " + tableName + " add partition (key = 0.1)");
+        assertEquals(result, 1);
+     }
     } finally {
-      assertEquals(errorMessage, "ADD_PARTITION is not supported yet\n");
       cleanupQuery(resultSet);
       if (stmt != null) {
         stmt.close();

@@ -24,12 +24,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster;
@@ -39,6 +42,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.net.URI;
@@ -375,12 +379,17 @@ public class DDLExecutor {
     }
   }
 
+
   /**
-   * ALTER TABLE SET ...
+   * Execute alter table statement using catalog api.
+   *
+   * @param context
+   * @param queryContext
+   * @param alterTable
+   * @throws IOException
    */
   public void alterTable(TajoMaster.MasterContext context, final QueryContext queryContext,
                          final AlterTableNode alterTable) throws IOException {
-
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
 
@@ -400,6 +409,25 @@ public class DDLExecutor {
       throw new NoSuchTableException(qualifiedName);
     }
 
+    Path partitionPath = null;
+    TableDesc desc = null;
+    Pair<List<PartitionKeyProto>, String> pair = null;
+    CatalogProtos.PartitionDescProto partitionDescProto = null;
+
+    if (alterTable.getAlterTableOpType() == AlterTableOpType.RENAME_TABLE
+      || alterTable.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
+      || alterTable.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
+      desc = catalog.getTableDesc(databaseName, simpleTableName);
+    }
+
+    // When adding a partition or dropping a partition, check existing partition column information.
+    if (alterTable.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
+      || alterTable.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
+      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
+      partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
+      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
+    }
+
     switch (alterTable.getAlterTableOpType()) {
     case RENAME_TABLE:
       if (!catalog.existsTable(databaseName, simpleTableName)) {
@@ -408,8 +436,6 @@ public class DDLExecutor {
       if (catalog.existsTable(databaseName, alterTable.getNewTableName())) {
         throw new AlreadyExistsTableException(alterTable.getNewTableName());
       }
-
-      TableDesc desc = catalog.getTableDesc(databaseName, simpleTableName);
 
       if (!desc.isExternal()) { // if the table is the managed table
         Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
@@ -446,8 +472,85 @@ public class DDLExecutor {
     case SET_PROPERTY:
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
+    case ADD_PARTITION:
+      if (partitionDescProto != null) {
+        throw new AlreadyExistsPartitionException(tableName, pair.getSecond());
+      }
+
+      if (alterTable.getLocation() != null) {
+        partitionPath = new Path(alterTable.getLocation());
+      } else {
+        // If location is not specified, the partition's location will be set using the table location.
+        partitionPath = new Path(desc.getUri().toString(), pair.getSecond());
+        alterTable.setLocation(partitionPath.toString());
+      }
+
+      FileSystem fs = partitionPath.getFileSystem(context.getConf());
+
+      // If there is a directory which was assumed to be a partitioned directory and users don't input another
+      // location, this will throw exception.
+      Path assumedDirectory = new Path(desc.getUri().toString(), pair.getSecond());
+      boolean result1 = fs.exists(assumedDirectory);
+      boolean result2 = fs.exists(partitionPath);
+      if (fs.exists(assumedDirectory) && !assumedDirectory.equals(partitionPath)) {
+        throw new AlreadyExistsAssumedPartitionDirectoryException(assumedDirectory.toString());
+      }
+
+      catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
+        alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
+
+      // If the partition's path doesn't exist, this would make the directory by force.
+      if (!fs.exists(partitionPath)) {
+        fs.mkdirs(partitionPath);
+      }
+      break;
+    case DROP_PARTITION:
+      if (partitionDescProto == null) {
+        throw new NoSuchPartitionException(tableName, pair.getSecond());
+      }
+
+      catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
+        alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
+
+      // When dropping partition on an managed table, the data will be delete from file system.
+      if (!desc.isExternal()) {
+        deletePartitionPath(partitionDescProto);
+      } else {
+        // When dropping partition on an external table, the data in the table will NOT be deleted from the file
+        // system. But if PURGE is specified, the partition data will be deleted.
+        if (alterTable.isPurge()) {
+          deletePartitionPath(partitionDescProto);
+        }
+      }
+      break;
     default:
       //TODO
+    }
+  }
+
+  private void deletePartitionPath(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException {
+    Path partitionPath = new Path(partitionDescProto.getPath());
+    FileSystem fs = partitionPath.getFileSystem(context.getConf());
+    if (fs.exists(partitionPath)) {
+      fs.delete(partitionPath, true);
+    }
+  }
+
+  private boolean existPartitionColumnNames(String tableName, String[] columnNames) {
+    for(String columnName : columnNames) {
+      if (!existPartitionColumnName(tableName, columnName)) {
+        throw new NoSuchPartitionKeyException(tableName, columnName);
+      }
+    }
+    return true;
+  }
+
+  private boolean existPartitionColumnName(String tableName, String columnName) {
+    final TableDesc tableDesc = catalog.getTableDesc(tableName);
+    if (tableDesc.getPartitionMethod().getExpressionSchema().contains(columnName)) {
+      return true;
+    } else {
+      return false;
     }
   }
 

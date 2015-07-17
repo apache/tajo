@@ -324,7 +324,10 @@ Release 0.11.0 - unreleased
   
   TASKS
 
-    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis, 
+    TAJO-1345: Implement logical plan part and DDL executor
+    for alter partition. (jaehwa)
+
+    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis,
     Committed by jihoon)
 
     TAJO-1583: Remove ServerCallable in RPC client. (jinho)

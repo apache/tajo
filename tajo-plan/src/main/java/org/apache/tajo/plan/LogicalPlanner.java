@@ -2015,6 +2015,42 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return schema;
   }
 
+  /**
+   * It transforms ColumnDefinition array to String array.
+   *
+   * @param columnReferenceExprs
+   * @return
+   */
+  private static String[] convertColumnsToStrings(ColumnReferenceExpr[] columnReferenceExprs) {
+    int columnCount = columnReferenceExprs.length;
+    String[] columns = new String[columnCount];
+
+    for(int i = 0; i < columnCount; i++) {
+      ColumnReferenceExpr columnReferenceExpr = columnReferenceExprs[i];
+      columns[i] = columnReferenceExpr.getName();
+    }
+
+    return columns;
+  }
+
+  /**
+   * It transforms Expr array to String array.
+   *
+   * @param exprs
+   * @return
+   */
+  private static String[] convertExprsToStrings(Expr[] exprs) {
+    int exprCount = exprs.length;
+    String[] values = new String[exprCount];
+
+    for(int i = 0; i < exprCount; i++) {
+      LiteralValue expr = (LiteralValue)exprs[i];
+      values[i] = expr.getValue();
+    }
+
+    return values;
+  }
+
   private static Column convertColumn(ColumnDefinition columnDefinition) {
     return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
@@ -2078,6 +2114,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     if (null != alterTable.getAddNewColumn()) {
       alterTableNode.setAddNewColumn(convertColumn(alterTable.getAddNewColumn()));
     }
+
+    if (alterTable.getColumns() != null) {
+      alterTableNode.setPartitionColumns(convertColumnsToStrings(alterTable.getColumns()));
+    }
+
+    if (alterTable.getValues() != null) {
+      alterTableNode.setPartitionValues(convertExprsToStrings(alterTable.getValues()));
+    }
+
+    if (alterTable.getLocation() != null) {
+      alterTableNode.setLocation(alterTable.getLocation());
+    }
+
+    alterTableNode.setPurge(alterTable.isPurge());
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
   }

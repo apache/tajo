@@ -18,20 +18,11 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoSuchPartitionException extends RuntimeException {
+public class AlreadyExistsAssumedPartitionDirectoryException extends RuntimeException {
 
-  private static final long serialVersionUID = 277182608283894938L;
+  private static final long serialVersionUID = 277182608283894931L;
 
-  public NoSuchPartitionException(String message) {
-    super(message);
+  public AlreadyExistsAssumedPartitionDirectoryException(String message) {
+    super(String.format("ERROR: There is a directory which is assumed to be a partitioned directory : %s", message));
   }
-
-  public NoSuchPartitionException(String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s\".", partitionName, tableName));
-  }
-
-  public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s.%s\".", partitionName, databaseName, tableName));
-  }
-
 }

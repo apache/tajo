@@ -18,20 +18,12 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoSuchPartitionException extends RuntimeException {
+public class NoSuchPartitionKeyException extends RuntimeException {
 
-  private static final long serialVersionUID = 277182608283894938L;
+  private static final long serialVersionUID = 277182608283894939L;
 
-  public NoSuchPartitionException(String message) {
-    super(message);
+  public NoSuchPartitionKeyException(String tableName, String partitionKey) {
+    super(String.format("ERROR: \"%s\" column is not the partition key of \"%s\".",
+      partitionKey, tableName));
   }
-
-  public NoSuchPartitionException(String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s\".", partitionName, tableName));
-  }
-
-  public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s.%s\".", partitionName, databaseName, tableName));
-  }
-
 }
