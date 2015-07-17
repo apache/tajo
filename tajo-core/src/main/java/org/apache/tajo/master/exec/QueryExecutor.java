@@ -545,7 +545,7 @@ public class QueryExecutor {
 
           if (distributedWorkerCount > 0) {
             throw new VerifyException(
-              String.format("The table data should be on all hosts to run TajoWorker or be on distributed file system. " +
+              String.format("The table data should be be on distributed file system. " +
                 ": %s", localFileUri.toString()));
           }
         }
