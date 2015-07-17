@@ -1001,7 +1001,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           if(partitionDesc != null) {
             dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
           }
-          addPartition(tableId, alterTableDescProto.getPartitionDesc());
+          addPartition(tableId, alterTableDescProto.getPartitionDesc(), null);
           break;
         case DROP_PARTITION:
           partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
@@ -1243,7 +1243,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition) throws CatalogException {
+  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition,
+                           Connection connection) throws CatalogException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     final String ADD_PARTITION_SQL =
@@ -1255,13 +1256,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       + COL_PARTITION_VALUE + ") VALUES (?,?,?)";
 
     try {
-
       if (LOG.isDebugEnabled()) {
         LOG.debug(ADD_PARTITION_SQL);
       }
 
-      conn = getConnection();
-      pstmt = conn.prepareStatement(ADD_PARTITION_SQL);
+      if (connection == null) {
+        conn = getConnection();
+        conn.setAutoCommit(false);
+        pstmt = conn.prepareStatement(ADD_PARTITION_SQL);
+      } else {
+        pstmt = connection.prepareStatement(ADD_PARTITION_SQL);
+      }
+
       pstmt.setInt(1, tableId);
       pstmt.setString(2, partition.getPartitionName());
       pstmt.setString(3, partition.getPath());
@@ -1269,12 +1275,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.close();
 
       if (partition.getPartitionKeysCount() > 0) {
-        pstmt = conn.prepareStatement(ADD_PARTITION_KEYS_SQL);
+        if (conn != null) {
+          pstmt = conn.prepareStatement(ADD_PARTITION_KEYS_SQL);
+        } else {
+          pstmt = connection.prepareStatement(ADD_PARTITION_KEYS_SQL);
+        }
         int partitionId = getPartitionId(tableId, partition.getPartitionName());
         addPartitionKeys(pstmt, partitionId, partition);
         pstmt.executeBatch();
       }
+
+      if (conn != null) {
+        conn.commit();
+      }
     } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
       throw new CatalogException(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
@@ -2176,8 +2197,61 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException {
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions)
+    throws CatalogException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
 
+    try {
+      int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+
+      conn = getConnection();
+      conn.setAutoCommit(false);
+      StringBuilder sb = new StringBuilder();
+      sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
+      sb.append("WHERE ").append(COL_PARTITIONS_PK).append(" IN (");
+      sb.append(" SELECT ").append(COL_PARTITIONS_PK).append(" FROM ").append(TB_PARTTIONS);
+      sb.append(" WHERE PARTITION_NAME = ? )");
+
+      pstmt = conn.prepareStatement(sb.toString());
+      for(PartitionDescProto partition : partitions) {
+        pstmt.setString(1, partition.getPartitionName());
+        pstmt.addBatch();
+        pstmt.clearParameters();
+      }
+      pstmt.executeBatch();
+      pstmt.close();
+
+      sb.append("DELETE FROM ").append(TB_PARTTIONS);
+      sb.append(" WHERE PARTITION_NAME = ? )");
+      pstmt = conn.prepareStatement(sb.toString());
+      for(PartitionDescProto partition : partitions) {
+        pstmt.setString(1, partition.getPartitionName());
+        pstmt.addBatch();
+        pstmt.clearParameters();
+      }
+      pstmt.executeBatch();
+      pstmt.close();
+
+      for(PartitionDescProto partition : partitions) {
+        addPartition(tableId, partition, conn);
+      }
+      if (conn != null) {
+        conn.commit();
+      }
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
   }
 
   @Override

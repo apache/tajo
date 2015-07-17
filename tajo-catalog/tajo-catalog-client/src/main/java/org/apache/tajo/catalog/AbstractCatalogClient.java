@@ -343,6 +343,28 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
+  public boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions) {
+    try {
+      CatalogProtocolService.BlockingInterface stub = getStub();
+      AddPartitionsProto.Builder builder = AddPartitionsProto.newBuilder();
+
+      TableIdentifierProto.Builder identifier = TableIdentifierProto.newBuilder();
+      identifier.setDatabaseName(databaseName);
+      identifier.setTableName(tableName);
+      builder.setTableIdentifier(identifier.build());
+
+      for (PartitionDescProto partition: partitions) {
+        builder.addPartitionDesc(partition);
+      }
+
+      return stub.addPartitions(null, builder.build()).getValue();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
+
+  @Override
   public final Collection<String> getAllTableNames(final String databaseName) {
     try {
       CatalogProtocolService.BlockingInterface stub = getStub();

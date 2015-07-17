@@ -21,7 +21,7 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 
 import java.util.List;
 
@@ -86,8 +86,8 @@ public class StatisticsUtil {
     // If there is partitions
     if (stats.getPartitions().size() > 0) {
       // Aggregate partitions for each table
-      for (PartitionDesc partitionDesc : stats.getPartitions()) {
-        result.addPartition(partitionDesc);
+      for (PartitionDescProto partition : stats.getPartitions()) {
+        result.addPartition(partition);
       }
     }
 
@@ -123,8 +123,8 @@ public class StatisticsUtil {
       // If there is partitions
       if (ts.getPartitions().size() > 0) {
         // Aggregate partitions for each table
-        for (PartitionDesc partitionDesc : ts.getPartitions()) {
-          aggregated.addPartition(partitionDesc);
+        for (PartitionDescProto partition : ts.getPartitions()) {
+          aggregated.addPartition(partition);
         }
       }
 

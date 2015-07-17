@@ -33,7 +33,6 @@ import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -42,7 +41,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
@@ -918,7 +916,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public BoolProto addTablePartitions(RpcController controller, AddTablePartitionsProto request)
+    public BoolProto addPartitions(RpcController controller, AddPartitionsProto request)
       throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
@@ -939,7 +937,7 @@ public class CatalogServer extends AbstractService {
           contain = store.existTable(databaseName, tableName);
           if (contain) {
             if (store.existPartitionMethod(databaseName, tableName)) {
-              store.addPartitions(request.getPartitionDescList());
+              store.addPartitions(databaseName, tableName, request.getPartitionDescList());
               return ProtoUtil.TRUE;
             } else {
               throw new NoPartitionedTableException(databaseName, tableName);

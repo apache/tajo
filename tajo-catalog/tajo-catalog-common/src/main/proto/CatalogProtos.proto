@@ -169,7 +169,7 @@ message GetTablePartitionsProto {
   repeated TablePartitionProto part = 1;
 }
 
-message AddTablePartitionsProto {
+message AddPartitionsProto {
   required TableIdentifierProto tableIdentifier = 1;
   repeated PartitionDescProto partitionDesc = 2;
 }

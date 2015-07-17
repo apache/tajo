@@ -33,9 +33,10 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -102,100 +103,100 @@ public class Query implements EventHandler<QueryEvent> {
   private static final QueryCompletedTransition QUERY_COMPLETED_TRANSITION = new QueryCompletedTransition();
 
   protected static final StateMachineFactory
-      <Query,QueryState,QueryEventType,QueryEvent> stateMachineFactory =
-      new StateMachineFactory<Query, QueryState, QueryEventType, QueryEvent>
-          (QueryState.QUERY_NEW)
+    <Query,QueryState,QueryEventType,QueryEvent> stateMachineFactory =
+    new StateMachineFactory<Query, QueryState, QueryEventType, QueryEvent>
+      (QueryState.QUERY_NEW)
 
-          // Transitions from NEW state
-          .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_RUNNING,
-              QueryEventType.START,
-              new StartTransition())
-          .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_NEW,
-              QueryEventType.DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_KILLED,
-              QueryEventType.KILL,
-              new KillNewQueryTransition())
-          .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_ERROR,
-              QueryEventType.INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
+      // Transitions from NEW state
+      .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_RUNNING,
+        QueryEventType.START,
+        new StartTransition())
+      .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_NEW,
+        QueryEventType.DIAGNOSTIC_UPDATE,
+        DIAGNOSTIC_UPDATE_TRANSITION)
+      .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_KILLED,
+        QueryEventType.KILL,
+        new KillNewQueryTransition())
+      .addTransition(QueryState.QUERY_NEW, QueryState.QUERY_ERROR,
+        QueryEventType.INTERNAL_ERROR,
+        INTERNAL_ERROR_TRANSITION)
 
-          // Transitions from RUNNING state
-          .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_RUNNING,
-              QueryEventType.STAGE_COMPLETED,
-              STAGE_COMPLETED_TRANSITION)
-          .addTransition(QueryState.QUERY_RUNNING,
-              EnumSet.of(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_FAILED, QueryState.QUERY_KILLED,
-                  QueryState.QUERY_ERROR),
-              QueryEventType.QUERY_COMPLETED,
-              QUERY_COMPLETED_TRANSITION)
-          .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_RUNNING,
-              QueryEventType.DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_KILL_WAIT,
-              QueryEventType.KILL,
-              new KillAllStagesTransition())
-          .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_ERROR,
-              QueryEventType.INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
+        // Transitions from RUNNING state
+      .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_RUNNING,
+        QueryEventType.STAGE_COMPLETED,
+        STAGE_COMPLETED_TRANSITION)
+      .addTransition(QueryState.QUERY_RUNNING,
+        EnumSet.of(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_FAILED, QueryState.QUERY_KILLED,
+          QueryState.QUERY_ERROR),
+        QueryEventType.QUERY_COMPLETED,
+        QUERY_COMPLETED_TRANSITION)
+      .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_RUNNING,
+        QueryEventType.DIAGNOSTIC_UPDATE,
+        DIAGNOSTIC_UPDATE_TRANSITION)
+      .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_KILL_WAIT,
+        QueryEventType.KILL,
+        new KillAllStagesTransition())
+      .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_ERROR,
+        QueryEventType.INTERNAL_ERROR,
+        INTERNAL_ERROR_TRANSITION)
 
-          // Transitions from QUERY_SUCCEEDED state
-          .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
-              QueryEventType.DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          // ignore-able transitions
-          .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
-              QueryEventType.STAGE_COMPLETED,
-              STAGE_COMPLETED_TRANSITION)
-          .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
-              QueryEventType.KILL)
-          .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_ERROR,
-              QueryEventType.INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
+        // Transitions from QUERY_SUCCEEDED state
+      .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
+        QueryEventType.DIAGNOSTIC_UPDATE,
+        DIAGNOSTIC_UPDATE_TRANSITION)
+        // ignore-able transitions
+      .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
+        QueryEventType.STAGE_COMPLETED,
+        STAGE_COMPLETED_TRANSITION)
+      .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
+        QueryEventType.KILL)
+      .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_ERROR,
+        QueryEventType.INTERNAL_ERROR,
+        INTERNAL_ERROR_TRANSITION)
 
-          // Transitions from KILL_WAIT state
-          .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
-              QueryEventType.STAGE_COMPLETED,
-              STAGE_COMPLETED_TRANSITION)
-          .addTransition(QueryState.QUERY_KILL_WAIT,
-              EnumSet.of(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_FAILED, QueryState.QUERY_KILLED,
-                  QueryState.QUERY_ERROR),
-              QueryEventType.QUERY_COMPLETED,
-              QUERY_COMPLETED_TRANSITION)
-          .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
-              QueryEventType.DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_ERROR,
-              QueryEventType.INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
-          // Ignore-able transitions
-          .addTransition(QueryState.QUERY_KILL_WAIT, EnumSet.of(QueryState.QUERY_KILLED),
-              QueryEventType.KILL,
-              QUERY_COMPLETED_TRANSITION)
+        // Transitions from KILL_WAIT state
+      .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
+        QueryEventType.STAGE_COMPLETED,
+        STAGE_COMPLETED_TRANSITION)
+      .addTransition(QueryState.QUERY_KILL_WAIT,
+        EnumSet.of(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_FAILED, QueryState.QUERY_KILLED,
+          QueryState.QUERY_ERROR),
+        QueryEventType.QUERY_COMPLETED,
+        QUERY_COMPLETED_TRANSITION)
+      .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
+        QueryEventType.DIAGNOSTIC_UPDATE,
+        DIAGNOSTIC_UPDATE_TRANSITION)
+      .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_ERROR,
+        QueryEventType.INTERNAL_ERROR,
+        INTERNAL_ERROR_TRANSITION)
+        // Ignore-able transitions
+      .addTransition(QueryState.QUERY_KILL_WAIT, EnumSet.of(QueryState.QUERY_KILLED),
+        QueryEventType.KILL,
+        QUERY_COMPLETED_TRANSITION)
 
-          // Transitions from FAILED state
-          .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
-              QueryEventType.DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_ERROR,
-              QueryEventType.INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
-          // Ignore-able transitions
-          .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
-              QueryEventType.KILL)
+        // Transitions from FAILED state
+      .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
+        QueryEventType.DIAGNOSTIC_UPDATE,
+        DIAGNOSTIC_UPDATE_TRANSITION)
+      .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_ERROR,
+        QueryEventType.INTERNAL_ERROR,
+        INTERNAL_ERROR_TRANSITION)
+        // Ignore-able transitions
+      .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
+        QueryEventType.KILL)
 
-          // Transitions from ERROR state
-          .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
-              QueryEventType.DIAGNOSTIC_UPDATE,
-              DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
-              QueryEventType.INTERNAL_ERROR,
-              INTERNAL_ERROR_TRANSITION)
-          // Ignore-able transitions
-          .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
-              EnumSet.of(QueryEventType.KILL, QueryEventType.STAGE_COMPLETED))
+        // Transitions from ERROR state
+      .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
+        QueryEventType.DIAGNOSTIC_UPDATE,
+        DIAGNOSTIC_UPDATE_TRANSITION)
+      .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
+        QueryEventType.INTERNAL_ERROR,
+        INTERNAL_ERROR_TRANSITION)
+        // Ignore-able transitions
+      .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
+        EnumSet.of(QueryEventType.KILL, QueryEventType.STAGE_COMPLETED))
 
-          .installTopology();
+      .installTopology();
 
   public Query(final QueryMasterTask.QueryMasterTaskContext context, final QueryId id,
                final long appSubmitTime,
@@ -347,11 +348,11 @@ public class Query implements EventHandler<QueryEvent> {
   public StateMachine<QueryState, QueryEventType, QueryEvent> getStateMachine() {
     return stateMachine;
   }
-  
+
   public void addStage(Stage stage) {
     stages.put(stage.getId(), stage);
   }
-  
+
   public QueryId getId() {
     return this.id;
   }
@@ -391,7 +392,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public static class StartTransition
-      implements SingleArcTransition<Query, QueryEvent> {
+    implements SingleArcTransition<Query, QueryEvent> {
 
     @Override
     public void transition(Query query, QueryEvent queryEvent) {
@@ -472,11 +473,11 @@ public class Query implements EventHandler<QueryEvent> {
         Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
 
         Path finalOutputDir = space.commitTable(
-            query.context.getQueryContext(),
-            lastStage.getId(),
-            lastStage.getMasterPlan().getLogicalPlan(),
-            lastStage.getSchema(),
-            tableDesc);
+          query.context.getQueryContext(),
+          lastStage.getId(),
+          lastStage.getMasterPlan().getLogicalPlan(),
+          lastStage.getSchema(),
+          tableDesc);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
@@ -540,11 +541,11 @@ public class Query implements EventHandler<QueryEvent> {
         TableStats stats = lastStage.getResultStats();
 
         TableDesc resultTableDesc =
-            new TableDesc(
-                query.getId().toString(),
-                lastStage.getSchema(),
-                meta,
-                finalOutputDir.toUri());
+          new TableDesc(
+            query.getId().toString(),
+            lastStage.getSchema(),
+            meta,
+            finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
         stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
@@ -573,11 +574,11 @@ public class Query implements EventHandler<QueryEvent> {
         TableMeta meta = new TableMeta(createTableNode.getStorageType(), createTableNode.getOptions());
 
         TableDesc tableDescTobeCreated =
-            new TableDesc(
-                createTableNode.getTableName(),
-                createTableNode.getTableSchema(),
-                meta,
-                finalOutputDir.toUri());
+          new TableDesc(
+            createTableNode.getTableName(),
+            createTableNode.getTableSchema(),
+            meta,
+            finalOutputDir.toUri());
         tableDescTobeCreated.setExternal(createTableNode.isExternal());
 
         if (createTableNode.hasPartition()) {
@@ -604,7 +605,7 @@ public class Query implements EventHandler<QueryEvent> {
       @Override
       public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext,
                           Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir)
-          throws Exception {
+        throws Exception {
 
         CatalogService catalog = context.getWorkerContext().getCatalog();
         Stage lastStage = query.getStage(finalExecBlockId);
@@ -632,15 +633,8 @@ public class Query implements EventHandler<QueryEvent> {
           builder.setStats(stats.getProto());
 
           catalog.updateTableStats(builder.build());
-          // If there is partitions
-          if (stats.getPartitions() != null && stats.getPartitions().size() > 0) {
-            // Store partitions to CatalogStore using alter table statement.
-            for (PartitionDesc partitionDesc : stats.getPartitions()) {
-              catalog.alterTable(CatalogUtil.addPartitionAndDropPartition(finalTable.getName(), partitionDesc,
-                AlterTableType.ADD_PARTITION));
-            }
-          }
         }
+
         query.setResultDesc(finalTable);
       }
     }
@@ -700,17 +694,17 @@ public class Query implements EventHandler<QueryEvent> {
           query.erroredStagesCount++;
         } else {
           LOG.error(String.format("Invalid Stage (%s) State %s at %s",
-              castEvent.getExecutionBlockId().toString(), castEvent.getState().name(), query.getSynchronizedState().name()));
+            castEvent.getExecutionBlockId().toString(), castEvent.getState().name(), query.getSynchronizedState().name()));
           query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));
         }
 
         // if a stage is succeeded and a query is running
         if (castEvent.getState() == StageState.SUCCEEDED &&  // latest stage succeeded
-            query.getSynchronizedState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
-            !executeNextBlock(query, castEvent.getExecutionBlockId())) {
+          query.getSynchronizedState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
+          !executeNextBlock(query, castEvent.getExecutionBlockId())) {
           return;
         }
-         // if a query is completed due to finished, kill, failure, or error
+        // if a query is completed due to finished, kill, failure, or error
         query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
@@ -769,10 +763,10 @@ public class Query implements EventHandler<QueryEvent> {
         queryState = getSynchronizedState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
-            + ", type:" + event
-            + ", oldState:" + oldState.name()
-            + ", nextState:" + getSynchronizedState().name()
-            , e);
+          + ", type:" + event
+          + ", oldState:" + oldState.name()
+          + ", nextState:" + getSynchronizedState().name()
+          , e);
         eventHandler.handle(new QueryEvent(this.id, QueryEventType.INTERNAL_ERROR));
       }
 

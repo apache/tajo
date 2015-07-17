@@ -614,8 +614,15 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException {
-
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions)
+    throws CatalogException {
+    for(CatalogProtos.PartitionDescProto partition: partitions) {
+      String partitionName = partition.getPartitionName();
+      if (this.partitions.containsKey(tableName) && this.partitions.get(tableName).containsKey(partitionName)) {
+        dropPartition(databaseName, tableName, partitionName);
+      }
+      addPartition(partition, tableName, partitionName);
+    }
   }
 
   /* (non-Javadoc)

@@ -54,6 +54,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
 import java.io.IOException;
@@ -752,7 +753,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
         values.add(keyProto.getPartitionValue());
       }
-      client.getHiveClient().dropPartition(databaseName, tableName, values, true);
+      client.getHiveClient().dropPartition(databaseName, tableName, values, false);
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {
@@ -944,7 +945,40 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(List<CatalogProtos.PartitionDescProto> partitions) throws CatalogException {
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions)
+    throws CatalogException {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    List<Partition> addPartitions = TUtil.newList();
+
+    try {
+      client = clientPool.getClient();
+
+      for (CatalogProtos.PartitionDescProto partitionDescProto : partitions) {
+        Partition partition = new Partition();
+        partition.setDbName(databaseName);
+        partition.setTableName(tableName);
+
+        List<String> values = Lists.newArrayList();
+        for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+          values.add(keyProto.getPartitionValue());
+        }
+        partition.setValues(values);
+
+        Table table = client.getHiveClient().getTable(databaseName, tableName);
+        StorageDescriptor sd = table.getSd();
+        sd.setLocation(partitionDescProto.getPath());
+        partition.setSd(sd);
+
+        addPartitions.add(partition);
+      }
+      client.getHiveClient().add_partitions(addPartitions);
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
 
   }
 

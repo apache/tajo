@@ -30,6 +30,10 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.*;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
@@ -324,6 +328,31 @@ public class QueryMaster extends CompositeService implements EventHandler {
         return;
       }
 
+      // In INSERT .. SELECT ... queries or CTAS, dynamic partitions should be added to catalog.
+      Query query = queryMasterTask.getQuery();
+      if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED && query.getResultDesc() != null) {
+        TableDesc desc = query.getResultDesc();
+        TableStats stats = desc.getStats();
+
+        String databaseName;
+        String simpleTableName;
+        if (CatalogUtil.isFQTableName(desc.getName())) {
+          String[] split = CatalogUtil.splitFQTableName(desc.getName());
+          databaseName = split[0];
+          simpleTableName = split[1];
+        } else {
+          databaseName = queryContext.getCurrentDatabase();
+          simpleTableName = desc.getName();
+        }
+
+        // If there is partitions
+        if (stats.getPartitions() != null && stats.getPartitions().size() > 0) {
+          CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
+          // Store partitions to CatalogStore using alter table statement.
+          catalog.addPartitions(databaseName, simpleTableName, stats.getPartitions());
+        }
+      }
+
       finishedQueryMasterTasks.put(queryId, queryMasterTask);
 
       TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
@@ -352,7 +381,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
       }
-      Query query = queryMasterTask.getQuery();
+      query = queryMasterTask.getQuery();
       if (query != null) {
         QueryHistory queryHisory = query.getQueryHistory();
         if (queryHisory != null) {

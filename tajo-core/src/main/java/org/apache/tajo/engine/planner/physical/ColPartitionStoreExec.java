@@ -29,8 +29,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
@@ -173,30 +173,30 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
    * @throws IOException
    */
   private void addPartition(String partition) throws IOException {
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setPartitionName(partition);
+    PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
+    builder.setPartitionName(partition);
 
     String[] partitionKeyPairs = partition.split("/");
-    List<PartitionKey> partitionKeyList = TUtil.newList();
     for(String partitionKeyPair: partitionKeyPairs) {
-      String[] keyValue = partitionKeyPair.split("=");
-      PartitionKey partitionKey = new PartitionKey(keyValue[0], keyValue[1]);
-      partitionKeyList.add(partitionKey);
+      String[] split = partitionKeyPair.split("=");
+      PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
+      keyBuilder.setColumnName(split[0]);
+      keyBuilder.setPartitionValue(split[1]);
+      builder.addPartitionKeys(keyBuilder.build());
     }
-    partitionDesc.setPartitionKeys(partitionKeyList);
 
     if (this.plan.getUri() == null) {
       // In CTAS, the uri would be null. So,
       String[] split = CatalogUtil.splitTableName(plan.getTableName());
       int endIndex = storeTablePath.toString().indexOf(split[1]) + split[1].length();
       String outputPath = storeTablePath.toString().substring(0, endIndex);
-      partitionDesc.setPath(outputPath + "/" + partition);
+      builder.setPath(outputPath + "/" + partition);
     } else {
-      partitionDesc.setPath(this.plan.getUri().toString() + "/" + partition);
+      builder.setPath(this.plan.getUri().toString() + "/" + partition);
     }
 
-    if(!appender.getStats().getPartitions().contains(partitionDesc)) {
-      appender.getStats().addPartition(partitionDesc);
+    if(!appender.getStats().getPartitions().contains(builder)) {
+      appender.getStats().addPartition(builder.build());
     }
   }
 

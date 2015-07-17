@@ -26,8 +26,8 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
@@ -48,7 +48,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   @Expose private Long avgRows = null; // optional
   @Expose private Long readBytes = null; //optional
   @Expose private List<ColumnStats> columnStatses = null; // repeated
-  @Expose private List<PartitionDesc> partitions = null; // repeated
+  @Expose private List<PartitionDescProto> partitions = null; // repeated
 
   public TableStats() {
     reset();
@@ -99,8 +99,8 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     }
 
     this.partitions = TUtil.newList();
-    for (CatalogProtos.PartitionDescProto partitionProto : proto.getPartitionsList()) {
-      partitions.add(new PartitionDesc(partitionProto));
+    for (PartitionDescProto partition : proto.getPartitionsList()) {
+      partitions.add(partition);
     }
   }
 
@@ -160,11 +160,11 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     this.columnStatses = new ArrayList<ColumnStats>(columnStatses);
   }
 
-  public List<PartitionDesc> getPartitions() {
+  public List<PartitionDescProto> getPartitions() {
     return partitions;
   }
 
-  public void setPartitions(List<PartitionDesc> partitions) {
+  public void setPartitions(List<PartitionDescProto> partitions) {
     this.partitions = partitions;
   }
 
@@ -172,7 +172,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     this.columnStatses.add(columnStats);
   }
 
-  public void addPartition(PartitionDesc partitionDesc) {
+  public void addPartition(PartitionDescProto partitionDesc) {
     this.partitions.add(partitionDesc);
   }
 
@@ -210,7 +210,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
 
     stat.columnStatses = new ArrayList<ColumnStats>(this.columnStatses);
 
-    stat.partitions = new ArrayList<PartitionDesc>(this.partitions);
+    stat.partitions = new ArrayList<PartitionDescProto>(this.partitions);
 
     return stat;
   }
@@ -288,8 +288,8 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       }
     }
     if (this.partitions != null) {
-      for (PartitionDesc partitionDesc: partitions) {
-        builder.addPartitions(partitionDesc.getProto());
+      for (PartitionDescProto partition: partitions) {
+        builder.addPartitions(partition);
       }
     }
     return builder.build();
