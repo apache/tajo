@@ -59,6 +59,7 @@ public class TestHiveCatalogStore {
 
   private static HiveCatalogStore store;
   private static Path warehousePath;
+  private final static String[] storages = {"CSV", "TEXT"};
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -85,34 +86,36 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testTableUsingTextFile() throws Exception {
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    for (String storage: storages) {
+      TableMeta meta = new TableMeta(storage, new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-    schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
+      org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+      schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
+      schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
+      schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
+      schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
+      schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
+      schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
 
-    TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
+      TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
-    store.createTable(table.getProto());
-    assertTrue(store.existTable(DB_NAME, CUSTOMER));
+      store.createTable(table.getProto());
+      assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
-    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
-    assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getUri(), table1.getUri());
-    assertEquals(table.getSchema().size(), table1.getSchema().size());
-    for (int i = 0; i < table.getSchema().size(); i++) {
-      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
-    }
+      TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
+      assertEquals(table.getName(), table1.getName());
+      assertEquals(table.getUri(), table1.getUri());
+      assertEquals(table.getSchema().size(), table1.getSchema().size());
+      for (int i = 0; i < table.getSchema().size(); i++) {
+        assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+      }
 
-    assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
+      assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
         table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
-    store.dropTable(DB_NAME, CUSTOMER);
+      store.dropTable(DB_NAME, CUSTOMER);
+    }
   }
 
   @Test
@@ -177,102 +180,106 @@ public class TestHiveCatalogStore {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
     options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\u0003"));
-    TableMeta meta = new TableMeta("CSV", options);
 
-    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-    schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("s_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("s_address", TajoDataTypes.Type.TEXT);
-    schema.addColumn("s_nationkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("s_phone", TajoDataTypes.Type.TEXT);
-    schema.addColumn("s_acctbal", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("s_comment", TajoDataTypes.Type.TEXT);
+    for (String storage : storages) {
+      TableMeta meta = new TableMeta(storage, options);
+      org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+      schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("s_name", TajoDataTypes.Type.TEXT);
+      schema.addColumn("s_address", TajoDataTypes.Type.TEXT);
+      schema.addColumn("s_nationkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("s_phone", TajoDataTypes.Type.TEXT);
+      schema.addColumn("s_acctbal", TajoDataTypes.Type.FLOAT8);
+      schema.addColumn("s_comment", TajoDataTypes.Type.TEXT);
 
-    TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
+      TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, SUPPLIER)).toUri());
 
-    store.createTable(table.getProto());
-    assertTrue(store.existTable(DB_NAME, SUPPLIER));
+      store.createTable(table.getProto());
+      assertTrue(store.existTable(DB_NAME, SUPPLIER));
 
-    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, SUPPLIER));
-    assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getUri(), table1.getUri());
-    assertEquals(table.getSchema().size(), table1.getSchema().size());
-    for (int i = 0; i < table.getSchema().size(); i++) {
-      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
-    }
+      TableDesc table1 = new TableDesc(store.getTable(DB_NAME, SUPPLIER));
+      assertEquals(table.getName(), table1.getName());
+      assertEquals(table.getUri(), table1.getUri());
+      assertEquals(table.getSchema().size(), table1.getSchema().size());
+      for (int i = 0; i < table.getSchema().size(); i++) {
+        assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+      }
 
-    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
+      assertEquals(table.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
         table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
 
-    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_NULL),
+      assertEquals(table.getMeta().getOption(StorageConstants.TEXT_NULL),
         table1.getMeta().getOption(StorageConstants.TEXT_NULL));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
+      assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
         StringEscapeUtils.escapeJava("\u0002"));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_NULL),
+      assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_NULL),
         StringEscapeUtils.escapeJava("\u0003"));
 
-    store.dropTable(DB_NAME, SUPPLIER);
+      store.dropTable(DB_NAME, SUPPLIER);
 
+    }
   }
 
   @Test
   public void testAddTableByPartition() throws Exception {
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    for (String storage: storages) {
+      TableMeta meta = new TableMeta(storage, new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+      org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+      schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
+      schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
 
 
-    TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, NATION), schema, meta,
+      TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, NATION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, NATION)).toUri());
 
-    org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
-    expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
-    expressionSchema.addColumn("n_date", TajoDataTypes.Type.TEXT);
+      org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+      expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
+      expressionSchema.addColumn("n_date", TajoDataTypes.Type.TEXT);
 
-    PartitionMethodDesc partitions = new PartitionMethodDesc(
+      PartitionMethodDesc partitions = new PartitionMethodDesc(
         DB_NAME,
         NATION,
         CatalogProtos.PartitionType.COLUMN, "n_nationkey,n_date", expressionSchema);
-    table.setPartitionMethod(partitions);
+      table.setPartitionMethod(partitions);
 
-    store.createTable(table.getProto());
-    assertTrue(store.existTable(DB_NAME, NATION));
+      store.createTable(table.getProto());
+      assertTrue(store.existTable(DB_NAME, NATION));
 
-    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, NATION));
-    assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getUri(), table1.getUri());
-    assertEquals(table.getSchema().size(), table1.getSchema().size());
-    for (int i = 0; i < table.getSchema().size(); i++) {
-      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+      TableDesc table1 = new TableDesc(store.getTable(DB_NAME, NATION));
+      assertEquals(table.getName(), table1.getName());
+      assertEquals(table.getUri(), table1.getUri());
+      assertEquals(table.getSchema().size(), table1.getSchema().size());
+      for (int i = 0; i < table.getSchema().size(); i++) {
+        assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+      }
+
+      Schema partitionSchema = table.getPartitionMethod().getExpressionSchema();
+      Schema partitionSchema1 = table1.getPartitionMethod().getExpressionSchema();
+      assertEquals(partitionSchema.size(), partitionSchema1.size());
+
+      for (int i = 0; i < partitionSchema.size(); i++) {
+        assertEquals(partitionSchema.getColumn(i).getSimpleName(), partitionSchema1.getColumn(i).getSimpleName());
+      }
+
+      testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
+      testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
+
+      testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
+      testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
+
+      CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
+      assertNull(partition);
+
+      partition = store.getPartition(DB_NAME, NATION, "n_nationkey=20/n_date=20150102");
+      assertNull(partition);
+
+      store.dropTable(DB_NAME, NATION);
     }
-
-    Schema partitionSchema = table.getPartitionMethod().getExpressionSchema();
-    Schema partitionSchema1 = table1.getPartitionMethod().getExpressionSchema();
-    assertEquals(partitionSchema.size(), partitionSchema1.size());
-
-    for (int i = 0; i < partitionSchema.size(); i++) {
-      assertEquals(partitionSchema.getColumn(i).getSimpleName(), partitionSchema1.getColumn(i).getSimpleName());
-    }
-
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
-
-    testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
-    testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
-
-    CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
-    assertNull(partition);
-
-    partition = store.getPartition(DB_NAME, NATION, "n_nationkey=20/n_date=20150102");
-    assertNull(partition);
-
-    store.dropTable(DB_NAME, NATION);
   }
 
 
@@ -332,52 +339,56 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testGetAllTableNames() throws Exception{
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
-    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+    for (String storage: storages) {
+      TableMeta meta = new TableMeta(storage, new KeyValueSet());
+      org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+      schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
+      schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
 
-    String[] tableNames = new String[]{"table1", "table2", "table3"};
+      String[] tableNames = new String[]{"table1", "table2", "table3"};
 
-    for(String tableName : tableNames){
-      TableDesc table = new TableDesc(CatalogUtil.buildFQName("default", tableName), schema, meta,
+      for(String tableName : tableNames){
+        TableDesc table = new TableDesc(CatalogUtil.buildFQName("default", tableName), schema, meta,
           new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
-      store.createTable(table.getProto());
-    }
+        store.createTable(table.getProto());
+      }
 
-    List<String> tables = store.getAllTableNames("default");
-    assertEquals(tableNames.length, tables.size());
+      List<String> tables = store.getAllTableNames("default");
+      assertEquals(tableNames.length, tables.size());
 
-    for(String tableName : tableNames){
-      assertTrue(tables.contains(tableName));
-    }
+      for(String tableName : tableNames){
+        assertTrue(tables.contains(tableName));
+      }
 
-    for(String tableName : tableNames){
-      store.dropTable("default", tableName);
+      for(String tableName : tableNames){
+        store.dropTable("default", tableName);
+      }
     }
   }
 
   @Test
   public void testDeleteTable() throws Exception {
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
-    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+    for (String storage: storages) {
+      TableMeta meta = new TableMeta(storage, new KeyValueSet());
+      org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+      schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
+      schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
+      schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
 
-    String tableName = "table1";
-    TableDesc table = new TableDesc(DB_NAME + "." + tableName, schema, meta, warehousePath.toUri());
-    store.createTable(table.getProto());
-    assertTrue(store.existTable(DB_NAME, tableName));
+      String tableName = "table1";
+      TableDesc table = new TableDesc(DB_NAME + "." + tableName, schema, meta, warehousePath.toUri());
+      store.createTable(table.getProto());
+      assertTrue(store.existTable(DB_NAME, tableName));
 
-    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
-    FileSystem fs = FileSystem.getLocal(new Configuration());
-    assertTrue(fs.exists(new Path(table1.getUri())));
+      TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
+      FileSystem fs = FileSystem.getLocal(new Configuration());
+      assertTrue(fs.exists(new Path(table1.getUri())));
 
-    store.dropTable(DB_NAME, tableName);
-    assertFalse(store.existTable(DB_NAME, tableName));
-    fs.close();
+      store.dropTable(DB_NAME, tableName);
+      assertFalse(store.existTable(DB_NAME, tableName));
+      fs.close();
+    }
   }
 
   @Test
@@ -472,36 +483,38 @@ public class TestHiveCatalogStore {
   public void testDataTypeCompatibility() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testDataTypeCompatibility");
 
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    for (String storage: storages) {
+      TableMeta meta = new TableMeta(storage, new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT1);
-    schema.addColumn("col3", TajoDataTypes.Type.INT2);
-    schema.addColumn("col4", TajoDataTypes.Type.INT8);
-    schema.addColumn("col5", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("col6", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col7", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col8", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col9", TajoDataTypes.Type.BLOB);
-    schema.addColumn("col10", TajoDataTypes.Type.TIMESTAMP);
-    schema.addColumn("col11", TajoDataTypes.Type.DATE);
+      org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+      schema.addColumn("col1", TajoDataTypes.Type.INT4);
+      schema.addColumn("col2", TajoDataTypes.Type.INT1);
+      schema.addColumn("col3", TajoDataTypes.Type.INT2);
+      schema.addColumn("col4", TajoDataTypes.Type.INT8);
+      schema.addColumn("col5", TajoDataTypes.Type.BOOLEAN);
+      schema.addColumn("col6", TajoDataTypes.Type.FLOAT4);
+      schema.addColumn("col7", TajoDataTypes.Type.FLOAT8);
+      schema.addColumn("col8", TajoDataTypes.Type.TEXT);
+      schema.addColumn("col9", TajoDataTypes.Type.BLOB);
+      schema.addColumn("col10", TajoDataTypes.Type.TIMESTAMP);
+      schema.addColumn("col11", TajoDataTypes.Type.DATE);
 
-    TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, tableName), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
-    store.createTable(table.getProto());
-    assertTrue(store.existTable(DB_NAME, tableName));
+      TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, tableName), schema, meta,
+        new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
+      store.createTable(table.getProto());
+      assertTrue(store.existTable(DB_NAME, tableName));
 
-    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
-    assertEquals(table.getName(), table1.getName());
-    assertEquals(table.getUri(), table1.getUri());
-    assertEquals(table.getSchema().size(), table1.getSchema().size());
-    for (int i = 0; i < table.getSchema().size(); i++) {
-      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+      TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
+      assertEquals(table.getName(), table1.getName());
+      assertEquals(table.getUri(), table1.getUri());
+      assertEquals(table.getSchema().size(), table1.getSchema().size());
+      for (int i = 0; i < table.getSchema().size(); i++) {
+        assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+      }
+
+      assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+      store.dropTable(DB_NAME, tableName);
     }
-
-    assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
-      table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
-    store.dropTable(DB_NAME, tableName);
   }
 }
