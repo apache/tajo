@@ -29,6 +29,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1677: Remove unnecessary messages for the Travis CI build. (jaehwa)
+
+    TAJO-1672: Removing rest api to create table
+    POST /databases/{database-name}/tables interface
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1638: Remove offset parameter from rest api result/{cacheId}.
     (Contributed by DaeMyung Kang, Committed by jaehwa)
 
@@ -172,6 +178,9 @@ Release 0.11.0 - unreleased
 
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
     names only without invalid external table info. 
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
+    table names only without invalid external table info. 
     (Contributed by  DaeMyung Kang, Committed by jihoon)
 
     TAJO-1644: When inserting empty data into a partitioned table,
@@ -322,7 +331,13 @@ Release 0.11.0 - unreleased
   
   TASKS
 
-    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis, 
+    TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
+    TAJO-1345: Implement logical plan part and DDL executor
+    for alter partition. (jaehwa)
+
+    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis,
     Committed by jihoon)
 
     TAJO-1583: Remove ServerCallable in RPC client. (jinho)
@@ -367,6 +382,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1514: Distinguish UNION and UNION ALL. (contributed by Keuntae Park,
+    committed by hyunsik)
 
     TAJO-1658: Filter push down to underlying storages. (hyunsik)
 

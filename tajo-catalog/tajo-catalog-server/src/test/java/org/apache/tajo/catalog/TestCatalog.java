@@ -19,20 +19,17 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.collect.Sets;
-
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
-import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -951,10 +948,15 @@ public class TestCatalog {
 
     String[] partitionNames = partitionName.split("/");
 
-    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
     for(int i = 0; i < partitionNames.length; i++) {
       String columnName = partitionNames[i].split("=")[0];
-      partitionKeyList.add(new PartitionKey(partitionNames[i], columnName));
+
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(partitionNames[i]);
+      builder.setPartitionValue(columnName);
+
+      partitionKeyList.add(builder.build());
     }
 
     partitionDesc.setPartitionKeys(partitionKeyList);
