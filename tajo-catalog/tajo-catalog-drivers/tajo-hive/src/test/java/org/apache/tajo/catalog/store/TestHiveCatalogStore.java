@@ -26,9 +26,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
@@ -286,11 +286,15 @@ public class TestHiveCatalogStore {
     PartitionDesc partitionDesc = new PartitionDesc();
     partitionDesc.setPartitionName(partitionName);
 
-    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
     String[] partitionNames = partitionName.split("/");
     for(int i = 0; i < partitionNames.length; i++) {
       String[] eachPartitionName = partitionNames[i].split("=");
-      partitionKeyList.add(new PartitionKey(eachPartitionName[0], eachPartitionName[1]));
+
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(eachPartitionName[0]);
+      builder.setPartitionValue(eachPartitionName[1]);
+      partitionKeyList.add(builder.build());
     }
     partitionDesc.setPartitionKeys(partitionKeyList);
     partitionDesc.setPath(path.toString());

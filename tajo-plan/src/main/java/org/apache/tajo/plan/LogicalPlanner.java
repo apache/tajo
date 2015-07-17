@@ -1372,15 +1372,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public TableSubQueryNode visitTableSubQuery(PlanContext context, Stack<Expr> stack, TablePrimarySubQuery expr)
       throws PlanningException {
-    QueryBlock block = context.queryBlock;
-
+    QueryBlock currentBlock = context.queryBlock;
     QueryBlock childBlock = context.plan.getBlock(context.plan.getBlockNameByExpr(expr.getSubQuery()));
+    context.plan.connectBlocks(childBlock, currentBlock, BlockType.TableSubQuery);
+
     PlanContext newContext = new PlanContext(context, childBlock);
     LogicalNode child = visit(newContext, new Stack<Expr>(), expr.getSubQuery());
-    TableSubQueryNode subQueryNode = context.queryBlock.getNodeFromExpr(expr);
-    context.plan.connectBlocks(childBlock, context.queryBlock, BlockType.TableSubQuery);
-    subQueryNode.setSubQuery(child);
+    TableSubQueryNode subQueryNode = currentBlock.getNodeFromExpr(expr);
 
+    subQueryNode.setSubQuery(child);
+    setTargetOfTableSubQuery(context, currentBlock, subQueryNode);
+
+    return subQueryNode;
+  }
+
+  private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode) throws PlanningException {
     // Add additional expressions required in upper nodes.
     Set<String> newlyEvaluatedExprs = TUtil.newHashSet();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
@@ -1403,8 +1409,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     subQueryNode.setTargets(targets.toArray(new Target[targets.size()]));
-
-    return subQueryNode;
   }
 
     /*===============================================================================================
@@ -1414,7 +1418,77 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public LogicalNode visitUnion(PlanContext context, Stack<Expr> stack, SetOperation setOperation)
       throws PlanningException {
-    return buildSetPlan(context, stack, setOperation);
+    UnionNode unionNode = (UnionNode)buildSetPlan(context, stack, setOperation);
+    LogicalNode resultingNode = unionNode;
+
+    /**
+     *  if the given node is Union (Distinct), it adds group by node
+     *    change
+     *     from
+     *             union
+     *
+     *       to
+     *           projection
+     *               |
+     *            group by
+     *               |
+     *         table subquery
+     *               |
+     *             union
+     */
+    if (unionNode.isDistinct()) {
+      return insertProjectionGroupbyBeforeSetOperation(context, unionNode);
+    }
+
+    return resultingNode;
+  }
+
+  private ProjectionNode insertProjectionGroupbyBeforeSetOperation(PlanContext context, SetOperationNode setOperationNode) throws PlanningException {
+    QueryBlock currentBlock = context.queryBlock;
+
+    // make table subquery node which has set operation as its subquery
+    TableSubQueryNode setOpTableSubQueryNode = context.plan.createNode(TableSubQueryNode.class);
+    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), context.plan.generateUniqueSubQueryName()), setOperationNode);
+    setTargetOfTableSubQuery(context, currentBlock, setOpTableSubQueryNode);
+    currentBlock.registerNode(setOpTableSubQueryNode);
+    currentBlock.addRelation(setOpTableSubQueryNode);
+
+    Schema setOpSchema = setOpTableSubQueryNode.getOutSchema();
+    Target[] setOpTarget = setOpTableSubQueryNode.getTargets();
+
+    // make group by node whose grouping keys are all columns of set operation
+    GroupbyNode setOpGroupbyNode = context.plan.createNode(GroupbyNode.class);
+    setOpGroupbyNode.setInSchema(setOpSchema);
+    setOpGroupbyNode.setGroupingColumns(setOpSchema.toArray());
+    setOpGroupbyNode.setTargets(setOpTarget);
+    setOpGroupbyNode.setChild(setOpTableSubQueryNode);
+    currentBlock.registerNode(setOpGroupbyNode);
+
+    // make projection node which projects all the union columns
+    ProjectionNode setOpProjectionNode = context.plan.createNode(ProjectionNode.class);
+    setOpProjectionNode.setInSchema(setOpSchema);
+    setOpProjectionNode.setTargets(setOpTarget);
+    setOpProjectionNode.setChild(setOpGroupbyNode);
+    currentBlock.registerNode(setOpProjectionNode);
+
+    // changing query block chain: at below, ( ) indicates query block
+    // (... + set operation ) - (...) ==> (... + projection + group by + table subquery) - (set operation) - (...)
+    QueryBlock setOpBlock = context.plan.newQueryBlock();
+    setOpBlock.registerNode(setOperationNode);
+    setOpBlock.setRoot(setOperationNode);
+
+    QueryBlock leftBlock = context.plan.getBlock(setOperationNode.getLeftChild());
+    QueryBlock rightBlock = context.plan.getBlock(setOperationNode.getRightChild());
+
+    context.plan.disconnectBlocks(leftBlock, context.queryBlock);
+    context.plan.disconnectBlocks(rightBlock, context.queryBlock);
+
+    context.plan.connectBlocks(setOpBlock, context.queryBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(leftBlock, setOpBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(rightBlock, setOpBlock, BlockType.TableSubQuery);
+
+    // projection node (not original set operation node) will be a new child of parent node
+    return setOpProjectionNode;
   }
 
   @Override
@@ -1941,6 +2015,42 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return schema;
   }
 
+  /**
+   * It transforms ColumnDefinition array to String array.
+   *
+   * @param columnReferenceExprs
+   * @return
+   */
+  private static String[] convertColumnsToStrings(ColumnReferenceExpr[] columnReferenceExprs) {
+    int columnCount = columnReferenceExprs.length;
+    String[] columns = new String[columnCount];
+
+    for(int i = 0; i < columnCount; i++) {
+      ColumnReferenceExpr columnReferenceExpr = columnReferenceExprs[i];
+      columns[i] = columnReferenceExpr.getName();
+    }
+
+    return columns;
+  }
+
+  /**
+   * It transforms Expr array to String array.
+   *
+   * @param exprs
+   * @return
+   */
+  private static String[] convertExprsToStrings(Expr[] exprs) {
+    int exprCount = exprs.length;
+    String[] values = new String[exprCount];
+
+    for(int i = 0; i < exprCount; i++) {
+      LiteralValue expr = (LiteralValue)exprs[i];
+      values[i] = expr.getValue();
+    }
+
+    return values;
+  }
+
   private static Column convertColumn(ColumnDefinition columnDefinition) {
     return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
@@ -2004,6 +2114,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     if (null != alterTable.getAddNewColumn()) {
       alterTableNode.setAddNewColumn(convertColumn(alterTable.getAddNewColumn()));
     }
+
+    if (alterTable.getColumns() != null) {
+      alterTableNode.setPartitionColumns(convertColumnsToStrings(alterTable.getColumns()));
+    }
+
+    if (alterTable.getValues() != null) {
+      alterTableNode.setPartitionValues(convertExprsToStrings(alterTable.getValues()));
+    }
+
+    if (alterTable.getLocation() != null) {
+      alterTableNode.setLocation(alterTable.getLocation());
+    }
+
+    alterTableNode.setPurge(alterTable.isPurge());
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
   }

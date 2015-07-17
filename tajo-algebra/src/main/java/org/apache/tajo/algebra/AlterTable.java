@@ -51,6 +51,9 @@ public class AlterTable extends Expr {
   @Expose @SerializedName("location")
   private String location;
 
+  @Expose @SerializedName("IsPurge")
+  private boolean purge;
+
   public AlterTable(final String tableName) {
     super(OpType.AlterTable);
     this.tableName = tableName;
@@ -129,18 +132,18 @@ public class AlterTable extends Expr {
     this.params = params;
   }
 
+  public boolean isPurge() {
+    return purge;
+  }
+
+  public void setPurge(boolean purge) {
+    this.purge = purge;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName,
-        null != newTableName ? Objects.hashCode(newTableName) : newTableName,
-        null != columnName ? Objects.hashCode(columnName) : columnName,
-        null != newColumnName ? Objects.hashCode(newColumnName) : newColumnName,
-        null != addNewColumn ? Objects.hashCode(addNewColumn) : addNewColumn,
-        null != alterTableOpType ? Objects.hashCode(alterTableOpType) : alterTableOpType,
-        null != columns ? Objects.hashCode(columns) : columns,
-        null != values ? Objects.hashCode(values) : values,
-        null != location ? Objects.hashCode(location) : location,
-        null != params ? Objects.hashCode(params) : params
+    return Objects.hashCode(tableName, newTableName, columnName, newColumnName, addNewColumn, alterTableOpType,
+      columns, values, location, params, purge
     );
 
   }
@@ -157,7 +160,8 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(columns, another.columns) &&
         TUtil.checkEquals(values, another.values) &&
         TUtil.checkEquals(location, another.location) &&
-        TUtil.checkEquals(params, another.params)
+        TUtil.checkEquals(params, another.params) &&
+        TUtil.checkEquals(purge, another.purge)
     ;
   }
 
@@ -178,6 +182,7 @@ public class AlterTable extends Expr {
     if (params != null) {
       alter.params = new HashMap<String, String>(params);
     }
+    alter.purge = purge;
     return alter;
   }
 }

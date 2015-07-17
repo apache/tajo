@@ -25,10 +25,13 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
@@ -1050,7 +1053,7 @@ public class TestLogicalPlanner {
   }
 
   static final String setStatements [] = {
-    "select deptName from employee where deptName like 'data%' union select deptName from score where deptName like 'data%'",
+    "select deptName from employee where deptName like 'data%' union all select deptName from score where deptName like 'data%'",
   };
 
   @Test
@@ -1230,4 +1233,103 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.INSERT, root.getChild().getType());
     return root.getChild();
   }
+
+  String [] ALTER_PARTITIONS = {
+    "ALTER TABLE partitioned_table ADD PARTITION (col1 = 1 , col2 = 2) LOCATION 'hdfs://xxx" +
+      ".com/warehouse/partitioned_table/col1=1/col2=2'", //0
+    "ALTER TABLE partitioned_table DROP PARTITION (col1 = '2015' , col2 = '01', col3 = '11' )", //1
+  };
+
+  @Test
+  public final void testAddPartitionAndDropPartition() throws PlanningException {
+    String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
+    String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4)
+      .addColumn("name", Type.TEXT)
+      .addColumn("age", Type.INT4)
+      .addColumn("score", Type.FLOAT8);
+
+    KeyValueSet opts = new KeyValueSet();
+    opts.set("file.delimiter", ",");
+
+    Schema partSchema = new Schema();
+    partSchema.addColumn("id", Type.INT4);
+    partSchema.addColumn("name", Type.TEXT);
+
+    PartitionMethodDesc partitionMethodDesc =
+      new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
+        CatalogProtos.PartitionType.COLUMN, "id,name", partSchema);
+
+    TableDesc desc = null;
+
+    try {
+      desc = new TableDesc(qualifiedTableName, schema, "CSV", new KeyValueSet(),
+        CommonTestingUtil.getTestDir().toUri());
+    } catch (Exception e) {
+      throw new PlanningException(e.getMessage());
+    }
+
+    desc.setPartitionMethod(partitionMethodDesc);
+    assertFalse(catalog.existsTable(qualifiedTableName));
+    catalog.createTable(desc);
+    assertTrue(catalog.existsTable(qualifiedTableName));
+
+    TableDesc retrieved = catalog.getTableDesc(qualifiedTableName);
+    assertEquals(retrieved.getName(), qualifiedTableName);
+    assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
+    assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
+
+    QueryContext qc = new QueryContext(util.getConfiguration(), session);
+
+    // Testing alter table add partition
+    Expr expr = sqlAnalyzer.parse(ALTER_PARTITIONS[0]);
+    LogicalPlan rootNode = planner.createPlan(qc, expr);
+    LogicalNode plan = rootNode.getRootBlock().getRoot();
+    testJsonSerDerObject(plan);
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
+
+    AlterTableNode alterTableNode = root.getChild();
+
+    assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
+
+    assertEquals(alterTableNode.getPartitionColumns().length, 2);
+    assertEquals(alterTableNode.getPartitionValues().length, 2);
+
+    assertEquals(alterTableNode.getPartitionColumns()[0], "col1");
+    assertEquals(alterTableNode.getPartitionColumns()[1], "col2");
+
+    assertEquals(alterTableNode.getPartitionValues()[0], "1");
+    assertEquals(alterTableNode.getPartitionValues()[1], "2");
+
+    assertEquals(alterTableNode.getLocation(), "hdfs://xxx.com/warehouse/partitioned_table/col1=1/col2=2");
+
+    // Testing alter table drop partition
+    expr = sqlAnalyzer.parse(ALTER_PARTITIONS[1]);
+    rootNode = planner.createPlan(qc, expr);
+    plan = rootNode.getRootBlock().getRoot();
+    testJsonSerDerObject(plan);
+    assertEquals(NodeType.ROOT, plan.getType());
+    root = (LogicalRootNode) plan;
+    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
+
+    alterTableNode = root.getChild();
+
+    assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.DROP_PARTITION);
+
+    assertEquals(alterTableNode.getPartitionColumns().length, 3);
+    assertEquals(alterTableNode.getPartitionValues().length, 3);
+
+    assertEquals(alterTableNode.getPartitionColumns()[0], "col1");
+    assertEquals(alterTableNode.getPartitionColumns()[1], "col2");
+    assertEquals(alterTableNode.getPartitionColumns()[2], "col3");
+
+    assertEquals(alterTableNode.getPartitionValues()[0], "2015");
+    assertEquals(alterTableNode.getPartitionValues()[1], "01");
+    assertEquals(alterTableNode.getPartitionValues()[2], "11");
+  }
+
 }

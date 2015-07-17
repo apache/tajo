@@ -315,9 +315,10 @@ public class MemStore implements CatalogStore {
         partitionName = partitionDesc.getPartitionName();
 
         if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
-          dropPartition(databaseName, tableName, partitionName);
+          throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+        } else {
+          addPartition(partitionDesc, tableName, partitionName);
         }
-        addPartition(partitionDesc, tableName, partitionName);
         break;
       case DROP_PARTITION:
         partitionName = partitionDesc.getPartitionName();
@@ -342,8 +343,6 @@ public class MemStore implements CatalogStore {
   }
 
   private void addPartition(CatalogProtos.PartitionDescProto partitionDesc, String tableName, String partitionName) {
-    Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
-
     CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
     builder.setPartitionName(partitionName);
     builder.setPath(partitionDesc.getPath());
@@ -357,6 +356,7 @@ public class MemStore implements CatalogStore {
       }
     }
 
+    Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
     if (!partitions.containsKey(tableName)) {
       protoMap = Maps.newHashMap();
     } else {
@@ -367,14 +367,10 @@ public class MemStore implements CatalogStore {
   }
 
   private void dropPartition(String databaseName, String tableName, String partitionName) {
-    Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
-
-    if(partitions.containsKey(tableName)) {
-      protoMap = partitions.get(tableName);
-      protoMap.remove(partitionName);
-      partitions.put(tableName, protoMap);
-    } else {
+    if(!partitions.containsKey(tableName)) {
       throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+    } else {
+      partitions.get(tableName).remove(partitionName);
     }
   }
 
