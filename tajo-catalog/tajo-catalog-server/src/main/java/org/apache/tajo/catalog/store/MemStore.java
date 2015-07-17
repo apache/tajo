@@ -321,6 +321,7 @@ public class MemStore implements CatalogStore {
         }
         break;
       case DROP_PARTITION:
+        partitionDesc = alterTableDescProto.getPartitionDesc();
         partitionName = partitionDesc.getPartitionName();
         dropPartition(databaseName, tableName, partitionName);
         break;
@@ -367,7 +368,7 @@ public class MemStore implements CatalogStore {
   }
 
   private void dropPartition(String databaseName, String tableName, String partitionName) {
-    if(!partitions.containsKey(tableName)) {
+    if (partitions.containsKey(tableName) && !partitions.get(tableName).containsKey(partitionName)) {
       throw new NoSuchPartitionException(databaseName, tableName, partitionName);
     } else {
       partitions.get(tableName).remove(partitionName);
