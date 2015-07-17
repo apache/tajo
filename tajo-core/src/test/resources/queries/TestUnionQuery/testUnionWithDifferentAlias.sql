@@ -10,7 +10,7 @@ FROM (
   WHERE
     l_returnflag = 'N'
 
-  UNION ALL
+  UNION
 
   SELECT
     l_returnflag col2, l_linestatus col5, l_orderkey col6

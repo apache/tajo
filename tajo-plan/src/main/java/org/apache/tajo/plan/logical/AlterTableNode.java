@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.algebra.AlterTableOpType;
@@ -42,6 +43,14 @@ public class AlterTableNode extends LogicalNode {
   private KeyValueSet properties = new KeyValueSet();
   @Expose
   private AlterTableOpType alterTableOpType;
+  @Expose
+  private String[] partitionColumns;
+  @Expose
+  private String[] partitionValues;
+  @Expose
+  private String location;
+  @Expose
+  private boolean isPurge;
 
   public AlterTableNode(int pid) {
     super(pid, NodeType.ALTER_TABLE);
@@ -117,6 +126,38 @@ public class AlterTableNode extends LogicalNode {
     this.properties = properties;
   }
 
+  public String[] getPartitionColumns() {
+    return partitionColumns;
+  }
+
+  public void setPartitionColumns(String[] partitionColumns) {
+    this.partitionColumns = partitionColumns;
+  }
+
+  public String[] getPartitionValues() {
+    return partitionValues;
+  }
+
+  public void setPartitionValues(String[] partitionValues) {
+    this.partitionValues = partitionValues;
+  }
+
+  public String getLocation() {
+    return location;
+  }
+
+  public void setLocation(String location) {
+    this.location = location;
+  }
+
+  public boolean isPurge() {
+    return isPurge;
+  }
+
+  public void setPurge(boolean isPurge) {
+    this.isPurge = isPurge;
+  }
+
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
@@ -124,16 +165,8 @@ public class AlterTableNode extends LogicalNode {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((addNewColumn == null) ? 0 : addNewColumn.hashCode());
-    result = prime * result + ((alterTableOpType == null) ? 0 : alterTableOpType.hashCode());
-    result = prime * result + ((columnName == null) ? 0 : columnName.hashCode());
-    result = prime * result + ((newColumnName == null) ? 0 : newColumnName.hashCode());
-    result = prime * result + ((newTableName == null) ? 0 : newTableName.hashCode());
-    result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
-    result = prime * result + ((properties == null) ? 0 : properties.hashCode());
-    return result;
+    return Objects.hashCode(tableName, addNewColumn, alterTableOpType, columnName, newColumnName, newTableName,
+      tableName, properties, partitionColumns, partitionValues, location, isPurge);
   }
 
   @Override

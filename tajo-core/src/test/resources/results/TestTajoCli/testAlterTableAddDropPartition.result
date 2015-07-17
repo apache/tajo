@@ -1,0 +1,9 @@
+OK
+ERROR: "key2" column is not the partition key of "default.testaltertableaddpartition".
+OK
+OK
+ERROR: "key=0.1" is not the partition of "testaltertableaddpartition".
+OK
+OK
+OK
+OK
