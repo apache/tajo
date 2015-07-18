@@ -19,7 +19,6 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Objects;
-import org.apache.tajo.conf.TajoConf;
 
 import java.lang.reflect.Array;
 import java.util.*;

@@ -35,13 +35,9 @@ import java.util.List;
 
 public interface TaskRequest extends ProtoObject<TaskRequestProto> {
 
-	String getQueryMasterHostAndPort();
 	TaskAttemptId getId();
 	List<CatalogProtos.FragmentProto> getFragments();
-	String getOutputTableId();
-	boolean isClusteredOutput();
 	PlanProto.LogicalNodeTree getPlan();
-	boolean isInterQuery();
 	void setInterQuery();
 	void addFetch(String name, FetchImpl fetch);
 	List<FetchImpl> getFetches();

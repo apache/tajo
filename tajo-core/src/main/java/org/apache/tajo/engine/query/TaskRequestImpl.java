@@ -99,19 +99,6 @@ public class TaskRequestImpl implements TaskRequest {
 	}
 
 	@Override
-	public String getQueryMasterHostAndPort() {
-		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (queryMasterHostAndPort != null) {
-			return this.queryMasterHostAndPort;
-		}
-		if (!p.hasQueryMasterHostAndPort()) {
-			return null;
-		}
-		this.queryMasterHostAndPort = p.getQueryMasterHostAndPort();
-		return this.queryMasterHostAndPort;
-	}
-
-	@Override
 	public TaskAttemptId getId() {
 		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (id != null) {
@@ -139,32 +126,6 @@ public class TaskRequestImpl implements TaskRequest {
 		return this.fragments;
 	}
 
-	@Override
-	public String getOutputTableId() {
-		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (outputTable != null) {
-			return this.outputTable;
-		}
-		if (!p.hasOutputTable()) {
-			return null;
-		}
-		this.outputTable = p.getOutputTable();
-		return this.outputTable;
-	}
-
-	@Override
-	public boolean isClusteredOutput() {
-		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (isUpdated) {
-			return this.clusteredOutput;
-		}
-		if (!p.hasClusteredOutput()) {
-			return false;
-		}
-		this.clusteredOutput = p.getClusteredOutput();
-		this.isUpdated = true;
-		return this.clusteredOutput;
-	}
 
 	@Override
 	public PlanProto.LogicalNodeTree getPlan() {

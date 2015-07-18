@@ -45,8 +45,10 @@ public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatu
   /** last heartbeat time */
   private volatile long lastHeartbeatTime;
 
+  @SuppressWarnings("unused")
   private volatile int numRunningTasks;
 
+  @SuppressWarnings("unused")
   private volatile int numRunningQueryMaster;
 
   private static AtomicLongFieldUpdater HEARTBEAT_TIME_UPDATER;
@@ -133,8 +135,8 @@ public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatu
     return connectionInfo;
   }
 
-  public void setLastHeartbeatTime(long lastheartbeatReportTime) {
-    HEARTBEAT_TIME_UPDATER.lazySet(this, lastheartbeatReportTime);
+  public void setLastHeartbeatTime(long lastHeartbeatTime) {
+    HEARTBEAT_TIME_UPDATER.lazySet(this, lastHeartbeatTime);
   }
 
   public void setNumRunningQueryMaster(int numRunningQueryMaster) {

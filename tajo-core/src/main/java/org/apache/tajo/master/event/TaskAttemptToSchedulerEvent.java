@@ -50,12 +50,6 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
 
     }
 
-    public TaskAttemptScheduleContext(String host,
-                                      RpcCallback<TaskRequestProto> callback) {
-      this.host = host;
-      this.callback = callback;
-    }
-
     public String getHost() {
       return host;
     }
