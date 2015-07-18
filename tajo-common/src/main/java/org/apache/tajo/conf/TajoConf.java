@@ -194,7 +194,7 @@ public class TajoConf extends Configuration {
     RESOURCE_SCHEDULER_CLASS("tajo.resource.scheduler", "org.apache.tajo.master.scheduler.SimpleScheduler",
         Validators.groups(Validators.notNull(), Validators.clazz())),
 
-    QUERYMASTER_TASK_SCHEDULER_DELAY("tajo.qm.task.task-scheduler.delay", 50),  // 50 ms
+    QUERYMASTER_TASK_SCHEDULER_DELAY("tajo.qm.task-scheduler.delay", 50),  // 50 ms
 
     // Catalog
     CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005", Validators.networkAddr()),

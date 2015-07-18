@@ -63,8 +63,11 @@ import static org.apache.tajo.ResourceProtos.*;
 public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private static final Log LOG = LogFactory.getLog(DefaultTaskScheduler.class);
 
+  private static final String REQUEST_MAX_NUM = "tajo.qm.task-scheduler.request.max-num";
+
   private final TaskSchedulerContext context;
   private Stage stage;
+  private TajoConf tajoConf;
 
   private Thread schedulingThread;
   private volatile boolean isStopped;
@@ -76,6 +79,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private int scheduledObjectNum = 0;
   private boolean isLeaf;
   private int schedulerDelay;
+  private int maximumRequestContainer;
 
   //candidate workers for locality of high priority
   private Set<Integer> candidateWorkers = Sets.newHashSet();
@@ -88,17 +92,17 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void init(Configuration conf) {
-    TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
     schedulerDelay= tajoConf.getIntVar(TajoConf.ConfVars.QUERYMASTER_TASK_SCHEDULER_DELAY);
-
     super.init(conf);
   }
 
   @Override
   public void start() {
     LOG.info("Start TaskScheduler");
+    maximumRequestContainer = tajoConf.getInt(REQUEST_MAX_NUM, stage.getContext().getWorkerMap().size() * 2);
     isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
 
     if (isLeaf) {
@@ -119,6 +123,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
           try {
             schedule();
+          } catch (InterruptedException e) {
+            if (isStopped) {
+              break;
+            } else {
+              LOG.fatal(e.getMessage(), e);
+              stage.abort(StageState.ERROR);
+            }
           } catch (Throwable e) {
             LOG.fatal(e.getMessage(), e);
             stage.abort(StageState.ERROR);
@@ -139,7 +150,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
     if (schedulingThread != null) {
       synchronized (schedulingThread) {
-        schedulingThread.notifyAll();
+        schedulingThread.interrupt();
       }
     }
     candidateWorkers.clear();
@@ -266,7 +277,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   protected LinkedList<TaskRequestEvent> createTaskRequest() throws Exception {
     LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
 
-    int requestContainerNum = remainingScheduledObjectNum();
+    //If scheduled tasks is long-term task, cluster resource can be the worst load balance.
+    //This part is to throttle the maximum required container per request
+    int requestContainerNum = Math.min(remainingScheduledObjectNum(), maximumRequestContainer);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Try to schedule task resources: " + requestContainerNum);
     }
@@ -554,15 +567,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
     }
 
-    public boolean isRemote(TaskAttemptId taskAttemptId){
-      Integer volumeId = lastAssignedVolumeId.get(taskAttemptId);
-      if(volumeId == null || volumeId > REMOTE){
-        return false;
-      } else {
-        return true;
-      }
-    }
-
     public int getRemoteConcurrency(){
       return getVolumeConcurrency(REMOTE);
     }
@@ -578,16 +582,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
 
     public String getHost() {
-
       return host;
     }
 
     public String getRack() {
       return rack;
-    }
-
-    public int getAssignedVolumeId(TaskAttemptId attemptId) {
-      return lastAssignedVolumeId.get(attemptId);
     }
   }
 
@@ -788,16 +787,18 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         String host = connectionInfo.getHost();
 
         // if there are no worker matched to the hostname a task request
-        if(!leafTaskHostMapping.containsKey(host)){
+        if (!leafTaskHostMapping.containsKey(host) && !taskRequests.isEmpty()) {
           String normalizedHost = NetUtils.normalizeHost(host);
 
-          if(!leafTaskHostMapping.containsKey(normalizedHost) && !taskRequests.isEmpty()){
+          if (!leafTaskHostMapping.containsKey(normalizedHost)) {
             // this case means one of either cases:
             // * there are no blocks which reside in this node.
             // * all blocks which reside in this node are consumed, and this task runner requests a remote task.
             // In this case, we transfer the task request to the remote task request list, and skip the followings.
             remoteTaskRequests.add(taskRequest);
             continue;
+          } else {
+            host = normalizedHost;
           }
         }
 
@@ -812,10 +813,38 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         TaskAttemptId attemptId = allocateLocalTask(host);
 
         if (attemptId == null) { // if a local task cannot be found
+          HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
+
+          if(!taskRequests.isEmpty()) { //if other requests remains, move to remote list for better locality
+            remoteTaskRequests.add(taskRequest);
+            candidateWorkers.remove(connectionInfo.getId());
+            continue;
+
+          } else {
+            if(hostVolumeMapping != null) {
+              int nodes = context.getMasterContext().getWorkerMap().size();
+              //this part is to control the assignment of tail and remote task balancing per node
+              int tailLimit = 1;
+              if (remainingScheduledObjectNum() > 0) {
+                tailLimit = Math.max(remainingScheduledObjectNum() / nodes, 1);
+              }
+
+              if (hostVolumeMapping.getRemoteConcurrency() >= tailLimit) { //remote task throttling per node
+                continue;
+              } else {
+                // assign to remote volume
+                hostVolumeMapping.increaseConcurrency(HostVolumeMapping.REMOTE);
+              }
+            }
+          }
+
           //////////////////////////////////////////////////////////////////////
           // rack-local allocation
           //////////////////////////////////////////////////////////////////////
           attemptId = allocateRackTask(host);
+          if (attemptId != null && hostVolumeMapping != null) {
+            hostVolumeMapping.lastAssignedVolumeId.put(attemptId, HostVolumeMapping.REMOTE);
+          }
 
           //////////////////////////////////////////////////////////////////////
           // random node allocation

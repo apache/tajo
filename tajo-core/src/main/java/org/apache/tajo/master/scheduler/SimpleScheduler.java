@@ -226,7 +226,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
         NodeStatus nodeStatus = getRMContext().getNodes().get(workerId);
         if (nodeStatus == null) {
           iter.remove();
-          LOG.warn("Can't found the nodeStatus :" + workerId);
+          LOG.warn("Can't find the node. id :" + workerId);
           continue;
         } else {
           if (NodeResources.fitsIn(capacity, nodeStatus.getAvailableResource())) {

@@ -467,6 +467,7 @@ public class TaskImpl implements Task {
 
   @Override
   public void cleanup() {
+    // history store in memory while running stage
     TaskHistory taskHistory = createTaskHistory();
     executionBlockContext.addTaskHistory(getId().getTaskId(), taskHistory);
     executionBlockContext.getTasks().remove(getId());
@@ -510,16 +511,12 @@ public class TaskImpl implements Task {
         int i = 0;
         FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
         for (Fetcher fetcher : fetcherRunners) {
-          // TODO store the fetcher histories
-          if (systemConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
-            builder.setStartTime(fetcher.getStartTime());
-            builder.setFinishTime(fetcher.getFinishTime());
-            builder.setFileLength(fetcher.getFileLen());
-            builder.setMessageReceivedCount(fetcher.getMessageReceiveCount());
-            builder.setState(fetcher.getState());
-
-            taskHistory.addFetcherHistory(builder.build());
-          }
+          builder.setStartTime(fetcher.getStartTime());
+          builder.setFinishTime(fetcher.getFinishTime());
+          builder.setFileLength(fetcher.getFileLen());
+          builder.setMessageReceivedCount(fetcher.getMessageReceiveCount());
+          builder.setState(fetcher.getState());
+          taskHistory.addFetcherHistory(builder.build());
           if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED) i++;
         }
         taskHistory.setFinishedFetchCount(i);
