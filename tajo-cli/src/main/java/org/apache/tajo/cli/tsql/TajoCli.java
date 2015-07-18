@@ -31,7 +31,6 @@ import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
 import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
-import org.apache.tajo.common.PlanTypesProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -42,9 +41,13 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TajoCli {
+
   public static final String ERROR_PREFIX = "ERROR: ";
   public static final String KILL_PREFIX = "KILL: ";
 

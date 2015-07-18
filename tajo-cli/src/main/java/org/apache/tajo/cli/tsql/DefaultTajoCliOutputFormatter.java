@@ -198,6 +198,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   public void printQueryTypeMessage(PrintWriter sout, boolean isDDL, PlanTypesProto.PlanNodeType planNodeType) {
     if (isDDL) {
       sout.println(getPlanTypeString(planNodeType) + " OK");
+      sout.flush();
     }
   }
 
