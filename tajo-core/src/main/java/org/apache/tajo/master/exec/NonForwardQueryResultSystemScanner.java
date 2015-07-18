@@ -485,7 +485,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           aTuple.put(fieldId, DatumFactory.createNullDatum());
         }
       } else if ("type".equalsIgnoreCase(column.getSimpleName())) {
-        aTuple.put(fieldId, DatumFactory.createText("NodeStatus"));
+        aTuple.put(fieldId, DatumFactory.createText("Worker"));
       } else if ("status".equalsIgnoreCase(column.getSimpleName())) {
         aTuple.put(fieldId, DatumFactory.createText(aNodeStatus.getState().toString()));
       } else if ("RUNNING".equalsIgnoreCase(aNodeStatus.getState().toString())) {
