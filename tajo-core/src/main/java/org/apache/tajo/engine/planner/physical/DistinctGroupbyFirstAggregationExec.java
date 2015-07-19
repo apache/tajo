@@ -183,6 +183,10 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
   @Override
   public void close() throws IOException {
+    nonDistinctHashAggregator.close();
+    for (DistinctHashAggregator aggregator : nodeSeqToDistinctAggregators.values()) {
+      aggregator.close();
+    }
     child.close();
   }
 
@@ -285,6 +289,11 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     public Tuple getDummyTuple() {
       return dummyTuple;
     }
+
+    public void close() {
+      nonDistinctAggrDatas.clear();
+      nonDistinctAggrDatas = null;
+    }
   }
 
   class DistinctHashAggregator {
@@ -352,6 +361,9 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     }
 
     public void close() throws IOException {
+      for (TupleSet set : distinctAggrDatas.values()) {
+        set.clear();
+      }
       distinctAggrDatas.clear();
       distinctAggrDatas = null;
       currentGroupingTuples = null;

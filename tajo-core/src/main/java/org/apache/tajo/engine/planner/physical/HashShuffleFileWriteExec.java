@@ -161,6 +161,12 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       appenderMap = null;
     }
 
+    for (TupleList eachList : partitionTuples.values()) {
+      eachList.clear();
+    }
+    partitionTuples.clear();
+    partitionTuples = null;
+
     partitioner = null;
     plan = null;
 

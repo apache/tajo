@@ -264,6 +264,11 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       listIndex++;
     }
 
+    for (TupleList eachList : tupleSlots) {
+      eachList.clear();
+    }
+    tupleSlots.clear();
+
     currentAggregatedTupleIndex = 0;
     currentAggregatedTupleSize = currentAggregatedTuples.size();
 
@@ -441,6 +446,9 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public void close() throws IOException {
+      for (TupleMap<FunctionContext[]> map : hashTable.values()) {
+        map.clear();
+      }
       hashTable.clear();
       hashTable = null;
       iterator = null;

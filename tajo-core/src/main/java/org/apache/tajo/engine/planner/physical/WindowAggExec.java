@@ -351,4 +351,16 @@ public class WindowAggExec extends UnaryPhysicalExec {
     lastKey = null;
     noMoreTuples = false;
   }
+
+  @Override
+  public void close() throws IOException {
+    evaluatedTuple.clear();
+    evaluatedTuples = null;
+    accumulatedInTuples.clear();
+    accumulatedInTuples = null;
+    nextAccumulatedInTuples.clear();
+    nextAccumulatedInTuples = null;
+
+    super.close();
+  }
 }
