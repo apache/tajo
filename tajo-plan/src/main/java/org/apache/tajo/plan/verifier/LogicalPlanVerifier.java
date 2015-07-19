@@ -27,11 +27,12 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.plan.DataTypeValidatorFactory;
 
 import java.util.Stack;
 
@@ -256,8 +257,8 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   @Override
   public LogicalNode visitCreateTable(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
-    super.visitCreateTable(context, plan, block, node, stack);
     // here, we don't need check table existence because this check is performed in PreLogicalPlanVerifier.
+    DataTypeValidatorFactory.validate(context.state, node.getStorageType(), node.getTableSchema());
     return node;
   }
 
