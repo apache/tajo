@@ -183,10 +183,14 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
   @Override
   public void close() throws IOException {
-    nonDistinctHashAggregator.close();
+    if (nonDistinctHashAggregator != null) {
+      nonDistinctHashAggregator.close();
+      nonDistinctHashAggregator = null;
+    }
     for (DistinctHashAggregator aggregator : nodeSeqToDistinctAggregators.values()) {
       aggregator.close();
     }
+    nodeSeqToDistinctAggregators.clear();
     child.close();
   }
 
