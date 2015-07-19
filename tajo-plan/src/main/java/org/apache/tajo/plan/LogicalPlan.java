@@ -53,12 +53,11 @@ public class LogicalPlan {
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "QB_";
-  public static final String NONAME_SUBQUERY_PREFIX = "?SubQuery_";
+  public static final String NONAME_SUBQUERY_PREFIX = VIRTUAL_TABLE_PREFIX + "SQ_";
   private static final int NO_SEQUENCE_PID = -1;
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
-  private Integer noNameSubqueryId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
@@ -151,13 +150,6 @@ public class LogicalPlan {
   public String generateUniqueColumnName(EvalNode evalNode) {
     String prefix = evalNode.getName();
     return attachSeqIdToGeneratedColumnName(prefix).toLowerCase();
-  }
-
-  /**
-   * It generates a unique table subquery name
-   */
-  public String generateUniqueSubQueryName() {
-    return NONAME_SUBQUERY_PREFIX + noNameSubqueryId++;
   }
 
   /**

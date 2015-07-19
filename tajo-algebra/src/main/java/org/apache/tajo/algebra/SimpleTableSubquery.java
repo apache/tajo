@@ -18,9 +18,11 @@
 
 package org.apache.tajo.algebra;
 
-public class TablePrimarySubQuery extends CommonSubquery {
+public class SimpleTableSubquery extends CommonSubquery {
 
-  public TablePrimarySubQuery(String relName, Expr subquery) {
-    super(OpType.TablePrimaryTableSubQuery, relName, subquery);
+  public final static String TEMP_RELATION_NAME = "TempSubqueryName";
+
+  public SimpleTableSubquery(Expr subquery) {
+    super(OpType.SimpleTableSubquery, TEMP_RELATION_NAME, subquery);
   }
 }

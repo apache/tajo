@@ -105,6 +105,12 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   }
 
   @Override
+  public RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr)
+      throws PlanningException {
+    return super.visitSimpleTableSubquery(ctx, stack, expr);
+  }
+
+  @Override
   public RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws PlanningException {
     return super.visitRelationList(ctx, stack, expr);
   }

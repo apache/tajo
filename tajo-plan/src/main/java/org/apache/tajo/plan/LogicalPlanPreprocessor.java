@@ -421,6 +421,26 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
     node.init(CatalogUtil.buildFQName(ctx.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getName()), child);
     ctx.queryBlock.addRelation(node);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitSimpleTableSubquery(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, SimpleTableSubquery expr)
+    throws PlanningException {
+    LogicalPlanner.PlanContext newContext;
+    // Note: TableSubQuery always has a table name.
+    // SELECT .... FROM (SELECT ...) TB_NAME <-
+    QueryBlock queryBlock = ctx.plan.newQueryBlock();
+    newContext = new LogicalPlanner.PlanContext(ctx, queryBlock);
+    LogicalNode child = super.visitSimpleTableSubquery(newContext, stack, expr);
+    queryBlock.setRoot(child);
+
+    // a table subquery should be dealt as a relation.
+    TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
+    node.init(CatalogUtil.buildFQName(ctx.queryContext.get(SessionVars.CURRENT_DATABASE),
+        ctx.generateUniqueSubQueryName()), child);
+    ctx.queryBlock.addRelation(node);
     if (stack.peek().getType() == OpType.InPredicate) {
       // In-subquery and scalar subquery cannot be the base for name resolution.
       node.setNameResolveBase(false);

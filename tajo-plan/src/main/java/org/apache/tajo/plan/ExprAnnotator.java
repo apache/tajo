@@ -392,13 +392,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitTableSubQuery(Context ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
+  public EvalNode visitSimpleTableSubquery(Context ctx, Stack<Expr> stack, SimpleTableSubquery expr)
       throws PlanningException {
     if (stack.peek().getType() == OpType.InPredicate) {
       // In the case of in-subquery, stop visiting because the subquery expr is not expression.
       return new SubqueryEval((TableSubQueryNode) ctx.currentBlock.getNodeFromExpr(expr));
     } else {
-      return super.visitTableSubQuery(ctx, stack, expr);
+      return super.visitSimpleTableSubquery(ctx, stack, expr);
     }
   }
 

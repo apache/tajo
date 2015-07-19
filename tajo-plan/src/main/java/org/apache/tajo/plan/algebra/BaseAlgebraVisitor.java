@@ -51,219 +51,222 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     RESULT current;
 
     switch (expr.getType()) {
-    case SetSession:
-      current = visitSetSession(ctx, stack, (SetSession) expr);
-      break;
+      case SetSession:
+        current = visitSetSession(ctx, stack, (SetSession) expr);
+        break;
 
-    case Projection:
-      current = visitProjection(ctx, stack, (Projection) expr);
-      break;
-    case Limit:
-      current = visitLimit(ctx, stack, (Limit) expr);
-      break;
-    case Sort:
-      current = visitSort(ctx, stack, (Sort) expr);
-      break;
-    case Having:
-      current = visitHaving(ctx, stack, (Having) expr);
-      break;
-    case Aggregation:
-      current = visitGroupBy(ctx, stack, (Aggregation) expr);
-      break;
-    case Join:
-      current = visitJoin(ctx, stack, (Join) expr);
-      break;
-    case Filter:
-      current = visitFilter(ctx, stack, (Selection) expr);
-      break;
-    case Union:
-      current = visitUnion(ctx, stack, (SetOperation) expr);
-      break;
-    case Except:
-      current = visitExcept(ctx, stack, (SetOperation) expr);
-      break;
-    case Intersect:
-      current = visitIntersect(ctx, stack, (SetOperation) expr);
-      break;
-    case TablePrimaryTableSubQuery:
-      current = visitTableSubQuery(ctx, stack, (TablePrimarySubQuery) expr);
-      break;
-    case RelationList:
-      current = visitRelationList(ctx, stack, (RelationList) expr);
-      break;
-    case Relation:
-      current = visitRelation(ctx, stack, (Relation) expr);
-      break;
-    case ScalarSubQuery:
-      current = visitScalarSubQuery(ctx, stack, (ScalarSubQuery) expr);
-      break;
-    case Explain:
-      current = visitExplain(ctx, stack, (Explain) expr);
-      break;
+      case Projection:
+        current = visitProjection(ctx, stack, (Projection) expr);
+        break;
+      case Limit:
+        current = visitLimit(ctx, stack, (Limit) expr);
+        break;
+      case Sort:
+        current = visitSort(ctx, stack, (Sort) expr);
+        break;
+      case Having:
+        current = visitHaving(ctx, stack, (Having) expr);
+        break;
+      case Aggregation:
+        current = visitGroupBy(ctx, stack, (Aggregation) expr);
+        break;
+      case Join:
+        current = visitJoin(ctx, stack, (Join) expr);
+        break;
+      case Filter:
+        current = visitFilter(ctx, stack, (Selection) expr);
+        break;
+      case Union:
+        current = visitUnion(ctx, stack, (SetOperation) expr);
+        break;
+      case Except:
+        current = visitExcept(ctx, stack, (SetOperation) expr);
+        break;
+      case Intersect:
+        current = visitIntersect(ctx, stack, (SetOperation) expr);
+        break;
+      case TablePrimaryTableSubQuery:
+        current = visitTableSubQuery(ctx, stack, (TablePrimarySubQuery) expr);
+        break;
+      case SimpleTableSubquery:
+        current = visitSimpleTableSubquery(ctx, stack, (SimpleTableSubquery) expr);
+        break;
+      case RelationList:
+        current = visitRelationList(ctx, stack, (RelationList) expr);
+        break;
+      case Relation:
+        current = visitRelation(ctx, stack, (Relation) expr);
+        break;
+      case ScalarSubQuery:
+        current = visitScalarSubQuery(ctx, stack, (ScalarSubQuery) expr);
+        break;
+      case Explain:
+        current = visitExplain(ctx, stack, (Explain) expr);
+        break;
 
-    case CreateDatabase:
-      current = visitCreateDatabase(ctx, stack, (CreateDatabase) expr);
-      break;
-    case DropDatabase:
-      current = visitDropDatabase(ctx, stack, (DropDatabase) expr);
-      break;
-    case CreateTable:
-      current = visitCreateTable(ctx, stack, (CreateTable) expr);
-      break;
-    case DropTable:
-      current = visitDropTable(ctx, stack, (DropTable) expr);
-      break;
-    case AlterTablespace:
-      current = visitAlterTablespace(ctx, stack, (AlterTablespace) expr);
-      break;
-    case AlterTable:
-      current = visitAlterTable(ctx, stack, (AlterTable) expr);
-      break;
-    case TruncateTable:
-      current = visitTruncateTable(ctx, stack, (TruncateTable)expr);
-      break;
+      case CreateDatabase:
+        current = visitCreateDatabase(ctx, stack, (CreateDatabase) expr);
+        break;
+      case DropDatabase:
+        current = visitDropDatabase(ctx, stack, (DropDatabase) expr);
+        break;
+      case CreateTable:
+        current = visitCreateTable(ctx, stack, (CreateTable) expr);
+        break;
+      case DropTable:
+        current = visitDropTable(ctx, stack, (DropTable) expr);
+        break;
+      case AlterTablespace:
+        current = visitAlterTablespace(ctx, stack, (AlterTablespace) expr);
+        break;
+      case AlterTable:
+        current = visitAlterTable(ctx, stack, (AlterTable) expr);
+        break;
+      case TruncateTable:
+        current = visitTruncateTable(ctx, stack, (TruncateTable)expr);
+        break;
 
-    case Insert:
-      current = visitInsert(ctx, stack, (Insert) expr);
-      break;
+      case Insert:
+        current = visitInsert(ctx, stack, (Insert) expr);
+        break;
 
-    case And:
-      current = visitAnd(ctx, stack, (BinaryOperator) expr);
-      break;
-    case Or:
-      current = visitOr(ctx, stack, (BinaryOperator) expr);
-      break;
-    case Not:
-      current = visitNot(ctx, stack, (NotExpr) expr);
-      break;
+      case And:
+        current = visitAnd(ctx, stack, (BinaryOperator) expr);
+        break;
+      case Or:
+        current = visitOr(ctx, stack, (BinaryOperator) expr);
+        break;
+      case Not:
+        current = visitNot(ctx, stack, (NotExpr) expr);
+        break;
 
-    case Equals:
-      current = visitEquals(ctx, stack, (BinaryOperator) expr);
-      break;
-    case NotEquals:
-      current = visitNotEquals(ctx, stack, (BinaryOperator) expr);
-      break;
-    case LessThan:
-      current = visitLessThan(ctx, stack, (BinaryOperator) expr);
-      break;
-    case LessThanOrEquals:
-      current = visitLessThanOrEquals(ctx, stack, (BinaryOperator) expr);
-      break;
-    case GreaterThan:
-      current = visitGreaterThan(ctx, stack, (BinaryOperator) expr);
-      break;
-    case GreaterThanOrEquals:
-      current = visitGreaterThanOrEquals(ctx, stack, (BinaryOperator) expr);
-      break;
+      case Equals:
+        current = visitEquals(ctx, stack, (BinaryOperator) expr);
+        break;
+      case NotEquals:
+        current = visitNotEquals(ctx, stack, (BinaryOperator) expr);
+        break;
+      case LessThan:
+        current = visitLessThan(ctx, stack, (BinaryOperator) expr);
+        break;
+      case LessThanOrEquals:
+        current = visitLessThanOrEquals(ctx, stack, (BinaryOperator) expr);
+        break;
+      case GreaterThan:
+        current = visitGreaterThan(ctx, stack, (BinaryOperator) expr);
+        break;
+      case GreaterThanOrEquals:
+        current = visitGreaterThanOrEquals(ctx, stack, (BinaryOperator) expr);
+        break;
 
-    // Other Predicates
-    case Between:
-      current = visitBetween(ctx, stack, (BetweenPredicate) expr);
-      break;
-    case CaseWhen:
-      current = visitCaseWhen(ctx, stack, (CaseWhenPredicate) expr);
-      break;
-    case IsNullPredicate:
-      current = visitIsNullPredicate(ctx, stack, (IsNullPredicate) expr);
-      break;
-    case InPredicate:
-      current = visitInPredicate(ctx, stack, (InPredicate) expr);
-      break;
-    case ValueList:
-      current = visitValueListExpr(ctx, stack, (ValueListExpr) expr);
-      break;
-    case ExistsPredicate:
-      current = visitExistsPredicate(ctx, stack, (ExistsPredicate) expr);
-      break;
+      // Other Predicates
+      case Between:
+        current = visitBetween(ctx, stack, (BetweenPredicate) expr);
+        break;
+      case CaseWhen:
+        current = visitCaseWhen(ctx, stack, (CaseWhenPredicate) expr);
+        break;
+      case IsNullPredicate:
+        current = visitIsNullPredicate(ctx, stack, (IsNullPredicate) expr);
+        break;
+      case InPredicate:
+        current = visitInPredicate(ctx, stack, (InPredicate) expr);
+        break;
+      case ValueList:
+        current = visitValueListExpr(ctx, stack, (ValueListExpr) expr);
+        break;
+      case ExistsPredicate:
+        current = visitExistsPredicate(ctx, stack, (ExistsPredicate) expr);
+        break;
 
-    // String Operator or Pattern Matching Predicates
-    case LikePredicate:
-      current = visitLikePredicate(ctx, stack, (PatternMatchPredicate) expr);
-      break;
-    case SimilarToPredicate:
-      current = visitSimilarToPredicate(ctx, stack, (PatternMatchPredicate) expr);
-      break;
-    case Regexp:
-      current = visitRegexpPredicate(ctx, stack, (PatternMatchPredicate) expr);
-      break;
-    case Concatenate:
-      current = visitConcatenate(ctx, stack, (BinaryOperator) expr);
-      break;
+      // String Operator or Pattern Matching Predicates
+      case LikePredicate:
+        current = visitLikePredicate(ctx, stack, (PatternMatchPredicate) expr);
+        break;
+      case SimilarToPredicate:
+        current = visitSimilarToPredicate(ctx, stack, (PatternMatchPredicate) expr);
+        break;
+      case Regexp:
+        current = visitRegexpPredicate(ctx, stack, (PatternMatchPredicate) expr);
+        break;
+      case Concatenate:
+        current = visitConcatenate(ctx, stack, (BinaryOperator) expr);
+        break;
 
-    // Arithmetic Operators
-    case Plus:
-      current = visitPlus(ctx, stack, (BinaryOperator) expr);
-      break;
-    case Minus:
-      current = visitMinus(ctx, stack, (BinaryOperator) expr);
-      break;
-    case Multiply:
-      current = visitMultiply(ctx, stack, (BinaryOperator) expr);
-      break;
-    case Divide:
-      current = visitDivide(ctx, stack, (BinaryOperator) expr);
-      break;
-    case Modular:
-      current = visitModular(ctx, stack, (BinaryOperator) expr);
-      break;
+      // Arithmetic Operators
+      case Plus:
+        current = visitPlus(ctx, stack, (BinaryOperator) expr);
+        break;
+      case Minus:
+        current = visitMinus(ctx, stack, (BinaryOperator) expr);
+        break;
+      case Multiply:
+        current = visitMultiply(ctx, stack, (BinaryOperator) expr);
+        break;
+      case Divide:
+        current = visitDivide(ctx, stack, (BinaryOperator) expr);
+        break;
+      case Modular:
+        current = visitModular(ctx, stack, (BinaryOperator) expr);
+        break;
 
-    // Other Expressions
-    case Sign:
-      current = visitSign(ctx, stack, (SignedExpr) expr);
-      break;
-    case Column:
-      current = visitColumnReference(ctx, stack, (ColumnReferenceExpr) expr);
-      break;
-    case Target:
-      current = visitTargetExpr(ctx, stack, (NamedExpr) expr);
-      break;
-    case Function:
-      current = visitFunction(ctx, stack, (FunctionExpr) expr);
-      break;
-    case Asterisk:
-      current = visitQualifiedAsterisk(ctx, stack, (QualifiedAsteriskExpr) expr);
-      break;
-
-
-    case CountRowsFunction:
-      current = visitCountRowsFunction(ctx, stack, (CountRowsFunctionExpr) expr);
-      break;
-    case GeneralSetFunction:
-      current = visitGeneralSetFunction(ctx, stack, (GeneralSetFunctionExpr) expr);
-      break;
-    case WindowFunction:
-      current = visitWindowFunction(ctx, stack, (WindowFunctionExpr) expr);
-      break;
+      // Other Expressions
+      case Sign:
+        current = visitSign(ctx, stack, (SignedExpr) expr);
+        break;
+      case Column:
+        current = visitColumnReference(ctx, stack, (ColumnReferenceExpr) expr);
+        break;
+      case Target:
+        current = visitTargetExpr(ctx, stack, (NamedExpr) expr);
+        break;
+      case Function:
+        current = visitFunction(ctx, stack, (FunctionExpr) expr);
+        break;
+      case Asterisk:
+        current = visitQualifiedAsterisk(ctx, stack, (QualifiedAsteriskExpr) expr);
+        break;
 
 
-    case DataType:
-      current = visitDataType(ctx, stack, (DataTypeExpr) expr);
-      break;
-    case Cast:
-      current = visitCastExpr(ctx, stack, (CastExpr) expr);
-      break;
-    case Literal:
-      current = visitLiteral(ctx, stack, (LiteralValue) expr);
-      break;
-    case NullLiteral:
-      current = visitNullLiteral(ctx, stack, (NullLiteral) expr);
-      break;
-    case DateLiteral:
-      current = visitDateLiteral(ctx, stack, (DateLiteral) expr);
-      break;
-    case TimeLiteral:
-      current = visitTimeLiteral(ctx, stack, (TimeLiteral) expr);
-      break;
-    case TimestampLiteral:
-      current = visitTimestampLiteral(ctx, stack, (TimestampLiteral) expr);
-      break;
-    case IntervalLiteral:
-      current = visitIntervalLiteral(ctx, stack, (IntervalLiteral) expr);
-      break;
+      case CountRowsFunction:
+        current = visitCountRowsFunction(ctx, stack, (CountRowsFunctionExpr) expr);
+        break;
+      case GeneralSetFunction:
+        current = visitGeneralSetFunction(ctx, stack, (GeneralSetFunctionExpr) expr);
+        break;
+      case WindowFunction:
+        current = visitWindowFunction(ctx, stack, (WindowFunctionExpr) expr);
+        break;
 
 
-    default:
-      throw new PlanningException("Cannot support this type algebra \"" + expr.getType() + "\"");
+      case DataType:
+        current = visitDataType(ctx, stack, (DataTypeExpr) expr);
+        break;
+      case Cast:
+        current = visitCastExpr(ctx, stack, (CastExpr) expr);
+        break;
+      case Literal:
+        current = visitLiteral(ctx, stack, (LiteralValue) expr);
+        break;
+      case NullLiteral:
+        current = visitNullLiteral(ctx, stack, (NullLiteral) expr);
+        break;
+      case DateLiteral:
+        current = visitDateLiteral(ctx, stack, (DateLiteral) expr);
+        break;
+      case TimeLiteral:
+        current = visitTimeLiteral(ctx, stack, (TimeLiteral) expr);
+        break;
+      case TimestampLiteral:
+        current = visitTimestampLiteral(ctx, stack, (TimestampLiteral) expr);
+        break;
+      case IntervalLiteral:
+        current = visitIntervalLiteral(ctx, stack, (IntervalLiteral) expr);
+        break;
+
+
+      default:
+        throw new PlanningException("Cannot support this type algebra \"" + expr.getType() + "\"");
     }
 
     // skip postHook against only one relation
@@ -396,6 +399,15 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
 
   @Override
   public RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
+      throws PlanningException {
+    stack.push(expr);
+    RESULT child = visit(ctx, stack, expr.getSubQuery());
+    stack.pop();
+    return child;
+  }
+
+  @Override
+  public RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr)
       throws PlanningException {
     stack.push(expr);
     RESULT child = visit(ctx, stack, expr.getSubQuery());

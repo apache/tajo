@@ -978,7 +978,7 @@ public class PlannerUtil {
     List<Expr> inSubqueries = TUtil.newList();
     for (Expr eachIn : ExprFinder.findsInOrder(qual, OpType.InPredicate)) {
       InPredicate inPredicate = (InPredicate) eachIn;
-      if (inPredicate.getInValue().getType() == OpType.TablePrimaryTableSubQuery) {
+      if (inPredicate.getInValue().getType() == OpType.SimpleTableSubquery) {
         inSubqueries.add(eachIn);
       }
     }

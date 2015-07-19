@@ -93,6 +93,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     TimeZone timeZone;
     List<Expr> unplannedExprs = TUtil.newList();
     boolean debugOrUnitTests;
+    Integer noNameSubqueryId = 0;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
                        boolean debugOrUnitTests) {
@@ -129,6 +130,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     public String toString() {
       return "block=" + queryBlock.getName() + ", relNum=" + queryBlock.getRelations().size() + ", "+
           queryBlock.namedExprsMgr.toString();
+    }
+
+    /**
+     * It generates a unique table subquery name
+     */
+    public String generateUniqueSubQueryName() {
+      return LogicalPlan.NONAME_SUBQUERY_PREFIX + noNameSubqueryId++;
     }
   }
 
@@ -1377,6 +1385,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public TableSubQueryNode visitTableSubQuery(PlanContext context, Stack<Expr> stack, TablePrimarySubQuery expr)
       throws PlanningException {
+    return visitCommonTableSubquery(context, stack, expr);
+  }
+
+  @Override
+  public TableSubQueryNode visitSimpleTableSubquery(PlanContext context, Stack<Expr> stack, SimpleTableSubquery expr)
+      throws PlanningException {
+    return visitCommonTableSubquery(context, stack, expr);
+  }
+
+  private TableSubQueryNode visitCommonTableSubquery(PlanContext context, Stack<Expr> stack, CommonSubquery expr)
+    throws PlanningException {
     QueryBlock currentBlock = context.queryBlock;
     QueryBlock childBlock = context.plan.getBlock(context.plan.getBlockNameByExpr(expr.getSubQuery()));
     context.plan.connectBlocks(childBlock, currentBlock, BlockType.TableSubQuery);
@@ -1392,7 +1411,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return subQueryNode;
   }
 
-  private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode) throws PlanningException {
+  private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode)
+      throws PlanningException {
     // Add additional expressions required in upper nodes.
     Set<String> newlyEvaluatedExprs = TUtil.newHashSet();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
@@ -1449,12 +1469,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return resultingNode;
   }
 
-  private ProjectionNode insertProjectionGroupbyBeforeSetOperation(PlanContext context, SetOperationNode setOperationNode) throws PlanningException {
+  private ProjectionNode insertProjectionGroupbyBeforeSetOperation(PlanContext context,
+                                                                   SetOperationNode setOperationNode)
+      throws PlanningException {
     QueryBlock currentBlock = context.queryBlock;
 
     // make table subquery node which has set operation as its subquery
     TableSubQueryNode setOpTableSubQueryNode = context.plan.createNode(TableSubQueryNode.class);
-    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), context.plan.generateUniqueSubQueryName()), setOperationNode);
+    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+        context.generateUniqueSubQueryName()), setOperationNode);
     setTargetOfTableSubQuery(context, currentBlock, setOpTableSubQueryNode);
     currentBlock.registerNode(setOpTableSubQueryNode);
     currentBlock.addRelation(setOpTableSubQueryNode);

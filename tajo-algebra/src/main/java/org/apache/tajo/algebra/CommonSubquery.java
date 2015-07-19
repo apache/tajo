@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,39 +22,39 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
-public class ExistsPredicate extends UnaryOperator {
-  @Expose @SerializedName("IsNot")
-  private boolean not;
+public abstract class CommonSubquery extends Relation {
+  @Expose
+  @SerializedName("SubPlan")
+  protected Expr subquery;
 
-  public ExistsPredicate(SimpleTableSubquery simpleTableSubQuery, boolean not) {
-    super(OpType.ExistsPredicate);
-    this.not = not;
-    setChild(simpleTableSubQuery);
+  protected CommonSubquery(OpType type, String relationName, Expr subquery) {
+    super(type, relationName);
+    this.subquery = subquery;
   }
 
-  public boolean isNot() {
-    return this.not;
+  public Expr getSubQuery() {
+    return subquery;
   }
 
-  public SimpleTableSubquery getSubQuery() {
-    return (SimpleTableSubquery) getChild();
-  }
-
-  @Override
   public int hashCode() {
-    return Objects.hashCode(not, getChild());
+    return Objects.hashCode(subquery);
   }
 
   @Override
   boolean equalsTo(Expr expr) {
-    ExistsPredicate another = (ExistsPredicate) expr;
-    return not == another.not;
+    CommonSubquery another = (CommonSubquery) expr;
+    return subquery.equals(another.subquery);
+  }
+
+  public String toJson() {
+    return JsonHelper.toJson(this);
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    ExistsPredicate exists = (ExistsPredicate) super.clone();
-    exists.not = not;
-    return exists;
+    CommonSubquery subQuery = (CommonSubquery) super.clone();
+    subQuery.subquery = (Expr) subquery.clone();
+    return subQuery;
   }
+
 }

@@ -39,6 +39,7 @@ public enum OpType {
   Except(SetOperation.class),
   Intersect(SetOperation.class),
   TablePrimaryTableSubQuery(TablePrimarySubQuery.class),
+  SimpleTableSubquery(SimpleTableSubquery.class),
   RelationList(RelationList.class),
   Relation(Relation.class),
   ScalarSubQuery(ScalarSubQuery.class),
