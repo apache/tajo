@@ -42,24 +42,21 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
-  private SQLParser parser;
 
   public Expr parse(String sql) {
     ANTLRInputStream input = new ANTLRInputStream(sql);
     SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    this.parser = new SQLParser(tokens);
-    parser.setBuildParseTree(true);
-    parser.removeErrorListeners();
-
-    parser.setErrorHandler(new SQLErrorStrategy());
-    parser.addErrorListener(new SQLErrorListener());
-
     SqlContext context;
     try {
+      SQLParser parser = new SQLParser(tokens);
+      parser.setBuildParseTree(true);
+      parser.removeErrorListeners();
+
+      parser.setErrorHandler(new SQLErrorStrategy());
+      parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      e.printStackTrace();
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);

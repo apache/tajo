@@ -422,11 +422,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getSchemas() throws SQLException {
     String databaseName;
-    try {
-      databaseName = conn.getQueryClient().getCurrentDatabase();
-    } catch (ServiceException e) {
-      throw new SQLException(e);
-    }
+
+    databaseName = conn.getQueryClient().getCurrentDatabase();
 
     MetaDataTuple tuple = new MetaDataTuple(2);
     tuple.put(0, new TextDatum(DEFAULT_SCHEMA_NAME));
@@ -441,11 +438,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getCatalogs() throws SQLException {
     Collection<String> databaseNames;
-    try {
-      databaseNames = conn.getCatalogAdminClient().getAllDatabaseNames();
-    } catch (ServiceException e) {
-      throw new SQLException(e);
-    }
+
+    databaseNames = conn.getCatalogAdminClient().getAllDatabaseNames();
 
     List<MetaDataTuple> tuples = new ArrayList<MetaDataTuple>();
     for (String databaseName : databaseNames) {
@@ -765,11 +759,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
     String databaseName;
-    try {
-      databaseName = conn.getQueryClient().getCurrentDatabase();
-    } catch (ServiceException e) {
-      throw new SQLException(e);
-    }
+
+    databaseName = conn.getQueryClient().getCurrentDatabase();
 
     MetaDataTuple tuple = new MetaDataTuple(2);
     tuple.put(0, new TextDatum(DEFAULT_SCHEMA_NAME));

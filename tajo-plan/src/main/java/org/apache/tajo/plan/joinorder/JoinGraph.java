@@ -33,10 +33,13 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
   private boolean allowArbitraryCrossJoin = true;
 
-  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) throws PlanningException {
+  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right)
+      throws PlanningException {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
+    // TODO: the below will be improved after TAJO-1683
     allowArbitraryCrossJoin &= PlannerUtil.isCommutativeJoinType(edge.getJoinType())
         || edge.getJoinType() == JoinType.LEFT_SEMI || edge.getJoinType() == JoinType.LEFT_ANTI;
+
     this.addEdge(left, right, edge);
     List<JoinEdge> incomeToLeft = getIncomingEdges(left);
     if (incomeToLeft == null || incomeToLeft.isEmpty()) {

@@ -217,11 +217,7 @@ public class JdbcConnection implements Connection {
 
   @Override
   public String getCatalog() throws SQLException {
-    try {
-      return tajoClient.getCurrentDatabase();
-    } catch (ServiceException e) {
-      throw new SQLException(e);
-    }
+    return tajoClient.getCurrentDatabase();
   }
 
   @Override
@@ -271,21 +267,13 @@ public class JdbcConnection implements Connection {
 
   @Override
   public boolean isValid(int timeout) throws SQLException {
-    try {
-      if (tajoClient.isConnected()) {
-        ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
-        boolean next = resultSet.next();
-        boolean valid = next && resultSet.getLong(1) == 1;
-        resultSet.close();
-        return valid;
-      } else {
-        return false;
-      }
-    } catch (ServiceException e) {
-      LOG.error("TajoMaster is not available.", e);
-      return false;
-    } catch (IOException e) {
-      LOG.error("JDBC connection is not valid.", e);
+    if (tajoClient.isConnected()) {
+      ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
+      boolean next = resultSet.next();
+      boolean valid = next && resultSet.getLong(1) == 1;
+      resultSet.close();
+      return valid;
+    } else {
       return false;
     }
   }
@@ -369,22 +357,16 @@ public class JdbcConnection implements Connection {
 
   @Override
   public void setCatalog(String catalog) throws SQLException {
-    try {
-      tajoClient.selectDatabase(catalog);
-    } catch (ServiceException e) {
-      throw new SQLException(e);
-    }
+    tajoClient.selectDatabase(catalog);
   }
 
   @Override
-  public void setClientInfo(Properties properties)
-      throws SQLClientInfoException {
+  public void setClientInfo(Properties properties) throws SQLClientInfoException {
     throw new UnsupportedOperationException("setClientInfo");
   }
 
   @Override
-  public void setClientInfo(String name, String value)
-      throws SQLClientInfoException {
+  public void setClientInfo(String name, String value) throws SQLClientInfoException {
     throw new UnsupportedOperationException("setClientInfo");
   }
 

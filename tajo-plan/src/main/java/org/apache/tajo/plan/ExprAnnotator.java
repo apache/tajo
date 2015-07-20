@@ -27,14 +27,16 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.function.FunctionUtil;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.plan.nameresolver.NameResolver;
@@ -44,7 +46,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -591,7 +593,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new NoSuchFunctionException(expr.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(expr.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
@@ -617,27 +619,21 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
 
-    try {
-      FunctionType functionType = funcDesc.getFuncType();
-      if (functionType == FunctionType.GENERAL
-          || functionType == FunctionType.UDF) {
-        return new GeneralFunctionEval(ctx.queryContext, funcDesc, givenArgs);
-      } else if (functionType == FunctionType.AGGREGATION
-          || functionType == FunctionType.UDA) {
-        if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
-          ctx.currentBlock.setAggregationRequire();
-        }
-        return new AggregationFunctionCallEval(funcDesc, givenArgs);
-      } else if (functionType == FunctionType.DISTINCT_AGGREGATION
-          || functionType == FunctionType.DISTINCT_UDA) {
-        throw new PlanningException("Unsupported function: " + funcDesc.toString());
-      } else {
-        throw new PlanningException("Unsupported Function Type: " + functionType.name());
+    FunctionType functionType = funcDesc.getFuncType();
+    if (functionType == FunctionType.GENERAL
+        || functionType == FunctionType.UDF) {
+      return new GeneralFunctionEval(ctx.queryContext, funcDesc, givenArgs);
+    } else if (functionType == FunctionType.AGGREGATION
+        || functionType == FunctionType.UDA) {
+      if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
+        ctx.currentBlock.setAggregationRequire();
       }
-    } catch (InternalException e) {
-      throw new PlanningException(e);
-    } catch (IOException e) {
-      throw new PlanningException(e);
+      return new AggregationFunctionCallEval(funcDesc, givenArgs);
+    } else if (functionType == FunctionType.DISTINCT_AGGREGATION
+        || functionType == FunctionType.DISTINCT_UDA) {
+      throw new PlanningException("Unsupported function: " + funcDesc.toString());
+    } else {
+      throw new PlanningException("Unsupported Function Type: " + functionType.name());
     }
   }
 
@@ -647,7 +643,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     FunctionDesc countRows = catalog.getFunction("count", FunctionType.AGGREGATION,
         new DataType[] {});
     if (countRows == null) {
-      throw new NoSuchFunctionException(expr.getSignature(), new DataType[]{});
+      throw new UndefinedFunctionException(expr.getSignature(), new DataType[]{});
     }
 
     ctx.currentBlock.setAggregationRequire();
@@ -672,7 +668,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(setFunction.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(setFunction.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
@@ -753,7 +749,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
     if (WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       if (distinct) {
-        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
+        throw new UndefinedFunctionException("row_number() does not support distinct keyword.");
       }
       functionType = FunctionType.WINDOW;
     } else {
@@ -761,7 +757,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(funcName, paramTypes);
+      throw new UndefinedFunctionException(funcName, paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);

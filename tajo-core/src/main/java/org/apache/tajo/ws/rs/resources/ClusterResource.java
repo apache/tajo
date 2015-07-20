@@ -35,7 +35,7 @@ import javax.ws.rs.core.UriInfo;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.ws.rs.JerseyResourceDelegate;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
@@ -99,11 +99,11 @@ public class ClusterResource {
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
-      Map<Integer, Worker> workerMap = masterContext.getResourceManager().getWorkers();
+      Map<Integer, NodeStatus> workerMap = masterContext.getResourceManager().getNodes();
       List<WorkerResponse> workerList = new ArrayList<WorkerResponse>();
       
-      for (Worker worker: workerMap.values()) {
-        workerList.add(new WorkerResponse(worker));
+      for (NodeStatus nodeStatus : workerMap.values()) {
+        workerList.add(new WorkerResponse(nodeStatus));
       }
       
       Map<String, List<WorkerResponse>> workerResponseMap = new HashMap<String, List<WorkerResponse>>();

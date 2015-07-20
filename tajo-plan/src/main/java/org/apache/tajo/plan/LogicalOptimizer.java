@@ -30,6 +30,9 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.expr.AlgebraicUtil;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
@@ -259,6 +262,7 @@ public class LogicalOptimizer {
         throws PlanningException {
       super.visitJoin(context, plan, block, joinNode, stack);
 
+//<<<<<<< HEAD
       if (joinNode.getJoinType() == JoinType.LEFT_SEMI || joinNode.getJoinType() == JoinType.LEFT_ANTI) {
         // In case of in-subquery, the left vertex must be the relation of the left column of the in qual.
         // In addition, the join qual can be evaluated only at the join node for in-subquery,
@@ -326,7 +330,53 @@ public class LogicalOptimizer {
           commutativeEdge.addJoinPredicates(joinConditions);
           context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),
               commutativeEdge);
+//=======
+//      // given a join node, find the relations which are nearest to the join in the query.
+//      RelationNode leftChild = findMostRightRelation(plan, block, joinNode.getLeftChild());
+//      RelationNode rightChild = findMostLeftRelation(plan, block, joinNode.getRightChild());
+//      RelationVertex leftVertex = new RelationVertex(leftChild);
+//      RelationVertex rightVertex = new RelationVertex(rightChild);
+//
+//      JoinEdge edge = context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
+//
+//      // find all possible predicates for this join edge
+//      Set<EvalNode> joinConditions = TUtil.newHashSet();
+//      if (joinNode.hasJoinQual()) {
+//        Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
+//        for (EvalNode predicate : joinNode.getJoinSpec().getPredicates()) {
+//          if (EvalTreeUtil.isJoinQual(block, leftVertex.getSchema(), rightVertex.getSchema(), predicate, false)) {
+//            if (JoinOrderingUtil.checkIfEvaluatedAtEdge(predicate, edge, true)) {
+//              joinConditions.add(predicate);
+//            }
+//          } else {
+//            joinConditions.add(predicate);
+//          }
+//>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
         }
+//        // find predicates which cannot be evaluated at this join
+//        originPredicates.removeAll(joinConditions);
+//        context.addCandidateJoinConditions(originPredicates);
+//        originPredicates.clear();
+//        originPredicates.addAll(joinConditions);
+//      }
+//
+//      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), edge,
+//          true));
+//      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), edge,
+//          false));
+//      context.markAsEvaluatedJoinConditions(joinConditions);
+//      context.markAsEvaluatedJoinFilters(joinConditions);
+//      edge.addJoinPredicates(joinConditions);
+//      if (edge.getJoinType() == JoinType.INNER && edge.getJoinQual().isEmpty()) {
+//        edge.getJoinSpec().setType(JoinType.CROSS);
+//      }
+//
+//      if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
+//        JoinEdge commutativeEdge = context.getCachedOrNewJoinEdge(edge.getJoinSpec(), edge.getRightVertex(),
+//            edge.getLeftVertex());
+//        commutativeEdge.addJoinPredicates(joinConditions);
+//        context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),
+//            commutativeEdge);
       }
 
       return joinNode;

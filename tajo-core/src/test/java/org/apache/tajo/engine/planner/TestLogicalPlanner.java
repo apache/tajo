@@ -991,7 +991,7 @@ public class TestLogicalPlanner {
     assertEquals("score", def.getColumn(3).getSimpleName());
     assertEquals(Type.FLOAT4, def.getColumn(3).getDataType().getType());
     assertTrue("CSV".equalsIgnoreCase(createTable.getStorageType()));
-    assertEquals("/tmp/data", createTable.getUri().toString());
+    assertEquals("file://tmp/data", createTable.getUri().toString());
     assertTrue(createTable.hasOptions());
     assertEquals("|", createTable.getOptions().get("csv.delimiter"));
   }

@@ -21,7 +21,7 @@ package org.apache.tajo.plan;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.exception.NoSuchColumnException;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
@@ -344,7 +344,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
           String normalized =
               NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolvingMode.LEGACY).getQualifiedName();
           expr.setName(normalized);
-        } catch (NoSuchColumnException nsc) {
+        } catch (UndefinedColumnException nsc) {
         }
       }
     }

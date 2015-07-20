@@ -141,8 +141,11 @@ public class JoinOrderingUtil {
    * (A full B) full C    | A full (B full C)     | Equivalent
    * ==============================================================
    *
+<<<<<<< HEAD
    * Cross, Semi and Anti joins follow the rule of the Inner join.
    *
+=======
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
    * @param leftType
    * @param rightType
    * @return true if two join types are associative.

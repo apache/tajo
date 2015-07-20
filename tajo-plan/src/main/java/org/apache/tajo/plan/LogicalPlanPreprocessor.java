@@ -21,7 +21,7 @@ package org.apache.tajo.plan;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.NoSuchColumnException;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
@@ -108,7 +108,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
       // If we cannot find any relation against a qualified column name
       if (relationOp == null) {
-        throw new NoSuchColumnException(CatalogUtil.buildFQName(qualifier, "*"));
+        throw new UndefinedColumnException(CatalogUtil.buildFQName(qualifier, "*"));
       }
 
       Schema schema = relationOp.getLogicalSchema();
@@ -129,7 +129,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       }
 
       if (resolvedColumns.size() == 0) {
-        throw new NoSuchColumnException(asteriskExpr.toString());
+        throw new UndefinedColumnException(asteriskExpr.toString());
       }
 
       return resolvedColumns.toArray(new Column[resolvedColumns.size()]);

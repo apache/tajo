@@ -142,18 +142,18 @@ public class ExprTestBase {
     Expr expr = analyzer.parse(parsedResults.get(0).getHistoryStatement());
     VerificationState state = new VerificationState();
     preLogicalPlanVerifier.verify(context, state, expr);
-    if (state.getErrorMessages().size() > 0) {
-      if (!condition && state.getErrorMessages().size() > 0) {
-        throw new PlanningException(state.getErrorMessages().get(0));
+    if (state.getErrors().size() > 0) {
+      if (!condition && state.getErrors().size() > 0) {
+        throw new PlanningException(state.getErrors().get(0));
       }
-      assertFalse(state.getErrorMessages().get(0), true);
+      assertFalse(state.getErrors().get(0).getMessage(), true);
     }
     LogicalPlan plan = planner.createPlan(context, expr, true);
     optimizer.optimize(context, plan);
     annotatedPlanVerifier.verify(state, plan);
 
-    if (state.getErrorMessages().size() > 0) {
-      assertFalse(state.getErrorMessages().get(0), true);
+    if (state.getErrors().size() > 0) {
+      assertFalse(state.getErrors().get(0).getMessage(), true);
     }
 
     Target [] targets = plan.getRootBlock().getRawTargets();
