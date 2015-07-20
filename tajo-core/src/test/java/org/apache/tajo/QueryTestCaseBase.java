@@ -231,7 +231,7 @@ public class QueryTestCaseBase {
     /* protect a travis stalled build */
     System.out.println("Run: " + name.getMethodName() +
         " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
-        / (1024 * 1024)) + "MBytes");
+        / (1024 * 1024)) + " MBytes, Active Threads:" + Thread.activeCount());
   }
 
   public QueryTestCaseBase() {

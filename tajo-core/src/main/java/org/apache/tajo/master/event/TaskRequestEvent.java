@@ -18,13 +18,10 @@
 
 package org.apache.tajo.master.event;
 
-import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
+import org.apache.tajo.ResourceProtos.AllocationResourceProto;
 import org.apache.tajo.master.event.TaskRequestEvent.TaskRequestEventType;
-import org.apache.tajo.master.container.TajoContainerId;
 
 public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
 
@@ -32,36 +29,28 @@ public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
     TASK_REQ
   }
 
-  private final int workerId;
-  private final TajoContainerId containerId;
+  private final AllocationResourceProto responseProto;
   private final ExecutionBlockId executionBlockId;
-
-  private final RpcCallback<TaskRequestProto> callback;
+  private final int workerId;
 
   public TaskRequestEvent(int workerId,
-                          TajoContainerId containerId,
-                          ExecutionBlockId executionBlockId,
-                          RpcCallback<TaskRequestProto> callback) {
+                          AllocationResourceProto responseProto,
+                          ExecutionBlockId executionBlockId) {
     super(TaskRequestEventType.TASK_REQ);
     this.workerId = workerId;
-    this.containerId = containerId;
+    this.responseProto = responseProto;
     this.executionBlockId = executionBlockId;
-    this.callback = callback;
-  }
-
-  public int getWorkerId() {
-    return this.workerId;
-  }
-
-  public TajoContainerId getContainerId() {
-    return this.containerId;
   }
 
   public ExecutionBlockId getExecutionBlockId() {
     return executionBlockId;
   }
 
-  public RpcCallback<TajoWorkerProtocol.TaskRequestProto> getCallback() {
-    return this.callback;
+  public AllocationResourceProto getResponseProto() {
+    return responseProto;
+  }
+
+  public int getWorkerId() {
+    return workerId;
   }
 }

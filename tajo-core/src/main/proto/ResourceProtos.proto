@@ -1,0 +1,311 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "org.apache.tajo";
+option java_outer_classname = "ResourceProtos";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "tajo_protos.proto";
+import "TajoIdProtos.proto";
+import "CatalogProtos.proto";
+import "PrimitiveProtos.proto";
+import "Plan.proto";
+
+enum ResponseCommand {
+  NORMAL = 1; //ping
+  MEMBERSHIP = 2; // request membership to worker node
+  ABORT_QUERY = 3; //query master failure
+  SHUTDOWN = 4; // black list
+}
+
+//TODO add node health information
+message NodeStatusProto {
+}
+
+enum ResourceType {
+    LEAF = 1;
+    INTERMEDIATE = 2;
+    QUERYMASTER = 3;
+}
+
+message AllocationResourceProto {
+    required int32 workerId = 1;
+    required NodeResourceProto resource = 2;
+}
+
+
+message ExecutionBlockListProto {
+    repeated ExecutionBlockIdProto executionBlockId = 1;
+}
+
+message TaskAllocationProto {
+    required TaskRequestProto taskRequest = 1;
+    required NodeResourceProto resource = 2;
+}
+
+message TaskRequestProto {
+    required string queryMasterHostAndPort = 1;
+    required TaskAttemptIdProto id = 2;
+    repeated FragmentProto fragments = 3;
+    required string outputTable = 4;
+    required bool clusteredOutput = 5;
+    required LogicalNodeTree plan = 6;
+    optional bool interQuery = 7 [default = false];
+    repeated FetchProto fetches = 8;
+    optional KeyValueSetProto queryContext = 9;
+    optional DataChannelProto dataChannel = 10;
+    optional EnforcerProto enforcer = 11;
+}
+
+message FetchProto {
+    required string host = 1;
+    required int32 port = 2;
+    required ShuffleType type = 3;
+    required ExecutionBlockIdProto executionBlockId = 4;
+    required int32 partitionId = 5;
+    required string name = 6;
+    optional string rangeParams = 7;
+    optional bool hasNext = 8 [default = false];
+
+    //repeated part
+    repeated int32 taskId = 9 [packed=true];
+    repeated int32 attemptId = 10 [packed=true];
+
+    optional int64 offset = 11;
+    optional int64 length = 12;
+}
+
+message TaskStatusProto {
+  required TaskAttemptIdProto id = 1;
+  required string workerName = 2;
+  required float progress = 3;
+  required TaskAttemptState state = 4;
+  optional StatSetProto stats = 5;
+  optional TableStatsProto inputStats = 6;
+  optional TableStatsProto resultStats = 7;
+  repeated ShuffleFileOutput shuffleFileOutputs = 8;
+}
+
+message TaskCompletionReport {
+  required TaskAttemptIdProto id = 1;
+  optional StatSetProto stats = 2;
+  optional TableStatsProto inputStats = 3;
+  optional TableStatsProto resultStats = 4;
+  repeated ShuffleFileOutput shuffleFileOutputs = 5;
+}
+
+message TaskFatalErrorReport {
+  required TaskAttemptIdProto id = 1;
+  optional string errorMessage = 2;
+  optional string errorTrace = 3;
+}
+
+message FailureIntermediateProto {
+    required int64 pagePos = 1;
+    required int32 startRowNum = 2;
+    required int32 endRowNum = 3;
+}
+
+message IntermediateEntryProto {
+    message PageProto {
+        required int64 pos = 1;
+        required int32 length = 2;
+    }
+    required ExecutionBlockIdProto ebId = 1;
+    required int32 taskId = 2;
+    required int32 attemptId = 3;
+    required int32 partId = 4;
+    required string host = 5;
+    required int64 volume = 6;
+    repeated PageProto pages = 7;
+    repeated FailureIntermediateProto failures = 8;
+}
+
+message ExecutionBlockReport {
+    required ExecutionBlockIdProto ebId = 1;
+    required bool reportSuccess = 2;
+    optional string reportErrorMessage = 3;
+    required int32 succeededTasks = 4;
+    repeated IntermediateEntryProto intermediateEntries = 5;
+}
+
+// deprecated
+message TaskResponseProto {
+    required string id = 1;
+    required QueryState status = 2;
+}
+
+message StatusReportProto {
+  required int64 timestamp = 1;
+  required string serverName = 2;
+  repeated TaskStatusProto status = 3;
+  repeated TaskAttemptIdProto pings = 4;
+}
+
+message CommandRequestProto {
+    repeated Command command = 1;
+}
+
+message CommandResponseProto {
+}
+
+message Command {
+    required TaskAttemptIdProto id = 1;
+    required CommandType type = 2;
+}
+
+enum CommandType {
+    PREPARE = 0;
+    LAUNCH = 1;
+    STOP = 2;
+    FINALIZE = 3;
+}
+
+message ShuffleFileOutput {
+    required int32 partId = 1;
+    optional string fileName = 2;
+    optional int64 volume = 3;
+}
+
+message SessionProto {
+  required string session_id = 1;
+  required string username = 2;
+  required string current_database = 3;
+  required int64 last_access_time = 4;
+  required KeyValueSetProto variables = 5;
+}
+
+message NodeHeartbeatRequest {
+  required int32 workerId = 1;
+  optional NodeResourceProto totalResource = 2;
+  optional NodeResourceProto availableResource = 3;
+  optional int32 runningTasks = 4;
+  optional int32 runningQueryMasters = 5;
+  optional WorkerConnectionInfoProto connectionInfo = 6;
+  optional NodeStatusProto status = 7;
+}
+
+message NodeHeartbeatResponse {
+  required ResponseCommand command = 1 [default = NORMAL];
+  optional int32 heartBeatInterval = 2;
+  repeated QueryIdProto queryId = 3;
+}
+
+//deplecated
+message TajoHeartbeatRequest {
+  required WorkerConnectionInfoProto connectionInfo = 1;
+  optional QueryIdProto queryId = 2;
+  optional QueryState state = 3;
+  optional TableDescProto resultDesc = 4;
+  optional string statusMessage = 5;
+  optional float queryProgress = 6;
+}
+
+//deplecated
+message TajoHeartbeatResponse {
+  message ResponseCommand {
+      required string command = 1;
+      repeated string params = 2;
+  }
+  required BoolProto heartbeatResult = 1;
+  optional ResponseCommand responseCommand = 3;
+}
+
+message WorkerConnectionsResponse {
+    repeated WorkerConnectionInfoProto worker = 1;
+}
+
+message NodeResourceRequest {
+    optional string queue = 1;
+    required string userId = 2;
+    required ResourceType type = 3;
+    required int32 priority = 4;
+    required QueryIdProto queryId = 5;
+    required int32 numContainers = 6;
+    required NodeResourceProto capacity = 7;
+    required int32 runningTasks = 8;
+    repeated int32 candidateNodes = 9;
+}
+
+message NodeResourceResponse {
+    required QueryIdProto queryId = 1;
+    repeated AllocationResourceProto resource = 2;
+}
+
+message ExecutionBlockContextRequest {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    required WorkerConnectionInfoProto worker = 2;
+}
+
+message ExecutionBlockContextResponse {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    optional string queryOutputPath = 2;
+
+    required KeyValueSetProto queryContext = 3;
+    required string planJson = 4;
+    required ShuffleType shuffleType = 5;
+}
+
+message StopExecutionBlockRequest {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    optional ExecutionBlockListProto cleanupList = 2;
+}
+
+message BatchAllocationRequest {
+    required ExecutionBlockIdProto executionBlockId = 1;
+    repeated TaskAllocationProto taskRequest = 2;
+}
+
+message BatchAllocationResponse {
+    repeated TaskAllocationProto cancellationTask = 1;
+}
+
+message QueryExecutionRequest {
+    required QueryIdProto queryId = 1;
+    required SessionProto session = 2;
+    required KeyValueSetProto queryContext = 3;
+    required StringProto exprInJson = 4;
+    optional StringProto logicalPlanJson = 5;
+    required AllocationResourceProto allocation = 6;
+}
+
+
+//Task history
+message FetcherHistoryProto {
+  required int64 startTime = 1;
+  optional int64 finishTime = 2;
+  required FetcherState state = 3;
+  required int64 fileLength = 4;
+  required int32 messageReceivedCount = 5;
+}
+
+message TaskHistoryProto {
+  required TaskAttemptIdProto taskAttemptId = 1;
+  required TaskAttemptState state = 2;
+  required float progress = 3;
+  required int64 startTime = 4;
+  required int64 finishTime = 5;
+  required TableStatsProto inputStats = 6;
+  optional TableStatsProto outputStats = 7;
+  optional string outputPath = 8;
+  optional string workingPath = 9;
+  optional int32 finishedFetchCount = 10;
+  optional int32 totalFetchCount = 11;
+  repeated FetcherHistoryProto fetcherHistories = 12;
+}

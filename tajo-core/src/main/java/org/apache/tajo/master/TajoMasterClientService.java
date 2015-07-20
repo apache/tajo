@@ -47,8 +47,7 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolServ
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -95,32 +94,27 @@ public class TajoMasterClientService extends AbstractService {
   }
 
   @Override
-  public void start() {
+  public void serviceStart() throws Exception {
 
     // start the rpc server
     String confClientServiceAddr = conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
     int workerNum = conf.getIntVar(ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
-    try {
-      server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa, workerNum);
-    } catch (Exception e) {
-      LOG.error(e);
-      throw new RuntimeException(e);
-    }
+    server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa, workerNum);
     server.start();
 
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    super.serviceStart();
     LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
-    super.start();
   }
 
   @Override
-  public void stop() {
+  public void serviceStop() throws Exception {
     if (server != null) {
       server.shutdown();
     }
-    super.stop();
+    super.serviceStop();
   }
 
   public InetSocketAddress getBindAddress() {
@@ -590,7 +584,7 @@ public class TajoMasterClientService extends AbstractService {
         QueryManager queryManager = context.getQueryJobManager();
         QueryInProgress queryInProgress = queryManager.getQueryInProgress(queryId);
 
-        QueryInfo queryInfo = null;
+        QueryInfo queryInfo;
         if (queryInProgress == null) {
           queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
         } else {
@@ -610,9 +604,6 @@ public class TajoMasterClientService extends AbstractService {
       return builder.build();
     }
 
-    /**
-     * It is invoked by TajoContainerProxy.
-     */
     @Override
     public BoolProto killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
       try {
@@ -642,31 +633,20 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetClusterInfoResponse.Builder builder= GetClusterInfoResponse.newBuilder();
 
-        Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
+        List<NodeStatus> nodeStatusList = new ArrayList<NodeStatus>(context.getResourceManager().getRMContext().getNodes().values());
+        Collections.sort(nodeStatusList);
 
-        List<Integer> wokerKeys = new ArrayList<Integer>(workers.keySet());
-        Collections.sort(wokerKeys);
+        WorkerResourceInfo.Builder workerBuilder = WorkerResourceInfo.newBuilder();
 
-        WorkerResourceInfo.Builder workerBuilder
-          = WorkerResourceInfo.newBuilder();
+        for(NodeStatus nodeStatus : nodeStatusList) {
+          workerBuilder.setConnectionInfo(nodeStatus.getConnectionInfo().getProto());
+          workerBuilder.setAvailableResource(nodeStatus.getAvailableResource().getProto());
+          workerBuilder.setTotalResource(nodeStatus.getTotalResourceCapability().getProto());
 
-        for(Worker worker: workers.values()) {
-          WorkerResource workerResource = worker.getResource();
-
-          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
-          workerBuilder.setDiskSlots(workerResource.getDiskSlots());
-          workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
-          workerBuilder.setMemoryMB(workerResource.getMemoryMB());
-          workerBuilder.setLastHeartbeat(worker.getLastHeartbeatTime());
-          workerBuilder.setUsedMemoryMB(workerResource.getUsedMemoryMB());
-          workerBuilder.setUsedCpuCoreSlots(workerResource.getUsedCpuCoreSlots());
-          workerBuilder.setUsedDiskSlots(workerResource.getUsedDiskSlots());
-          workerBuilder.setWorkerStatus(worker.getState().toString());
-          workerBuilder.setMaxHeap(workerResource.getMaxHeap());
-          workerBuilder.setFreeHeap(workerResource.getFreeHeap());
-          workerBuilder.setTotalHeap(workerResource.getTotalHeap());
-          workerBuilder.setNumRunningTasks(workerResource.getNumRunningTasks());
-          workerBuilder.setNumQueryMasterTasks(workerResource.getNumQueryMasterTasks());
+          workerBuilder.setLastHeartbeat(nodeStatus.getLastHeartbeatTime());
+          workerBuilder.setWorkerStatus(nodeStatus.getState().toString());
+          workerBuilder.setNumRunningTasks(nodeStatus.getNumRunningTasks());
+          workerBuilder.setNumQueryMasterTasks(nodeStatus.getNumRunningQueryMaster());
 
           builder.addWorkerList(workerBuilder.build());
         }
