@@ -490,7 +490,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
         }
       } else if (tableDesc.getMeta().getStoreType().equalsIgnoreCase(BuiltinStorages.CSV)
-          || tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.TEXTFILE)) {
+          || tableDesc.getMeta().getStoreType().equalsIgnoreCase(BuiltinStorages.TEXT)) {
         sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
         sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
@@ -676,7 +676,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         }
       }
       client.getHiveClient().alter_table(databaseName, tableName, table);
-
     } catch (NoSuchObjectException nsoe) {
     } catch (Exception e) {
       throw new CatalogException(e);
@@ -771,12 +770,82 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
       throws CatalogException {
-    return null;  // TODO - not implemented yet
+    org.apache.hadoop.hive.ql.metadata.Table table;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+
+    PartitionMethodDesc partitionMethodDesc = null;
+    try {
+      try {
+        client = clientPool.getClient();
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      } catch (NoSuchObjectException nsoe) {
+        throw new NoSuchTableException(tableName);
+      } catch (Exception e) {
+        throw new CatalogException(e);
+      }
+
+      // set partition keys
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (partitionKeys != null && partitionKeys.size() > 0) {
+        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        StringBuilder sb = new StringBuilder();
+        if (partitionKeys.size() > 0) {
+          for (int i = 0; i < partitionKeys.size(); i++) {
+            FieldSchema fieldSchema = partitionKeys.get(i);
+            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
+              CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            expressionSchema.addColumn(new Column(fieldName, dataType));
+            if (i > 0) {
+              sb.append(",");
+            }
+            sb.append(fieldSchema.getName());
+          }
+          partitionMethodDesc = new PartitionMethodDesc(
+            databaseName,
+            tableName,
+            PartitionType.COLUMN,
+            sb.toString(),
+            expressionSchema);
+        }
+      } else {
+        throw new NoPartitionedTableException(databaseName, tableName);
+      }
+    } finally {
+      if(client != null) client.release();
+    }
+
+    return partitionMethodDesc.getProto();
   }
 
   @Override
   public boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException {
-    return false;  // TODO - not implemented yet
+    boolean exist = false;
+    org.apache.hadoop.hive.ql.metadata.Table table;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+
+    try {
+      try {
+        client = clientPool.getClient();
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      } catch (NoSuchObjectException nsoe) {
+        throw new NoSuchTableException(tableName);
+      } catch (Exception e) {
+        throw new CatalogException(e);
+      }
+
+      // set partition keys
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (partitionKeys != null && partitionKeys.size() > 0) {
+        exist = true;
+      }
+    } finally {
+      if(client != null) client.release();
+    }
+
+    return exist;
   }
 
   @Override
@@ -952,7 +1021,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
     try {
       client = clientPool.getClient();
-
       for (CatalogProtos.PartitionDescProto partitionDescProto : partitions) {
         Partition partition = new Partition();
         partition.setDbName(databaseName);
@@ -971,7 +1039,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
         addPartitions.add(partition);
       }
-      client.getHiveClient().add_partitions(addPartitions);
+      client.getHiveClient().add_partitions(addPartitions, false, true);
     } catch (Exception e) {
       throw new CatalogException(e);
     } finally {

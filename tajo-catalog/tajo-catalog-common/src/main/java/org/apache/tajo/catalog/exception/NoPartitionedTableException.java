@@ -18,7 +18,7 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoPartitionedTableException extends Exception {
+public class NoPartitionedTableException extends CatalogException {
 
   public NoPartitionedTableException() {}
 

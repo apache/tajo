@@ -2210,7 +2210,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn.setAutoCommit(false);
       StringBuilder sb = new StringBuilder();
       sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
-      sb.append("WHERE ").append(COL_PARTITIONS_PK).append(" IN (");
+      sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" IN (");
       sb.append(" SELECT ").append(COL_PARTITIONS_PK).append(" FROM ").append(TB_PARTTIONS);
       sb.append(" WHERE PARTITION_NAME = ? )");
 
@@ -2223,8 +2223,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.executeBatch();
       pstmt.close();
 
+      sb.delete(0, sb.length());
       sb.append("DELETE FROM ").append(TB_PARTTIONS);
-      sb.append(" WHERE PARTITION_NAME = ? )");
+      sb.append(" WHERE PARTITION_NAME = ? ");
+
       pstmt = conn.prepareStatement(sb.toString());
       for(PartitionDescProto partition : partitions) {
         pstmt.setString(1, partition.getPartitionName());
