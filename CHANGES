@@ -177,6 +177,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1689: Metrics file reporter prints histogram metric without group name.
+    (hyunsik)
+
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
     table names only without invalid external table info. 
     (Contributed by  DaeMyung Kang, Committed by jihoon)
