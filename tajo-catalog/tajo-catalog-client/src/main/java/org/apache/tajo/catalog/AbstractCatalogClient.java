@@ -25,13 +25,14 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
-import org.apache.tajo.catalog.exception.DuplicateFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.ProtoUtil;
@@ -343,7 +344,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final PartitionDescProto getPartition(final String databaseName, final String tableName,
-                                               final String partitionName) {
+                                               final String partitionName) throws UndefinedPartitionException {
     try {
       final BlockingInterface stub = getStub();
       final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
@@ -353,6 +354,11 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
 
       final GetPartitionDescResponse response = stub.getPartitionByPartitionName(null, request);
+
+      if (ReturnStateUtil.isThisError(response.getState(), ResultCode.UNDEFINED_PARTITION)) {
+        throw new UndefinedPartitionException(partitionName);
+      }
+
       ensureOk(response.getState());
 
       return response.getPartition();

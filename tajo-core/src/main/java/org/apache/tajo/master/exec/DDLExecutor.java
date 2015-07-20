@@ -421,14 +421,6 @@ public class DDLExecutor {
       desc = catalog.getTableDesc(databaseName, simpleTableName);
     }
 
-    // When adding a partition or dropping a partition, check existing partition column information.
-    if (alterTable.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
-      || alterTable.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
-      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
-      partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
-      existPartitionColumnNames(qualifiedName, alterTable.getPartitionColumns());
-    }
-
     switch (alterTable.getAlterTableOpType()) {
     case RENAME_TABLE:
       if (!catalog.existsTable(databaseName, simpleTableName)) {
@@ -458,14 +450,14 @@ public class DDLExecutor {
           AlterTableType.RENAME_TABLE));
       break;
     case RENAME_COLUMN:
-      if (existColumnName(qualifiedName, alterTable.getNewColumnName())) {
+      if (ensureColumnExistance(qualifiedName, alterTable.getNewColumnName())) {
         throw new DuplicateColumnException(alterTable.getNewColumnName());
       }
       catalog.alterTable(CatalogUtil.renameColumn(qualifiedName, alterTable.getColumnName(),
           alterTable.getNewColumnName(), AlterTableType.RENAME_COLUMN));
       break;
     case ADD_COLUMN:
-      if (existColumnName(qualifiedName, alterTable.getAddNewColumn().getSimpleName())) {
+      if (ensureColumnExistance(qualifiedName, alterTable.getAddNewColumn().getSimpleName())) {
         throw new DuplicateColumnException(alterTable.getAddNewColumn().getSimpleName());
       }
       catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn(), AlterTableType.ADD_COLUMN));
@@ -474,7 +466,17 @@ public class DDLExecutor {
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
       break;
     case ADD_PARTITION:
-      if (partitionDescProto != null) {
+      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
+      ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());
+
+      // checking a duplicated partition
+      boolean duplicatedPartition = true;
+      try {
+        catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
+      } catch (UndefinedPartitionException npe) {
+        duplicatedPartition = false;
+      }
+      if (duplicatedPartition) {
         throw new DuplicatePartitionException(pair.getSecond());
       }
 
@@ -491,8 +493,7 @@ public class DDLExecutor {
       // If there is a directory which was assumed to be a partitioned directory and users don't input another
       // location, this will throw exception.
       Path assumedDirectory = new Path(desc.getUri().toString(), pair.getSecond());
-      boolean result1 = fs.exists(assumedDirectory);
-      boolean result2 = fs.exists(partitionPath);
+
       if (fs.exists(assumedDirectory) && !assumedDirectory.equals(partitionPath)) {
         throw new AlreadyExistsAssumedPartitionDirectoryException(assumedDirectory.toString());
       }
@@ -506,6 +507,10 @@ public class DDLExecutor {
       }
       break;
     case DROP_PARTITION:
+      ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());
+      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
+      partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
+
       if (partitionDescProto == null) {
         throw new NoSuchPartitionException(tableName, pair.getSecond());
       }
@@ -537,16 +542,16 @@ public class DDLExecutor {
     }
   }
 
-  private boolean existPartitionColumnNames(String tableName, String[] columnNames) {
+  private boolean ensureColumnPartitionKeys(String tableName, String[] columnNames) {
     for(String columnName : columnNames) {
-      if (!existPartitionColumnName(tableName, columnName)) {
+      if (!ensureColumnPartitionKeys(tableName, columnName)) {
         throw new NoSuchPartitionKeyException(tableName, columnName);
       }
     }
     return true;
   }
 
-  private boolean existPartitionColumnName(String tableName, String columnName) {
+  private boolean ensureColumnPartitionKeys(String tableName, String columnName) {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
     if (tableDesc.getPartitionMethod().getExpressionSchema().contains(columnName)) {
       return true;
@@ -555,8 +560,8 @@ public class DDLExecutor {
     }
   }
 
-  private boolean existColumnName(String tableName, String columnName) {
+  private boolean ensureColumnExistance(String tableName, String columnName) {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
-    return tableDesc.getSchema().containsByName(columnName) ? true : false;
+    return tableDesc.getSchema().containsByName(columnName);
   }
 }

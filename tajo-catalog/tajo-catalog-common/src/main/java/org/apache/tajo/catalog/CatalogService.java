@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -187,7 +188,8 @@ public interface CatalogService {
 
   boolean existPartitionMethod(String databaseName, String tableName);
 
-  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName, String partitionName);
+  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
+      throws UndefinedPartitionException;
 
   List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName);
 

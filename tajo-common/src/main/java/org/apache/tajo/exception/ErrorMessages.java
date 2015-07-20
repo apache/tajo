@@ -62,6 +62,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_TABLE, "relation '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_COLUMN, "column '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_FUNCTION, "function does not exist: %s", 1);
+    ADD_MESSAGE(UNDEFINED_PARTITION, "partition '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
 
     ADD_MESSAGE(DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
@@ -71,7 +72,7 @@ public class ErrorMessages {
     ADD_MESSAGE(DUPLICATE_COLUMN, "column '%s' already exists", 1);
     ADD_MESSAGE(DUPLICATE_ALIAS, "table name '%s' specified more than once", 1);
     ADD_MESSAGE(DUPLICATE_INDEX, "index '%s' already exists", 1);
-    ADD_MESSAGE(DUPLICATE_PARTITION, "partition '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_PARTITION, "partition for '%s' already exists", 1);
 
     ADD_MESSAGE(DIVISION_BY_ZERO, "Division by zero: %s", 1);
 
