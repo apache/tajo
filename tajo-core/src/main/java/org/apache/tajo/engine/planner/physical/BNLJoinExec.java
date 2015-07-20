@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
@@ -40,13 +41,14 @@ public class BNLJoinExec extends CommonJoinExec {
   private Tuple leftTuple = null;
   private Tuple rightNext = null;
 
-  private final static int TUPLE_SLOT_SIZE = 10000;
+  private final int memoryTupleSlotNum;
 
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
     super(context, plan, leftExec, rightExec);
-    this.leftTupleSlots = new TupleList(TUPLE_SLOT_SIZE);
-    this.rightTupleSlots = new TupleList(TUPLE_SLOT_SIZE);
+    this.memoryTupleSlotNum = context.getConf().getIntVar(ConfVars.EXECUTOR_MEMORY_TUPLE_SLOT_NUM);
+    this.leftTupleSlots = new TupleList(memoryTupleSlotNum);
+    this.rightTupleSlots = new TupleList(memoryTupleSlotNum);
     this.leftIterator = leftTupleSlots.iterator();
     this.rightIterator = rightTupleSlots.iterator();
     this.rightEnd = false;
@@ -61,7 +63,7 @@ public class BNLJoinExec extends CommonJoinExec {
   public Tuple next() throws IOException {
 
     if (leftTupleSlots.isEmpty()) {
-      for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
+      for (int k = 0; k < memoryTupleSlotNum; k++) {
         Tuple t = leftChild.next();
         if (t == null) {
           leftEnd = true;
@@ -74,7 +76,7 @@ public class BNLJoinExec extends CommonJoinExec {
     }
 
     if (rightTupleSlots.isEmpty()) {
-      for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
+      for (int k = 0; k < memoryTupleSlotNum; k++) {
         Tuple t = rightChild.next();
         if (t == null) {
           rightEnd = true;
@@ -98,12 +100,12 @@ public class BNLJoinExec extends CommonJoinExec {
           if (rightEnd) {
             rightChild.rescan();
             rightEnd = false;
-            
+
             if (leftEnd) {
               return null;
             }
             leftTupleSlots.clear();
-            for (int k = 0; k < TUPLE_SLOT_SIZE; k++) {
+            for (int k = 0; k < memoryTupleSlotNum; k++) {
               Tuple t = leftChild.next();
               if (t == null) {
                 leftEnd = true;
@@ -116,16 +118,16 @@ public class BNLJoinExec extends CommonJoinExec {
             }
             leftIterator = leftTupleSlots.iterator();
             leftTuple = leftIterator.next();
-            
+
           } else {
             leftIterator = leftTupleSlots.iterator();
             leftTuple = leftIterator.next();
           }
-          
+
           rightTupleSlots.clear();
           if (rightNext != null) {
             rightTupleSlots.add(rightNext);
-            for (int k = 1; k < TUPLE_SLOT_SIZE; k++) { // fill right
+            for (int k = 1; k < memoryTupleSlotNum; k++) { // fill right
               Tuple t = rightChild.next();
               if (t == null) {
                 rightEnd = true;
@@ -134,7 +136,7 @@ public class BNLJoinExec extends CommonJoinExec {
               rightTupleSlots.add(t);
             }
           } else {
-            for (int k = 0; k < TUPLE_SLOT_SIZE; k++) { // fill right
+            for (int k = 0; k < memoryTupleSlotNum; k++) { // fill right
               Tuple t = rightChild.next();
               if (t == null) {
                 rightEnd = true;
@@ -143,7 +145,7 @@ public class BNLJoinExec extends CommonJoinExec {
               rightTupleSlots.add(t);
             }
           }
-          
+
           if ((rightNext = rightChild.next()) == null) {
             rightEnd = true;
           }

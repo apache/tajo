@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.TupleUtil;
@@ -360,7 +361,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
     public HashAggregator(GroupbyNode groupbyNode, Schema schema) throws IOException {
 
-      hashTable = new TupleMap<TupleMap<FunctionContext[]>>(10000);
+      hashTable = new TupleMap<TupleMap<FunctionContext[]>>(
+          context.getConf().getIntVar(ConfVars.EXECUTOR_MEMORY_TUPLE_SLOT_NUM));
 
       List<Column> groupingKeyColumnList = new ArrayList<Column>(distinctGroupingKeyColumnSet);
 
