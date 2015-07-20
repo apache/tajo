@@ -69,5 +69,5 @@ service TajoMasterClientProtocolService {
   rpc dropTable(DropTableRequest) returns (ReturnState);
   rpc getTableList(SessionedStringProto) returns (StringListResponse);
   rpc getTableDesc(SessionedStringProto) returns (TableResponse);
-  rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
+  rpc getFunctionList(SessionedStringProto) returns (FunctionListResponse);
 }

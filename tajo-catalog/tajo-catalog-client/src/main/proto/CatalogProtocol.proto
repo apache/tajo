@@ -24,7 +24,7 @@ option java_generate_equals_and_hash = true;
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
-message GetTablespacesResponse {
+message GetTablespaceListResponse {
   required ReturnState state = 1;
   repeated TablespaceProto tablespace = 2;
 }
@@ -39,19 +39,9 @@ message GetDatabasesResponse {
   repeated DatabaseProto database = 2;
 }
 
-message TableDescResponse {
-  required ReturnState state = 1;
-  optional TableDescProto table = 2;
-}
-
 message GetTablesResponse {
   required ReturnState state = 1;
   repeated TableDescriptorProto table = 2;
-}
-
-message FunctionDescResponse {
-  required ReturnState state = 1;
-  optional FunctionDescProto function = 2;
 }
 
 message GetTablePropertiesResponse {
@@ -104,7 +94,7 @@ service CatalogProtocolService {
   rpc createTablespace(CreateTablespaceRequest) returns (ReturnState);
   rpc dropTablespace(StringProto) returns (ReturnState);
   rpc existTablespace(StringProto) returns (ReturnState);
-  rpc getAllTablespaces(NullProto) returns (GetTablespacesResponse);
+  rpc getAllTablespaces(NullProto) returns (GetTablespaceListResponse);
   rpc getAllTablespaceNames(NullProto) returns (StringListResponse);
   rpc getTablespace(StringProto) returns (GetTablespaceResponse);
   rpc alterTablespace(AlterTablespaceProto) returns (ReturnState);
@@ -120,7 +110,7 @@ service CatalogProtocolService {
   rpc createTable(TableDescProto) returns (ReturnState);
   rpc dropTable(TableIdentifierProto) returns (ReturnState);
   rpc existsTable(TableIdentifierProto) returns (ReturnState);
-  rpc getTableDesc(TableIdentifierProto) returns (TableDescResponse);
+  rpc getTableDesc(TableIdentifierProto) returns (TableResponse);
   rpc getAllTableNames(StringProto) returns (StringListResponse);
   rpc getAllTables(NullProto) returns (GetTablesResponse);
   rpc getAllTableProperties(NullProto) returns (GetTablePropertiesResponse);
@@ -146,6 +136,6 @@ service CatalogProtocolService {
   rpc createFunction(FunctionDescProto) returns (ReturnState);
   rpc dropFunction(UnregisterFunctionRequest) returns (ReturnState);
   rpc getFunctions(NullProto) returns (GetFunctionsResponse);
-  rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionDescResponse);
+  rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionResponse);
   rpc containFunction(ContainFunctionRequest) returns (ReturnState);
 }

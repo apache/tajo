@@ -18,28 +18,15 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.exception.TajoError;
 
-import java.util.Collection;
+/**
+ * Tajo Metadata Connector's connection error
+ */
+public class MetadataConnectionException extends TajoError {
 
-public class CatalogExceptionUtil {
-
-  public static CatalogException makeUndefinedTable(String tbName) {
-    return new CatalogException(ResultCode.UNDEFINED_TABLE, tbName);
-  }
-
-  public static CatalogException makeDuplicateTable(String tbName) {
-    return new CatalogException(ResultCode.DUPLICATE_TABLE, tbName);
-  }
-
-  public static CatalogException makeCatalogUpgrade() {
-    return new CatalogException(ResultCode.CAT_UPGRADE_REQUIRED);
-  }
-
-  public static CatalogException makeMDCNoMatchedDataType(String dataType) {
-    return new CatalogException(ResultCode.MDC_NO_MATCHED_DATATYPE, dataType);
+  public MetadataConnectionException(String uri, Throwable t) {
+    super(ResultCode.CAT_CANNOT_CONNECT, t, uri, t.getMessage());
   }
 }

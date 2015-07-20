@@ -21,6 +21,11 @@ package org.apache.tajo.exception;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
+/**
+ * It is used in unexpected cases or error that we know the cause.
+ *
+ * @see @{link TajoException}
+ */
 public class TajoRuntimeException extends RuntimeException implements TajoExceptionInterface {
   private ResultCode code;
 

@@ -20,6 +20,10 @@ package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
 
+/**
+ * TajoException contains all exceptions with any exact reason.
+ * It always have an exact error code and an error message.
+ */
 public class TajoException extends Exception implements TajoExceptionInterface {
   private ResultCode code;
 

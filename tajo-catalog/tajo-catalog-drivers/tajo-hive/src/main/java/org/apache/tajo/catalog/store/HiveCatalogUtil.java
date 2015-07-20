@@ -26,7 +26,6 @@ import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.CatalogExceptionUtil;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
@@ -34,6 +33,7 @@ import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
+import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeMDCNoMatchedDataType;
 import static org.apache.tajo.exception.ExceptionUtil.makeNotSupported;
 
 public class HiveCatalogUtil {
@@ -73,7 +73,7 @@ public class HiveCatalogUtil {
     } else if(dataType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
       return TajoDataTypes.Type.DATE;
     } else {
-      throw CatalogExceptionUtil.makeTMCNoMatchedDataType(dataType);
+      throw makeMDCNoMatchedDataType(dataType);
     }
   }
 

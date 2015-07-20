@@ -392,3 +392,18 @@ message PythonInvocationDescProto {
   required string filePath = 2;
   required bool isScalarFunction = 3;
 }
+
+message TableResponse {
+  required ReturnState state = 1;
+  optional TableDescProto table = 2;
+}
+
+message FunctionResponse {
+  required ReturnState state = 1;
+  optional FunctionDescProto function = 2;
+}
+
+message FunctionListResponse {
+  required ReturnState state = 1;
+  repeated FunctionDescProto function = 2;
+}

@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,15 +18,14 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.TajoError;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.error.Errors;
 
-/**
- * Tajo Metadata Connector's connection error
- */
-public class TMCConnectionException extends TajoError {
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
-  public TMCConnectionException(String uri, Throwable t) {
-    super(ResultCode.CAT_CANNOT_CONNECT, t, uri, t.getMessage());
-  }
+public class AmbiguousFunctionException extends CatalogException {
+
+	public AmbiguousFunctionException(String funcName, DataType[] parameters) {
+		super(Errors.ResultCode.AMBIGUOUS_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
+	}
 }

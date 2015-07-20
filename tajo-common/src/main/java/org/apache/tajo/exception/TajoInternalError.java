@@ -22,10 +22,6 @@ import org.apache.tajo.error.Errors.ResultCode;
 
 /**
  * Exception for Internal Bugs and Unexpected exception
- *
- * When should we use TajoInternalError?
- *  * Cases that must not be happened
- *  * Developer bugs
  */
 public class TajoInternalError extends TajoError {
 

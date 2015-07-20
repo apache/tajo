@@ -25,7 +25,9 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
@@ -132,7 +134,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       builder.setPartition(partitionMethodDesc.getProto());
     }
 
-    ClientProtos.TableResponse res;
+    TableResponse res;
     try {
       res = tajoMasterService.createExternalTable(null, builder.build());
     } catch (ServiceException e) {
@@ -140,7 +142,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     }
 
     if (isSuccess(res.getState())) {
-      return CatalogUtil.newTableDesc(res.getTableDesc());
+      return CatalogUtil.newTableDesc(res.getTable());
     } else {
       throw SQLExceptionUtil.toSQLException(res.getState());
     }
@@ -189,7 +191,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
     final BlockingInterface stub = conn.getTMStub();
 
-    ClientProtos.TableResponse res;
+    TableResponse res;
     try {
       res = stub.getTableDesc(null, conn.getSessionedString(tableName));
     } catch (ServiceException e) {
@@ -197,7 +199,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     }
 
     throwIfError(res.getState());
-    return CatalogUtil.newTableDesc(res.getTableDesc());
+    return CatalogUtil.newTableDesc(res.getTable());
   }
 
   @Override
@@ -206,7 +208,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     final BlockingInterface stub = conn.getTMStub();
 
     String paramFunctionName = functionName == null ? "" : functionName;
-    ClientProtos.FunctionResponse res;
+    CatalogProtos.FunctionListResponse res;
     try {
       res = stub.getFunctionList(null, conn.getSessionedString(paramFunctionName));
     } catch (ServiceException e) {
@@ -214,7 +216,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     }
 
     throwIfError(res.getState());
-    return res.getFunctionsList();
+    return res.getFunctionList();
   }
 
   @Override

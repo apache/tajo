@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
+import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
 import org.apache.tajo.catalog.exception.DuplicateFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -118,7 +119,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      final GetTablespacesResponse response = stub.getAllTablespaces(null, ProtoUtil.NULL_PROTO);
+      final GetTablespaceListResponse response = stub.getAllTablespaces(null, ProtoUtil.NULL_PROTO);
       ensureOk(response.getState());
 
       return response.getTablespaceList();
@@ -236,7 +237,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
 
-      TableDescResponse response = stub.getTableDesc(null, request);
+      TableResponse response = stub.getTableDesc(null, request);
       ensureOk(response.getState());
 
       return CatalogUtil.newTableDesc(response.getTable());
@@ -652,7 +653,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       builder.addParameterTypes(type);
     }
 
-    FunctionDescResponse response = null;
+    FunctionResponse response = null;
     try {
       final BlockingInterface stub = getStub();
       response = stub.getFunctionMeta(null, builder.build());
@@ -663,7 +664,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     if (isThisError(response.getState(), ResultCode.UNDEFINED_FUNCTION)) {
       throw new UndefinedFunctionException(signature, paramTypes);
     } else if (isThisError(response.getState(), ResultCode.AMBIGUOUS_FUNCTION)) {
-      throw new DuplicateFunctionException(signature, paramTypes);
+      throw new AmbiguousFunctionException(signature, paramTypes);
     }
 
     ensureOk(response.getState());

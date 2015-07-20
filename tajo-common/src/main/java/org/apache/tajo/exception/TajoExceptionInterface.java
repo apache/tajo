@@ -20,6 +20,12 @@ package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
 
+/**
+ * Abstracted exception or error interface. TajoException and
+ * TajoRuntimeException always have a ResultCode and a message.
+ * This interface helps routines access both TajoException and
+ * TajoRuntimeException in a common way.
+ */
 public interface TajoExceptionInterface {
   ResultCode getErrorCode();
 

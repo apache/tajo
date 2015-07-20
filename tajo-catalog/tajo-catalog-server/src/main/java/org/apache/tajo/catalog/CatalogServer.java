@@ -300,10 +300,11 @@ public class CatalogServer extends AbstractService {
     }
     
     @Override
-    public GetTablespacesResponse getAllTablespaces(RpcController controller, NullProto request) throws ServiceException {
+    public GetTablespaceListResponse getAllTablespaces(RpcController controller, NullProto request)
+        throws ServiceException {
       rlock.lock();
       try {
-        return GetTablespacesResponse.newBuilder()
+        return GetTablespaceListResponse.newBuilder()
             .setState(OK)
             .addAllTablespace(store.getTablespaces())
             .build();
@@ -545,13 +546,13 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public TableDescResponse getTableDesc(RpcController controller,
+    public TableResponse getTableDesc(RpcController controller,
                                        TableIdentifierProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
       if (metaDictionary.isSystemDatabase(dbName)) {
-        return TableDescResponse.newBuilder()
+        return TableResponse.newBuilder()
             .setState(OK)
             .setTable(metaDictionary.getTableDesc(tbName))
             .build();
@@ -565,17 +566,17 @@ public class CatalogServer extends AbstractService {
           if (contain) {
             contain = store.existTable(dbName, tbName);
             if (contain) {
-              return TableDescResponse.newBuilder()
+              return TableResponse.newBuilder()
                   .setState(OK)
                   .setTable(store.getTable(dbName, tbName))
                   .build();
             } else {
-              return TableDescResponse.newBuilder()
+              return TableResponse.newBuilder()
                   .setState(errUndefinedTable(tbName))
                   .build();
             }
           } else {
-            return TableDescResponse.newBuilder()
+            return TableResponse.newBuilder()
                 .setState(errUndefinedDatabase(dbName))
                 .build();
           }
@@ -583,7 +584,7 @@ public class CatalogServer extends AbstractService {
         } catch (Throwable t) {
           printStackTraceIfError(LOG, t);
 
-          return TableDescResponse.newBuilder()
+          return TableResponse.newBuilder()
               .setState(returnError(t))
               .build();
 
@@ -1401,7 +1402,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public FunctionDescResponse getFunctionMeta(RpcController controller, GetFunctionMetaRequest request) {
+    public FunctionResponse getFunctionMeta(RpcController controller, GetFunctionMetaRequest request) {
 
       FunctionDescProto function = null;
 
@@ -1415,13 +1416,13 @@ public class CatalogServer extends AbstractService {
         }
 
         if (function != null) {
-          return FunctionDescResponse.newBuilder()
+          return FunctionResponse.newBuilder()
               .setState(OK)
               .setFunction(function)
               .build();
         } else {
 
-          return FunctionDescResponse.newBuilder()
+          return FunctionResponse.newBuilder()
               .setState(errUndefinedFunction(
                   buildSimpleFunctionSignature(request.getSignature(), request.getParameterTypesList())))
               .build();
@@ -1430,7 +1431,7 @@ public class CatalogServer extends AbstractService {
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return FunctionDescResponse.newBuilder()
+        return FunctionResponse.newBuilder()
             .setState(returnError(t))
             .build();
       }

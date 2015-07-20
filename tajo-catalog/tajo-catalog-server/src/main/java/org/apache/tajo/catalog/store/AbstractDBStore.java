@@ -38,7 +38,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
@@ -138,7 +137,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = createConnection(conf);
       LOG.info("Connected to database (" + catalogUri + ")");
     } catch (SQLException e) {
-      throw new TMCConnectionException(catalogUri , e);
+      throw new MetadataConnectionException(catalogUri , e);
     }
 
     String schemaPath = getCatalogSchemaPath();

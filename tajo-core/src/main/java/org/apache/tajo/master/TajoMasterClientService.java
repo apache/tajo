@@ -36,6 +36,8 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FunctionListResponse;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
@@ -817,7 +819,7 @@ public class TajoMasterClientService extends AbstractService {
         if (catalog.existsTable(databaseName, tableName)) {
           return TableResponse.newBuilder()
               .setState(OK)
-              .setTableDesc(catalog.getTableDesc(databaseName, tableName).getProto())
+              .setTable(catalog.getTableDesc(databaseName, tableName).getProto())
               .build();
         } else {
           return TableResponse.newBuilder()
@@ -865,7 +867,7 @@ public class TajoMasterClientService extends AbstractService {
 
         return TableResponse.newBuilder()
             .setState(OK)
-            .setTableDesc(desc.getProto()).build();
+            .setTable(desc.getProto()).build();
 
       } catch (Throwable t) {
         return TableResponse.newBuilder()
@@ -890,7 +892,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public FunctionResponse getFunctionList(RpcController controller, SessionedStringProto request)
+    public FunctionListResponse getFunctionList(RpcController controller, SessionedStringProto request)
         throws ServiceException {
 
       try {
@@ -910,13 +912,13 @@ public class TajoMasterClientService extends AbstractService {
             }
           }
         }
-        return FunctionResponse.newBuilder()
+        return FunctionListResponse.newBuilder()
             .setState(OK)
-            .addAllFunctions(functionProtos)
+            .addAllFunction(functionProtos)
             .build();
 
       } catch (Throwable t) {
-        return FunctionResponse.newBuilder().setState(returnError(t)).build();
+        return FunctionListResponse.newBuilder().setState(returnError(t)).build();
       }
     }
   }

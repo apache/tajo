@@ -201,17 +201,6 @@ message DropTableRequest {
   optional bool purge = 3 [default = false];
 }
 
-message TableResponse {
-  required ReturnState state = 1;
-  optional TableDescProto tableDesc = 2;
-}
-
-message FunctionResponse {
-  required ReturnState state = 1;
-  repeated FunctionDescProto functions = 2;
-  optional string errorMessage = 3;
-}
-
 message QueryInfoProto {
   required string queryId = 1;
   optional string sql = 2;
