@@ -346,7 +346,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
@@ -361,7 +360,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
@@ -380,7 +378,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
@@ -395,7 +392,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
