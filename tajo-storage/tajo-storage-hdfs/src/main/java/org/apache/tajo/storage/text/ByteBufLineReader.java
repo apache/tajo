@@ -197,6 +197,6 @@ public class ByteBufLineReader implements Closeable {
       }
     }
     reads.set(readBytes);
-    return buffer.slice(startIndex, readBytes - newlineLength);
+    return buffer.slice(startIndex, readBytes - newlineLength).retain();
   }
 }

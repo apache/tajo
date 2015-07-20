@@ -339,7 +339,7 @@ public class DelimitedTextFile {
 
       // skip first line if it reads from middle of file
       if (startOffset > 0) {
-        reader.readLine();
+        reader.readLine().release();
       }
       // skip header lines if it is defined
       else if (headerLineNum > 0) {
@@ -349,7 +349,7 @@ public class DelimitedTextFile {
             return;
           }
 
-          reader.readLine();
+          reader.readLine().release();
         }
       }
 
@@ -456,7 +456,8 @@ public class DelimitedTextFile {
             if (errorTorrenceMaxNum >= 0 && errorNum > errorTorrenceMaxNum) {
               throw tae;
             }
-            continue;
+          } finally {
+            buf.release();
           }
 
         } while (reader.isReadable()); // continue until EOS
