@@ -40,9 +40,9 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
@@ -290,7 +290,6 @@ public class DDLExecutor {
    * @param purge     Remove all data if purge is true.
    */
   public boolean dropTable(QueryContext queryContext, String tableName, boolean ifExists, boolean purge) {
-    CatalogService catalog = context.getCatalog();
 
     String databaseName;
     String simpleTableName;
