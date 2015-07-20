@@ -172,7 +172,8 @@ public class CatalogServer extends AbstractService {
     }
   }
 
-  public void start() {
+  @Override
+  public void serviceStart() throws Exception {
     String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     int workerNum = conf.getIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM);
@@ -189,10 +190,11 @@ public class CatalogServer extends AbstractService {
     }
 
     LOG.info("Catalog Server startup (" + bindAddressStr + ")");
-    super.start();
+    super.serviceStart();
   }
 
-  public void stop() {
+  @Override
+  public void serviceStop() throws Exception {
     LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
 
     // If CatalogServer shutdowns before it started, rpcServer and store may be NULL.
@@ -201,13 +203,9 @@ public class CatalogServer extends AbstractService {
       this.rpcServer.shutdown();
     }
     if (store != null) {
-      try {
-        store.close();
-      } catch (IOException ioe) {
-        LOG.error(ioe.getMessage(), ioe);
-      }
+      store.close();
     }
-    super.stop();
+    super.serviceStop();
   }
 
   public CatalogProtocolHandler getHandler() {

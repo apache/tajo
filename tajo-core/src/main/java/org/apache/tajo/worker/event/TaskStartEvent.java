@@ -18,20 +18,24 @@
 
 package org.apache.tajo.worker.event;
 
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.resource.NodeResource;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
 
-public class TaskStartEvent extends TaskExecutorEvent {
+import static org.apache.tajo.ResourceProtos.TaskRequestProto;
+
+public class TaskStartEvent extends TaskManagerEvent {
 
   private NodeResource allocatedResource;
   private TaskRequestProto taskRequest;
+  private TaskAttemptId taskAttemptId;
 
   public TaskStartEvent(TaskRequestProto taskRequest,
                         NodeResource allocatedResource) {
-    super(EventType.START, new TaskAttemptId(taskRequest.getId()));
+    super(EventType.TASK_START);
     this.taskRequest = taskRequest;
     this.allocatedResource = allocatedResource;
+    this.taskAttemptId = new TaskAttemptId(taskRequest.getId());
   }
 
   public NodeResource getAllocatedResource() {
@@ -40,5 +44,13 @@ public class TaskStartEvent extends TaskExecutorEvent {
 
   public TaskRequestProto getTaskRequest() {
     return taskRequest;
+  }
+
+  public TaskAttemptId getTaskAttemptId() {
+    return taskAttemptId;
+  }
+
+  public ExecutionBlockId getExecutionBlockId() {
+    return taskAttemptId.getTaskId().getExecutionBlockId();
   }
 }

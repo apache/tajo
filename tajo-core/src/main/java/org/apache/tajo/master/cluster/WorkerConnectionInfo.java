@@ -111,6 +111,10 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
     return this.getHost() + ":" + this.getPeerRpcPort();
   }
 
+  public String getHostAndQMPort() {
+    return this.getHost() + ":" + this.getQueryMasterPort();
+  }
+
   @Override
   public WorkerConnectionInfoProto getProto() {
     WorkerConnectionInfoProto.Builder builder = WorkerConnectionInfoProto.newBuilder();
