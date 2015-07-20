@@ -19,11 +19,11 @@
 package org.apache.tajo.worker;
 
 import org.apache.hadoop.yarn.event.Dispatcher;
-import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.ResourceProtos.TaskAllocationProto;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
@@ -38,8 +38,8 @@ public class MockNodeResourceManager extends NodeResourceManager {
   volatile boolean enableTaskHandlerEvent = true;
   private final Semaphore barrier;
 
-  public MockNodeResourceManager(Semaphore barrier, Dispatcher dispatcher, EventHandler taskEventHandler) {
-    super(dispatcher, taskEventHandler);
+  public MockNodeResourceManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
+    super(dispatcher, workerContext);
     this.barrier = barrier;
   }
 
@@ -50,14 +50,7 @@ public class MockNodeResourceManager extends NodeResourceManager {
   }
 
   @Override
-  protected void startExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
-    if(enableTaskHandlerEvent) {
-      super.startExecutionBlock(request);
-    }
-  }
-
-  @Override
-  protected void startTask(TajoWorkerProtocol.TaskRequestProto request, NodeResource resource) {
+  protected void startTask(TaskRequestProto request, NodeResource resource) {
     if(enableTaskHandlerEvent) {
       super.startTask(request, resource);
     }
@@ -70,24 +63,23 @@ public class MockNodeResourceManager extends NodeResourceManager {
     enableTaskHandlerEvent = flag;
   }
 
-  protected static Queue<TajoWorkerProtocol.TaskAllocationRequestProto> createTaskRequests(
+  protected static Queue<TaskAllocationProto> createTaskRequests(
       ExecutionBlockId ebId, int memory, int size) {
 
-    Queue<TajoWorkerProtocol.TaskAllocationRequestProto>
-        requestProtoList = new LinkedBlockingQueue<TajoWorkerProtocol.TaskAllocationRequestProto>();
+    Queue<TaskAllocationProto>
+        requestProtoList = new LinkedBlockingQueue<TaskAllocationProto>();
     for (int i = 0; i < size; i++) {
 
       TaskAttemptId taskAttemptId = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(ebId, i), 0);
-      TajoWorkerProtocol.TaskRequestProto.Builder builder =
-          TajoWorkerProtocol.TaskRequestProto.newBuilder();
+      TaskRequestProto.Builder builder = TaskRequestProto.newBuilder();
+      builder.setQueryMasterHostAndPort("localhost:0");
       builder.setId(taskAttemptId.getProto());
-      builder.setShouldDie(true);
       builder.setOutputTable("");
       builder.setPlan(PlanProto.LogicalNodeTree.newBuilder());
       builder.setClusteredOutput(false);
 
 
-      requestProtoList.add(TajoWorkerProtocol.TaskAllocationRequestProto.newBuilder()
+      requestProtoList.add(TaskAllocationProto.newBuilder()
           .setResource(NodeResources.createResource(memory).getProto())
           .setTaskRequest(builder.build()).build());
     }

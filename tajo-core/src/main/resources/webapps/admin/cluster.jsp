@@ -23,14 +23,12 @@
 <%@ page import="org.apache.tajo.master.cluster.WorkerConnectionInfo" %>
 <%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
-<%@ page import="org.apache.tajo.master.rm.Worker" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
-<%@ page import="org.apache.tajo.master.rm.WorkerState" %>
+<%@ page import="org.apache.tajo.master.rm.NodeStatus" %>
+<%@ page import="org.apache.tajo.master.rm.NodeState" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="java.net.InetSocketAddress" %>
 
 <%
@@ -40,37 +38,37 @@
   InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
-  Map<Integer, Worker> workers = master.getContext().getResourceManager().getWorkers();
-  List<Integer> wokerKeys = new ArrayList<Integer>(workers.keySet());
+  Map<Integer, NodeStatus> nodes = master.getContext().getResourceManager().getNodes();
+  List<Integer> wokerKeys = new ArrayList<Integer>(nodes.keySet());
   Collections.sort(wokerKeys);
 
   int runningQueryMasterTasks = 0;
 
-  Set<Worker> liveWorkers = new TreeSet<Worker>();
-  Set<Worker> deadWorkers = new TreeSet<Worker>();
-  Set<Worker> decommissionWorkers = new TreeSet<Worker>();
+  Set<NodeStatus> liveNodes = new TreeSet<NodeStatus>();
+  Set<NodeStatus> deadNodes = new TreeSet<NodeStatus>();
+  Set<NodeStatus> decommissionNodes = new TreeSet<NodeStatus>();
 
-  Set<Worker> liveQueryMasters = new TreeSet<Worker>();
-  Set<Worker> deadQueryMasters = new TreeSet<Worker>();
+  Set<NodeStatus> liveQueryMasters = new TreeSet<NodeStatus>();
+  Set<NodeStatus> deadQueryMasters = new TreeSet<NodeStatus>();
 
-  for(Worker eachWorker: workers.values()) {
-    liveQueryMasters.add(eachWorker);
-    liveWorkers.add(eachWorker);
-    runningQueryMasterTasks += eachWorker.getResource().getNumQueryMasterTasks();
+  for(NodeStatus eachNode: nodes.values()) {
+    liveQueryMasters.add(eachNode);
+    liveNodes.add(eachNode);
+    runningQueryMasterTasks += eachNode.getNumRunningQueryMaster();
   }
 
-  for (Worker inactiveWorker : master.getContext().getResourceManager().getInactiveWorkers().values()) {
-    WorkerState state = inactiveWorker.getState();
+  for (NodeStatus inactiveNode : master.getContext().getResourceManager().getInactiveNodes().values()) {
+    NodeState state = inactiveNode.getState();
 
-    if (state == WorkerState.LOST) {
-      deadQueryMasters.add(inactiveWorker);
-      deadWorkers.add(inactiveWorker);
-    } else if (state == WorkerState.DECOMMISSIONED) {
-      decommissionWorkers.add(inactiveWorker);
+    if (state == NodeState.LOST) {
+      deadQueryMasters.add(inactiveNode);
+      deadNodes.add(inactiveNode);
+    } else if (state == NodeState.DECOMMISSIONED) {
+      decommissionNodes.add(inactiveNode);
     }
   }
 
-  String deadWorkersHtml = deadWorkers.isEmpty() ? "0": "<font color='red'>" + deadWorkers.size() + "</font>";
+  String deadNodesHtml = deadNodes.isEmpty() ? "0": "<font color='red'>" + deadNodes.size() + "</font>";
   String deadQueryMastersHtml = deadQueryMasters.isEmpty() ? "0": "<font color='red'>" + deadQueryMasters.size() + "</font>";
 
   ServiceTracker haService = master.getContext().getHAService();
@@ -169,12 +167,11 @@
   } else {
 %>
   <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Running Query</th><th>Heap(free/total/max)</th><th>Heartbeat</th><th>Status</th></tr>
+    <tr><th>No</th><th>QueryMaster</th><th>Client Port</th><th>Running Query</th><th>Heartbeat</th><th>Status</th></tr>
 
 <%
     int no = 1;
-    for(Worker queryMaster: liveQueryMasters) {
-        WorkerResource resource = queryMaster.getResource();
+    for(NodeStatus queryMaster: liveQueryMasters) {
         WorkerConnectionInfo connectionInfo = queryMaster.getConnectionInfo();
         String queryMasterHttp = "http://" + connectionInfo.getHost()
                 + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
@@ -183,8 +180,7 @@
         <td width='30' align='right'><%=no++%></td>
         <td><a href='<%=queryMasterHttp%>'><%=connectionInfo.getHost() + ":" + connectionInfo.getQueryMasterPort()%></a></td>
         <td width='100' align='center'><%=connectionInfo.getClientPort()%></td>
-        <td width='200' align='right'><%=resource.getNumQueryMasterTasks()%></td>
-        <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+        <td width='200' align='right'><%=queryMaster.getNumRunningQueryMaster()%></td>
         <td width='100' align='right'><%=JSPUtil.getElapsedTime(queryMaster.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
         <td width='100' align='center'><%=queryMaster.getState()%></td>
     </tr>
@@ -207,7 +203,7 @@
     <tr><th>No</th><th>QueryMaster</th>
 <%
       int no = 1;
-      for(Worker queryMaster: deadQueryMasters) {
+      for(NodeStatus queryMaster: deadQueryMasters) {
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
@@ -223,34 +219,32 @@
 %>
 
   <hr/>
-  <h2>Worker</h2>
-  <div>Live:<%=liveWorkers.size()%>, Dead: <%=deadWorkersHtml%></div>
+  <h2>Node</h2>
+  <div>Live:<%=liveNodes.size()%>, Dead: <%=deadNodesHtml%></div>
   <hr/>
-  <h3>Live Workers</h3>
+  <h3>Live Nodes</h3>
 <%
-  if(liveWorkers.isEmpty()) {
-    out.write("No Live Workers\n");
+  if(liveNodes.isEmpty()) {
+    out.write("No Live Nodes\n");
   } else {
 %>
   <table width="100%" class="border_table" border="1">
-    <tr><th>No</th><th>Worker</th><th>PullServer<br/>Port</th><th>Running Tasks</th><th>Memory Resource<br/>(used/total)</th><th>Disk Resource<br/>(used/total)</th><th>Heap<br/>(free/total/max)</th><th>Heartbeat</th><th>Status</th></tr>
+    <tr><th>No</th><th>Node</th><th>PullServer<br/>Port</th><th>Running Tasks</th><th>Available</th><th>Total</th><th>Heartbeat</th><th>Status</th></tr>
 <%
     int no = 1;
-    for(Worker worker: liveWorkers) {
-        WorkerResource resource = worker.getResource();
-        WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
-        String workerHttp = "http://" + connectionInfo.getHost() + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
+    for(NodeStatus node: liveNodes) {
+        WorkerConnectionInfo connectionInfo = node.getConnectionInfo();
+        String nodeHttp = "http://" + connectionInfo.getHost() + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
 %>
     <tr>
         <td width='30' align='right'><%=no++%></td>
-        <td><a href='<%=workerHttp%>'><%=connectionInfo.getHostAndPeerRpcPort()%></a></td>
+        <td><a href='<%=nodeHttp%>'><%=connectionInfo.getHostAndPeerRpcPort()%></a></td>
         <td width='80' align='center'><%=connectionInfo.getPullServerPort()%></td>
-        <td width='100' align='right'><%=resource.getNumRunningTasks()%></td>
-        <td width='150' align='center'><%=resource.getUsedMemoryMB()%>/<%=resource.getMemoryMB()%></td>
-        <td width='100' align='center'><%=resource.getUsedDiskSlots()%>/<%=resource.getDiskSlots()%></td>
-        <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
-        <td width='100' align='right'><%=JSPUtil.getElapsedTime(worker.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
-        <td width='100' align='center'><%=worker.getState()%></td>
+        <td width='100' align='right'><%=node.getNumRunningTasks()%></td>
+        <td width='150' align='center'><%=node.getAvailableResource()%></td>
+        <td width='150' align='center'><%=node.getTotalResourceCapability()%></td>
+        <td width='100' align='right'><%=JSPUtil.getElapsedTime(node.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
+        <td width='100' align='center'><%=node.getState()%></td>
     </tr>
 <%
     } //end fo for
@@ -263,25 +257,24 @@
   <p/>
   <hr/>
   <p/>
-  <h3>Dead Workers</h3>
+  <h3>Dead Nodes</h3>
 
 <%
-    if(deadWorkers.isEmpty()) {
+    if(deadNodes.isEmpty()) {
 %>
-  No Dead Workers
+  No Dead Nodes
 <%
   } else {
 %>
   <table width="300" class="border_table" border="1">
-    <tr><th>No</th><th>Worker</th></tr>
+    <tr><th>No</th><th>Node</th></tr>
 <%
       int no = 1;
-      for(Worker worker: deadWorkers) {
-        WorkerResource resource = worker.getResource();
+      for(NodeStatus node: deadNodes) {
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
-      <td><%=worker.getConnectionInfo().getHostAndPeerRpcPort()%></td>
+      <td><%=node.getConnectionInfo().getHostAndPeerRpcPort()%></td>
     </tr>
 <%
       } //end fo for

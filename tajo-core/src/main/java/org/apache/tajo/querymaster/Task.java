@@ -34,9 +34,8 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
-import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TaskState;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
@@ -57,7 +56,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class Task implements EventHandler<TaskEvent> {
   /** Class Logger */
@@ -86,9 +85,8 @@ public class Task implements EventHandler<TaskEvent> {
   private TaskAttemptId lastAttemptId;
 
   private TaskAttemptId successfulAttempt;
-  private String succeededHost;
-  private int succeededHostPort;
-  private int succeededPullServerPort;
+
+  private WorkerConnectionInfo succeededWorker;
 
   private int failedAttempts;
   private int finishedAttempts; // finish are total of success, failed and killed
@@ -174,6 +172,7 @@ public class Task implements EventHandler<TaskEvent> {
               EnumSet.of(
                   TaskEventType.T_KILL,
                   TaskEventType.T_SCHEDULE,
+                  TaskEventType.T_ATTEMPT_LAUNCHED,
                   TaskEventType.T_ATTEMPT_SUCCEEDED,
                   TaskEventType.T_ATTEMPT_FAILED))
 
@@ -252,7 +251,11 @@ public class Task implements EventHandler<TaskEvent> {
       taskHistory.setState(lastAttempt.getState().toString());
       taskHistory.setProgress(lastAttempt.getProgress());
     }
-    taskHistory.setHostAndPort(succeededHost + ":" + succeededHostPort);
+
+    if(getSucceededWorker() != null) {
+      taskHistory.setHostAndPort(succeededWorker.getHostAndPeerRpcPort());
+    }
+
     taskHistory.setRetryCount(this.getRetryCount());
     taskHistory.setLaunchTime(launchTime);
     taskHistory.setFinishTime(finishTime);
@@ -357,8 +360,8 @@ public class Task implements EventHandler<TaskEvent> {
     return dataLocations;
   }
 
-  public String getSucceededHost() {
-    return succeededHost;
+  public WorkerConnectionInfo getSucceededWorker() {
+    return succeededWorker;
   }
 	
 	public void addFetches(String tableId, Collection<FetchImpl> fetches) {
@@ -608,9 +611,7 @@ public class Task implements EventHandler<TaskEvent> {
       TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
 
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
-      task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
-      task.succeededHostPort = attempt.getWorkerConnectionInfo().getPeerRpcPort();
-      task.succeededPullServerPort = attempt.getWorkerConnectionInfo().getPullServerPort();
+      task.succeededWorker = attempt.getWorkerConnectionInfo();
 
       task.finishTask();
       task.eventHandler.handle(new StageTaskEvent(event.getTaskId(), TaskState.SUCCEEDED));
@@ -624,11 +625,7 @@ public class Task implements EventHandler<TaskEvent> {
       if (!(event instanceof TaskTAttemptEvent)) {
         throw new IllegalArgumentException("event should be a TaskTAttemptEvent type.");
       }
-      TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
-      TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
-      task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
-      task.succeededHostPort = attempt.getWorkerConnectionInfo().getPeerRpcPort();
     }
   }
 
