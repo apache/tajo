@@ -21,6 +21,7 @@ package org.apache.tajo.master.event;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.session.Session;
 
 /**
@@ -36,15 +37,17 @@ public class QueryStartEvent extends AbstractEvent {
   private final QueryContext queryContext;
   private final String jsonExpr;
   private final String logicalPlanJson;
+  private final NodeResource allocation;
 
   public QueryStartEvent(QueryId queryId, Session session, QueryContext queryContext, String jsonExpr,
-                         String logicalPlanJson) {
+                         String logicalPlanJson, NodeResource allocation) {
     super(EventType.QUERY_START);
     this.queryId = queryId;
     this.session = session;
     this.queryContext = queryContext;
     this.jsonExpr = jsonExpr;
     this.logicalPlanJson = logicalPlanJson;
+    this.allocation = allocation;
   }
 
   public QueryId getQueryId() {
@@ -65,6 +68,10 @@ public class QueryStartEvent extends AbstractEvent {
 
   public String getLogicalPlanJson() {
     return logicalPlanJson;
+  }
+
+  public NodeResource getAllocation() {
+    return allocation;
   }
 
   @Override

@@ -177,19 +177,12 @@ message GetClusterInfoRequest {
 
 message WorkerResourceInfo {
   required WorkerConnectionInfoProto connectionInfo = 1;
-  required float diskSlots = 2;
-  required int32 cpuCoreSlots = 3;
-  required int32 memoryMB = 4;
-  required float usedDiskSlots = 5;
-  required int32 usedMemoryMB = 6;
-  required int32 usedCpuCoreSlots = 7;
-  required int64 maxHeap = 8;
-  required int64 freeHeap = 9;
-  required int64 totalHeap = 10;
-  required int32 numRunningTasks = 11;
-  required string workerStatus = 12;
-  required int64 lastHeartbeat = 13;
-  required int32 numQueryMasterTasks = 14;
+  required NodeResourceProto totalResource = 2;
+  required NodeResourceProto availableResource = 3;
+  required int32 numRunningTasks = 4;
+  required string workerStatus = 5;
+  required int64 lastHeartbeat = 6;
+  required int32 numQueryMasterTasks = 7;
 }
 
 message GetClusterInfoResponse {

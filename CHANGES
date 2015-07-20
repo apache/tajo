@@ -29,6 +29,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1397: Resource allocation should be fine grained. (jinho)
+
+    TAJO-1352: Improve the join order algorithm to consider missed cases of 
+    associative join operators. (jihoon)
+
     TAJO-1677: Remove unnecessary messages for the Travis CI build. (jaehwa)
 
     TAJO-1672: Removing rest api to create table
@@ -323,6 +328,9 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
+    (Contributed by Jongyoung Park, Committed by jihoon)
 
     TAJO-1345: Implement logical plan part and DDL executor
     for alter partition. (jaehwa)

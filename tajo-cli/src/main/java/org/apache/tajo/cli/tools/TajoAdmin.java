@@ -268,7 +268,7 @@ public class TajoAdmin {
     } else {
       String fmtQueryMasterLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-10s%n";
       line = String.format(fmtQueryMasterLine, "QueryMaster", "Port", "Query",
-                           "Heap", "Status");
+                           "Mem", "Status");
       writer.write(line);
       line = String.format(fmtQueryMasterLine, DASHLINE_LEN25, DASHLINE_LEN5,
               DASHLINE_LEN5, DASHLINE_LEN10, DASHLINE_LEN10);
@@ -276,12 +276,12 @@ public class TajoAdmin {
       for (WorkerResourceInfo queryMaster : liveQueryMasters) {
         TajoProtos.WorkerConnectionInfoProto connInfo = queryMaster.getConnectionInfo();
         String queryMasterHost = String.format("%s:%d", connInfo.getHost(), connInfo.getQueryMasterPort());
-        String heap = String.format("%d MB", queryMaster.getMaxHeap() / 1024 / 1024);
+        String memory = String.format("%d MB", queryMaster.getAvailableResource().getMemory());
         line = String.format(fmtQueryMasterLine,
             queryMasterHost,
             connInfo.getClientPort(),
             queryMaster.getNumQueryMasterTasks(),
-            heap,
+            memory,
             queryMaster.getWorkerStatus());
         writer.write(line);
       }
@@ -348,7 +348,7 @@ public class TajoAdmin {
     String line = String.format(fmtWorkerLine,
         "Worker", "Port", "Tasks",
         "Mem", "Disk",
-        "Heap", "Status");
+        "Cpu", "Status");
     writer.write(line);
     line = String.format(fmtWorkerLine,
         DASHLINE_LEN25, DASHLINE_LEN5, DASHLINE_LEN5,
@@ -359,17 +359,16 @@ public class TajoAdmin {
     for (WorkerResourceInfo worker : workers) {
       TajoProtos.WorkerConnectionInfoProto connInfo = worker.getConnectionInfo();
       String workerHost = String.format("%s:%d", connInfo.getHost(), connInfo.getPeerRpcPort());
-      String mem = String.format("%d/%d", worker.getUsedMemoryMB(),
-          worker.getMemoryMB());
-      String disk = String.format("%.2f/%.2f", worker.getUsedDiskSlots(),
-          worker.getDiskSlots());
-      String heap = String.format("%d/%d MB", worker.getFreeHeap()/1024/1024,
-          worker.getMaxHeap()/1024/1024);
-
+      String mem = String.format("%d/%d", worker.getAvailableResource().getMemory(),
+          worker.getTotalResource().getMemory());
+      String disk = String.format("%d/%d", worker.getAvailableResource().getDisks(),
+          worker.getTotalResource().getDisks());
+      String cpu = String.format("%d/%d", worker.getAvailableResource().getVirtualCores(),
+          worker.getTotalResource().getVirtualCores());
       line = String.format(fmtWorkerLine, workerHost,
           connInfo.getPullServerPort(),
           worker.getNumRunningTasks(),
-          mem, disk, heap, worker.getWorkerStatus());
+          mem, disk, cpu, worker.getWorkerStatus());
       writer.write(line);
     }
     writer.write("\n\n");
