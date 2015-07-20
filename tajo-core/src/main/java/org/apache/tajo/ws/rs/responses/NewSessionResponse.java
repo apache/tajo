@@ -18,10 +18,9 @@
 
 package org.apache.tajo.ws.rs.responses;
 
-import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.util.TUtil;
-
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Map;
 
@@ -29,7 +28,7 @@ public class NewSessionResponse {
 
   @Expose private String id;
   @Expose private String message;
-  @Expose private ClientProtos.ResultCode resultCode;
+  @Expose private ResultCode resultCode;
   @Expose private Map<String, String> variables;
 
   public String getId() {
@@ -48,11 +47,11 @@ public class NewSessionResponse {
     this.message = message;
   }
 
-  public ClientProtos.ResultCode getResultCode() {
+  public ResultCode getResultCode() {
     return resultCode;
   }
 
-  public void setResultCode(ClientProtos.ResultCode resultCode) {
+  public void setResultCode(ResultCode resultCode) {
     this.resultCode = resultCode;
   }
 

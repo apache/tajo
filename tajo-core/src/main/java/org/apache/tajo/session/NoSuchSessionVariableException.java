@@ -18,8 +18,12 @@
 
 package org.apache.tajo.session;
 
-public class NoSuchSessionVariableException extends Exception {
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
+
+public class NoSuchSessionVariableException extends TajoException {
+
   public NoSuchSessionVariableException(String varname) {
-    super("No such session variable \"" + varname + "\"");
+    super(Errors.ResultCode.NO_SUCH_SESSION_VARIABLE, varname);
   }
 }

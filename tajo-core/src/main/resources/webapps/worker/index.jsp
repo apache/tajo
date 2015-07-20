@@ -24,9 +24,7 @@
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
-<%@ page import="org.apache.tajo.worker.TaskRunner" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.ArrayList" %>
 <%@ page import="java.util.List" %>
 
 <%
@@ -52,6 +50,8 @@
     <tr><td width='100'>MaxHeap: </td><td><%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
     <tr><td width='100'>TotalHeap: </td><td><%=Runtime.getRuntime().totalMemory()/1024/1024%> MB</td>
     <tr><td width='100'>FreeHeap: </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB</td>
+    <tr><td width='100'>Available Resource: </td><td><%= tajoWorker.getWorkerContext().getNodeResourceManager().getAvailableResource() %></td>
+    <tr><td width='100'>Running Tasks: </td><td><%= tajoWorker.getWorkerContext().getTaskManager().getRunningTasks() %></td>
     <tr><td width="100">Configuration:</td><td><a href='conf.jsp'>detail...</a></td></tr>
     <tr><td width="100">Environment:</td><td><a href='env.jsp'>detail...</a></td></tr>
     <tr><td width="100">Threads:</td><td><a href='thread.jsp'>thread dump...</a></tr>
@@ -62,8 +62,6 @@
   List<QueryMasterTask> queryMasterTasks = JSPUtil.sortQueryMasterTask(tajoWorker.getWorkerContext()
           .getQueryMasterManagerService().getQueryMaster().getQueryMasterTasks(), true);
 
-  List<QueryMasterTask> finishedQueryMasterTasks = JSPUtil.sortQueryMasterTask(tajoWorker.getWorkerContext()
-          .getQueryMasterManagerService().getQueryMaster().getFinishedQueryMasterTasks(), true);
 %>
   <h3>Running Query</h3>
   <%
@@ -89,58 +87,6 @@
         } //end of for
       } //end of if
     %>
-  </table>
-  <p/>
-  <hr/>
-  <h3>Finished Query</h3>
-  <%
-    if(finishedQueryMasterTasks.isEmpty()) {
-      out.write("No finished query master");
-    } else {
-  %>
-  <table width="100%" border="1" class="border_table">
-    <tr><th>QueryId</th><th>Status</th><th>StartTime</th><th>FinishTime</th><th>Progress</th><th>RunTime</th></tr>
-    <%
-      for(QueryMasterTask eachQueryMasterTask: finishedQueryMasterTasks) {
-        Query query = eachQueryMasterTask.getQuery();
-        long startTime = query != null ? query.getStartTime() : eachQueryMasterTask.getQuerySubmitTime();
-    %>
-    <tr>
-      <td align='center'><a href='querydetail.jsp?queryId=<%=eachQueryMasterTask.getQueryId()%>'><%=eachQueryMasterTask.getQueryId()%></a></td>
-      <td align='center'><%=eachQueryMasterTask.getState()%></td>
-      <td align='center'><%=df.format(startTime)%></td>
-      <td align='center'><%=(query == null || query.getFinishTime() == 0) ? "-" : df.format(query.getFinishTime())%></td>
-      <td align='center'><%=(query == null) ? "-" : (int)(query.getProgress()*100.0f)%>%</td>
-      <td align='right'><%=(query == null) ? "-" : JSPUtil.getElapsedTime(query.getStartTime(), query.getFinishTime())%></td>
-    </tr>
-    <%
-        } //end of for
-      } //end of if
-    %>
-  </table>
-  <p/>
-  <hr/>
-<%
-  List<TaskRunner> taskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunners());
-  JSPUtil.sortTaskRunner(taskRunners);
-%>
-  <h3>Running Task Containers</h3>
-  <a href='taskcontainers.jsp'>[All Task Containers]</a>
-  <br/>
-  <table width="100%" border="1" class="border_table">
-    <tr><th>ContainerId</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
-    <%
-      for(TaskRunner eachTaskRunner: taskRunners) {
-    %>
-    <tr>
-      <td><a href="tasks.jsp?taskRunnerId=<%=eachTaskRunner.getId()%>"><%=eachTaskRunner.getId()%></a></td>
-      <td><%=df.format(eachTaskRunner.getStartTime())%></td>
-      <td><%=eachTaskRunner.getFinishTime() == 0 ? "-" : df.format(eachTaskRunner.getFinishTime())%></td>
-      <td><%=JSPUtil.getElapsedTime(eachTaskRunner.getStartTime(), eachTaskRunner.getFinishTime())%></td>
-      <td><%=eachTaskRunner.getServiceState()%></td>
-<%
-      }   //end of for
-%>
   </table>
 </div>
 </body>

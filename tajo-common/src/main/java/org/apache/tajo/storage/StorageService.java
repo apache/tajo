@@ -25,6 +25,7 @@ import java.net.URI;
  * TablespaceManager interface for loosely coupled usages
  */
 public interface StorageService {
+
   /**
    * Get Table URI
    *

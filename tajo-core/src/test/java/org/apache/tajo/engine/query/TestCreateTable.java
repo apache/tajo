@@ -441,6 +441,22 @@ public class TestCreateTable extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testCreateExternalTable1FromOnlyPath() throws Exception {
+    // This test verifies CREATE EXTERNAL TABLE from just a path instead of a full qualified URI.
+    ResultSet res = null;
+    try {
+      res = executeString(
+          "INSERT INTO LOCATION '/testCreateExternalTable1FromOnlyPath' SELECT * FROM default.lineitem");
+      res = executeString(
+          "CREATE EXTERNAL TABLE table1 (col1 INTEGER) USING CSV LOCATION '/testCreateExternalTable1FromOnlyPath';");
+    } catch (Throwable t) {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  @Test
   public final void testCreateTableLike1() throws Exception {
     // //HiveCatalogStore does not support varchar type in hive-0.12.0
     if (testingCluster.isHiveCatalogStoreRunning()) {

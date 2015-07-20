@@ -19,7 +19,7 @@
 package org.apache.tajo.common.type;
 
 import org.apache.hadoop.io.Writable;
-import org.apache.tajo.common.exception.InvalidAddressException;
+import org.apache.tajo.exception.InvalidAddressException;
 
 import java.io.DataInput;
 import java.io.DataOutput;
