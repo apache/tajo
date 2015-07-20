@@ -1954,7 +1954,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private URI getCreatedTableURI(PlanContext context, CreateTable createTable) {
 
     if (createTable.hasLocation()) {
-      return URI.create(createTable.getLocation());
+      URI tableUri = URI.create(createTable.getLocation());
+      if (tableUri.getScheme() == null) { // if a given table URI is a just path, the default tablespace will be added.
+        tableUri = URI.create(context.queryContext.get(QueryVars.DEFAULT_SPACE_ROOT_URI) + createTable.getLocation());
+      }
+      return tableUri;
+
     } else {
 
       String tableName = createTable.getTableName();
