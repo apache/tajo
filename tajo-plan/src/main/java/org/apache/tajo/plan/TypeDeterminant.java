@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
@@ -169,7 +169,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new NoSuchFunctionException(expr.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(expr.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
@@ -205,7 +205,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     stack.pop(); // <-- pop
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(setFunction.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(setFunction.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
@@ -246,7 +246,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
     if (ExprAnnotator.WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       if (distinct) {
-        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
+        throw new UndefinedFunctionException("row_number() does not support distinct keyword.");
       }
       functionType = CatalogProtos.FunctionType.WINDOW;
     } else {
@@ -255,7 +255,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     }
 
     if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(funcName, paramTypes);
+      throw new UndefinedFunctionException(funcName, paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);

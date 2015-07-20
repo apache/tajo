@@ -22,6 +22,8 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
@@ -99,7 +101,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 			.request().post(Entity.entity(request, MediaType.APPLICATION_JSON), NewSessionResponse.class);
 
 		assertNotNull(response);
-		assertTrue(ClientProtos.ResultCode.OK.equals(response.getResultCode()));
+		assertTrue(ResultCode.OK.equals(response.getResultCode()));
 		assertTrue(response.getId() != null && !response.getId().isEmpty());
 
 		return response.getId();
@@ -115,7 +117,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 				new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
 
 		assertNotNull(response);
-		assertEquals(ClientProtos.ResultCode.OK, response.getResultCode());
+		assertEquals(ResultCode.OK, response.getResultCode());
 	}
 
   @Test

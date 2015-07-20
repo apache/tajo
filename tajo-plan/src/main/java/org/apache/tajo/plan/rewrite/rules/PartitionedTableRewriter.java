@@ -323,7 +323,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           totalVolume += summary.getFileCount();
         }
         scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
-      } catch (IOException e) {
+      } catch (Throwable e) {
         throw new PlanningException(e);
       }
     }
