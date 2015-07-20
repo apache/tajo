@@ -153,7 +153,11 @@ public class TajoTestingCluster {
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
 
+    // Python function path
     conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
+
+    // Memory tuple slot size
+    conf.setIntVar(ConfVars.EXECUTOR_MEMORY_TUPLE_SLOT_NUM, 100);
 
     /* Since Travis CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
