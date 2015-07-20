@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.exec;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -257,9 +258,19 @@ public class DDLExecutor {
 
     Tablespace tableSpace;
     if (tableSpaceName != null) {
-      tableSpace = TablespaceManager.getByName(tableSpaceName).get();
+      Optional<Tablespace> ts = (Optional<Tablespace>) TablespaceManager.getByName(tableSpaceName);
+      if (ts.isPresent()) {
+        tableSpace = ts.get();
+      } else {
+        throw new IOException("Tablespace '" + tableSpaceName + "' does not exist");
+      }
     } else if (uri != null) {
-      tableSpace = TablespaceManager.get(uri).get();
+      Optional<Tablespace> ts = TablespaceManager.get(uri);
+      if (ts.isPresent()) {
+        tableSpace = ts.get();
+      } else {
+        throw new IOException("Unknown tablespace URI: " + uri);
+      }
     } else {
       tableSpace = TablespaceManager.getDefault();
     }

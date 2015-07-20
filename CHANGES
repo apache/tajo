@@ -381,6 +381,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1684: CREATE EXTERNAL TABLE should allows just a path. (hyunsik)
+
     TAJO-1670: Refactor client errors and exceptions. (hyunsik)
 
     TAJO-1514: Distinguish UNION and UNION ALL. (contributed by Keuntae Park,
