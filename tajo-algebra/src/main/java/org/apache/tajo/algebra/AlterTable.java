@@ -54,6 +54,9 @@ public class AlterTable extends Expr {
   @Expose @SerializedName("IsPurge")
   private boolean purge;
 
+  @Expose @SerializedName("IfNotExists")
+  private boolean ifNotExists;
+
   public AlterTable(final String tableName) {
     super(OpType.AlterTable);
     this.tableName = tableName;
@@ -140,10 +143,18 @@ public class AlterTable extends Expr {
     this.purge = purge;
   }
 
+  public boolean isIfNotExists() {
+    return ifNotExists;
+  }
+
+  public void setIfNotExists(boolean ifNotExists) {
+    this.ifNotExists = ifNotExists;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName, newTableName, columnName, newColumnName, addNewColumn, alterTableOpType,
-      columns, values, location, params, purge
+      columns, values, location, params, purge, ifNotExists
     );
 
   }
@@ -161,7 +172,8 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(values, another.values) &&
         TUtil.checkEquals(location, another.location) &&
         TUtil.checkEquals(params, another.params) &&
-        TUtil.checkEquals(purge, another.purge)
+        TUtil.checkEquals(purge, another.purge) &&
+        TUtil.checkEquals(ifNotExists, another.ifNotExists)
     ;
   }
 
@@ -183,6 +195,7 @@ public class AlterTable extends Expr {
       alter.params = new HashMap<String, String>(params);
     }
     alter.purge = purge;
+    alter.ifNotExists = ifNotExists;
     return alter;
   }
 }

@@ -435,6 +435,20 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testAlterTableAddPartition5() throws IOException {
+    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_add_partition_4.sql");
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
+    assertEquals(1, alterTable.getColumns().length);
+    assertEquals(1, alterTable.getValues().length);
+    assertEquals("col1", alterTable.getColumns()[0].getName());
+    LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
+    assertEquals("TAJO", value1.getValue());
+  }
+
+  @Test
   public void testAlterTableDropPartition1() throws IOException {
     String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_drop_partition_1.sql");
     Expr expr = parseQuery(sql);
