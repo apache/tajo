@@ -29,6 +29,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1352: Improve the join order algorithm to consider missed cases of 
+    associative join operators. (jihoon)
+
     TAJO-1677: Remove unnecessary messages for the Travis CI build. (jaehwa)
 
     TAJO-1672: Removing rest api to create table

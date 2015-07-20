@@ -2181,7 +2181,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         return false;
       }
 
-      if (PlannerUtil.isOuterJoin(node.getJoinType())) {
+      if (PlannerUtil.isOuterJoinType(node.getJoinType())) {
         /*
          * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
          * Other predicates from the where clause must be evaluated after the join.

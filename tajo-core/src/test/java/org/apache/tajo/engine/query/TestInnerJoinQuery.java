@@ -50,7 +50,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select n_name, r_name, n_regionkey, r_regionkey from nation, region order by n_name, r_name"),
       // testCrossJoinWithAsterisk
@@ -64,7 +64,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
     runSimpleTests();
