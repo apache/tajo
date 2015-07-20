@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -40,7 +39,7 @@ public class MemSortExec extends SortExec {
 
   public void init() throws IOException {
     super.init();
-    this.tupleSlots = new TupleList(context.getConf().getIntVar(ConfVars.EXECUTOR_MEMORY_TUPLE_SLOT_NUM));
+    this.tupleSlots = new TupleList(10000);
   }
 
   @Override

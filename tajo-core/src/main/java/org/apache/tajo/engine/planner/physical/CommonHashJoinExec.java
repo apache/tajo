@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
@@ -57,7 +56,6 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected boolean finished;
   protected final KeyProjector leftKeyExtractor;
-  protected final int memoryTupleSlotNum;
 
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
@@ -78,7 +76,6 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     rightNumCols = inner.getSchema().size();
 
     leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
-    memoryTupleSlotNum = context.getConf().getIntVar(ConfVars.EXECUTOR_MEMORY_TUPLE_SLOT_NUM);
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -113,7 +110,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
     Tuple tuple;
-    TupleMap<TupleList> map = new TupleMap<TupleList>(memoryTupleSlotNum);
+    TupleMap<TupleList> map = new TupleMap<TupleList>(100000);
     KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {

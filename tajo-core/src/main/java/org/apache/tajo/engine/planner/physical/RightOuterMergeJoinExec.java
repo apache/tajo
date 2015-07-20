@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
@@ -45,6 +44,8 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
   private JoinTupleComparator joinComparator = null;
   private TupleComparator [] tupleComparator = null;
 
+  private final static int INITIAL_TUPLE_SLOT = 10000;
+
   private boolean end = false;
 
   private int leftNumCols;
@@ -58,9 +59,8 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
     super(context, plan, outer, inner);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    int memoryTupleSlotNum = context.getConf().getIntVar(ConfVars.EXECUTOR_MEMORY_TUPLE_SLOT_NUM);
-    this.leftTupleSlots = new TupleList(memoryTupleSlotNum);
-    this.innerTupleSlots = new TupleList(memoryTupleSlotNum);
+    this.leftTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
+    this.innerTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = outerSortKey;
     sortSpecs[1] = innerSortKey;

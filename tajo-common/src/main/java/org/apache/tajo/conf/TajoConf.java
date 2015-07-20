@@ -266,9 +266,6 @@ public class TajoConf extends Configuration {
     EXECUTOR_EXTERNAL_SORT_THREAD_NUM("tajo.executor.external-sort.thread-num", 1),
     EXECUTOR_EXTERNAL_SORT_FANOUT("tajo.executor.external-sort.fanout-num", 8),
 
-    EXECUTOR_MEMORY_TUPLE_SLOT_NUM("tajo.executor.memory-tuple-slot-num", 10000),
-
-
     // Metrics ----------------------------------------------------------------
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
