@@ -356,23 +356,38 @@ public class TestStorages {
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
     VTuple tuple = new VTuple(11 + (handleProtobuf ? 1 : 0));
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createChar("hyunsik"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("hyunsik"),
-        DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get()
-    });
-    if (handleProtobuf) {
-      tuple.put(11, factory.createDatum(queryid.getProto()));
-    }
 
+    if (handleProtobuf) {
+      tuple.put(new Datum[] {
+          DatumFactory.createBool(true),
+          DatumFactory.createChar("hyunsik"),
+          DatumFactory.createInt2((short) 17),
+          DatumFactory.createInt4(59),
+          DatumFactory.createInt8(23l),
+          DatumFactory.createFloat4(77.9f),
+          DatumFactory.createFloat8(271.9f),
+          DatumFactory.createText("hyunsik"),
+          DatumFactory.createBlob("hyunsik".getBytes()),
+          DatumFactory.createInet4("192.168.0.1"),
+          NullDatum.get(),
+          factory.createDatum(queryid.getProto())
+      });
+    } else {
+      tuple.put(new Datum[] {
+          DatumFactory.createBool(true),
+          DatumFactory.createChar("hyunsik"),
+          DatumFactory.createInt2((short) 17),
+          DatumFactory.createInt4(59),
+          DatumFactory.createInt8(23l),
+          DatumFactory.createFloat4(77.9f),
+          DatumFactory.createFloat8(271.9f),
+          DatumFactory.createText("hyunsik"),
+          DatumFactory.createBlob("hyunsik".getBytes()),
+          DatumFactory.createInet4("192.168.0.1"),
+          NullDatum.get()
+      });
+    }
+    
     appender.addTuple(tuple);
     appender.flush();
     appender.close();
@@ -432,22 +447,36 @@ public class TestStorages {
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
     int columnNum = 11 + (handleProtobuf ? 1 : 0);
     VTuple seedTuple = new VTuple(columnNum);
-    seedTuple.put(new Datum[]{
-        DatumFactory.createBool(true),                // 0
-        DatumFactory.createChar("hyunsik"),           // 2
-        DatumFactory.createInt2((short) 17),          // 3
-        DatumFactory.createInt4(59),                  // 4
-        DatumFactory.createInt8(23l),                 // 5
-        DatumFactory.createFloat4(77.9f),             // 6
-        DatumFactory.createFloat8(271.9f),            // 7
-        DatumFactory.createText("hyunsik"),           // 8
-        DatumFactory.createBlob("hyunsik".getBytes()),// 9
-        DatumFactory.createInet4("192.168.0.1"),      // 10
-        NullDatum.get(),                              // 11
-    });
 
     if (handleProtobuf) {
-      seedTuple.put(11, factory.createDatum(queryid.getProto()));       // 12
+      seedTuple.put(new Datum[]{
+          DatumFactory.createBool(true),                // 0
+          DatumFactory.createChar("hyunsik"),           // 2
+          DatumFactory.createInt2((short) 17),          // 3
+          DatumFactory.createInt4(59),                  // 4
+          DatumFactory.createInt8(23l),                 // 5
+          DatumFactory.createFloat4(77.9f),             // 6
+          DatumFactory.createFloat8(271.9f),            // 7
+          DatumFactory.createText("hyunsik"),           // 8
+          DatumFactory.createBlob("hyunsik".getBytes()),// 9
+          DatumFactory.createInet4("192.168.0.1"),      // 10
+          NullDatum.get(),                              // 11
+          factory.createDatum(queryid.getProto())
+      });
+    } else {
+      seedTuple.put(new Datum[]{
+          DatumFactory.createBool(true),                // 0
+          DatumFactory.createChar("hyunsik"),           // 2
+          DatumFactory.createInt2((short) 17),          // 3
+          DatumFactory.createInt4(59),                  // 4
+          DatumFactory.createInt8(23l),                 // 5
+          DatumFactory.createFloat4(77.9f),             // 6
+          DatumFactory.createFloat8(271.9f),            // 7
+          DatumFactory.createText("hyunsik"),           // 8
+          DatumFactory.createBlob("hyunsik".getBytes()),// 9
+          DatumFactory.createInet4("192.168.0.1"),      // 10
+          NullDatum.get(),                              // 11
+      });
     }
 
     // Making tuples with different null column positions
