@@ -21,32 +21,27 @@
  */
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.List;
 
-public interface TaskRequest extends ProtoObject<TajoWorkerProtocol.TaskRequestProto> {
+public interface TaskRequest extends ProtoObject<TaskRequestProto> {
 
-	public TaskAttemptId getId();
-	public List<CatalogProtos.FragmentProto> getFragments();
-	public String getOutputTableId();
-	public boolean isClusteredOutput();
-	public PlanProto.LogicalNodeTree getPlan();
-	public boolean isInterQuery();
-	public void setInterQuery();
-	public void addFetch(String name, FetchImpl fetch);
-	public List<FetchImpl> getFetches();
-  public boolean shouldDie();
-  public void setShouldDie();
-  public QueryContext getQueryContext(TajoConf conf);
-  public DataChannel getDataChannel();
-  public Enforcer getEnforcer();
+	TaskAttemptId getId();
+	List<CatalogProtos.FragmentProto> getFragments();
+	PlanProto.LogicalNodeTree getPlan();
+	void setInterQuery();
+	void addFetch(String name, FetchImpl fetch);
+	List<FetchImpl> getFetches();
+  QueryContext getQueryContext(TajoConf conf);
+  DataChannel getDataChannel();
+  Enforcer getEnforcer();
 }

@@ -19,7 +19,7 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
+<%@ page import="org.apache.tajo.ResourceProtos.FetcherHistoryProto" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.*" %>
@@ -86,13 +86,13 @@
     int index = 1;
     int pageSize = 1000; //TODO pagination
 
-    List<TajoWorkerProtocol.FetcherHistoryProto> fetcherHistories = taskHistory.getFetcherHistories();
+    List<FetcherHistoryProto> fetcherHistories = taskHistory.getFetcherHistories();
     if (fetcherHistories.size() > 0) {
 %>
   <table border="1" width="100%" class="border_table">
   <tr><th>No</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th><th>File Length</th><th># Messages</th></tr>
 <%
-      for (TajoWorkerProtocol.FetcherHistoryProto eachFetcher : fetcherHistories) {
+      for (FetcherHistoryProto eachFetcher : fetcherHistories) {
 %>
     <tr>
       <td><%=index%></td>

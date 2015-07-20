@@ -47,6 +47,7 @@ import static org.junit.Assert.assertTrue;
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
 @NamedTest("TestJoinQuery")
+@net.jcip.annotations.NotThreadSafe
 public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
   public TestJoinOnPartitionedTables(String joinOption) throws Exception {
