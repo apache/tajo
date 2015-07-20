@@ -385,7 +385,7 @@ Release 0.11.0 - unreleased
   SUB TASKS
 
     TAJO-1525: Implement INTERSECT [ALL] physical operator. (Contributed 
-    Keuntae Park, committed by hyunsik)
+    Keuntae Park, Committed by hyunsik) 
 
     TAJO-1684: CREATE EXTERNAL TABLE should allows just a path. (hyunsik)
 
