@@ -242,6 +242,7 @@ public class TestSimpleScheduler {
   class MySimpleScheduler extends SimpleScheduler {
     Semaphore barrier;
     Map<QueryId, QueryInfo> queryInfoMap = Maps.newHashMap();
+    Map<QueryId, AllocationResourceProto> qmAllocationMap = Maps.newHashMap();
 
     public MySimpleScheduler(TajoRMContext rmContext, Semaphore barrier) {
       super(null, rmContext);
@@ -265,13 +266,12 @@ public class TestSimpleScheduler {
     }
 
     @Override
-    protected boolean startQuery(QueryId queryId, final AllocationResourceProto allocation) {
+    protected boolean startQuery(final QueryId queryId, final AllocationResourceProto allocation) {
       executorService.schedule(new Runnable() {
         @Override
         public void run() {
           barrier.release();
-          NodeResources.addTo(rmContext.getNodes().get(allocation.getWorkerId()).getAvailableResource(),
-              new NodeResource(allocation.getResource()));
+          qmAllocationMap.put(queryId, allocation);
           rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
         }
       }, testDelay, TimeUnit.MILLISECONDS);
@@ -292,6 +292,9 @@ public class TestSimpleScheduler {
     @Override
     public void stopQuery(QueryId queryId) {
       queryInfoMap.remove(queryId);
+      AllocationResourceProto allocationResourceProto = qmAllocationMap.remove(queryId);
+      NodeResources.addTo(rmContext.getNodes().get(allocationResourceProto.getWorkerId()).getAvailableResource(),
+          new NodeResource(allocationResourceProto.getResource()));
       super.stopQuery(queryId);
     }
   }
