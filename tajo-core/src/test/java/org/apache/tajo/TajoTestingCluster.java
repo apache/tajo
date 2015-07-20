@@ -59,6 +59,7 @@ import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
@@ -618,7 +619,7 @@ public class TajoTestingCluster {
     }
   }
 
-  public static TajoClient newTajoClient(TajoTestingCluster util) throws InterruptedException, IOException {
+  public static TajoClient newTajoClient(TajoTestingCluster util) throws SQLException, InterruptedException {
     while(true) {
       if(util.getMaster().isMasterRunning()) {
         break;

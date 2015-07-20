@@ -57,22 +57,13 @@ import org.junit.runner.Description;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -208,7 +199,7 @@ public class QueryTestCaseBase {
   }
 
   @AfterClass
-  public static void tearDownClass() throws ServiceException {
+  public static void tearDownClass() throws SQLException {
     for (String tableName : createdTableGlobalSet) {
       client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
     }
@@ -296,7 +287,7 @@ public class QueryTestCaseBase {
 
     Expr expr = sqlParser.parse(query);
     verifier.verify(context, state, expr);
-    if (state.getErrorMessages().size() > 0) {
+    if (state.getErrors().size() > 0) {
       return state;
     }
     LogicalPlan plan = planner.createPlan(context, expr);
@@ -308,8 +299,8 @@ public class QueryTestCaseBase {
 
   public void assertValidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
-    if (state.getErrorMessages().size() > 0) {
-      fail(state.getErrorMessages().get(0));
+    if (state.getErrors().size() > 0) {
+      fail(state.getErrors().get(0).getMessage());
     }
   }
 
@@ -321,7 +312,7 @@ public class QueryTestCaseBase {
 
   public void assertInvalidSQL(String query) throws PlanningException, IOException {
     VerificationState state = verify(query);
-    if (state.getErrorMessages().size() == 0) {
+    if (state.getErrors().size() == 0) {
       fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
     }
   }
@@ -539,7 +530,7 @@ public class QueryTestCaseBase {
       for (String cleanup : annotation.cleanup()) {
         try {
           client.executeQueryAndGetResult(cleanup).close();
-        } catch (ServiceException e) {
+        } catch (SQLException e) {
           // ignore
         }
       }
@@ -668,7 +659,7 @@ public class QueryTestCaseBase {
    * Assert that the database exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseExists(String databaseName) throws ServiceException {
+  public void assertDatabaseExists(String databaseName) throws SQLException {
     assertTrue(client.existDatabase(databaseName));
   }
 
@@ -676,7 +667,7 @@ public class QueryTestCaseBase {
    * Assert that the database does not exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseNotExists(String databaseName) throws ServiceException {
+  public void assertDatabaseNotExists(String databaseName) throws SQLException {
     assertTrue(!client.existDatabase(databaseName));
   }
 
@@ -686,7 +677,7 @@ public class QueryTestCaseBase {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @throws ServiceException
    */
-  public void assertTableExists(String tableName) throws ServiceException {
+  public void assertTableExists(String tableName) throws SQLException {
     assertTrue(client.existTable(tableName));
   }
 
@@ -695,21 +686,23 @@ public class QueryTestCaseBase {
    *
    * @param tableName The table name to be checked. This name is case sensitive.
    */
-  public void assertTableNotExists(String tableName) throws ServiceException {
+  public void assertTableNotExists(String tableName) throws SQLException {
     assertTrue(!client.existTable(tableName));
   }
 
-  public void assertColumnExists(String tableName,String columnName) throws ServiceException {
-    TableDesc tableDesc = fetchTableMetaData(tableName);
+  public void assertColumnExists(String tableName,String columnName) throws ServiceException, SQLException {
+    TableDesc tableDesc = getTableDesc(tableName);
     assertTrue(tableDesc.getSchema().containsByName(columnName));
   }
 
-  private TableDesc fetchTableMetaData(String tableName) throws ServiceException {
+  private TableDesc getTableDesc(String tableName) throws ServiceException, SQLException {
     return client.getTableDesc(tableName);
   }
 
-  public void assertTablePropertyEquals(String tableName, String key, String expectedValue) throws ServiceException {
-    TableDesc tableDesc = fetchTableMetaData(tableName);
+  public void assertTablePropertyEquals(String tableName, String key, String expectedValue)
+      throws ServiceException, SQLException {
+
+    TableDesc tableDesc = getTableDesc(tableName);
     assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
   }
 

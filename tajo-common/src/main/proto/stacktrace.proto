@@ -15,17 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.catalog.exception;
 
+// Copyright 2011 Google Inc. All Rights Reserved.
+// Support for serializing stack traces.
 
-public class ColumnNameAlreadyExistException extends CatalogException {
+package tajo.error;
+option java_package = "org.apache.tajo.error";
 
-  private static final long serialVersionUID = -4863862140874083282L;
-
-  public ColumnNameAlreadyExistException() {
+message StackTrace {
+  message Element {
+    optional string function   = 1;
+    optional string filename   = 2;
+    optional int32 line        = 3  [default = -1];
+    optional string context    = 4;
   }
-
-  public ColumnNameAlreadyExistException(String columnName) {
-    super("Column already exists : " + columnName);
-  }
+  repeated Element element     = 1;
 }

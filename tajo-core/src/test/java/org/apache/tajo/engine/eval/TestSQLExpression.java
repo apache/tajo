@@ -21,7 +21,7 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
@@ -53,11 +53,11 @@ public class TestSQLExpression extends ExprTestBase {
   public void testNoSuchFunction() throws IOException {
     try {
       testSimpleEval("select test123('abc') col1 ", new String[]{"abc"});
-      fail("This test should throw NoSuchFunctionException");
-    } catch (NoSuchFunctionException e) {
+      fail("This test should throw UndefinedFunctionException");
+    } catch (UndefinedFunctionException e) {
       //success
     } catch (Exception e) {
-      fail("This test should throw NoSuchFunctionException: " + e);
+      fail("This test should throw UndefinedFunctionException: " + e);
     }
   }
 

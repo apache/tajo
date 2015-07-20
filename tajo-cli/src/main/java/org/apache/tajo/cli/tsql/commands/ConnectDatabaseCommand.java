@@ -21,6 +21,8 @@ package org.apache.tajo.cli.tsql.commands;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.cli.tsql.TajoCli;
 
+import java.sql.SQLException;
+
 public class ConnectDatabaseCommand extends TajoShellCommand {
 
   public ConnectDatabaseCommand(TajoCli.TajoCliContext context) {
@@ -49,7 +51,7 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
             context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
                 context.getCurrentDatabase(), client.getUserInfo().getUserName()));
           }
-        } catch (ServiceException se) {
+        } catch (SQLException se) {
           if (se.getMessage() != null) {
             context.getOutput().write(se.getMessage());
           } else {

@@ -18,20 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class AlreadyExistsPartitionException extends RuntimeException {
 
-  private static final long serialVersionUID = 277182608283894930L;
+import org.apache.tajo.error.Errors;
 
-  public AlreadyExistsPartitionException(String message) {
-    super(message);
+public class DuplicateTableException extends CatalogException {
+	private static final long serialVersionUID = -641623770742392865L;
+
+  public DuplicateTableException(String relName) {
+    super(Errors.ResultCode.DUPLICATE_TABLE, relName);
   }
-
-  public AlreadyExistsPartitionException(String tableName, String partitionName) {
-    super(String.format("ERROR: partition \"%s already exist in \"%s\"", partitionName, tableName));
-  }
-
-  public AlreadyExistsPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: partition \"%s already exist in \"%s.%s\"", partitionName, databaseName, tableName));
-  }
-
 }

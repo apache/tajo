@@ -18,10 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class AlreadyExistsFunctionException extends CatalogException {
-	private static final long serialVersionUID = 3224521585413794703L;
+import org.apache.tajo.error.Errors.ResultCode;
 
-	public AlreadyExistsFunctionException(String funcName) {
-		super("Already Exists Function: "+funcName);
-	}
+public class UndefinedPartitionException extends CatalogException {
+
+  private static final long serialVersionUID = 277182608283894938L;
+
+  public UndefinedPartitionException(String partitionName) {
+    super(ResultCode.UNDEFINED_PARTITION, partitionName);
+  }
 }
