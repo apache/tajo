@@ -69,8 +69,7 @@ public class KeyTuple extends VTuple {
 
   @Override
   public void put(Datum [] values) {
-    super.clear();
-    System.arraycopy(values, 0, this.values, 0, values.length);
+    super.put(values);
     updateHashCode();
   }
 

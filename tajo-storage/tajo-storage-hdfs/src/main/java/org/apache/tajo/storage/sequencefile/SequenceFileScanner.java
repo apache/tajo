@@ -188,7 +188,6 @@ public class SequenceFileScanner extends FileScanner {
         byteBuf.clear();
         byteBuf.writeBytes(text.getBytes(), 0, text.getLength());
 
-        outTuple.clear();
         try {
           deserializer.deserialize(byteBuf, outTuple);
         } catch (TextLineParsingError e) {

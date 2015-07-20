@@ -113,7 +113,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     }
 
     int mergeTupleIndex = 0;
-    outTuple.clear();
     for (int i = 0; i < currentTuples.length; i++) {
       int tupleSize = currentTuples[i].size();
       for (int j = 0; j < tupleSize; j++) {
@@ -127,7 +126,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
   }
 
   private Tuple getEmptyTuple() {
-    outTuple.clear();
     NullDatum nullDatum = DatumFactory.createNullDatum();
 
     int tupleIndex = 0;

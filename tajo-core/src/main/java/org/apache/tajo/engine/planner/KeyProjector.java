@@ -38,7 +38,6 @@ public class KeyProjector {
   }
 
   public KeyTuple project(Tuple tuple) {
-    keyTuple.clear();
     RowStoreUtil.project(tuple, keyTuple, projectIds);
     return keyTuple;
   }

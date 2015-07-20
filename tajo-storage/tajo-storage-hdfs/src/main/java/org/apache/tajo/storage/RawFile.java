@@ -271,8 +271,6 @@ public class RawFile {
         }
       }
 
-      outTuple.clear();
-
       for (int i = 0; i < columnTypes.length; i++) {
         // check if the i'th column is null
         if (nullFlags.get(i)) {

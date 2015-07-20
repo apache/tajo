@@ -209,7 +209,6 @@ public class HBaseScanner implements Scanner {
       scanResultIndex = 0;
     }
 
-    outTuple.clear();
     Result result = scanResults[scanResultIndex++];
     for (int i = 0; i < targetIndexes.length; i++) {
       outTuple.put(i, getDatum(result, targetIndexes[i]));

@@ -387,7 +387,7 @@ public class TestStorages {
           NullDatum.get()
       });
     }
-    
+
     appender.addTuple(tuple);
     appender.flush();
     appender.close();

@@ -264,7 +264,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     int[] columnIndexes = distinctKeyIndexes[distinctSeq];
     int keyLength = numGroupingColumns + columnIndexes.length + 1;
     Tuple keyTuple = getKeyTuple(keyTupleMap, keyLength);
-    keyTuple.clear();
     keyTuple.put(0, tuple.asDatum(0));
     for (int i = 0; i < numGroupingColumns; i++) {
       keyTuple.put(i + 1, tuple.asDatum(i + 1));

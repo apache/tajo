@@ -1645,7 +1645,6 @@ public class RCFile {
         return null;
       }
 
-      outTuple.clear();
       getCurrentRow(outTuple);
       return outTuple;
     }

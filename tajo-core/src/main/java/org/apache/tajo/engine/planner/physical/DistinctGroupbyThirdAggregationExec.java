@@ -143,7 +143,6 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
     while (!context.isStopped()) {
       Tuple tuple = child.next();
-      outTuple.clear();
       // Last tuple
       if (tuple == null) {
         finished = true;
@@ -205,7 +204,6 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
   }
 
   private Tuple makeEmptyTuple() {
-    outTuple.clear();
     for (DistinctFinalAggregator eachAggr: aggregators) {
       eachAggr.terminateEmpty(outTuple);
     }
@@ -214,7 +212,6 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
   }
 
   private Tuple getGroupingKeyTuple(Tuple tuple) {
-    keyTuple.clear();
     for (int i = 0; i < numGroupingColumns; i++) {
       keyTuple.put(i, tuple.asDatum(i + 1));
     }

@@ -74,7 +74,6 @@ public class SortAggregateExec extends AggregationExec {
 
     while(!context.isStopped() && (tuple = child.next()) != null) {
       // get a key tuple
-      currentKey.clear();
       for(int i = 0; i < groupingKeyIds.length; i++) {
         currentKey.put(i, tuple.asDatum(groupingKeyIds[i]));
       }
@@ -101,7 +100,6 @@ public class SortAggregateExec extends AggregationExec {
 
       } else { /** Finalization State */
         // finalize aggregate and return
-        outTuple.clear();
         int tupleIdx = 0;
 
         for(; tupleIdx < groupingKeyNum; tupleIdx++) {
@@ -126,7 +124,6 @@ public class SortAggregateExec extends AggregationExec {
       return null;
     }
     if (!finished) {
-      outTuple.clear();
       int tupleIdx = 0;
       for(; tupleIdx < groupingKeyNum; tupleIdx++) {
         outTuple.put(tupleIdx, lastKey.asDatum(tupleIdx));

@@ -213,7 +213,6 @@ public class WindowAggExec extends UnaryPhysicalExec {
         }
 
         if (readTuple != null && hasPartitionKeys) { // get a key tuple
-          currentKey.clear();
           for (int i = 0; i < partitionKeyIds.length; i++) {
             currentKey.put(i, readTuple.asDatum(partitionKeyIds[i]));
           }
@@ -286,7 +285,6 @@ public class WindowAggExec extends UnaryPhysicalExec {
     for (int i = 0; i <accumulatedInTuples.size(); i++) {
       Tuple inTuple = accumulatedInTuples.get(i);
 
-      evaluatedTuple.clear();
       for (int c = 0; c < nonFunctionColumnNum; c++) {
         evaluatedTuple.put(c, inTuple.asDatum(nonFunctionColumns[c]));
       }

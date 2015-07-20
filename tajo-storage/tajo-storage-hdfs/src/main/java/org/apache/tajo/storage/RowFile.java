@@ -197,7 +197,6 @@ public class RowFile {
         }
       }
 
-      tuple.clear();
       Datum datum;
       Column col;
       for (i = 0; i < schema.size(); i++) {

@@ -93,7 +93,6 @@ public class HashAggregateExec extends AggregationExec {
       Tuple keyTuple = entry.getKey();
       contexts =  entry.getValue();
 
-      tuple.clear();
       int tupleIdx = 0;
       for (; tupleIdx < groupingKeyNum; tupleIdx++) {
         tuple.put(tupleIdx, keyTuple.asDatum(tupleIdx));

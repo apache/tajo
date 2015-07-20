@@ -407,8 +407,6 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       int tupleIndex = 0;
       if (outTuple == null) {
         outTuple = new VTuple(resultTupleLength);
-      } else {
-        outTuple.clear();
       }
       outTuple.put(tupleIndex++, nodeSequenceDatum);
 

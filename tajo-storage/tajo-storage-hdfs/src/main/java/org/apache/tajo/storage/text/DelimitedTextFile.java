@@ -388,7 +388,6 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          outTuple.clear();
           outTuple.setOffset(offset);
 
           try {

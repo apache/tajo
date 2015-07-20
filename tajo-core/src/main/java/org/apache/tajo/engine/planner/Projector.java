@@ -70,7 +70,6 @@ public class Projector {
   }
 
   public Tuple eval(Tuple in) {
-    outTuple.clear();
     for (int i = 0; i < evals.length; i++) {
       outTuple.put(i, evals[i].eval(in));
     }

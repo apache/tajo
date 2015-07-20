@@ -83,6 +83,7 @@ public class VTuple implements Tuple, Cloneable {
   // Setter
   //////////////////////////////////////////////////////
   public void put(int fieldId, Datum value) {
+    this.offset = -1;
     values[fieldId] = value;
   }
 
@@ -103,9 +104,6 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public void put(Datum [] values) {
-    if (values.length != this.values.length) {
-      throw new RuntimeException("value length is different");
-    }
     this.offset = -1;
     System.arraycopy(values, 0, this.values, 0, values.length);
   }

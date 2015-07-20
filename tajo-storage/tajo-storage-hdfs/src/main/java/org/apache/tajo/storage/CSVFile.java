@@ -456,7 +456,6 @@ public class CSVFile {
         byteBuf.clear();
         byteBuf.writeBytes(buffer.getData(), startOffsets.get(currentIdx), rowLengthList.get(currentIdx));
 
-        outTuple.clear();
         deserializer.deserialize(byteBuf, outTuple);
 
         currentIdx++;

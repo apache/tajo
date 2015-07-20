@@ -227,7 +227,6 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
       //merge
       int resultColumnIdx = 0;
-      outTuple.clear();
 
       boolean allNull = true;
       for (int i = 0; i < hashAggregators.length; i++) {
@@ -429,7 +428,6 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       TupleList aggregatedTuples = new TupleList();
 
       for (Entry<KeyTuple, FunctionContext[]> entry : groupTuples.entrySet()) {
-        aggregatedTuple.clear();
         Tuple groupbyKey = entry.getKey();
         int index = 0;
         for (; index < groupbyKey.size(); index++) {

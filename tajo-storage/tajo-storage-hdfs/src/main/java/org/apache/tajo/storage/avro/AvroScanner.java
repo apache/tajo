@@ -178,7 +178,6 @@ public class AvroScanner extends FileScanner {
       return null;
     }
 
-    outTuple.clear();
     GenericRecord record = dataFileReader.next();
     for (int i = 0; i < projectionMap.length; ++i) {
       int columnIndex = projectionMap[i];
