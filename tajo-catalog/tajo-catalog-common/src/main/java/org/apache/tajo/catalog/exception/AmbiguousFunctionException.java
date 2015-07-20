@@ -24,8 +24,7 @@ import org.apache.tajo.error.Errors;
 import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
 public class AmbiguousFunctionException extends CatalogException {
-
-	public AmbiguousFunctionException(String funcName, DataType[] parameters) {
-		super(Errors.ResultCode.AMBIGUOUS_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
-	}
+  public AmbiguousFunctionException(String funcName, DataType[] parameters) {
+    super(Errors.ResultCode.AMBIGUOUS_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
+  }
 }
