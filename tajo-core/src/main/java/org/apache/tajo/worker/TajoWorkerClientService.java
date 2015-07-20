@@ -27,12 +27,19 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
+<<<<<<< HEAD
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
 import org.apache.tajo.ipc.ClientProtos.RequestResult;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
+=======
+import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
+import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.BlockingRpcServer;
@@ -132,11 +139,18 @@ public class TajoWorkerClientService extends AbstractService {
         if (queryHistory != null) {
           builder.setQueryHistory(queryHistory.getProto());
         }
+<<<<<<< HEAD
         builder.setResult(buildOkRequestResult());
       } catch (Throwable t) {
         LOG.warn(t.getMessage(), t);
         builder.setResult(buildRequestResult(ResultCode.ERROR,
             StringUtils.stringifyException(t), null));
+=======
+        builder.setState(ReturnStateUtil.OK);
+      } catch (Throwable t) {
+        LOG.error(t.getMessage(), t);
+        builder.setState(ReturnStateUtil.returnError(t));
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
 
       return builder.build();

@@ -277,4 +277,13 @@ public class TUtil {
       throw new RuntimeException("Cannot convert " + str + " to the URI type", e);
     }
   }
+
+  public static <T> T checkTypeAndGet(Object instance, Class<T> type) {
+    if (!type.isInstance(instance)) {
+      throw new IllegalArgumentException(instance.getClass().getSimpleName()
+          + " must be a " + type.getSimpleName() + " type");
+
+    }
+    return (T) instance;
+  }
 }

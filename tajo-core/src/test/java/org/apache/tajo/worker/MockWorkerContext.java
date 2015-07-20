@@ -52,11 +52,6 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
   }
 
   @Override
-  public TaskRunnerManager getTaskRunnerManager() {
-    return null;
-  }
-
-  @Override
   public CatalogService getCatalog() {
     return null;
   }
@@ -73,11 +68,6 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
 
   @Override
   public LocalDirAllocator getLocalDirAllocator() {
-    return null;
-  }
-
-  @Override
-  public QueryCoordinatorProtocol.ClusterResourceSummary getClusterResource() {
     return null;
   }
 
@@ -113,16 +103,6 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
 
   @Override
   public void cleanupTemporalDirectories() {
-
-  }
-
-  @Override
-  public void setClusterResource(QueryCoordinatorProtocol.ClusterResourceSummary clusterResource) {
-
-  }
-
-  @Override
-  public void setNumClusterNodes(int numClusterNodes) {
 
   }
 }

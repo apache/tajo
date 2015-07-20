@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
@@ -45,7 +46,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @AfterClass
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     TestJoinQuery.classTearDown();
   }
 
@@ -348,7 +349,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
@@ -363,7 +363,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
@@ -382,7 +381,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(queries = {
@@ -397,7 +395,6 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  // TODO: this test is disabled due to a bug in broadcast join. It will be enabled after TAJO-1553
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {

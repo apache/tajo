@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
+import org.apache.tajo.ResourceProtos.TaskHistoryProto;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.Bytes;
 
@@ -192,7 +192,11 @@ public class HistoryReader {
   }
 
   public List<TaskHistory> getTaskHistory(String queryId, String ebId) throws IOException {
-    Path queryHistoryFile = getQueryHistoryFilePath(queryId, 0);
+    return getTaskHistory(queryId, ebId, 0);
+  }
+
+  public List<TaskHistory> getTaskHistory(String queryId, String ebId, long startTime) throws IOException {
+    Path queryHistoryFile = getQueryHistoryFilePath(queryId, startTime);
     if (queryHistoryFile == null) {
       return new ArrayList<TaskHistory>();
     }

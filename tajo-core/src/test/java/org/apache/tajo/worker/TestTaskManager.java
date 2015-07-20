@@ -21,24 +21,27 @@ package org.apache.tajo.worker;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.tajo.*;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.worker.event.ExecutionBlockStartEvent;
 import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
+import org.apache.tajo.worker.event.TaskStartEvent;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.*;
 
 public class TestTaskManager {
@@ -65,8 +68,9 @@ public class TestTaskManager {
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES, 4);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB,
         taskMemory * conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES));
-    conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS_NUM, 4);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS, 4);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM, 1);
+    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM, 2);
 
     dispatcher = new AsyncDispatcher();
     taskDispatcher = new AsyncDispatcher();
@@ -80,6 +84,21 @@ public class TestTaskManager {
       }
 
       @Override
+      public TaskManager getTaskManager() {
+        return taskManager;
+      }
+
+      @Override
+      public TaskExecutor getTaskExecuor() {
+        return taskExecutor;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return resourceManager;
+      }
+
+      @Override
       public WorkerConnectionInfo getConnectionInfo() {
         if (workerConnectionInfo == null) {
           workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
@@ -88,10 +107,10 @@ public class TestTaskManager {
       }
     };
     barrier = new Semaphore(0);
-    taskManager = new MockTaskManager(barrier, taskDispatcher, workerContext, dispatcher.getEventHandler());
-    taskExecutor = new MockTaskExecutor(new Semaphore(0), taskManager, dispatcher.getEventHandler());
-    resourceManager = new NodeResourceManager(dispatcher, taskDispatcher.getEventHandler());
-    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext, resourceManager);
+    taskManager = new MockTaskManager(barrier, taskDispatcher, workerContext);
+    taskExecutor = new MockTaskExecutor(new Semaphore(0), workerContext);
+    resourceManager = new NodeResourceManager(dispatcher, workerContext);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext);
 
     service = new CompositeService("MockService") {
       @Override
@@ -125,25 +144,12 @@ public class TestTaskManager {
   @Test(timeout = 10000)
   public void testExecutionBlockStart() throws Exception {
     int requestSize = 1;
-
-    TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
-    ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setNodeId(workerContext.getConnectionInfo().getHost() + ":"
-            + workerContext.getConnectionInfo().getQueryMasterPort())
-        .setContainerId("test")
-        .setQueryContext(new QueryContext(conf).getProto())
-        .setPlanJson("test")
-        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
-
-    CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     requestProto.setExecutionBlockId(ebId.getProto());
-    requestProto.setExecutionBlockRequest(ebRequestProto.build());
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     requestProto.addAllTaskRequest(MockNodeResourceManager.createTaskRequests(ebId, taskMemory, requestSize));
@@ -158,21 +164,14 @@ public class TestTaskManager {
   @Test(timeout = 10000)
   public void testExecutionBlockStop() throws Exception {
 
-    TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
+    TaskAllocationProto requestProto =
+        MockNodeResourceManager.createTaskRequests(ebId, taskMemory, 1).poll();
 
-    ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setNodeId(workerContext.getConnectionInfo().getHost()+":"
-            + workerContext.getConnectionInfo().getQueryMasterPort())
-        .setContainerId("test")
-        .setQueryContext(new QueryContext(conf).getProto())
-        .setPlanJson("test")
-        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
+    taskDispatcher.getEventHandler().handle(new TaskStartEvent(requestProto.getTaskRequest(),
+        new NodeResource(requestProto.getResource())));
 
-    taskDispatcher.getEventHandler().handle(new ExecutionBlockStartEvent(ebRequestProto.build()));
     assertTrue(barrier.tryAcquire(3, TimeUnit.SECONDS));
     assertNotNull(taskManager.getExecutionBlockContext(ebId));
     assertEquals(ebId, taskManager.getExecutionBlockContext(ebId).getExecutionBlockId());

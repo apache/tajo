@@ -33,8 +33,7 @@ public class GeneralFunctionEval extends FunctionEval {
   protected FunctionInvoke funcInvoke;
   @Expose protected FunctionInvokeContext invokeContext;
 
-	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
-      throws IOException {
+	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs) {
 		super(EvalType.FUNCTION, desc, givenArgs);
     this.invokeContext = new FunctionInvokeContext(queryContext, getParamType());
   }
@@ -58,8 +57,7 @@ public class GeneralFunctionEval extends FunctionEval {
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
-    Datum res = funcInvoke.eval(evalParams(tuple));
-    return res;
+    return funcInvoke.eval(evalParams(tuple));
   }
 
 	@Override

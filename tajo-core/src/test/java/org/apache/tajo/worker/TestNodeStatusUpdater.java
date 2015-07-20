@@ -18,11 +18,11 @@
 
 package org.apache.tajo.worker;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 import org.junit.After;
@@ -30,13 +30,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+
+import static org.apache.tajo.ResourceProtos.NodeHeartbeatRequest;
 import static org.junit.Assert.*;
 
 public class TestNodeStatusUpdater {
 
   private NodeResourceManager resourceManager;
   private MockNodeStatusUpdater statusUpdater;
+  private MockTaskManager taskManager;
   private AsyncDispatcher dispatcher;
+  private AsyncDispatcher taskDispatcher;
+  private CompositeService service;
   private TajoConf conf;
   private TajoWorker.WorkerContext workerContext;
 
@@ -45,12 +51,30 @@ public class TestNodeStatusUpdater {
   public void setup() {
     conf = new TajoConf();
     conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES, 2);
+    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM, 2);
+
     workerContext = new MockWorkerContext() {
       WorkerConnectionInfo workerConnectionInfo;
 
       @Override
       public TajoConf getConf() {
         return conf;
+      }
+
+      @Override
+      public TaskManager getTaskManager() {
+        return taskManager;
+      }
+
+      @Override
+      public TaskExecutor getTaskExecuor() {
+        return null;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return resourceManager;
       }
 
       @Override
@@ -62,27 +86,48 @@ public class TestNodeStatusUpdater {
       }
     };
 
-    conf.setIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_INTERVAL, 1000);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_IDLE_INTERVAL, 1000);
     dispatcher = new AsyncDispatcher();
-    dispatcher.init(conf);
-    dispatcher.start();
+    resourceManager = new NodeResourceManager(dispatcher, workerContext);
+    taskDispatcher = new AsyncDispatcher();
+    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext) {
+      @Override
+      public int getRunningTasks() {
+        return 0;
+      }
+    };
 
-    resourceManager = new NodeResourceManager(dispatcher, null);
-    resourceManager.init(conf);
-    resourceManager.start();
+    service = new CompositeService("MockService") {
+      @Override
+      protected void serviceInit(Configuration conf) throws Exception {
+        addIfService(dispatcher);
+        addIfService(taskDispatcher);
+        addIfService(taskManager);
+        addIfService(resourceManager);
+        addIfService(statusUpdater);
+        super.serviceInit(conf);
+      }
+
+      @Override
+      protected void serviceStop() throws Exception {
+        workerContext.getWorkerSystemMetrics().stop();
+        super.serviceStop();
+      }
+    };
+
+    service.init(conf);
+    service.start();
   }
 
   @After
   public void tearDown() {
-    resourceManager.stop();
-    if (statusUpdater != null) statusUpdater.stop();
-    dispatcher.stop();
+    service.stop();
   }
 
   @Test(timeout = 20000)
   public void testNodeMembership() throws Exception {
     CountDownLatch barrier = new CountDownLatch(1);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 
@@ -100,16 +145,18 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testPing() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 
     MockNodeStatusUpdater.MockResourceTracker resourceTracker = statusUpdater.getResourceTracker();
     barrier.await();
 
-    TajoResourceTrackerProtocol.NodeHeartbeatRequestProto lastRequest = resourceTracker.getLastRequest();
+    NodeHeartbeatRequest lastRequest = resourceTracker.getLastRequest();
     assertTrue(lastRequest.hasWorkerId());
-    assertFalse(lastRequest.hasAvailableResource());
+    assertTrue(lastRequest.hasAvailableResource());
+    assertTrue(lastRequest.hasRunningTasks());
+    assertTrue(lastRequest.hasRunningQueryMasters());
     assertFalse(lastRequest.hasTotalResource());
     assertFalse(lastRequest.hasConnectionInfo());
   }
@@ -117,12 +164,12 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 
     assertEquals(0, statusUpdater.getQueueSize());
-    for (int i = 0; i < statusUpdater.getQueueingLimit(); i++) {
+    for (int i = 0; i < statusUpdater.getQueueingThreshold(); i++) {
       dispatcher.getEventHandler().handle(new NodeStatusEvent(NodeStatusEvent.EventType.REPORT_RESOURCE));
     }
     barrier.await();
@@ -132,7 +179,7 @@ public class TestNodeStatusUpdater {
   @Test(timeout = 20000)
   public void testFlushResourceReport() throws Exception {
     CountDownLatch barrier = new CountDownLatch(2);
-    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext, resourceManager);
+    statusUpdater = new MockNodeStatusUpdater(barrier, workerContext);
     statusUpdater.init(conf);
     statusUpdater.start();
 

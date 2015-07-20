@@ -18,14 +18,13 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -146,15 +145,11 @@ public class TajoStatement implements Statement {
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     checkConnection("Can't execute");
+    return executeSQL(sql);
 
-    try {
-      return executeSQL(sql);
-    } catch (Exception e) {
-      throw new SQLException(e.getMessage(), e);
-    }
   }
 
-  protected ResultSet executeSQL(String sql) throws SQLException, ServiceException, IOException {
+  protected ResultSet executeSQL(String sql) throws SQLException {
     if (isSetVariableQuery(sql)) {
       return setSessionVariable(tajoClient, sql);
     }
@@ -163,6 +158,7 @@ public class TajoStatement implements Statement {
     }
 
     ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
+<<<<<<< HEAD
     if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
       if (response.getResult().hasErrorMessage()) {
         throw new ServiceException(response.getResult().getErrorMessage());
@@ -172,6 +168,9 @@ public class TajoStatement implements Statement {
       }
       throw new ServiceException("Failed to submit query by unknown reason");
     }
+=======
+    SQLExceptionUtil.throwIfError(response.getState());
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded() && !queryId.isNull()) {
@@ -222,12 +221,7 @@ public class TajoStatement implements Statement {
     }
     Map<String, String> variable = new HashMap<String, String>();
     variable.put(tokens[0].trim(), tokens[1].trim());
-    try {
-      client.updateSessionVariables(variable);
-    } catch (ServiceException e) {
-      throw new SQLException(e.getMessage(), e);
-    }
-
+    client.updateSessionVariables(variable);
     return TajoClientUtil.createNullResultSet();
   }
 
@@ -241,11 +235,7 @@ public class TajoStatement implements Statement {
     if (key.isEmpty()) {
       throw new SQLException("UNSET statement should be <KEY>: " + sql);
     }
-    try {
-      client.unsetSessionVariables(Lists.newArrayList(key));
-    } catch (ServiceException e) {
-      throw new SQLException(e.getMessage(), e);
-    }
+    client.unsetSessionVariables(Lists.newArrayList(key));
 
     return TajoClientUtil.createNullResultSet();
   }
@@ -253,13 +243,8 @@ public class TajoStatement implements Statement {
   @Override
   public int executeUpdate(String sql) throws SQLException {
     checkConnection("Can't execute update");
-    try {
-      tajoClient.executeQuery(sql);
-
-      return 1;
-    } catch (Exception ex) {
-      throw new SQLException(ex.toString());
-    }
+    tajoClient.executeQuery(sql);
+    return 1;
   }
 
   @Override

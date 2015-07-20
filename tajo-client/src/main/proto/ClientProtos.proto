@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package tajo.client;
+
 option java_package = "org.apache.tajo.ipc";
 option java_outer_classname = "ClientProtos";
 option java_generic_services = true;
@@ -26,24 +28,13 @@ import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
-enum ResultCode {
-  OK = 0;
-  ERROR = 1;
-}
-
-message RequestResult {
-  required ResultCode resultCode = 1;
-  optional string errorMessage = 2;
-  optional string errorTrace = 3;
-}
-
 message CreateSessionRequest {
   required string username = 1;
   optional string baseDatabaseName = 2;
 }
 
 message CreateSessionResponse {
-  required RequestResult result = 1;
+  required ReturnState state = 1;
   optional SessionIdProto sessionId = 2;
   optional KeyValueSetProto sessionVars = 3;
 }
@@ -55,7 +46,7 @@ message UpdateSessionVariableRequest {
 }
 
 message SessionUpdateResponse {
-  required RequestResult result = 1;
+  required ReturnState state = 1;
   optional KeyValueSetProto sessionVars = 2;
 }
 
@@ -65,7 +56,7 @@ message SessionedStringProto {
 }
 
 message ExplainQueryResponse {
-  required RequestResult result = 1;
+  required ReturnState state = 1;
   optional string explain = 2;
 }
 
@@ -77,7 +68,7 @@ message QueryRequest {
 }
 
 message UpdateQueryResponse {
-  required RequestResult result = 1;
+  required ReturnState state = 1;
   optional KeyValueSetProto sessionVars = 2;
 }
 
@@ -87,8 +78,8 @@ message GetQueryResultRequest {
 }
 
 message GetQueryResultResponse {
-  optional TableDescProto tableDesc = 1;
-  optional string errorMessage = 2;
+  required ReturnState state = 1;
+  optional TableDescProto tableDesc = 2;
   optional string tajoUserName = 3;
 }
 
@@ -113,7 +104,8 @@ message BriefQueryInfo {
 }
 
 message GetQueryListResponse {
-  repeated BriefQueryInfo queryList = 1;
+  required ReturnState state = 1;
+  repeated BriefQueryInfo queryList = 2;
 }
 
 message GetQueryStatusRequest {
@@ -128,9 +120,9 @@ message SerializedResultSet {
 }
 
 message SubmitQueryResponse {
-  required RequestResult result = 1;
-  required QueryIdProto queryId = 2;
-  required string userName = 3;
+  required ReturnState state = 1;
+  optional QueryIdProto queryId = 2;
+  optional string userName = 3;
   optional bool isForwarded = 4 [default = false];
 
   optional string queryMasterHost = 5;
@@ -140,13 +132,13 @@ message SubmitQueryResponse {
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
-  optional KeyValueSetProto sessionVars = 10;
+  optional KeyValueSetProto sessionVars = 12;
 }
 
 message GetQueryStatusResponse {
-  required RequestResult result = 1;
-  required QueryIdProto queryId = 2;
-  optional QueryState state = 3;
+  required ReturnState state = 1;
+  optional QueryIdProto queryId = 2;
+  optional QueryState query_state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;
   optional int64 finishTime = 7;
@@ -162,8 +154,8 @@ message GetQueryResultDataRequest {
 }
 
 message GetQueryResultDataResponse {
-  required RequestResult result = 1;
-  required SerializedResultSet resultSet = 2;
+  required ReturnState state = 1;
+  optional SerializedResultSet resultSet = 2;
 }
 
 message GetClusterInfoRequest {
@@ -172,23 +164,17 @@ message GetClusterInfoRequest {
 
 message WorkerResourceInfo {
   required WorkerConnectionInfoProto connectionInfo = 1;
-  required float diskSlots = 2;
-  required int32 cpuCoreSlots = 3;
-  required int32 memoryMB = 4;
-  required float usedDiskSlots = 5;
-  required int32 usedMemoryMB = 6;
-  required int32 usedCpuCoreSlots = 7;
-  required int64 maxHeap = 8;
-  required int64 freeHeap = 9;
-  required int64 totalHeap = 10;
-  required int32 numRunningTasks = 11;
-  required string workerStatus = 12;
-  required int64 lastHeartbeat = 13;
-  required int32 numQueryMasterTasks = 14;
+  required NodeResourceProto totalResource = 2;
+  required NodeResourceProto availableResource = 3;
+  required int32 numRunningTasks = 4;
+  required string workerStatus = 5;
+  required int64 lastHeartbeat = 6;
+  required int32 numQueryMasterTasks = 7;
 }
 
 message GetClusterInfoResponse {
-  repeated WorkerResourceInfo workerList = 1;
+  required ReturnState state = 1;
+  repeated WorkerResourceInfo workerList = 2;
 }
 
 message CreateTableRequest {
@@ -206,16 +192,19 @@ message DropTableRequest {
   optional bool purge = 3 [default = false];
 }
 
-message TableResponse {
-  required RequestResult result = 1;
-  optional TableDescProto tableDesc = 2;
-}
-
-message FunctionResponse {
-  required RequestResult result = 1;
-  repeated FunctionDescProto functions = 2;
-}
-
+//<<<<<<< HEAD
+//message TableResponse {
+//  required RequestResult result = 1;
+//  optional TableDescProto tableDesc = 2;
+//}
+//
+//message FunctionResponse {
+//  required RequestResult result = 1;
+//  repeated FunctionDescProto functions = 2;
+//}
+//
+//=======
+//>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 message QueryInfoProto {
   required string queryId = 1;
   optional string sql = 2;
@@ -266,12 +255,12 @@ message QueryHistoryProto {
 }
 
 message GetQueryHistoryResponse {
-  required RequestResult result = 1;
+  required ReturnState state = 1;
   optional QueryHistoryProto queryHistory = 2;
 }
 
 message GetQueryInfoResponse {
-  required RequestResult result = 1;
+  required ReturnState state = 1;
   optional QueryInfoProto queryInfo = 2;
 }
 

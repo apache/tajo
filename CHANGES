@@ -29,6 +29,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1397: Resource allocation should be fine grained. (jinho)
+
+    TAJO-1352: Improve the join order algorithm to consider missed cases of 
+    associative join operators. (jihoon)
+
     TAJO-1677: Remove unnecessary messages for the Travis CI build. (jaehwa)
 
     TAJO-1672: Removing rest api to create table
@@ -178,6 +183,9 @@ Release 0.11.0 - unreleased
 
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
     names only without invalid external table info. 
+
+    TAJO-1689: Metrics file reporter prints histogram metric without group name.
+    (hyunsik)
 
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
     table names only without invalid external table info. 
@@ -382,6 +390,13 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1525: Implement INTERSECT [ALL] physical operator. (Contributed 
+    Keuntae Park, Committed by hyunsik) 
+
+    TAJO-1684: CREATE EXTERNAL TABLE should allows just a path. (hyunsik)
+
+    TAJO-1670: Refactor client errors and exceptions. (hyunsik)
 
     TAJO-1514: Distinguish UNION and UNION ALL. (contributed by Keuntae Park,
     committed by hyunsik)

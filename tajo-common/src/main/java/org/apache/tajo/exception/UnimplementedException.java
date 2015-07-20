@@ -18,21 +18,17 @@
 
 package org.apache.tajo.exception;
 
-public class UnimplementedException extends RuntimeException {
+import org.apache.tajo.error.Errors;
+
+public class UnimplementedException extends TajoRuntimeException {
   private static final long serialVersionUID = -5467580471721530536L;
 
   public UnimplementedException() {
+    super(Errors.ResultCode.NOT_IMPLEMENTED,
+        Thread.currentThread().getStackTrace()[1].getClassName());
   }
 
-  public UnimplementedException(String message) {
-    super(message);
-  }
-
-  public UnimplementedException(Throwable cause) {
-    super(cause);
-  }
-
-  public UnimplementedException(String message, Throwable cause) {
-    super(message, cause);
+  public UnimplementedException(String featureName) {
+    super(Errors.ResultCode.NOT_IMPLEMENTED, featureName);
   }
 }

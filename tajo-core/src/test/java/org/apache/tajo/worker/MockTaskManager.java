@@ -19,9 +19,13 @@
 package org.apache.tajo.worker;
 
 import org.apache.hadoop.yarn.event.Dispatcher;
-import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
+import org.apache.tajo.ResourceProtos.ExecutionBlockListProto;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.event.TaskManagerEvent;
 
 import java.io.IOException;
@@ -31,15 +35,21 @@ public class MockTaskManager extends TaskManager {
 
   private final Semaphore barrier;
 
-  public MockTaskManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, EventHandler rmEventHandler) {
-    super(dispatcher, workerContext, rmEventHandler);
+  public MockTaskManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
+    super(dispatcher, workerContext);
     this.barrier = barrier;
   }
 
   @Override
-  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+  protected ExecutionBlockContext createExecutionBlock(ExecutionBlockId executionBlockId, String queryMaster) {
     try {
-      return new MockExecutionBlock(getWorkerContext(), request);
+      ExecutionBlockContextResponse.Builder builder = ExecutionBlockContextResponse.newBuilder();
+      builder.setExecutionBlockId(executionBlockId.getProto())
+          .setPlanJson("test")
+          .setQueryContext(new QueryContext(new TajoConf()).getProto())
+          .setQueryOutputPath("testpath")
+          .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
+      return new MockExecutionBlock(getWorkerContext(), builder.build());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -47,7 +57,7 @@ public class MockTaskManager extends TaskManager {
 
   @Override
   protected void stopExecutionBlock(ExecutionBlockContext context,
-                                    TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+                                    ExecutionBlockListProto cleanupList) {
     //skip for testing
   }
 

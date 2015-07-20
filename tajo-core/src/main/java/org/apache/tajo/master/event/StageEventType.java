@@ -26,9 +26,7 @@ public enum StageEventType {
   // Producer: Query
   SQ_INIT,
   SQ_START,
-  SQ_CONTAINER_ALLOCATED,
   SQ_KILL,
-  SQ_LAUNCH,
 
   // Producer: Task
   SQ_TASK_COMPLETED,

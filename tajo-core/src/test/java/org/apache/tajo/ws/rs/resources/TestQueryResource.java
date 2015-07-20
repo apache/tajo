@@ -22,7 +22,8 @@ import com.google.gson.internal.StringMap;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
@@ -40,8 +41,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +94,7 @@ public class TestQueryResource extends QueryTestCaseBase {
         .request().post(Entity.entity(request, MediaType.APPLICATION_JSON), NewSessionResponse.class);
     
     assertNotNull(response);
-    assertTrue(ResultCode.OK.equals(response.getResultCode()));
+    assertTrue(ErrorUtil.isOk(response.getResultCode()));
     assertTrue(response.getId() != null && !response.getId().isEmpty());
     
     return response.getId();

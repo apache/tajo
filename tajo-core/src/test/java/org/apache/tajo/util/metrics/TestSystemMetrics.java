@@ -124,6 +124,7 @@ public class TestSystemMetrics {
     }
 
     assertEquals(2, lines.size());
+    tajoSystemMetrics.stop();
   }
 
   @After

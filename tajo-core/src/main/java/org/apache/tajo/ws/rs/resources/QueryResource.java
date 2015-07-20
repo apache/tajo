@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInProgress;
@@ -262,11 +263,18 @@ public class QueryResource {
         return ResourcesUtil.createBadRequestResponse(LOG, "Provided session id (" + sessionId + ") is invalid.");
       }
       
+<<<<<<< HEAD
       SubmitQueryResponse response =
           masterContext.getGlobalEngine().executeQuery(session, request.getQuery(), false);
       if (response.getResult().hasResultCode() &&
           ClientProtos.ResultCode.ERROR.equals(response.getResult().getResultCode())) {
         return ResourcesUtil.createExceptionResponse(LOG, response.getResult().getErrorMessage());
+=======
+      SubmitQueryResponse response = 
+        masterContext.getGlobalEngine().executeQuery(session, request.getQuery(), false);
+      if (ReturnStateUtil.isError(response.getState())) {
+        return ResourcesUtil.createExceptionResponse(LOG, response.getState().getMessage());
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       } else {
         JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
@@ -283,7 +291,11 @@ public class QueryResource {
           queryResponse.setUri(queryURI);
         }
 
+<<<<<<< HEAD
         queryResponse.setResultCode(response.getResult().getResultCode());
+=======
+        queryResponse.setResultCode(response.getState().getReturnCode());
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
         queryResponse.setQuery(request.getQuery());
         return Response.status(Status.OK).entity(queryResponse).build();
       }

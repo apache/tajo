@@ -36,7 +36,7 @@ public class QueryStatus {
 
   public QueryStatus(GetQueryStatusResponse proto) {
     queryId = new QueryId(proto.getQueryId());
-    state = proto.getState();
+    state = proto.getQueryState();
     progress = proto.getProgress();
     submitTime = proto.getSubmitTime();
     finishTime = proto.getFinishTime();

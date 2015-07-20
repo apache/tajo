@@ -25,14 +25,14 @@ SORT(5)
            => target list: default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)
            => out schema: {(4) default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
            => in schema: {(6) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-            SCAN(2) on default.partsupp
-              => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
-              => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
-              => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
             SCAN(1) on default.supplier
               => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)
               => out schema: {(4) default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
               => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+            SCAN(2) on default.partsupp
+              => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
+              => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+              => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -86,14 +86,14 @@ SORT(21)
            => target list: default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)
            => out schema: {(4) default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
            => in schema: {(6) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-            SCAN(2) on default.partsupp
-              => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
-              => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
-              => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
             SCAN(1) on default.supplier
               => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)
               => out schema: {(4) default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
               => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+            SCAN(2) on default.partsupp
+              => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
+              => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+              => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000008 [ROOT]

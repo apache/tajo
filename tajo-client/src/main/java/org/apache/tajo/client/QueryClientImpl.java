@@ -22,66 +22,67 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.*;
+import org.apache.tajo.TajoIdProtos.SessionIdProto;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
+import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.util.ProtoUtil;
 
-import java.io.IOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
+import static org.apache.tajo.exception.ReturnStateUtil.returnError;
+import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
-import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 
 public class QueryClientImpl implements QueryClient {
   private static final Log LOG = LogFactory.getLog(QueryClientImpl.class);
-  private final SessionConnection connection;
+  private final SessionConnection conn;
   private final int defaultFetchRows;
-//maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
+  // maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
   private int maxRows;
 
-  public QueryClientImpl(SessionConnection connection) {
-    this.connection = connection;
-    this.defaultFetchRows = this.connection.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
+  public QueryClientImpl(SessionConnection conn) {
+    this.conn = conn;
+    this.defaultFetchRows = this.conn.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
         SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
     this.maxRows = 0;
   }
 
   @Override
-  public void setSessionId(TajoIdProtos.SessionIdProto sessionId) {
-    connection.setSessionId(sessionId);
-  }
-
-  @Override
   public boolean isConnected() {
-    return connection.isConnected();
+    return conn.isConnected();
   }
 
   @Override
-  public TajoIdProtos.SessionIdProto getSessionId() {
-    return connection.getSessionId();
+  public String getSessionId() {
+    return conn.getSessionId();
   }
 
   @Override
   public Map<String, String> getClientSideSessionVars() {
-    return connection.getClientSideSessionVars();
+    return conn.getClientSideSessionVars();
   }
 
   @Override
   public String getBaseDatabase() {
-    return connection.getBaseDatabase();
+    return conn.getBaseDatabase();
   }
 
   @Override
@@ -90,72 +91,62 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public UserRoleInfo getUserInfo() {
-    return connection.getUserInfo();
+    return conn.getUserInfo();
   }
 
   @Override
-  public void closeQuery(QueryId queryId) {
+  public void closeQuery(QueryId queryId) throws SQLException {
     closeNonForwardQuery(queryId);
   }
 
   @Override
-  public void closeNonForwardQuery(QueryId queryId) {
-    NettyClientBase tmClient = null;
+  public void closeNonForwardQuery(QueryId queryId) throws SQLException {
     try {
-      tmClient = connection.getTajoMasterConnection();
-      TajoMasterClientProtocolService.BlockingInterface tajoMaster = tmClient.getStub();
-      connection.checkSessionAndGet(tmClient);
-
-      ClientProtos.QueryIdRequest.Builder builder = ClientProtos.QueryIdRequest.newBuilder();
-
-      builder.setSessionId(getSessionId());
-      builder.setQueryId(queryId.getProto());
-      tajoMaster.closeNonForwardQuery(null, builder.build());
-    } catch (Exception e) {
-      LOG.warn("Fail to close a TajoMaster connection (qid=" + queryId + ", msg=" + e.getMessage() + ")", e);
+      throwIfError(conn.getTMStub().closeNonForwardQuery(null, buildQueryIdRequest(queryId)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
   }
 
   @Override
-  public String getCurrentDatabase() throws ServiceException {
-    return connection.getCurrentDatabase();
+  public String getCurrentDatabase() throws SQLException {
+    return conn.getCurrentDatabase();
   }
 
   @Override
-  public Boolean selectDatabase(String databaseName) throws ServiceException {
-    return connection.selectDatabase(databaseName);
+  public Boolean selectDatabase(String databaseName) throws SQLException {
+    return conn.selectDatabase(databaseName);
   }
 
   @Override
-  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws ServiceException {
-    return connection.updateSessionVariables(variables);
+  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws SQLException {
+    return conn.updateSessionVariables(variables);
   }
 
   @Override
-  public Map<String, String> unsetSessionVariables(List<String> variables) throws ServiceException {
-    return connection.unsetSessionVariables(variables);
+  public Map<String, String> unsetSessionVariables(List<String> variables) throws SQLException {
+    return conn.unsetSessionVariables(variables);
   }
 
   @Override
-  public String getSessionVariable(String varname) throws ServiceException {
-    return connection.getSessionVariable(varname);
+  public String getSessionVariable(String varname) throws SQLException {
+    return conn.getSessionVariable(varname);
   }
 
   @Override
-  public Boolean existSessionVariable(String varname) throws ServiceException {
-    return connection.existSessionVariable(varname);
+  public Boolean existSessionVariable(String varname) throws SQLException {
+    return conn.existSessionVariable(varname);
   }
 
   @Override
-  public Map<String, String> getAllSessionVariables() throws ServiceException {
-    return connection.getAllSessionVariables();
+  public Map<String, String> getAllSessionVariables() throws SQLException {
+    return conn.getAllSessionVariables();
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) throws ServiceException {
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
+  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) throws SQLException {
 
+<<<<<<< HEAD
     final QueryRequest.Builder builder = QueryRequest.newBuilder();
     builder.setSessionId(connection.sessionId);
     builder.setQuery(sql);
@@ -164,7 +155,22 @@ public class QueryClientImpl implements QueryClient {
     SubmitQueryResponse response = tajoMasterService.submitQuery(null, builder.build());
     if (response.getResult().getResultCode() == ResultCode.OK) {
       connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+=======
+    final BlockingInterface stub = conn.getTMStub();
+    final QueryRequest request = buildQueryRequest(sql, false);
+
+    SubmitQueryResponse response;
+    try {
+      response = stub.submitQuery(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
+
+    if (isSuccess(response.getState())) {
+      conn.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
+    }
+
     return response;
 
 //<<<<<<< HEAD
@@ -190,25 +196,22 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException {
+  public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+    final QueryRequest request = buildQueryRequest(json, true);
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-
-    final QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    builder.setQuery(json);
-    builder.setIsJson(true);
-    TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-
-
-    return tajoMasterService.submitQuery(null, builder.build());
+    try {
+      return stub.submitQuery(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
-  public ResultSet executeQueryAndGetResult(String sql) throws ServiceException, IOException {
+  public ResultSet executeQueryAndGetResult(String sql) throws SQLException {
 
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
+<<<<<<< HEAD
 
     if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
       if (response.getResult().hasErrorMessage()) {
@@ -217,6 +220,9 @@ public class QueryClientImpl implements QueryClient {
         throw new ServiceException(response.getResult().getErrorTrace());
       }
     }
+=======
+    throwIfError(response.getState());
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -242,16 +248,19 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException {
 
     ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
+<<<<<<< HEAD
 
     if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
       throw new ServiceException(response.getResult().getErrorTrace());
     }
+=======
+    throwIfError(response.getState());
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
     QueryId queryId = new QueryId(response.getQueryId());
-
     if (response.getIsForwarded()) {
 
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
@@ -271,7 +280,7 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  private ResultSet getQueryResultAndWait(QueryId queryId) throws ServiceException, IOException {
+  private ResultSet getQueryResultAndWait(QueryId queryId) throws SQLException {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
@@ -295,75 +304,70 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException {
+  public QueryStatus getQueryStatus(QueryId queryId) throws SQLException {
 
-    ClientProtos.GetQueryStatusRequest.Builder builder = ClientProtos.GetQueryStatusRequest.newBuilder();
-    builder.setQueryId(queryId.getProto());
+    final BlockingInterface stub = conn.getTMStub();
+    final GetQueryStatusRequest request = GetQueryStatusRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .setQueryId(queryId.getProto())
+        .build();
 
-    GetQueryStatusResponse res = null;
-
-    NettyClientBase tmClient = null;
+    GetQueryStatusResponse res;
     try {
-      tmClient = connection.getTajoMasterConnection();
-      connection.checkSessionAndGet(tmClient);
-      builder.setSessionId(connection.sessionId);
-      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
-
-      res = tajoMasterService.getQueryStatus(null, builder.build());
-
-    } catch (Exception e) {
-      throw new ServiceException(e.getMessage(), e);
+      res = stub.getQueryStatus(null, request);
+    } catch (ServiceException t) {
+      throw new RuntimeException(t);
     }
+
+    throwIfError(res.getState());
     return new QueryStatus(res);
   }
 
   @Override
-  public ResultSet getQueryResult(QueryId queryId) throws ServiceException, IOException {
+  public ResultSet getQueryResult(QueryId queryId) throws SQLException {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
 
     GetQueryResultResponse response = getResultResponse(queryId);
+    throwIfError(response.getState());
     TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
     return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
 
   @Override
-  public ResultSet createNullResultSet(QueryId queryId) throws IOException {
+  public ResultSet createNullResultSet(QueryId queryId) {
     return TajoClientUtil.createNullResultSet(queryId);
   }
 
   @Override
-  public GetQueryResultResponse getResultResponse(QueryId queryId) throws ServiceException {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) throws SQLException {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return null;
     }
 
-    NettyClientBase tmClient = null;
+    final BlockingInterface stub = conn.getTMStub();
+    final GetQueryResultRequest request = GetQueryResultRequest.newBuilder()
+        .setQueryId(queryId.getProto())
+        .setSessionId(conn.sessionId)
+        .build();
 
+    GetQueryResultResponse response;
     try {
-
-      tmClient = connection.getTajoMasterConnection();
-      connection.checkSessionAndGet(tmClient);
-      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
-
-      GetQueryResultRequest.Builder builder = GetQueryResultRequest.newBuilder();
-      builder.setQueryId(queryId.getProto());
-      builder.setSessionId(connection.sessionId);
-      GetQueryResultResponse response = tajoMasterService.getQueryResult(null,builder.build());
-
-      return response;
-
-    } catch (Exception e) {
-      throw new ServiceException(e.getMessage(), e);
+      response = stub.getQueryResult(null, request);
+    } catch (ServiceException t) {
+      throw new RuntimeException(t);
     }
+
+    throwIfError(response.getState());
+    return response;
   }
 
   @Override
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum)
-      throws ServiceException {
+  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException {
 
+<<<<<<< HEAD
     try {
 //<<<<<<< HEAD
 //      final ServerCallable<ClientProtos.SerializedResultSet> callable =
@@ -414,32 +418,40 @@ public class QueryClientImpl implements QueryClient {
 
       ClientProtos.SerializedResultSet resultSet = response.getResultSet();
 //>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
+=======
+    final BlockingInterface stub = conn.getTMStub();
+    final GetQueryResultDataRequest request = GetQueryResultDataRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .setQueryId(queryId.getProto())
+        .setFetchRowNum(fetchRowNum)
+        .build();
 
-      return new TajoMemoryResultSet(queryId,
-          new Schema(resultSet.getSchema()),
-          resultSet.getSerializedTuplesList(),
-          resultSet.getSerializedTuplesCount(),
-          getClientSideSessionVars());
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
+
+    GetQueryResultDataResponse response;
+    try {
+      response = stub.getQueryResultData(null, request);
     } catch (ServiceException e) {
-      throw e;
-    } catch (Throwable e) {
-      throw new ServiceException(e.getMessage(), e);
+      throw new RuntimeException(e);
     }
+
+    throwIfError(response.getState());
+
+    ClientProtos.SerializedResultSet resultSet = response.getResultSet();
+    return new TajoMemoryResultSet(queryId,
+        new Schema(resultSet.getSchema()),
+        resultSet.getSerializedTuplesList(),
+        resultSet.getSerializedTuplesCount(),
+        getClientSideSessionVars());
   }
 
   @Override
-  public boolean updateQuery(final String sql) throws ServiceException {
+  public boolean updateQuery(final String sql) throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
+    final QueryRequest request = buildQueryRequest(sql, false);
 
-    QueryRequest.Builder builder = QueryRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    builder.setQuery(sql);
-    builder.setIsJson(false);
-    ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
-
+<<<<<<< HEAD
 //<<<<<<< HEAD
 //        connection.checkSessionAndGet(client);
 //        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
@@ -469,12 +481,25 @@ public class QueryClientImpl implements QueryClient {
 //>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
       }
       return false;
+=======
+    UpdateQueryResponse response;
+    try {
+      response = stub.updateQuery(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     }
+
+    throwIfError(response.getState());
+    conn.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+
+    return true;
   }
 
   @Override
-  public boolean updateQueryWithJson(final String json) throws ServiceException {
+  public boolean updateQueryWithJson(final String json) throws SQLException {
 
+<<<<<<< HEAD
 //<<<<<<< HEAD
 //    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
 //        TajoMasterClientProtocol.class, false) {
@@ -515,84 +540,102 @@ public class QueryClientImpl implements QueryClient {
 //>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
       }
       return false;
+=======
+    final BlockingInterface stub = conn.getTMStub();
+    final QueryRequest request = buildQueryRequest(json, true);
+
+    UpdateQueryResponse response;
+    try {
+      response = stub.updateQuery(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     }
+
+    throwIfError(response.getState());
+    return true;
   }
 
   @Override
-  public List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws ServiceException {
+  public List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stmb = conn.getTMStub();
 
-    TajoIdProtos.SessionIdProto.Builder builder = TajoIdProtos.SessionIdProto.newBuilder();
-    builder.setId(connection.sessionId.getId());
-    ClientProtos.GetQueryListResponse res = tajoMasterService.getRunningQueryList(null, builder.build());
+    GetQueryListResponse res;
+    try {
+      res = stmb.getRunningQueryList(null, conn.sessionId);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(res.getState());
     return res.getQueryListList();
   }
 
   @Override
-  public List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws ServiceException {
+  public List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
 
-    TajoIdProtos.SessionIdProto.Builder builder = TajoIdProtos.SessionIdProto.newBuilder();
-    builder.setId(connection.sessionId.getId());
-    ClientProtos.GetQueryListResponse res = tajoMasterService.getFinishedQueryList(null, builder.build());
+    GetQueryListResponse res;
+    try {
+      res = stub.getFinishedQueryList(null, conn.sessionId);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(res.getState());
     return res.getQueryListList();
   }
 
   @Override
-  public List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws ServiceException {
+  public List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws SQLException {
 
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+    final BlockingInterface stub = conn.getTMStub();
+    final GetClusterInfoRequest request = GetClusterInfoRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .build();
 
-    ClientProtos.GetClusterInfoRequest.Builder builder = ClientProtos.GetClusterInfoRequest.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    ClientProtos.GetClusterInfoResponse res = tajoMasterService.getClusterInfo(null, builder.build());
+    GetClusterInfoResponse res;
+    try {
+      res = stub.getClusterInfo(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(res.getState());
     return res.getWorkerListList();
   }
 
   @Override
-  public QueryStatus killQuery(final QueryId queryId)
-      throws ServiceException, IOException {
+  public QueryStatus killQuery(final QueryId queryId) throws SQLException {
 
+    final BlockingInterface stub = conn.getTMStub();
     QueryStatus status = getQueryStatus(queryId);
 
-    NettyClientBase tmClient = null;
+    /* send a kill to the TM */
+    QueryIdRequest request = buildQueryIdRequest(queryId);
     try {
-      /* send a kill to the TM */
-      tmClient = connection.getTajoMasterConnection();
-      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
-
-      connection.checkSessionAndGet(tmClient);
-
-      ClientProtos.QueryIdRequest.Builder builder = ClientProtos.QueryIdRequest.newBuilder();
-      builder.setSessionId(connection.sessionId);
-      builder.setQueryId(queryId.getProto());
-      tajoMasterService.killQuery(null, builder.build());
-
-      long currentTimeMillis = System.currentTimeMillis();
-      long timeKillIssued = currentTimeMillis;
-      while ((currentTimeMillis < timeKillIssued + 10000L)
-          && ((status.getState() != TajoProtos.QueryState.QUERY_KILLED)
-          || (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT))) {
-        try {
-          Thread.sleep(100L);
-        } catch(InterruptedException ie) {
-          break;
-        }
-        currentTimeMillis = System.currentTimeMillis();
-        status = getQueryStatus(queryId);
-      }
-
-    } catch(Exception e) {
-      LOG.debug("Error when checking for application status", e);
+      stub.killQuery(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
+
+
+    long currentTimeMillis = System.currentTimeMillis();
+    long timeKillIssued = currentTimeMillis;
+    while ((currentTimeMillis < timeKillIssued + 10000L)
+        && ((status.getState() != TajoProtos.QueryState.QUERY_KILLED)
+        || (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT))) {
+      try {
+        Thread.sleep(100L);
+      } catch (InterruptedException ie) {
+        break;
+      }
+      currentTimeMillis = System.currentTimeMillis();
+      status = getQueryStatus(queryId);
+    }
+
     return status;
   }
 
@@ -606,6 +649,7 @@ public class QueryClientImpl implements QueryClient {
   	return this.maxRows;
   }
   
+<<<<<<< HEAD
   public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
 //<<<<<<< HEAD
 //    return new ServerCallable<QueryInfoProto>(connection.manager, connection.getTajoMasterAddr(),
@@ -643,27 +687,39 @@ public class QueryClientImpl implements QueryClient {
       throw new ServiceException(res.getResult().getErrorMessage());
     }
 //>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
+=======
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException {
+
+    final BlockingInterface stub = conn.getTMStub();
+    final QueryIdRequest request = buildQueryIdRequest(queryId);
+
+    GetQueryInfoResponse res;
+    try {
+      res = stub.getQueryInfo(null, request);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(res.getState());
+    return res.getQueryInfo();
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
   }
 
-  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException {
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws SQLException {
     final QueryInfoProto queryInfo = getQueryInfo(queryId);
 
     if (queryInfo.getHostNameOfQM() == null || queryInfo.getQueryMasterClientPort() == 0) {
       return null;
     }
+
     InetSocketAddress qmAddress = new InetSocketAddress(
         queryInfo.getHostNameOfQM(), queryInfo.getQueryMasterClientPort());
 
     RpcClientManager manager = RpcClientManager.getInstance();
-    NettyClientBase queryMasterClient;
-    try {
-      queryMasterClient = manager.newClient(qmAddress, QueryMasterClientProtocol.class, false,
-          manager.getRetries(), manager.getTimeoutSeconds(), TimeUnit.SECONDS, false);
-    } catch (Exception e) {
-      throw new ServiceException(e);
-    }
+    NettyClientBase qmClient = null;
 
     try {
+<<<<<<< HEAD
       connection.checkSessionAndGet(connection.getTajoMasterConnection());
 
 //<<<<<<< HEAD
@@ -687,9 +743,62 @@ public class QueryClientImpl implements QueryClient {
       } else {
         throw new ServiceException(res.getResult().getErrorMessage());
 //>>>>>>> 9b3824b5f0c64af42bfcf0a6bb8d3555c22c5746
+=======
+
+      qmClient = manager.newClient(
+          qmAddress,
+          QueryMasterClientProtocol.class,
+          false,
+          manager.getRetries(),
+          manager.getTimeoutSeconds(),
+          TimeUnit.SECONDS,
+          false
+      );
+
+      conn.checkSessionAndGet(conn.getTajoMasterConnection());
+
+      QueryIdRequest request = QueryIdRequest.newBuilder()
+          .setSessionId(conn.sessionId)
+          .setQueryId(queryId.getProto())
+          .build();
+
+      QueryMasterClientProtocolService.BlockingInterface stub = qmClient.getStub();
+      GetQueryHistoryResponse res;
+      try {
+        res = stub.getQueryHistory(null, request);
+      } catch (ServiceException e) {
+        throw new RuntimeException(e);
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
+
+      throwIfError(res.getState());
+      return res.getQueryHistory();
+
+    } catch (ConnectException e) {
+      throw SQLExceptionUtil.makeUnableToEstablishConnection(e);
+    } catch (ClassNotFoundException e) {
+      throw SQLExceptionUtil.makeUnableToEstablishConnection(e);
+    } catch (NoSuchMethodException e) {
+      throw SQLExceptionUtil.makeUnableToEstablishConnection(e);
+    } catch (SQLException e) {
+      throw e;
     } finally {
-      queryMasterClient.close();
+      qmClient.close();
     }
+  }
+
+  private QueryIdRequest buildQueryIdRequest(QueryId queryId) {
+    return ClientProtos.QueryIdRequest.newBuilder()
+        .setSessionId(SessionIdProto.newBuilder().setId(getSessionId()))
+        .setQueryId(queryId.getProto())
+        .build();
+  }
+
+  private QueryRequest buildQueryRequest(String query, boolean json) {
+    return QueryRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .setQuery(query)
+        .setIsJson(json)
+        .build();
   }
 }

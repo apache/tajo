@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -864,8 +865,13 @@ public class TestTablePartitions extends QueryTestCaseBase {
     ClientProtos.SubmitQueryResponse response = client.executeQuery("insert overwrite into " + tableName
         + " select l_orderkey, l_partkey from lineitem");
 
+<<<<<<< HEAD
     assertTrue(response.getResult().hasErrorMessage());
     assertEquals(response.getResult().getErrorMessage(), "INSERT has smaller expressions than target columns\n");
+=======
+    assertTrue(ReturnStateUtil.isError(response.getState()));
+    assertEquals(response.getState().getMessage(), "INSERT has smaller expressions than target columns");
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
     res = executeFile("case14.sql");
     assertResultSet(res, "case14.result");
@@ -890,8 +896,13 @@ public class TestTablePartitions extends QueryTestCaseBase {
       response = client.executeQuery("insert overwrite into " + tableName
         + " select l_returnflag , l_orderkey, l_partkey from lineitem");
 
+<<<<<<< HEAD
       assertTrue(response.getResult().hasErrorMessage());
       assertEquals(response.getResult().getErrorMessage(), "INSERT has smaller expressions than target columns\n");
+=======
+      assertTrue(ReturnStateUtil.isError(response.getState()));
+      assertEquals(response.getState().getMessage(), "INSERT has smaller expressions than target columns");
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
       res = executeFile("case15.sql");
       assertResultSet(res, "case15.result");

@@ -25,9 +25,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
 
@@ -112,7 +111,7 @@ public class JsonLineSerializer extends TextLineSerializer {
         break;
 
       default:
-        throw new NotImplementedException(types[i].name() + " is not supported.");
+        throw new UnimplementedException(types[i].name() + " is not supported.");
       }
     }
 
