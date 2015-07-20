@@ -157,7 +157,7 @@ public abstract class NameResolver {
       Pair<String, String> normalized;
       try {
         normalized = lookupQualifierAndCanonicalName(block, columnRef);
-      } catch (AmbiguousFieldException nsce) {
+      } catch (UndefinedColumnException udce) {
         // is it correlated subquery?
         // if the search column is not found at the current block, find it at all ancestors of the block.
         LogicalPlan.QueryBlock current = block;
@@ -171,7 +171,7 @@ public abstract class NameResolver {
           current = parentBlock;
         }
 
-        throw nsce;
+        throw udce;
       }
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
@@ -375,7 +375,7 @@ public abstract class NameResolver {
 
     // throw exception if no column cannot be founded or two or more than columns are founded
     if (guessedRelations.size() == 0) {
-      throw new UndefinedColumnException(columnRef.getQualifier());
+      throw new UndefinedColumnException(columnRef.getCanonicalName());
     } else if (guessedRelations.size() > 1) {
       throw new AmbiguousFieldException(columnRef.getCanonicalName());
     }

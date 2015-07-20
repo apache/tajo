@@ -147,13 +147,14 @@ public class TestInSubquery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  @Test
+  @Test()
   public final void testCorrelatedSubQuery() throws Exception {
+    // Use try-catch clause to verify the exact error message
     try {
       executeString("select * from nation where n_regionkey in (select r_regionkey from region where n_name > r_name)");
-      fail("Correlated subquery must raise the UnsupportedException.");
-    } catch (ServiceException e) {
-      assertEquals("Correlated subquery is not supported yet: default.nation.n_name", e.getMessage());
+      fail("Correlated subquery must raise the UnimplementedException.");
+    } catch (SQLException e) {
+      assertEquals("not implemented feature: Correlated subquery", e.getMessage());
     }
   }
 
