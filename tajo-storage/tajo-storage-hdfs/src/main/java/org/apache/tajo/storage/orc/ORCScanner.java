@@ -64,7 +64,6 @@ public class ORCScanner extends FileScanner {
   private Vector createOrcVector(TajoDataTypes.DataType type) {
     switch (type.getType()) {
       case INT1: case INT2: case INT4: case INT8:
-      case UINT1: case UINT2: case UINT4: case UINT8:
       case INET4:
       case TIMESTAMP:
       case DATE:
@@ -189,23 +188,19 @@ public class ORCScanner extends FileScanner {
   private Datum createValueDatum(Vector vector, TajoDataTypes.DataType type) {
     switch (type.getType()) {
       case INT1:
-      case UINT1:
       case INT2:
-      case UINT2:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
 
         return DatumFactory.createInt2((short) ((LongVector) vector).vector[currentPosInBatch]);
 
       case INT4:
-      case UINT4:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
 
         return DatumFactory.createInt4((int) ((LongVector) vector).vector[currentPosInBatch]);
 
       case INT8:
-      case UINT8:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
 
