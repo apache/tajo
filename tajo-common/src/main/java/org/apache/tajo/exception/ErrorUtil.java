@@ -16,19 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-public class NoSuchIndexException extends CatalogException {
-  private static final long serialVersionUID = 3705839985189534673L;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.error.Stacktrace;
 
-  public NoSuchIndexException() {
+public class ErrorUtil {
+  public static boolean isOk(ResultCode code) {
+    return code == ResultCode.OK;
   }
 
-  public NoSuchIndexException(String databaseName, String columnName) {
-    super(String.format("ERROR: index \" %s \" in %s does not exist", columnName, databaseName));
+  public static boolean isFailed(ResultCode code) {
+    return code != ResultCode.OK;
   }
 
-  public NoSuchIndexException(String indexName) {
-    super("ERROR: index \"" + indexName + "\" does not exist");
+  public static Stacktrace.StackTrace convertStacktrace(Throwable t) {
+    Stacktrace.StackTrace.Builder builder = Stacktrace.StackTrace.newBuilder();
+    for (StackTraceElement element: t.getStackTrace()) {
+      builder.addElement(Stacktrace.StackTrace.Element.newBuilder()
+              .setFilename(element.getFileName())
+              .setFunction(element.getClassName() + "::" + element.getMethodName())
+              .setLine(element.getLineNumber())
+      );
+    }
+    return builder.build();
   }
 }

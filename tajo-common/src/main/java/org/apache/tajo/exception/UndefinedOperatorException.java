@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-public class AlreadyExistsFieldException extends CatalogException {
-	private static final long serialVersionUID = 6766228091940775275L;
+import org.apache.tajo.error.Errors;
 
-	public AlreadyExistsFieldException() {
-	}
+public class UndefinedOperatorException extends TajoException {
 
-	public AlreadyExistsFieldException(String fieldName) {
-		super("Already Exists Field: "+fieldName);
-	}
+  public UndefinedOperatorException(String operation) {
+    super(Errors.ResultCode.UNDEFINED_OPERATOR, operation);
+  }
 }

@@ -22,12 +22,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.algebra.Relation;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.NoSuchColumnException;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
 import org.apache.tajo.plan.algebra.AmbiguousFieldException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -192,7 +190,7 @@ public abstract class NameResolver {
    * @return The found column
    */
   static Column resolveFromCurrentAndChildNode(LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws NoSuchColumnException {
+      throws UndefinedColumnException {
 
     if (block.getCurrentNode() != null && block.getCurrentNode().getInSchema() != null) {
       Column found = block.getCurrentNode().getInSchema().getColumn(columnRef.getCanonicalName());
@@ -355,7 +353,7 @@ public abstract class NameResolver {
 
     // throw exception if no column cannot be founded or two or more than columns are founded
     if (guessedRelations.size() == 0) {
-      throw new NoSuchColumnException(columnRef.getQualifier());
+      throw new UndefinedColumnException(columnRef.getQualifier());
     } else if (guessedRelations.size() > 1) {
       throw new AmbiguousFieldException(columnRef.getCanonicalName());
     }

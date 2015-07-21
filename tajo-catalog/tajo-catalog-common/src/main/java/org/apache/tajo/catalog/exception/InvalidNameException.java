@@ -1,5 +1,5 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
+/*
+ * Lisensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -16,18 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.jdbc;
+package org.apache.tajo.catalog.exception;
 
-public enum SQLStates {
-  ER_NO_SUCH_TABLE("42S02");
 
-  private String state;
+import org.apache.tajo.error.Errors;
 
-  SQLStates(String state) {
-    this.state = state;
-  }
+public class InvalidNameException extends CatalogException {
 
-  public String getState() {
-    return state;
-  }
+	public InvalidNameException(String databaseName) {
+		super(Errors.ResultCode.INVALID_NAME, databaseName);
+	}
 }

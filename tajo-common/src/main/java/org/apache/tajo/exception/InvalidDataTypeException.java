@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.error.Errors;
 
-public class AlreadyExistsDatabaseException extends CatalogException {
+public class InvalidDataTypeException extends TajoRuntimeException {
 
-  public AlreadyExistsDatabaseException() {
-	}
-
-	public AlreadyExistsDatabaseException(String dbName) {
-		super(String.format("Already exists database \"%s\"", dbName));
-	}
+  public InvalidDataTypeException(DataType dataType) {
+    super(Errors.ResultCode.INVALID_DATATYPE, dataType.getType().name());
+  }
 }

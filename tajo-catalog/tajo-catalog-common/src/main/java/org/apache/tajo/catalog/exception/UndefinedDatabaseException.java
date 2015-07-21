@@ -19,17 +19,12 @@
 package org.apache.tajo.catalog.exception;
 
 
-public class AlreadyExistsTableException extends CatalogException {
-	private static final long serialVersionUID = -641623770742392865L;
+import org.apache.tajo.error.Errors;
 
-	public AlreadyExistsTableException() {		
-	}
+public class UndefinedDatabaseException extends CatalogException {
+	private static final long serialVersionUID = 277182608283894937L;
 
-  public AlreadyExistsTableException(String databaseName, String relName) {
-    super(String.format("relation \" %s \" already exists in %s", relName, databaseName));
-  }
-
-	public AlreadyExistsTableException(String tableName) {
-		super("relation \"" + tableName + "\" exists table");
+	public UndefinedDatabaseException(String dbName) {
+		super(Errors.ResultCode.UNDEFINED_DATABASE, dbName);
 	}
 }

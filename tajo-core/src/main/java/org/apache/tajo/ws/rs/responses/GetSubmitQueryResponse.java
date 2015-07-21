@@ -19,20 +19,22 @@
 package org.apache.tajo.ws.rs.responses;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.net.URI;
 
 public class GetSubmitQueryResponse {
-  @Expose private ClientProtos.ResultCode resultCode;
+  @Expose private ResultCode resultCode;
   @Expose private String query;
   @Expose private URI uri;
 
-  public ClientProtos.ResultCode getResultCode() {
+  public ResultCode getResultCode() {
     return resultCode;
   }
 
-  public void setResultCode(ClientProtos.ResultCode resultCode) {
+  public void setResultCode(ResultCode resultCode) {
     this.resultCode = resultCode;
   }
 

@@ -19,16 +19,17 @@
 package org.apache.tajo.catalog.exception;
 
 
-public class NoSuchColumnException extends CatalogException {
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.error.Errors.ResultCode;
+
+public class UndefinedTableException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
 
-	public NoSuchColumnException() {}
-
-  public NoSuchColumnException(String databaseName, String relName, String columnName) {
-    super(String.format("ERROR: column \" %s.%s \" in %s does not exist", relName, columnName, databaseName));
+  public UndefinedTableException(String dbName, String tbName) {
+		super(ResultCode.UNDEFINED_TABLE, CatalogUtil.buildFQName(dbName, tbName));
   }
 
-	public NoSuchColumnException(String columnName) {
-		super("ERROR: column \"" + columnName + "\" does not exist");
+	public UndefinedTableException(String relName) {
+		super(ResultCode.UNDEFINED_TABLE, relName);
 	}
 }

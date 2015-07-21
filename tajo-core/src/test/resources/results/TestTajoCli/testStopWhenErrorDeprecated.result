@@ -3,4 +3,4 @@ Warning: deprecated to directly use config key in TajoConf.ConfVars. Please exec
 -------------------------------
 5
 (1 rows, , 2 B selected)
-ERROR: relation "default.lineitem2" does not exist
+ERROR: relation 'default.lineitem2' does not exist

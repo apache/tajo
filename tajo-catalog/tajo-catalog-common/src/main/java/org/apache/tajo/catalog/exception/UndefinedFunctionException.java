@@ -19,22 +19,26 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.function.FunctionUtil;
 
 import java.util.Collection;
 
-public class NoSuchFunctionException extends RuntimeException {
+public class UndefinedFunctionException extends CatalogException {
 	private static final long serialVersionUID = 5062193018697228028L;
 
-  public NoSuchFunctionException(String message) {
-    super(message);
+  public UndefinedFunctionException(String signature) {
+    super(ResultCode.UNDEFINED_FUNCTION, signature);
   }
 
-  public NoSuchFunctionException(String funcName, TajoDataTypes.DataType [] parameters) {
-    super("function " + FunctionUtil.buildSimpleFunctionSignature(funcName, parameters) + " does not exist");
+  public UndefinedFunctionException(String funcName, TajoDataTypes.DataType[] parameters) {
+    super(ResultCode.UNDEFINED_FUNCTION, FunctionUtil.buildSimpleFunctionSignature(funcName, parameters));
   }
 
-	public NoSuchFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
-		super("function " + FunctionUtil.buildSimpleFunctionSignature(funcName, parameters) + " does not exist");
+	public UndefinedFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
+		super(ResultCode.UNDEFINED_FUNCTION, FunctionUtil.buildSimpleFunctionSignature(funcName, parameters));
 	}
 }

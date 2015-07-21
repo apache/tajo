@@ -32,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertEquals;
@@ -67,7 +68,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   }
 
   @AfterClass
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     TestJoinQuery.classTearDown();
     client.executeQuery("DROP TABLE IF EXISTS customer_parts PURGE");
     client.executeQuery("DROP TABLE IF EXISTS nation_partitioned PURGE");

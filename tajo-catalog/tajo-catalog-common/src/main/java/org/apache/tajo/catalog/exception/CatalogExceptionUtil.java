@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,13 +18,28 @@
 
 package org.apache.tajo.catalog.exception;
 
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.function.FunctionUtil;
 
-public class AlreadyExistsTablespaceException extends CatalogException {
+import java.util.Collection;
 
-  public AlreadyExistsTablespaceException() {
-	}
+public class CatalogExceptionUtil {
 
-	public AlreadyExistsTablespaceException(String dbName) {
-		super(String.format("Already exists tablespace \"%s\"", dbName));
-	}
+  public static CatalogException makeUndefinedTable(String tbName) {
+    return new CatalogException(ResultCode.UNDEFINED_TABLE, tbName);
+  }
+
+  public static CatalogException makeDuplicateTable(String tbName) {
+    return new CatalogException(ResultCode.DUPLICATE_TABLE, tbName);
+  }
+
+  public static CatalogException makeCatalogUpgrade() {
+    return new CatalogException(ResultCode.CAT_UPGRADE_REQUIRED);
+  }
+
+  public static CatalogException makeMDCNoMatchedDataType(String dataType) {
+    return new CatalogException(ResultCode.MDC_NO_MATCHED_DATATYPE, dataType);
+  }
 }

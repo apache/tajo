@@ -16,10 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.common.exception;
+package org.apache.tajo.catalog.exception;
 
-public class InvalidAddressException extends Exception {
 
-	private static final long serialVersionUID = -7266998886109689882L;
+import org.apache.tajo.error.Errors;
 
+public class DuplicateDatabaseException extends CatalogException {
+	public DuplicateDatabaseException(String dbName) {
+		super(Errors.ResultCode.DUPLICATE_DATABASE, dbName);
+	}
 }

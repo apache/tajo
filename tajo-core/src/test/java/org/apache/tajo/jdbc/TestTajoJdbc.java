@@ -619,7 +619,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         result  = stmt.executeUpdate("alter table " + tableName + " add partition (key = 0.1)");
         assertEquals(result, 1);
      }
-    } finally {
+    } finally {      
       cleanupQuery(resultSet);
       if (stmt != null) {
         stmt.close();

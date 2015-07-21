@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
+import org.apache.tajo.error.Errors.ResultCode;
 
-public class NoSuchTableException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
+/**
+ * TajoException contains all exceptions with any exact reason.
+ * It always have an exact error code and an error message.
+ */
+public class TajoException extends Exception implements TajoExceptionInterface {
+  private ResultCode code;
 
-	public NoSuchTableException() {}
-
-  public NoSuchTableException(String databaseName, String relName) {
-    super(String.format("ERROR: relation \" %s \" in %s does not exist", relName, databaseName));
+  public TajoException(ResultCode code) {
+    super(ErrorMessages.getMessage(code));
+    this.code = code;
   }
 
-	public NoSuchTableException(String relName) {
-		super("ERROR: relation \"" + relName + "\" does not exist");
-	}
+  public TajoException(ResultCode code, String ... args) {
+    super(ErrorMessages.getMessage(code, args));
+    this.code = code;
+  }
+
+  @Override
+  public ResultCode getErrorCode() {
+    return code;
+  }
 }

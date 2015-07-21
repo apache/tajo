@@ -60,7 +60,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      e.printStackTrace();
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);

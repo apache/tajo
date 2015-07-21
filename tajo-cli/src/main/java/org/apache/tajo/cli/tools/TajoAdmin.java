@@ -405,13 +405,19 @@ public class TajoAdmin {
 
   public void processKill(Writer writer, String queryIdStr)
       throws IOException, ServiceException {
-    QueryStatus status = tajoClient.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
-    if (status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
-      writer.write(queryIdStr + " is killed successfully.\n");
-    } else if (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT) {
-      writer.write(queryIdStr + " will be finished after a while.\n");
-    } else {
-      writer.write("ERROR:" + status.getErrorMessage());
+
+    try {
+      QueryStatus status = tajoClient.killQuery(TajoIdUtils.parseQueryId(queryIdStr));
+
+      if (status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
+        writer.write(queryIdStr + " is killed successfully.\n");
+      } else if (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT) {
+        writer.write(queryIdStr + " will be finished after a while.\n");
+      } else {
+        writer.write("ERROR:" + status.getErrorMessage());
+      }
+    } catch (SQLException e) {
+      writer.write("ERROR:" + e.getMessage());
     }
   }
 

@@ -16,34 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.common.exception;
+package org.apache.tajo.exception;
 
-public class NotImplementedException extends RuntimeException {
+public class InvalidAddressException extends Exception {
 
-  private static final long serialVersionUID = 8515328809349325243L;
+	private static final long serialVersionUID = -7266998886109689882L;
 
-  public NotImplementedException() {
-  }
-
-  /**
-   * @param message
-   */
-  public NotImplementedException(String message) {
-    super(message);
-  }
-
-  /**
-   * @param cause
-   */
-  public NotImplementedException(Throwable cause) {
-    super(cause);
-  }
-
-  /**
-   * @param message
-   * @param cause
-   */
-  public NotImplementedException(String message, Throwable cause) {
-    super(message, cause);
-  }
 }
