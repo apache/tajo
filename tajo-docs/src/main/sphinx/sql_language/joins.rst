@@ -7,33 +7,35 @@ Overview
 =====================
 
 In Tajo, a single query can accesses multiple rows of the same or different relations at one time. This query is called *join*.
-Currently, Tajo supports inner (cross) joins and outer joins.
+Currently, Tajo supports cross, inner, and outer joins. 
 
 A join query can involve multiple relations in the ``FROM`` clause according to the following rule.
 
 .. code-block:: sql
 
-  FROM table_reference [, table_reference [, ...]]
+  FROM joined_table [, joined_table [, ...] ]
 
-, where ``table_reference`` is:
+, where ``joined_table`` is:
 
 .. code-block:: sql
 
-  table_primary join_type table_primary [ join_condition ]
+  table_reference join_type table_reference [ ON join_condition ]
 
 ``join_type`` can be one of the followings.
 
 .. code-block:: sql
 
-  NATURAL { CROSS | INNER } | { { LEFT | RIGHT | FULL } OUTER } JOIN
+  CROSS JOIN
+  [ NATURAL ] [ INNER ] JOIN
+  { LEFT | RIGHT | FULL } OUTER JOIN
 
-For more detail for ``join_condition``, please refer to :doc:`/sql_language/predicates`.
+``join_condition`` can be specified in the ``WHERE`` clause as well as the ``ON`` clause.
+
+For more information, please refer to :doc:`/sql_language/predicates`.
 
 .. note::
 
   Currently, Tajo cannot natively support non-equality conditions. It means that inner joins with non-equality conditions will be executed with cross joins. Outer joins with non-equality conditions cannot be executed yet.
-
-Please see :doc:`/sql_language/queries` for the context of this join syntax.
 
 =====================
 Examples
