@@ -21,19 +21,19 @@ package org.apache.tajo.plan.util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
@@ -487,7 +487,7 @@ public class PlannerUtil {
     Preconditions.checkNotNull(type);
 
     ParentNodeFinder finder = new ParentNodeFinder(type);
-    node.postOrder(finder);
+    node.preOrder(finder);
 
     if (finder.getFoundNodes().size() == 0) {
       return null;
@@ -770,11 +770,12 @@ public class PlannerUtil {
     }
   }
 
-  public static boolean isCommutativeJoin(JoinType joinType) {
-    return joinType == JoinType.INNER;
+  public static boolean isCommutativeJoinType(JoinType joinType) {
+    // Full outer join is also commutative.
+    return joinType == JoinType.INNER || joinType == JoinType.CROSS || joinType == JoinType.FULL_OUTER;
   }
 
-  public static boolean isOuterJoin(JoinType joinType) {
+  public static boolean isOuterJoinType(JoinType joinType) {
     return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
   }
 

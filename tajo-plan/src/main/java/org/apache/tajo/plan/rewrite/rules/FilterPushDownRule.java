@@ -248,7 +248,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(onPredicates, block, joinNode));
 
     // for outer joins
-    if (PlannerUtil.isOuterJoin(joinNode.getJoinType())) {
+    if (PlannerUtil.isOuterJoinType(joinNode.getJoinType())) {
       nonPushableQuals.addAll(extractNonPushableOuterJoinQuals(plan, onPredicates, wherePredicates, joinNode));
     }
     return nonPushableQuals;

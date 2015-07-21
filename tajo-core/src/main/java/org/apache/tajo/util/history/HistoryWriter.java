@@ -53,6 +53,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class HistoryWriter extends AbstractService {
   private static final Log LOG = LogFactory.getLog(HistoryWriter.class);
+  public static final String HISTORY_QUERY_REPLICATION = "tajo.history.query.replication";
+  public static final String HISTORY_TASK_REPLICATION = "tajo.history.task.replication";
+
   public static final String QUERY_LIST = "query-list";
   public static final String QUERY_DETAIL = "query-detail";
   public static final String HISTORY_FILE_POSTFIX = ".hist";
@@ -87,13 +90,15 @@ public class HistoryWriter extends AbstractService {
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("conf should be a TajoConf type.");
     }
-    tajoConf = (TajoConf)conf;
+    tajoConf = (TajoConf) conf;
     historyParentPath = tajoConf.getQueryHistoryDir(tajoConf);
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
     writerThread = new WriterThread();
     historyCleaner = new HistoryCleaner(tajoConf, isMaster);
-    queryReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_REPLICATION);
-    taskReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_TASK_REPLICATION);
+    queryReplication = (short) tajoConf.getInt(HISTORY_QUERY_REPLICATION,
+        FileSystem.get(tajoConf).getDefaultReplication(historyParentPath));
+    taskReplication = (short) tajoConf.getInt(HISTORY_TASK_REPLICATION,
+        FileSystem.get(tajoConf).getDefaultReplication(taskHistoryParentPath));
     super.serviceInit(conf);
   }
 
@@ -144,6 +149,7 @@ public class HistoryWriter extends AbstractService {
       }
     };
     historyQueue.add(future);
+
     synchronized (writerThread) {
       writerThread.notifyAll();
     }
@@ -151,7 +157,7 @@ public class HistoryWriter extends AbstractService {
   }
 
   /* synchronously flush to history file */
-  public synchronized void appendAndSync(History history)
+  public void appendAndSync(History history)
       throws TimeoutException, InterruptedException, IOException {
 
     WriterFuture<WriterHolder> future = appendAndFlush(history);
@@ -227,7 +233,7 @@ public class HistoryWriter extends AbstractService {
         }
 
         try {
-          if (!histories.isEmpty()) {
+          if (!stopped.get() && !histories.isEmpty()) {
             writeHistory(histories);
           } else {
             continue;
@@ -239,25 +245,23 @@ public class HistoryWriter extends AbstractService {
         //clean up history file
 
         // closing previous writer
-        synchronized (taskWriters) {
-          Calendar cal = Calendar.getInstance();
-          cal.add(Calendar.HOUR_OF_DAY, -2);
-          String closeTargetTime = df.format(cal.getTime());
-          List<String> closingTargets = new ArrayList<String>();
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.HOUR_OF_DAY, -2);
+        String closeTargetTime = df.format(cal.getTime());
+        List<String> closingTargets = new ArrayList<String>();
 
-          for (String eachWriterTime : taskWriters.keySet()) {
-            if (eachWriterTime.compareTo(closeTargetTime) <= 0) {
-              closingTargets.add(eachWriterTime);
-            }
+        for (String eachWriterTime : taskWriters.keySet()) {
+          if (eachWriterTime.compareTo(closeTargetTime) <= 0) {
+            closingTargets.add(eachWriterTime);
           }
+        }
 
-          for (String eachWriterTime : closingTargets) {
-            WriterHolder writerHolder;
-            writerHolder = taskWriters.remove(eachWriterTime);
-            if (writerHolder != null) {
-              LOG.info("Closing task history file: " + writerHolder.path);
-              IOUtils.cleanup(LOG, writerHolder);
-            }
+        for (String eachWriterTime : closingTargets) {
+          WriterHolder writerHolder;
+          writerHolder = taskWriters.remove(eachWriterTime);
+          if (writerHolder != null) {
+            LOG.info("Closing task history file: " + writerHolder.path);
+            IOUtils.cleanup(LOG, writerHolder);
           }
         }
       }
@@ -267,24 +271,20 @@ public class HistoryWriter extends AbstractService {
     private int drainHistory(Collection<WriterFuture<WriterHolder>> buffer, int numElements,
                              long timeoutMillis) throws InterruptedException {
 
-      long deadline = System.currentTimeMillis() + timeoutMillis;
+      long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
       int added = 0;
       while (added < numElements) {
         added += historyQueue.drainTo(buffer, numElements - added);
         if (added < numElements) { // not enough elements immediately available; will have to wait
-          if (deadline <= System.currentTimeMillis()) {
-            break;
-          } else {
-            synchronized (writerThread) {
-              writerThread.wait(deadline - System.currentTimeMillis());
-              if (deadline > System.currentTimeMillis()) {
-                added += historyQueue.drainTo(buffer, numElements - added);
-                break;
-              }
-            }
+          WriterFuture<WriterHolder> e = historyQueue.poll(deadline - System.nanoTime(), TimeUnit.NANOSECONDS);
+          if (e == null) {
+            break; // we already waited enough, and there are no more elements in sight
           }
+          buffer.add(e);
+          added++;
         }
       }
+
       return added;
     }
 
@@ -427,13 +427,11 @@ public class HistoryWriter extends AbstractService {
     }
 
     private void flushTaskHistories() {
-      synchronized (taskWriters) {
-        for (WriterHolder holder : taskWriters.values()) {
-          try {
-            holder.flush();
-          } catch (IOException e) {
-            LOG.warn(e, e);
-          }
+      for (WriterHolder holder : taskWriters.values()) {
+        try {
+          holder.flush();
+        } catch (IOException e) {
+          LOG.warn(e, e);
         }
       }
     }

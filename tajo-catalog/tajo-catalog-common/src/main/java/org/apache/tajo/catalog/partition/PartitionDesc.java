@@ -22,13 +22,12 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -55,35 +54,10 @@ import java.util.List;
  */
 public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescProto>, Cloneable, GsonObject {
   @Expose protected String partitionName;
-  @Expose protected List<PartitionKey> partitionKeys;
+  @Expose protected List<PartitionKeyProto> partitionKeys;
   @Expose protected String path; //optional
 
   private CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
-
-  public PartitionDesc() {
-  }
-
-  public PartitionDesc(PartitionDesc partition) {
-    this.partitionName = partition.partitionName;
-    this.partitionKeys = partition.partitionKeys;
-    this.path = partition.path;
-  }
-
-  public PartitionDesc(CatalogProtos.PartitionDescProto proto) {
-    if(proto.hasPartitionName()) {
-      this.partitionName = proto.getPartitionName();
-    }
-
-    this.partitionKeys = new ArrayList<PartitionKey>();
-    for(CatalogProtos.PartitionKeyProto keyProto : proto.getPartitionKeysList()) {
-      PartitionKey partitionKey = new PartitionKey(keyProto);
-      this.partitionKeys.add(partitionKey);
-    }
-
-    if(proto.hasPath()) {
-      this.path = proto.getPath();
-    }
-  }
 
   public String getPartitionName() {
     return partitionName;
@@ -93,20 +67,20 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     this.partitionName = partitionName;
   }
 
-  public List<PartitionKey> getPartitionKeys() {
-    return partitionKeys;
-  }
-
-  public void setPartitionKeys(List<PartitionKey> partitionKeys) {
-    this.partitionKeys = partitionKeys;
-  }
-
   public void setPath(String path) {
     this.path = path;
   }
 
   public String getPath() {
     return path;
+  }
+
+  public List<PartitionKeyProto> getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public void setPartitionKeys(List<PartitionKeyProto> partitionKeys) {
+    this.partitionKeys = partitionKeys;
   }
 
   public int hashCode() {
@@ -142,8 +116,8 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
 
     builder.clearPartitionKeys();
     if (this.partitionKeys != null) {
-      for(PartitionKey partitionKey : this.partitionKeys) {
-        builder.addPartitionKeys(partitionKey.getProto());
+      for(PartitionKeyProto partitionKey : this.partitionKeys) {
+        builder.addPartitionKeys(partitionKey);
       }
     }
 

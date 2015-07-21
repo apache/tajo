@@ -21,26 +21,26 @@ package org.apache.tajo.worker.event;
 
 import com.google.protobuf.RpcCallback;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationRequestProto;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.BatchAllocationResponseProto;
+import static org.apache.tajo.ResourceProtos.BatchAllocationRequest;
+import static org.apache.tajo.ResourceProtos.BatchAllocationResponse;
 
 public class NodeResourceAllocateEvent extends NodeResourceEvent {
 
-  private BatchAllocationRequestProto request;
-  private RpcCallback<BatchAllocationResponseProto> callback;
+  private BatchAllocationRequest request;
+  private RpcCallback<BatchAllocationResponse> callback;
 
-  public NodeResourceAllocateEvent(BatchAllocationRequestProto request,
-                                   RpcCallback<BatchAllocationResponseProto> callback) {
-    super(EventType.ALLOCATE);
+  public NodeResourceAllocateEvent(BatchAllocationRequest request,
+                                   RpcCallback<BatchAllocationResponse> callback) {
+    super(EventType.ALLOCATE, ResourceType.TASK);
     this.callback = callback;
     this.request = request;
   }
 
-  public BatchAllocationRequestProto getRequest() {
+  public BatchAllocationRequest getRequest() {
     return request;
   }
 
-  public RpcCallback<BatchAllocationResponseProto> getCallback() {
+  public RpcCallback<BatchAllocationResponse> getCallback() {
     return callback;
   }
 }

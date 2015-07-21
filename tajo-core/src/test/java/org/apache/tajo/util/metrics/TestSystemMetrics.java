@@ -54,12 +54,14 @@ public class TestSystemMetrics {
     out.write("reporter.file=org.apache.tajo.util.metrics.reporter.MetricsFileScheduledReporter\n".getBytes());
     out.write("reporter.console=org.apache.tajo.util.metrics.reporter.MetricsConsoleScheduledReporter\n".getBytes());
 
+    out.write("test-file-group-jvm.reporters=console\n".getBytes());
     out.write("test-file-group.reporters=file\n".getBytes());
     out.write("test-console-group.reporters=console\n".getBytes());
     out.write("test-find-console-group.reporters=console,file\n".getBytes());
 
     out.write(("test-file-group.file.filename=" + metricsOutputFile.toUri().getPath() + "\n").getBytes());
     out.write("test-file-group.file.period=5\n".getBytes());
+    out.close();
   }
 
   @Test
@@ -71,7 +73,7 @@ public class TestSystemMetrics {
 
     Collection<TajoMetricsScheduledReporter> reporters = tajoSystemMetrics.getMetricsReporters();
 
-    assertEquals(1, reporters.size());
+    assertEquals(2, reporters.size());
 
     TajoMetricsScheduledReporter reporter = reporters.iterator().next();
     assertEquals(5, reporter.getPeriod());
@@ -122,6 +124,7 @@ public class TestSystemMetrics {
     }
 
     assertEquals(2, lines.size());
+    tajoSystemMetrics.stop();
   }
 
   @After

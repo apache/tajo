@@ -29,12 +29,24 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
 import java.io.IOException;
-import java.util.*;
+import java.net.InetSocketAddress;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.apache.tajo.ResourceProtos.ExecutionBlockListProto;
+import static org.apache.tajo.ResourceProtos.ExecutionBlockContextRequest;
+import static org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 
 /**
  * A TaskManager is responsible for managing executionBlock resource and tasks.
@@ -45,26 +57,23 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   private final TajoWorker.WorkerContext workerContext;
   private final Map<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
   private final Dispatcher dispatcher;
-  private final EventHandler rmEventHandler;
+  private TaskExecutor executor;
 
-  private TajoConf tajoConf;
+  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext){
+    this(dispatcher, workerContext, null);
+  }
 
-  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, EventHandler rmEventHandler) {
+  public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext, TaskExecutor executor) {
     super(TaskManager.class.getName());
 
     this.dispatcher = dispatcher;
     this.workerContext = workerContext;
     this.executionBlockContextMap = Maps.newHashMap();
-    this.rmEventHandler = rmEventHandler;
+    this.executor = executor;
   }
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-    if (!(conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
-    }
-
-    this.tajoConf = (TajoConf)conf;
     dispatcher.register(TaskManagerEvent.EventType.class, this);
     super.serviceInit(conf);
   }
@@ -87,22 +96,51 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     return workerContext;
   }
 
-  protected ExecutionBlockContext createExecutionBlock(TajoWorkerProtocol.RunExecutionBlockRequestProto request) {
+  protected TaskExecutor getTaskExecutor() {
+    if (executor == null) {
+      executor = workerContext.getTaskExecuor();
+    }
+    return executor;
+  }
+
+  public int getRunningTasks() {
+    return workerContext.getTaskExecuor().getRunningTasks();
+  }
+
+  protected ExecutionBlockContext createExecutionBlock(ExecutionBlockId executionBlockId,
+                                                       String queryMasterHostAndPort) {
+
+    LOG.info("QueryMaster Address:" + queryMasterHostAndPort);
+
+    AsyncRpcClient client = null;
     try {
-      ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), null, request);
+      InetSocketAddress address = NetUtils.createSocketAddr(queryMasterHostAndPort);
+      ExecutionBlockContextRequest.Builder request = ExecutionBlockContextRequest.newBuilder();
+      request.setExecutionBlockId(executionBlockId.getProto())
+          .setWorker(getWorkerContext().getConnectionInfo().getProto());
+
+      client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true);
+      QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+      CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<ExecutionBlockContextResponse>();
+      stub.getExecutionBlockContext(callback.getController(), request.build(), callback);
+
+      ExecutionBlockContextResponse contextProto =
+          callback.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), contextProto, client);
 
       context.init();
       return context;
     } catch (Throwable e) {
+      RpcClientManager.cleanup(client);
       LOG.fatal(e.getMessage(), e);
       throw new RuntimeException(e);
     }
   }
 
   protected void stopExecutionBlock(ExecutionBlockContext context,
-                                    TajoWorkerProtocol.ExecutionBlockListProto cleanupList) {
+                                    ExecutionBlockListProto cleanupList) {
 
-    if(context != null){
+    if (context != null) {
       try {
         context.getSharedResource().releaseBroadcastCache(context.getExecutionBlockId());
         context.sendShuffleReport();
@@ -127,22 +165,72 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
 
   @Override
   public void handle(TaskManagerEvent event) {
-    LOG.info("======================== Processing " + event.getExecutionBlockId() + " of type " + event.getType());
 
-    if (event instanceof ExecutionBlockStartEvent) {
+    if(LOG.isDebugEnabled()) {
+      LOG.debug("======================== Processing " + event + " of type " + event.getType());
+    }
 
-      //receive event from NodeResourceManager
-      if(!executionBlockContextMap.containsKey(event.getExecutionBlockId())) {
-        ExecutionBlockContext context = createExecutionBlock(((ExecutionBlockStartEvent) event).getRequestProto());
-        executionBlockContextMap.put(context.getExecutionBlockId(), context);
-      } else {
-        LOG.warn("Already initialized ExecutionBlock: " + event.getExecutionBlockId());
+    switch (event.getType()) {
+      case TASK_START: {
+        //receive event from NodeResourceManager
+        TaskStartEvent taskStartEvent = TUtil.checkTypeAndGet(event, TaskStartEvent.class);
+        try {
+          if (!executionBlockContextMap.containsKey(taskStartEvent.getExecutionBlockId())) {
+            ExecutionBlockContext context = createExecutionBlock(taskStartEvent.getExecutionBlockId(),
+                taskStartEvent.getTaskRequest().getQueryMasterHostAndPort());
+
+            executionBlockContextMap.put(context.getExecutionBlockId(), context);
+            LOG.info("Running ExecutionBlocks: " + executionBlockContextMap.size()
+                + ", running tasks:" + getRunningTasks() + ", availableResource: "
+                + workerContext.getNodeResourceManager().getAvailableResource());
+          }
+          getTaskExecutor().handle(taskStartEvent);
+        } catch (Exception e) {
+          getTaskExecutor().releaseResource(taskStartEvent.getTaskAttemptId());
+          getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
+              .handle(new ExecutionBlockErrorEvent(taskStartEvent.getExecutionBlockId(), e));
+        }
+        break;
       }
-    } else if (event instanceof ExecutionBlockStopEvent) {
-      //receive event from QueryMaster
-      rmEventHandler.handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
-      stopExecutionBlock(executionBlockContextMap.remove(event.getExecutionBlockId()),
-          ((ExecutionBlockStopEvent) event).getCleanupList());
+      case EB_STOP: {
+        //receive event from QueryMaster
+        ExecutionBlockStopEvent executionBlockStopEvent = TUtil.checkTypeAndGet(event, ExecutionBlockStopEvent.class);
+        workerContext.getNodeResourceManager().getDispatcher().getEventHandler()
+            .handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));
+        stopExecutionBlock(executionBlockContextMap.remove(executionBlockStopEvent.getExecutionBlockId()),
+            executionBlockStopEvent.getCleanupList());
+        break;
+      }
+      case QUERY_STOP: {
+        QueryStopEvent queryStopEvent = TUtil.checkTypeAndGet(event, QueryStopEvent.class);
+
+        //cleanup failure ExecutionBlock
+        for (ExecutionBlockId ebId : executionBlockContextMap.keySet()) {
+          if (ebId.getQueryId().equals(queryStopEvent.getQueryId())) {
+            try {
+              executionBlockContextMap.remove(ebId).stop();
+            } catch (Exception e) {
+              LOG.fatal(e.getMessage(), e);
+            }
+          }
+        }
+        workerContext.cleanup(queryStopEvent.getQueryId().toString());
+        break;
+      }
+      case EB_FAIL: {
+        ExecutionBlockErrorEvent errorEvent = TUtil.checkTypeAndGet(event, ExecutionBlockErrorEvent.class);
+        LOG.error(errorEvent.getError().getMessage(), errorEvent.getError());
+        ExecutionBlockContext context = executionBlockContextMap.remove(errorEvent.getExecutionBlockId());
+
+        if (context != null) {
+          context.getSharedResource().releaseBroadcastCache(context.getExecutionBlockId());
+          getWorkerContext().getTaskHistoryWriter().flushTaskHistories();
+          context.stop();
+        }
+        break;
+      }
+      default:
+        break;
     }
   }
 
@@ -158,17 +246,14 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     return null;
   }
 
-  public List<TaskHistory> getTaskHistories(ExecutionBlockId executionblockId) throws IOException {
-    List<TaskHistory> histories = new ArrayList<TaskHistory>();
-    ExecutionBlockContext context = executionBlockContextMap.get(executionblockId);
-    if (context != null) {
-      histories.addAll(context.getTaskHistories().values());
-    }
-    //TODO get List<TaskHistory> from HistoryReader
-    return histories;
+  public List<org.apache.tajo.util.history.TaskHistory> getTaskHistories(ExecutionBlockId executionblockId)
+      throws IOException {
+
+    return getWorkerContext().getHistoryReader().getTaskHistory(executionblockId.getQueryId().toString(),
+        executionblockId.toString());
   }
 
-  public TaskHistory getTaskHistory(TaskId taskId) {
+  public TaskHistory getTaskHistory(TaskId taskId) throws IOException {
     TaskHistory history = null;
     ExecutionBlockContext context = executionBlockContextMap.get(taskId.getExecutionBlockId());
     if (context != null) {

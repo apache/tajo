@@ -24,15 +24,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.catalog.store.MySQLStore;
 import org.apache.tajo.catalog.store.MariaDBStore;
@@ -40,6 +39,7 @@ import org.apache.tajo.catalog.store.OracleStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -94,7 +94,7 @@ public class TestCatalog {
     // MySQLStore/MariaDB/PostgreSQL requires username (and password).
     if (isConnectionIdRequired(driverClass)) {
       if (connectionId == null) {
-        throw new CatalogException(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
+        throw new TajoInternalError(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
       }
       conf.set(CatalogConstants.CONNECTION_ID, connectionId);
       if (password != null) {
@@ -695,7 +695,7 @@ public class TestCatalog {
       assertFalse(catalog.containFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
       catalog.getFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
       fail();
-    } catch (NoSuchFunctionException nsfe) {
+    } catch (UndefinedFunctionException nsfe) {
       // succeed test
     } catch (Throwable e) {
       fail(e.getMessage());
@@ -936,10 +936,15 @@ public class TestCatalog {
 
     String[] partitionNames = partitionName.split("/");
 
-    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
     for(int i = 0; i < partitionNames.length; i++) {
       String columnName = partitionNames[i].split("=")[0];
-      partitionKeyList.add(new PartitionKey(partitionNames[i], columnName));
+
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(partitionNames[i]);
+      builder.setPartitionValue(columnName);
+
+      partitionKeyList.add(builder.build());
     }
 
     partitionDesc.setPartitionKeys(partitionKeyList);
@@ -1098,7 +1103,7 @@ public class TestCatalog {
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
-  @Test(expected=NoSuchFunctionException.class)
+  @Test(expected=UndefinedFunctionException.class)
   public final void testFindIntInvalidFunc() throws Exception {
     assertFalse(catalog.containFunction("testintinvalid", FunctionType.GENERAL));
     FunctionDesc meta = new FunctionDesc("testintinvalid", TestIntFunc.class, FunctionType.GENERAL,
@@ -1127,7 +1132,7 @@ public class TestCatalog {
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
-  @Test(expected=NoSuchFunctionException.class)
+  @Test(expected=UndefinedFunctionException.class)
   public final void testFindFloatInvalidFunc() throws Exception {
     assertFalse(catalog.containFunction("testfloatinvalid", FunctionType.GENERAL));
     FunctionDesc meta = new FunctionDesc("testfloatinvalid", TestFloatFunc.class, FunctionType.GENERAL,

@@ -20,7 +20,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
@@ -151,7 +151,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     try {
       testSimpleEval("select coalesce(null, 2, 'value3');", new String[]{"2"});
       fail("coalesce(NULL, INT, TEXT) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       //success
     }
   }
@@ -170,7 +170,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     try {
       testSimpleEval("select coalesce(null, 'value2', 3);", new String[]{"2"});
       fail("coalesce(NULL, TEXT, INT) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       //success
     }
   }
@@ -189,14 +189,14 @@ public class TestConditionalExpressions extends ExprTestBase {
     try {
       testSimpleEval("select coalesce('value1', null, 3.0);", new String[]{"1.0"});
       fail("coalesce(TEXT, NULL, FLOAT8) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       // success
     }
 
     try {
       testSimpleEval("select coalesce(null, 'value2', 3.0);", new String[]{"2.0"});
       fail("coalesce(NULL, TEXT, FLOAT8) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       //success
     }
   }

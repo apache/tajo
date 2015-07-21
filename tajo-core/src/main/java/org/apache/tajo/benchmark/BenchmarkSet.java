@@ -35,6 +35,7 @@ import org.apache.tajo.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public abstract class BenchmarkSet {
   protected Map<String, String> queries = new HashMap<String, String>();
   protected String dataDir;
 
-  public void init(TajoConf conf, String dataDir) throws IOException {
+  public void init(TajoConf conf, String dataDir) throws SQLException {
     this.dataDir = dataDir;
 
     if (System.getProperty(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname) != null) {
@@ -90,7 +91,7 @@ public abstract class BenchmarkSet {
 
   public abstract void loadQueries() throws IOException;
 
-  public abstract void loadTables() throws ServiceException;
+  public abstract void loadTables() throws SQLException;
 
   public String [] getTableNames() {
     return schemas.keySet().toArray(new String[schemas.size()]);
@@ -112,7 +113,7 @@ public abstract class BenchmarkSet {
     return outSchemas.get(name);
   }
 
-  public void perform(String queryName) throws IOException, ServiceException {
+  public void perform(String queryName) throws SQLException {
     String query = getQuery(queryName);
     if (query == null) {
       throw new IllegalArgumentException("#{queryName} does not exists");

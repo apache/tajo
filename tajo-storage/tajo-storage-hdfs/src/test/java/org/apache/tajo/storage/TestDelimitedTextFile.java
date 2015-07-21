@@ -19,6 +19,8 @@
 package org.apache.tajo.storage;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -41,6 +43,7 @@ import java.net.URL;
 import static org.junit.Assert.*;
 
 public class TestDelimitedTextFile {
+  private static final Log LOG = LogFactory.getLog(TestDelimitedTextFile.class);
 
   private static Schema schema = new Schema();
 
@@ -133,7 +136,7 @@ public class TestDelimitedTextFile {
     try {
       scanner.next();
     } catch (IOException ioe) {
-      System.out.println(ioe);
+      LOG.error(ioe);
       return;
     } finally {
       scanner.close();

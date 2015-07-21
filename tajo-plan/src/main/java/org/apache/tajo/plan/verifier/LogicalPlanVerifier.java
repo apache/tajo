@@ -23,9 +23,11 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
@@ -34,6 +36,10 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
 import java.util.Stack;
+
+import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeDataTypeMisMatch;
+import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSetOpDataTypeMisMatch;
+import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
 
 public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVerifier.Context, LogicalNode> {
   public LogicalPlanVerifier(TajoConf conf, CatalogService catalog) {
@@ -71,16 +77,13 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       Column outputColumn = outputSchema.getColumn(i);
 
       if (outputColumn.getDataType().getType() == Type.RECORD) {
-        context.state.addVerification("Projecting RECORD fields is not supported yet.");
+        context.state.addVerification(new UnsupportedException("RECORD field projection"));
       }
 
       if (!outputColumn.getDataType().equals(targetSchema.getColumn(i).getDataType())) {
         Column targetColumn = targetSchema.getColumn(i);
         Column insertColumn = outputColumn;
-        throw new PlanningException("ERROR: " +
-            insertColumn.getSimpleName() + " is of type " + insertColumn.getDataType().getType().name() +
-            ", but target column '" + targetColumn.getSimpleName() + "' is of type " +
-            targetColumn.getDataType().getType().name());
+        throw new PlanningException(SyntaxErrorUtil.makeDataTypeMisMatch(insertColumn, targetColumn));
       }
     }
   }
@@ -105,7 +108,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
     super.visitLimit(context, plan, block, node, stack);
 
     if (node.getFetchFirstNum() < 0) {
-      context.state.addVerification("LIMIT must not be negative");
+      context.state.addVerification(makeSyntaxError("LIMIT must not be negative"));
     }
 
     return node;
@@ -151,7 +154,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
     NodeType type = setNode.getType();
 
     if (left.size() != right.size()) {
-      state.addVerification("each " + type.name() + " query must have the same number of columns");
+      state.addVerification(new TajoException(Errors.ResultCode.AMBIGUOUS_FUNCTION));
       return;
     }
 
@@ -160,8 +163,9 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
     for (int i = 0; i < leftColumns.length; i++) {
       if (!leftColumns[i].getDataType().equals(rightColumns[i].getDataType())) {
-        state.addVerification(type + " types " + leftColumns[i].getDataType().getType() + " and "
-            + rightColumns[i].getDataType().getType() + " cannot be matched");
+        state.addVerification(
+            makeSetOpDataTypeMisMatch(type, leftColumns[i].getDataType(), rightColumns[i].getDataType())
+        );
       }
     }
   }
@@ -245,10 +249,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       if (!schema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
         Column targetColumn = targetTableScheme.getColumn(i);
         Column insertColumn = schema.getColumn(i);
-        state.addVerification("ERROR: " +
-            insertColumn.getSimpleName() + " is of type " + insertColumn.getDataType().getType().name() +
-            ", but target column '" + targetColumn.getSimpleName() + "' is of type " +
-            targetColumn.getDataType().getType().name());
+        state.addVerification(makeDataTypeMisMatch(insertColumn, targetColumn));
       }
     }
   }

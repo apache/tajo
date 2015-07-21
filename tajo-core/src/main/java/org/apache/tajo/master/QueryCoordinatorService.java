@@ -23,13 +23,13 @@ import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.rm.NodeStatus;
+import org.apache.tajo.master.scheduler.event.ResourceReserveSchedulerEvent;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -37,7 +37,8 @@ import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.List;
+
+import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryCoordinatorService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(QueryCoordinatorService.class);
@@ -59,30 +60,27 @@ public class QueryCoordinatorService extends AbstractService {
   }
 
   @Override
-  public void start() {
+  public void serviceStart() throws Exception {
     String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     int workerNum = conf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
-    try {
-      server = new AsyncRpcServer(QueryCoordinatorProtocol.class, masterHandler, initIsa, workerNum);
-    } catch (Exception e) {
-      LOG.error(e, e);
-    }
+
+    server = new AsyncRpcServer(QueryCoordinatorProtocol.class, masterHandler, initIsa, workerNum);
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
         NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterService at " + this.bindAddress);
-    super.start();
+    super.serviceStart();
   }
 
   @Override
-  public void stop() {
+  public void serviceStop() throws Exception {
     if(server != null) {
       server.shutdown();
       server = null;
     }
-    super.stop();
+    super.serviceStop();
   }
 
   public InetSocketAddress getBindAddress() {
@@ -97,62 +95,47 @@ public class QueryCoordinatorService extends AbstractService {
     @Override
     public void heartbeat(
         RpcController controller,
-        TajoHeartbeat request, RpcCallback<QueryCoordinatorProtocol.TajoHeartbeatResponse> done) {
+        TajoHeartbeatRequest request, RpcCallback<TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
         LOG.debug("Received QueryHeartbeat:" + new WorkerConnectionInfo(request.getConnectionInfo()));
       }
 
-      QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
+      TajoHeartbeatResponse.ResponseCommand command;
 
       QueryManager queryManager = context.getQueryJobManager();
       command = queryManager.queryHeartbeat(request);
 
-      QueryCoordinatorProtocol.TajoHeartbeatResponse.Builder builder = QueryCoordinatorProtocol.TajoHeartbeatResponse.newBuilder();
+      TajoHeartbeatResponse.Builder builder = TajoHeartbeatResponse.newBuilder();
       builder.setHeartbeatResult(BOOL_TRUE);
       if(command != null) {
         builder.setResponseCommand(command);
       }
 
-      builder.setClusterResourceSummary(context.getResourceManager().getClusterResourceSummary());
       done.run(builder.build());
     }
 
+    /**
+     * Reserve a node resources to TajoMaster
+     */
     @Override
-    public void allocateWorkerResources(
-        RpcController controller,
-        QueryCoordinatorProtocol.WorkerResourceAllocationRequest request,
-        RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> done) {
-      context.getResourceManager().allocateWorkerResources(request, done);
+    public void reserveNodeResources(RpcController controller, NodeResourceRequest request,
+                                     RpcCallback<NodeResourceResponse> done) {
+      Dispatcher dispatcher = context.getResourceManager().getRMContext().getDispatcher();
+      dispatcher.getEventHandler().handle(new ResourceReserveSchedulerEvent(request, done));
     }
 
+    /**
+     * Get all worker connection information
+     */
     @Override
-    public void releaseWorkerResource(RpcController controller, WorkerResourceReleaseRequest request,
-                                           RpcCallback<PrimitiveProtos.BoolProto> done) {
-      List<ContainerProtocol.TajoContainerIdProto> containerIds = request.getContainerIdsList();
+    public void getAllWorkers(RpcController controller, PrimitiveProtos.NullProto request,
+                                     RpcCallback<WorkerConnectionsResponse> done) {
 
-      for(ContainerProtocol.TajoContainerIdProto eachContainer: containerIds) {
-        context.getResourceManager().releaseWorkerResource(eachContainer);
-      }
-      done.run(BOOL_TRUE);
-    }
+      WorkerConnectionsResponse.Builder builder = WorkerConnectionsResponse.newBuilder();
+      Collection<NodeStatus> nodeStatuses = context.getResourceManager().getRMContext().getNodes().values();
 
-    @Override
-    public void getAllWorkerResource(RpcController controller, PrimitiveProtos.NullProto request,
-                                     RpcCallback<WorkerResourcesRequest> done) {
-
-      WorkerResourcesRequest.Builder builder = WorkerResourcesRequest.newBuilder();
-      Collection<Worker> workers = context.getResourceManager().getWorkers().values();
-
-      for(Worker worker: workers) {
-        WorkerResource resource = worker.getResource();
-
-        WorkerResourceProto.Builder workerResource = WorkerResourceProto.newBuilder();
-
-        workerResource.setConnectionInfo(worker.getConnectionInfo().getProto());
-        workerResource.setMemoryMB(resource.getMemoryMB());
-        workerResource.setDiskSlots(resource.getDiskSlots());
-
-        builder.addWorkerResources(workerResource);
+      for(NodeStatus nodeStatus : nodeStatuses) {
+        builder.addWorker(nodeStatus.getConnectionInfo().getProto());
       }
       done.run(builder.build());
     }

@@ -41,8 +41,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -50,6 +49,8 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -420,40 +421,35 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     return tuples;
   }
   
-  private Tuple getQueryMasterTuple(Schema outSchema, Worker aWorker) {
+  private Tuple getQueryMasterTuple(Schema outSchema, NodeStatus aNodeStatus) {
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple = new VTuple(outSchema.size());
-    WorkerResource aResource = aWorker.getResource();
-    
+
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
       Column column = columns.get(fieldId);
       
       if ("host".equalsIgnoreCase(column.getSimpleName())) {
-        if (aWorker.getConnectionInfo() != null && aWorker.getConnectionInfo().getHost() != null) {
-          aTuple.put(fieldId, DatumFactory.createText(aWorker.getConnectionInfo().getHost()));
+        if (aNodeStatus.getConnectionInfo() != null && aNodeStatus.getConnectionInfo().getHost() != null) {
+          aTuple.put(fieldId, DatumFactory.createText(aNodeStatus.getConnectionInfo().getHost()));
         } else {
           aTuple.put(fieldId, DatumFactory.createNullDatum());
         }
       } else if ("port".equalsIgnoreCase(column.getSimpleName())) {
-        if (aWorker.getConnectionInfo() != null) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getConnectionInfo().getQueryMasterPort()));
+        if (aNodeStatus.getConnectionInfo() != null) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aNodeStatus.getConnectionInfo().getQueryMasterPort()));
         } else {
           aTuple.put(fieldId, DatumFactory.createNullDatum());
         }
       } else if ("type".equalsIgnoreCase(column.getSimpleName())) {
         aTuple.put(fieldId, DatumFactory.createText("QueryMaster"));
       } else if ("status".equalsIgnoreCase(column.getSimpleName())) {
-        aTuple.put(fieldId, DatumFactory.createText(aWorker.getState().toString()));
-      } else if ("RUNNING".equalsIgnoreCase(aWorker.getState().toString())) {
+        aTuple.put(fieldId, DatumFactory.createText(aNodeStatus.getState().toString()));
+      } else if ("RUNNING".equalsIgnoreCase(aNodeStatus.getState().toString())) {
         if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumQueryMasterTasks()));
-        } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
-        } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aNodeStatus.getNumRunningQueryMaster()));
         } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {
-          if (aWorker.getLastHeartbeatTime() > 0) {
-            aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
+          if (aNodeStatus.getLastHeartbeatTime() > 0) {
+            aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aNodeStatus.getLastHeartbeatTime()));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
@@ -466,50 +462,48 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     return aTuple;
   }
   
-  private Tuple getWorkerTuple(Schema outSchema, Worker aWorker) {
+  private Tuple getWorkerTuple(Schema outSchema, NodeStatus aNodeStatus) {
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple = new VTuple(outSchema.size());
-    WorkerResource aResource = aWorker.getResource();
+
+    NodeResource total = aNodeStatus.getTotalResourceCapability();
+    NodeResource used = NodeResources.subtract(total, aNodeStatus.getAvailableResource());
     
     for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
       Column column = columns.get(fieldId);
       
       if ("host".equalsIgnoreCase(column.getSimpleName())) {
-        if (aWorker.getConnectionInfo() != null && aWorker.getConnectionInfo().getHost() != null) {
-          aTuple.put(fieldId, DatumFactory.createText(aWorker.getConnectionInfo().getHost()));
+        if (aNodeStatus.getConnectionInfo() != null && aNodeStatus.getConnectionInfo().getHost() != null) {
+          aTuple.put(fieldId, DatumFactory.createText(aNodeStatus.getConnectionInfo().getHost()));
         } else {
           aTuple.put(fieldId, DatumFactory.createNullDatum());
         }
       } else if ("port".equalsIgnoreCase(column.getSimpleName())) {
-        if (aWorker.getConnectionInfo() != null) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getConnectionInfo().getPeerRpcPort()));
+        if (aNodeStatus.getConnectionInfo() != null) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aNodeStatus.getConnectionInfo().getPeerRpcPort()));
         } else {
           aTuple.put(fieldId, DatumFactory.createNullDatum());
         }
       } else if ("type".equalsIgnoreCase(column.getSimpleName())) {
         aTuple.put(fieldId, DatumFactory.createText("Worker"));
       } else if ("status".equalsIgnoreCase(column.getSimpleName())) {
-        aTuple.put(fieldId, DatumFactory.createText(aWorker.getState().toString()));
-      } else if ("RUNNING".equalsIgnoreCase(aWorker.getState().toString())) {
+        aTuple.put(fieldId, DatumFactory.createText(aNodeStatus.getState().toString()));
+      } else if ("RUNNING".equalsIgnoreCase(aNodeStatus.getState().toString())) {
         if ("total_cpu".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getCpuCoreSlots()));
+          aTuple.put(fieldId, DatumFactory.createInt4(total.getVirtualCores()));
         } else if ("used_mem".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getUsedMemoryMB()*1048576l));
+          aTuple.put(fieldId, DatumFactory.createInt8(used.getMemory() * 1048576l));
         } else if ("total_mem".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMemoryMB()*1048576l));
-        } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
-        } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
-        } else if ("used_diskslots".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getUsedDiskSlots()));
-        } else if ("total_diskslots".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getDiskSlots()));
+          aTuple.put(fieldId, DatumFactory.createInt8(total.getMemory() * 1048576l));
+        } else if ("used_disk".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(used.getDisks()));
+        } else if ("total_disk".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(total.getDisks()));
         } else if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumRunningTasks()));
+          aTuple.put(fieldId, DatumFactory.createInt4(aNodeStatus.getNumRunningTasks()));
         } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {
-          if (aWorker.getLastHeartbeatTime() > 0) {
-            aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
+          if (aNodeStatus.getLastHeartbeatTime() > 0) {
+            aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aNodeStatus.getLastHeartbeatTime()));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
@@ -524,23 +518,23 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   }
   
   private List<Tuple> getClusterInfo(Schema outSchema) {
-    Map<Integer, Worker> workerMap = masterContext.getResourceManager().getWorkers();
+    Map<Integer, NodeStatus> workerMap = masterContext.getResourceManager().getNodes();
     List<Tuple> tuples;
-    List<Worker> queryMasterList = new ArrayList<Worker>();
-    List<Worker> workerList = new ArrayList<Worker>();
+    List<NodeStatus> queryMasterList = new ArrayList<NodeStatus>();
+    List<NodeStatus> nodeStatusList = new ArrayList<NodeStatus>();
     
-    for (Worker aWorker: workerMap.values()) {
-      queryMasterList.add(aWorker);
-      workerList.add(aWorker);
+    for (NodeStatus aNodeStatus : workerMap.values()) {
+      queryMasterList.add(aNodeStatus);
+      nodeStatusList.add(aNodeStatus);
     }
     
-    tuples = new ArrayList<Tuple>(queryMasterList.size() + workerList.size());
-    for (Worker queryMaster: queryMasterList) {
+    tuples = new ArrayList<Tuple>(queryMasterList.size() + nodeStatusList.size());
+    for (NodeStatus queryMaster: queryMasterList) {
       tuples.add(getQueryMasterTuple(outSchema, queryMaster));
     }
     
-    for (Worker worker: workerList) {
-      tuples.add(getWorkerTuple(outSchema, worker));
+    for (NodeStatus nodeStatus : nodeStatusList) {
+      tuples.add(getWorkerTuple(outSchema, nodeStatus));
     }
     
     return tuples;

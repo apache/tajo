@@ -26,21 +26,18 @@ import net.minidev.json.parser.ParseException;
 import org.apache.tajo.catalog.*;
 import org.apache.commons.net.util.Base64;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
-import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
@@ -238,7 +235,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
       break;
 
     default:
-      throw new NotImplementedException(types.get(fullPath).name() + " is not supported.");
+      throw new UnimplementedException(types.get(fullPath).name() + " is not supported.");
     }
   }
 

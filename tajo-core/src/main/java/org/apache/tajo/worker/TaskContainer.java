@@ -20,7 +20,6 @@ package org.apache.tajo.worker;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.TajoProtos;
 
 /**
  * The driver class for Tajo Task processing.

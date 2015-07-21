@@ -19,7 +19,6 @@
 package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -31,8 +30,6 @@ import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.worker.TaskRunner;
-import org.apache.tajo.worker.TaskRunnerHistory;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -64,28 +61,6 @@ public class JSPUtil {
     }
 
     Collections.sort(tasks, new TaskHistoryComparator(sortField, "asc".equals(sortOrder)));
-  }
-
-  public static void sortTaskRunner(List<TaskRunner> taskRunners) {
-    Collections.sort(taskRunners, new Comparator<TaskRunner>() {
-      @Override
-      public int compare(TaskRunner taskRunner, TaskRunner taskRunner2) {
-        return taskRunner.getId().compareTo(taskRunner2.getId());
-      }
-    });
-  }
-
-  public static void sortTaskRunnerHistory(List<TaskRunnerHistory> histories) {
-    Collections.sort(histories, new Comparator<TaskRunnerHistory>() {
-      @Override
-      public int compare(TaskRunnerHistory h1, TaskRunnerHistory h2) {
-        int value = h1.getExecutionBlockId().compareTo(h2.getExecutionBlockId());
-        if(value == 0){
-          return h1.getContainerId().compareTo(h2.getContainerId());
-        }
-        return value;
-      }
-    });
   }
 
   public static String getElapsedTime(long startTime, long finishTime) {
@@ -221,8 +196,8 @@ public class JSPUtil {
         if("id".equals(sortField)) {
           return task.getId().compareTo(task2.getId());
         } else if("host".equals(sortField)) {
-          String host1 = task.getSucceededHost() == null ? "-" : task.getSucceededHost();
-          String host2 = task2.getSucceededHost() == null ? "-" : task2.getSucceededHost();
+          String host1 = task.getSucceededWorker() == null ? "-" : task.getSucceededWorker().getHost();
+          String host2 = task2.getSucceededWorker() == null ? "-" : task2.getSucceededWorker().getHost();
           return host1.compareTo(host2);
         } else if("runTime".equals(sortField)) {
           return compareLong(task.getRunningTime(), task2.getRunningTime());
@@ -235,8 +210,8 @@ public class JSPUtil {
         if("id".equals(sortField)) {
           return task2.getId().compareTo(task.getId());
         } else if("host".equals(sortField)) {
-          String host1 = task.getSucceededHost() == null ? "-" : task.getSucceededHost();
-          String host2 = task2.getSucceededHost() == null ? "-" : task2.getSucceededHost();
+          String host1 = task.getSucceededWorker() == null ? "-" : task.getSucceededWorker().getHost();
+          String host2 = task2.getSucceededWorker() == null ? "-" : task2.getSucceededWorker().getHost();
           return host2.compareTo(host1);
         } else if("runTime".equals(sortField)) {
           if(task2.getLaunchTime() == 0) {
