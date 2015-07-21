@@ -22,26 +22,26 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.tajo.*;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
-import org.junit.*;
+import org.apache.tajo.worker.event.NodeResourceEvent;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.*;
-
-import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 public class TestNodeResourceManager {
 
   private MockNodeResourceManager resourceManager;
@@ -65,8 +65,9 @@ public class TestNodeResourceManager {
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES, 4);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB,
         taskMemory * conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES));
-    conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS_NUM, 4);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS, 4);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM, 1);
+    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM, 2);
 
     dispatcher = new AsyncDispatcher();
     taskDispatcher = new AsyncDispatcher();
@@ -79,6 +80,21 @@ public class TestNodeResourceManager {
       }
 
       @Override
+      public TaskManager getTaskManager() {
+        return taskManager;
+      }
+
+      @Override
+      public TaskExecutor getTaskExecuor() {
+        return taskExecutor;
+      }
+
+      @Override
+      public NodeResourceManager getNodeResourceManager() {
+        return resourceManager;
+      }
+
+      @Override
       public WorkerConnectionInfo getConnectionInfo() {
         if (workerConnectionInfo == null) {
           workerConnectionInfo = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
@@ -87,10 +103,10 @@ public class TestNodeResourceManager {
       }
     };
 
-    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext, dispatcher.getEventHandler());
-    taskExecutor = new MockTaskExecutor(new Semaphore(0), taskManager, dispatcher.getEventHandler());
-    resourceManager = new MockNodeResourceManager(new Semaphore(0), dispatcher, taskDispatcher.getEventHandler());
-    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext, resourceManager);
+    taskManager = new MockTaskManager(new Semaphore(0), taskDispatcher, workerContext);
+    taskExecutor = new MockTaskExecutor(new Semaphore(0), workerContext);
+    resourceManager = new MockNodeResourceManager(new Semaphore(0), dispatcher, workerContext);
+    statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext);
 
     service = new CompositeService("MockService") {
       @Override
@@ -102,6 +118,12 @@ public class TestNodeResourceManager {
         addIfService(resourceManager);
         addIfService(statusUpdater);
         super.serviceInit(conf);
+      }
+
+      @Override
+      protected void serviceStop() throws Exception {
+        workerContext.getWorkerSystemMetrics().stop();
+        super.serviceStop();
       }
     };
 
@@ -119,8 +141,8 @@ public class TestNodeResourceManager {
     int requestSize = 4;
     resourceManager.setTaskHandlerEvent(false); //skip task execution
 
-    CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     requestProto.setExecutionBlockId(ebId.getProto());
 
@@ -129,7 +151,7 @@ public class TestNodeResourceManager {
 
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
 
-    BatchAllocationResponseProto responseProto = callFuture.get();
+    BatchAllocationResponse responseProto = callFuture.get();
     assertNotEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     // allocated all
     assertEquals(0, responseProto.getCancellationTaskCount());
@@ -142,8 +164,8 @@ public class TestNodeResourceManager {
     int overSize = 10;
     resourceManager.setTaskHandlerEvent(false); //skip task execution
 
-    CallFuture<BatchAllocationResponseProto> callFuture = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     requestProto.setExecutionBlockId(ebId.getProto());
 
@@ -152,7 +174,7 @@ public class TestNodeResourceManager {
         MockNodeResourceManager.createTaskRequests(ebId, taskMemory, requestSize + overSize));
 
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
-    BatchAllocationResponseProto responseProto = callFuture.get();
+    BatchAllocationResponse responseProto = callFuture.get();
 
     assertEquals(overSize, responseProto.getCancellationTaskCount());
   }
@@ -162,8 +184,8 @@ public class TestNodeResourceManager {
     int requestSize = 4;
     resourceManager.setTaskHandlerEvent(false); //skip task execution
 
-    CallFuture<BatchAllocationResponseProto> callFuture  = new CallFuture<BatchAllocationResponseProto>();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     requestProto.setExecutionBlockId(ebId.getProto());
 
@@ -172,14 +194,15 @@ public class TestNodeResourceManager {
 
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
 
-    BatchAllocationResponseProto responseProto = callFuture.get();
+    BatchAllocationResponse responseProto = callFuture.get();
     assertNotEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
     assertEquals(0, responseProto.getCancellationTaskCount());
 
     //deallocate
-    for(TaskAllocationRequestProto allocationRequestProto : requestProto.getTaskRequestList()) {
+    for(TaskAllocationProto allocationRequestProto : requestProto.getTaskRequestList()) {
       // direct invoke handler for testing
-      resourceManager.handle(new NodeResourceDeallocateEvent(allocationRequestProto.getResource()));
+      resourceManager.handle(new NodeResourceDeallocateEvent(
+          allocationRequestProto.getResource(), NodeResourceEvent.ResourceType.TASK));
     }
 
     assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
@@ -195,33 +218,22 @@ public class TestNodeResourceManager {
     final AtomicInteger totalCanceled = new AtomicInteger();
 
     final ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
-    final Queue<TaskAllocationRequestProto>
+    final Queue<TaskAllocationProto>
         totalTasks = MockNodeResourceManager.createTaskRequests(ebId, taskMemory, taskSize);
 
-    // first request with starting ExecutionBlock
-    TajoWorkerProtocol.RunExecutionBlockRequestProto.Builder
-        ebRequestProto = TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder();
-    ebRequestProto.setExecutionBlockId(ebId.getProto())
-        .setQueryMaster(workerContext.getConnectionInfo().getProto())
-        .setNodeId(workerContext.getConnectionInfo().getHost() + ":" +
-            workerContext.getConnectionInfo().getQueryMasterPort())
-        .setContainerId("test")
-        .setQueryContext(new QueryContext(conf).getProto())
-        .setPlanJson("test")
-        .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
 
-    TaskAllocationRequestProto task = totalTasks.poll();
-    BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+    TaskAllocationProto task = totalTasks.poll();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     requestProto.addTaskRequest(task);
     requestProto.setExecutionBlockId(ebId.getProto());
-    requestProto.setExecutionBlockRequest(ebRequestProto.build());
-    CallFuture<BatchAllocationResponseProto> callFuture = new CallFuture<BatchAllocationResponseProto>();
+    CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
     dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
     assertTrue(callFuture.get().getCancellationTaskCount() == 0);
     totalComplete.incrementAndGet();
 
     // start parallel request
     ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
+
     List<Future> futureList = Lists.newArrayList();
 
     long startTime = System.currentTimeMillis();
@@ -231,18 +243,18 @@ public class TestNodeResourceManager {
             public void run() {
               int complete = 0;
               while (true) {
-                TaskAllocationRequestProto task = totalTasks.poll();
+                TaskAllocationProto task = totalTasks.poll();
                 if (task == null) break;
 
 
-                BatchAllocationRequestProto.Builder requestProto = BatchAllocationRequestProto.newBuilder();
+                BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
                 requestProto.addTaskRequest(task);
                 requestProto.setExecutionBlockId(ebId.getProto());
 
-                CallFuture<BatchAllocationResponseProto> callFuture = new CallFuture<BatchAllocationResponseProto>();
+                CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
                 dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
                 try {
-                  BatchAllocationResponseProto proto = callFuture.get();
+                  BatchAllocationResponse proto = callFuture.get();
                   if (proto.getCancellationTaskCount() > 0) {
                     totalTasks.addAll(proto.getCancellationTaskList());
                     totalCanceled.addAndGet(proto.getCancellationTaskCount());
@@ -253,7 +265,6 @@ public class TestNodeResourceManager {
                   fail(e.getMessage());
                 }
               }
-              System.out.println(Thread.currentThread().getName() + " complete requests: " + complete);
               totalComplete.addAndGet(complete);
             }
           })
@@ -264,8 +275,6 @@ public class TestNodeResourceManager {
       future.get();
     }
 
-    System.out.println(parallelCount + " Thread, completed requests: " + totalComplete.get() + ", canceled requests:"
-        + totalCanceled.get() + ", " + +(System.currentTimeMillis() - startTime) + " ms elapsed");
     executor.shutdown();
     assertEquals(taskSize, totalComplete.get());
   }

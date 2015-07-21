@@ -19,13 +19,13 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.util.JSPUtil" %>
-<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
-<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="org.apache.commons.lang.math.NumberUtils" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.history.TaskHistory" %>
+<%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 
 <%
@@ -34,15 +34,16 @@
 
   String queryId = request.getParameter("queryId");
   String ebId = request.getParameter("ebid");
-
+  String startTime = request.getParameter("startTime");
   String status = request.getParameter("status");
+
   if(status == null || status.isEmpty() || "null".equals(status)) {
       status = "ALL";
   }
 
   String taskAttemptId = request.getParameter("taskAttemptId");
 
-  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId);
+  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId, NumberUtils.toLong(startTime, 0));
 
   TaskHistory task = null;
   for(TaskHistory eachTask: allTasks) {
@@ -107,12 +108,15 @@
     shuffleKey = task.getShuffleKey();
     shuffleFileName = task.getShuffleFileName();
   }
+
+  String masterLabel = master.getContext().getTajoMasterService().getBindAddress().getHostName()+ ":"
+          + master.getContext().getTajoMasterService().getBindAddress().getPort();
 %>
 
 
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
   <h3><a href='<%=backUrl%>'><%=ebId%></a></h3>
   <hr/>

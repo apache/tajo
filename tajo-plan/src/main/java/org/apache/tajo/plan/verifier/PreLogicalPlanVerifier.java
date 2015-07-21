@@ -26,7 +26,9 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
@@ -36,6 +38,9 @@ import org.apache.tajo.validation.ConstraintViolation;
 import java.util.Collection;
 import java.util.Set;
 import java.util.Stack;
+
+import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeUndefinedTable;
+import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
 
 public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVerifier.Context, Expr> {
   private CatalogService catalog;
@@ -71,7 +76,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
         Collection<ConstraintViolation> violations = var.validator().validate(expr.getValue());
 
         for (ConstraintViolation violation : violations) {
-          ctx.state.addVerification(violation.getMessage());
+          ctx.state.addVerification(SyntaxErrorUtil.makeInvalidSessionVar(var.keyname(), violation.getMessage()));
         }
       }
     }
@@ -88,8 +93,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
       if (namedExpr.hasAlias()) {
         if (names.contains(namedExpr.getAlias())) {
-          context.state.addVerification(String.format("column name \"%s\" specified more than once",
-              namedExpr.getAlias()));
+          context.state.addVerification(SyntaxErrorUtil.makeDuplicateAlias(namedExpr.getAlias()));
         } else {
           names.add(namedExpr.getAlias());
         }
@@ -103,7 +107,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     stack.push(expr);
 
     if (ExprFinder.finds(expr.getFetchFirstNum(), OpType.Column).size() > 0) {
-      context.state.addVerification("argument of LIMIT must not contain variables");
+      context.state.addVerification(SyntaxErrorUtil.makeSyntaxError("argument of LIMIT must not contain variables"));
     }
 
     visit(context, stack, expr.getFetchFirstNum());
@@ -119,7 +123,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     // Enforcer only ordinary grouping set.
     for (Aggregation.GroupElement groupingElement : expr.getGroupSet()) {
       if (groupingElement.getType() != Aggregation.GroupType.OrdinaryGroup) {
-        context.state.addVerification(groupingElement.getType() + " is not supported yet");
+        context.state.addVerification(ExceptionUtil.makeNotSupported(groupingElement.getType().name()));
       }
     }
 
@@ -154,7 +158,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (!catalog.existsTable(qualifiedName)) {
-      context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
+      context.state.addVerification(makeUndefinedTable(qualifiedName));
       return false;
     }
     return true;
@@ -172,7 +176,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
       System.out.println("A");
     }
     if (catalog.existsTable(qualifiedName)) {
-      context.state.addVerification(String.format("relation \"%s\" already exists", qualifiedName));
+      context.state.addVerification(CatalogExceptionUtil.makeDuplicateTable(qualifiedName));
       return false;
     }
     return true;
@@ -182,7 +186,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     Preconditions.checkNotNull(name);
 
     if (name.equalsIgnoreCase("RAW")) {
-      state.addVerification(String.format("Store format %s is not supported.", name));
+      state.addVerification(SyntaxErrorUtil.makeUnknownDataFormat(name));
       return false;
     }
     return true;
@@ -190,7 +194,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
   private boolean assertDatabaseExistence(VerificationState state, String name) {
     if (!catalog.existDatabase(name)) {
-      state.addVerification(String.format("database \"%s\" does not exist", name));
+      state.addVerification(new UndefinedDatabaseException(name));
       return false;
     }
     return true;
@@ -198,7 +202,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
   private boolean assertDatabaseNoExistence(VerificationState state, String name) {
     if (catalog.existDatabase(name)) {
-      state.addVerification(String.format("database \"%s\" already exists", name));
+      state.addVerification(new DuplicateDatabaseException(name));
       return false;
     }
     return true;
@@ -283,9 +287,9 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
           int targetColumnNum = expr.getTargetColumns().length;
 
           if (targetColumnNum > projectColumnNum) {
-            context.state.addVerification("INSERT has more target columns than expressions");
+            context.state.addVerification(makeSyntaxError("INSERT has more target columns than expressions"));
           } else if (targetColumnNum < projectColumnNum) {
-            context.state.addVerification("INSERT has more expressions than target columns");
+            context.state.addVerification(makeSyntaxError("INSERT has more expressions than target columns"));
           }
         } else {
           if (expr.hasTableName()) {
@@ -297,33 +301,22 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
             TableDesc table = catalog.getTableDesc(qualifiedName);
             if (table == null) {
-              context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
+              context.state.addVerification(new UndefinedTableException(qualifiedName));
               return null;
             }
             if (table.hasPartition()) {
               int columnSize = table.getSchema().getRootColumns().size();
               columnSize += table.getPartitionMethod().getExpressionSchema().getRootColumns().size();
+
               if (projectColumnNum < columnSize) {
-                context.state.addVerification("INSERT has smaller expressions than target columns");
+                context.state.addVerification(makeSyntaxError("INSERT has smaller expressions than target columns"));
               } else if (projectColumnNum > columnSize) {
-                context.state.addVerification("INSERT has more expressions than target columns");
+                context.state.addVerification(makeSyntaxError("INSERT has more expressions than target columns"));
               }
             }
           }
         }
       }
-    }
-
-    return expr;
-  }
-
-  @Override
-  public Expr visitAlterTable(Context context, Stack<Expr> stack, AlterTable expr) throws PlanningException {
-    super.visitAlterTable(context, stack, expr);
-
-    if (expr.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
-      || expr.getAlterTableOpType() == AlterTableOpType.DROP_PARTITION) {
-      context.state.addVerification(expr.getAlterTableOpType().name() + " is not supported yet");
     }
 
     return expr;

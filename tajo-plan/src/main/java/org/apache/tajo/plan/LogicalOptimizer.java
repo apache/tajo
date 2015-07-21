@@ -19,8 +19,6 @@
 package org.apache.tajo.plan;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -30,22 +28,20 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.util.ReflectionUtil;
-import org.apache.tajo.util.graph.DirectedGraphCursor;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.joinorder.FoundJoinOrder;
-import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
-import org.apache.tajo.plan.joinorder.JoinGraph;
-import org.apache.tajo.plan.joinorder.JoinOrderAlgorithm;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
+import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.*;
+import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.ReflectionUtil;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.graph.DirectedGraphCursor;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 import static org.apache.tajo.plan.LogicalPlan.BlockEdge;
 import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.getCost;
@@ -72,12 +68,6 @@ public class LogicalOptimizer {
     rulesAfterToJoinOpt.addRewriteRule(provider.getPostRules());
   }
 
-  public void addRuleAfterToJoinOpt(LogicalPlanRewriteRule rewriteRule) {
-    if (rewriteRule != null) {
-      rulesAfterToJoinOpt.addRewriteRule(rewriteRule);
-    }
-  }
-
   @VisibleForTesting
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
     OverridableConf conf = new OverridableConf(new TajoConf(),
@@ -97,7 +87,7 @@ public class LogicalOptimizer {
         optimizeJoinOrder(plan, blockCursor.nextBlock());
       }
     } else {
-      LOG.info("Skip Join Optimized.");
+      LOG.info("Skip join order optimization");
     }
     rulesAfterToJoinOpt.rewrite(context, plan);
     return plan.getRootBlock().getRoot();
@@ -113,12 +103,13 @@ public class LogicalOptimizer {
       // finding relations and filter expressions
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
 
-      // finding join order and restore remain filter order
-      FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block,
-          joinGraphContext.joinGraph, joinGraphContext.relationsForProduct);
+      // finding join order and restore remaining filters
+      FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
 
       // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
+      LogicalNode newNode = handleRemainingFiltersIfNecessary(joinGraphContext, plan, block, newJoinNode);
+
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
       JoinTargetCollector collector = new JoinTargetCollector();
@@ -130,13 +121,65 @@ public class LogicalOptimizer {
       } else {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
-      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
+      PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
       // End of replacement logic
 
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
       block.addPlanHistory("Non-optimized join order: " + originalOrder + " (cost: " + nonOptimizedJoinCost + ")");
       block.addPlanHistory("Optimized join order    : " + optimizedOrder + " (cost: " + order.getCost() + ")");
     }
+  }
+
+  /**
+   * During join order optimization, every condition is checked whether it is a join condition or not.
+   * So, after join order is optimized, there can be remaining conditions which are not join conditions.
+   * This function handles such remaining conditions. It creates a new selection node for those conditions if required
+   * or add them to the existing selection node.
+   *
+   * @param joinGraphContext join graph context
+   * @param plan logical plan
+   * @param block query block
+   * @param newJoinNode the top join node after join order optimization
+   * @return the top logical node after handling remaining conditions
+   */
+  private static LogicalNode handleRemainingFiltersIfNecessary(JoinGraphContext joinGraphContext,
+                                                               LogicalPlan plan,
+                                                               LogicalPlan.QueryBlock block,
+                                                               JoinNode newJoinNode) {
+    // Gather filters from remaining join edges
+    Collection<JoinEdge> joinEdges = joinGraphContext.getJoinGraph().getEdgesAll();
+    Collection<EvalNode> markAsEvaluated = new HashSet<EvalNode>(joinGraphContext.getEvaluatedJoinConditions());
+    markAsEvaluated.addAll(joinGraphContext.getEvaluatedJoinFilters());
+    Set<EvalNode> remainingQuals = new HashSet<EvalNode>(joinGraphContext.getCandidateJoinFilters());
+    for (JoinEdge eachEdge : joinEdges) {
+      for (EvalNode eachQual : eachEdge.getJoinQual()) {
+        if (!markAsEvaluated.contains(eachQual)) {
+          remainingQuals.add(eachQual);
+        }
+      }
+    }
+
+    if (!remainingQuals.isEmpty()) {
+      LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
+      if (topParent.getType() == NodeType.SELECTION) {
+        SelectionNode topParentSelect = (SelectionNode) topParent;
+        Set<EvalNode> filters = TUtil.newHashSet();
+        filters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual())));
+        filters.addAll(remainingQuals);
+        topParentSelect.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+            filters.toArray(new EvalNode[filters.size()])));
+        return newJoinNode;
+      } else {
+        SelectionNode newSelection = plan.createNode(SelectionNode.class);
+        newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+            remainingQuals.toArray(new EvalNode[remainingQuals.size()])));
+        newSelection.setChild(newJoinNode);
+        return newSelection;
+      }
+    }
+
+
+    return newJoinNode;
   }
 
   private static class JoinTargetCollector extends BasicLogicalPlanVisitor<Set<Target>, LogicalNode> {
@@ -155,12 +198,23 @@ public class LogicalOptimizer {
     }
   }
 
-  private static class JoinGraphContext {
-    JoinGraph joinGraph = new JoinGraph();
-    Set<EvalNode> quals = Sets.newHashSet();
-    Set<String> relationsForProduct = Sets.newHashSet();
-  }
-
+  /**
+   * The first phase of the join order optimization is building a join graph from the given query.
+   * This initial join graph forms a tree which consists of only relation vertexes in an order of their occurrences in
+   * the query. For example, let me suppose the following query.
+   *
+   * default> select * from t1 inner join t2 left outer join t3 inner join t4;
+   *
+   * In this example, the initial join graph is:
+   *
+   * t1 - (inner join) - t2 - (left outer join) - t3 - (inner join) - t4.
+   *
+   * This means that the default join order is left to right. Join queries can be always processed with the
+   * default join order. This join order will be optimized by {@link JoinOrderAlgorithm}.
+   *
+   * JoinGraphBuilder builds an initial join graph as illustrated above.
+   *
+   */
   private static class JoinGraphBuilder extends BasicLogicalPlanVisitor<JoinGraphContext, LogicalNode> {
     private final static JoinGraphBuilder instance;
 
@@ -175,37 +229,84 @@ public class LogicalOptimizer {
      */
     public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
         throws PlanningException {
-      JoinGraphContext joinGraphContext = new JoinGraphContext();
-      instance.visit(joinGraphContext, plan, block);
-      return joinGraphContext;
+      JoinGraphContext context = new JoinGraphContext();
+      instance.visit(context, plan, block);
+      return context;
     }
 
-    public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
-      super.visitFilter(context, plan, block, node, stack);
-      context.quals.addAll(Lists.newArrayList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
+    @Override
+    public LogicalNode visit(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+      if (node.getType() != NodeType.TABLE_SUBQUERY) {
+        super.visit(context, plan, block, node, stack);
+      }
+
       return node;
     }
 
     @Override
-    public LogicalNode visitJoin(JoinGraphContext joinGraphContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
+    public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+      // all join predicate candidates must be collected before building the join tree
+      context.addCandidateJoinFilters(
+          TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
+      super.visitFilter(context, plan, block, node, stack);
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitJoin(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode joinNode, Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
+      super.visitJoin(context, plan, block, joinNode, stack);
+
+      // given a join node, find the relations which are nearest to the join in the query.
+      RelationNode leftChild = findMostRightRelation(plan, block, joinNode.getLeftChild());
+      RelationNode rightChild = findMostLeftRelation(plan, block, joinNode.getRightChild());
+      RelationVertex leftVertex = new RelationVertex(leftChild);
+      RelationVertex rightVertex = new RelationVertex(rightChild);
+
+      JoinEdge edge = context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
+
+      // find all possible predicates for this join edge
+      Set<EvalNode> joinConditions = TUtil.newHashSet();
       if (joinNode.hasJoinQual()) {
-        joinGraphContext.joinGraph.addJoin(plan, block, joinNode);
-      } else {
-        LogicalNode leftChild = joinNode.getLeftChild();
-        LogicalNode rightChild = joinNode.getRightChild();
-        if (leftChild instanceof RelationNode) {
-          RelationNode rel = (RelationNode) leftChild;
-          joinGraphContext.relationsForProduct.add(rel.getCanonicalName());
+        Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
+        for (EvalNode predicate : joinNode.getJoinSpec().getPredicates()) {
+          if (EvalTreeUtil.isJoinQual(block, leftVertex.getSchema(), rightVertex.getSchema(), predicate, false)) {
+            if (JoinOrderingUtil.checkIfEvaluatedAtEdge(predicate, edge, true)) {
+              joinConditions.add(predicate);
+            }
+          } else {
+            joinConditions.add(predicate);
+          }
         }
-        if (rightChild instanceof RelationNode) {
-          RelationNode rel = (RelationNode) rightChild;
-          joinGraphContext.relationsForProduct.add(rel.getCanonicalName());
-        }
+        // find predicates which cannot be evaluated at this join
+        originPredicates.removeAll(joinConditions);
+        context.addCandidateJoinConditions(originPredicates);
+        originPredicates.clear();
+        originPredicates.addAll(joinConditions);
       }
+
+      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), edge,
+          true));
+      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), edge,
+          false));
+      context.markAsEvaluatedJoinConditions(joinConditions);
+      context.markAsEvaluatedJoinFilters(joinConditions);
+      edge.addJoinPredicates(joinConditions);
+      if (edge.getJoinType() == JoinType.INNER && edge.getJoinQual().isEmpty()) {
+        edge.getJoinSpec().setType(JoinType.CROSS);
+      }
+
+      if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
+        JoinEdge commutativeEdge = context.getCachedOrNewJoinEdge(edge.getJoinSpec(), edge.getRightVertex(),
+            edge.getLeftVertex());
+        commutativeEdge.addJoinPredicates(joinConditions);
+        context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),
+            commutativeEdge);
+      }
+
       return joinNode;
     }
   }
@@ -306,6 +407,83 @@ public class LogicalOptimizer {
       }
 
       return joinNode;
+    }
+  }
+
+  /**
+   * Find the most left relation node in the join tree. For the join tree, please refer to {@link JoinGraphBuilder}.
+   *
+   * @param plan logical plan
+   * @param block query block in which the given join node is involved
+   * @param from logical node where the search starts
+   * @return found relation
+   * @throws PlanningException
+   */
+  public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
+      throws PlanningException {
+    RelationNodeFinderContext context = new RelationNodeFinderContext();
+    context.findMostLeft = true;
+    RelationNodeFinder finder = new RelationNodeFinder();
+    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    return context.founds.isEmpty() ? null : context.founds.iterator().next();
+  }
+
+  /**
+   * Find the most right relation node in the join tree. For the join tree, please refer to {@link JoinGraphBuilder}.
+   *
+   * @param plan logical plan
+   * @param block query block in which the given join node is involved
+   * @param from logical node where the search starts
+   * @return found relation
+   * @throws PlanningException
+   */
+  public static RelationNode findMostRightRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
+      throws PlanningException {
+    RelationNodeFinderContext context = new RelationNodeFinderContext();
+    context.findMostRight = true;
+    RelationNodeFinder finder = new RelationNodeFinder();
+    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    return context.founds.isEmpty() ? null : context.founds.iterator().next();
+  }
+
+  private static class RelationNodeFinderContext {
+    private Set<RelationNode> founds = TUtil.newHashSet();
+    private boolean findMostLeft;
+    private boolean findMostRight;
+  }
+
+  /**
+   * RelationNodeFinder finds the most left/right vertex from the given node in the join graph.
+   */
+  private static class RelationNodeFinder extends BasicLogicalPlanVisitor<RelationNodeFinderContext,LogicalNode> {
+
+    @Override
+    public LogicalNode visit(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+      if (node.getType() != NodeType.TABLE_SUBQUERY) {
+        super.visit(context, plan, block, node, stack);
+      }
+
+      if (node instanceof RelationNode) {
+        context.founds.add((RelationNode) node);
+      }
+
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitJoin(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+      stack.push(node);
+      LogicalNode result = null;
+      if (context.findMostLeft) {
+        result = visit(context, plan, block, node.getLeftChild(), stack);
+      }
+      if (context.findMostRight) {
+        result = visit(context, plan, block, node.getRightChild(), stack);
+      }
+      stack.pop();
+      return result;
     }
   }
 }

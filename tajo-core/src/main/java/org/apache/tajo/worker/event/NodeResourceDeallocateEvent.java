@@ -25,12 +25,12 @@ public class NodeResourceDeallocateEvent extends NodeResourceEvent {
 
   private NodeResource resource;
 
-  public NodeResourceDeallocateEvent(TajoProtos.NodeResourceProto proto) {
-    this(new NodeResource(proto));
+  public NodeResourceDeallocateEvent(TajoProtos.NodeResourceProto proto, ResourceType resourceType) {
+    this(new NodeResource(proto), resourceType);
   }
 
-  public NodeResourceDeallocateEvent(NodeResource resource) {
-    super(EventType.DEALLOCATE);
+  public NodeResourceDeallocateEvent(NodeResource resource, ResourceType resourceType) {
+    super(EventType.DEALLOCATE, resourceType);
     this.resource = resource;
   }
 

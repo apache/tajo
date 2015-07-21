@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoInternalError;
 
 import java.sql.*;
 
@@ -80,7 +81,7 @@ public class DerbyStore extends AbstractDBStore {
         stmt = getConnection().createStatement();
         stmt.executeUpdate("CREATE SCHEMA " + schemaName);
       } catch (SQLException e) {
-        throw new CatalogException(e);
+        throw new TajoInternalError(e);
       } finally {
         CatalogUtil.closeQuietly(stmt);
       }

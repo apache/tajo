@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -448,6 +449,7 @@ public class TestSQLAnalyzer {
     assertEquals("1", value1.getValue());
     LiteralValue value2 = (LiteralValue)alterTable.getValues()[1];
     assertEquals("2", value2.getValue());
+    assertFalse(alterTable.isPurge());
   }
 
   @Test
@@ -468,6 +470,7 @@ public class TestSQLAnalyzer {
     assertEquals("01", value2.getValue());
     LiteralValue value3 = (LiteralValue)alterTable.getValues()[2];
     assertEquals("11", value3.getValue());
+    assertFalse(alterTable.isPurge());
   }
 
   @Test
@@ -482,6 +485,7 @@ public class TestSQLAnalyzer {
     assertEquals("col1", alterTable.getColumns()[0].getName());
     LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
     assertEquals("TAJO", value1.getValue());
+    assertTrue(alterTable.isPurge());
   }
 
   @Test

@@ -23,10 +23,13 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
@@ -51,6 +54,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class CatalogUtil {
 
   public static final String TEXTFILE_NAME = "TEXT";
+
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
    *
@@ -691,11 +695,11 @@ public class CatalogUtil {
     return widest;
   }
 
-  public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
-    CatalogProtos.TableIdentifierProto.Builder builder = CatalogProtos.TableIdentifierProto.newBuilder();
-    builder.setDatabaseName(databaseName);
-    builder.setTableName(tableName);
-    return builder.build();
+  public static TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
+    return TableIdentifierProto.newBuilder()
+        .setDatabaseName(databaseName)
+        .setTableName(tableName)
+        .build();
   }
 
   public static void closeQuietly(Connection conn) {
@@ -792,6 +796,70 @@ public class CatalogUtil {
     alterTableDesc.setProperties(params);
     alterTableDesc.setAlterTableType(alterTableType);
     return alterTableDesc;
+  }
+
+  /**
+   * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
+   * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
+   *
+   * @param tableName table name
+   * @param columns partition column names
+   * @param values partition values
+   * @param location partition location
+   * @param alterTableType ADD_PARTITION or DROP_PARTITION
+   * @return AlterTableDesc
+   */
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
+                                            String[] values, String location, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    Pair<List<PartitionKeyProto>, String> pair = getPartitionKeyNamePair(columns, values);
+
+    partitionDesc.setPartitionKeys(pair.getFirst());
+    partitionDesc.setPartitionName(pair.getSecond());
+
+    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
+      partitionDesc.setPath(location);
+    }
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  /**
+   * Get partition key/value list and partition name
+   *
+   * ex) partition key/value list :
+   *   - col1, 2015-07-01
+   *   - col2, tajo
+   *     partition name : col1=2015-07-01/col2=tajo
+   *
+   * @param columns partition column names
+   * @param values partition values
+   * @return partition key/value list and partition name
+   */
+  public static Pair<List<PartitionKeyProto>, String> getPartitionKeyNamePair(String[] columns, String[] values) {
+    Pair<List<PartitionKeyProto>, String> pair = null;
+    List<PartitionKeyProto> partitionKeyList = TUtil.newList();
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < columns.length; i++) {
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(columns[i]);
+      builder.setPartitionValue(values[i]);
+
+      if (i > 0) {
+        sb.append("/");
+      }
+      sb.append(columns[i]).append("=").append(values[i]);
+      partitionKeyList.add(builder.build());
+    }
+
+    pair = new Pair<List<PartitionKeyProto>, String>(partitionKeyList, sb.toString());
+    return pair;
   }
 
   /* It is the relationship graph of type conversions. */

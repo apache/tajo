@@ -24,53 +24,118 @@ option java_generate_equals_and_hash = true;
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
+message GetTablespaceListResponse {
+  required ReturnState state = 1;
+  repeated TablespaceProto tablespace = 2;
+}
+
+message GetTablespaceResponse {
+  required ReturnState state = 1;
+  optional TablespaceProto tablespace = 2;
+}
+
+message GetDatabasesResponse {
+  required ReturnState state = 1;
+  repeated DatabaseProto database = 2;
+}
+
+message GetTablesResponse {
+  required ReturnState state = 1;
+  repeated TableDescriptorProto table = 2;
+}
+
+message GetTablePropertiesResponse {
+  required ReturnState state = 1;
+  repeated TableOptionProto properties = 2;
+}
+
+message GetTableStatsResponse {
+  required ReturnState state = 1;
+  repeated TableStatsProto stats = 2;
+}
+
+message GetColumnsResponse {
+  required ReturnState state = 1;
+  repeated ColumnProto column = 2;
+}
+
+message GetPartitionMethodResponse {
+  required ReturnState state = 1;
+  optional PartitionMethodProto partition = 2;
+}
+
+message GetPartitionDescResponse {
+  required ReturnState state = 1;
+  optional PartitionDescProto partition = 2;
+}
+
+message GetIndexResponse {
+  required ReturnState state = 1;
+  optional IndexDescProto index = 2;
+}
+
+message GetIndexesResponse {
+  required ReturnState state = 1;
+  repeated IndexProto index = 2;
+}
+
+message GetPartitionsResponse {
+  required ReturnState state = 1;
+  repeated PartitionDescProto partition = 2;
+}
+
+message GetTablePartitionsResponse {
+  required ReturnState state = 1;
+  repeated TablePartitionProto part = 2;
+}
+
 service CatalogProtocolService {
 
-  rpc createTablespace(CreateTablespaceRequest) returns (BoolProto);
-  rpc dropTablespace(StringProto) returns (BoolProto);
-  rpc existTablespace(StringProto) returns (BoolProto);
-  rpc getAllTablespaces(NullProto) returns (GetTablespacesProto);
-  rpc getAllTablespaceNames(NullProto) returns (StringListProto);
-  rpc getTablespace(StringProto) returns (TablespaceProto);
-  rpc alterTablespace(AlterTablespaceProto) returns (BoolProto);
-  rpc alterTable(AlterTableDescProto) returns (BoolProto);
-  rpc updateTableStats(UpdateTableStatsProto) returns (BoolProto);
+  rpc createTablespace(CreateTablespaceRequest) returns (ReturnState);
+  rpc dropTablespace(StringProto) returns (ReturnState);
+  rpc existTablespace(StringProto) returns (ReturnState);
+  rpc getAllTablespaces(NullProto) returns (GetTablespaceListResponse);
+  rpc getAllTablespaceNames(NullProto) returns (StringListResponse);
+  rpc getTablespace(StringProto) returns (GetTablespaceResponse);
+  rpc alterTablespace(AlterTablespaceProto) returns (ReturnState);
+  rpc alterTable(AlterTableDescProto) returns (ReturnState);
+  rpc updateTableStats(UpdateTableStatsProto) returns (ReturnState);
 
-  rpc createDatabase(CreateDatabaseRequest) returns (BoolProto);
-  rpc dropDatabase(StringProto) returns (BoolProto);
-  rpc existDatabase(StringProto) returns (BoolProto);
-  rpc getAllDatabaseNames(NullProto) returns (StringListProto);
-  rpc getAllDatabases(NullProto) returns (GetDatabasesProto);
+  rpc createDatabase(CreateDatabaseRequest) returns (ReturnState);
+  rpc dropDatabase(StringProto) returns (ReturnState);
+  rpc existDatabase(StringProto) returns (ReturnState);
+  rpc getAllDatabaseNames(NullProto) returns (StringListResponse);
+  rpc getAllDatabases(NullProto) returns (GetDatabasesResponse);
 
-  rpc createTable(TableDescProto) returns (BoolProto);
-  rpc dropTable(TableIdentifierProto) returns (BoolProto);
-  rpc existsTable(TableIdentifierProto) returns (BoolProto);
-  rpc getTableDesc(TableIdentifierProto) returns (TableDescProto);
-  rpc getAllTableNames(StringProto) returns (StringListProto);
-  rpc getAllTables(NullProto) returns (GetTablesProto);
-  rpc getAllTableOptions(NullProto) returns (GetTableOptionsProto);
-  rpc getAllTableStats(NullProto) returns (GetTableStatsProto);
-  rpc getAllColumns(NullProto) returns (GetColumnsProto);
+  rpc createTable(TableDescProto) returns (ReturnState);
+  rpc dropTable(TableIdentifierProto) returns (ReturnState);
+  rpc existsTable(TableIdentifierProto) returns (ReturnState);
+  rpc getTableDesc(TableIdentifierProto) returns (TableResponse);
+  rpc getAllTableNames(StringProto) returns (StringListResponse);
+  rpc getAllTables(NullProto) returns (GetTablesResponse);
+  rpc getAllTableProperties(NullProto) returns (GetTablePropertiesResponse);
+  rpc getAllTableStats(NullProto) returns (GetTableStatsResponse);
+  rpc getAllColumns(NullProto) returns (GetColumnsResponse);
 
-  rpc getPartitionMethodByTableName(TableIdentifierProto) returns (PartitionMethodProto);
-  rpc existPartitionMethod(TableIdentifierProto) returns (BoolProto);
-  rpc dropPartitionMethod(TableIdentifierProto) returns (BoolProto);
+  rpc getPartitionMethodByTableName(TableIdentifierProto) returns (GetPartitionMethodResponse);
+  rpc existPartitionMethod(TableIdentifierProto) returns (ReturnState);
+  rpc dropPartitionMethod(TableIdentifierProto) returns (ReturnState);
 
-  rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (PartitionDescProto);
-  rpc getPartitionsByTableName(PartitionIdentifierProto) returns (PartitionsProto);
-  rpc getAllPartitions(NullProto) returns (GetTablePartitionsProto);
+  rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
+  rpc getPartitionsByTableName(PartitionIdentifierProto) returns (GetPartitionsResponse);
+  rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
 
-  rpc createIndex(IndexDescProto) returns (BoolProto);
-  rpc dropIndex(IndexNameProto) returns (BoolProto);
-  rpc existIndexByName(IndexNameProto) returns (BoolProto);
-  rpc existIndexByColumn(GetIndexByColumnRequest) returns (BoolProto);
-  rpc getIndexByName(IndexNameProto) returns (IndexDescProto);
-  rpc getIndexByColumn(GetIndexByColumnRequest) returns (IndexDescProto);
-  rpc getAllIndexes(NullProto) returns (GetIndexesProto);
+  rpc createIndex(IndexDescProto) returns (ReturnState);
+  rpc dropIndex(IndexNameProto) returns (ReturnState);
+  rpc existIndexByName(IndexNameProto) returns (ReturnState);
+  rpc existIndexByColumn(GetIndexByColumnRequest) returns (ReturnState);
+  rpc getIndexByName(IndexNameProto) returns (GetIndexResponse);
+  rpc getIndexByColumn(GetIndexByColumnRequest) returns (GetIndexResponse);
+  rpc getAllIndexes(NullProto) returns (GetIndexesResponse);
 
-  rpc createFunction(FunctionDescProto) returns (BoolProto);
-  rpc dropFunction(UnregisterFunctionRequest) returns (BoolProto);
+  rpc createFunction(FunctionDescProto) returns (ReturnState);
+  rpc dropFunction(UnregisterFunctionRequest) returns (ReturnState);
   rpc getFunctions(NullProto) returns (GetFunctionsResponse);
-  rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionDescProto);
-  rpc containFunction(ContainFunctionRequest) returns (BoolProto);
+  rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionResponse);
+  rpc containFunction(ContainFunctionRequest) returns (ReturnState);
 }

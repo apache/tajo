@@ -21,7 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -57,11 +57,11 @@ public abstract class ScanExec extends PhysicalExec {
   private boolean checkIfBroadcast() {
     Enforcer enforcer = context.getEnforcer();
 
-    if (enforcer != null && enforcer.hasEnforceProperty(TajoWorkerProtocol.EnforceProperty.EnforceType.BROADCAST)) {
-      List<TajoWorkerProtocol.EnforceProperty> properties =
-          enforcer.getEnforceProperties(TajoWorkerProtocol.EnforceProperty.EnforceType.BROADCAST);
+    if (enforcer != null && enforcer.hasEnforceProperty(EnforceProperty.EnforceType.BROADCAST)) {
+      List<EnforceProperty> properties =
+          enforcer.getEnforceProperties(EnforceProperty.EnforceType.BROADCAST);
 
-      for (TajoWorkerProtocol.EnforceProperty property : properties) {
+      for (EnforceProperty property : properties) {
         if (getCanonicalName().equals(property.getBroadcast().getTableName())) {
           return true;
         }
