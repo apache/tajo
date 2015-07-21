@@ -186,7 +186,7 @@ public class TestDelimitedTextFile {
     meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
     FileFragment fragment = getFileFragment("testNormal.json");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
-    
+
     scanner.init();
 
     int lines = 0;
