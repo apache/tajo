@@ -19,20 +19,20 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ResourceProtos.ExecutionBlockReport;
 
 /**
  * Event Class: From {@link org.apache.tajo.querymaster.QueryMasterManagerService} to Stage
  */
 public class StageShuffleReportEvent extends StageEvent {
-  private TajoWorkerProtocol.ExecutionBlockReport report;
+  private ExecutionBlockReport report;
 
-  public StageShuffleReportEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
+  public StageShuffleReportEvent(ExecutionBlockId executionBlockId, ExecutionBlockReport report) {
     super(executionBlockId, StageEventType.SQ_SHUFFLE_REPORT);
     this.report = report;
   }
 
-  public TajoWorkerProtocol.ExecutionBlockReport getReport() {
+  public ExecutionBlockReport getReport() {
     return report;
   }
 }

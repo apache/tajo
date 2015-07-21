@@ -21,23 +21,18 @@ package org.apache.tajo.ws.rs.resources;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.responses.ExceptionResponse;
 import org.apache.tajo.ws.rs.responses.NewSessionResponse;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -132,7 +127,7 @@ public class SessionsResource {
         LOG.info("Session " + sessionId + " is created. ");
         
         sessionResponse.setId(sessionId);
-        sessionResponse.setResultCode(ClientProtos.ResultCode.OK);
+        sessionResponse.setResultCode(ResultCode.OK);
         sessionResponse.setVariables(masterContext.getSessionManager().getAllVariables(sessionId));
         
         JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
@@ -147,7 +142,7 @@ public class SessionsResource {
         LOG.error(e.getMessage(), e);
         
         NewSessionResponse sessionResponse = new NewSessionResponse();
-        sessionResponse.setResultCode(ClientProtos.ResultCode.ERROR);
+        sessionResponse.setResultCode(ResultCode.INTERNAL_ERROR);
         sessionResponse.setMessage(e.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sessionResponse).build();
@@ -155,7 +150,7 @@ public class SessionsResource {
         LOG.error(e.getMessage(), e);
         
         NewSessionResponse sessionResponse = new NewSessionResponse();
-        sessionResponse.setResultCode(ClientProtos.ResultCode.ERROR);
+        sessionResponse.setResultCode(ResultCode.INTERNAL_ERROR);
         sessionResponse.setMessage(e.getMessage());
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sessionResponse).build();

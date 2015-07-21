@@ -33,6 +33,7 @@ public enum TaskAttemptEventType {
 
   //Producer:Scheduler
   TA_ASSIGNED,
+  TA_ASSIGN_CANCEL,
   TA_SCHEDULE_CANCELED,
 
   //Producer:Scheduler

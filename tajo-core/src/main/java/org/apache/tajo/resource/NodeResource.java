@@ -183,6 +183,6 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
 
   @Override
   public String toString() {
-    return "<memory:" + getMemory() + ", disks:" + getDisks() + ", vCores:" + getVirtualCores() + ">";
+    return "(Memory:" + getMemory() + ", Disks:" + getDisks() + ", vCores:" + getVirtualCores() + ")";
   }
 }
