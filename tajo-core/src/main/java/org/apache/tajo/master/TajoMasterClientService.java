@@ -36,12 +36,9 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-<<<<<<< HEAD
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
-=======
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionListResponse;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
@@ -139,19 +136,6 @@ public class TajoMasterClientService extends AbstractService {
         String sessionId =
             context.getSessionManager().createSession(request.getUsername(), databaseName);
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-<<<<<<< HEAD
-        builder.setResult(IPCUtil.buildOkRequestResult());
-        builder.setSessionId(TajoIdProtos.SessionIdProto.newBuilder().setId(sessionId).build());
-        builder.setSessionVars(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
-        return builder.build();
-      } catch (NoSuchDatabaseException nsde) {
-        CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, nsde.getMessage(), null));
-        return builder.build();
-      } catch (InvalidSessionException e) {
-        CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, e.getMessage(), null));
-=======
         builder.setState(OK);
         builder.setSessionId(TajoIdProtos.SessionIdProto.newBuilder().setId(sessionId).build());
         builder.setSessionVars(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
@@ -160,7 +144,6 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Throwable t) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
         builder.setState(returnError(t));
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
         return builder.build();
       }
     }
@@ -176,27 +159,12 @@ public class TajoMasterClientService extends AbstractService {
       return OK;
     }
 
-<<<<<<< HEAD
-    public SessionUpdateResponse buildSessionUpdateOnSuccess(Map<String, String> variables) {
-      SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-      builder.setResult(IPCUtil.buildOkRequestResult());
-      builder.setSessionVars(new KeyValueSet(variables).getProto());
-      return builder.build();
-    }
-=======
     @Override
     public SessionUpdateResponse updateSessionVariables(RpcController controller,
                                                         UpdateSessionVariableRequest request)
         throws ServiceException {
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
       SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-<<<<<<< HEAD
-      builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, message, null));
-      return builder.build();
-    }
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
       try {
         String sessionId = request.getSessionId().getId();
@@ -312,16 +280,6 @@ public class TajoMasterClientService extends AbstractService {
         return context.getGlobalEngine().executeQuery(session, request.getQuery(), request.getIsJson());
 
       } catch (Exception e) {
-<<<<<<< HEAD
-        LOG.error(e.getMessage(), e);
-        SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
-        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setIsForwarded(true);
-        responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
-        responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-            e.getMessage() == null ? "Internal Error" : ExceptionUtils.getStackTrace(e), null));
-        return responseBuilder.build();
-=======
 
         return ClientProtos.SubmitQueryResponse.newBuilder()
             .setState(returnError(e))
@@ -329,8 +287,6 @@ public class TajoMasterClientService extends AbstractService {
             .setIsForwarded(true)
             .setUserName(context.getConf().getVar(ConfVars.USERNAME))
             .build();
-
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
     }
 
@@ -344,18 +300,6 @@ public class TajoMasterClientService extends AbstractService {
         context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
         builder.setState(OK);
 
-<<<<<<< HEAD
-        UpdateQueryResponse.Builder responseBuilder = UpdateQueryResponse.newBuilder();
-        try {
-          context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
-          return responseBuilder.setResult(IPCUtil.buildOkRequestResult()).build();
-        } catch (Exception e) {
-          responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-              e.getMessage() == null ? ExceptionUtils.getStackTrace(e) : null, null));
-          return responseBuilder.build();
-        }
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       } catch (Throwable t) {
         builder.setState(returnError(t));
       }
@@ -500,13 +444,8 @@ public class TajoMasterClientService extends AbstractService {
         builder.setQueryId(request.getQueryId());
 
         if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-<<<<<<< HEAD
-          builder.setResult(IPCUtil.buildOkRequestResult());
-          builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-=======
           builder.setState(OK);
           builder.setQueryState(QueryState.QUERY_SUCCEEDED);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
         } else {
           QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
 
@@ -519,13 +458,8 @@ public class TajoMasterClientService extends AbstractService {
           }
 
           if (queryInfo != null) {
-<<<<<<< HEAD
-            builder.setResult(IPCUtil.buildOkRequestResult());
-            builder.setState(queryInfo.getQueryState());
-=======
             builder.setState(OK);
             builder.setQueryState(queryInfo.getQueryState());
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
             boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
             boolean isInsert = queryInfo.getQueryContext().isInsert();
@@ -545,18 +479,10 @@ public class TajoMasterClientService extends AbstractService {
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
             if (session.getNonForwardQueryResultScanner(queryId) != null) {
-<<<<<<< HEAD
-              builder.setResult(IPCUtil.buildOkRequestResult());
-              builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-            } else {
-              builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-                  "No such query: " + queryId.toString(), null));
-=======
               builder.setState(OK);
               builder.setQueryState(QueryState.QUERY_SUCCEEDED);
             } else {
               builder.setState(errNoSuchQueryId(queryId));
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
             }
           }
         }
@@ -608,24 +534,14 @@ public class TajoMasterClientService extends AbstractService {
         resultSetBuilder.addAllSerializedTuples(rows);
 
         builder.setResultSet(resultSetBuilder.build());
-<<<<<<< HEAD
-        builder.setResult(IPCUtil.buildOkRequestResult());
-=======
         builder.setState(OK);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
         LOG.info("Send result to client for " +
             request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
 
       } catch (Throwable t) {
         builder.setResultSet(resultSetBuilder.build()); // required field
-<<<<<<< HEAD
-        String errorMessage = t.getMessage() == null ? t.getClass().getName() : t.getMessage();
-        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-            errorMessage, org.apache.hadoop.util.StringUtils.stringifyException(t)));
-=======
         builder.setState(returnError(t));
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
 
       return builder.build();
@@ -669,18 +585,10 @@ public class TajoMasterClientService extends AbstractService {
         if (queryInfo != null) {
           builder.setQueryInfo(queryInfo.getProto());
         }
-<<<<<<< HEAD
-        builder.setResult(IPCUtil.buildOkRequestResult());
-      } catch (Throwable t) {
-        LOG.warn(t.getMessage(), t);
-        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-            org.apache.hadoop.util.StringUtils.stringifyException(t), null));
-=======
         builder.setState(OK);
 
       } catch (Throwable t) {
         builder.setState(returnError(t));
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
 
       return builder.build();
@@ -872,14 +780,8 @@ public class TajoMasterClientService extends AbstractService {
 
         if (!request.hasValue()) {
           return TableResponse.newBuilder()
-<<<<<<< HEAD
-              .setResult(
-                  IPCUtil.buildRequestResult(ResultCode.ERROR, "table name is required.", null)
-              ).build();
-=======
               .setState(errInvalidRpcCall("Table name is required"))
               .build();
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
         }
 
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
@@ -897,22 +799,12 @@ public class TajoMasterClientService extends AbstractService {
 
         if (catalog.existsTable(databaseName, tableName)) {
           return TableResponse.newBuilder()
-<<<<<<< HEAD
-              .setResult(IPCUtil.buildOkRequestResult())
-              .setTableDesc(catalog.getTableDesc(databaseName, tableName).getProto())
-              .build();
-        } else {
-          return TableResponse.newBuilder()
-              .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-                  "ERROR: no such a table: " + request.getValue(), null))
-=======
               .setState(OK)
               .setTable(catalog.getTableDesc(databaseName, tableName).getProto())
               .build();
         } else {
           return TableResponse.newBuilder()
               .setState(errUndefinedTable(request.getValue()))
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
               .build();
         }
       } catch (Throwable t) {
@@ -941,28 +833,6 @@ public class TajoMasterClientService extends AbstractService {
           partitionDesc = new PartitionMethodDesc(request.getPartition());
         }
 
-<<<<<<< HEAD
-        TableDesc desc;
-        try {
-          desc = context.getGlobalEngine().getDDLExecutor().createTable(queryContext, request.getName(),
-              null, meta.getStoreType(), schema, meta, path.toUri(), true, partitionDesc, false);
-        } catch (Exception e) {
-          return TableResponse.newBuilder()
-              .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, e.getMessage(), null))
-              .build();
-        }
-
-        return TableResponse.newBuilder()
-            .setResult(IPCUtil.buildOkRequestResult())
-            .setTableDesc(desc.getProto()).build();
-      } catch (InvalidSessionException ise) {
-        return TableResponse.newBuilder()
-            .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, ise.getMessage(), null))
-            .build();
-      } catch (IOException ioe) {
-        return TableResponse.newBuilder()
-            .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, ioe.getMessage(), null))
-=======
         TableDesc desc = context.getGlobalEngine().getDDLExecutor().createTable(
             queryContext,
             request.getName(),
@@ -983,7 +853,6 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Throwable t) {
         return TableResponse.newBuilder()
             .setState(returnError(t))
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
             .build();
       }
     }
@@ -1024,15 +893,9 @@ public class TajoMasterClientService extends AbstractService {
             }
           }
         }
-<<<<<<< HEAD
-        return FunctionResponse.newBuilder()
-            .setResult(IPCUtil.buildOkRequestResult())
-            .addAllFunctions(functionProtos)
-=======
         return FunctionListResponse.newBuilder()
             .setState(OK)
             .addAllFunction(functionProtos)
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
             .build();
 
       } catch (Throwable t) {

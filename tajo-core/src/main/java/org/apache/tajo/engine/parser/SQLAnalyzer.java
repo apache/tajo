@@ -29,11 +29,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
-<<<<<<< HEAD
 import org.apache.tajo.algebra.Sort.SortSpec;
-import org.apache.tajo.catalog.CatalogUtil;
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;

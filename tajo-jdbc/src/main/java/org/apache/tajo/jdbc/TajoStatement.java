@@ -20,9 +20,9 @@ package org.apache.tajo.jdbc;
 import com.google.common.collect.Lists;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.*;
@@ -158,19 +158,7 @@ public class TajoStatement implements Statement {
     }
 
     ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
-<<<<<<< HEAD
-    if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
-      if (response.getResult().hasErrorMessage()) {
-        throw new ServiceException(response.getResult().getErrorMessage());
-      }
-      if (response.getResult().hasErrorTrace()) {
-        throw new ServiceException(response.getResult().getErrorTrace());
-      }
-      throw new ServiceException("Failed to submit query by unknown reason");
-    }
-=======
     SQLExceptionUtil.throwIfError(response.getState());
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
     QueryId queryId = new QueryId(response.getQueryId());
     if (response.getIsForwarded() && !queryId.isNull()) {

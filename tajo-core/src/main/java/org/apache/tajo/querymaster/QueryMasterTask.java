@@ -55,10 +55,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
-<<<<<<< HEAD
-=======
 import org.apache.tajo.util.TUtil;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;

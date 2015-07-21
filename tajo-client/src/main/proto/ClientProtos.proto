@@ -192,19 +192,6 @@ message DropTableRequest {
   optional bool purge = 3 [default = false];
 }
 
-//<<<<<<< HEAD
-//message TableResponse {
-//  required RequestResult result = 1;
-//  optional TableDescProto tableDesc = 2;
-//}
-//
-//message FunctionResponse {
-//  required RequestResult result = 1;
-//  repeated FunctionDescProto functions = 2;
-//}
-//
-//=======
-//>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 message QueryInfoProto {
   required string queryId = 1;
   optional string sql = 2;
@@ -265,22 +252,12 @@ message GetQueryInfoResponse {
 }
 
 message CreateIndexResponse {
-  required RequestResult result = 1;
+  required ReturnState result = 1;
   optional IndexDescProto indexDesc = 2;
-}
-
-message GetIndexesResponse {
-  required RequestResult result = 1;
-  repeated IndexDescProto indexes = 2;
 }
 
 message GetIndexWithColumnsRequest {
   required SessionIdProto sessionId = 1;
   required string tableName = 2;
   repeated string columnNames = 3;
-}
-
-message GetIndexWithColumnsResponse {
-  required RequestResult result = 1;
-  optional IndexDescProto indexDesc = 2;
 }

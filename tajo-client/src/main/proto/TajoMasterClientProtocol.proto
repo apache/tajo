@@ -72,11 +72,11 @@ service TajoMasterClientProtocolService {
   rpc getFunctionList(SessionedStringProto) returns (FunctionListResponse);
 
   // Index Management APIs
-  rpc getIndexWithName(SessionedStringProto) returns (IndexDescProto);
-  rpc existIndexWithName(SessionedStringProto) returns (BoolProto);
-  rpc getIndexesForTable(SessionedStringProto) returns (GetIndexesResponse);
-  rpc existIndexesForTable(SessionedStringProto) returns (BoolProto);
-  rpc getIndexWithColumns(GetIndexWithColumnsRequest) returns (GetIndexWithColumnsResponse);
-  rpc existIndexWithColumns(GetIndexWithColumnsRequest) returns (BoolProto);
-  rpc dropIndex(SessionedStringProto) returns (BoolProto);
+  rpc getIndexWithName(SessionedStringProto) returns (IndexResponse);
+  rpc existIndexWithName(SessionedStringProto) returns (ReturnState);
+  rpc getIndexesForTable(SessionedStringProto) returns (IndexListResponse);
+  rpc existIndexesForTable(SessionedStringProto) returns (ReturnState);
+  rpc getIndexWithColumns(GetIndexWithColumnsRequest) returns (IndexResponse);
+  rpc existIndexWithColumns(GetIndexWithColumnsRequest) returns (ReturnState);
+  rpc dropIndex(SessionedStringProto) returns (ReturnState);
 }

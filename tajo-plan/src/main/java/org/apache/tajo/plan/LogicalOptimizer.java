@@ -34,16 +34,9 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
-<<<<<<< HEAD
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter;
-import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule;
-import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
-import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
-import org.apache.tajo.plan.rewrite.*;
-=======
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ReflectionUtil;

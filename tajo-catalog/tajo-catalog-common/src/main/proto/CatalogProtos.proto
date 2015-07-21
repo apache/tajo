@@ -387,3 +387,13 @@ message FunctionListResponse {
   required ReturnState state = 1;
   repeated FunctionDescProto function = 2;
 }
+
+message IndexListResponse {
+  required ReturnState state = 1;
+  repeated IndexDescProto indexDesc = 2;
+}
+
+message IndexResponse {
+  required ReturnState state = 1;
+  optional IndexDescProto indexDesc = 2;
+}

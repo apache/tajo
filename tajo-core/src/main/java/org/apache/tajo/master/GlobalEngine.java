@@ -34,42 +34,35 @@ import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
-<<<<<<< HEAD
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
-=======
 import org.apache.tajo.exception.ExceptionUtil;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.IllegalQueryStatusException;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-<<<<<<< HEAD
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
 import org.apache.tajo.plan.verifier.VerificationState;
-import org.apache.tajo.plan.verifier.VerifyException;
-=======
-import org.apache.tajo.plan.verifier.*;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.IPCUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.exception.ReturnStateUtil.returnError;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 
 public class GlobalEngine extends AbstractService {
@@ -208,16 +201,7 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setIsForwarded(true);
-<<<<<<< HEAD
-      String errorMessage = t.getMessage();
-      if (t.getMessage() == null) {
-        errorMessage = t.getClass().getName();
-      }
-      responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-          errorMessage, StringUtils.stringifyException(t)));
-=======
       responseBuilder.setState(ReturnStateUtil.returnError(t));
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       return responseBuilder.build();
     }
   }

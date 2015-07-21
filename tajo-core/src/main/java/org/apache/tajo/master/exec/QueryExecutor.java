@@ -107,12 +107,9 @@ public class QueryExecutor {
 
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-<<<<<<< HEAD
-=======
       ddlExecutor.execute(queryContext, plan);
       response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       response.setState(OK);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
       if (PlannerUtil.isDistExecDDL(rootNode)) {
         if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
@@ -162,12 +159,7 @@ public class QueryExecutor {
         session.selectDatabase(setSessionNode.getValue());
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-<<<<<<< HEAD
-        response.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-            "database \"" + databaseName + "\" does not exists.", null));
-=======
         response.setState(errUndefinedDatabase(databaseName));
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
 
       // others
@@ -181,11 +173,7 @@ public class QueryExecutor {
 
     context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-<<<<<<< HEAD
-    response.setResult(IPCUtil.buildOkRequestResult());
-=======
     response.setState(OK);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
   }
 
   public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
@@ -231,10 +219,6 @@ public class QueryExecutor {
     response.setState(OK);
     response.setResultSet(serializedResBuilder.build());
     response.setMaxRowNum(lines.length);
-<<<<<<< HEAD
-    response.setResult(IPCUtil.buildOkRequestResult());
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
   }
 
@@ -257,10 +241,6 @@ public class QueryExecutor {
     response.setQueryId(queryId.getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(queryResultScanner.getTableDesc().getProto());
-<<<<<<< HEAD
-    response.setResult(IPCUtil.buildOkRequestResult());
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
   }
 
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
@@ -297,10 +277,6 @@ public class QueryExecutor {
     response.setQueryId(queryInfo.getQueryId().getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(desc.getProto());
-<<<<<<< HEAD
-    response.setResult(IPCUtil.buildOkRequestResult());
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
   }
 
   public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
@@ -338,10 +314,6 @@ public class QueryExecutor {
         responseBuilder.setResultSet(serializedResBuilder);
         responseBuilder.setMaxRowNum(1);
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-<<<<<<< HEAD
-        responseBuilder.setResult(IPCUtil.buildOkRequestResult());
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
     } finally {
       // stop script executor
@@ -503,11 +475,7 @@ public class QueryExecutor {
       // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
       responseBuilder.setMaxRowNum(-1);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-<<<<<<< HEAD
-      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
-=======
       responseBuilder.setState(OK);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
@@ -541,29 +509,11 @@ public class QueryExecutor {
 
     queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
 
-<<<<<<< HEAD
-    if(queryInfo == null) {
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-          "Fail starting QueryMaster.", null));
-      LOG.error("Fail starting QueryMaster: " + sql);
-    } else {
-      responseBuilder.setIsForwarded(true);
-      responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
-      if(queryInfo.getQueryMasterHost() != null) {
-        responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
-      }
-      responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
-      LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
-          " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
-=======
     responseBuilder.setIsForwarded(true);
     responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
     responseBuilder.setState(OK);
     if (queryInfo.getQueryMasterHost() != null) {
       responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     }
     responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
     LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +

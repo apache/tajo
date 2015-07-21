@@ -319,8 +319,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   public List<IndexDescProto> getAllIndexes() {
     try {
       CatalogProtocolService.BlockingInterface stub = getStub();
-      GetIndexesProto response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
-      return response.getIndexList();
+      IndexListResponse response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+      return response.getIndexDescList();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
@@ -550,7 +550,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
       final BlockingInterface stub = getStub();
 
-      return isSuccess(stub.existIndexByColumnNames(null, builder.build()).getValue());
+      return isSuccess(stub.existIndexByColumnNames(null, builder.build()));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -562,7 +562,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final BlockingInterface stub = getStub();
 
       return isSuccess(
-          stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)).getValue());
+          stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -578,10 +578,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
 
       final BlockingInterface stub = getStub();
-      final GetIndexResponse response = stub.getIndexByName(null, request);
+      final IndexResponse response = stub.getIndexByName(null, request);
       ensureOk(response.getState());
 
-      return new IndexDesc(response.getIndex());
+      return new IndexDesc(response.getIndexDesc());
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -615,10 +615,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       }
 
       final BlockingInterface stub = getStub();
-      final GetIndexResponse response = stub.getIndexByColumnNames(null, builder.build());
+      final IndexResponse response = stub.getIndexByColumnNames(null, builder.build());
       ensureOk(response.getState());
 
-      return new IndexDesc(response.getIndex());
+      return new IndexDesc(response.getIndexDesc());
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -631,7 +631,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       TableIdentifierProto proto = CatalogUtil.buildTableIdentifier(databaseName, tableName);
 
       final BlockingInterface stub = getStub();
-      final GetAllIndexesResponse response = stub.getAllIndexesByTable(null, proto);
+      final IndexListResponse response = stub.getAllIndexesByTable(null, proto);
       ensureOk(response.getState());
 
       List<IndexDesc> indexDescs = TUtil.newList();

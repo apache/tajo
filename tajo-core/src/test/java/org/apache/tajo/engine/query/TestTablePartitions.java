@@ -19,7 +19,10 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -31,12 +34,12 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
@@ -57,7 +60,6 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_SHUFFLE;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class TestTablePartitions extends QueryTestCaseBase {
@@ -865,13 +867,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     ClientProtos.SubmitQueryResponse response = client.executeQuery("insert overwrite into " + tableName
         + " select l_orderkey, l_partkey from lineitem");
 
-<<<<<<< HEAD
-    assertTrue(response.getResult().hasErrorMessage());
-    assertEquals(response.getResult().getErrorMessage(), "INSERT has smaller expressions than target columns\n");
-=======
     assertTrue(ReturnStateUtil.isError(response.getState()));
     assertEquals(response.getState().getMessage(), "INSERT has smaller expressions than target columns");
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
     res = executeFile("case14.sql");
     assertResultSet(res, "case14.result");
@@ -896,13 +893,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       response = client.executeQuery("insert overwrite into " + tableName
         + " select l_returnflag , l_orderkey, l_partkey from lineitem");
 
-<<<<<<< HEAD
-      assertTrue(response.getResult().hasErrorMessage());
-      assertEquals(response.getResult().getErrorMessage(), "INSERT has smaller expressions than target columns\n");
-=======
       assertTrue(ReturnStateUtil.isError(response.getState()));
       assertEquals(response.getState().getMessage(), "INSERT has smaller expressions than target columns");
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 
       res = executeFile("case15.sql");
       assertResultSet(res, "case15.result");

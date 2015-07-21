@@ -1143,7 +1143,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetIndexResponse getIndexByName(RpcController controller, IndexNameProto request)
+    public IndexResponse getIndexByName(RpcController controller, IndexNameProto request)
         throws ServiceException {
 
       String databaseName = request.getDatabaseName();
@@ -1153,20 +1153,20 @@ public class CatalogServer extends AbstractService {
       try {
 
         if (!store.existIndexByName(databaseName, indexName)) {
-          return GetIndexResponse.newBuilder()
+          return IndexResponse.newBuilder()
               .setState(errUndefinedIndexName(indexName))
               .build();
         }
 
-        return GetIndexResponse.newBuilder()
+        return IndexResponse.newBuilder()
             .setState(OK)
-            .setIndex(store.getIndexByName(databaseName, indexName))
+            .setIndexDesc(store.getIndexByName(databaseName, indexName))
             .build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetIndexResponse.newBuilder()
+        return IndexResponse.newBuilder()
             .setState(returnError(t))
             .build();
 
@@ -1176,7 +1176,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetIndexResponse getIndexByColumnNames(RpcController controller, GetIndexByColumnNamesRequest request)
+    public IndexResponse getIndexByColumnNames(RpcController controller, GetIndexByColumnNamesRequest request)
         throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
@@ -1189,18 +1189,18 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         if (!store.existIndexByColumns(databaseName, tableName, columnNames)) {
-          return GetIndexResponse.newBuilder()
-              .setState(errUndefinedIndex(tableName, columnName))
+          return IndexResponse.newBuilder()
+              .setState(errUndefinedIndex(tableName, columnNamesList))
               .build();
         }
-        return GetIndexResponse.newBuilder()
+        return IndexResponse.newBuilder()
             .setState(OK)
-            .setIndex(store.getIndexByColumn(databaseName, tableName, columnName))
+            .setIndexDesc(store.getIndexByColumns(databaseName, tableName, columnNames))
             .build();
-      }  catch (Throwable t) {
+      } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetIndexResponse.newBuilder()
+        return IndexResponse.newBuilder()
             .setState(returnError(t))
             .build();
       } finally {
@@ -1209,35 +1209,44 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetAllIndexesResponse getAllIndexesByTable(RpcController controller, TableIdentifierProto request)
+    public IndexListResponse getAllIndexesByTable(RpcController controller, TableIdentifierProto request)
         throws ServiceException {
-      rlock.lock();
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+
+      rlock.lock();
       try {
-        GetAllIndexesResponse.Builder builder = GetAllIndexesResponse.newBuilder();
+        if (!store.existIndexesByTable(databaseName, tableName)) {
+          return IndexListResponse.newBuilder()
+              .setState(errUndefinedIndex(tableName))
+              .build();
+        }
+        IndexListResponse.Builder builder = IndexListResponse.newBuilder().setState(OK);
         for (String eachIndexName : store.getAllIndexNamesByTable(databaseName, tableName)) {
           builder.addIndexDesc(store.getIndexByName(databaseName, eachIndexName));
         }
         return builder.build();
-      } catch (Exception e) {
-        LOG.error("ERROR: cannot get all indexes for " + databaseName + "." + tableName, e);
-        return null;
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return IndexListResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       } finally {
         rlock.unlock();
       }
     }
 
     @Override
-    public GetIndexesResponse getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
+    public IndexListResponse getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return GetIndexesResponse.newBuilder().addAllIndex(store.getAllIndexes()).build();
+        return IndexListResponse.newBuilder().addAllIndexDesc(store.getAllIndexes()).build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetIndexesResponse.newBuilder()
+        return IndexListResponse.newBuilder()
             .setState(returnError(t))
             .build();
 
