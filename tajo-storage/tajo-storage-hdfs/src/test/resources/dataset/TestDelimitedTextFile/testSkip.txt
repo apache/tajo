@@ -5,4 +5,3 @@ true,hyunsik,19,59,23,77.9,271.9,hyunsik,aH1bnNpaw==,192.168.0.1
 true,hyunsik,20,59,23,77.9,271.9,hyunsik,aH1bnNpaw==,192.168.0.1
 true,hyunsik,21,59,23,77.9,271.9,hyunsik,aH1bnNpaw==,192.168.0.1
 true,hyunsik,22,59,23,77.9,271.9,hyunsik,aH1bnNpaw==,192.168.0.1
-== end of file ==
