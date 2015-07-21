@@ -6,51 +6,28 @@ Joins
 Overview
 =====================
 
-Tajo supports the following syntax for joining tables.
+In Tajo, a single query can accesses multiple rows of the same or different relations at one time. This query is called *join*.
+Currently, Tajo supports inner (cross) joins and outer joins.
 
-*Synopsis*
+A join query can involve multiple relations in the ``FROM`` clause according to the following rule.
 
 .. code-block:: sql
 
-  from_clause:
-    FROM table_reference_list
+  FROM table_reference [, table_reference [, ...]]
 
-  table_reference_list:
-    table_reference (COMMA table_reference)*
+, where ``table_reference`` is:
 
-  table_reference:
-    joined_table
-  | table_primary
+.. code-block:: sql
 
-  joined_table:
-    table_primary joined_table_primary+
+  table_primary join_type table_primary [ join_condition ]
 
-  joined_table_primary:
-    CROSS JOIN right=table_primary
-  | (t=join_type)? JOIN right=table_primary s=join_specification
-  | NATURAL (t=join_type)? JOIN right=table_primary
-  | UNION JOIN right=table_primary
+``join_type`` can be one of the followings.
 
-  join_type:
-    INNER
-  | LEFT OUTER
-  | RIGHT OUTER
-  | FULL OUTER
+.. code-block:: sql
 
-  join_specification:
-    ON search_condition
+  NATURAL { CROSS | INNER } | { { LEFT | RIGHT | FULL } OUTER } JOIN
 
-  table_primary:
-    table_or_query_name ((AS)? alias=identifier)? (LEFT_PAREN column_name_list RIGHT_PAREN)?
-  | derived_table (AS)? name=identifier (LEFT_PAREN column_name_list RIGHT_PAREN)?
-
-  column_name_list:
-    identifier ( COMMA identifier )*
-
-  derived_table:
-    table_subquery
-
-More than two tables can be joined in Tajo. Currently, Tajo supports only inner (cross) joins and outer joins.
+For more detail for ``join_condition``, please refer to :doc:`/sql_language/predicates`.
 
 .. note::
 
