@@ -27,6 +27,8 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.sql.SQLException;
+
 import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
@@ -44,7 +46,7 @@ public class TestOuterJoinWithSubQuery extends TestJoinQuery {
   }
 
   @AfterClass
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     TestJoinQuery.classTearDown();
   }
 

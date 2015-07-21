@@ -22,9 +22,9 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProtoOrBuilder;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
+import org.apache.tajo.ResourceProtos.FetchProto;
+import org.apache.tajo.ResourceProtos.TaskRequestProtoOrBuilder;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -34,22 +34,22 @@ import java.util.List;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class TaskRequestImpl implements TaskRequest {
-	
-  private TaskAttemptId id;
-  private List<FragmentProto> fragments;
-  private String outputTable;
+
+	private TaskAttemptId id;
+	private List<FragmentProto> fragments;
+	private String outputTable;
 	private boolean isUpdated;
 	private boolean clusteredOutput;
 	private PlanProto.LogicalNodeTree plan;     // logical node
 	private Boolean interQuery;
 	private List<FetchImpl> fetches;
-  private Boolean shouldDie;
-  private QueryContext queryContext;
-  private DataChannel dataChannel;
-  private Enforcer enforcer;
+	private QueryContext queryContext;
+	private DataChannel dataChannel;
+	private Enforcer enforcer;
+	private String queryMasterHostAndPort;
 	
-	private TaskRequestProto proto = TajoWorkerProtocol.TaskRequestProto.getDefaultInstance();
-	private TajoWorkerProtocol.TaskRequestProto.Builder builder = null;
+	private TaskRequestProto proto = TaskRequestProto.getDefaultInstance();
+	private TaskRequestProto.Builder builder = null;
 	private boolean viaProto = false;
 	
 	public TaskRequestImpl() {
@@ -61,9 +61,9 @@ public class TaskRequestImpl implements TaskRequest {
 	public TaskRequestImpl(TaskAttemptId id, List<FragmentProto> fragments,
 												 String outputTable, boolean clusteredOutput,
 												 PlanProto.LogicalNodeTree plan, QueryContext queryContext, DataChannel channel,
-												 Enforcer enforcer) {
+												 Enforcer enforcer, String queryMasterHostAndPort) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, plan, queryContext, channel, enforcer);
+		this.set(id, fragments, outputTable, clusteredOutput, plan, queryContext, channel, enforcer, queryMasterHostAndPort);
 	}
 	
 	public TaskRequestImpl(TaskRequestProto proto) {
@@ -75,7 +75,8 @@ public class TaskRequestImpl implements TaskRequest {
 	
 	public void set(TaskAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
-			PlanProto.LogicalNodeTree plan, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
+			PlanProto.LogicalNodeTree plan, QueryContext queryContext,
+									DataChannel dataChannel, Enforcer enforcer, String queryMasterHostAndPort) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
@@ -86,6 +87,7 @@ public class TaskRequestImpl implements TaskRequest {
     this.queryContext = queryContext;
     this.dataChannel = dataChannel;
     this.enforcer = enforcer;
+		this.queryMasterHostAndPort = queryMasterHostAndPort;
 	}
 
 	@Override
@@ -124,32 +126,6 @@ public class TaskRequestImpl implements TaskRequest {
 		return this.fragments;
 	}
 
-	@Override
-	public String getOutputTableId() {
-		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (outputTable != null) {
-			return this.outputTable;
-		}
-		if (!p.hasOutputTable()) {
-			return null;
-		}
-		this.outputTable = p.getOutputTable();
-		return this.outputTable;
-	}
-
-	@Override
-	public boolean isClusteredOutput() {
-		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (isUpdated) {
-			return this.clusteredOutput;
-		}
-		if (!p.hasClusteredOutput()) {
-			return false;
-		}
-		this.clusteredOutput = p.getClusteredOutput();
-		this.isUpdated = true;
-		return this.clusteredOutput;
-	}
 
 	@Override
 	public PlanProto.LogicalNodeTree getPlan() {
@@ -248,33 +224,14 @@ public class TaskRequestImpl implements TaskRequest {
     }
     TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     this.fetches = new ArrayList<FetchImpl>();
-    for(TajoWorkerProtocol.FetchProto fetch : p.getFetchesList()) {
+    for(FetchProto fetch : p.getFetchesList()) {
       fetches.add(new FetchImpl(fetch));
     }
 	}
 
-  @Override
-  public boolean shouldDie() {
-    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (shouldDie != null) {
-      return shouldDie;
-    }
-    if (!p.hasShouldDie()) {
-      return false;
-    }
-    this.shouldDie = p.getShouldDie();
-    return this.shouldDie;
-  }
-
-  @Override
-  public void setShouldDie() {
-    maybeInitBuilder();
-    shouldDie = true;
-  }
-
   private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
-			builder = TajoWorkerProtocol.TaskRequestProto.newBuilder(proto);
+			builder = TaskRequestProto.newBuilder(proto);
 		}
 		viaProto = true;
 	}
@@ -305,8 +262,8 @@ public class TaskRequestImpl implements TaskRequest {
         builder.addFetches(fetches.get(i).getProto());
       }
     }
-    if (this.shouldDie != null) {
-      builder.setShouldDie(this.shouldDie);
+    if (this.queryMasterHostAndPort != null) {
+      builder.setQueryMasterHostAndPort(this.queryMasterHostAndPort);
     }
     if (this.queryContext != null) {
       builder.setQueryContext(queryContext.getProto());

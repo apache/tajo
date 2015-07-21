@@ -36,7 +36,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -49,6 +49,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
+import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeCatalogUpgrade;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
@@ -128,7 +129,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       Class.forName(getCatalogDriverName()).newInstance();
       LOG.info("Loaded the Catalog driver (" + catalogDriver + ")");
     } catch (Exception e) {
-      throw new CatalogException("Cannot load Catalog driver " + catalogDriver, e);
+      throw new TajoInternalError(e);
     }
 
     try {
@@ -136,8 +137,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = createConnection(conf);
       LOG.info("Connected to database (" + catalogUri + ")");
     } catch (SQLException e) {
-      throw new CatalogException("Cannot connect to database (" + catalogUri
-          + ")", e);
+      throw new MetadataConnectionException(catalogUri , e);
     }
 
     String schemaPath = getCatalogSchemaPath();
@@ -168,7 +168,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         }
      }
     } catch (Exception se) {
-      throw new CatalogException("Cannot initialize the persistent storage of Catalog", se);
+      throw new TajoInternalError(se);
     }
   }
 
@@ -180,7 +180,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       return FileUtil.readTextFileFromResource("schemas/" + path);
     } catch (IOException e) {
-      throw new CatalogException(e);
+      throw new TajoInternalError(e);
     }
   }
 
@@ -232,7 +232,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         schemaVersion = result.getInt("VERSION");
       }
     } catch (SQLException e) {
-      throw new CatalogException(e.getMessage(), e);
+      throw new TajoInternalError(e);
     } finally {
       CatalogUtil.closeQuietly(pstmt, result);
     }
@@ -256,7 +256,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.error("| In order to learn how to migration Apache Tajo instance, |");
       LOG.error("| please refer http://tajo.apache.org/docs/current/backup_and_restore/catalog.html |");
       LOG.error("=========================================================================");
-      throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
+      throw makeCatalogUpgrade();
     }
 
     LOG.info(String.format("The compatibility of the catalog schema (version: %d) has been verified.",
@@ -267,7 +267,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * Insert the version of the current catalog schema
    */
   protected void insertSchemaVersion() throws CatalogException {
-    Connection conn = null;
+    Connection conn;
     PreparedStatement pstmt = null;
     try {
       conn = getConnection();
@@ -275,7 +275,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, getDriverVersion());
       pstmt.executeUpdate();
     } catch (SQLException se) {
-      throw new CatalogException("cannot insert catalog schema version", se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -310,7 +310,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -336,7 +336,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -374,7 +374,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(String.format("Failed to drop tablespace \"%s\"", tableSpaceName), se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -406,7 +406,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         tablespaceNames.add(resultSet.getString(1));
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, resultSet);
     }
@@ -439,7 +439,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       return tablespaces;
 
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -459,7 +459,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultSet = pstmt.executeQuery();
 
       if (!resultSet.next()) {
-        throw new NoSuchTablespaceException(spaceName);
+        throw new UndefinedTablespaceException(spaceName);
       }
 
       String retrieveSpaceName = resultSet.getString("SPACE_NAME");
@@ -471,7 +471,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       return builder.build();
 
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, resultSet);
     }
@@ -495,7 +495,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           pstmt.setString(2, alterProto.getSpaceName());
           pstmt.executeUpdate();
         } catch (SQLException se) {
-          throw new CatalogException(se);
+          throw new TajoInternalError(se);
         } finally {
           CatalogUtil.closeQuietly(pstmt);
         }
@@ -534,7 +534,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -560,7 +560,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -595,7 +595,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(String.format("Failed to drop database \"%s\"", databaseName), se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -627,7 +627,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         databaseNames.add(resultSet.getString(1));
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, resultSet);
     }
@@ -659,7 +659,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         databases.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -703,11 +703,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(1, spaceName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no SPACE_ID matched to the space name \"" + spaceName + "\"");
+        throw new TajoInternalError("There is no SPACE_ID matched to the space name '" + spaceName + "'");
       }
       return new TableSpaceInternal(res.getInt(1), res.getString(2), res.getString(3));
     } catch (SQLException se) {
-      throw new NoSuchTablespaceException(spaceName);
+      throw new UndefinedTablespaceException(spaceName);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -726,11 +726,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, tableName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no tid matched to " + tableName);
+        throw new TajoInternalError("There is no tid matched to '" + tableName + "'");
       }
       return res.getInt(1);
     } catch (SQLException se) {
-      throw new NoSuchTableException(databaseName, tableName);
+      throw new UndefinedTableException(databaseName, tableName);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -753,8 +753,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String[] splitted = CatalogUtil.splitTableName(table.getTableName());
       if (splitted.length == 1) {
-        throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
-            + table.getTableName() + "\".");
+        throw new TajoInternalError(
+            "createTable() requires a qualified table name, but it is '" + table.getTableName() + "'");
       }
       String databaseName = splitted[0];
       String tableName = splitted[1];
@@ -789,7 +789,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no TID matched to " + table.getTableName());
+        throw new TajoInternalError("There is no TID matched to '" + table.getTableName() + '"');
       }
 
       int tableId = res.getInt("TID");
@@ -885,7 +885,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -920,7 +920,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no TID matched to " + statsProto.getTableName());
+        throw new TajoInternalError("There is no TID matched to '" + statsProto.getTableName() + "'");
       }
 
       int tableId = res.getInt("TID");
@@ -953,7 +953,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -979,19 +979,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       switch (alterTableDescProto.getAlterTableType()) {
         case RENAME_TABLE:
           if (existTable(databaseName,alterTableDescProto.getNewTableName())) {
-            throw new AlreadyExistsTableException(alterTableDescProto.getNewTableName());
+            throw new DuplicateTableException(alterTableDescProto.getNewTableName());
           }
           renameTable(tableId, alterTableDescProto.getNewTableName());
           break;
         case RENAME_COLUMN:
           if (existColumn(tableId, alterTableDescProto.getAlterColumnName().getNewColumnName())) {
-            throw new ColumnNameAlreadyExistException(alterTableDescProto.getAlterColumnName().getNewColumnName());
+            throw new DuplicateColumnException(alterTableDescProto.getAlterColumnName().getNewColumnName());
           }
           renameColumn(tableId, alterTableDescProto.getAlterColumnName());
           break;
         case ADD_COLUMN:
           if (existColumn(tableId, alterTableDescProto.getAddColumn().getName())) {
-            throw new ColumnNameAlreadyExistException(alterTableDescProto.getAddColumn().getName());
+            throw new DuplicateColumnException(alterTableDescProto.getAddColumn().getName());
           }
           addNewColumn(tableId, alterTableDescProto.getAddColumn());
           break;
@@ -999,7 +999,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
           partitionDesc = getPartition(databaseName, tableName, partitionName);
           if(partitionDesc != null) {
-            dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
+            throw new DuplicatePartitionException(partitionName);
           }
           addPartition(tableId, alterTableDescProto.getPartitionDesc(), null);
           break;
@@ -1007,7 +1007,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
           partitionDesc = getPartition(databaseName, tableName, partitionName);
           if(partitionDesc == null) {
-            throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+            throw new UndefinedPartitionException(partitionName);
           }
           dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
           break;
@@ -1017,7 +1017,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         default:
       }
     } catch (SQLException sqlException) {
-      throw new CatalogException(sqlException);
+      throw new TajoInternalError(sqlException);
     }
 
   }
@@ -1040,7 +1040,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         options.put(res.getString("KEY_"), res.getString("VALUE_"));
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1084,8 +1084,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       conn.commit();
-    } catch (SQLException sqlException) {
-      throw new CatalogException(sqlException);
+    } catch (Throwable sqlException) {
+      throw new TajoInternalError(sqlException);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -1110,8 +1110,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(2, tableId);
       pstmt.executeUpdate();
 
-    } catch (SQLException sqlException) {
-      throw new CatalogException(sqlException);
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -1161,7 +1161,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         ordinalPosition = resultSet.getInt("ORDINAL_POSITION");
         nestedFieldNum = resultSet.getInt("NESTED_FIELD_NUM");
       } else {
-        throw new NoSuchColumnException(alterColumnProto.getOldColumnName());
+        throw new UndefinedColumnException(alterColumnProto.getOldColumnName());
       }
 
       resultSet.close();
@@ -1189,7 +1189,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
 
     } catch (SQLException sqlException) {
-      throw new CatalogException(sqlException);
+      throw new TajoInternalError(sqlException);
     } finally {
       CatalogUtil.closeQuietly(pstmt,resultSet);
     }
@@ -1237,7 +1237,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.executeUpdate();
 
     } catch (SQLException sqlException) {
-      throw new CatalogException(sqlException);
+      throw new TajoInternalError(sqlException);
     } finally {
       CatalogUtil.closeQuietly(pstmt,resultSet);
     }
@@ -1296,7 +1296,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -1326,7 +1326,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         retValue = res.getInt(1);
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1373,7 +1373,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.executeUpdate();
 
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -1396,7 +1396,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(1, databaseName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new NoSuchDatabaseException(databaseName);
+        throw new UndefinedDatabaseException(databaseName);
       }
 
       return res.getInt("DB_ID");
@@ -1429,7 +1429,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1569,7 +1569,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(1, databaseName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new NoSuchDatabaseException(databaseName);
+        throw new UndefinedDatabaseException(databaseName);
       }
 
       return new Pair<Integer, String>(res.getInt(1), res.getString(2) + "/" + databaseName);
@@ -1712,10 +1712,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (res.next()) {
         tableBuilder.setPartition(resultToPartitionMethodProto(databaseName, tableName, res));
       }
-    } catch (InvalidProtocolBufferException e) {
-      throw new CatalogException(e);
-    } catch (SQLException se) {
-      throw new CatalogException(se);
+    } catch (Throwable se) {
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1758,7 +1756,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         tables.add(res.getString(COL_TABLES_NAME).trim());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1806,7 +1804,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         tables.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -1815,7 +1813,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+  public List<TableOptionProto> getAllTableProperties() throws CatalogException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -1841,7 +1839,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         options.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -1873,7 +1871,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         stats.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -1919,7 +1917,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         columns.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -1954,7 +1952,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setBytes(4, proto.getExpressionSchema().toByteArray());
       pstmt.executeUpdate();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -1980,7 +1978,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, tableId);
       pstmt.executeUpdate();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -2012,10 +2010,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (res.next()) {
         return resultToPartitionMethodProto(databaseName, tableName, res);
       }
-    } catch (InvalidProtocolBufferException e) {
-      throw new CatalogException(e);
-    } catch (SQLException se) {
-      throw new CatalogException(se);
+    } catch (Throwable se) {
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2047,7 +2043,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2088,7 +2084,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         return null;
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2117,7 +2113,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         partitionDesc.addPartitionKeys(builder);
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2155,7 +2151,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         partitions.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2188,7 +2184,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         partitions.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -2250,7 +2246,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           LOG.error(e, e);
         }
       }
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -2294,7 +2290,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -2319,7 +2315,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, indexName);
       pstmt.executeUpdate();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
@@ -2335,7 +2331,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("Cannot get any table name from TID");
+        throw new TajoInternalError("Cannot get any table name from TID");
       }
       return res.getString(1);
     } finally {
@@ -2371,7 +2367,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, indexName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " + indexName);
+        throw new TajoInternalError("There is no index matched to " + indexName);
       }
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
@@ -2379,7 +2375,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       proto = builder.build();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2412,14 +2408,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, columnName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " + columnName);
+        throw new TajoInternalError("ERROR: there is no index matched to " + columnName);
       }
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       proto = builder.build();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2452,7 +2448,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2486,7 +2482,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2527,7 +2523,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         protos.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -2566,7 +2562,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         indexes.add(builder.build());
       }
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(stmt, resultSet);
     }
@@ -2700,7 +2696,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
-      throw new CatalogException(se);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }

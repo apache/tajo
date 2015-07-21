@@ -21,8 +21,7 @@ package org.apache.tajo.worker;
 import com.google.common.collect.Maps;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.ipc.TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
 
@@ -30,7 +29,7 @@ import java.net.ConnectException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.*;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class MockNodeStatusUpdater extends NodeStatusUpdater {
 
@@ -39,9 +38,8 @@ public class MockNodeStatusUpdater extends NodeStatusUpdater {
   private Map<Integer, NodeResource> resources = Maps.newHashMap();
   private MockResourceTracker resourceTracker;
 
-  public MockNodeStatusUpdater(CountDownLatch barrier, TajoWorker.WorkerContext workerContext,
-                               NodeResourceManager resourceManager) {
-    super(workerContext, resourceManager);
+  public MockNodeStatusUpdater(CountDownLatch barrier, TajoWorker.WorkerContext workerContext) {
+    super(workerContext);
     this.barrier = barrier;
     this.resourceTracker = new MockResourceTracker();
   }
@@ -58,7 +56,7 @@ public class MockNodeStatusUpdater extends NodeStatusUpdater {
   }
 
   class MockResourceTracker implements TajoResourceTrackerProtocolService.Interface {
-    private NodeHeartbeatRequestProto lastRequest;
+    private NodeHeartbeatRequest lastRequest;
 
     protected Map<Integer, NodeResource> getTotalResource() {
       return membership;
@@ -68,21 +66,15 @@ public class MockNodeStatusUpdater extends NodeStatusUpdater {
       return membership;
     }
 
-    protected NodeHeartbeatRequestProto getLastRequest() {
+    protected NodeHeartbeatRequest getLastRequest() {
       return lastRequest;
     }
 
     @Override
-    public void heartbeat(RpcController controller, NodeHeartbeat request,
-                          RpcCallback<QueryCoordinatorProtocol.TajoHeartbeatResponse> done) {
+    public void nodeHeartbeat(RpcController controller, NodeHeartbeatRequest request,
+                              RpcCallback<NodeHeartbeatResponse> done) {
 
-    }
-
-    @Override
-    public void nodeHeartbeat(RpcController controller, NodeHeartbeatRequestProto request,
-                              RpcCallback<NodeHeartbeatResponseProto> done) {
-
-      NodeHeartbeatResponseProto.Builder response = NodeHeartbeatResponseProto.newBuilder();
+      NodeHeartbeatResponse.Builder response = NodeHeartbeatResponse.newBuilder();
       if (membership.containsKey(request.getWorkerId())) {
         if (request.hasAvailableResource()) {
           NodeResource resource = resources.get(request.getWorkerId());

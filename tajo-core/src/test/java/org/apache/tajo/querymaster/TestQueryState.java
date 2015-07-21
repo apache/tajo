@@ -18,26 +18,34 @@
 
 package org.apache.tajo.querymaster;
 
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.tajo.*;
+import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.master.QueryManager;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@NotThreadSafe
 public class TestQueryState {
   private static TajoTestingCluster cluster;
   private static TajoClient client;
 
   @BeforeClass
-  public static void setUp() throws Exception {
+  public static void setUpClass() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     client = cluster.newTajoClient();
+  }
+
+  @AfterClass
+  public static void tearDownClass() {
+    client.close();
   }
 
   @Test(timeout = 10000)
@@ -61,16 +69,21 @@ public class TestQueryState {
 
     ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
     QueryId queryId = new QueryId(res.getQueryId());
-    cluster.waitForQuerySubmitted(queryId);
+
+    QueryStatus queryState = client.getQueryStatus(queryId);
+    while (!TajoClientUtil.isQueryComplete(queryState.getState())) {
+      try {
+        Thread.sleep(50);
+      } catch (InterruptedException e) {
+        fail("Query state : " + queryState);
+      }
+      queryState = client.getQueryStatus(queryId);
+    }
 
     QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
     Query query = qmt.getQuery();
 
-    // wait for query complete
-    cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_SUCCEEDED, 100);
-
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, qmt.getState());
-
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, query.getSynchronizedState());
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, query.getState());
 
@@ -78,13 +91,6 @@ public class TestQueryState {
     for (Stage stage : query.getStages()) {
       assertEquals(StageState.SUCCEEDED, stage.getSynchronizedState());
       assertEquals(StageState.SUCCEEDED, stage.getState());
-    }
-
-    /* wait for heartbeat from QueryMaster */
-    QueryManager queryManager = cluster.getMaster().getContext().getQueryJobManager();
-    for (; ; ) {
-      if (queryManager.getFinishedQuery(queryId) != null) break;
-      else Thread.sleep(100);
     }
 
     /* get status from TajoMaster */

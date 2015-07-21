@@ -19,7 +19,7 @@
 package org.apache.tajo.common.type;
 
 import org.junit.Test;
-import org.apache.tajo.common.exception.InvalidAddressException;
+import org.apache.tajo.exception.InvalidAddressException;
 
 import static org.junit.Assert.*;
 

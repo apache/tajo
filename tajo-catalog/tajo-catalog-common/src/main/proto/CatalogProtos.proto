@@ -133,47 +133,9 @@ enum IndexMethod {
   BITMAP_IDX = 3;
 }
 
-message GetAllTableNamesResponse {
-  repeated string tableName = 1;
-}
-
-message GetTablespacesProto {
-  repeated TablespaceProto tablespace = 1;
-}
-
-message GetDatabasesProto {
-  repeated DatabaseProto database = 1;
-}
-
-message GetTablesProto {
-  repeated TableDescriptorProto table = 1;
-}
-
-message GetColumnsProto {
-  repeated ColumnProto column = 1;
-}
-
 message GetIndexesProto {
   repeated IndexProto index = 1;
 }
-
-message GetTableOptionsProto {
-  repeated TableOptionProto tableOption = 1;
-}
-
-message GetTableStatsProto {
-  repeated TableStatsProto stat = 1;
-}
-
-message GetTablePartitionsProto {
-  repeated TablePartitionProto part = 1;
-}
-
-message AddPartitionsProto {
-  required TableIdentifierProto tableIdentifier = 1;
-  repeated PartitionDescProto partitionDesc = 2;
-}
-
 
 message IndexProto {
   required int32 dbId = 1;
@@ -288,16 +250,16 @@ message SortSpecProto {
   optional bool nullFirst = 3 [default = false];
 }
 
-
-message PartitionsProto {
-  repeated PartitionDescProto partition = 1;
-}
-
 message PartitionMethodProto {
   required TableIdentifierProto tableIdentifier = 1;
   required PartitionType partitionType = 2;
   required string expression = 3;
   required SchemaProto expressionSchema = 4;
+}
+
+message AddPartitionsProto {
+  required TableIdentifierProto tableIdentifier = 1;
+  repeated PartitionDescProto partitionDesc = 2;
 }
 
 message PartitionDescProto {
@@ -310,7 +272,6 @@ message PartitionKeyProto {
   required string columnName = 1;
   required string partitionValue = 2;
 }
-
 
 message PartitionIdentifierProto {
   required string databaseName = 1;
@@ -326,9 +287,9 @@ message TablespaceProto {
 }
 
 message DatabaseProto {
-	required int32 spaceId = 1;
-	required int32 id = 2;
-	required string name = 3;
+ 	required int32 spaceId = 1;
+ 	required int32 id = 2;
+ 	required string name = 3;
 }
 
 message TableDescriptorProto {
@@ -436,4 +397,19 @@ message PythonInvocationDescProto {
   required string funcName = 1;
   required string filePath = 2;
   required bool isScalarFunction = 3;
+}
+
+message TableResponse {
+  required ReturnState state = 1;
+  optional TableDescProto table = 2;
+}
+
+message FunctionResponse {
+  required ReturnState state = 1;
+  optional FunctionDescProto function = 2;
+}
+
+message FunctionListResponse {
+  required ReturnState state = 1;
+  repeated FunctionDescProto function = 2;
 }

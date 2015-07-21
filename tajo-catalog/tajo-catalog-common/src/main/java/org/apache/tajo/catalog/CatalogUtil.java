@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -42,7 +43,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -50,6 +54,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class CatalogUtil {
 
   public static final String TEXTFILE_NAME = "TEXT";
+
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
    *
@@ -688,11 +693,11 @@ public class CatalogUtil {
     return widest;
   }
 
-  public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
-    CatalogProtos.TableIdentifierProto.Builder builder = CatalogProtos.TableIdentifierProto.newBuilder();
-    builder.setDatabaseName(databaseName);
-    builder.setTableName(tableName);
-    return builder.build();
+  public static TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
+    return TableIdentifierProto.newBuilder()
+        .setDatabaseName(databaseName)
+        .setTableName(tableName)
+        .build();
   }
 
   public static void closeQuietly(Connection conn) {

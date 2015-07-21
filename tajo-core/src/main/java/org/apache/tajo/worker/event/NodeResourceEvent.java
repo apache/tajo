@@ -29,7 +29,19 @@ public class NodeResourceEvent extends AbstractEvent<NodeResourceEvent.EventType
     DEALLOCATE
   }
 
-  public NodeResourceEvent(EventType eventType) {
+  public enum ResourceType {
+    QUERY_MASTER,
+    TASK
+  }
+
+  private ResourceType resourceType;
+
+  public NodeResourceEvent(EventType eventType, ResourceType resourceType) {
     super(eventType);
+    this.resourceType = resourceType;
+  }
+
+  public ResourceType getResourceType() {
+    return resourceType;
   }
 }

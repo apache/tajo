@@ -20,9 +20,8 @@ package org.apache.tajo.master.event;
 
 import com.google.protobuf.RpcCallback;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.querymaster.TaskAttempt;
-import org.apache.tajo.master.container.TajoContainerId;
 
 public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
   private final TaskAttemptScheduleContext context;
@@ -44,28 +43,11 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
   }
 
   public static class TaskAttemptScheduleContext {
-    private TajoContainerId containerId;
     private String host;
-    private RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback;
+    private RpcCallback<TaskRequestProto> callback;
 
     public TaskAttemptScheduleContext() {
 
-    }
-
-    public TaskAttemptScheduleContext(TajoContainerId containerId,
-                                      String host,
-                                      RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
-      this.containerId = containerId;
-      this.host = host;
-      this.callback = callback;
-    }
-
-    public TajoContainerId getContainerId() {
-      return containerId;
-    }
-
-    public void setContainerId(TajoContainerId containerId) {
-      this.containerId = containerId;
     }
 
     public String getHost() {
@@ -76,11 +58,11 @@ public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
       this.host = host;
     }
 
-    public RpcCallback<TajoWorkerProtocol.TaskRequestProto> getCallback() {
+    public RpcCallback<TaskRequestProto> getCallback() {
       return callback;
     }
 
-    public void setCallback(RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
+    public void setCallback(RpcCallback<TaskRequestProto> callback) {
       this.callback = callback;
     }
   }

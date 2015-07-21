@@ -19,11 +19,12 @@
 package org.apache.tajo.plan;
 
 public class PlanningException extends Exception {
+
   public PlanningException(String message) {
     super(message);
   }
 
-  public PlanningException(Exception e) {
+  public PlanningException(Throwable e) {
     super(e);
   }
 }

@@ -18,7 +18,7 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
+import org.apache.tajo.catalog.exception.DuplicateColumnException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -191,7 +191,7 @@ public class TestSchema {
     assertEquals(schema.size(), schema3.size());
 	}
 	
-	@Test(expected = AlreadyExistsFieldException.class)
+	@Test(expected = DuplicateColumnException.class)
 	public final void testAddExistColumn() {
     Schema schema = new Schema();
     schema.addColumn("abc", Type.FLOAT8);

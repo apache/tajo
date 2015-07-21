@@ -28,9 +28,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -44,7 +42,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
-  private SQLParser parser;
 
   public SQLAnalyzer() {
   }
@@ -53,18 +50,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     ANTLRInputStream input = new ANTLRInputStream(sql);
     SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    this.parser = new SQLParser(tokens);
-    parser.setBuildParseTree(true);
-    parser.removeErrorListeners();
-
-    parser.setErrorHandler(new SQLErrorStrategy());
-    parser.addErrorListener(new SQLErrorListener());
-
     SqlContext context;
     try {
+      SQLParser parser = new SQLParser(tokens);
+      parser.setBuildParseTree(true);
+      parser.removeErrorListeners();
+
+      parser.setErrorHandler(new SQLErrorStrategy());
+      parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      e.printStackTrace();
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);
