@@ -135,7 +135,6 @@ public class TestStorages {
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
         //type, splitable, statsable, seekable
-        {"CSV", true, true, true},
         {"RAW", false, true, true},
         {"RCFILE", true, true, false},
         {"PARQUET", false, false, false},
@@ -776,7 +775,7 @@ public class TestStorages {
 
   @Test
   public void testTime() throws IOException {
-    if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("RAW")) {
+    if (storeType.equalsIgnoreCase("TEXT") || storeType.equalsIgnoreCase("RAW")) {
       Schema schema = new Schema();
       schema.addColumn("col1", Type.DATE);
       schema.addColumn("col2", Type.TIME);
@@ -1021,7 +1020,7 @@ public class TestStorages {
 
   @Test
   public final void testInsertFixedCharTypeWithOverSize() throws Exception {
-    if (storeType.equalsIgnoreCase("CSV") == false &&
+    if (storeType.equalsIgnoreCase("TEXT") == false &&
         storeType.equalsIgnoreCase("SEQUENCEFILE") == false &&
         storeType.equalsIgnoreCase("RCFILE") == false &&
         storeType.equalsIgnoreCase("PARQUET") == false) {

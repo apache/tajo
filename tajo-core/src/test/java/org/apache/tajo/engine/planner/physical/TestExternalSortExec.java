@@ -80,7 +80,7 @@ public class TestExternalSortExec {
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);

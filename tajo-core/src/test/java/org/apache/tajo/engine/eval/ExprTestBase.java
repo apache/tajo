@@ -264,7 +264,7 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.createTable(new TableDesc(qualifiedTableName, inputSchema,"CSV",
+      cat.createTable(new TableDesc(qualifiedTableName, inputSchema,"TEXT",
           new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
     }
 

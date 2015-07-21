@@ -81,7 +81,7 @@ public class TestNLJoinExec {
     schema.addColumn("memid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
@@ -105,7 +105,7 @@ public class TestNLJoinExec {
     peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta peopleMeta = CatalogUtil.newTableMeta("TEXT");
     Path peoplePath = new Path(testDir, "people.csv");
     appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);

@@ -23,10 +23,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
@@ -162,7 +160,7 @@ public class GlobalPlanner {
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType("CSV");
+    outputChannel.setStoreType("TEXT");
     outputChannel.setSchema(outputSchema);
   }
 
@@ -997,7 +995,7 @@ public class GlobalPlanner {
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
           // This data channel will be stored in staging directory, but RawFile, default file type, does not support
           // distributed file system. It needs to change the file format for distributed file system.
-          dataChannel.setStoreType("CSV");
+          dataChannel.setStoreType("TEXT");
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);

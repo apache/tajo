@@ -68,10 +68,9 @@ public class TestCompressionStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"CSV"},
+        {"TEXT"},
         {"RCFILE"},
-        {"SEQUENCEFILE"},
-        {"TEXT"}
+        {"SEQUENCEFILE"}
     });
   }
 
@@ -153,14 +152,6 @@ public class TestCompressionStorages {
     tablets[0] = new FileFragment(fileName, tablePath, 0, fileLen);
 
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, tablets[0], schema);
-
-    if (storeType.equalsIgnoreCase("CSV")) {
-      if (SplittableCompressionCodec.class.isAssignableFrom(codec)) {
-        assertTrue(scanner.isSplittable());
-      } else {
-        assertFalse(scanner.isSplittable());
-      }
-    }
     scanner.init();
 
     if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {

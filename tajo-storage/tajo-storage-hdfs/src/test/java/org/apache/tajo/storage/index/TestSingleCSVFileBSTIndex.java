@@ -21,6 +21,7 @@ package org.apache.tajo.storage.index;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -71,7 +72,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta("CSV");
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindValueInSingleCSV", "table.csv");
     fs.mkdirs(tablePath.getParent());
@@ -160,7 +161,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindNextKeyValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta("CSV");
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindNextKeyValueInSingleCSV",
         "table1.csv");

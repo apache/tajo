@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
@@ -1781,7 +1782,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setUri(targetUri);
 
     if (expr.hasStorageType()) {
-      insertNode.setStorageType(expr.getStorageType());
+      insertNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(expr.getStorageType()));
     }
     if (expr.hasParams()) {
       KeyValueSet options = new KeyValueSet();
@@ -1826,7 +1827,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setTableSchema(parentTableDesc.getSchema());
     createTableNode.setPartitionMethod(partitionDesc);
 
-    createTableNode.setStorageType(parentTableDesc.getMeta().getStoreType());
+    createTableNode.setStorageType(
+        CatalogUtil.getBackwardCompitablityStoreType(parentTableDesc.getMeta().getStoreType()));
     createTableNode.setOptions(parentTableDesc.getMeta().getOptions());
 
     createTableNode.setExternal(parentTableDesc.isExternal());
@@ -1862,9 +1864,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setUri(getCreatedTableURI(context, expr));
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
-      createTableNode.setStorageType(expr.getStorageType());
+      createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(expr.getStorageType()));
     } else { // otherwise, default type
-      createTableNode.setStorageType("CSV");
+      createTableNode.setStorageType(BuiltinStorages.TEXT);
     }
 
     // Set default storage properties to table

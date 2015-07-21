@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionDesc;
@@ -52,8 +53,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
-
-  public static final String TEXTFILE_NAME = "TEXT";
 
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
@@ -282,16 +281,21 @@ public class CatalogUtil {
     return sb.toString();
   }
 
+
+  public static String getBackwardCompitablityStoreType(String storeType) {
+    return getStoreTypeString(getStoreType(storeType));
+  }
+
   public static String getStoreTypeString(final StoreType type) {
     if (type == StoreType.TEXTFILE) {
-      return TEXTFILE_NAME;
+      return BuiltinStorages.TEXT;
     } else {
       return type.name();
     }
   }
 
   public static StoreType getStoreType(final String typeStr) {
-    if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
+    if (typeStr.equalsIgnoreCase("CSV")) {
       return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
       return StoreType.RAW;
@@ -305,7 +309,7 @@ public class CatalogUtil {
       return StoreType.SEQUENCEFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
       return StoreType.AVRO;
-    } else if (typeStr.equalsIgnoreCase(TEXTFILE_NAME)) {
+    } else if (typeStr.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.JSON.name())) {
       return StoreType.JSON;
@@ -941,7 +945,7 @@ public class CatalogUtil {
    */
   public static KeyValueSet newDefaultProperty(String storeType) {
     KeyValueSet options = new KeyValueSet();
-    if (storeType.equalsIgnoreCase("CSV") ||  storeType.equalsIgnoreCase("TEXT")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     } else if (storeType.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");

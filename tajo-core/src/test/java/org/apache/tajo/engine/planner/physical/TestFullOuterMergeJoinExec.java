@@ -107,7 +107,7 @@ public class TestFullOuterMergeJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
@@ -145,7 +145,7 @@ public class TestFullOuterMergeJoinExec {
     dep4Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep4Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta dep4Meta = CatalogUtil.newTableMeta("TEXT");
     Path dep4Path = new Path(testDir, "dep4.csv");
     Appender appender4 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
@@ -176,7 +176,7 @@ public class TestFullOuterMergeJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
@@ -215,7 +215,7 @@ public class TestFullOuterMergeJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
@@ -267,7 +267,7 @@ public class TestFullOuterMergeJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
     Path phone3Path = new Path(testDir, "phone3.csv");
     Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
