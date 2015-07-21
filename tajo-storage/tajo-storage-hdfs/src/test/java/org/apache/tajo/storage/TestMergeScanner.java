@@ -76,7 +76,7 @@ public class TestMergeScanner {
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
-        {"CSV"},
+        {"TEXT"},
         {"RAW"},
         {"RCFILE"},
         {"PARQUET"},
@@ -201,6 +201,7 @@ public class TestMergeScanner {
   private static boolean isProjectableStorage(String type) {
     if (type.equalsIgnoreCase("RCFILE") ||
         type.equalsIgnoreCase("PARQUET") ||
+        type.equalsIgnoreCase("TEXT") ||
         type.equalsIgnoreCase("AVRO")) {
       return true;
     } else {

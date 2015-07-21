@@ -398,13 +398,15 @@ public class TestTajoCli {
   @Test
   public void testTimeZoneTest2() throws Exception {
     String tableName = "test1";
-    tajoCli.executeMetaCommand("\\set TIMEZONE GMT+1");
+    tajoCli.executeMetaCommand("\\set TIMEZONE GMT+0");
     tajoCli.executeScript("create table " + tableName + " (col1 TIMESTAMP)");
     tajoCli.executeScript("insert into " + tableName + " select to_timestamp(0)");
+    tajoCli.executeMetaCommand("\\set TIMEZONE GMT+1");
     tajoCli.executeScript("select * from " + tableName);
     String consoleResult = new String(out.toByteArray());
     tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
-    assertTrue(consoleResult.contains("1970-01-01 01:00:00"));
+    System.out.println(consoleResult);
+    assertTrue(consoleResult.contains("1970-01-01 00:00:00"));
   }
 
   @Test(timeout = 3000)

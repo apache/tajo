@@ -128,9 +128,7 @@ public class TestCompressionStorages {
     appender.init();
 
     String extension = "";
-    if (appender instanceof CSVFile.CSVAppender) {
-      extension = ((CSVFile.CSVAppender) appender).getExtension();
-    } else if (appender instanceof DelimitedTextFile.DelimitedTextFileAppender) {
+    if (appender instanceof DelimitedTextFile.DelimitedTextFileAppender) {
       extension = ((DelimitedTextFile.DelimitedTextFileAppender) appender).getExtension();
     }
 

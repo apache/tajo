@@ -287,7 +287,7 @@ public class CatalogUtil {
 
   public static StoreType getStoreType(final String typeStr) {
     if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
-      return StoreType.CSV;
+      return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
       return StoreType.RAW;
     } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
