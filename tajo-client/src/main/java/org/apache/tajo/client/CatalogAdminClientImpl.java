@@ -26,18 +26,14 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-<<<<<<< HEAD
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
-import org.apache.tajo.jdbc.SQLStates;
-=======
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 
@@ -140,13 +136,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     if (partitionMethodDesc != null) {
       builder.setPartition(partitionMethodDesc.getProto());
     }
-<<<<<<< HEAD
-    ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
-    if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-      return CatalogUtil.newTableDesc(res.getTableDesc());
-    } else {
-      throw new SQLException(res.getResult().getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
-=======
 
     TableResponse res;
     try {
@@ -159,7 +148,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       return CatalogUtil.newTableDesc(res.getTable());
     } else {
       throw SQLExceptionUtil.toSQLException(res.getState());
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     }
   }
 
@@ -202,22 +190,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-<<<<<<< HEAD
-  public TableDesc getTableDesc(final String tableName) throws ServiceException {
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
-
-    SessionedStringProto.Builder builder = SessionedStringProto.newBuilder();
-    builder.setSessionId(connection.sessionId);
-    builder.setValue(tableName);
-    ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
-    if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-      return CatalogUtil.newTableDesc(res.getTableDesc());
-    } else {
-      throw new ServiceException(new SQLException(res.getResult().getErrorMessage(),
-          SQLStates.ER_NO_SUCH_TABLE.getState()));
-=======
   public TableDesc getTableDesc(final String tableName) throws SQLException {
 
     final BlockingInterface stub = conn.getTMStub();
@@ -227,7 +199,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       res = stub.getTableDesc(null, conn.getSessionedString(tableName));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
     }
 
     throwIfError(res.getState());
@@ -235,24 +206,24 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-<<<<<<< HEAD
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
-    NettyClientBase client = connection.getTajoMasterConnection();
-    connection.checkSessionAndGet(client);
-    BlockingInterface tajoMasterService = client.getStub();
+  public List<FunctionDescProto> getFunctions(final String functionName) throws SQLException {
+
+    final BlockingInterface stub = conn.getTMStub();
 
     String paramFunctionName = functionName == null ? "" : functionName;
-    ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
-        connection.convertSessionedString(paramFunctionName));
-    if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-      return res.getFunctionsList();
-    } else {
-      throw new ServiceException(res.getResult().getErrorMessage());
+    CatalogProtos.FunctionListResponse res;
+    try {
+      res = stub.getFunctionList(null, conn.getSessionedString(paramFunctionName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
     }
+
+    throwIfError(res.getState());
+    return res.getFunctionList();
   }
 
   @Override
-  public IndexDescProto getIndex(final String indexName) throws ServiceException {
+  public IndexDescProto getIndex(final String indexName) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
@@ -261,7 +232,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean existIndex(final String indexName) throws ServiceException {
+  public boolean existIndex(final String indexName) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
@@ -270,7 +241,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public List<IndexDescProto> getIndexes(final String tableName) throws ServiceException {
+  public List<IndexDescProto> getIndexes(final String tableName) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
@@ -284,7 +255,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean hasIndexes(final String tableName) throws ServiceException {
+  public boolean hasIndexes(final String tableName) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
@@ -293,7 +264,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws ServiceException {
+  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
@@ -312,7 +283,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean existIndex(final String tableName, final String[] columnName) throws ServiceException {
+  public boolean existIndex(final String tableName, final String[] columnName) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
@@ -326,29 +297,13 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean dropIndex(final String indexName) throws ServiceException {
+  public boolean dropIndex(final String indexName) throws SQLException {
     NettyClientBase client = connection.getTajoMasterConnection();
     connection.checkSessionAndGet(client);
     BlockingInterface tajoMasterService = client.getStub();
     return tajoMasterService.dropIndex(null,
         connection.convertSessionedString(indexName)).getValue();
 =======
-  public List<FunctionDescProto> getFunctions(final String functionName) throws SQLException {
-
-    final BlockingInterface stub = conn.getTMStub();
-
-    String paramFunctionName = functionName == null ? "" : functionName;
-    CatalogProtos.FunctionListResponse res;
-    try {
-      res = stub.getFunctionList(null, conn.getSessionedString(paramFunctionName));
-    } catch (ServiceException e) {
-      throw new RuntimeException(e);
-    }
-
-    throwIfError(res.getState());
-    return res.getFunctionList();
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
-  }
 
   @Override
   public void close() throws IOException {

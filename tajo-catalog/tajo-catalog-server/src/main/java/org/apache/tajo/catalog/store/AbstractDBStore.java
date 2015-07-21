@@ -2351,11 +2351,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-<<<<<<< HEAD
-        throw new CatalogException("ERROR: there is no index matched to " + unifiedName);
-=======
-        throw new TajoInternalError("ERROR: there is no index matched to " + columnName);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
+        throw new TajoInternalError("ERROR: there is no index matched to " + unifiedName);
       }
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();

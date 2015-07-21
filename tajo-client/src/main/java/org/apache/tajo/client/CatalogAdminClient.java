@@ -19,7 +19,6 @@
 package org.apache.tajo.client;
 
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.IndexMeta;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -136,23 +135,19 @@ public interface CatalogAdminClient extends Closeable {
    */
   TableDesc getTableDesc(final String tableName) throws SQLException;
 
-<<<<<<< HEAD
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException;
-
-  public IndexDescProto getIndex(final String indexName) throws ServiceException;
-
-  public boolean existIndex(final String indexName) throws ServiceException;
-
-  public List<IndexDescProto> getIndexes(final String tableName) throws ServiceException;
-
-  public boolean hasIndexes(final String tableName) throws ServiceException;
-
-  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws ServiceException;
-
-  public boolean existIndex(final String tableName, final String[] columnName) throws ServiceException;
-
-  public boolean dropIndex(final String indexName) throws ServiceException;
-=======
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws SQLException;
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
+
+  IndexDescProto getIndex(final String indexName) throws SQLException;
+
+  boolean existIndex(final String indexName) throws SQLException;
+
+  List<IndexDescProto> getIndexes(final String tableName) throws SQLException;
+
+  boolean hasIndexes(final String tableName) throws SQLException;
+
+  IndexDescProto getIndex(final String tableName, final String[] columnNames) throws SQLException;
+
+  boolean existIndex(final String tableName, final String[] columnName) throws SQLException;
+
+  boolean dropIndex(final String indexName) throws SQLException;
 }

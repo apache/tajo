@@ -491,11 +491,7 @@ public class TajoCli {
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       onError("response is null", null);
-<<<<<<< HEAD
-    } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-=======
     } else if (ReturnStateUtil.isSuccess(response.getState())) {
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
@@ -508,13 +504,8 @@ public class TajoCli {
         }
       }
     } else {
-<<<<<<< HEAD
-      if (response.getResult().hasErrorMessage()) {
-        onError(response.getResult().getErrorMessage(), null);
-=======
       if (ReturnStateUtil.isError(response.getState())) {
         onError(response.getState().getMessage(), null);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
     }
   }
@@ -529,23 +520,11 @@ public class TajoCli {
       onError(null, te);
     }
 
-<<<<<<< HEAD
-    if (response == null) {
-      onError("response is null", null);
-    } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-      if (response.getIsForwarded()) {
-        QueryId queryId = new QueryId(response.getQueryId());
-        waitForQueryCompleted(queryId);
-      } else {
-        if (!response.hasTableDesc() && !response.hasResultSet()) {
-          displayFormatter.printMessage(sout, "OK");
-=======
     if (response != null) {
       if (ReturnStateUtil.isSuccess(response.getState())) {
         if (response.getIsForwarded()) {
           QueryId queryId = new QueryId(response.getQueryId());
           waitForQueryCompleted(queryId);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
         } else {
           if (!response.hasTableDesc() && !response.hasResultSet()) {
             displayFormatter.printMessage(sout, "OK");
@@ -557,13 +536,10 @@ public class TajoCli {
         if (ReturnStateUtil.isError(response.getState())) {
           onError(response.getState().getMessage(), null);
         }
-<<<<<<< HEAD
       }
     } else {
       if (response.getResult().hasErrorMessage()) {
         onError(response.getResult().getErrorMessage(), null);
-=======
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
       }
     }
 

@@ -670,17 +670,12 @@ public class MemStore implements CatalogStore {
   @Override
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-<<<<<<< HEAD
     String simpleTableName = CatalogUtil.extractSimpleName(tableName);
     TableDescProto tableDescProto = getTable(databaseName, simpleTableName);
     String qualifiedColumnName = CatalogUtil.buildFQName(databaseName, simpleTableName,
         CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
     if (!indexByColumn.containsKey(qualifiedColumnName)) {
-      throw new NoSuchIndexException(qualifiedColumnName);
-=======
-    if (!indexByColumn.containsKey(columnName)) {
-      throw new UndefinedIndexException(CatalogUtil.buildFQName(databaseName, tableName), columnName);
->>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
+      throw new UndefinedIndexException(qualifiedColumnName);
     }
 
     return indexByColumn.get(qualifiedColumnName);
