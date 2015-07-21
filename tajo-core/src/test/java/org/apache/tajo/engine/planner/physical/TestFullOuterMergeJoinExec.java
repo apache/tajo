@@ -33,13 +33,16 @@ import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -304,7 +307,7 @@ public class TestFullOuterMergeJoinExec {
   };
 
   @Test
-  public final void testFullOuterMergeJoin0() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin0() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -341,7 +344,7 @@ public class TestFullOuterMergeJoinExec {
 
 
   @Test
-  public final void testFullOuterMergeJoin1() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin1() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -378,7 +381,7 @@ public class TestFullOuterMergeJoinExec {
   }
 
   @Test
-  public final void testFullOuterMergeJoin2() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin2() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -416,7 +419,7 @@ public class TestFullOuterMergeJoinExec {
   }
 
   @Test
-  public final void testFullOuterMergeJoin3() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin3() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[3]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -456,7 +459,7 @@ public class TestFullOuterMergeJoinExec {
 
 
   @Test
-  public final void testFullOuterMergeJoin4() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin4() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[4]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -495,7 +498,7 @@ public class TestFullOuterMergeJoinExec {
 
 
   @Test
-  public final void testFullOuterMergeJoin5() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin5() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[5]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);

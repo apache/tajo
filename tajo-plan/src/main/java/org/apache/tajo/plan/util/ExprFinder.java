@@ -22,6 +22,8 @@ import org.apache.tajo.algebra.BinaryOperator;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.algebra.UnaryOperator;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
@@ -47,14 +49,14 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
     stack.push(expr);
     try {
       finder.visit(context, new Stack<Expr>(), expr);
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
     stack.pop();
     return (Set<T>) context.set;
   }
 
-  public Object visit(Context ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
+  public Object visit(Context ctx, Stack<Expr> stack, Expr expr) throws TajoException {
     if (expr instanceof UnaryOperator) {
       preHook(ctx, stack, expr);
       visitUnaryOperator(ctx, stack, (UnaryOperator) expr);

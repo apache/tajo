@@ -42,8 +42,8 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -1090,7 +1090,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws TajoException {
     if (REWRITE_RULE.isEligible(context, plan)) {
       REWRITE_RULE.rewrite(context, plan);
     }

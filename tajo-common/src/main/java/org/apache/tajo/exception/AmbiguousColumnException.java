@@ -16,28 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.utils.test;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import static org.apache.tajo.error.Errors.ResultCode.AMBIGUOUS_COLUMN;
 
-@SuppressWarnings("unused")
-public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
-  @Override
-  public String getName() {
-    return "ErrorInjectionRewriter";
-  }
+public class AmbiguousColumnException extends TajoException {
+  private static final long serialVersionUID = 3102675985226352347L;
 
-  @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    return true;
-  }
-
-  @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
-    throw new NullPointerException();
+  /**
+   * @param fieldName
+   */
+  public AmbiguousColumnException(String fieldName) {
+    super(AMBIGUOUS_COLUMN, fieldName);
   }
 }

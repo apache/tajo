@@ -29,10 +29,10 @@ import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -124,7 +124,7 @@ public class TestLogicalOptimizer {
   };
   
   @Test
-  public final void testProjectionPushWithNaturalJoin() throws PlanningException, CloneNotSupportedException {
+  public final void testProjectionPushWithNaturalJoin() throws TajoException, CloneNotSupportedException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -151,7 +151,7 @@ public class TestLogicalOptimizer {
   }
   
   @Test
-  public final void testProjectionPushWithInnerJoin() throws PlanningException {
+  public final void testProjectionPushWithInnerJoin() throws TajoException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -159,7 +159,7 @@ public class TestLogicalOptimizer {
   }
   
   @Test
-  public final void testProjectionPush() throws CloneNotSupportedException, PlanningException {
+  public final void testProjectionPush() throws CloneNotSupportedException, TajoException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[2]);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -182,7 +182,7 @@ public class TestLogicalOptimizer {
   }
   
   @Test
-  public final void testOptimizeWithGroupBy() throws CloneNotSupportedException, PlanningException {
+  public final void testOptimizeWithGroupBy() throws CloneNotSupportedException, TajoException {
     Expr expr = sqlAnalyzer.parse(QUERIES[3]);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
@@ -208,7 +208,7 @@ public class TestLogicalOptimizer {
   }
 
   @Test
-  public final void testPushable() throws CloneNotSupportedException, PlanningException {
+  public final void testPushable() throws CloneNotSupportedException, TajoException {
     // two relations
     Expr expr = sqlAnalyzer.parse(QUERIES[0]);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -262,7 +262,7 @@ public class TestLogicalOptimizer {
   }
 
   @Test
-  public final void testInsertInto() throws CloneNotSupportedException, PlanningException {
+  public final void testInsertInto() throws CloneNotSupportedException, TajoException {
     Expr expr = sqlAnalyzer.parse(TestLogicalPlanner.insertStatements[0]);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(newPlan);

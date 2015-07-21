@@ -28,15 +28,16 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -140,7 +141,7 @@ public class TestBNLJoinExec {
           "inner join people as p on e.empId = p.empId and e.memId = p.fk_memId" };
 
   @Test
-  public final void testBNLCrossJoin() throws IOException, PlanningException {
+  public final void testBNLCrossJoin() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
         expr).getRootBlock().getRoot();
@@ -176,7 +177,7 @@ public class TestBNLJoinExec {
   }
 
   @Test
-  public final void testBNLInnerJoin() throws IOException, PlanningException {
+  public final void testBNLInnerJoin() throws IOException, TajoException {
     Expr context = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
         context).getRootBlock().getRoot();
