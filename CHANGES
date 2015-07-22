@@ -343,6 +343,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1628: Add a documentation for join operation. (jihoon)
+
     TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
     (Contributed by Jongyoung Park, Committed by jihoon)
 
