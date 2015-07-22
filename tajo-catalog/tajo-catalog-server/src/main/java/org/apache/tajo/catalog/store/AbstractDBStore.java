@@ -2193,8 +2193,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions)
-    throws CatalogException {
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException {
     Connection conn = null;
     PreparedStatement pstmt = null;
 

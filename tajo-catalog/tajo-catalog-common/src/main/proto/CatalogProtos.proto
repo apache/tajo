@@ -260,6 +260,7 @@ message PartitionMethodProto {
 message AddPartitionsProto {
   required TableIdentifierProto tableIdentifier = 1;
   repeated PartitionDescProto partitionDesc = 2;
+  required bool ifNotExists = 3;
 }
 
 message PartitionDescProto {

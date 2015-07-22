@@ -1084,7 +1084,7 @@ public class CatalogServer extends AbstractService {
           contain = store.existTable(databaseName, tableName);
           if (contain) {
             if (store.existPartitionMethod(databaseName, tableName)) {
-              store.addPartitions(databaseName, tableName, request.getPartitionDescList());
+              store.addPartitions(databaseName, tableName, request.getPartitionDescList(), request.getIfNotExists());
               return OK;
             } else {
               return errUndefinedPartitionMethod(tableName);

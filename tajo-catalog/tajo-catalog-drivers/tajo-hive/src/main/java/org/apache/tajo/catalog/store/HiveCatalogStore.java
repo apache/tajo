@@ -1013,8 +1013,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions)
-    throws CatalogException {
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<Partition> addPartitions = TUtil.newList();
 
