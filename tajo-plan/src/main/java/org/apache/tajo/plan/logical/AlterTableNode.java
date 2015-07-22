@@ -51,6 +51,8 @@ public class AlterTableNode extends LogicalNode {
   private String location;
   @Expose
   private boolean isPurge;
+  @Expose
+  private boolean ifNotExists;
 
   public AlterTableNode(int pid) {
     super(pid, NodeType.ALTER_TABLE);
@@ -158,6 +160,14 @@ public class AlterTableNode extends LogicalNode {
     this.isPurge = isPurge;
   }
 
+  public boolean isIfNotExists() {
+    return ifNotExists;
+  }
+
+  public void setIfNotExists(boolean ifNotExists) {
+    this.ifNotExists = ifNotExists;
+  }
+
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
@@ -166,7 +176,7 @@ public class AlterTableNode extends LogicalNode {
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName, addNewColumn, alterTableOpType, columnName, newColumnName, newTableName,
-      tableName, properties, partitionColumns, partitionValues, location, isPurge);
+      tableName, properties, partitionColumns, partitionValues, location, isPurge, ifNotExists);
   }
 
   @Override
