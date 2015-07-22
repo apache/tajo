@@ -4,6 +4,9 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1486: Text file should support to skip header rows when creating 
+    external table. (Contributed by Jongyoung Park. Committed by jinho)
+
     TAJO-1661: Implement CORR function. (jihoon)
 
     TAJO-1537: Implement a virtual table for sessions. 
