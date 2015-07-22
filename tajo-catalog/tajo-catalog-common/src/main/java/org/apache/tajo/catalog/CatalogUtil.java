@@ -827,16 +827,6 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
-  public static AlterTableDesc addPartitionAndDropPartition(String tableName, PartitionDesc partitionDesc,
-                                                            AlterTableType alterTableType) {
-    final AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(tableName);
-    alterTableDesc.setPartitionDesc(partitionDesc);
-    alterTableDesc.setAlterTableType(alterTableType);
-    return alterTableDesc;
-  }
-
-
   /**
    * Get partition key/value list and partition name
    *

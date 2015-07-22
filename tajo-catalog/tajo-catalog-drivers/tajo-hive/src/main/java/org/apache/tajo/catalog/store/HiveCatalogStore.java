@@ -1017,28 +1017,39 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     , boolean ifNotExists) throws CatalogException {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<Partition> addPartitions = TUtil.newList();
+    CatalogProtos.PartitionDescProto existingPartition = null;
 
     try {
       client = clientPool.getClient();
       for (CatalogProtos.PartitionDescProto partitionDescProto : partitions) {
-        Partition partition = new Partition();
-        partition.setDbName(databaseName);
-        partition.setTableName(tableName);
+        existingPartition = getPartition(databaseName, tableName, partitionDescProto.getPartitionName());
 
-        List<String> values = Lists.newArrayList();
-        for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
-          values.add(keyProto.getPartitionValue());
+        // Unfortunately, hive client add_partitions doesn't run as expected. The method never read the ifNotExists
+        // parameter. So, if Tajo add existing partition to Hive, it will threw AlreadyExistsException. To avoid
+        // above error, we need filter existing partitions before call add_partitions.
+        if (existingPartition != null) {
+          Partition partition = new Partition();
+          partition.setDbName(databaseName);
+          partition.setTableName(tableName);
+
+          List<String> values = Lists.newArrayList();
+          for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+            values.add(keyProto.getPartitionValue());
+          }
+          partition.setValues(values);
+
+          Table table = client.getHiveClient().getTable(databaseName, tableName);
+          StorageDescriptor sd = table.getSd();
+          sd.setLocation(partitionDescProto.getPath());
+          partition.setSd(sd);
+
+          addPartitions.add(partition);
         }
-        partition.setValues(values);
-
-        Table table = client.getHiveClient().getTable(databaseName, tableName);
-        StorageDescriptor sd = table.getSd();
-        sd.setLocation(partitionDescProto.getPath());
-        partition.setSd(sd);
-
-        addPartitions.add(partition);
       }
-      client.getHiveClient().add_partitions(addPartitions, false, true);
+
+      if (addPartitions.size() > 0) {
+        client.getHiveClient().add_partitions(addPartitions, true, true);
+      }
     } catch (Exception e) {
       throw new TajoInternalError(e);
     } finally {

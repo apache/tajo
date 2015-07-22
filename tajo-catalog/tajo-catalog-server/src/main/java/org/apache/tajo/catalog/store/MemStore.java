@@ -615,8 +615,13 @@ public class MemStore implements CatalogStore {
     , boolean ifNotExists) throws CatalogException {
     for(CatalogProtos.PartitionDescProto partition: partitions) {
       String partitionName = partition.getPartitionName();
+
       if (this.partitions.containsKey(tableName) && this.partitions.get(tableName).containsKey(partitionName)) {
-        dropPartition(databaseName, tableName, partitionName);
+        if (ifNotExists) {
+          dropPartition(databaseName, tableName, partitionName);
+        } else {
+          throw new DuplicatePartitionException(partitionName);
+        }
       }
       addPartition(partition, tableName, partitionName);
     }

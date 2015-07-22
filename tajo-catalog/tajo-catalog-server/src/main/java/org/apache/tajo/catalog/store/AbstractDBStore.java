@@ -2204,33 +2204,44 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       conn = getConnection();
       conn.setAutoCommit(false);
+
       StringBuilder sb = new StringBuilder();
-      sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
-      sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" IN (");
-      sb.append(" SELECT ").append(COL_PARTITIONS_PK).append(" FROM ").append(TB_PARTTIONS);
-      sb.append(" WHERE PARTITION_NAME = ? )");
+      if (ifNotExists) {
+        sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
+        sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" IN (");
+        sb.append(" SELECT ").append(COL_PARTITIONS_PK).append(" FROM ").append(TB_PARTTIONS);
+        sb.append(" WHERE PARTITION_NAME = ? )");
 
-      pstmt = conn.prepareStatement(sb.toString());
-      for(PartitionDescProto partition : partitions) {
-        pstmt.setString(1, partition.getPartitionName());
-        pstmt.addBatch();
-        pstmt.clearParameters();
+        pstmt = conn.prepareStatement(sb.toString());
+        for(PartitionDescProto partition : partitions) {
+          pstmt.setString(1, partition.getPartitionName());
+          pstmt.addBatch();
+          pstmt.clearParameters();
+        }
+        pstmt.executeBatch();
+        pstmt.close();
+
+        sb.delete(0, sb.length());
+        sb.append("DELETE FROM ").append(TB_PARTTIONS);
+        sb.append(" WHERE PARTITION_NAME = ? ");
+
+        pstmt = conn.prepareStatement(sb.toString());
+        for(PartitionDescProto partition : partitions) {
+          pstmt.setString(1, partition.getPartitionName());
+          pstmt.addBatch();
+          pstmt.clearParameters();
+        }
+        pstmt.executeBatch();
+        pstmt.close();
+      } else {
+        PartitionDescProto existingPartition = null;
+        for (PartitionDescProto partition : partitions) {
+          existingPartition = getPartition(databaseName, tableName, partition.getPartitionName());
+          if (existingPartition != null) {
+            throw new DuplicatePartitionException(partition.getPartitionName());
+          }
+        }
       }
-      pstmt.executeBatch();
-      pstmt.close();
-
-      sb.delete(0, sb.length());
-      sb.append("DELETE FROM ").append(TB_PARTTIONS);
-      sb.append(" WHERE PARTITION_NAME = ? ");
-
-      pstmt = conn.prepareStatement(sb.toString());
-      for(PartitionDescProto partition : partitions) {
-        pstmt.setString(1, partition.getPartitionName());
-        pstmt.addBatch();
-        pstmt.clearParameters();
-      }
-      pstmt.executeBatch();
-      pstmt.close();
 
       for(PartitionDescProto partition : partitions) {
         addPartition(tableId, partition, conn);
