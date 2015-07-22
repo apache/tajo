@@ -24,11 +24,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
@@ -54,9 +54,6 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -1786,7 +1783,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setUri(targetUri);
 
     if (expr.hasStorageType()) {
-      insertNode.setStorageType(expr.getStorageType());
+      insertNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(expr.getStorageType()));
     }
     if (expr.hasParams()) {
       KeyValueSet options = new KeyValueSet();
@@ -1833,7 +1830,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setTableSchema(baseTable.getSchema());
     createTableNode.setPartitionMethod(partitionDesc);
 
-    createTableNode.setStorageType(baseTable.getMeta().getStoreType());
+    createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(baseTable.getMeta().getStoreType()));
     createTableNode.setOptions(baseTable.getMeta().getOptions());
 
     createTableNode.setExternal(baseTable.isExternal());
@@ -1869,9 +1866,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setUri(getCreatedTableURI(context, expr));
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
-      createTableNode.setStorageType(expr.getStorageType());
+      createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(expr.getStorageType()));
     } else { // otherwise, default type
-      createTableNode.setStorageType("CSV");
+      createTableNode.setStorageType(BuiltinStorages.TEXT);
     }
 
     // Set default storage properties to table

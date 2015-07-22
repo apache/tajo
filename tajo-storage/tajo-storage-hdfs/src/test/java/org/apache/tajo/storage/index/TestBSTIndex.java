@@ -72,7 +72,6 @@ public class TestBSTIndex {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"CSV"},
         {"RAW"},
         {"TEXT"}
     });

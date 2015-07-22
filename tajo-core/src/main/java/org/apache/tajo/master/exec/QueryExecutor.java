@@ -24,10 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -454,7 +451,7 @@ public class QueryExecutor {
         List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();
         CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
             .setTableName(nodeUniqName)
-            .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType("CSV").build())
+            .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(BuiltinStorages.TEXT).build())
             .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
             .setStats(stats.getProto())
             .build();

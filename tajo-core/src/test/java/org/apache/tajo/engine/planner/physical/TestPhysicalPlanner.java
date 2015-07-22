@@ -117,7 +117,7 @@ public class TestPhysicalPlanner {
     scoreSchema.addColumn("score", Type.INT4);
     scoreSchema.addColumn("nullable", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
 
 
     Path employeePath = new Path(testDir, "employee.csv");
@@ -138,7 +138,7 @@ public class TestPhysicalPlanner {
     catalog.createTable(employee);
 
     Path scorePath = new Path(testDir, "score");
-    TableMeta scoreMeta = CatalogUtil.newTableMeta("CSV", new KeyValueSet());
+    TableMeta scoreMeta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
     appender = sm.getAppender(scoreMeta, scoreSchema, scorePath);
     appender.init();
     score = new TableDesc(
@@ -434,7 +434,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -503,7 +503,7 @@ public class TestPhysicalPlanner {
     long totalNum = 0;
     for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
       Scanner scanner =  ((FileTablespace) TablespaceManager.getLocalFs()).getFileScanner(
-          CatalogUtil.newTableMeta("CSV"),
+          CatalogUtil.newTableMeta("TEXT"),
           rootNode.getOutSchema(),
           status.getPath());
 
@@ -741,7 +741,7 @@ public class TestPhysicalPlanner {
       long expectedFileNum = (long) Math.ceil(fileVolumSum / (float)StorageUnit.MB);
       assertEquals(expectedFileNum, fileStatuses.length);
     }
-    TableMeta outputMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
 

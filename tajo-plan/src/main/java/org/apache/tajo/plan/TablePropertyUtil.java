@@ -41,7 +41,7 @@ public class TablePropertyUtil {
     String storeType = node.getStorageType();
     KeyValueSet property = node.getOptions();
 
-    if (storeType.equalsIgnoreCase("CSV") || storeType.equalsIgnoreCase("TEXT")) {
+    if (storeType.equalsIgnoreCase("TEXT") || storeType.equalsIgnoreCase("TEXT")) {
       setSessionToProperty(context, SessionVars.NULL_CHAR, property, StorageConstants.TEXT_NULL);
     }
   }

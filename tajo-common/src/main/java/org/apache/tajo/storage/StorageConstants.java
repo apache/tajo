@@ -18,8 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.tajo.TajoConstants;
-
 import java.net.URI;
 
 public class StorageConstants {
@@ -41,10 +39,6 @@ public class StorageConstants {
   public static final String COMPRESSION_TYPE = "compression.type";
 
   // Text file properties -------------------------------------------------
-  @Deprecated
-  public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
-  @Deprecated
-  public static final String CSVFILE_NULL = "csvfile.null";
   @Deprecated
   public static final String CSVFILE_SERDE = "csvfile.serde";
 

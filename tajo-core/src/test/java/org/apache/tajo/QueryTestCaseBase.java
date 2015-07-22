@@ -834,7 +834,7 @@ public class QueryTestCaseBase {
    *   CREATE EXTERNAL TABLE ${0} (
    *     t_timestamp  TIMESTAMP,
    *     t_date    DATE
-   *   ) USING CSV LOCATION ${table.path}
+   *   ) USING TEXT LOCATION ${table.path}
    * </pre>
    *
    * @param ddlFileName A file name, containing a data definition statement.

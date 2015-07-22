@@ -399,6 +399,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1496: Remove legacy CSVFile. (jinho)
+
     TAJO-1691: Refactor visitors and planner to throw TajoException. (hyunsik)
 
     TAJO-1525: Implement INTERSECT [ALL] physical operator. (Contributed 
