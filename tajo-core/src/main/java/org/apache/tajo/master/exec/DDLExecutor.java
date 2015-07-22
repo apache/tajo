@@ -523,7 +523,7 @@ public class DDLExecutor {
       partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
 
       if (partitionDescProto == null) {
-        throw new NoSuchPartitionException(tableName, pair.getSecond());
+        throw new UndefinedPartitionException(pair.getSecond());
       }
 
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
@@ -556,7 +556,7 @@ public class DDLExecutor {
   private boolean ensureColumnPartitionKeys(String tableName, String[] columnNames) {
     for(String columnName : columnNames) {
       if (!ensureColumnPartitionKeys(tableName, columnName)) {
-        throw new NoSuchPartitionKeyException(tableName, columnName);
+        throw new UndefinedPartitionKeyException(columnName);
       }
     }
     return true;

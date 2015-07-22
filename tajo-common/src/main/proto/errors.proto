@@ -108,6 +108,7 @@ enum ResultCode {
   UNDEFINED_PARTITION                   = 519; // ?
   UNDEFINED_PARTITION_METHOD            = 520; // ?
   UNDEFINED_OPERATOR                    = 521; // SQLState: 42883 (=UNDEFINED_FUNCTION)
+  UNDEFINED_PARTITION_KEY               = 522; // ?
 
   DUPLICATE_TABLESPACE                  = 531;
   DUPLICATE_DATABASE                    = 532; // SQLState: 42P04
