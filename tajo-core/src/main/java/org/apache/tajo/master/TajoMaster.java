@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master;
 
+import com.codahale.metrics.Gauge;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -134,6 +135,8 @@ public class TajoMaster extends CompositeService {
 
   private HistoryReader historyReader;
 
+  private static final long CLUSTER_STARTUP_TIME = System.currentTimeMillis();
+
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
   }
@@ -216,6 +219,14 @@ public class TajoMaster extends CompositeService {
   private void initSystemMetrics() {
     systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
+
+    systemMetrics.register(Master.Cluster.UPTIME, new Gauge<Long>() {
+      @Override
+      public Long getValue() {
+        return context.getClusterUptime();
+      }
+    });
+
     systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
   }
 
@@ -421,6 +432,10 @@ public class TajoMaster extends CompositeService {
       return clock;
     }
 
+    public long getClusterUptime() {
+      return getClock().getTime() - CLUSTER_STARTUP_TIME;
+    }
+
     public QueryManager getQueryJobManager() {
       return queryManager;
     }
@@ -449,7 +464,7 @@ public class TajoMaster extends CompositeService {
       return tajoMasterService;
     }
 
-    public TajoSystemMetrics getSystemMetrics() {
+    public TajoSystemMetrics getMetrics() {
       return systemMetrics;
     }
 

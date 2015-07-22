@@ -30,23 +30,24 @@ option java_generate_equals_and_hash = true;
 enum Cluster {
   UPTIME = 0;
 
-  TOTAL_NODES  = 1;
-  ACTIVE_NODES = 2;
-  LOST_NODES   = 3;
+  TOTAL_NODES       = 1;
+  ACTIVE_NODES      = 2;
+  LOST_NODES        = 3;
 
-  TOTAL_MEMORY = 4;
-  FREE_MEMORY  = 5;
-  TOTAL_VCPU   = 6;
-  FREE_VCPU    = 7;
+  TOTAL_MEMORY      = 4;
+  FREE_MEMORY       = 5;
+  TOTAL_VCPU        = 6;
+  FREE_VCPU         = 7;
 }
 
 // Query Coordinator
 enum Query {
-  TOTAL_SUBMITTED   = 1;
+  SUBMITTED         = 1;
   COMPLETED         = 2;
-  ERROR             = 3;
-  FAILED            = 4;
-  KILLED            = 5;
+  RUNNING           = 3;
+  ERROR             = 4;
+  FAILED            = 5;
+  KILLED            = 6;
 
   NUM_PER_HOUR      = 6;
   MAX_IO_THROUGHPUT = 7;

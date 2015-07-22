@@ -181,7 +181,7 @@ public class GlobalEngine extends AbstractService {
     Expr planningContext;
 
     try {
-      context.getSystemMetrics().counter(Master.Query.TOTAL_SUBMITTED).inc();
+      context.getMetrics().counter(Master.Query.SUBMITTED).inc();
 
       if (isJson) {
         planningContext = buildExpressionFromJson(query);
@@ -198,7 +198,7 @@ public class GlobalEngine extends AbstractService {
     } catch (Throwable t) {
       ExceptionUtil.printStackTraceIfError(LOG, t);
 
-      context.getSystemMetrics().counter(Master.Query.ERROR).inc();
+      context.getMetrics().counter(Master.Query.ERROR).inc();
 
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
