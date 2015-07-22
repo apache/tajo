@@ -937,9 +937,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         }
 
         pstmt = conn.prepareStatement(statSql);
-        pstmt.setInt(1, tableId);
-        pstmt.setLong(2, statsProto.getStats().getNumRows());
-        pstmt.setLong(3, statsProto.getStats().getNumBytes());
+        pstmt.setLong(1, statsProto.getStats().getNumRows());
+        pstmt.setLong(2, statsProto.getStats().getNumBytes());
+        pstmt.setInt(3, tableId);
         pstmt.executeUpdate();
       }
 
