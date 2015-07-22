@@ -1,6 +1,6 @@
 select sum(b.l_quantity)
 from (
-      select a.l_orderkey, a.l_quantity
+      select a.l_orderkey, a.l_quantity, a.l_linenumber
         from lineitem a
         join part on a.l_partkey = p_partkey) b
 join orders c on c.o_orderkey = b.l_orderkey

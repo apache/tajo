@@ -36,16 +36,16 @@ public class QueryStatus {
 
   public QueryStatus(GetQueryStatusResponse proto) {
     queryId = new QueryId(proto.getQueryId());
-    state = proto.getState();
+    state = proto.getQueryState();
     progress = proto.getProgress();
     submitTime = proto.getSubmitTime();
     finishTime = proto.getFinishTime();
     hasResult = proto.getHasResult();
-    if (proto.getResult().hasErrorMessage()) {
-      errorText = proto.getResult().getErrorMessage();
+    if (proto.hasErrorMessage()) {
+      errorText = proto.getErrorMessage();
     }
-    if (proto.getResult().hasErrorTrace()) {
-      errorTrace = proto.getResult().getErrorTrace();
+    if (proto.hasErrorTrace()) {
+      errorTrace = proto.getErrorTrace();
     }
 
     queryMasterHost = proto.getQueryMasterHost();

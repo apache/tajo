@@ -22,16 +22,16 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.algebra.Relation;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.NoSuchColumnException;
-import org.apache.tajo.plan.algebra.AmbiguousFieldException;
+import org.apache.tajo.catalog.exception.AmbiguousTableException;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.AmbiguousColumnException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -71,15 +71,15 @@ public abstract class NameResolver {
   }
 
   public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
-                               NameResolvingMode mode) throws PlanningException {
+                               NameResolvingMode mode) throws TajoException {
     if (!resolverMap.containsKey(mode)) {
-      throw new PlanningException("Unsupported name resolving level: " + mode.name());
+      throw new RuntimeException("Unsupported name resolving level: " + mode.name());
     }
     return resolverMap.get(mode).resolve(plan, block, column);
   }
 
   abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-  throws PlanningException;
+  throws TajoException;
 
   /**
    * Guess a relation from a table name regardless of whether the given name is qualified or not.
@@ -89,7 +89,9 @@ public abstract class NameResolver {
    * @return A corresponding relation
    * @throws PlanningException
    */
-  public static RelationNode lookupTable(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
+  public static RelationNode lookupTable(LogicalPlan.QueryBlock block, String tableName)
+      throws AmbiguousTableException {
+
     List<RelationNode> found = TUtil.newList();
 
     for (RelationNode relation : block.getRelations()) {
@@ -109,7 +111,7 @@ public abstract class NameResolver {
       return null;
 
     } else if (found.size() > 1) {
-      throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
+      throw new AmbiguousTableException(tableName);
     }
 
     return found.get(0);
@@ -121,10 +123,8 @@ public abstract class NameResolver {
    * @param block the current block
    * @param columnName The column name to find relation
    * @return relations including a given column
-   * @throws PlanningException
    */
-  public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName)
-      throws PlanningException {
+  public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName) {
 
     Set<RelationNode> found = TUtil.newHashSet();
 
@@ -149,7 +149,7 @@ public abstract class NameResolver {
    * @throws PlanningException
    */
   static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                  ColumnReferenceExpr columnRef) throws PlanningException {
+                                                  ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
     String qualifier;
     String canonicalName;
 
@@ -162,7 +162,7 @@ public abstract class NameResolver {
 
       // If we cannot find any relation against a qualified column name
       if (relationOp == null) {
-        throw new PlanningException("Cannot find any relation for " + qualifier);
+        throw new UndefinedTableException(qualifier);
       }
 
       // Please consider a query case:
@@ -192,7 +192,7 @@ public abstract class NameResolver {
    * @return The found column
    */
   static Column resolveFromCurrentAndChildNode(LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws NoSuchColumnException {
+      throws UndefinedColumnException {
 
     if (block.getCurrentNode() != null && block.getCurrentNode().getInSchema() != null) {
       Column found = block.getCurrentNode().getInSchema().getColumn(columnRef.getCanonicalName());
@@ -218,7 +218,7 @@ public abstract class NameResolver {
    * @return The found column
    */
   static Column lookupColumnFromAllRelsInBlock(LogicalPlan.QueryBlock block,
-                                               String columnName) throws VerifyException {
+                                               String columnName) throws AmbiguousColumnException {
     Preconditions.checkArgument(CatalogUtil.isSimpleIdentifier(columnName));
 
     List<Column> candidates = TUtil.newList();
@@ -244,7 +244,8 @@ public abstract class NameResolver {
    * @param columnRef The column reference to be found
    * @return The found column
    */
-  static Column resolveFromAllRelsInAllBlocks(LogicalPlan plan, ColumnReferenceExpr columnRef) throws VerifyException {
+  static Column resolveFromAllRelsInAllBlocks(LogicalPlan plan, ColumnReferenceExpr columnRef)
+      throws AmbiguousColumnException {
 
     List<Column> candidates = Lists.newArrayList();
 
@@ -273,7 +274,9 @@ public abstract class NameResolver {
    * @param columnRef The column reference to be found
    * @return The found column
    */
-  static Column resolveAliasedName(LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef) throws VerifyException {
+  static Column resolveAliasedName(LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+      throws AmbiguousColumnException {
+
     List<Column> candidates = Lists.newArrayList();
 
     if (block.getSchema() != null) {
@@ -303,7 +306,8 @@ public abstract class NameResolver {
    */
   static Pair<String, String> lookupQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
                                                               ColumnReferenceExpr columnRef)
-      throws PlanningException {
+      throws AmbiguousColumnException {
+
     Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
 
     String [] qualifierParts = columnRef.getQualifier().split("\\.");
@@ -344,7 +348,7 @@ public abstract class NameResolver {
       Collection<RelationNode> rels = lookupTableByColumns(block, qualifierParts[0]);
 
       if (rels.size() > 1) {
-        throw new AmbiguousFieldException(columnRef.getCanonicalName());
+        throw new AmbiguousColumnException(columnRef.getCanonicalName());
       }
 
       if (rels.size() == 1) {
@@ -355,9 +359,9 @@ public abstract class NameResolver {
 
     // throw exception if no column cannot be founded or two or more than columns are founded
     if (guessedRelations.size() == 0) {
-      throw new NoSuchColumnException(columnRef.getQualifier());
+      throw new UndefinedColumnException(columnRef.getQualifier());
     } else if (guessedRelations.size() > 1) {
-      throw new AmbiguousFieldException(columnRef.getCanonicalName());
+      throw new AmbiguousColumnException(columnRef.getCanonicalName());
     }
 
     String qualifier = guessedRelations.iterator().next().getCanonicalName();
@@ -381,7 +385,7 @@ public abstract class NameResolver {
     return new Pair<String, String>(qualifier, columnName);
   }
 
-  static Column ensureUniqueColumn(List<Column> candidates) throws VerifyException {
+  static Column ensureUniqueColumn(List<Column> candidates) throws AmbiguousColumnException {
     if (candidates.size() == 1) {
       return candidates.get(0);
     } else if (candidates.size() > 1) {
@@ -395,7 +399,7 @@ public abstract class NameResolver {
         }
         sb.append(column);
       }
-      throw new AmbiguousFieldException("Ambiguous Column Name: " + sb.toString());
+      throw new AmbiguousColumnException(sb.toString());
     } else {
       return null;
     }

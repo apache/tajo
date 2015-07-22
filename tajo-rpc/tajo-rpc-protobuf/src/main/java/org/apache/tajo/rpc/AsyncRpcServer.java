@@ -131,10 +131,8 @@ public class AsyncRpcServer extends NettyServerBase {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());
 
-        if(LOG.isDebugEnabled()) {
-          Throwable rootCause = ExceptionUtils.getRootCause(cause);
-          LOG.error(ExceptionUtils.getMessage(rootCause), rootCause);
-        }
+        Throwable rootCause = ExceptionUtils.getRootCause(cause);
+        LOG.error(ExceptionUtils.getMessage(rootCause), rootCause);
       } else {
         /* unhandled exception. */
         if (ctx.channel().isOpen()) {

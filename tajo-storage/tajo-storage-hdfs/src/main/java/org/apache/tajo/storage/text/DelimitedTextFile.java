@@ -48,7 +48,6 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -287,6 +286,8 @@ public class DelimitedTextFile {
     /** How many errors have occurred? */
     private int errorNum;
 
+    private VTuple outTuple;
+
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final Fragment fragment)
         throws IOException {
@@ -322,13 +323,30 @@ public class DelimitedTextFile {
         targets = schema.toArray();
       }
 
+      outTuple = new VTuple(targets.length);
+
       super.init();
       if (LOG.isDebugEnabled()) {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
 
+      // skip first line if it reads from middle of file
       if (startOffset > 0) {
-        reader.readLine();  // skip first line;
+        reader.readLine();
+      } else { // skip header lines if it is defined
+
+        // initialization for skipping header(max 20)
+        int headerLineNum = Math.min(Integer.parseInt(meta.getOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
+        if (headerLineNum > 0) {
+          LOG.info(String.format("Skip %d header lines", headerLineNum));
+          for (int i = 0; i < headerLineNum; i++) {
+            if (!reader.isReadable()) {
+              return;
+            }
+
+            reader.readLine();
+          }
+        }
       }
 
       deserializer = getLineSerde().createDeserializer(schema, meta, targets);
@@ -341,6 +359,8 @@ public class DelimitedTextFile {
 
     @Override
     public float getProgress() {
+      if(!inited) return super.getProgress();
+
       try {
         if (!reader.isReadable()) {
           return 1.0f;
@@ -361,7 +381,6 @@ public class DelimitedTextFile {
 
     @Override
     public Tuple next() throws IOException {
-      VTuple tuple;
 
       if (!reader.isReadable()) {
         return null;
@@ -386,12 +405,11 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          tuple = new VTuple(targets.length);
-          tuple.setOffset(offset);
+          outTuple.setOffset(offset);
 
           try {
-            deserializer.deserialize(buf, tuple);
-            // if a line is read normally, it exists this loop.
+            deserializer.deserialize(buf, outTuple);
+            // if a line is read normally, it exits this loop.
             break;
 
           } catch (TextLineParsingError tae) {
@@ -400,7 +418,7 @@ public class DelimitedTextFile {
 
             // suppress too many log prints, which probably cause performance degradation
             if (errorNum < errorPrintOutMaxNum) {
-              LOG.warn("Ignore JSON Parse Error (" + errorNum + "): ", tae);
+              LOG.warn("Ignore Text Parse Error (" + errorNum + "): ", tae);
             }
 
             // Only when the maximum error torrence limit is set (i.e., errorTorrenceMaxNum >= 0),
@@ -409,15 +427,13 @@ public class DelimitedTextFile {
             if (errorTorrenceMaxNum >= 0 && errorNum > errorTorrenceMaxNum) {
               throw tae;
             }
-            continue;
           }
-
         } while (reader.isReadable()); // continue until EOS
 
         // recordCount means the number of actual read records. We increment the count here.
         recordCount++;
 
-        return tuple;
+        return outTuple;
 
       } catch (Throwable t) {
         LOG.error(t);
@@ -447,6 +463,7 @@ public class DelimitedTextFile {
       } finally {
         IOUtils.cleanup(LOG, reader);
         reader = null;
+        outTuple = null;
       }
     }
 

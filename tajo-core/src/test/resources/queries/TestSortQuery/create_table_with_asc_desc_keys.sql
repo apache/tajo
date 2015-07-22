@@ -1,1 +1,1 @@
-create external table table2 (col1 int8, col2 int8) using csv with ('csvfile.delimiter'=',') location ${table.path};
+create external table table2 (col1 int8, col2 int8) using text with ('text.delimiter'=',') location ${table.path};

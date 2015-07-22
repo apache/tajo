@@ -21,16 +21,16 @@
 
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.QueryId" %>
+<%@ page import="org.apache.tajo.ResourceProtos.ShuffleFileOutput" %>
 <%@ page import="org.apache.tajo.TaskId" %>
 <%@ page import="org.apache.tajo.catalog.proto.CatalogProtos" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
-<%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
 <%@ page import="org.apache.tajo.querymaster.Query" %>
 <%@ page import="org.apache.tajo.querymaster.QueryMasterTask" %>
-<%@ page import="org.apache.tajo.querymaster.Task" %>
 <%@ page import="org.apache.tajo.querymaster.Stage" %>
+<%@ page import="org.apache.tajo.querymaster.Task" %>
 <%@ page import="org.apache.tajo.storage.DataLocation" %>
-<%@ page import="org.apache.tajo.storage.fragment.FileFragment" %>
+<%@ page import="org.apache.tajo.storage.fragment.Fragment" %>
 <%@ page import="org.apache.tajo.storage.fragment.FragmentConvertor" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
@@ -41,7 +41,6 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
-<%@ page import="org.apache.tajo.storage.fragment.Fragment" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -57,10 +56,11 @@
     int taskSeq = Integer.parseInt(request.getParameter("taskSeq"));
     TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
     QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
-            .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId, true);
+            .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId);
 
     if(queryMasterTask == null) {
-        out.write("<script type='text/javascript'>alert('no query'); history.back(0); </script>");
+        String tajoMasterHttp = request.getScheme() + "://" + JSPUtil.getTajoMasterHttpAddr(tajoWorker.getConfig());
+        response.sendRedirect(tajoMasterHttp + request.getRequestURI() + "?" + request.getQueryString());
         return;
     }
 
@@ -131,7 +131,7 @@
     String shuffleKey = "-";
     String shuffleFileName = "-";
     if(numShuffles > 0) {
-        TajoWorkerProtocol.ShuffleFileOutput shuffleFileOutputs = task.getShuffleFileOutputs().get(0);
+        ShuffleFileOutput shuffleFileOutputs = task.getShuffleFileOutputs().get(0);
         shuffleKey = "" + shuffleFileOutputs.getPartId();
         shuffleFileName = shuffleFileOutputs.getFileName();
     }
@@ -161,7 +161,7 @@
         <tr><td align="right">Launch Time</td><td><%=task.getLaunchTime() == 0 ? "-" : df.format(task.getLaunchTime())%></td></tr>
         <tr><td align="right">Finish Time</td><td><%=task.getFinishTime() == 0 ? "-" : df.format(task.getFinishTime())%></td></tr>
         <tr><td align="right">Running Time</td><td><%=task.getLaunchTime() == 0 ? "-" : task.getRunningTime() + " ms"%></td></tr>
-        <tr><td align="right">Host</td><td><%=task.getSucceededHost() == null ? "-" : task.getSucceededHost()%></td></tr>
+        <tr><td align="right">Host</td><td><%=task.getSucceededWorker() == null ? "-" : task.getSucceededWorker().getHost()%></td></tr>
         <tr><td align="right">Shuffles</td><td># Shuffle Outputs: <%=numShuffles%>, Shuffle Key: <%=shuffleKey%>, Shuffle file: <%=shuffleFileName%></td></tr>
         <tr><td align="right">Data Locations</td><td><%=dataLocationInfos%></td></tr>
         <tr><td align="right">Fragment</td><td><%=fragmentInfo%></td></tr>

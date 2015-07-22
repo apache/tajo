@@ -19,23 +19,25 @@
 package org.apache.tajo.ws.rs.responses;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.ipc.ClientProtos;
 
 import com.google.gson.annotations.Expose;
 
 public class GetQueryResultDataResponse {
 
-  @Expose private ClientProtos.ResultCode resultCode;
+  @Expose private ResultCode resultCode;
   @Expose private Schema schema;
   @Expose private int bytesNum;
   @Expose private ResultSetInfoResponse resultset;
   @Expose private String errorMessage;
   @Expose private String errorTrace;
   
-  public ClientProtos.ResultCode getResultCode() {
+  public ResultCode getResultCode() {
     return resultCode;
   }
-  public void setResultCode(ClientProtos.ResultCode resultCode) {
+  public void setResultCode(ResultCode resultCode) {
     this.resultCode = resultCode;
   }
   public Schema getSchema() {

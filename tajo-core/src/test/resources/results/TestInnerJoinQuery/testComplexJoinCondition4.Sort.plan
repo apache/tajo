@@ -7,14 +7,14 @@ SORT(3)
      => target list: default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)
      => out schema: {(3) default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)}
      => in schema: {(3) default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)}
-      SCAN(1) on default.nation as n2
-        => target list: substr(default.n2.n_name (TEXT),1,4) as name2
-        => out schema: {(1) name2 (TEXT)}
-        => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
       SCAN(0) on default.nation as n1
         => target list: default.n1.n_nationkey (INT4), substr(default.n1.n_name (TEXT),1,4) as name1
         => out schema: {(2) default.n1.n_nationkey (INT4), name1 (TEXT)}
         => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
+      SCAN(1) on default.nation as n2
+        => target list: substr(default.n2.n_name (TEXT),1,4) as name2
+        => out schema: {(1) name2 (TEXT)}
+        => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -48,14 +48,14 @@ SORT(10)
      => target list: default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)
      => out schema: {(3) default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)}
      => in schema: {(3) default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)}
-      SCAN(1) on default.nation as n2
-        => target list: substr(default.n2.n_name (TEXT),1,4) as name2
-        => out schema: {(1) name2 (TEXT)}
-        => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
       SCAN(0) on default.nation as n1
         => target list: default.n1.n_nationkey (INT4), substr(default.n1.n_name (TEXT),1,4) as name1
         => out schema: {(2) default.n1.n_nationkey (INT4), name1 (TEXT)}
         => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
+      SCAN(1) on default.nation as n2
+        => target list: substr(default.n2.n_name (TEXT),1,4) as name2
+        => out schema: {(1) name2 (TEXT)}
+        => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000004 [ROOT]

@@ -20,8 +20,9 @@ package org.apache.tajo.plan.rewrite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -71,7 +72,7 @@ public class BaseLogicalPlanRewriteEngine implements LogicalPlanRewriteEngine {
    * @param context
    * @return The rewritten plan.
    */
-  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlanRewriteRule rule;
     LogicalPlan plan = null;
     for (Entry<String, LogicalPlanRewriteRule> rewriteRule : rewriteRules.entrySet()) {

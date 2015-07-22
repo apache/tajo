@@ -49,7 +49,6 @@ public class StoreTableExec extends UnaryPhysicalExec {
   private PersistentStoreNode plan;
   private TableMeta meta;
   private Appender appender;
-  private Tuple tuple;
 
   // for file punctuation
   private TableStats sumStats;                  // for aggregating all stats of written files
@@ -125,6 +124,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
    */
   @Override
   public Tuple next() throws IOException {
+    Tuple tuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
       appender.addTuple(tuple);
 

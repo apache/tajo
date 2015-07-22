@@ -31,6 +31,7 @@ import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
 import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -279,7 +280,7 @@ public class TajoCli {
     addShutdownHook();
   }
 
-  private void processConfVarCommand(String[] confCommands) throws ServiceException {
+  private void processConfVarCommand(String[] confCommands) throws SQLException {
     for (String eachParam: confCommands) {
       String[] tokens = eachParam.split("=");
       if (tokens.length != 2) {
@@ -292,7 +293,7 @@ public class TajoCli {
     }
   }
 
-  private void processSessionVarCommand(String[] confCommands) throws ServiceException {
+  private void processSessionVarCommand(String[] confCommands) throws SQLException {
     for (String eachParam: confCommands) {
       String[] tokens = eachParam.split("=");
       if (tokens.length != 2) {
@@ -484,13 +485,13 @@ public class TajoCli {
     return 0;
   }
 
-  private void executeJsonQuery(String json) throws ServiceException, IOException {
+  private void executeJsonQuery(String json) throws SQLException {
 
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       onError("response is null", null);
-    } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
+    } else if (ReturnStateUtil.isSuccess(response.getState())) {
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
@@ -503,13 +504,13 @@ public class TajoCli {
         }
       }
     } else {
-      if (response.getResult().hasErrorMessage()) {
-        onError(response.getResult().getErrorMessage(), null);
+      if (ReturnStateUtil.isError(response.getState())) {
+        onError(response.getState().getMessage(), null);
       }
     }
   }
 
-  private int executeQuery(String statement) throws ServiceException, IOException {
+  private int executeQuery(String statement) throws SQLException {
 
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = null;
@@ -519,22 +520,22 @@ public class TajoCli {
       onError(null, te);
     }
 
-    if (response == null) {
-      onError("response is null", null);
-    } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
-      if (response.getIsForwarded()) {
-        QueryId queryId = new QueryId(response.getQueryId());
-        waitForQueryCompleted(queryId);
-      } else {
-        if (!response.hasTableDesc() && !response.hasResultSet()) {
-          displayFormatter.printMessage(sout, "OK");
+    if (response != null) {
+      if (ReturnStateUtil.isSuccess(response.getState())) {
+        if (response.getIsForwarded()) {
+          QueryId queryId = new QueryId(response.getQueryId());
+          waitForQueryCompleted(queryId);
         } else {
-          localQueryCompleted(response, startTime);
+          if (!response.hasTableDesc() && !response.hasResultSet()) {
+            displayFormatter.printMessage(sout, "OK");
+          } else {
+            localQueryCompleted(response, startTime);
+          }
         }
-      }
-    } else {
-      if (response.getResult().hasErrorMessage()) {
-        onError(response.getResult().getErrorMessage(), null);
+      } else {
+        if (ReturnStateUtil.isError(response.getState())) {
+          onError(response.getState().getMessage(), null);
+        }
       }
     }
 
@@ -570,7 +571,7 @@ public class TajoCli {
     }
   }
 
-  private void waitForQueryCompleted(QueryId queryId) {
+  private void waitForQueryCompleted(QueryId queryId) throws SQLException {
     // if query is empty string
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return;
@@ -661,7 +662,11 @@ public class TajoCli {
     if (t == null) {
       displayFormatter.printErrorMessage(sout, message);
     } else {
-      displayFormatter.printErrorMessage(sout, t);
+      if (t instanceof SQLException) {
+        displayFormatter.printErrorMessage(sout, t.getMessage());
+      } else {
+        displayFormatter.printErrorMessage(sout, t);
+      }
     }
     if (reconnect && (t instanceof InvalidClientSessionException ||
         (message != null && message.startsWith("org.apache.tajo.session.InvalidSessionException")))) {

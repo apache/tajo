@@ -32,7 +32,7 @@ import org.apache.tajo.common.ProtoObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.SessionProto;
+import static org.apache.tajo.ResourceProtos.SessionProto;
 
 public class Session implements SessionConstants, ProtoObject<SessionProto>, Cloneable {
   private static final Log LOG = LogFactory.getLog(Session.class);

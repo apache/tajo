@@ -26,8 +26,8 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
-import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Stage;
+import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -565,12 +565,12 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testHavingWithAggFunction() throws Exception {
     // select l_orderkey, avg(l_partkey) total, sum(l_linenumber) as num from lineitem group by l_orderkey
     // having avg(l_partkey) = 2.5 or num = 1;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -693,6 +693,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNumShufflePartition() throws Exception {
+
+    Thread.sleep(5000);
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -801,17 +803,17 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testGroupbyWithPythonFunc() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testGroupbyWithPythonFunc2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -829,10 +831,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testPythonUdaf3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)

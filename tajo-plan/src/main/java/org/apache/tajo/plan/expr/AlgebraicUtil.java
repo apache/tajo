@@ -20,6 +20,7 @@ package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
@@ -441,14 +442,14 @@ public class AlgebraicUtil {
       stack.push(expr);
       try {
         this.visit(null, stack, expr);
-      } catch (PlanningException e) {
+      } catch (TajoException e) {
 
       }
       return nameBuilder.deleteCharAt(nameBuilder.length()-1).toString();
     }
 
     @Override
-    public Object visitBinaryOperator(Object ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+    public Object visitBinaryOperator(Object ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
       addIntermExpr(expr);
       return super.visitBinaryOperator(ctx, stack, expr);
     }
@@ -463,32 +464,32 @@ public class AlgebraicUtil {
 
     @Override
     public Object visitColumnReference(Object ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
-        throws PlanningException {
+        throws TajoException {
       this.append(expr.getName());
       return super.visitColumnReference(ctx, stack, expr);
     }
 
     @Override
-    public Object visitLiteral(Object ctx, Stack<Expr> stack, LiteralValue expr) throws PlanningException {
+    public Object visitLiteral(Object ctx, Stack<Expr> stack, LiteralValue expr) throws TajoException {
       this.append(expr.getValue());
       return super.visitLiteral(ctx, stack, expr);
     }
 
     @Override
-    public Object visitNullLiteral(Object ctx, Stack<Expr> stack, NullLiteral expr) throws PlanningException {
+    public Object visitNullLiteral(Object ctx, Stack<Expr> stack, NullLiteral expr) throws TajoException {
       this.append("null");
       return super.visitNullLiteral(ctx, stack, expr);
     }
 
     @Override
-    public Object visitTimestampLiteral(Object ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException {
+    public Object visitTimestampLiteral(Object ctx, Stack<Expr> stack, TimestampLiteral expr) throws TajoException {
       this.append(expr.getDate().toString());
       this.append(expr.getTime().toString());
       return super.visitTimestampLiteral(ctx, stack, expr);
     }
 
     @Override
-    public Object visitTimeLiteral(Object ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
+    public Object visitTimeLiteral(Object ctx, Stack<Expr> stack, TimeLiteral expr) throws TajoException {
       this.append(expr.getTime().toString());
       return super.visitTimeLiteral(ctx, stack, expr);
     }

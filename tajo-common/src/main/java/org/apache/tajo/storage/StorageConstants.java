@@ -18,8 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.tajo.TajoConstants;
-
 import java.net.URI;
 
 public class StorageConstants {
@@ -42,16 +40,15 @@ public class StorageConstants {
 
   // Text file properties -------------------------------------------------
   @Deprecated
-  public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
-  @Deprecated
-  public static final String CSVFILE_NULL = "csvfile.null";
-  @Deprecated
   public static final String CSVFILE_SERDE = "csvfile.serde";
 
   public static final String TEXT_DELIMITER = "text.delimiter";
   public static final String TEXT_NULL = "text.null";
   public static final String TEXT_SERDE_CLASS = "text.serde";
   public static final String DEFAULT_TEXT_SERDE_CLASS = "org.apache.tajo.storage.text.CSVLineSerDe";
+
+  public static final String TEXT_SKIP_HEADER_LINE = "text.skip.headerlines";
+
   /**
    * It's the maximum number of parsing error torrence.
    *

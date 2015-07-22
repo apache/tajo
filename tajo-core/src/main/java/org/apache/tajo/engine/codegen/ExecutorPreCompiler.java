@@ -22,12 +22,12 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.Pair;
 
@@ -44,13 +44,13 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     instance = new ExecutorPreCompiler();
   }
 
-  public static void compile(CompilationContext context, LogicalNode node) throws PlanningException {
+  public static void compile(CompilationContext context, LogicalNode node) throws TajoException {
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
     context.compiledEval = Collections.unmodifiableMap(context.compiledEval);
   }
 
   public static Map<Pair<Schema, EvalNode>, EvalNode> compile(TajoClassLoader classLoader, LogicalNode node)
-      throws PlanningException {
+      throws TajoException {
     CompilationContext context = new CompilationContext(classLoader);
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
     return context.compiledEval;
@@ -111,7 +111,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitProjection(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     ProjectionNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitProjection(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
@@ -121,7 +121,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitHaving(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 HavingNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 HavingNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitHaving(context, plan, block, node, stack);
 
     compileSelectableNode(context, node.getInSchema(), node);
@@ -131,7 +131,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitGroupBy(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                  GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                  GroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitGroupBy(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
@@ -141,7 +141,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitWindowAgg(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    WindowAggNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    WindowAggNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitWindowAgg(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
@@ -150,7 +150,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   }
 
   public LogicalNode visitDistinctGroupby(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                          DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                          DistinctGroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitDistinctGroupby(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
@@ -159,7 +159,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitFilter(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitFilter(context, plan, block, node, stack);
 
     compileSelectableNode(context, node.getInSchema(), node);
@@ -169,7 +169,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitJoin(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                               JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+                               JoinNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitJoin(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
@@ -183,7 +183,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitTableSubQuery(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     visit(context, plan, null, node.getSubQuery(), stack);
     stack.pop();
@@ -200,14 +200,14 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   @Override
   public LogicalNode visitPartitionedTableScan(CompilationContext context, LogicalPlan plan,
                                                LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
-                                               Stack<LogicalNode> stack) throws PlanningException {
+                                               Stack<LogicalNode> stack) throws TajoException {
     visitScan(context, plan, block, node, stack);
     return node;
   }
 
   @Override
   public LogicalNode visitScan(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                               ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+                               ScanNode node, Stack<LogicalNode> stack) throws TajoException {
 
     compileProjectableNode(context, node.getInSchema(), node);
     compileSelectableNode(context, node.getInSchema(), node);
@@ -217,7 +217,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   @Override
   public LogicalNode visitIndexScan(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
     visitScan(context, plan, block, node, stack);
     return node;
   }

@@ -2,7 +2,7 @@ OK
 
 table name: default.TEST_DESC_TABLE
 table uri: ${table.path}
-store type: CSV
+store type: TEXT
 number of rows: 0
 volume: 0 B
 Options: 
@@ -16,7 +16,7 @@ col2	INT4
 
 table name: default.TEST_DESC_TABLE
 table uri: ${table.path}
-store type: CSV
+store type: TEXT
 number of rows: 0
 volume: 0 B
 Options: 

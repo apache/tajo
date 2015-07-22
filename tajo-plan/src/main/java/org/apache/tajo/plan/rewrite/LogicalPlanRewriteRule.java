@@ -18,8 +18,8 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 
 /**
  * An interface for a rewrite rule.
@@ -52,5 +52,5 @@ public interface LogicalPlanRewriteRule {
    * @param plan Input logical plan. It will not be modified.
    * @return The rewritten logical plan.
    */
-  LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException;
+  LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException;
 }

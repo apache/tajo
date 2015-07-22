@@ -87,6 +87,10 @@ public class NullTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public void clearOffset() {
+  }
+
+  @Override
   public void put(int fieldId, Tuple tuple) {
     throw new UnsupportedOperationException();
   }
