@@ -16,17 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.algebra;
+package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 
-public class AmbiguousFieldException extends InvalidQueryException {
-	private static final long serialVersionUID = 3102675985226352347L;
+import java.util.ArrayList;
 
-	/**
-	 * @param fieldName
-	 */
-	public AmbiguousFieldException(String fieldName) {
-		super("ERROR: column name "+ fieldName + " is ambiguous");	
-	}
+/**
+ * In TupleList, input tuples are automatically cloned whenever the add() method is called.
+ * This data structure is usually used in physical operators like hash join or hash aggregation.
+ */
+public class TupleList extends ArrayList<Tuple> {
+
+  public TupleList() {
+    super();
+  }
+
+  public TupleList(int initialCapacity) {
+    super(initialCapacity);
+  }
+
+  @Override
+  public boolean add(Tuple tuple) {
+    return super.add(new VTuple(tuple));
+  }
 }

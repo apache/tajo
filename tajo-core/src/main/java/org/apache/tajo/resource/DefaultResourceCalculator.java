@@ -27,8 +27,12 @@ public class DefaultResourceCalculator extends ResourceCalculator {
 
   @Override
   public int computeAvailableContainers(NodeResource available, NodeResource required) {
-    return Math.min(available.getMemory() / required.getMemory(),
+    int availableContainer = Math.min(available.getMemory() / required.getMemory(),
         available.getVirtualCores() / required.getVirtualCores());
+    if (required.getDisks() > 0) {
+      availableContainer = Math.min(availableContainer, available.getDisks() / required.getDisks());
+    }
+    return availableContainer;
   }
 
   @Override

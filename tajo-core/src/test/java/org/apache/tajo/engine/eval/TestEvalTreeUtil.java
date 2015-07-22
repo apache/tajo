@@ -34,9 +34,9 @@ import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizer;
@@ -103,7 +103,7 @@ public class TestEvalTreeUtil {
     schema.addColumn("score", TajoDataTypes.Type.INT4);
     schema.addColumn("age", TajoDataTypes.Type.INT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
@@ -141,22 +141,16 @@ public class TestEvalTreeUtil {
     LogicalPlan plan = null;
     try {
       plan = planner.createPlan(defaultContext, expr);
-    } catch (PlanningException e) {
-      e.printStackTrace();
+    } catch (TajoException e) {
+      throw new RuntimeException(e);
     }
 
     return plan.getRootBlock().getRawTargets();
   }
 
-  public static EvalNode getRootSelection(String query) throws PlanningException {
-
+  public static EvalNode getRootSelection(String query) throws TajoException {
     Expr block = analyzer.parse(query);
-    LogicalPlan plan = null;
-    try {
-      plan = planner.createPlan(defaultContext, block);
-    } catch (PlanningException e) {
-      e.printStackTrace();
-    }
+    LogicalPlan plan = planner.createPlan(defaultContext, block);
 
     LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(defaultContext, plan, plan.getRootBlock(),
         new EvalTreeOptimizer(), true);
@@ -230,7 +224,7 @@ public class TestEvalTreeUtil {
   }
 
   @Test
-  public final void testGetContainExprs() throws CloneNotSupportedException, PlanningException {
+  public final void testGetContainExprs() throws CloneNotSupportedException, TajoException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalPlan plan = planner.createPlan(defaultContext, expr, true);
     Target [] targets = plan.getRootBlock().getRawTargets();
@@ -251,7 +245,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testGetCNF() throws PlanningException {
+  public final void testGetCNF() throws TajoException {
     // "select score from people where score < 10 and 4 < score "
     EvalNode node = getRootSelection(QUERIES[5]);
     EvalNode [] cnf = AlgebraicUtil.toConjunctiveNormalFormArray(node);
@@ -274,7 +268,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testTransformCNF2Singleton() throws PlanningException {
+  public final void testTransformCNF2Singleton() throws TajoException {
     // "select score from people where score < 10 and 4 < score "
     EvalNode node = getRootSelection(QUERIES[6]);
     EvalNode [] cnf1 = AlgebraicUtil.toConjunctiveNormalFormArray(node);
@@ -289,7 +283,7 @@ public class TestEvalTreeUtil {
   }
 
   @Test
-  public final void testGetDNF() throws PlanningException {
+  public final void testGetDNF() throws TajoException {
     // "select score from people where score > 1 and score < 3 or score > 7 and score < 10", // 7
     EvalNode node = getRootSelection(QUERIES[7]);
     EvalNode [] cnf = AlgebraicUtil.toDisjunctiveNormalFormArray(node);
@@ -300,7 +294,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testSimplify() throws PlanningException {
+  public final void testSimplify() throws TajoException {
     Target [] targets = getRawTargets(QUERIES[0]);
     EvalNode node = AlgebraicUtil.eliminateConstantExprs(targets[0].getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
@@ -319,7 +313,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testConatainSingleVar() throws PlanningException {
+  public final void testConatainSingleVar() throws TajoException {
     EvalNode node = getRootSelection(QUERIES[2]);
     assertEquals(true, AlgebraicUtil.containSingleVar(node));
     node = getRootSelection(QUERIES[3]);
@@ -327,7 +321,7 @@ public class TestEvalTreeUtil {
   }
   
   @Test
-  public final void testTranspose() throws PlanningException {
+  public final void testTranspose() throws TajoException {
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     EvalNode node = getRootSelection(QUERIES[3]);
     // we expect that score < 3
@@ -347,7 +341,7 @@ public class TestEvalTreeUtil {
   }
 
   @Test
-  public final void testFindDistinctAggFunctions() throws PlanningException {
+  public final void testFindDistinctAggFunctions() throws TajoException {
     String query = "select sum(score) + max(age) from people";
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
@@ -367,13 +361,13 @@ public class TestEvalTreeUtil {
   }
 
   @Test
-  public final void testIsJoinQual() throws PlanningException {
+  public final void testIsJoinQual() throws TajoException {
     EvalNode evalNode = getRootSelection("select score from people where people.score > people.age");
     assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));
   }
 
   @Test
-  public final void testIsJoinQual2() throws PlanningException {
+  public final void testIsJoinQual2() throws TajoException {
     EvalNode evalNode = getRootSelection(
         "select score from people where substr(people.score::text,1,1) > substr(people.age::text,1,1)");
     assertFalse(EvalTreeUtil.isJoinQual(evalNode, true));

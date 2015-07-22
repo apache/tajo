@@ -16,24 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.catalog.exception;
 
-import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.error.Errors;
 
-import java.io.IOException;
-import java.io.InputStream;
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
-public class SplitLineReader extends LineReader {
-  public SplitLineReader(InputStream in, byte[] recordDelimiterBytes) {
-    super(in, recordDelimiterBytes);
-  }
-
-  public SplitLineReader(InputStream in, Configuration conf,
-                         byte[] recordDelimiterBytes) throws IOException {
-    super(in, conf, recordDelimiterBytes);
-  }
-
-  public boolean needAdditionalRecordAfterSplit() {
-    return false;
+public class AmbiguousTableException extends CatalogException {
+  public AmbiguousTableException(String tableName) {
+    super(Errors.ResultCode.AMBIGUOUS_TABLE, tableName);
   }
 }

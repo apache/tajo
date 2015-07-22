@@ -28,6 +28,12 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -100,7 +106,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws TajoException {
     /*
     FilterPushDown rule: processing when visits each node
       - If a target which is corresponding on a filter EvalNode's column is not FieldEval, do not PushDown.
@@ -129,7 +135,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   @Override
   public LogicalNode visitFilter(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 SelectionNode selNode, Stack<LogicalNode> stack) throws PlanningException {
+                                 SelectionNode selNode, Stack<LogicalNode> stack) throws TajoException {
     context.pushingDownFilters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
 
     stack.push(selNode);
@@ -169,7 +175,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                JoinNode joinNode,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     Set<EvalNode> onPredicates = TUtil.newHashSet();
     if (joinNode.hasJoinQual()) {
       onPredicates.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
@@ -247,7 +253,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                                            final JoinNode joinNode,
                                                            final Set<EvalNode> onPredicates,
                                                            final Set<EvalNode> wherePredicates)
-      throws PlanningException {
+      throws TajoException {
     Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
     // TODO: non-equi theta join quals must not be pushed until TAJO-742 is resolved.
     nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(wherePredicates, block, joinNode));
@@ -294,7 +300,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private static Set<EvalNode> extractNonPushableOuterJoinQuals(final LogicalPlan plan,
                                                                 final Set<EvalNode> onPredicates,
                                                                 final Set<EvalNode> wherePredicates,
-                                                                final JoinNode joinNode) throws PlanningException {
+                                                                final JoinNode joinNode) throws TajoException {
     Set<String> nullSupplyingTableNameSet = TUtil.newHashSet();
     Set<String> preservedTableNameSet = TUtil.newHashSet();
     String leftRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild());
@@ -378,7 +384,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private Map<EvalNode, EvalNode> transformEvalsWidthByPassNode(
       Collection<EvalNode> originEvals, LogicalPlan plan,
       LogicalPlan.QueryBlock block,
-      LogicalNode node, LogicalNode childNode) throws PlanningException {
+      LogicalNode node, LogicalNode childNode) throws TajoException {
     // transformed -> pushingDownFilters
     Map<EvalNode, EvalNode> transformedMap = TUtil.newHashMap();
 
@@ -394,14 +400,14 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         try {
           copy = (EvalNode) eval.clone();
         } catch (CloneNotSupportedException e) {
-          throw new PlanningException(e);
+          throw new TajoInternalError(e);
         }
 
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
         for (Column c : columns) {
           Column column = childOutSchema.getColumn(c.getSimpleName());
           if (column == null) {
-            throw new PlanningException(
+            throw new TajoInternalError(
                 "Invalid Filter PushDown on SubQuery: No such a corresponding column '"
                     + c.getQualifiedName() + " for FilterPushDown(" + eval + "), " +
                     "(PID=" + node.getPID() + ", Child=" + childNode.getPID() + ")");
@@ -421,7 +427,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         try {
           copy = (EvalNode) eval.clone();
         } catch (CloneNotSupportedException e) {
-          throw new PlanningException(e);
+          throw new TajoInternalError(e);
         }
 
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
@@ -452,7 +458,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       try {
         copy = (EvalNode) matchedEval.clone();
       } catch (CloneNotSupportedException e) {
-        throw new PlanningException(e);
+        throw new TajoInternalError(e);
       }
 
       Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
@@ -467,7 +473,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
               break;
             }
           } else {
-            throw new PlanningException(
+            throw new TajoInternalError(
                 "Invalid Filter PushDown on SubQuery: No such a corresponding column '"
                     + c.getQualifiedName() + " for FilterPushDown(" + matchedEval + "), " +
                     "(PID=" + node.getPID() + ", Child=" + childNode.getPID() + ")"
@@ -485,7 +491,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   @Override
   public LogicalNode visitTableSubQuery(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     List<EvalNode> matched = TUtil.newList();
     for (EvalNode eval : context.pushingDownFilters) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
@@ -506,7 +512,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitUnion(FilterPushDownContext context, LogicalPlan plan,
                                 LogicalPlan.QueryBlock block, UnionNode unionNode,
-                                Stack<LogicalNode> stack) throws PlanningException {
+                                Stack<LogicalNode> stack) throws TajoException {
     LogicalNode leftNode = unionNode.getLeftChild();
 
     List<EvalNode> origins = TUtil.newList(context.pushingDownFilters);
@@ -539,7 +545,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                      LogicalPlan plan,
                                      LogicalPlan.QueryBlock block,
                                      ProjectionNode projectionNode,
-                                     Stack<LogicalNode> stack) throws PlanningException {
+                                     Stack<LogicalNode> stack) throws TajoException {
     LogicalNode childNode = projectionNode.getChild();
 
     List<EvalNode> notMatched = TUtil.newList();
@@ -604,7 +610,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private BiMap<EvalNode, EvalNode> findCanPushdownAndTransform(
       FilterPushDownContext context, LogicalPlan.QueryBlock block, Projectable node,
       LogicalNode childNode, List<EvalNode> notMatched,
-      Set<String> partitionColumns, int columnOffset) throws PlanningException {
+      Set<String> partitionColumns, int columnOffset) throws TajoException {
     // canonical name -> target
     Map<String, Target> nodeTargetMap = TUtil.newHashMap();
     for (Target target : node.getTargets()) {
@@ -648,19 +654,19 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   private EvalNode transformEval(Projectable node, LogicalNode childNode, EvalNode origin,
                                  Map<String, Target> targetMap, Set<String> partitionColumns,
-                                 int columnOffset) throws PlanningException {
+                                 int columnOffset) throws TajoException {
     Schema outputSchema = childNode != null ? childNode.getOutSchema() : node.getInSchema();
     EvalNode copy;
     try {
       copy = (EvalNode) origin.clone();
     } catch (CloneNotSupportedException e) {
-      throw new PlanningException(e);
+      throw new TajoInternalError(e);
     }
     Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
     for (Column c: columns) {
       Target target = targetMap.get(c.getQualifiedName());
       if (target == null) {
-        throw new PlanningException(
+        throw new TajoInternalError(
             "Invalid Filter PushDown: No such a corresponding target '"
                 + c.getQualifiedName() + " for FilterPushDown(" + origin + "), " +
                 "(PID=" + node.getPID() + ")"
@@ -668,7 +674,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
       EvalNode targetEvalNode = target.getEvalTree();
       if (targetEvalNode.getType() != EvalType.FIELD) {
-        throw new PlanningException(
+        throw new TajoInternalError(
             "Invalid Filter PushDown: '" + c.getQualifiedName() + "' target is not FieldEval " +
                 "(PID=" + node.getPID() + ")"
         );
@@ -723,13 +729,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
    * @param havingNode      If null, projection is parent
    * @param groupByNode
    * @return matched origin eval
-   * @throws PlanningException
+   * @throws TajoException
    */
   private List<EvalNode> addHavingNode(FilterPushDownContext context, LogicalPlan plan,
                                        LogicalPlan.QueryBlock block,
                                        UnaryNode parentNode,
                                        HavingNode havingNode,
-                                       GroupbyNode groupByNode) throws PlanningException {
+                                       GroupbyNode groupByNode) throws TajoException {
     // find aggregation column
     Set<Column> groupingColumns = TUtil.newHashSet(groupByNode.getGroupingColumns());
     Set<String> aggrFunctionOutColumns = TUtil.newHashSet();
@@ -799,7 +805,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitWindowAgg(FilterPushDownContext context, LogicalPlan plan,
                                   LogicalPlan.QueryBlock block, WindowAggNode winAggNode,
-                                  Stack<LogicalNode> stack) throws PlanningException {
+                                  Stack<LogicalNode> stack) throws TajoException {
     stack.push(winAggNode);
     super.visitWindowAgg(context, plan, block, winAggNode, stack);
     stack.pop();
@@ -810,7 +816,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitGroupBy(FilterPushDownContext context, LogicalPlan plan,
                                   LogicalPlan.QueryBlock block, GroupbyNode groupbyNode,
-                                  Stack<LogicalNode> stack) throws PlanningException {
+                                  Stack<LogicalNode> stack) throws TajoException {
     LogicalNode parentNode = stack.peek();
     List<EvalNode> aggrEvals;
     if (parentNode.getType() == NodeType.HAVING) {
@@ -841,7 +847,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
                                LogicalPlan.QueryBlock block, final ScanNode scanNode,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     List<EvalNode> matched = TUtil.newList();
 
     // find partition column and check matching
@@ -876,7 +882,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
           try {
             copy = (EvalNode) eval.clone();
           } catch (CloneNotSupportedException e) {
-            throw new PlanningException(e);
+            throw new TajoInternalError(e);
           }
           EvalTreeUtil.changeColumnRef(copy, column.getQualifiedName(),
               scanNode.getCanonicalName() + "." + column.getSimpleName());
@@ -1002,7 +1008,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private void errorFilterPushDown(LogicalPlan plan, LogicalNode node,
-                                   FilterPushDownContext context) throws PlanningException {
+                                   FilterPushDownContext context) {
     String prefix = "";
     StringBuilder notMatchedNodeStrBuilder = new StringBuilder();
     for (EvalNode notMatchedNode: context.pushingDownFilters) {
@@ -1011,8 +1017,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         prefix = ", ";
       }
     }
-    throw new PlanningException("FilterPushDown failed cause some filters not matched: " + notMatchedNodeStrBuilder.toString() + "\n" +
-        "Error node: " + node.getPlanString() + "\n" +
-        plan.toString());
+    throw new TajoInternalError("FilterPushDown failed cause some filters not matched: "
+        + notMatchedNodeStrBuilder.toString() + "\n" +
+        "Error node: " + node.getPlanString() + "\n" + plan.toString());
   }
 }

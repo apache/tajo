@@ -44,6 +44,8 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.plan.InvalidQueryException;
@@ -105,8 +107,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     GlobalPlanner globalPlanner = new GlobalPlanner(masterContext.getConf(), masterContext.getCatalog());
     try {
       globalPlanner.build(queryContext, masterPlan);
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
     
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(masterPlan);
@@ -688,8 +690,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     @Override
     public Tuple next() throws IOException {
       Tuple aTuple;
-      Tuple outTuple = new VTuple(outColumnNum);
-      
+
       if (isClosed) {
         return null;
       }
@@ -701,7 +702,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       if (!scanNode.hasQual()) {
         if (currentRow < cachedData.size()) {
           aTuple = cachedData.get(currentRow++);
-          projector.eval(aTuple, outTuple);
+          Tuple outTuple = projector.eval(aTuple);
           outTuple.setOffset(aTuple.getOffset());
           return outTuple;
         }
@@ -710,7 +711,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         while (currentRow < cachedData.size()) {
           aTuple = cachedData.get(currentRow++);
           if (qual.eval(aTuple).isTrue()) {
-            projector.eval(aTuple, outTuple);
+            Tuple outTuple = projector.eval(aTuple);
+            outTuple.setOffset(aTuple.getOffset());
             return outTuple;
           }
         }

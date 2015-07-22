@@ -18,11 +18,9 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.QueryVars;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -30,9 +28,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -353,7 +351,7 @@ public abstract class Tablespace {
   /**
    * Rewrite the logical plan. It is assumed that the final plan will be given in this method.
    */
-  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws TajoException {
     // nothing to do by default
   }
 

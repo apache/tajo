@@ -18,7 +18,7 @@ If the index is created successfully, you can see the information about that ind
 
   table name: default.lineitem
   table path: hdfs://localhost:7020/tpch/lineitem
-  store type: CSV
+  store type: TEXT
   number of rows: unknown
   volume: 753.9 MB
   Options:

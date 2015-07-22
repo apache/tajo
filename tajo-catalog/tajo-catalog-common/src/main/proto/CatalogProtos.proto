@@ -27,7 +27,7 @@ import "PrimitiveProtos.proto";
 
 enum StoreType {
   MEM = 0;
-  CSV = 1;
+  TEXTFILE = 1;
   RAW = 2;
   RCFILE = 3;
   ROWFILE = 4;
@@ -35,10 +35,9 @@ enum StoreType {
   PARQUET = 7;
   SEQUENCEFILE = 8;
   AVRO = 9;
-  TEXTFILE = 10;
-  JSON = 11;
-  HBASE = 12;
-  SYSTEM = 13;
+  JSON = 10;
+  HBASE = 11;
+  SYSTEM = 12;
 }
 
 enum OrderType {

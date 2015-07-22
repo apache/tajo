@@ -4,6 +4,9 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1486: Text file should support to skip header rows when creating 
+    external table. (Contributed by Jongyoung Park. Committed by jinho)
+
     TAJO-1661: Implement CORR function. (jihoon)
 
     TAJO-1537: Implement a virtual table for sessions. 
@@ -28,6 +31,14 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1343: Improve the memory usage of physical executors. (jihoon)
+
+    TAJO-1696: Resource calculator should consider the requested disk resource 
+    at the first stage. (jihoon)
+
+    TAJO-1695: Shuffle fetcher executor should be consider random writing.
+    (jinho)
 
     TAJO-1397: Resource allocation should be fine grained. (jinho)
 
@@ -184,6 +195,8 @@ Release 0.11.0 - unreleased
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
     names only without invalid external table info. 
 
+    TAJO-1697: RCFile progress causes NPE occasionally. (jinho)
+
     TAJO-1689: Metrics file reporter prints histogram metric without group name.
     (hyunsik)
 
@@ -339,6 +352,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1628: Add a documentation for join operation. (jihoon)
+
     TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
     (Contributed by Jongyoung Park, Committed by jihoon)
 
@@ -390,6 +405,10 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1496: Remove legacy CSVFile. (jinho)
+
+    TAJO-1691: Refactor visitors and planner to throw TajoException. (hyunsik)
 
     TAJO-1525: Implement INTERSECT [ALL] physical operator. (Contributed 
     Keuntae Park, Committed by hyunsik) 
@@ -2530,3 +2549,4 @@ Release 0.2.0
     TAJO-252: Add DISCLAIMER file. (hyunsik)
 
     TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
+

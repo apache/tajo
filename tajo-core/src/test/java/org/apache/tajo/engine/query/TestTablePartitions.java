@@ -594,8 +594,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
-        "create table " + tableName + " (col2 int4, col3 float8) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+        "create table " + tableName + " (col2 int4, col3 float8) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "PARTITION BY column(col1 int4)");
       res.close();
       assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
@@ -604,8 +604,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "insert overwrite into " + tableName + " select l_partkey, l_quantity, l_orderkey from lineitem");
     } else {
       res = executeString(
-        "create table " + tableName + " (col2 int4, col3 float8) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+        "create table " + tableName + " (col2 int4, col3 float8) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "PARTITION BY column(col1 int4) as select l_partkey, l_quantity, l_orderkey from lineitem");
     }
     res.close();
@@ -641,8 +641,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByTwoColumnsWithCompression");
 
     if (nodeType == NodeType.INSERT) {
-      res = executeString("create table " + tableName + " (col3 float8, col4 text) USING csv " +
-        "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+      res = executeString("create table " + tableName + " (col3 float8, col4 text) USING text " +
+        "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
         "PARTITION by column(col1 int4, col2 int4)");
       res.close();
 
@@ -652,8 +652,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "insert overwrite into " + tableName +
           " select  l_quantity, l_returnflag, l_orderkey, l_partkey from lineitem");
     } else {
-      res = executeString("create table " + tableName + " (col3 float8, col4 text) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+      res = executeString("create table " + tableName + " (col3 float8, col4 text) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "PARTITION by column(col1 int4, col2 int4) as select  l_quantity, l_returnflag, l_orderkey, " +
         "l_partkey from lineitem");
     }
@@ -698,8 +698,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
-        "create table " + tableName + " (col4 text) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+        "create table " + tableName + " (col4 text) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "partition by column(col1 int4, col2 int4, col3 float8)");
       res.close();
 
@@ -709,8 +709,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "insert overwrite into " + tableName +
           " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     } else {
-      res = executeString("create table " + tableName + " (col4 text) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+      res = executeString("create table " + tableName + " (col4 text) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
     }
@@ -793,8 +793,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
-        "create table " + tableName + " (col4 text) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+        "create table " + tableName + " (col4 text) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "partition by column(col1 int4, col2 int4, col3 float8)");
       res.close();
 
@@ -804,8 +804,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "insert overwrite into " + tableName +
           " select l_returnflag , l_orderkey, l_partkey, l_quantity from lineitem");
     } else {
-      res = executeString("create table " + tableName + " (col4 text) USING csv " +
-          "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+      res = executeString("create table " + tableName + " (col4 text) USING text " +
+          "WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag , l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
     }

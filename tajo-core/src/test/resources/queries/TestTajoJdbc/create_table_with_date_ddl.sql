@@ -5,6 +5,6 @@ create external table table1 (
   col1 timestamp,
 	col2 date,
 	col3 time
-) using csv
-with ('csvfile.delimiter'='|', 'csvfile.null'='NULL')
+) using text
+with ('text.delimiter'='|', 'text.null'='NULL')
 location ${table.path};

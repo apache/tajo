@@ -40,11 +40,15 @@ import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.session.Session;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
@@ -61,7 +65,6 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestLogicalPlanner {
   private static TajoTestingCluster util;
@@ -96,19 +99,19 @@ public class TestLogicalPlanner {
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", Type.INT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc people = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(people);
 
     TableDesc student = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "CSV", new KeyValueSet(),
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "TEXT", new KeyValueSet(),
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "CSV", new KeyValueSet(),
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "TEXT", new KeyValueSet(),
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 
@@ -125,7 +128,7 @@ public class TestLogicalPlanner {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpchTables) {
-      TableMeta m = CatalogUtil.newTableMeta("CSV");
+      TableMeta m = CatalogUtil.newTableMeta("TEXT");
       TableDesc d = CatalogUtil.newTableDesc(
           CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m,
           CommonTestingUtil.getTestDir());
@@ -172,7 +175,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testSingleRelation() throws CloneNotSupportedException, PlanningException {
+  public final void testSingleRelation() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[0]);
@@ -206,7 +209,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testImplicityJoinPlan() throws CloneNotSupportedException, PlanningException {
+  public final void testImplicityJoinPlan() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     // two relations
@@ -295,7 +298,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testNaturalJoinPlan() throws PlanningException {
+  public final void testNaturalJoinPlan() throws TajoException {
     QueryContext qc = createQueryContext();
     // two relations
     Expr context = sqlAnalyzer.parse(JOINS[0]);
@@ -327,7 +330,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInnerJoinPlan() throws PlanningException {
+  public final void testInnerJoinPlan() throws TajoException {
     QueryContext qc = createQueryContext();
     // two relations
     Expr expr = sqlAnalyzer.parse(JOINS[1]);
@@ -360,7 +363,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testOuterJoinPlan() throws PlanningException {
+  public final void testOuterJoinPlan() throws TajoException {
     QueryContext qc = createQueryContext();
 
     // two relations
@@ -395,7 +398,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testGroupby() throws CloneNotSupportedException, PlanningException {
+  public final void testGroupby() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     // without 'having clause'
@@ -437,7 +440,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testMultipleJoin() throws IOException, PlanningException {
+  public final void testMultipleJoin() throws IOException, TajoException {
     Expr expr = sqlAnalyzer.parse(
         FileUtil.readTextFile(new File("src/test/resources/queries/TestJoinQuery/testTPCHQ2Join.sql")));
     QueryContext qc = createQueryContext();
@@ -449,7 +452,7 @@ public class TestLogicalPlanner {
 
   private final void findJoinQual(EvalNode evalNode, Map<BinaryEval, Boolean> qualMap,
                                   EvalType leftType, EvalType rightType)
-      throws IOException, PlanningException {
+      throws IOException, TajoException {
     Preconditions.checkArgument(evalNode instanceof BinaryEval);
     BinaryEval qual = (BinaryEval)evalNode;
 
@@ -495,7 +498,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testJoinWithMultipleJoinQual1() throws IOException, PlanningException {
+  public final void testJoinWithMultipleJoinQual1() throws IOException, TajoException {
     Expr expr = sqlAnalyzer.parse(
         FileUtil.readTextFile(new File
             ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual1.sql")));
@@ -537,7 +540,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testJoinWithMultipleJoinQual2() throws IOException, PlanningException {
+  public final void testJoinWithMultipleJoinQual2() throws IOException, TajoException {
     Expr expr = sqlAnalyzer.parse(
         FileUtil.readTextFile(new File
             ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual2.sql")));
@@ -578,7 +581,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testJoinWithMultipleJoinQual3() throws IOException, PlanningException {
+  public final void testJoinWithMultipleJoinQual3() throws IOException, TajoException {
     Expr expr = sqlAnalyzer.parse(
         FileUtil.readTextFile(new File
             ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual3.sql")));
@@ -625,7 +628,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testJoinWithMultipleJoinQual4() throws IOException, PlanningException {
+  public final void testJoinWithMultipleJoinQual4() throws IOException, TajoException {
     Expr expr = sqlAnalyzer.parse(
         FileUtil.readTextFile(new File
             ("src/test/resources/queries/TestJoinQuery/testJoinWithMultipleJoinQual4.sql")));
@@ -719,7 +722,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testStoreTable() throws CloneNotSupportedException, PlanningException {
+  public final void testStoreTable() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr context = sqlAnalyzer.parse(QUERIES[8]);
@@ -737,7 +740,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testOrderBy() throws CloneNotSupportedException, PlanningException {
+  public final void testOrderBy() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
@@ -767,7 +770,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testLimit() throws CloneNotSupportedException, PlanningException {
+  public final void testLimit() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[12]);
@@ -789,7 +792,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testSPJPush() throws CloneNotSupportedException, PlanningException {
+  public final void testSPJPush() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
@@ -811,7 +814,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testSPJ() throws CloneNotSupportedException, PlanningException {
+  public final void testSPJ() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[6]);
@@ -821,7 +824,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testJson() throws PlanningException {
+  public final void testJson() throws TajoException {
     QueryContext qc = createQueryContext();
 
 	  Expr expr = sqlAnalyzer.parse(QUERIES[9]);
@@ -843,7 +846,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testVisitor() throws PlanningException {
+  public final void testVisitor() throws TajoException {
     QueryContext qc = createQueryContext();
 
     // two relations
@@ -870,7 +873,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testExprNode() throws PlanningException {
+  public final void testExprNode() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[10]);
@@ -892,7 +895,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testCreateIndexNode() throws PlanningException {
+  public final void testCreateIndexNode() throws TajoException {
     QueryContext qc = new QueryContext(util.getConfiguration(), session);
     Expr expr = sqlAnalyzer.parse(QUERIES[11]);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
@@ -915,7 +918,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testAsterisk() throws CloneNotSupportedException, PlanningException {
+  public final void testAsterisk() throws CloneNotSupportedException, TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(QUERIES[13]);
@@ -945,7 +948,7 @@ public class TestLogicalPlanner {
 
 
   @Test
-  public final void testAlias1() throws PlanningException {
+  public final void testAlias1() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(ALIAS[0]);
@@ -973,7 +976,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testAlias2() throws PlanningException {
+  public final void testAlias2() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(ALIAS[1]);
@@ -994,7 +997,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testCreateTableDef() throws PlanningException {
+  public final void testCreateTableDef() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(CREATE_TABLE[0]);
@@ -1013,7 +1016,7 @@ public class TestLogicalPlanner {
     assertEquals(Type.INT8, def.getColumn(2).getDataType().getType());
     assertEquals("score", def.getColumn(3).getSimpleName());
     assertEquals(Type.FLOAT4, def.getColumn(3).getDataType().getType());
-    assertTrue("CSV".equalsIgnoreCase(createTable.getStorageType()));
+    assertTrue("TEXT".equalsIgnoreCase(createTable.getStorageType()));
     assertEquals("file://tmp/data", createTable.getUri().toString());
     assertTrue(createTable.hasOptions());
     assertEquals("|", createTable.getOptions().get("csv.delimiter"));
@@ -1080,7 +1083,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testSetPlan() throws PlanningException {
+  public final void testSetPlan() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(setStatements[0]);
@@ -1101,7 +1104,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public void testSetQualifier() throws PlanningException {
+  public void testSetQualifier() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr context = sqlAnalyzer.parse(setQualifiers[0]);
@@ -1154,7 +1157,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testInsertInto0() throws PlanningException {
+  public final void testInsertInto0() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[0]);
@@ -1167,7 +1170,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInsertInto1() throws PlanningException {
+  public final void testInsertInto1() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[1]);
@@ -1179,7 +1182,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInsertInto2() throws PlanningException {
+  public final void testInsertInto2() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[2]);
@@ -1194,7 +1197,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInsertInto3() throws PlanningException {
+  public final void testInsertInto3() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[3]);
@@ -1206,7 +1209,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInsertInto4() throws PlanningException {
+  public final void testInsertInto4() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[4]);
@@ -1222,7 +1225,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInsertInto5() throws PlanningException {
+  public final void testInsertInto5() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[5]);
@@ -1234,7 +1237,7 @@ public class TestLogicalPlanner {
   }
 
   @Test
-  public final void testInsertInto6() throws PlanningException {
+  public final void testInsertInto6() throws TajoException {
     QueryContext qc = createQueryContext();
 
     Expr expr = sqlAnalyzer.parse(insertStatements[6]);
@@ -1264,7 +1267,7 @@ public class TestLogicalPlanner {
   };
 
   @Test
-  public final void testAddPartitionAndDropPartition() throws PlanningException {
+  public final void testAddPartitionAndDropPartition() throws TajoException {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
     String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
 
@@ -1288,10 +1291,10 @@ public class TestLogicalPlanner {
     TableDesc desc = null;
 
     try {
-      desc = new TableDesc(qualifiedTableName, schema, "CSV", new KeyValueSet(),
+      desc = new TableDesc(qualifiedTableName, schema, "TEXT", new KeyValueSet(),
         CommonTestingUtil.getTestDir().toUri());
     } catch (Exception e) {
-      throw new PlanningException(e.getMessage());
+      throw new RuntimeException(e);
     }
 
     desc.setPartitionMethod(partitionMethodDesc);
@@ -1354,5 +1357,4 @@ public class TestLogicalPlanner {
     assertEquals(alterTableNode.getPartitionValues()[1], "01");
     assertEquals(alterTableNode.getPartitionValues()[2], "11");
   }
-
 }

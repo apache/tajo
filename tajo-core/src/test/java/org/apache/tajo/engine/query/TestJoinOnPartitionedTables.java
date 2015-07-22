@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.TajoTestingCluster;
@@ -225,8 +224,8 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     String tableName = CatalogUtil.normalizeIdentifier("paritioned_nation");
     ResultSet res = executeString(
         "create table " + tableName + " (n_name text,"
-            + "  n_comment text, n_regionkey int8) USING csv "
-            + "WITH ('csvfile.delimiter'='|')"
+            + "  n_comment text, n_regionkey int8) USING text "
+            + "WITH ('text.delimiter'='|')"
             + "PARTITION BY column(n_nationkey int8)");
     res.close();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
@@ -264,7 +263,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
      See the following case.
      CREATE TABLE orders_partition
        (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,
-          o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')
+          o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING TEXT WITH ('text.delimiter'='|')
        PARTITION BY COLUMN(o_orderdate TEXT, o_orderstatus TEXT);
 
      select a.o_orderstatus, count(*) as cnt
@@ -283,7 +282,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_orders");
     ResultSet res = executeString(
         "create table " + tableName + " (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,\n" +
-            "o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')\n" +
+            "o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING TEXT WITH ('text.delimiter'='|')\n" +
             "PARTITION BY COLUMN(o_orderdate TEXT, o_orderstatus TEXT, o_orderkey_mod INT8)");
     res.close();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));

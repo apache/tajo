@@ -41,10 +41,10 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -117,7 +117,7 @@ public class TestPhysicalPlanner {
     scoreSchema.addColumn("score", Type.INT4);
     scoreSchema.addColumn("nullable", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
 
 
     Path employeePath = new Path(testDir, "employee.csv");
@@ -138,7 +138,7 @@ public class TestPhysicalPlanner {
     catalog.createTable(employee);
 
     Path scorePath = new Path(testDir, "score");
-    TableMeta scoreMeta = CatalogUtil.newTableMeta("CSV", new KeyValueSet());
+    TableMeta scoreMeta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
     appender = sm.getAppender(scoreMeta, scoreSchema, scorePath);
     appender.init();
     score = new TableDesc(
@@ -236,7 +236,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testCreateScanPlan() throws IOException, PlanningException {
+  public final void testCreateScanPlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testCreateScanPlan");
@@ -267,7 +267,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testCreateScanWithFilterPlan() throws IOException, PlanningException {
+  public final void testCreateScanWithFilterPlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testCreateScanWithFilterPlan");
@@ -296,7 +296,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testGroupByPlan() throws IOException, PlanningException {
+  public final void testGroupByPlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testGroupByPlan");
@@ -326,7 +326,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testHashGroupByPlanWithALLField() throws IOException, PlanningException {
+  public final void testHashGroupByPlanWithALLField() throws IOException, TajoException {
     // TODO - currently, this query does not use hash-based group operator.
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
@@ -357,7 +357,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testSortGroupByPlan() throws IOException, PlanningException {
+  public final void testSortGroupByPlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testSortGroupByPlan");
@@ -420,7 +420,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testStorePlan() throws IOException, PlanningException {
+  public final void testStorePlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testStorePlan");
@@ -434,7 +434,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -461,7 +461,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testStorePlanWithMaxOutputFileSize() throws IOException, PlanningException,
+  public final void testStorePlanWithMaxOutputFileSize() throws IOException, TajoException,
       CloneNotSupportedException {
 
     TableStats stats = largeScore.getStats();
@@ -503,7 +503,7 @@ public class TestPhysicalPlanner {
     long totalNum = 0;
     for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
       Scanner scanner =  ((FileTablespace) TablespaceManager.getLocalFs()).getFileScanner(
-          CatalogUtil.newTableMeta("CSV"),
+          CatalogUtil.newTableMeta("TEXT"),
           rootNode.getOutSchema(),
           status.getPath());
 
@@ -517,7 +517,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testStorePlanWithRCFile() throws IOException, PlanningException {
+  public final void testStorePlanWithRCFile() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testStorePlanWithRCFile");
@@ -558,7 +558,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testEnforceForDefaultColumnPartitionStorePlan() throws IOException, PlanningException {
+  public final void testEnforceForDefaultColumnPartitionStorePlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testStorePlan");
@@ -577,7 +577,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testEnforceForHashBasedColumnPartitionStorePlan() throws IOException, PlanningException {
+  public final void testEnforceForHashBasedColumnPartitionStorePlan() throws IOException, TajoException {
 
     Expr context = analyzer.parse(CreateTableAsStmts[2]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
@@ -601,7 +601,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testEnforceForSortBasedColumnPartitionStorePlan() throws IOException, PlanningException {
+  public final void testEnforceForSortBasedColumnPartitionStorePlan() throws IOException, TajoException {
 
     Expr context = analyzer.parse(CreateTableAsStmts[2]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
@@ -625,7 +625,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testPartitionedStorePlan() throws IOException, PlanningException {
+  public final void testPartitionedStorePlan() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     TaskAttemptId id = LocalTajoTestingUtility.newTaskAttemptId(masterPlan);
@@ -692,7 +692,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testPartitionedStorePlanWithMaxFileSize() throws IOException, PlanningException {
+  public final void testPartitionedStorePlanWithMaxFileSize() throws IOException, TajoException {
 
     // Preparing working dir and input fragments
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score_large", largeScore.getMeta(),
@@ -741,7 +741,7 @@ public class TestPhysicalPlanner {
       long expectedFileNum = (long) Math.ceil(fileVolumSum / (float)StorageUnit.MB);
       assertEquals(expectedFileNum, fileStatuses.length);
     }
-    TableMeta outputMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
 
@@ -758,7 +758,7 @@ public class TestPhysicalPlanner {
 
   @Test
   public final void testPartitionedStorePlanWithEmptyGroupingSet()
-      throws IOException, PlanningException {
+      throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     TaskAttemptId id = LocalTajoTestingUtility.newTaskAttemptId(masterPlan);
@@ -825,7 +825,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testAggregationFunction() throws IOException, PlanningException {
+  public final void testAggregationFunction() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testAggregationFunction");
@@ -856,7 +856,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testCountFunction() throws IOException, PlanningException {
+  public final void testCountFunction() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testCountFunction");
@@ -884,7 +884,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testGroupByWithNullValue() throws IOException, PlanningException {
+  public final void testGroupByWithNullValue() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testGroupByWithNullValue");
@@ -909,7 +909,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testUnionPlan() throws IOException, PlanningException, CloneNotSupportedException {
+  public final void testUnionPlan() throws IOException, TajoException, CloneNotSupportedException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testUnionPlan");
@@ -939,7 +939,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testEvalExpr() throws IOException, PlanningException {
+  public final void testEvalExpr() throws IOException, TajoException {
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testEvalExpr");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(masterPlan),
@@ -974,7 +974,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testCreateIndex() throws IOException, PlanningException {
+  public final void testCreateIndex() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testCreateIndex");
@@ -1007,7 +1007,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testDuplicateEliminate() throws IOException, PlanningException {
+  public final void testDuplicateEliminate() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(),
         new Path(score.getUri()), Integer.MAX_VALUE);
 
@@ -1041,7 +1041,7 @@ public class TestPhysicalPlanner {
   };
 
   @Test
-  public final void testSortEnforcer() throws IOException, PlanningException {
+  public final void testSortEnforcer() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
 
@@ -1092,7 +1092,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testGroupByEnforcer() throws IOException, PlanningException {
+  public final void testGroupByEnforcer() throws IOException, TajoException {
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.score", score.getMeta(), new Path(score.getUri()),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testGroupByEnforcer");

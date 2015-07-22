@@ -79,7 +79,6 @@ public class TaskImpl implements Task {
   private final TaskRequest request;
   private final Map<String, TableDesc> descs;
   private final TableStats inputStats;
-  private final ExecutorService fetcherExecutor;
   private final Path taskDir;
 
   private final TaskAttemptContext context;
@@ -101,8 +100,7 @@ public class TaskImpl implements Task {
   private TupleComparator sortComp = null;
 
   public TaskImpl(final TaskRequest request,
-                  final ExecutionBlockContext executionBlockContext,
-                  final ExecutorService fetcherExecutor) throws IOException {
+                  final ExecutionBlockContext executionBlockContext) throws IOException {
 
     this.request = request;
     this.executionBlockContext = executionBlockContext;
@@ -110,7 +108,6 @@ public class TaskImpl implements Task {
     this.queryContext = request.getQueryContext(systemConf);
     this.inputStats = new TableStats();
     this.fetcherRunners = Lists.newArrayList();
-    this.fetcherExecutor = fetcherExecutor;
     this.descs = Maps.newHashMap();
 
     Path baseDirPath = executionBlockContext.createBaseDir();
@@ -253,7 +250,7 @@ public class TaskImpl implements Task {
   }
 
   @Override
-  public void fetch() {
+  public void fetch(ExecutorService fetcherExecutor) {
     for (Fetcher f : fetcherRunners) {
       fetcherExecutor.submit(new FetchRunner(context, f));
     }
