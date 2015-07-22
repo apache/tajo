@@ -24,6 +24,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.exception.DuplicatePartitionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -31,7 +32,6 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.List;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -87,6 +87,15 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col4");
 
     executeDDL("alter_table_add_partition1.sql", null);
+
+    // checking a duplicated partition
+    boolean duplicatedPartition = false;
+    try {
+      executeDDL("alter_table_add_partition2.sql", null);
+    } catch (DuplicatePartitionException npe) {
+      duplicatedPartition = true;
+    }
+    assertFalse(duplicatedPartition);
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
