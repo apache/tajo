@@ -29,6 +29,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1696: Resource calculator should consider the requested disk resource 
+    at the first stage. (jihoon)
+
     TAJO-1695: Shuffle fetcher executor should be consider random writing.
     (jinho)
 
