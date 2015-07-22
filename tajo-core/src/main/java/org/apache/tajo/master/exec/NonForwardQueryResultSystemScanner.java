@@ -40,6 +40,8 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.plan.InvalidQueryException;
@@ -101,8 +103,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     GlobalPlanner globalPlanner = new GlobalPlanner(masterContext.getConf(), masterContext.getCatalog());
     try {
       globalPlanner.build(queryContext, masterPlan);
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
     
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(masterPlan);

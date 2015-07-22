@@ -44,6 +44,11 @@ public class TajoRuntimeException extends RuntimeException implements TajoExcept
     this.code = code;
   }
 
+  public TajoRuntimeException(TajoException e) {
+    super(e.getMessage());
+    this.code = e.getErrorCode();
+  }
+
   @Override
   public ResultCode getErrorCode() {
     return code;

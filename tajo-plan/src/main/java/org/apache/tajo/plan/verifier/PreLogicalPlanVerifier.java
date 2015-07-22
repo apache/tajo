@@ -26,12 +26,16 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.exception.CatalogExceptionUtil;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
+import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.validation.ConstraintViolation;
 
@@ -60,14 +64,14 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   }
 
   public VerificationState verify(OverridableConf queryContext, VerificationState state, Expr expr)
-      throws PlanningException {
+      throws TajoException {
     Context context = new Context(queryContext, state);
     visit(context, new Stack<Expr>(), expr);
     return context.state;
   }
 
   @Override
-  public Expr visitSetSession(Context ctx, Stack<Expr> stack, SetSession expr) throws PlanningException {
+  public Expr visitSetSession(Context ctx, Stack<Expr> stack, SetSession expr) throws TajoException {
 
     // we should allow undefined session variables which can be used in query statements in the future.
     if (SessionVars.exists(expr.getName())) {
@@ -84,7 +88,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return expr;
   }
 
-  public Expr visitProjection(Context context, Stack<Expr> stack, Projection expr) throws PlanningException {
+  public Expr visitProjection(Context context, Stack<Expr> stack, Projection expr) throws TajoException {
     super.visitProjection(context, stack, expr);
 
     Set<String> names = TUtil.newHashSet();
@@ -103,7 +107,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   }
 
   @Override
-  public Expr visitLimit(Context context, Stack<Expr> stack, Limit expr) throws PlanningException {
+  public Expr visitLimit(Context context, Stack<Expr> stack, Limit expr) throws TajoException {
     stack.push(expr);
 
     if (ExprFinder.finds(expr.getFetchFirstNum(), OpType.Column).size() > 0) {
@@ -117,7 +121,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   }
 
   @Override
-  public Expr visitGroupBy(Context context, Stack<Expr> stack, Aggregation expr) throws PlanningException {
+  public Expr visitGroupBy(Context context, Stack<Expr> stack, Aggregation expr) throws TajoException {
     super.visitGroupBy(context, stack, expr);
 
     // Enforcer only ordinary grouping set.
@@ -136,14 +140,14 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (projection == null) {
-      throw new PlanningException("No Projection");
+      throw new TajoInternalError("No Projection");
     }
 
     return expr;
   }
 
   @Override
-  public Expr visitRelation(Context context, Stack<Expr> stack, Relation expr) throws PlanningException {
+  public Expr visitRelation(Context context, Stack<Expr> stack, Relation expr) throws TajoException {
     assertRelationExistence(context, expr.getName());
     return expr;
   }
@@ -215,7 +219,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
   @Override
   public Expr visitCreateDatabase(Context context, Stack<Expr> stack, CreateDatabase expr)
-      throws PlanningException {
+      throws TajoException {
     super.visitCreateDatabase(context, stack, expr);
     if (!expr.isIfNotExists()) {
       assertDatabaseNoExistence(context.state, expr.getDatabaseName());
@@ -224,7 +228,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   }
 
   @Override
-  public Expr visitDropDatabase(Context context, Stack<Expr> stack, DropDatabase expr) throws PlanningException {
+  public Expr visitDropDatabase(Context context, Stack<Expr> stack, DropDatabase expr) throws TajoException {
     super.visitDropDatabase(context, stack, expr);
     if (!expr.isIfExists()) {
       assertDatabaseExistence(context.state, expr.getDatabaseName());
@@ -233,7 +237,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   }
 
   @Override
-  public Expr visitCreateTable(Context context, Stack<Expr> stack, CreateTable expr) throws PlanningException {
+  public Expr visitCreateTable(Context context, Stack<Expr> stack, CreateTable expr) throws TajoException {
     super.visitCreateTable(context, stack, expr);
     if (!expr.isIfNotExists()) {
       assertRelationNoExistence(context, expr.getTableName());
@@ -245,7 +249,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   }
 
   @Override
-  public Expr visitDropTable(Context context, Stack<Expr> stack, DropTable expr) throws PlanningException {
+  public Expr visitDropTable(Context context, Stack<Expr> stack, DropTable expr) throws TajoException {
     super.visitDropTable(context, stack, expr);
     if (!expr.isIfExists()) {
       assertRelationExistence(context, expr.getTableName());
@@ -257,7 +261,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public Expr visitInsert(Context context, Stack<Expr> stack, Insert expr) throws PlanningException {
+  public Expr visitInsert(Context context, Stack<Expr> stack, Insert expr) throws TajoException {
     Expr child = super.visitInsert(context, stack, expr);
 
     if (expr.hasTableName()) {

@@ -32,10 +32,10 @@ import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -152,7 +152,7 @@ public class TestHashSemiJoinExec {
   };
 
   @Test
-  public final void testHashSemiJoin() throws IOException, PlanningException {
+  public final void testHashSemiJoin() throws IOException, TajoException {
     FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),

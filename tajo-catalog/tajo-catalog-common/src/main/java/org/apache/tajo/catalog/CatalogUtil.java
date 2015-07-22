@@ -27,13 +27,15 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -687,8 +689,7 @@ public class CatalogUtil {
       if (types[i].getType() != Type.NULL_TYPE) {
         Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
         if (candidate == null) {
-          throw new InvalidOperationException("No matched operation for those types: " + StringUtils.join
-              (types));
+          throw new TajoRuntimeException(new UndefinedOperatorException(StringUtils.join(types)));
         }
         widest = newSimpleDataType(candidate);
       }

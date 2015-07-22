@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.joinorder.FoundJoinOrder;
@@ -44,5 +45,5 @@ public interface JoinOrderAlgorithm {
    * @throws org.apache.tajo.plan.PlanningException
    */
   FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext joinGraphContext)
-      throws PlanningException;
+      throws TajoException;
 }
