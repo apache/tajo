@@ -79,7 +79,7 @@ ADD PARTITION
   ALTER TABLE table1 ADD PARTITION (col1 = 1 , col2 = 2)
   ALTER TABLE table1 ADD PARTITION (col1 = 1 , col2 = 2) LOCATION 'hdfs://xxx.com/warehouse/table1/col1=1/col2=2'
 
-You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The location must be a directory inside of which data files reside. If the location doesn't exist on the file system, Tajo will make the location by force. ``ADD PARTITION`` changes the table metadata, but does not load data. If the data does not exist in the partition's location, queries will not return any results.
+You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The location must be a directory inside of which data files reside. If the location doesn't exist on the file system, Tajo will make the location by force. ``ADD PARTITION`` changes the table metadata, but does not load data. If the data does not exist in the partition's location, queries will not return any results. An error is thrown if the partition for the table already exists. You can use ``IF NOT EXISTS`` to skip the error.
 
 ========================
  DROP PARTITION
