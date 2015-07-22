@@ -689,7 +689,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
   public final void testInsertOverwritePathWithNonFromQuery() throws Exception {
     ResultSet res = executeString("insert overwrite into location " +
         "'/tajo-data/testInsertOverwritePathWithNonFromQuery' " +
-        "USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
+        "USING csv WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
         "select 1::INT4, 2.1::FLOAT4, 'test'");
 
     res.close();

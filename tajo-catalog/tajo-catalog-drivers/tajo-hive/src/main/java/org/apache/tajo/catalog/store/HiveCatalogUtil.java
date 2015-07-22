@@ -25,9 +25,9 @@ import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
 import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.thrift.TException;
@@ -113,7 +113,7 @@ public class HiveCatalogUtil {
 
     String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
     if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
-      return CatalogUtil.TEXTFILE_NAME;
+      return BuiltinStorages.TEXT;
     } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.SEQUENCEFILE.name();
     } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {

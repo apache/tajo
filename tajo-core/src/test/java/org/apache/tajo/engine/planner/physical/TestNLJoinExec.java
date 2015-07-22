@@ -28,14 +28,14 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -81,7 +81,7 @@ public class TestNLJoinExec {
     schema.addColumn("memid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
@@ -105,7 +105,7 @@ public class TestNLJoinExec {
     peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta peopleMeta = CatalogUtil.newTableMeta("TEXT");
     Path peoplePath = new Path(testDir, "people.csv");
     appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
@@ -142,7 +142,7 @@ public class TestNLJoinExec {
   };
   
   @Test
-  public final void testNLCrossJoin() throws IOException, PlanningException {
+  public final void testNLCrossJoin() throws IOException, TajoException {
     FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),
@@ -171,7 +171,7 @@ public class TestNLJoinExec {
   }
 
   @Test
-  public final void testNLInnerJoin() throws IOException, PlanningException {
+  public final void testNLInnerJoin() throws IOException, TajoException {
     FileFragment[] empFrags = FileTablespace.splitNG(conf, "default.e", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     FileFragment[] peopleFrags = FileTablespace.splitNG(conf, "default.p", people.getMeta(),

@@ -125,6 +125,11 @@ public class FrameTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public void clearOffset() {
+    throw new UnsupportedException();
+  }
+
+  @Override
   public void setOffset(long offset) {
     throw new UnsupportedException();
   }

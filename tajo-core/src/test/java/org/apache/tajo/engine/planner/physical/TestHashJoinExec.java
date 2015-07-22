@@ -30,15 +30,16 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -83,7 +84,7 @@ public class TestHashJoinExec {
     employeeSchema.addColumn("memid", Type.INT4);
     employeeSchema.addColumn("deptname", Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, employeeSchema, employeePath);
@@ -106,7 +107,7 @@ public class TestHashJoinExec {
     peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);
     peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta("CSV");
+    TableMeta peopleMeta = CatalogUtil.newTableMeta("TEXT");
     Path peoplePath = new Path(testDir, "people.csv");
     appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
@@ -141,7 +142,7 @@ public class TestHashJoinExec {
   };
 
   @Test
-  public final void testHashInnerJoin() throws IOException, PlanningException {
+  public final void testHashInnerJoin() throws IOException, TajoException {
 
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
@@ -185,7 +186,7 @@ public class TestHashJoinExec {
   }
 
   @Test
-  public final void testCheckIfInMemoryInnerJoinIsPossible() throws IOException, PlanningException {
+  public final void testCheckIfInMemoryInnerJoinIsPossible() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 

@@ -42,7 +42,12 @@ public abstract class TextLineSerDe {
   public abstract TextLineSerializer createSerializer(Schema schema, TableMeta meta);
 
   public static ByteBuf getNullChars(TableMeta meta) {
-    byte[] nullCharByteArray = getNullCharsAsBytes(meta);
+    byte[] nullCharByteArray;
+    if (meta.getStoreType().equals("SEQUENCEFILE")) {
+      nullCharByteArray = getNullCharsAsBytes(meta, StorageConstants.SEQUENCEFILE_NULL, "\\");
+    } else {
+      nullCharByteArray = getNullCharsAsBytes(meta);
+    }
 
     ByteBuf nullChars = BufferPool.directBuffer(nullCharByteArray.length, nullCharByteArray.length);
     nullChars.writeBytes(nullCharByteArray);
@@ -51,10 +56,13 @@ public abstract class TextLineSerDe {
   }
 
   public static byte [] getNullCharsAsBytes(TableMeta meta) {
+    return getNullCharsAsBytes(meta, StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
+  }
+
+  public static byte[] getNullCharsAsBytes(TableMeta meta, String key, String defaultVal) {
     byte [] nullChars;
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_NULL,
-        NullDatum.DEFAULT_TEXT));
+    String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(key, defaultVal));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {

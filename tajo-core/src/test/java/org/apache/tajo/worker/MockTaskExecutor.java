@@ -27,6 +27,7 @@ import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 
 public class MockTaskExecutor extends TaskExecutor {
@@ -70,7 +71,7 @@ public class MockTaskExecutor extends TaskExecutor {
       }
 
       @Override
-      public void fetch() {
+      public void fetch(ExecutorService executorService) {
 
       }
 

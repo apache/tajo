@@ -25,8 +25,8 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.util.graph.DirectedGraphCursor;
-import org.apache.tajo.util.graph.SimpleDirectedGraph;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.expr.ConstEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -37,6 +37,8 @@ import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.graph.DirectedGraphCursor;
+import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -315,7 +317,7 @@ public class LogicalPlan {
     return queryBlockGraph;
   }
 
-  public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
+  public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws TajoException {
     return NameResolver.resolve(this, block, columnRef, NameResolvingMode.LEGACY);
   }
 
@@ -363,8 +365,8 @@ public class LogicalPlan {
         explains.append(
             ExplainLogicalPlanVisitor.printDepthString(explainContext.getMaxDepth(), explainContext.explains.pop()));
       }
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
 
     return explains.toString();
@@ -575,12 +577,12 @@ public class LogicalPlan {
       return namedExprsMgr;
     }
 
-    public void updateCurrentNode(Expr expr) throws PlanningException {
+    public void updateCurrentNode(Expr expr) {
 
       if (expr.getType() != OpType.RelationList) { // skip relation list because it is a virtual expr.
         this.currentNode = exprToNodeMap.get(ObjectUtils.identityToString(expr));
         if (currentNode == null) {
-          throw new PlanningException("Unregistered Algebra Expression: " + expr.getType());
+          throw new TajoInternalError("Unregistered Algebra Expression: " + expr.getType());
         }
       }
     }

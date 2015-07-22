@@ -179,4 +179,57 @@ public class TestDelimitedTextFile {
       scanner.close();
     }
   }
+
+  @Test
+  public void testSkippingHeaderWithJson() throws IOException {
+    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
+    FileFragment fragment = getFileFragment("testNormal.json");
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+
+    scanner.init();
+
+    int lines = 0;
+
+    try {
+      while (true) {
+        Tuple tuple = scanner.next();
+        if (tuple != null) {
+          assertEquals(19+lines, tuple.getInt2(2));
+          lines++;
+        }
+        else break;
+      }
+    } finally {
+      assertEquals(4, lines);
+      scanner.close();
+    }
+  }
+
+  @Test
+  public void testSkippingHeaderWithText() throws IOException {
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "1");
+    meta.putOption(StorageConstants.TEXT_DELIMITER, ",");
+    FileFragment fragment = getFileFragment("testSkip.txt");
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    
+    scanner.init();
+
+    int lines = 0;
+
+    try {
+      while (true) {
+        Tuple tuple = scanner.next();
+        if (tuple != null) {
+          assertEquals(17+lines, tuple.getInt2(2));
+          lines++;
+        }
+        else break;
+      }
+    } finally {
+      assertEquals(6, lines);
+      scanner.close();
+    }
+  }
 }

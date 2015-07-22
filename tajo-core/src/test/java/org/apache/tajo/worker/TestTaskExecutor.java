@@ -35,6 +35,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -223,7 +224,7 @@ public class TestTaskExecutor {
         }
 
         @Override
-        public void fetch() {
+        public void fetch(ExecutorService fetchExecutor) {
           try {
             Thread.sleep(50);
           } catch (InterruptedException e) {
