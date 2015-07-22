@@ -18,11 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class AlreadyExistsAssumedPartitionDirectoryException extends RuntimeException {
 
-  private static final long serialVersionUID = 277182608283894931L;
+import org.apache.tajo.error.Errors.ResultCode;
 
-  public AlreadyExistsAssumedPartitionDirectoryException(String message) {
-    super(String.format("ERROR: There is a directory which is assumed to be a partitioned directory : %s", message));
-  }
+public class AssumedPartitionDirectoryException extends CatalogException {
+	private static final long serialVersionUID = 277182608283894931L;
+
+	public AssumedPartitionDirectoryException(String columnName) {
+		super(ResultCode.ASSUMED_PARTITION_DIRECTORY, columnName);
+	}
 }

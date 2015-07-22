@@ -89,6 +89,10 @@ public class ErrorMessages {
     ADD_MESSAGE(MDC_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     ADD_MESSAGE(UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
+
+    ADD_MESSAGE(ASSUMED_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory : " +
+      "'%s'", 1);
+
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {

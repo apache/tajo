@@ -506,7 +506,7 @@ public class DDLExecutor {
       Path assumedDirectory = new Path(desc.getUri().toString(), pair.getSecond());
 
       if (fs.exists(assumedDirectory) && !assumedDirectory.equals(partitionPath)) {
-        throw new AlreadyExistsAssumedPartitionDirectoryException(assumedDirectory.toString());
+        throw new AssumedPartitionDirectoryException(assumedDirectory.toString());
       }
 
       catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),

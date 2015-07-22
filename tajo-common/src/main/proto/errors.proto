@@ -123,6 +123,7 @@ enum ResultCode {
   AMBIGUOUS_TABLE                       = 541; // ?
   AMBIGUOUS_COLUMN                      = 542; // SQLState: 42702;
   AMBIGUOUS_FUNCTION                    = 543; // SQLState: 42725;
+  ASSUMED_PARTITION_DIRECTORY           = 544; // ?
 
   CANNOT_CAST                           = 601; // SQLState: 42846 - Cast from source type to target type is not supported.
   GROUPING_ERROR                        = 602; // SQLState: 42803
