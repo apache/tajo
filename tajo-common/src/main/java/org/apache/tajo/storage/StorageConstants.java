@@ -52,6 +52,9 @@ public class StorageConstants {
   public static final String TEXT_NULL = "text.null";
   public static final String TEXT_SERDE_CLASS = "text.serde";
   public static final String DEFAULT_TEXT_SERDE_CLASS = "org.apache.tajo.storage.text.CSVLineSerDe";
+
+  public static final String TEXT_SKIP_HEADER_LINE = "text.skip.headerlines";
+
   /**
    * It's the maximum number of parsing error torrence.
    *
