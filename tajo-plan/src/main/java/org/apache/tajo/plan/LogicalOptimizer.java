@@ -28,6 +28,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
@@ -69,13 +70,13 @@ public class LogicalOptimizer {
   }
 
   @VisibleForTesting
-  public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
+  public LogicalNode optimize(LogicalPlan plan) throws TajoException {
     OverridableConf conf = new OverridableConf(new TajoConf(),
         ConfigKey.ConfigType.SESSION, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SYSTEM);
     return optimize(conf, plan);
   }
 
-  public LogicalNode optimize(OverridableConf context, LogicalPlan plan) throws PlanningException {
+  public LogicalNode optimize(OverridableConf context, LogicalPlan plan) throws TajoException {
     rulesBeforeJoinOpt.rewrite(context, plan);
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
@@ -93,7 +94,7 @@ public class LogicalOptimizer {
     return plan.getRootBlock().getRoot();
   }
 
-  private void optimizeJoinOrder(LogicalPlan plan, String blockName) throws PlanningException {
+  private void optimizeJoinOrder(LogicalPlan plan, String blockName) throws TajoException {
     LogicalPlan.QueryBlock block = plan.getBlock(blockName);
 
     if (block.hasNode(NodeType.JOIN)) {
@@ -186,7 +187,7 @@ public class LogicalOptimizer {
     @Override
     public LogicalNode visitJoin(Set<Target> ctx, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
                                  Stack<LogicalNode> stack)
-        throws PlanningException {
+        throws TajoException {
       super.visitJoin(ctx, plan, block, node, stack);
 
       if (node.hasTargets()) {
@@ -228,7 +229,7 @@ public class LogicalOptimizer {
      * Otherwise, this method may build incorrectly a join graph.
      */
     public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
-        throws PlanningException {
+        throws TajoException {
       JoinGraphContext context = new JoinGraphContext();
       instance.visit(context, plan, block);
       return context;
@@ -236,7 +237,7 @@ public class LogicalOptimizer {
 
     @Override
     public LogicalNode visit(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+                             LogicalNode node, Stack<LogicalNode> stack) throws TajoException {
       if (node.getType() != NodeType.TABLE_SUBQUERY) {
         super.visit(context, plan, block, node, stack);
       }
@@ -246,7 +247,7 @@ public class LogicalOptimizer {
 
     @Override
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
       // all join predicate candidates must be collected before building the join tree
       context.addCandidateJoinFilters(
           TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
@@ -257,7 +258,7 @@ public class LogicalOptimizer {
     @Override
     public LogicalNode visitJoin(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode joinNode, Stack<LogicalNode> stack)
-        throws PlanningException {
+        throws TajoException {
       super.visitJoin(context, plan, block, joinNode, stack);
 
       // given a join node, find the relations which are nearest to the join in the query.
@@ -321,7 +322,7 @@ public class LogicalOptimizer {
       return instance;
     }
 
-    public static String buildJoinOrderString(LogicalPlan plan, LogicalPlan.QueryBlock block) throws PlanningException {
+    public static String buildJoinOrderString(LogicalPlan plan, LogicalPlan.QueryBlock block) throws TajoException {
       StringBuilder originalOrder = new StringBuilder();
       instance.visit(originalOrder, plan, block);
       return originalOrder.toString();
@@ -330,7 +331,7 @@ public class LogicalOptimizer {
     @Override
     public LogicalNode visitJoin(StringBuilder sb, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode joinNode,
                                  Stack<LogicalNode> stack)
-        throws PlanningException {
+        throws TajoException {
       stack.push(joinNode);
       sb.append("(");
       visit(sb, plan, block, joinNode.getLeftChild(), stack);
@@ -380,7 +381,7 @@ public class LogicalOptimizer {
       instance = new JoinCostComputer();
     }
 
-    public static double computeCost(LogicalPlan plan, LogicalPlan.QueryBlock block) throws PlanningException {
+    public static double computeCost(LogicalPlan plan, LogicalPlan.QueryBlock block) throws TajoException {
       CostContext costContext = new CostContext();
       instance.visit(costContext, plan, block);
       return costContext.accumulatedCost;
@@ -389,7 +390,7 @@ public class LogicalOptimizer {
     @Override
     public LogicalNode visitJoin(CostContext joinGraphContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode joinNode, Stack<LogicalNode> stack)
-        throws PlanningException {
+        throws TajoException {
       super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
 
       double filterFactor = 1;
@@ -417,10 +418,10 @@ public class LogicalOptimizer {
    * @param block query block in which the given join node is involved
    * @param from logical node where the search starts
    * @return found relation
-   * @throws PlanningException
+   * @throws TajoException
    */
   public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
-      throws PlanningException {
+      throws TajoException {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostLeft = true;
     RelationNodeFinder finder = new RelationNodeFinder();
@@ -435,10 +436,10 @@ public class LogicalOptimizer {
    * @param block query block in which the given join node is involved
    * @param from logical node where the search starts
    * @return found relation
-   * @throws PlanningException
+   * @throws TajoException
    */
   public static RelationNode findMostRightRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
-      throws PlanningException {
+      throws TajoException {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostRight = true;
     RelationNodeFinder finder = new RelationNodeFinder();
@@ -459,7 +460,7 @@ public class LogicalOptimizer {
 
     @Override
     public LogicalNode visit(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+                             LogicalNode node, Stack<LogicalNode> stack) throws TajoException {
       if (node.getType() != NodeType.TABLE_SUBQUERY) {
         super.visit(context, plan, block, node, stack);
       }
@@ -473,7 +474,7 @@ public class LogicalOptimizer {
 
     @Override
     public LogicalNode visitJoin(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 JoinNode node, Stack<LogicalNode> stack) throws TajoException {
       stack.push(node);
       LogicalNode result = null;
       if (context.findMostLeft) {

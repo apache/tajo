@@ -16,17 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.algebra;
+package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.error.Errors;
 
-public class AmbiguousFieldException extends InvalidQueryException {
-	private static final long serialVersionUID = 3102675985226352347L;
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
-	/**
-	 * @param fieldName
-	 */
-	public AmbiguousFieldException(String fieldName) {
-		super("ERROR: column name "+ fieldName + " is ambiguous");	
-	}
+public class AmbiguousTableException extends CatalogException {
+  public AmbiguousTableException(String tableName) {
+    super(Errors.ResultCode.AMBIGUOUS_TABLE, tableName);
+  }
 }

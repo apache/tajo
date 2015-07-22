@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.global.rewriter;
 
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.PlanningException;
 
 /**
@@ -48,5 +49,5 @@ public interface GlobalPlanRewriteRule {
    * @param plan Global Plan
    * @return
    */
-  MasterPlan rewrite(MasterPlan plan) throws PlanningException;
+  MasterPlan rewrite(MasterPlan plan) throws TajoException;
 }

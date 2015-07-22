@@ -47,8 +47,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     instance = new ExprsVerifier();
   }
 
-  public static VerificationState verify(VerificationState state, LogicalNode currentNode, EvalNode expression)
-      throws PlanningException {
+  public static VerificationState verify(VerificationState state, LogicalNode currentNode, EvalNode expression) {
     instance.visitChild(state, expression, new Stack<EvalNode>());
     Set<Column> referredColumns = EvalTreeUtil.findUniqueColumns(expression);
     for (Column referredColumn : referredColumns) {
