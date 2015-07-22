@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.UUID;
 
 public class LocalTajoTestingUtility {
@@ -139,7 +140,7 @@ public class LocalTajoTestingUtility {
     return util;
   }
 
-  public ResultSet execute(String query) throws IOException, ServiceException {
+  public ResultSet execute(String query) throws IOException, SQLException {
     return client.executeQueryAndGetResult(query);
   }
 

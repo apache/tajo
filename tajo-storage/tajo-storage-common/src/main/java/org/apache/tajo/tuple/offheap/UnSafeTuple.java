@@ -186,6 +186,10 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   @Override
+  public void clearOffset() {
+  }
+
+  @Override
   public void setOffset(long offset) {
   }
 

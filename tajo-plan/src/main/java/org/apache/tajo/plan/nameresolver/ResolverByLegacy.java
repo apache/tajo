@@ -22,10 +22,12 @@ import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.AmbiguousColumnException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.NoSuchColumnException;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
@@ -36,7 +38,7 @@ import java.util.List;
 public class ResolverByLegacy extends NameResolver {
   @Override
   public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException {
+      throws TajoException {
 
     if (columnRef.hasQualifier()) {
       return resolveColumnWithQualifier(plan, block, columnRef);
@@ -46,7 +48,7 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                   ColumnReferenceExpr columnRef) throws PlanningException {
+                                                   ColumnReferenceExpr columnRef) throws TajoException {
     final String qualifier;
     final String qualifiedName;
 
@@ -56,7 +58,7 @@ public class ResolverByLegacy extends NameResolver {
 
     Column found = resolveFromRelsWithinBlock(plan, block, columnRef);
     if (found == null) {
-      throw new NoSuchColumnException(columnRef.getCanonicalName());
+      throw new UndefinedColumnException(columnRef.getCanonicalName());
     }
 
     // If code reach here, a column is found.
@@ -97,7 +99,7 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                     ColumnReferenceExpr columnRef)throws PlanningException {
+                                                     ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
 
     Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     if (found != null) {
@@ -119,6 +121,6 @@ public class ResolverByLegacy extends NameResolver {
       return found;
     }
 
-    throw new NoSuchColumnException("ERROR: no such a column name "+ columnRef.getCanonicalName());
+    throw new UndefinedColumnException(columnRef.getCanonicalName());
   }
 }

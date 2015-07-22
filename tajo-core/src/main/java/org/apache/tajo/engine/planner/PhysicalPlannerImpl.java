@@ -39,11 +39,10 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
@@ -66,12 +65,13 @@ import java.util.Stack;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce;
+import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
+import static org.apache.tajo.plan.serder.PlanProto.GroupbyEnforce.GroupbyAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.JoinEnforce.JoinAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
+import static org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
@@ -893,7 +893,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     List<EnforceProperty> property = enforcer.getEnforceProperties(EnforceType.SORTED_INPUT);
     if (property != null && property.size() > 0 && node.peek().getType() == NodeType.SORT) {
       SortNode sortNode = (SortNode) node.peek();
-      TajoWorkerProtocol.SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
+      SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
 
       boolean condition = scanNode.getTableName().equals(sortEnforcer.getTableName());
       SortSpec [] sortSpecs = LogicalNodeDeserializer.convertSortSpecs(sortEnforcer.getSortSpecsList());

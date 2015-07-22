@@ -152,6 +152,8 @@
                 <argument>src/main/proto/PrimitiveProtos.proto</argument>
                 <argument>src/main/proto/tajo_protos.proto</argument>
                 <argument>src/main/proto/PlanTypes.proto</argument>
+                <argument>src/main/proto/stacktrace.proto</argument>
+                <argument>src/main/proto/errors.proto</argument>
               </arguments>
             </configuration>
             <goals>

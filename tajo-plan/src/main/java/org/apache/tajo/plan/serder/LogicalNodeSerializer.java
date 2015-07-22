@@ -24,9 +24,11 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.PlanTypesProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
@@ -72,8 +74,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     SerializeContext context = new SerializeContext();
     try {
       instance.visit(context, null, null, node, new Stack<LogicalNode>());
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
     return context.treeBuilder.build();
   }
@@ -110,7 +112,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitRoot(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                               LogicalRootNode root, Stack<LogicalNode> stack) throws PlanningException {
+                               LogicalRootNode root, Stack<LogicalNode> stack) throws TajoException {
     super.visitRoot(context, plan, block, root, stack);
 
     int [] childIds = registerGetChildIds(context, root);
@@ -127,7 +129,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitSetSession(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     SetSessionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     SetSessionNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitSetSession(context, plan, block, node, stack);
 
     PlanProto.SetSessionNode.Builder builder = PlanProto.SetSessionNode.newBuilder();
@@ -145,7 +147,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitEvalExpr(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   EvalExprNode exprEval, Stack<LogicalNode> stack) throws PlanningException {
+                                   EvalExprNode exprEval, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.EvalExprNode.Builder exprEvalBuilder = PlanProto.EvalExprNode.newBuilder();
     exprEvalBuilder.addAllTargets(
         ProtoUtil.<PlanProto.Target>toProtoObjects(exprEval.getTargets()));
@@ -159,7 +161,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitProjection(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     ProjectionNode projection, Stack<LogicalNode> stack) throws PlanningException {
+                                     ProjectionNode projection, Stack<LogicalNode> stack) throws TajoException {
     super.visitProjection(context, plan, block, projection, stack);
 
     int [] childIds = registerGetChildIds(context, projection);
@@ -179,7 +181,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitLimit(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                LimitNode limit, Stack<LogicalNode> stack) throws PlanningException {
+                                LimitNode limit, Stack<LogicalNode> stack) throws TajoException {
     super.visitLimit(context, plan, block, limit, stack);
 
     int [] childIds = registerGetChildIds(context, limit);
@@ -197,7 +199,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitWindowAgg(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    WindowAggNode windowAgg, Stack<LogicalNode> stack) throws PlanningException {
+                                    WindowAggNode windowAgg, Stack<LogicalNode> stack) throws TajoException {
     super.visitWindowAgg(context, plan, block, windowAgg, stack);
 
     int [] childIds = registerGetChildIds(context, windowAgg);
@@ -234,7 +236,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitSort(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                SortNode sort, Stack<LogicalNode> stack) throws PlanningException {
+                                SortNode sort, Stack<LogicalNode> stack) throws TajoException {
     super.visitSort(context, plan, block, sort, stack);
 
     int [] childIds = registerGetChildIds(context, sort);
@@ -254,7 +256,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitHaving(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 HavingNode having, Stack<LogicalNode> stack) throws PlanningException {
+                                 HavingNode having, Stack<LogicalNode> stack) throws TajoException {
     super.visitHaving(context, plan, block, having, stack);
 
     int [] childIds = registerGetChildIds(context, having);
@@ -272,7 +274,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitGroupBy(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                  GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                  GroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitGroupBy(context, plan, block, node, new Stack<LogicalNode>());
 
     PlanProto.LogicalNode.Builder nodeBuilder = buildGroupby(context, node);
@@ -281,7 +283,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   }
 
   private PlanProto.LogicalNode.Builder buildGroupby(SerializeContext context, GroupbyNode node)
-      throws PlanningException {
+      throws TajoException {
     int [] childIds = registerGetChildIds(context, node);
 
     PlanProto.GroupbyNode.Builder groupbyBuilder = PlanProto.GroupbyNode.newBuilder();
@@ -308,7 +310,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitDistinctGroupby(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                          DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                          DistinctGroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitDistinctGroupby(context, plan, block, node, new Stack<LogicalNode>());
 
     int [] childIds = registerGetChildIds(context, node);
@@ -347,7 +349,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitFilter(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 SelectionNode filter, Stack<LogicalNode> stack) throws PlanningException {
+                                 SelectionNode filter, Stack<LogicalNode> stack) throws TajoException {
     super.visitFilter(context, plan, block, filter, stack);
 
     int [] childIds = registerGetChildIds(context, filter);
@@ -365,7 +367,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitJoin(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode join,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     super.visitJoin(context, plan, block, join, stack);
 
     int [] childIds = registerGetChildIds(context, join);
@@ -395,7 +397,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitUnion(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
-                           Stack<LogicalNode> stack) throws PlanningException {
+                           Stack<LogicalNode> stack) throws TajoException {
     super.visitUnion(context, plan, block, node, stack);
 
     int [] childIds = registerGetChildIds(context, node);
@@ -414,7 +416,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                               ScanNode scan, Stack<LogicalNode> stack) throws PlanningException {
+                               ScanNode scan, Stack<LogicalNode> stack) throws TajoException {
 
     PlanProto.ScanNode.Builder scanBuilder = buildScanNode(scan);
 
@@ -449,7 +451,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitIndexScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
 
     PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
 
@@ -470,7 +472,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   @Override
   public LogicalNode visitPartitionedTableScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
 
     PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
 
@@ -493,7 +495,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitTableSubQuery(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitTableSubQuery(context, plan, block, node, stack);
 
     int [] childIds = registerGetChildIds(context, node);
@@ -516,7 +518,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitCreateTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                      CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                      CreateTableNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitCreateTable(context, plan, block, node, stack);
     int [] childIds = registerGetChildIds(context, node);
 
@@ -556,7 +558,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitAlterTablespace(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     AlterTablespaceNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     AlterTablespaceNode node, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.AlterTablespaceNode.Builder alterTablespaceBuilder = PlanProto.AlterTablespaceNode.newBuilder();
     alterTablespaceBuilder.setTableSpaceName(node.getTablespaceName());
 
@@ -644,7 +646,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitTruncateTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TruncateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TruncateTableNode node, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.TruncateTableNode.Builder truncateTableBuilder = PlanProto.TruncateTableNode.newBuilder();
     truncateTableBuilder.addAllTableNames(node.getTableNames());
 
@@ -657,7 +659,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitInsert(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 InsertNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitInsert(context, plan, block, node, stack);
 
     int [] childIds = registerGetChildIds(context, node);
@@ -718,7 +720,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitCreateDatabase(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    CreateDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    CreateDatabaseNode node, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.CreateDatabaseNode.Builder createDatabaseBuilder = PlanProto.CreateDatabaseNode.newBuilder();
     createDatabaseBuilder.setDbName(node.getDatabaseName());
     createDatabaseBuilder.setIfNotExists(node.isIfNotExists());
@@ -732,7 +734,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitDropDatabase(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                       DropDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                       DropDatabaseNode node, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.DropDatabaseNode.Builder dropDatabaseBuilder = PlanProto.DropDatabaseNode.newBuilder();
     dropDatabaseBuilder.setDbName(node.getDatabaseName());
     dropDatabaseBuilder.setIfExists(node.isIfExists());
@@ -746,7 +748,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitCreateIndex(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                      CreateIndexNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                      CreateIndexNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitCreateIndex(context, plan, block, node, new Stack<LogicalNode>());
 
     PlanProto.CreateIndexNode.Builder createIndexBuilder = PlanProto.CreateIndexNode.newBuilder();

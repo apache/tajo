@@ -2,7 +2,7 @@ CREATE TABLE OK
 
 table name: default.TEST_DESC_TABLE_NESTED
 table uri: ${table.path}
-store type: CSV
+store type: TEXT
 number of rows: 0
 volume: 0 B
 Options: 
@@ -17,7 +17,7 @@ col3	RECORD (col4 RECORD (col5 TEXT))
 
 table name: default.TEST_DESC_TABLE_NESTED
 table uri: ${table.path}
-store type: CSV
+store type: TEXT
 number of rows: 0
 volume: 0 B
 Options: 

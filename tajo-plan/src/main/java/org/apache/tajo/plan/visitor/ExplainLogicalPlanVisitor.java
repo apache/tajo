@@ -19,9 +19,9 @@
 package org.apache.tajo.plan.visitor;
 
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 
 import java.util.Stack;
@@ -68,7 +68,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     }
   }
 
-  public Context getBlockPlanStrings(@Nullable LogicalPlan plan, LogicalNode node) throws PlanningException {
+  public Context getBlockPlanStrings(@Nullable LogicalPlan plan, LogicalNode node) throws TajoException {
     Stack<LogicalNode> stack = new Stack<LogicalNode>();
     Context explainContext = new Context();
     visit(explainContext, plan, null, node, stack);
@@ -77,54 +77,54 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
 
   @Override
   public LogicalNode visitRoot(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalRootNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
     return visit(context, plan, block, node.getChild(), stack);
   }
 
   @Override
   public LogicalNode visitProjection(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      ProjectionNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitLimit(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                LimitNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                LimitNode node, Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitSort(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, SortNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   public LogicalNode visitHaving(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, HavingNode node,
-                                  Stack<LogicalNode> stack) throws PlanningException {
+                                  Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitGroupBy(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
-                                  Stack<LogicalNode> stack) throws PlanningException {
+                                  Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitWindowAgg(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
-                                    Stack<LogicalNode> stack) throws PlanningException {
+                                    Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   public LogicalNode visitDistinctGroupby(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           DistinctGroupbyNode node,
-                                          Stack<LogicalNode> stack) throws PlanningException {
+                                          Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   private LogicalNode visitUnaryNode(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     UnaryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     UnaryNode node, Stack<LogicalNode> stack) throws TajoException {
     context.depth++;
     stack.push(node);
     visit(context, plan, block, node.getChild(), stack);
@@ -135,7 +135,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
 
   private LogicalNode visitBinaryNode(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, BinaryNode node,
                                       Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
     context.depth++;
     stack.push(node);
     visit(context, plan, block, node.getLeftChild(), stack);
@@ -148,37 +148,37 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
 
   @Override
   public LogicalNode visitFilter(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, SelectionNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
+                                 Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitJoin(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     return visitBinaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitUnion(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
-                                Stack<LogicalNode> stack) throws PlanningException {
+                                Stack<LogicalNode> stack) throws TajoException {
     return visitBinaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitExcept(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ExceptNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
+                                 Stack<LogicalNode> stack) throws TajoException {
     return visitBinaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitIntersect(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, IntersectNode node,
-                                    Stack<LogicalNode> stack) throws PlanningException {
+                                    Stack<LogicalNode> stack) throws TajoException {
     return visitBinaryNode(context, plan, block, node, stack);
   }
 
   @Override
   public LogicalNode visitTableSubQuery(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     context.depth++;
     stack.push(node);
     visit(context, plan, block, node.getSubQuery(), new Stack<LogicalNode>());
@@ -191,7 +191,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
 
   @Override
   public LogicalNode visitScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     context.add(context.depth, node.getPlanString());
     return node;
   }
@@ -199,32 +199,32 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   @Override
   public LogicalNode visitPartitionedTableScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
     context.add(context.depth, node.getPlanString());
     return node;
   }
 
   @Override
   public LogicalNode visitStoreTable(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     StoreTableNode node, Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 
   public LogicalNode visitCreateDatabase(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                         CreateDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                         CreateDatabaseNode node, Stack<LogicalNode> stack) throws TajoException {
     context.add(context.depth, node.getPlanString());
     return node;
   }
 
   public LogicalNode visitDropDatabase(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                         DropDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                         DropDatabaseNode node, Stack<LogicalNode> stack) throws TajoException {
     context.add(context.depth, node.getPlanString());
     return node;
   }
 
   @Override
   public LogicalNode visitInsert(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, InsertNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
+                                 Stack<LogicalNode> stack) throws TajoException {
     context.depth++;
     stack.push(node);
     super.visitInsert(context, plan, block, node, stack);
@@ -236,7 +236,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
 
   @Override
   public LogicalNode visitCreateIndex(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     CreateIndexNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     CreateIndexNode node, Stack<LogicalNode> stack) throws TajoException {
     return visitUnaryNode(context, plan, block, node, stack);
   }
 

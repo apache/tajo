@@ -1,6 +1,6 @@
-*************************************
+****
 TEXT
-*************************************
+****
 
 A character-separated values plain-text file represents a tabular data set consisting of rows and columns.
 Each row is a plan-text line. A line is usually broken by a character line feed ``\n`` or carriage-return ``\r``.
@@ -8,9 +8,9 @@ The line feed ``\n`` is the default delimiter in Tajo. Each record consists of m
 some other character or string, most commonly a literal vertical bar ``|``, comma ``,`` or tab ``\t``.
 The vertical bar is used as the default field delimiter in Tajo.
 
-=========================================
+============================
 How to Create a TEXT Table ?
-=========================================
+============================
 
 If you are not familiar with the ``CREATE TABLE`` statement, please refer to the Data Definition Language :doc:`/sql_language/ddl`.
 
@@ -27,9 +27,9 @@ statement. The below is an example statement for creating a table using *TEXT* f
     type text
   ) USING TEXT;
 
-=========================================
+===================
 Physical Properties
-=========================================
+===================
 
 Some table storage formats provide parameters for enabling or disabling features and adjusting physical parameters.
 The ``WITH`` clause in the CREATE TABLE statement allows users to set those parameters.
@@ -42,9 +42,12 @@ The ``WITH`` clause in the CREATE TABLE statement allows users to set those para
 * ``text.serde``: custom (De)serializer class. ``org.apache.tajo.storage.text.CSVLineSerDe`` is the default (De)serializer class.
 * ``timezone``: the time zone that the table uses for writting. When table rows are read or written, ```timestamp``` and ```time``` column values are adjusted by this timezone if it is set. Time zone can be an abbreviation form like 'PST' or 'DST'. Also, it accepts an offset-based form like 'UTC+9' or a location-based form like 'Asia/Seoul'.
 * ``text.error-tolerance.max-num``: the maximum number of permissible parsing errors. This value should be an integer value. By default, ``text.error-tolerance.max-num`` is ``0``. According to the value, parsing errors will be handled in different ways.
+
   * If ``text.error-tolerance.max-num < 0``, all parsing errors are ignored.
   * If ``text.error-tolerance.max-num == 0``, any parsing error is not allowed. If any error occurs, the query will be failed. (default)
   * If ``text.error-tolerance.max-num > 0``, the given number of parsing errors in each task will be pemissible.
+
+* ``text.skip.headerlines``: Number of header lines to be skipped. Some text files often have a header which has a kind of metadata(e.g.: column names), thus this option can be useful.
 
 The following example is to set a custom field delimiter, ``NULL`` character, and compression codec:
 
@@ -64,9 +67,9 @@ The following example is to set a custom field delimiter, ``NULL`` character, an
   Be careful when using ``\n`` as the field delimiter because *TEXT* format tables use ``\n`` as the line delimiter.
   At the moment, Tajo does not provide a way to specify the line delimiter.
 
-=========================================
+=====================
 Custom (De)serializer
-=========================================
+=====================
 
 The *TEXT* format not only provides reading and writing interfaces for text data but also allows users to process custom
 plan-text file formats with user-defined (De)serializer classes.
@@ -87,17 +90,17 @@ For example:
  ) USING TEXT WITH ('text.serde'='org.my.storage.CustomSerializerDeserializer')
 
 
-=========================================
+==========================
 Null Value Handling Issues
-=========================================
+==========================
 In default, ``NULL`` character in *TEXT* format is an empty string ``''``.
 In other words, an empty field is basically recognized as a ``NULL`` value in Tajo.
 If a field domain is ``TEXT``, an empty field is recognized as a string value ``''`` instead of ``NULL`` value.
 Besides, You can also use your own ``NULL`` character by specifying a physical property ``text.null``.
 
-=========================================
+======================================
 Compatibility Issues with Apache Hive™
-=========================================
+======================================
 
 *TEXT* tables generated in Tajo can be processed directly by Apache Hive™ without further processing.
 In this section, we explain some compatibility issue for users who use both Hive and Tajo.

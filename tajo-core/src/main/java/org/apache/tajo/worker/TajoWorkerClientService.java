@@ -25,14 +25,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
-import org.apache.tajo.ipc.ClientProtos.RequestResult;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.BlockingRpcServer;
@@ -132,31 +129,12 @@ public class TajoWorkerClientService extends AbstractService {
         if (queryHistory != null) {
           builder.setQueryHistory(queryHistory.getProto());
         }
-        builder.setResult(buildOkRequestResult());
+        builder.setState(ReturnStateUtil.OK);
       } catch (Throwable t) {
-        LOG.warn(t.getMessage(), t);
-        builder.setResult(buildRequestResult(ResultCode.ERROR,
-            StringUtils.stringifyException(t), null));
+        LOG.error(t.getMessage(), t);
+        builder.setState(ReturnStateUtil.returnError(t));
       }
 
-      return builder.build();
-    }
-
-    private RequestResult buildOkRequestResult() {
-      return buildRequestResult(ResultCode.OK, null, null);
-    }
-
-    private RequestResult buildRequestResult(ResultCode code,
-                                                    @Nullable String errorMessage,
-                                                    @Nullable String errorTrace) {
-      RequestResult.Builder builder = RequestResult.newBuilder();
-      builder.setResultCode(code);
-      if (errorMessage != null) {
-        builder.setErrorMessage(errorMessage);
-      }
-      if (errorTrace != null) {
-        builder.setErrorTrace(errorTrace);
-      }
       return builder.build();
     }
   }

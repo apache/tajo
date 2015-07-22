@@ -20,29 +20,28 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.TestTajoIds;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
-import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 import org.junit.Test;
 
-import io.netty.handler.codec.http.QueryStringDecoder;
-
 import java.net.URI;
 import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
-import static org.apache.tajo.querymaster.Repartitioner.FetchGroupMeta;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.HASH_SHUFFLE;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_SHUFFLE;
+import static org.apache.tajo.querymaster.Repartitioner.FetchGroupMeta;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -76,7 +75,7 @@ public class TestRepartitioner {
 
       fetch.setName(sid.toString());
 
-      TajoWorkerProtocol.FetchProto proto = fetch.getProto();
+      FetchProto proto = fetch.getProto();
       fetch = new FetchImpl(proto);
       assertEquals(proto, fetch.getProto());
 

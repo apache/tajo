@@ -18,14 +18,11 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
@@ -35,7 +32,6 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TUtil;
@@ -47,7 +43,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class BSTIndexScanExec extends PhysicalExec {
-  private final static Log LOG = LogFactory.getLog(BSTIndexScanExec.class);
   private IndexScanNode plan;
   private SeekableScanner fileScanner;
   
@@ -55,12 +50,12 @@ public class BSTIndexScanExec extends PhysicalExec {
   private BSTIndex.BSTIndexReader reader;
   
   private Projector projector;
-  
-  private Datum[] values = null;
 
   private boolean initialize = true;
 
   private float progress;
+
+  private Tuple indexLookupKey;
 
   private TableStats inputStats;
 
@@ -78,15 +73,15 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.keySchema = keySchema;
 
     SortSpec[] keySortSpecs = new SortSpec[predicates.length];
-    values = new Datum[predicates.length];
+    Datum[] values = new Datum[predicates.length];
     for (int i = 0; i < predicates.length; i++) {
       keySortSpecs[i] = predicates[i].getKeySortSpec();
       values[i] = predicates[i].getValue();
     }
+    indexLookupKey = new VTuple(values);
 
     TupleComparator comparator = new BaseTupleComparator(keySchema,
         keySortSpecs);
-
 
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
@@ -185,9 +180,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   public Tuple next() throws IOException {
     if(initialize) {
       //TODO : more complicated condition
-      Tuple key = new VTuple(values.length);
-      key.put(values);
-      long offset = reader.find(key);
+      long offset = reader.find(indexLookupKey);
       if (offset == -1) {
         reader.close();
         fileScanner.close();
@@ -211,19 +204,16 @@ public class BSTIndexScanExec extends PhysicalExec {
     }
 
     Tuple tuple;
-    Tuple outTuple = new VTuple(outColumnNum);
     if (!plan.hasQual()) {
       if ((tuple = fileScanner.next()) != null) {
-        projector.eval(tuple, outTuple);
-        return outTuple;
+        return projector.eval(tuple);
       } else {
         return null;
       }
     } else {
        while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
          if (qual.eval(tuple).isTrue()) {
-           projector.eval(tuple, outTuple);
-           return outTuple;
+           return projector.eval(tuple);
          } else {
            long offset = reader.next();
            if (offset == -1) {
@@ -257,6 +247,10 @@ public class BSTIndexScanExec extends PhysicalExec {
     }
     reader = null;
     fileScanner = null;
+    plan = null;
+    qual = null;
+    projector = null;
+    indexLookupKey = null;
   }
 
   @Override

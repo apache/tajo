@@ -26,7 +26,6 @@ import com.google.common.cache.Weigher;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
@@ -39,23 +38,26 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
+import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.IllegalQueryStatusException;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
 import org.apache.tajo.plan.verifier.VerificationState;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.IPCUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -189,19 +191,17 @@ public class GlobalEngine extends AbstractService {
       LogicalPlan plan = createLogicalPlan(queryContext, planningContext);
       SubmitQueryResponse response = queryExecutor.execute(queryContext, session, query, jsonExpr, plan);
       return response;
+
+
     } catch (Throwable t) {
+      ExceptionUtil.printStackTraceIfError(LOG, t);
+
       context.getSystemMetrics().counter("Query", "errorQuery").inc();
-      LOG.error("\nStack Trace:\n" + StringUtils.stringifyException(t));
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setIsForwarded(true);
-      String errorMessage = t.getMessage();
-      if (t.getMessage() == null) {
-        errorMessage = t.getClass().getName();
-      }
-      responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
-          errorMessage, StringUtils.stringifyException(t)));
+      responseBuilder.setState(ReturnStateUtil.returnError(t));
       return responseBuilder.build();
     }
   }
@@ -228,8 +228,7 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
-  public QueryId updateQuery(QueryContext queryContext, String sql, boolean isJson) throws IOException,
-      SQLException, PlanningException {
+  public QueryId updateQuery(QueryContext queryContext, String sql, boolean isJson) throws Throwable {
     try {
       LOG.info("SQL: " + sql);
 
@@ -250,22 +249,22 @@ public class GlobalEngine extends AbstractService {
         ddlExecutor.execute(queryContext, plan);
         return QueryIdFactory.NULL_QUERY_ID;
       }
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      throw new IOException(e.getMessage(), e);
+    } catch (Throwable e) {
+      ExceptionUtil.printStackTraceIfError(LOG, e);
+      throw e;
     }
   }
 
-  private LogicalPlan createLogicalPlan(QueryContext queryContext, Expr expression) throws PlanningException {
+  private LogicalPlan createLogicalPlan(QueryContext queryContext, Expr expression) throws Throwable {
 
     VerificationState state = new VerificationState();
     preVerifier.verify(queryContext, state, expression);
     if (!state.verified()) {
       StringBuilder sb = new StringBuilder();
-      for (String error : state.getErrorMessages()) {
-        sb.append(error).append("\n");
+
+      for (Throwable error : state.getErrors()) {
+        throw error;
       }
-      throw new VerifyException(sb.toString());
     }
 
     LogicalPlan plan = planner.createPlan(queryContext, expression);
@@ -284,11 +283,9 @@ public class GlobalEngine extends AbstractService {
     verifyInsertTableSchema(queryContext, state, plan);
 
     if (!state.verified()) {
-      StringBuilder sb = new StringBuilder();
-      for (String error : state.getErrorMessages()) {
-        sb.append(error).append("\n");
+      for (Throwable error : state.getErrors()) {
+        throw error;
       }
-      throw new VerifyException(sb.toString());
     }
 
     return plan;
@@ -307,7 +304,7 @@ public class GlobalEngine extends AbstractService {
           TablespaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
 
         } catch (Throwable t) {
-          state.addVerification(t.getMessage());
+          state.addVerification(SyntaxErrorUtil.makeSyntaxError(t.getMessage()));
         }
       }
     }

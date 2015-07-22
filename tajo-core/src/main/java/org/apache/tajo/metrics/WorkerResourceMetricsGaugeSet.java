@@ -22,8 +22,8 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerState;
+import org.apache.tajo.master.rm.NodeStatus;
+import org.apache.tajo.master.rm.NodeState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,31 +40,31 @@ public class WorkerResourceMetricsGaugeSet implements MetricSet {
     metricsMap.put("totalWorkers", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return tajoMasterContext.getResourceManager().getWorkers().size();
+        return tajoMasterContext.getResourceManager().getNodes().size();
       }
     });
 
     metricsMap.put("liveWorkers", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return getNumWorkers(WorkerState.RUNNING);
+        return getNumWorkers(NodeState.RUNNING);
       }
     });
 
     metricsMap.put("deadWorkers", new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return getNumWorkers(WorkerState.LOST);
+        return getNumWorkers(NodeState.LOST);
       }
     });
 
     return metricsMap;
   }
 
-  protected int getNumWorkers(WorkerState status) {
+  protected int getNumWorkers(NodeState status) {
     int numWorkers = 0;
-    for(Worker eachWorker: tajoMasterContext.getResourceManager().getWorkers().values()) {
-      if(eachWorker.getState() == status) {
+    for(NodeStatus eachNodeStatus : tajoMasterContext.getResourceManager().getNodes().values()) {
+      if(eachNodeStatus.getState() == status) {
         numWorkers++;
       }
     }

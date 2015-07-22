@@ -45,6 +45,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
@@ -176,7 +177,16 @@ public class Query implements EventHandler<QueryEvent> {
               QueryEventType.KILL,
               QUERY_COMPLETED_TRANSITION)
 
-          // Transitions from FAILED state
+              // Transitions from KILLED state
+              // ignore-able transitions
+          .addTransition(QueryState.QUERY_KILLED, QueryState.QUERY_KILLED,
+              EnumSet.of(QueryEventType.START, QueryEventType.QUERY_COMPLETED,
+                  QueryEventType.KILL, QueryEventType.INTERNAL_ERROR))
+          .addTransition(QueryState.QUERY_KILLED, QueryState.QUERY_ERROR,
+              QueryEventType.INTERNAL_ERROR,
+              INTERNAL_ERROR_TRANSITION)
+
+              // Transitions from FAILED state
           .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
               QueryEventType.DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
@@ -307,7 +317,6 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setQueryId(getId().toString());
     queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
     queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
-    queryHistory.setLogicalPlan(plan.toString());
     queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
     queryHistory.setDistributedPlan(plan.toString());
 
@@ -558,7 +567,7 @@ public class Query implements EventHandler<QueryEvent> {
           LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
         } else {
           LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-          throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
+          throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
         }
       }
     }
@@ -749,8 +758,17 @@ public class Query implements EventHandler<QueryEvent> {
             !executeNextBlock(query, castEvent.getExecutionBlockId())) {
           return;
         }
-         // if a query is completed due to finished, kill, failure, or error
-        query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+
+        //wait for stages is completed
+        if (query.completedStagesCount >= query.stages.size()) {
+          // if a query is completed due to finished, kill, failure, or error
+          query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+        }
+        LOG.info(String.format("Complete Stage[%s], State: %s, %d/%d. ",
+            castEvent.getExecutionBlockId().toString(),
+            castEvent.getState().toString(),
+            query.completedStagesCount,
+            query.stages.size()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));

@@ -31,7 +31,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCache;
 import org.apache.tajo.engine.utils.TableCacheKey;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.util.Pair;
@@ -76,7 +76,7 @@ public class ExecutionBlockSharedResource {
     plan = CoreGsonHelper.fromJson(planJson, LogicalNode.class);
   }
 
-  private void initCodeGeneration() throws PlanningException {
+  private void initCodeGeneration() throws TajoException {
     if (context.getBool(SessionVars.CODEGEN)) {
       codeGenEnabled = true;
       classLoader = new TajoClassLoader();

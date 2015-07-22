@@ -23,21 +23,20 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
 public class MasterPlan {
   private final QueryId queryId;
@@ -288,7 +287,7 @@ public class MasterPlan {
       if (block.getEnforcer().getProperties().size() > 0) {
         sb.append("\n[Enforcers]\n");
         int i = 0;
-        for (TajoWorkerProtocol.EnforceProperty enforce : block.getEnforcer().getProperties()) {
+        for (EnforceProperty enforce : block.getEnforcer().getProperties()) {
           sb.append(" ").append(i++).append(": ");
           sb.append(Enforcer.toString(enforce));
           sb.append("\n");

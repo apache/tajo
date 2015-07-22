@@ -1,5 +1,5 @@
 create table testCtasWithOptions (col1 float, col2 float)
-using csv with ('csvfile.delimiter'='\u0001') as
+using text with ('text.delimiter'='\u0001') as
 select
   sum(l_orderkey) as total1,
   avg(l_partkey) as total2

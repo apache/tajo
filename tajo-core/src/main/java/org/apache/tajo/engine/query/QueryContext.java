@@ -29,6 +29,8 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.session.Session;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
@@ -42,7 +44,10 @@ public class QueryContext extends OverridableConf {
 
   public QueryContext(TajoConf conf, Session session) {
     super(conf, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SESSION);
-    putAll(session.getAllVariables());
+    Map<String, String> copy = new HashMap<String, String>(session.getAllVariables());
+    // Among session variables, timezone must not be
+    copy.remove("TIMEZONE");
+    putAll(copy);
   }
 
   public QueryContext(TajoConf conf, KeyValueSetProto proto) {

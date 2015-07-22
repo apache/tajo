@@ -30,9 +30,10 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.GlobalPlanner.GlobalPlanContext;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
@@ -61,7 +62,7 @@ public class DistinctGroupbyBuilder {
 
   public ExecutionBlock buildMultiLevelPlan(GlobalPlanContext context,
                                             ExecutionBlock latestExecBlock,
-                                            LogicalNode currentNode) throws PlanningException {
+                                            LogicalNode currentNode) {
     try {
       GroupbyNode groupbyNode = (GroupbyNode) currentNode;
 
@@ -177,8 +178,7 @@ public class DistinctGroupbyBuilder {
 
       return thirdStageBlock;
     } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      throw new PlanningException(e);
+      throw new TajoInternalError(e);
     }
   }
 
@@ -303,7 +303,7 @@ public class DistinctGroupbyBuilder {
 
   public ExecutionBlock buildPlan(GlobalPlanContext context,
                                   ExecutionBlock latestExecBlock,
-                                  LogicalNode currentNode) throws PlanningException {
+                                  LogicalNode currentNode) {
     try {
       GroupbyNode groupbyNode = (GroupbyNode)currentNode;
       LogicalPlan plan = context.getPlan().getLogicalPlan();
@@ -350,8 +350,7 @@ public class DistinctGroupbyBuilder {
 
       return secondStageBlock;
     } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      throw new PlanningException(e);
+      throw new TajoInternalError(e);
     }
   }
 

@@ -18,15 +18,17 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ResourceProtos.TaskStatusProto;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public interface Task {
 
   void init() throws IOException;
 
-  void fetch();
+  void fetch(ExecutorService fetcherExecutor);
 
   void run() throws Exception;
 
@@ -48,5 +50,9 @@ public interface Task {
 
   ExecutionBlockContext getExecutionBlockContext();
 
-  TajoWorkerProtocol.TaskStatusProto getReport();
+  TaskStatusProto getReport();
+
+  TaskHistory createTaskHistory();
+
+  List<Fetcher> getFetchers();
 }

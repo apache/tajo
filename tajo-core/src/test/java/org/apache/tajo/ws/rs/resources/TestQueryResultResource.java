@@ -22,7 +22,9 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
@@ -53,6 +55,7 @@ import java.net.URI;
 import java.security.MessageDigest;
 import java.util.List;
 
+import static org.apache.tajo.exception.ErrorUtil.isOk;
 import static org.junit.Assert.*;
 
 public class TestQueryResultResource extends QueryTestCaseBase {
@@ -100,7 +103,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
         .request().post(Entity.entity(request, MediaType.APPLICATION_JSON), NewSessionResponse.class);
 
     assertNotNull(response);
-    assertTrue(ResultCode.OK.equals(response.getResultCode()));
+    assertTrue(isOk(response.getResultCode()));
     assertTrue(response.getId() != null && !response.getId().isEmpty());
 
     return response.getId();
@@ -140,7 +143,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertNotNull(response);
     assertNotNull(response.getResultCode());
-    assertEquals(ResultCode.OK, response.getResultCode());
+    assertTrue(isOk(response.getResultCode()));
     assertNotNull(response.getSchema());
     assertEquals(16, response.getSchema().getRootColumns().size());
     assertNotNull(response.getResultset());
@@ -174,7 +177,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertNotNull(response);
     assertNotNull(response.getResultCode());
-    assertEquals(ResultCode.OK, response.getResultCode());
+    assertTrue(ErrorUtil.isOk(response.getResultCode()));
     assertNotNull(response.getSchema());
     assertEquals(16, response.getSchema().getRootColumns().size());
     assertNotNull(response.getResultset());
@@ -236,7 +239,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertNotNull(response);
     assertNotNull(response.getResultCode());
-    assertEquals(ResultCode.OK, response.getResultCode());
+    assertTrue(isOk(response.getResultCode()));
     assertNotNull(response.getSchema());
     assertEquals(16, response.getSchema().getRootColumns().size());
     assertNotNull(response.getResultset());

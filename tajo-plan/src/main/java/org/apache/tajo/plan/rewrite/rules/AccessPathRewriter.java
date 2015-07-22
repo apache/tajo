@@ -22,8 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
@@ -68,7 +68,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     rewriter.init(context.getQueryContext());
@@ -86,7 +86,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
 
     @Override
     public Object visitScan(Object object, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
       List<AccessPathInfo> accessPaths = block.getAccessInfos(scanNode);
       AccessPathInfo optimalPath = null;
       // initialize

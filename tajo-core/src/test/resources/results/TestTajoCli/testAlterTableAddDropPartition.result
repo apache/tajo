@@ -2,7 +2,7 @@ CREATE TABLE OK
 ERROR: "key2" column is not the partition key of "default.testaltertableaddpartition".
 ALTER TABLE OK
 ALTER TABLE OK
-ERROR: "key=0.1" is not the partition of "testaltertableaddpartition".
+ERROR: partition 'key=0.1' does not exist
 DROP TABLE OK
 CREATE TABLE OK
 ALTER TABLE OK

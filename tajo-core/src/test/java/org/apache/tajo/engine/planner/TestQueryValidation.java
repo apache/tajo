@@ -33,7 +33,7 @@ public class TestQueryValidation extends QueryTestCaseBase {
   }
 
   @Test
-  public void testLimitClauses() throws PlanningException, IOException {
+  public void testLimitClauses() throws IOException {
     // select * from lineitem limit 3;
     assertValidSQLFromFile("valid_limit_1.sql");
 
@@ -42,7 +42,7 @@ public class TestQueryValidation extends QueryTestCaseBase {
   }
 
   @Test
-  public void testGroupByClauses() throws PlanningException, IOException {
+  public void testGroupByClauses() throws IOException {
     // select l_orderkey from lineitem group by l_orderkey;
     assertValidSQLFromFile("valid_groupby_1.sql");
 
@@ -53,13 +53,13 @@ public class TestQueryValidation extends QueryTestCaseBase {
   }
 
   @Test
-  public void testCaseWhenExprs() throws PlanningException, IOException {
+  public void testCaseWhenExprs() throws IOException {
     // See TAJO-1098
     assertInvalidSQLFromFile("invalid_casewhen_1.sql");
   }
 
   @Test
-  public void testUnsupportedStoreType() throws PlanningException, IOException {
+  public void testUnsupportedStoreType() throws IOException {
     // See TAJO-1249
     assertInvalidSQLFromFile("invalid_store_format.sql");
   }
