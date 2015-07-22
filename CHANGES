@@ -29,6 +29,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1696: Resource calculator should consider the requested disk resource 
+    at the first stage. (jihoon)
+
+    TAJO-1695: Shuffle fetcher executor should be consider random writing.
+    (jinho)
+
     TAJO-1397: Resource allocation should be fine grained. (jinho)
 
     TAJO-1352: Improve the join order algorithm to consider missed cases of 
