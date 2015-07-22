@@ -286,6 +286,8 @@ public class DelimitedTextFile {
     /** How many errors have occurred? */
     private int errorNum;
 
+    private VTuple outTuple;
+
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final Fragment fragment)
         throws IOException {
@@ -320,6 +322,8 @@ public class DelimitedTextFile {
       if (targets == null) {
         targets = schema.toArray();
       }
+
+      outTuple = new VTuple(targets.length);
 
       super.init();
       if (LOG.isDebugEnabled()) {
@@ -375,7 +379,6 @@ public class DelimitedTextFile {
 
     @Override
     public Tuple next() throws IOException {
-      VTuple tuple;
 
       if (!reader.isReadable()) {
         return null;
@@ -400,11 +403,10 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          tuple = new VTuple(targets.length);
-          tuple.setOffset(offset);
+          outTuple.setOffset(offset);
 
           try {
-            deserializer.deserialize(buf, tuple);
+            deserializer.deserialize(buf, outTuple);
             // if a line is read normally, it exits this loop.
             break;
 
@@ -429,7 +431,7 @@ public class DelimitedTextFile {
         // recordCount means the number of actual read records. We increment the count here.
         recordCount++;
 
-        return tuple;
+        return outTuple;
 
       } catch (Throwable t) {
         LOG.error(t);
@@ -459,6 +461,7 @@ public class DelimitedTextFile {
       } finally {
         IOUtils.cleanup(LOG, reader);
         reader = null;
+        outTuple = null;
       }
     }
 

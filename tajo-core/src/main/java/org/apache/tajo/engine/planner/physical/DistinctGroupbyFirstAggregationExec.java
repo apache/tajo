@@ -23,13 +23,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Int2Datum;
-import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.DistinctGroupbyNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
+import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -94,9 +96,11 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
   private long totalNumRows;
   private int fetchedRows;
 
-  private int[] groupingKeyIndexes;
   private NonDistinctHashAggregator nonDistinctHashAggregator;
-  private DistinctHashAggregator[] distinctAggregators;
+  private Map<Integer, DistinctHashAggregator> nodeSeqToDistinctAggregators = TUtil.newHashMap();
+
+  private KeyProjector nonDistinctGroupingKeyProjector;
+  private Map<Integer, KeyProjector> distinctGroupbyKeyProjectors = TUtil.newHashMap();
 
   private int resultTupleLength;
 
@@ -111,37 +115,23 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     super.init();
 
     // finding grouping column index
-    Column[] groupingColumns = plan.getGroupingColumns();
-    groupingKeyIndexes = new int[groupingColumns.length];
-
-    int index = 0;
-    for (Column col: groupingColumns) {
-      int keyIndex;
-      if (col.hasQualifier()) {
-        keyIndex = inSchema.getColumnId(col.getQualifiedName());
-      } else {
-        keyIndex = inSchema.getColumnIdByName(col.getSimpleName());
-      }
-      groupingKeyIndexes[index++] = keyIndex;
-    }
-    resultTupleLength = groupingKeyIndexes.length + 1;  //1 is Sequence Datum which indicates sequence of DistinctNode.
+    Column[] groupingKeyColumns = plan.getGroupingColumns();
+    nonDistinctGroupingKeyProjector = new KeyProjector(inSchema, plan.getGroupingColumns());
+    resultTupleLength = groupingKeyColumns.length + 1;  //1 is Sequence Datum which indicates sequence of DistinctNode.
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
-    List<DistinctHashAggregator> distinctAggrList = new ArrayList<DistinctHashAggregator>();
     int distinctSeq = 0;
     for (GroupbyNode eachGroupby: groupbyNodes) {
       if (eachGroupby.isDistinct()) {
-        DistinctHashAggregator aggregator = new DistinctHashAggregator(eachGroupby);
-        aggregator.setNodeSequence(distinctSeq++);
-        distinctAggrList.add(aggregator);
+        DistinctHashAggregator aggregator = new DistinctHashAggregator(eachGroupby, distinctSeq);
+        nodeSeqToDistinctAggregators.put(distinctSeq++, aggregator);
         resultTupleLength += aggregator.getTupleLength();
       } else {
         nonDistinctHashAggregator = new NonDistinctHashAggregator(eachGroupby);
         resultTupleLength += nonDistinctHashAggregator.getTupleLength();
       }
     }
-    distinctAggregators = distinctAggrList.toArray(new DistinctHashAggregator[]{});
   }
 
   private int currentAggregatorIndex = 0;
@@ -154,13 +144,13 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
     int prevIndex = currentAggregatorIndex;
     while (!context.isStopped()) {
-      DistinctHashAggregator aggregator = distinctAggregators[currentAggregatorIndex];
+      DistinctHashAggregator aggregator = nodeSeqToDistinctAggregators.get(currentAggregatorIndex);
       Tuple result = aggregator.next();
       if (result != null) {
         return result;
       }
       currentAggregatorIndex++;
-      currentAggregatorIndex = currentAggregatorIndex % distinctAggregators.length;
+      currentAggregatorIndex = currentAggregatorIndex % nodeSeqToDistinctAggregators.size();
       if (currentAggregatorIndex == prevIndex) {
         finished = true;
         return null;
@@ -171,29 +161,36 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
   }
 
   private void prepareInputData() throws IOException {
-    Tuple tuple = null;
+    Tuple tuple;
+
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      Tuple groupingKey = new VTuple(groupingKeyIndexes.length);
-      for (int i = 0; i < groupingKeyIndexes.length; i++) {
-        groupingKey.put(i, tuple.asDatum(groupingKeyIndexes[i]));
-      }
-      for (int i = 0; i < distinctAggregators.length; i++) {
-        distinctAggregators[i].compute(groupingKey, tuple);
+
+      KeyTuple groupingKey = nonDistinctGroupingKeyProjector.project(tuple);
+      for (int i = 0; i < nodeSeqToDistinctAggregators.size(); i++) {
+        nodeSeqToDistinctAggregators.get(i).compute(groupingKey, tuple);
       }
       if (nonDistinctHashAggregator != null) {
         nonDistinctHashAggregator.compute(groupingKey, tuple);
       }
     }
-    for (int i = 0; i < distinctAggregators.length; i++) {
-      distinctAggregators[i].rescan();
+    for (int i = 0; i < nodeSeqToDistinctAggregators.size(); i++) {
+      nodeSeqToDistinctAggregators.get(i).rescan();
     }
 
-    totalNumRows = distinctAggregators[0].distinctAggrDatas.size();
+    totalNumRows = nodeSeqToDistinctAggregators.get(0).distinctAggrDatas.size();
     preparedData = true;
   }
 
   @Override
   public void close() throws IOException {
+    if (nonDistinctHashAggregator != null) {
+      nonDistinctHashAggregator.close();
+      nonDistinctHashAggregator = null;
+    }
+    for (DistinctHashAggregator aggregator : nodeSeqToDistinctAggregators.values()) {
+      aggregator.close();
+    }
+    nodeSeqToDistinctAggregators.clear();
     child.close();
   }
 
@@ -223,8 +220,8 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
   public void rescan() {
     finished = false;
     currentAggregatorIndex = 0;
-    for (int i = 0; i < distinctAggregators.length; i++) {
-      distinctAggregators[i].rescan();
+    for (int i = 0; i < nodeSeqToDistinctAggregators.size(); i++) {
+      nodeSeqToDistinctAggregators.get(i).rescan();
     }
   }
 
@@ -233,13 +230,14 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     private final AggregationFunctionCallEval aggFunctions[];
 
     // GroupingKey -> FunctionContext[]
-    private Map<Tuple, FunctionContext[]> nonDistinctAggrDatas;
+    private TupleMap<FunctionContext[]> nonDistinctAggrDatas;
     private int tupleLength;
 
-    private Tuple dummyTuple;
+    private final Tuple dummyTuple;
+    private final Tuple outTuple;
     private NonDistinctHashAggregator(GroupbyNode groupbyNode) throws IOException {
 
-      nonDistinctAggrDatas = new HashMap<Tuple, FunctionContext[]>();
+      nonDistinctAggrDatas = new TupleMap<FunctionContext[]>();
 
       if (groupbyNode.hasAggFunctions()) {
         aggFunctions = groupbyNode.getAggFunctions();
@@ -254,14 +252,12 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
         eachFunction.setFirstPhase();
       }
 
-      dummyTuple = new VTuple(aggFunctionsNum);
-      for (int i = 0; i < aggFunctionsNum; i++) {
-        dummyTuple.put(i, NullDatum.get());
-      }
+      outTuple = new VTuple(aggFunctionsNum);
+      dummyTuple = NullTuple.create(aggFunctionsNum);
       tupleLength = aggFunctionsNum;
     }
 
-    public void compute(Tuple groupingKeyTuple, Tuple tuple) {
+    public void compute(KeyTuple groupingKeyTuple, Tuple tuple) {
       FunctionContext[] contexts = nonDistinctAggrDatas.get(groupingKeyTuple);
       if (contexts != null) {
         for (int i = 0; i < aggFunctions.length; i++) {
@@ -282,13 +278,12 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       if (contexts == null) {
         return null;
       }
-      Tuple tuple = new VTuple(aggFunctionsNum);
 
       for (int i = 0; i < aggFunctionsNum; i++) {
-        tuple.put(i, aggFunctions[i].terminate(contexts[i]));
+        outTuple.put(i, aggFunctions[i].terminate(contexts[i]));
       }
 
-      return tuple;
+      return outTuple;
     }
 
     public int getTupleLength() {
@@ -298,57 +293,51 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     public Tuple getDummyTuple() {
       return dummyTuple;
     }
+
+    public void close() {
+      nonDistinctAggrDatas.clear();
+      nonDistinctAggrDatas = null;
+    }
   }
 
   class DistinctHashAggregator {
 
     // GroupingKey -> DistinctKey
-    private Map<Tuple, Set<Tuple>> distinctAggrDatas;
-    private Iterator<Entry<Tuple, Set<Tuple>>> iterator = null;
+    private TupleMap<TupleSet> distinctAggrDatas;
+    private Iterator<Entry<KeyTuple, TupleSet>> iterator = null;
 
     private int nodeSequence;
     private Int2Datum nodeSequenceDatum;
 
-    private int[] distinctKeyIndexes;
-
     private int tupleLength;
-    private Tuple dummyTuple;
+    private final Tuple dummyTuple;
+    private Tuple outTuple;
     private boolean aggregatorFinished = false;
 
-    public DistinctHashAggregator(GroupbyNode groupbyNode) throws IOException {
+    public DistinctHashAggregator(GroupbyNode groupbyNode, int nodeSequence) throws IOException {
 
-      Set<Integer> groupingKeyIndexSet = new HashSet<Integer>();
-      for (Integer eachIndex: groupingKeyIndexes) {
-        groupingKeyIndexSet.add(eachIndex);
-      }
+      Set<Column> groupingKeySet = TUtil.newHashSet(plan.getGroupingColumns());
 
-      List<Integer> distinctGroupingKeyIndexSet = new ArrayList<Integer>();
+      List<Column> distinctGroupingKeyIndexSet = new ArrayList<Column>();
       Column[] groupingColumns = groupbyNode.getGroupingColumns();
       for (int idx = 0; idx < groupingColumns.length; idx++) {
         Column col = groupingColumns[idx];
-        int keyIndex;
-        if (col.hasQualifier()) {
-          keyIndex = inSchema.getColumnId(col.getQualifiedName());
-        } else {
-          keyIndex = inSchema.getColumnIdByName(col.getSimpleName());
-        }
-        if (!groupingKeyIndexSet.contains(keyIndex)) {
-          distinctGroupingKeyIndexSet.add(keyIndex);
+        if (!groupingKeySet.contains(col)) {
+          distinctGroupingKeyIndexSet.add(col);
         }
       }
-      int index = 0;
-      this.distinctKeyIndexes = new int[distinctGroupingKeyIndexSet.size()];
-      this.dummyTuple = new VTuple(distinctGroupingKeyIndexSet.size());
-      for (Integer eachId : distinctGroupingKeyIndexSet) {
-        this.dummyTuple.put(index, NullDatum.get());
-        this.distinctKeyIndexes[index++] = eachId;
-      }
+      Column[] distinctKeyColumns = new Column[distinctGroupingKeyIndexSet.size()];
+      distinctKeyColumns = distinctGroupingKeyIndexSet.toArray(distinctKeyColumns);
+      this.dummyTuple = NullTuple.create(distinctGroupingKeyIndexSet.size());
 
-      this.distinctAggrDatas = new HashMap<Tuple, Set<Tuple>>();
-      this.tupleLength = distinctKeyIndexes.length;
+      this.distinctAggrDatas = new TupleMap<TupleSet>();
+      distinctGroupbyKeyProjectors.put(nodeSequence, new KeyProjector(inSchema, distinctKeyColumns));
+      this.tupleLength = distinctKeyColumns.length;
+
+      setNodeSequence(nodeSequence);
     }
 
-    public void setNodeSequence(int nodeSequence) {
+    private void setNodeSequence(int nodeSequence) {
       this.nodeSequence = nodeSequence;
       this.nodeSequenceDatum = new Int2Datum((short)nodeSequence);
     }
@@ -357,15 +346,12 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       return tupleLength;
     }
 
-    public void compute(Tuple groupingKey, Tuple tuple) throws IOException {
-      Tuple distinctKeyTuple = new VTuple(distinctKeyIndexes.length);
-      for (int i = 0; i < distinctKeyIndexes.length; i++) {
-        distinctKeyTuple.put(i, tuple.asDatum(distinctKeyIndexes[i]));
-      }
+    public void compute(KeyTuple groupingKey, Tuple tuple) throws IOException {
+      KeyTuple distinctKeyTuple = distinctGroupbyKeyProjectors.get(nodeSequence).project(tuple);
 
-      Set<Tuple> distinctEntry = distinctAggrDatas.get(groupingKey);
+      TupleSet distinctEntry = distinctAggrDatas.get(groupingKey);
       if (distinctEntry == null) {
-        distinctEntry = new HashSet<Tuple>();
+        distinctEntry = new TupleSet();
         distinctAggrDatas.put(groupingKey, distinctEntry);
       }
       distinctEntry.add(distinctKeyTuple);
@@ -379,14 +365,17 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     }
 
     public void close() throws IOException {
+      for (TupleSet set : distinctAggrDatas.values()) {
+        set.clear();
+      }
       distinctAggrDatas.clear();
       distinctAggrDatas = null;
       currentGroupingTuples = null;
       iterator = null;
     }
 
-    Entry<Tuple, Set<Tuple>> currentGroupingTuples;
-    Iterator<Tuple> distinctKeyIterator;
+    Entry<KeyTuple, TupleSet> currentGroupingTuples;
+    Iterator<KeyTuple> distinctKeyIterator;
     boolean groupingKeyChanged = false;
 
     public Tuple next() {
@@ -415,30 +404,32 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       }
       // node sequence, groupingKeys, 1'st distinctKeys, 2'st distinctKeys, ...
       // If n'st == this.nodeSequence set with real data, otherwise set with NullDatum
-      VTuple tuple = new VTuple(resultTupleLength);
       int tupleIndex = 0;
-      tuple.put(tupleIndex++, nodeSequenceDatum);
+      if (outTuple == null) {
+        outTuple = new VTuple(resultTupleLength);
+      }
+      outTuple.put(tupleIndex++, nodeSequenceDatum);
 
       // merge grouping key
       Tuple groupingKeyTuple = currentGroupingTuples.getKey();
       int groupingKeyLength = groupingKeyTuple.size();
       for (int i = 0; i < groupingKeyLength; i++, tupleIndex++) {
-        tuple.put(tupleIndex, groupingKeyTuple.asDatum(i));
+        outTuple.put(tupleIndex, groupingKeyTuple.asDatum(i));
       }
 
       // merge distinctKey
-      for (int i = 0; i < distinctAggregators.length; i++) {
+      for (int i = 0; i < nodeSeqToDistinctAggregators.size(); i++) {
         if (i == nodeSequence) {
           Tuple distinctKeyTuple = distinctKeyIterator.next();
           int distinctKeyLength = distinctKeyTuple.size();
           for (int j = 0; j < distinctKeyLength; j++, tupleIndex++) {
-            tuple.put(tupleIndex, distinctKeyTuple.asDatum(j));
+            outTuple.put(tupleIndex, distinctKeyTuple.asDatum(j));
           }
         } else {
-          Tuple dummyTuple = distinctAggregators[i].getDummyTuple();
+          Tuple dummyTuple = nodeSeqToDistinctAggregators.get(i).getDummyTuple();
           int dummyTupleSize = dummyTuple.size();
           for (int j = 0; j < dummyTupleSize; j++, tupleIndex++) {
-            tuple.put(tupleIndex, dummyTuple.asDatum(j));
+            outTuple.put(tupleIndex, dummyTuple.asDatum(j));
           }
         }
       }
@@ -457,10 +448,10 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
         }
         int tupleSize = nonDistinctTuple.size();
         for (int j = 0; j < tupleSize; j++, tupleIndex++) {
-          tuple.put(tupleIndex, nonDistinctTuple.asDatum(j));
+          outTuple.put(tupleIndex, nonDistinctTuple.asDatum(j));
         }
       }
-      return tuple;
+      return outTuple;
     }
 
     public Tuple getDummyTuple() {

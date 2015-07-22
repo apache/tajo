@@ -16,21 +16,29 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
-package org.apache.tajo.engine.planner;
+package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+
+import java.util.ArrayList;
 
 /**
- * This class generates a physical execution plan.
+ * In TupleList, input tuples are automatically cloned whenever the add() method is called.
+ * This data structure is usually used in physical operators like hash join or hash aggregation.
  */
-public interface PhysicalPlanner {
-  PhysicalExec createPlan(TaskAttemptContext context,
-                          LogicalNode logicalPlan)
-      throws InternalException;
+public class TupleList extends ArrayList<Tuple> {
+
+  public TupleList() {
+    super();
+  }
+
+  public TupleList(int initialCapacity) {
+    super(initialCapacity);
+  }
+
+  @Override
+  public boolean add(Tuple tuple) {
+    return super.add(new VTuple(tuple));
+  }
 }

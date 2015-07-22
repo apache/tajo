@@ -109,8 +109,7 @@ public class TestMergeScanner {
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
     if (storeType.equalsIgnoreCase("AVRO")) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
-                     TEST_MULTIPLE_FILES_AVRO_SCHEMA);
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MULTIPLE_FILES_AVRO_SCHEMA);
     }
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
@@ -202,6 +201,7 @@ public class TestMergeScanner {
     if (type.equalsIgnoreCase("RCFILE") ||
         type.equalsIgnoreCase("PARQUET") ||
         type.equalsIgnoreCase("TEXT") ||
+        type.equalsIgnoreCase("SEQUENCEFILE") ||
         type.equalsIgnoreCase("AVRO")) {
       return true;
     } else {

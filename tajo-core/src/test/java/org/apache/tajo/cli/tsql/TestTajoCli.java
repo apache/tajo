@@ -393,7 +393,6 @@ public class TestTajoCli {
   }
 
   @Test
-  @Ignore //MetaData should be fixed
   public void testTimeZoneTest2() throws Exception {
     String tableName = "test1";
     tajoCli.executeMetaCommand("\\set TIMEZONE GMT+1");

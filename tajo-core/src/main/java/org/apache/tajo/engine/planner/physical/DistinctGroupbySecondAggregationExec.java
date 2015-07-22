@@ -1,4 +1,4 @@
-  /**
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,22 +18,20 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-  import org.apache.commons.logging.Log;
-  import org.apache.commons.logging.LogFactory;
-  import org.apache.tajo.catalog.Column;
-  import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
-  import org.apache.tajo.plan.function.FunctionContext;
-  import org.apache.tajo.plan.logical.DistinctGroupbyNode;
-  import org.apache.tajo.plan.logical.GroupbyNode;
-  import org.apache.tajo.storage.Tuple;
-  import org.apache.tajo.storage.VTuple;
-  import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.logical.DistinctGroupbyNode;
+import org.apache.tajo.plan.logical.GroupbyNode;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
-  import java.io.IOException;
-  import java.util.ArrayList;
-  import java.util.HashSet;
-  import java.util.List;
-  import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * This class adjusts shuffle columns between DistinctGroupbyFirstAggregationExec and
@@ -86,10 +84,21 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private AggregationFunctionCallEval[] nonDistinctAggrFunctions;
   private int nonDistinctAggrTupleStartIndex = -1;
 
+  // Key tuples may have various lengths. The below two maps are used to cache key tuple instances.
+  // Each map is a mapping of key length to key tuple.
+  private Map<Integer, Tuple> keyTupleMap = new HashMap<Integer, Tuple>();
+  private Map<Integer, Tuple> prevKeyTupleMap = new HashMap<Integer, Tuple>();
+
+  private Tuple prevKeyTuple = null;
+  private Tuple prevTuple = null;
+  private final Tuple outTuple;
+  private int prevSeq = -1;
+
   public DistinctGroupbySecondAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, SortExec sortExec)
       throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), sortExec);
     this.plan = plan;
+    outTuple = new VTuple(outSchema.size());
   }
 
   @Override
@@ -158,20 +167,15 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     }
   }
 
-  Tuple prevKeyTuple = null;
-  Tuple prevTuple = null;
-  int prevSeq = -1;
-
   @Override
   public Tuple next() throws IOException {
     if (finished) {
       return null;
     }
 
-    Tuple result = null;
     while (!context.isStopped()) {
-      Tuple childTuple = child.next();
-      if (childTuple == null) {
+      Tuple tuple = child.next();
+      if (tuple == null) {
         finished = true;
 
         if (prevTuple == null) {
@@ -181,15 +185,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         if (prevSeq == 0 && nonDistinctAggrFunctions != null) {
           terminatedNonDistinctAggr(prevTuple);
         }
-        result = prevTuple;
-        break;
-      }
-
-      Tuple tuple = null;
-      try {
-        tuple = childTuple.clone();
-      } catch (CloneNotSupportedException e) {
-        throw new IOException(e.getMessage(), e);
+        outTuple.put(prevTuple.getValues());
+        return outTuple;
       }
 
       int distinctSeq = tuple.getInt2(0);
@@ -201,8 +198,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
           initNonDistinctAggrContext();
           mergeNonDistinctAggr(tuple);
         }
-        prevKeyTuple = keyTuple;
-        prevTuple = tuple;
+        prevKeyTuple = getKeyTuple(prevKeyTupleMap, keyTuple.getValues());
+        prevTuple = new VTuple(tuple.getValues());
         prevSeq = distinctSeq;
         continue;
       }
@@ -212,20 +209,20 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         if (prevSeq == 0 && nonDistinctAggrFunctions != null) {
           terminatedNonDistinctAggr(prevTuple);
         }
-        result = prevTuple;
+        outTuple.put(prevTuple.getValues());
 
-        prevKeyTuple = keyTuple;
-        prevTuple = tuple;
+        prevKeyTuple = getKeyTuple(prevKeyTupleMap, keyTuple.getValues());
+        prevTuple.put(tuple.getValues());
         prevSeq = distinctSeq;
 
         if (distinctSeq == 0 && nonDistinctAggrFunctions != null) {
           initNonDistinctAggrContext();
           mergeNonDistinctAggr(tuple);
         }
-        break;
+        return outTuple;
       } else {
-        prevKeyTuple = keyTuple;
-        prevTuple = tuple;
+        prevKeyTuple = getKeyTuple(prevKeyTupleMap, keyTuple.getValues());
+        prevTuple.put(tuple.getValues());
         prevSeq = distinctSeq;
         if (distinctSeq == 0 && nonDistinctAggrFunctions != null) {
           mergeNonDistinctAggr(tuple);
@@ -233,7 +230,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       }
     }
 
-    return result;
+    return null;
   }
 
   private void initNonDistinctAggrContext() {
@@ -265,8 +262,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
   private Tuple getKeyTuple(int distinctSeq, Tuple tuple) {
     int[] columnIndexes = distinctKeyIndexes[distinctSeq];
-
-    Tuple keyTuple = new VTuple(numGroupingColumns + columnIndexes.length + 1);
+    int keyLength = numGroupingColumns + columnIndexes.length + 1;
+    Tuple keyTuple = getKeyTuple(keyTupleMap, keyLength);
     keyTuple.put(0, tuple.asDatum(0));
     for (int i = 0; i < numGroupingColumns; i++) {
       keyTuple.put(i + 1, tuple.asDatum(i + 1));
@@ -278,16 +275,39 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     return keyTuple;
   }
 
+  private static Tuple getKeyTuple(Map<Integer, Tuple> keyTupleMap, Datum[] values) {
+    Tuple keyTuple = getKeyTuple(keyTupleMap, values.length);
+    keyTuple.put(values);
+    return keyTuple;
+  }
+
+  private static Tuple getKeyTuple(Map<Integer, Tuple> keyTupleMap, int keyLength) {
+    Tuple keyTuple;
+    if (keyTupleMap.containsKey(keyLength)) {
+      keyTuple = keyTupleMap.get(keyLength);
+    } else {
+      keyTuple = new VTuple(keyLength);
+      keyTupleMap.put(keyLength, keyTuple);
+    }
+    return keyTuple;
+  }
+
   @Override
   public void rescan() throws IOException {
     super.rescan();
     prevKeyTuple = null;
     prevTuple = null;
     finished = false;
+    keyTupleMap.clear();
+    prevKeyTupleMap.clear();
   }
 
   @Override
   public void close() throws IOException {
     super.close();
+    keyTupleMap.clear();
+    prevKeyTupleMap.clear();
+    prevKeyTuple = null;
+    prevTuple = null;
   }
 }

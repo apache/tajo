@@ -40,6 +40,7 @@ import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.*;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -1334,5 +1335,4 @@ public class TestLogicalPlanner {
     assertEquals(alterTableNode.getPartitionValues()[1], "01");
     assertEquals(alterTableNode.getPartitionValues()[2], "11");
   }
-
 }

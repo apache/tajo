@@ -16,21 +16,19 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
-package org.apache.tajo.engine.planner;
+package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.exception.InternalException;
+import java.util.HashSet;
 
 /**
- * This class generates a physical execution plan.
+ * TupleSet is a set which accepts only KeyTuple.
+ * Input tuples are automatically cloned whenever the add() method is called.
+ * This data structure is usually used in physical operators like hash join or hash aggregation.
  */
-public interface PhysicalPlanner {
-  PhysicalExec createPlan(TaskAttemptContext context,
-                          LogicalNode logicalPlan)
-      throws InternalException;
+public class TupleSet extends HashSet<KeyTuple> {
+
+  @Override
+  public boolean add(KeyTuple tuple) {
+    return super.add(new KeyTuple(tuple));
+  }
 }

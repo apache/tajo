@@ -16,21 +16,29 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.planner.physical.KeyTuple;
+import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.Tuple;
 
-/**
- * This class generates a physical execution plan.
- */
-public interface PhysicalPlanner {
-  PhysicalExec createPlan(TaskAttemptContext context,
-                          LogicalNode logicalPlan)
-      throws InternalException;
+public class KeyProjector {
+
+  private final KeyTuple keyTuple;
+  private final int projectIds[];
+
+  public KeyProjector(Schema inSchema, Column[] keyColumns) {
+    keyTuple = new KeyTuple(keyColumns.length);
+    projectIds = new int[keyColumns.length];
+    for (int i = 0; i < keyColumns.length; i++) {
+      projectIds[i] = inSchema.getColumnId(keyColumns[i].getQualifiedName());
+    }
+  }
+
+  public KeyTuple project(Tuple tuple) {
+    RowStoreUtil.project(tuple, keyTuple, projectIds);
+    return keyTuple;
+  }
 }
