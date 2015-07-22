@@ -75,6 +75,9 @@ public class ErrorMessages {
     ADD_MESSAGE(DUPLICATE_INDEX, "index '%s' already exists", 1);
     ADD_MESSAGE(DUPLICATE_PARTITION, "partition for '%s' already exists", 1);
 
+    ADD_MESSAGE(AMBIGUOUS_TABLE, "table name '%s' is ambiguous", 1);
+    ADD_MESSAGE(AMBIGUOUS_COLUMN, "column name '%s' is ambiguous", 1);
+
     ADD_MESSAGE(DIVISION_BY_ZERO, "Division by zero: %s", 1);
 
     ADD_MESSAGE(DATATYPE_MISMATCH,

@@ -25,6 +25,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
@@ -89,7 +90,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   }
 
   @Override
-  public MasterPlan rewrite(MasterPlan plan) throws PlanningException{
+  public MasterPlan rewrite(MasterPlan plan) throws TajoException {
     plan.accept(plan.getRoot().getId(), planBuilder);
     plan.accept(plan.getRoot().getId(), planFinalizer);
     return plan;

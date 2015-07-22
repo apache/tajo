@@ -27,19 +27,17 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
 import java.util.Stack;
 
-import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeDataTypeMisMatch;
-import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSetOpDataTypeMisMatch;
-import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
+import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.*;
 
 public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVerifier.Context, LogicalNode> {
   public LogicalPlanVerifier(TajoConf conf, CatalogService catalog) {
@@ -54,7 +52,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   }
 
   public VerificationState verify(OverridableConf queryContext, VerificationState state, LogicalPlan plan)
-      throws PlanningException {
+      throws TajoException {
     Context context = new Context(queryContext, state);
     visit(context, plan, plan.getRootBlock());
     return context.state;
@@ -63,13 +61,13 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   /**
    * It checks if an output schema of a projectable node and target's output data types are equivalent to each other.
    */
-  private static void verifyProjectableOutputSchema(Context context, Projectable node) throws PlanningException {
+  private static void verifyProjectableOutputSchema(Context context, Projectable node) throws TajoException {
 
     Schema outputSchema = node.getOutSchema();
     Schema targetSchema = PlannerUtil.targetToSchema(node.getTargets());
 
     if (outputSchema.size() != node.getTargets().length) {
-      throw new PlanningException(String.format("Output schema and Target's schema are mismatched at Node (%d)",
+      throw new TajoInternalError(String.format("Output schema and Target's schema are mismatched at Node (%d)",
           + node.getPID()));
     }
 
@@ -83,14 +81,14 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       if (!outputColumn.getDataType().equals(targetSchema.getColumn(i).getDataType())) {
         Column targetColumn = targetSchema.getColumn(i);
         Column insertColumn = outputColumn;
-        throw new PlanningException(SyntaxErrorUtil.makeDataTypeMisMatch(insertColumn, targetColumn));
+        throw new TajoInternalError(SyntaxErrorUtil.makeDataTypeMisMatch(insertColumn, targetColumn));
       }
     }
   }
 
   @Override
   public LogicalNode visitProjection(Context state, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     ProjectionNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitProjection(state, plan, block, node, stack);
 
     for (Target target : node.getTargets()) {
@@ -104,7 +102,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitLimit(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                LimitNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                LimitNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitLimit(context, plan, block, node, stack);
 
     if (node.getFetchFirstNum() < 0) {
@@ -116,7 +114,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitGroupBy(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                  GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                  GroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitGroupBy(context, plan, block, node, stack);
 
     verifyProjectableOutputSchema(context, node);
@@ -125,7 +123,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitFilter(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
     visit(context, plan, block, node.getChild(), stack);
     ExprsVerifier.verify(context.state, node, node.getQual());
     return node;
@@ -133,7 +131,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitJoin(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     visit(context, plan, block, node.getLeftChild(), stack);
     visit(context, plan, block, node.getRightChild(), stack);
 
@@ -172,7 +170,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitUnion(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                UnionNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitUnion(context, plan, block, node, stack);
     verifySetStatement(context.state, node);
     return node;
@@ -180,7 +178,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitExcept(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 ExceptNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 ExceptNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitExcept(context, plan, block, node, stack);
     verifySetStatement(context.state, node);
     return node;
@@ -188,7 +186,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitIntersect(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    IntersectNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    IntersectNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitIntersect(context, plan, block, node, stack);
     verifySetStatement(context.state, node);
     return node;
@@ -196,7 +194,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitTableSubQuery(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitTableSubQuery(context, plan, block, node, stack);
     if (node.hasTargets()) {
       for (Target target : node.getTargets()) {
@@ -210,7 +208,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     if (node.hasTargets()) {
       for (Target target : node.getTargets()) {
         ExprsVerifier.verify(context.state, node, target.getEvalTree());
@@ -228,14 +226,14 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitStoreTable(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     StoreTableNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitStoreTable(context, plan, block, node, stack);
     return node;
   }
 
   @Override
   public LogicalNode visitInsert(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 InsertNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitInsert(context, plan, block, node, stack);
     return node;
   }
@@ -244,7 +242,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
    * This ensures that corresponding columns in both tables are equivalent to each other.
    */
   private static void ensureDomains(VerificationState state, Schema targetTableScheme, Schema schema)
-      throws PlanningException {
+      throws TajoException {
     for (int i = 0; i < schema.size(); i++) {
       if (!schema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
         Column targetColumn = targetTableScheme.getColumn(i);
@@ -256,7 +254,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
 
   @Override
   public LogicalNode visitCreateTable(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                      CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                      CreateTableNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitCreateTable(context, plan, block, node, stack);
     // here, we don't need check table existence because this check is performed in PreLogicalPlanVerifier.
     return node;

@@ -32,7 +32,7 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
   private boolean isSymmetricJoinOnly = true;
 
-  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) throws PlanningException {
+  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
     isSymmetricJoinOnly &= PlannerUtil.isCommutativeJoinType(edge.getJoinType());
     this.addEdge(left, right, edge);

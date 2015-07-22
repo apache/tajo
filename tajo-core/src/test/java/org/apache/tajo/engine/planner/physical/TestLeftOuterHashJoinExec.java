@@ -28,15 +28,16 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -262,7 +263,7 @@ public class TestLeftOuterHashJoinExec {
   };
 
   @Test
-  public final void testLeftOuterHashJoinExec0() throws IOException, PlanningException {
+  public final void testLeftOuterHashJoinExec0() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -298,7 +299,7 @@ public class TestLeftOuterHashJoinExec {
 
 
   @Test
-  public final void testLeftOuter_HashJoinExec1() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec1() throws IOException, TajoException {
     FileFragment[] job3Frags = FileTablespace.splitNG(conf, JOB3_NAME, job3.getMeta(),
         new Path(job3.getUri()), Integer.MAX_VALUE);
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
@@ -331,7 +332,7 @@ public class TestLeftOuterHashJoinExec {
   }
 
     @Test
-  public final void testLeftOuter_HashJoinExec2() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec2() throws IOException, TajoException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
         new Path(emp3.getUri()), Integer.MAX_VALUE);
@@ -367,7 +368,7 @@ public class TestLeftOuterHashJoinExec {
 
 
    @Test
-  public final void testLeftOuter_HashJoinExec3() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec3() throws IOException, TajoException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
         new Path(emp3.getUri()), Integer.MAX_VALUE);
@@ -402,7 +403,7 @@ public class TestLeftOuterHashJoinExec {
 
   
    @Test
-  public final void testLeftOuter_HashJoinExec4() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec4() throws IOException, TajoException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, "default.emp3", emp3.getMeta(),
         new Path(emp3.getUri()), Integer.MAX_VALUE);

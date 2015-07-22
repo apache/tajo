@@ -21,6 +21,7 @@ package org.apache.tajo.master.exec;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
@@ -42,7 +43,7 @@ public class ExplainPlanPreprocessorForTest {
   private static final PlanShapeFixerContext shapeFixerContext = new PlanShapeFixerContext();
   private static final PlanShapeFixer shapeFixer = new PlanShapeFixer();
 
-  public void prepareTest(LogicalPlan plan) throws PlanningException {
+  public void prepareTest(LogicalPlan plan) throws TajoException {
     // Plan shape fixer
     shapeFixerContext.reset();
     shapeFixer.visit(shapeFixerContext, plan, plan.getRootBlock());
@@ -77,7 +78,7 @@ public class ExplainPlanPreprocessorForTest {
 
     @Override
     public LogicalNode visit(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+                             LogicalNode node, Stack<LogicalNode> stack) throws TajoException {
       super.visit(context, plan, block, node, stack);
       node.setInSchema(sortSchema(node.getInSchema()));
       node.setOutSchema(sortSchema(node.getOutSchema()));
@@ -87,7 +88,7 @@ public class ExplainPlanPreprocessorForTest {
 
     @Override
     public LogicalNode visitFilter(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
       super.visitFilter(context, plan, block, node, stack);
       if (node.hasQual()) {
         node.setQual(sortQual(node.getQual()));
@@ -97,7 +98,7 @@ public class ExplainPlanPreprocessorForTest {
 
     @Override
     public LogicalNode visitScan(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 ScanNode node, Stack<LogicalNode> stack) throws TajoException {
       super.visitScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
       if (node.hasTargets()) {
@@ -113,7 +114,7 @@ public class ExplainPlanPreprocessorForTest {
     public LogicalNode visitPartitionedTableScan(PlanShapeFixerContext context, LogicalPlan plan,
                                                  LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
                                                  Stack<LogicalNode> stack)
-        throws PlanningException {
+        throws TajoException {
       super.visitPartitionedTableScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
       Path[] inputPaths = node.getInputPaths();
@@ -130,7 +131,7 @@ public class ExplainPlanPreprocessorForTest {
 
     @Override
     public LogicalNode visitJoin(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 JoinNode node, Stack<LogicalNode> stack) throws TajoException {
       super.visitJoin(context, plan, block, node, stack);
       int rightChildNum = context.childNumbers.pop();
       int leftChildNum = context.childNumbers.pop();

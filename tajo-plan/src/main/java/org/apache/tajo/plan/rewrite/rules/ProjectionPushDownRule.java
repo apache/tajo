@@ -25,14 +25,19 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.catalog.exception.DuplicateColumnException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
@@ -71,7 +76,7 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
@@ -190,7 +195,7 @@ public class ProjectionPushDownRule extends
      * Add an expression with a specified name, which is usually an alias.
      * Later, you can refer this expression by the specified name.
      */
-    private String add(String specifiedName, EvalNode evalNode) throws PlanningException {
+    private String add(String specifiedName, EvalNode evalNode) {
 
       // if a name already exists, it only just keeps an actual
       // expression instead of a column reference.
@@ -205,7 +210,7 @@ public class ProjectionPushDownRule extends
             // The case where if existing reference name and a given reference name are the same to each other and
             // existing EvalNode and a given EvalNode is the different
             if (found.getType() != EvalType.FIELD && evalNode.getType() != EvalType.FIELD) {
-              throw new PlanningException("Duplicate alias: " + evalNode);
+              throw new DuplicateColumnException(evalNode.toString());
             }
 
             if (found.getType() == EvalType.FIELD) {
@@ -248,7 +253,7 @@ public class ProjectionPushDownRule extends
      * Adds an expression without any name. It returns an automatically
      * generated name. It can be also used for referring this expression.
      */
-    public String add(EvalNode evalNode) throws PlanningException {
+    public String add(EvalNode evalNode) {
       String name;
 
       if (evalNode.getType() == EvalType.FIELD) {
@@ -278,7 +283,7 @@ public class ProjectionPushDownRule extends
       return nameToIdBiMap.keySet();
     }
 
-    public String add(Target target) throws PlanningException {
+    public String add(Target target) {
       return add(target.getCanonicalName(), target.getEvalTree());
     }
 
@@ -414,13 +419,13 @@ public class ProjectionPushDownRule extends
       targetListMgr = upperContext.targetListMgr;
     }
 
-    public String addExpr(Target target) throws PlanningException {
+    public String addExpr(Target target) {
       String reference = targetListMgr.add(target);
       addNecessaryReferences(target.getEvalTree());
       return reference;
     }
 
-    public String addExpr(EvalNode evalNode) throws PlanningException {
+    public String addExpr(EvalNode evalNode) {
       String reference = targetListMgr.add(evalNode);
       addNecessaryReferences(evalNode);
       return reference;
@@ -440,7 +445,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitRoot(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalRootNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     LogicalNode child = super.visitRoot(context, plan, block, node, stack);
     node.setInSchema(child.getOutSchema());
     node.setOutSchema(child.getOutSchema());
@@ -449,7 +454,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitProjection(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     ProjectionNode node, Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
     Target [] targets = node.getTargets();
     int targetNum = targets.length;
@@ -520,7 +525,7 @@ public class ProjectionPushDownRule extends
           createTableNode.setInSchema(child.getOutSchema());
           break;
         default:
-          throw new PlanningException("Unexpected Parent Node: " + parentNode.getType());
+          throw new TajoInternalError("unexpected parent node: " + parentNode.getType());
         }
         plan.addHistory("ProjectionNode is eliminated.");
       }
@@ -533,7 +538,7 @@ public class ProjectionPushDownRule extends
   }
 
   public LogicalNode visitLimit(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, LimitNode node,
-                           Stack<LogicalNode> stack) throws PlanningException {
+                           Stack<LogicalNode> stack) throws TajoException {
     LogicalNode child = super.visitLimit(context, plan, block, node, stack);
 
     node.setInSchema(child.getOutSchema());
@@ -543,7 +548,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitSort(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                               SortNode node, Stack<LogicalNode> stack) throws PlanningException {
+                               SortNode node, Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
 
     final int sortKeyNum = node.getSortKeys().length;
@@ -585,7 +590,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitHaving(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, HavingNode node,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
     String referenceName = newContext.targetListMgr.add(node.getQual());
     newContext.addNecessaryReferences(node.getQual());
@@ -607,7 +612,7 @@ public class ProjectionPushDownRule extends
   }
 
   public LogicalNode visitWindowAgg(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
-                        Stack<LogicalNode> stack) throws PlanningException {
+                        Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
 
     if (node.hasPartitionKeys()) {
@@ -700,7 +705,7 @@ public class ProjectionPushDownRule extends
   }
 
   public LogicalNode visitGroupBy(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
-                             Stack<LogicalNode> stack) throws PlanningException {
+                             Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
 
     // Getting grouping key names
@@ -758,7 +763,7 @@ public class ProjectionPushDownRule extends
               context.targetListMgr.markAsEvaluated(target);
             }
           } else {
-            throw new PlanningException("Cannot evaluate this expression in grouping keys: " + target.getEvalTree());
+            throw new TajoInternalError("Cannot evaluate this expression in grouping keys: " + target.getEvalTree());
           }
         }
       }
@@ -821,7 +826,7 @@ public class ProjectionPushDownRule extends
   }
 
   public LogicalNode visitFilter(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
     String referenceName = newContext.targetListMgr.add(node.getQual());
     newContext.addNecessaryReferences(node.getQual());
@@ -843,7 +848,7 @@ public class ProjectionPushDownRule extends
   }
 
   private static void pushDownIfComplexTermInJoinCondition(Context ctx, EvalNode cnf, EvalNode term)
-      throws PlanningException {
+      throws TajoException {
 
     // If one of both terms in a binary operator is a complex expression, the binary operator will require
     // multiple phases. In this case, join cannot evaluate a binary operator.
@@ -858,7 +863,7 @@ public class ProjectionPushDownRule extends
   }
 
   public LogicalNode visitJoin(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
 
     String joinQualReference = null;
@@ -900,7 +905,7 @@ public class ProjectionPushDownRule extends
     if (node.hasJoinQual()) {
       Target target = context.targetListMgr.getTarget(joinQualReference);
       if (newContext.targetListMgr.isEvaluated(joinQualReference)) {
-        throw new PlanningException("Join condition must be evaluated in the proper Join Node: " + joinQualReference);
+        throw new TajoInternalError("Join condition must be evaluated in the proper Join Node: " + joinQualReference);
       } else {
         node.setJoinQual(target.getEvalTree());
         newContext.targetListMgr.markAsEvaluated(target);
@@ -1022,7 +1027,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitUnion(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
-                           Stack<LogicalNode> stack) throws PlanningException {
+                           Stack<LogicalNode> stack) throws TajoException {
 
     LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
     LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
@@ -1040,7 +1045,7 @@ public class ProjectionPushDownRule extends
   }
 
   public LogicalNode visitScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
 
     Context newContext = new Context(context);
 
@@ -1074,7 +1079,7 @@ public class ProjectionPushDownRule extends
   @Override
   public LogicalNode visitPartitionedTableScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                PartitionedTableScanNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
 
     Context newContext = new Context(context);
 
@@ -1107,7 +1112,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitTableSubQuery(Context upperContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     Context childContext = new Context(plan, upperContext.requiredSet);
     stack.push(node);
     LogicalNode child = super.visitTableSubQuery(childContext, plan, block, node, stack);
@@ -1143,7 +1148,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitInsert(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, InsertNode node,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     visit(context, plan, block, node.getChild(), stack);
     stack.pop();

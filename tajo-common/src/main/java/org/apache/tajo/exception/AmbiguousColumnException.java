@@ -16,43 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.ResourceProtos.TaskStatusProto;
+import static org.apache.tajo.error.Errors.ResultCode.AMBIGUOUS_COLUMN;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
+public class AmbiguousColumnException extends TajoException {
+  private static final long serialVersionUID = 3102675985226352347L;
 
-public interface Task {
-
-  void init() throws IOException;
-
-  void fetch(ExecutorService fetcherExecutor);
-
-  void run() throws Exception;
-
-  void kill();
-
-  void abort();
-
-  void cleanup();
-
-  boolean hasFetchPhase();
-
-  boolean isProgressChanged();
-
-  boolean isStopped();
-
-  void updateProgress();
-
-  TaskAttemptContext getTaskContext();
-
-  ExecutionBlockContext getExecutionBlockContext();
-
-  TaskStatusProto getReport();
-
-  TaskHistory createTaskHistory();
-
-  List<Fetcher> getFetchers();
+  /**
+   * @param fieldName
+   */
+  public AmbiguousColumnException(String fieldName) {
+    super(AMBIGUOUS_COLUMN, fieldName);
+  }
 }
