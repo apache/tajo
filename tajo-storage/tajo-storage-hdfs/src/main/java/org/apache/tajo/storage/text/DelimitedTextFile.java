@@ -359,6 +359,8 @@ public class DelimitedTextFile {
 
     @Override
     public float getProgress() {
+      if(!inited) return super.getProgress();
+
       try {
         if (!reader.isReadable()) {
           return 1.0f;

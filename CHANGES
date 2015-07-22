@@ -188,6 +188,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1697: RCFile progress causes NPE occasionally. (jinho)
+
     TAJO-1689: Metrics file reporter prints histogram metric without group name.
     (hyunsik)
 
