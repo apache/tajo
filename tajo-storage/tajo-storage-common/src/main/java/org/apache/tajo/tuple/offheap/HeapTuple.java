@@ -65,6 +65,10 @@ public class HeapTuple implements Tuple {
     return UNSAFE.getInt(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
+  @Override
+  public void clearOffset() {
+  }
+
   public ByteBuffer nioBuffer() {
     return ByteBuffer.wrap(data);
   }

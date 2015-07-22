@@ -32,6 +32,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1343: Improve the memory usage of physical executors. (jihoon)
+
     TAJO-1696: Resource calculator should consider the requested disk resource 
     at the first stage. (jihoon)
 
@@ -2534,3 +2536,4 @@ Release 0.2.0
     TAJO-252: Add DISCLAIMER file. (hyunsik)
 
     TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
+

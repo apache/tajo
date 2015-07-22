@@ -18,12 +18,14 @@
 
 package org.apache.tajo.storage;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
@@ -40,8 +42,10 @@ import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.storage.text.ByteBufLineReader;
+import org.apache.tajo.storage.text.DelimitedTextFile;
+import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -50,7 +54,6 @@ import java.util.Arrays;
 public class CSVFile {
 
   public static final byte LF = '\n';
-  public static int EOF = -1;
 
   private static final Log LOG = LogFactory.getLog(CSVFile.class);
 
@@ -262,26 +265,9 @@ public class CSVFile {
       if (codec == null || codec instanceof SplittableCompressionCodec) {
         splittable = true;
       }
-
-      //Delimiter
-      this.delimiter = StringEscapeUtils.unescapeJava(
-          meta.getOption(StorageConstants.TEXT_DELIMITER,
-          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)))
-          .getBytes(Bytes.UTF8_CHARSET);
-
-      String nullCharacters = StringEscapeUtils.unescapeJava(
-          meta.getOption(StorageConstants.TEXT_NULL,
-          meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
-
-      if (StringUtils.isEmpty(nullCharacters)) {
-        nullChars = NullDatum.get().asTextBytes();
-      } else {
-        nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
-      }
     }
 
     private final static int DEFAULT_PAGE_SIZE = 256 * 1024;
-    private byte[] delimiter;
     private FileSystem fs;
     private FSDataInputStream fis;
     private InputStream is; //decompressd stream
@@ -294,13 +280,14 @@ public class CSVFile {
     private int currentIdx = 0, validIdx = 0, recordCount = 0;
     private int[] targetColumnIndexes;
     private boolean eof = false;
-    private final byte[] nullChars;
     private SplitLineReader reader;
     private ArrayList<Long> fileOffsets;
     private ArrayList<Integer> rowLengthList;
     private ArrayList<Integer> startOffsets;
     private NonSyncByteArrayOutputStream buffer;
-    private SerializerDeserializer serde;
+    private Tuple outTuple;
+    private TextLineDeserializer deserializer;
+    private ByteBuf byteBuf = BufferPool.directBuffer(ByteBufLineReader.DEFAULT_BUFFER);
 
     @Override
     public void init() throws IOException {
@@ -347,20 +334,13 @@ public class CSVFile {
         targets = schema.toArray();
       }
 
+      outTuple = new VTuple(targets.length);
+      deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta, targets);
+      deserializer.init();
+
       targetColumnIndexes = new int[targets.length];
       for (int i = 0; i < targets.length; i++) {
         targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
-      }
-
-      try {
-        //FIXME
-        String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
-            TextSerializerDeserializer.class.getName());
-        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
-        serde.init(schema);
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e);
       }
 
       super.init();
@@ -396,7 +376,7 @@ public class CSVFile {
     }
 
     private void page() throws IOException {
-//      // Index initialization
+      // Index initialization
       currentIdx = 0;
       validIdx = 0;
       int currentBufferPos = 0;
@@ -473,15 +453,13 @@ public class CSVFile {
           }
         }
 
-        long offset = -1;
-        if(!isCompress()){
-          offset = fileOffsets.get(currentIdx);
-        }
+        byteBuf.clear();
+        byteBuf.writeBytes(buffer.getData(), startOffsets.get(currentIdx), rowLengthList.get(currentIdx));
 
-        byte[][] cells = BytesUtils.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
-            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes, schema.size());
+        deserializer.deserialize(byteBuf, outTuple);
+
         currentIdx++;
-        return new LazyTuple(schema, cells, offset, nullChars, serde);
+        return outTuple;
       } catch (Throwable t) {
         LOG.error("Tuple list length: " + (fileOffsets != null ? fileOffsets.size() : 0), t);
         LOG.error("Tuple list current index: " + currentIdx, t);
@@ -523,12 +501,16 @@ public class CSVFile {
           CodecPool.returnDecompressor(decompressor);
           decompressor = null;
         }
+        outTuple = null;
+        if (this.byteBuf.refCnt() > 0) {
+          this.byteBuf.release();
+        }
       }
     }
 
     @Override
     public boolean isProjectable() {
-      return false;
+      return true;
     }
 
     @Override

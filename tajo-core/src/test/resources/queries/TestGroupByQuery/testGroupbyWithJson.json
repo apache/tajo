@@ -42,57 +42,86 @@
         }
     ],
     "Expr": {
-        "HavingCondition": {
-            "LeftExpr": {
-                "LeftExpr": {
+        "SortSpecs": [
+            {
+                "SortKey": {
+                    "ColumnName": "l_orderkey",
+                    "OpType": "Column"
+                },
+                "IsAsc": true,
+                "IsNullFirst": false
+            },
+            {
+                "SortKey": {
                     "ColumnName": "total",
                     "OpType": "Column"
                 },
-                "RightExpr": {
-                    "Value": "2",
-                    "ValueType": "Unsigned_Integer",
-                    "OpType": "Literal"
-                },
-                "OpType": "GreaterThanOrEquals"
+                "IsAsc": true,
+                "IsNullFirst": false
             },
-            "RightExpr": {
-                "LeftExpr": {
+            {
+                "SortKey": {
                     "ColumnName": "num",
                     "OpType": "Column"
                 },
-                "RightExpr": {
-                    "Value": "3",
-                    "ValueType": "Unsigned_Integer",
-                    "OpType": "Literal"
-                },
-                "OpType": "Equals"
-            },
-            "OpType": "Or"
-        },
+                "IsAsc": true,
+                "IsNullFirst": false
+            }
+        ],
         "Expr": {
-            "Groups": [
-                {
-                    "GroupType": "OrdinaryGroup",
-                    "Dimensions": [
-                        {
-                            "ColumnName": "l_orderkey",
-                            "OpType": "Column"
-                        }
-                    ]
-                }
-            ],
+            "HavingCondition": {
+                "LeftExpr": {
+                    "LeftExpr": {
+                        "ColumnName": "total",
+                        "OpType": "Column"
+                    },
+                    "RightExpr": {
+                        "Value": "2",
+                        "ValueType": "Unsigned_Integer",
+                        "OpType": "Literal"
+                    },
+                    "OpType": "GreaterThanOrEquals"
+                },
+                "RightExpr": {
+                    "LeftExpr": {
+                        "ColumnName": "num",
+                        "OpType": "Column"
+                    },
+                    "RightExpr": {
+                        "Value": "3",
+                        "ValueType": "Unsigned_Integer",
+                        "OpType": "Literal"
+                    },
+                    "OpType": "Equals"
+                },
+                "OpType": "Or"
+            },
             "Expr": {
-                "Relations": [
+                "Groups": [
                     {
-                        "TableName": "lineitem",
-                        "OpType": "Relation"
+                        "GroupType": "OrdinaryGroup",
+                        "Dimensions": [
+                            {
+                                "ColumnName": "l_orderkey",
+                                "OpType": "Column"
+                            }
+                        ]
                     }
                 ],
-                "OpType": "RelationList"
+                "Expr": {
+                    "Relations": [
+                        {
+                            "TableName": "lineitem",
+                            "OpType": "Relation"
+                        }
+                    ],
+                    "OpType": "RelationList"
+                },
+                "OpType": "Aggregation"
             },
-            "OpType": "Aggregation"
+            "OpType": "Having"
         },
-        "OpType": "Having"
+        "OpType": "Sort"
     },
     "OpType": "Projection"
 }
