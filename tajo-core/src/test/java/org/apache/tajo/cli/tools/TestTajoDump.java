@@ -42,16 +42,18 @@ public class TestTajoDump extends QueryTestCaseBase {
       executeString("CREATE TABLE \"" + getCurrentDatabase() +
           "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
 
-      UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      PrintWriter printWriter = new PrintWriter(bos);
-      TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
-      printWriter.flush();
-      printWriter.close();
-      assertStrings(new String(bos.toByteArray()));
-      bos.close();
-
-      executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+      try {
+        UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PrintWriter printWriter = new PrintWriter(bos);
+        TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+        printWriter.flush();
+        printWriter.close();
+        assertStrings(new String(bos.toByteArray()));
+        bos.close();
+      } finally {
+        executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+      }
     }
   }
 
@@ -61,16 +63,18 @@ public class TestTajoDump extends QueryTestCaseBase {
       executeString("CREATE TABLE \"" + getCurrentDatabase() +
           "\".\"TableName2\" (\"Age\" int, \"Name\" Record (\"FirstName\" TEXT, lastname TEXT))");
 
-      UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      PrintWriter printWriter = new PrintWriter(bos);
-      TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
-      printWriter.flush();
-      printWriter.close();
-      assertStrings(new String(bos.toByteArray()));
-      bos.close();
-
-      executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName2\"");
+      try {
+        UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PrintWriter printWriter = new PrintWriter(bos);
+        TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+        printWriter.flush();
+        printWriter.close();
+        assertStrings(new String(bos.toByteArray()));
+        bos.close();
+      } finally {
+        executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName2\"");
+      }
     }
   }
 
@@ -83,18 +87,20 @@ public class TestTajoDump extends QueryTestCaseBase {
       executeString("CREATE INDEX test_idx on \"" + getCurrentDatabase()
           + "\".\"TableName1\" ( \"Age\" asc null first, \"FirstName\" desc null last )");
 
-      UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
-      ByteArrayOutputStream bos = new ByteArrayOutputStream();
-      PrintWriter printWriter = new PrintWriter(bos);
-      TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
-      printWriter.flush();
-      printWriter.close();
-      assertOutputResult("testDump3.result", new String(bos.toByteArray()), new String[]{"${index.path}"},
-          new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString()});
-      bos.close();
-
-      executeString("DROP INDEX test_idx");
-      executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+      try {
+        UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PrintWriter printWriter = new PrintWriter(bos);
+        TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+        printWriter.flush();
+        printWriter.close();
+        assertOutputResult("testDump3.result", new String(bos.toByteArray()), new String[]{"${index.path}"},
+            new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString()});
+        bos.close();
+      } finally {
+        executeString("DROP INDEX test_idx");
+        executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+      }
     }
   }
 
