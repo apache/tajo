@@ -280,7 +280,7 @@ public class TestKillQuery {
       }
     };
 
-    org.apache.tajo.worker.Task task = new TaskImpl(taskRequest, context, null);
+    org.apache.tajo.worker.Task task = new TaskImpl(taskRequest, context);
     task.kill();
     assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getTaskContext().getState());
     try {

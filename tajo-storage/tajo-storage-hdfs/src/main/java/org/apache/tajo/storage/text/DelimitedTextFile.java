@@ -48,7 +48,6 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -327,8 +326,23 @@ public class DelimitedTextFile {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
 
+      // skip first line if it reads from middle of file
       if (startOffset > 0) {
-        reader.readLine();  // skip first line;
+        reader.readLine();
+      } else { // skip header lines if it is defined
+
+        // initialization for skipping header(max 20)
+        int headerLineNum = Math.min(Integer.parseInt(meta.getOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
+        if (headerLineNum > 0) {
+          LOG.info(String.format("Skip %d header lines", headerLineNum));
+          for (int i = 0; i < headerLineNum; i++) {
+            if (!reader.isReadable()) {
+              return;
+            }
+
+            reader.readLine();
+          }
+        }
       }
 
       deserializer = getLineSerde().createDeserializer(schema, meta, targets);
@@ -391,7 +405,7 @@ public class DelimitedTextFile {
 
           try {
             deserializer.deserialize(buf, tuple);
-            // if a line is read normally, it exists this loop.
+            // if a line is read normally, it exits this loop.
             break;
 
           } catch (TextLineParsingError tae) {
@@ -400,7 +414,7 @@ public class DelimitedTextFile {
 
             // suppress too many log prints, which probably cause performance degradation
             if (errorNum < errorPrintOutMaxNum) {
-              LOG.warn("Ignore JSON Parse Error (" + errorNum + "): ", tae);
+              LOG.warn("Ignore Text Parse Error (" + errorNum + "): ", tae);
             }
 
             // Only when the maximum error torrence limit is set (i.e., errorTorrenceMaxNum >= 0),
@@ -409,9 +423,7 @@ public class DelimitedTextFile {
             if (errorTorrenceMaxNum >= 0 && errorNum > errorTorrenceMaxNum) {
               throw tae;
             }
-            continue;
           }
-
         } while (reader.isReadable()); // continue until EOS
 
         // recordCount means the number of actual read records. We increment the count here.
