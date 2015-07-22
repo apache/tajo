@@ -34,21 +34,28 @@ import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.parser.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.metrics.Master;
+import org.apache.tajo.plan.IllegalQueryStatusException;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.*;
+import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
+import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -57,7 +64,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.exception.ReturnStateUtil.returnError;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 
 public class GlobalEngine extends AbstractService {
@@ -175,6 +181,8 @@ public class GlobalEngine extends AbstractService {
     Expr planningContext;
 
     try {
+      context.getSystemMetrics().counter(Master.Query.TOTAL_SUBMITTED).inc();
+
       if (isJson) {
         planningContext = buildExpressionFromJson(query);
       } else {
@@ -190,7 +198,8 @@ public class GlobalEngine extends AbstractService {
     } catch (Throwable t) {
       ExceptionUtil.printStackTraceIfError(LOG, t);
 
-      context.getSystemMetrics().counter("Query", "errorQuery").inc();
+      context.getSystemMetrics().counter(Master.Query.ERROR).inc();
+
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
@@ -206,7 +215,6 @@ public class GlobalEngine extends AbstractService {
 
   public Expr buildExpressionFromSql(String sql, Session session) throws InterruptedException, IOException,
       IllegalQueryStatusException {
-    context.getSystemMetrics().counter("Query", "totalQuery").inc();
     try {
       if (session.getQueryCache() == null) {
         return analyzer.parse(sql);

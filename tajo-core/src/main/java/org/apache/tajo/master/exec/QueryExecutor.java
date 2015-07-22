@@ -64,6 +64,7 @@ import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -106,7 +107,6 @@ public class QueryExecutor {
 
 
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
-      context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
       ddlExecutor.execute(queryContext, plan);
       response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       response.setState(OK);
@@ -161,7 +161,6 @@ public class QueryExecutor {
       }
     }
 
-    context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
     response.setState(OK);
   }
@@ -491,7 +490,7 @@ public class QueryExecutor {
 
       space.prepareTable(rootNode.getChild());
     }
-    context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
+
     hookManager.doHooks(queryContext, plan);
 
     QueryManager queryManager = this.context.getQueryJobManager();

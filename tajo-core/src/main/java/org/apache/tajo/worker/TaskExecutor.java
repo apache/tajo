@@ -29,7 +29,6 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
@@ -176,8 +175,6 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
         }
         taskQueue.put(task);
         runningTasks.incrementAndGet();
-        context.getWorkerContext().getWorkerSystemMetrics()
-            .histogram("tasks", "running").update(runningTasks.get());
       } else {
         LOG.warn("Release duplicate task resource: " + event.getAllocatedResource());
         stopTask(event.getTaskAttemptId());

@@ -21,7 +21,10 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
@@ -39,8 +42,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoResourceManager;
-import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
-import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
+import org.apache.tajo.metrics.ClusterResourceMetricSet;
+import org.apache.tajo.metrics.Master;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
@@ -73,12 +76,9 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
 public class TajoMaster extends CompositeService {
-  private static final String METRICS_GROUP_NAME = "tajomaster";
 
   /** Class Logger */
   private static final Log LOG = LogFactory.getLog(TajoMaster.class);
-
-  public static final int SHUTDOWN_HOOK_PRIORITY = 30;
 
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
@@ -214,11 +214,9 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initSystemMetrics() {
-    systemMetrics = new TajoSystemMetrics(systemConf, METRICS_GROUP_NAME, getMasterName());
+    systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
-
-    systemMetrics.register("resource", new WorkerResourceMetricsGaugeSet(context));
-    systemMetrics.register("catalog", new CatalogMetricsGaugeSet(context));
+    systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
   }
 
   private void initResourceManager() throws Exception {

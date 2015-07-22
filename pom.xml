@@ -93,6 +93,7 @@
     <module>tajo-dist</module>
     <module>tajo-thirdparty/asm</module>
     <module>tajo-cli</module>
+    <module>tajo-metrics</module>
   </modules>
 
   <build>
