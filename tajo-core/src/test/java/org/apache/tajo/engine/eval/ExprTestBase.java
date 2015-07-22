@@ -35,6 +35,8 @@ import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.exec.QueryExecutor;
 import org.apache.tajo.plan.*;
@@ -133,7 +135,7 @@ public class ExprTestBase {
    * @throws PlanningException
    */
   private static Target[] getRawTargets(QueryContext context, String query, boolean condition)
-      throws PlanningException, InvalidStatementException {
+      throws TajoException, InvalidStatementException {
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
     if (parsedResults.size() > 1) {
@@ -144,7 +146,7 @@ public class ExprTestBase {
     preLogicalPlanVerifier.verify(context, state, expr);
     if (state.getErrors().size() > 0) {
       if (!condition && state.getErrors().size() > 0) {
-        throw new PlanningException(state.getErrors().get(0));
+        throw new RuntimeException(state.getErrors().get(0));
       }
       assertFalse(state.getErrors().get(0).getMessage(), true);
     }
@@ -158,7 +160,7 @@ public class ExprTestBase {
 
     Target [] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
-      throw new PlanningException("Wrong query statement or query plan: " + parsedResults.get(0).getHistoryStatement());
+      throw new RuntimeException("Wrong query statement or query plan: " + parsedResults.get(0).getHistoryStatement());
     }
 
     // Trying regression test for cloning, (de)serialization for json and protocol buffer
@@ -313,7 +315,7 @@ public class ExprTestBase {
       }
     } catch (InvalidStatementException e) {
       assertFalse(e.getMessage(), true);
-    } catch (PlanningException e) {
+    } catch (TajoException e) {
       // In failure test case, an exception must occur while executing query.
       // So, we should check an error message, and return it.
       if (!condition) {

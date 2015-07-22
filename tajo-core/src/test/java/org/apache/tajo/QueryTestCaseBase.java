@@ -35,11 +35,11 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
@@ -280,13 +280,15 @@ public class QueryTestCaseBase {
     return currentDatabase;
   }
 
-  private static VerificationState verify(String query) throws PlanningException {
+  private static VerificationState verify(String query) throws TajoException {
 
     VerificationState state = new VerificationState();
     QueryContext context = LocalTajoTestingUtility.createDummyContext(conf);
 
     Expr expr = sqlParser.parse(query);
+
     verifier.verify(context, state, expr);
+
     if (state.getErrors().size() > 0) {
       return state;
     }
@@ -297,38 +299,50 @@ public class QueryTestCaseBase {
     return state;
   }
 
-  public void assertValidSQL(String query) throws PlanningException, IOException {
-    VerificationState state = verify(query);
-    if (state.getErrors().size() > 0) {
-      fail(state.getErrors().get(0).getMessage());
+  public void assertValidSQL(String query) throws IOException {
+    VerificationState state = null;
+    try {
+      state = verify(query);
+      if (state.getErrors().size() > 0) {
+        fail(state.getErrors().get(0).getMessage());
+      }
+    } catch (TajoException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  public void assertValidSQLFromFile(String fileName) throws PlanningException, IOException {
+  public void assertValidSQLFromFile(String fileName) throws IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
     assertValidSQL(query);
   }
 
-  public void assertInvalidSQL(String query) throws PlanningException, IOException {
-    VerificationState state = verify(query);
-    if (state.getErrors().size() == 0) {
-      fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
+  public void assertInvalidSQL(String query) throws IOException {
+    VerificationState state = null;
+    try {
+      state = verify(query);
+
+      if (state.getErrors().size() == 0) {
+        fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
+      }
+
+    } catch (TajoException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  public void assertInvalidSQLFromFile(String fileName) throws PlanningException, IOException {
+  public void assertInvalidSQLFromFile(String fileName) throws IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
     assertInvalidSQL(query);
   }
 
-  public void assertPlanError(String fileName) throws PlanningException, IOException {
+  public void assertPlanError(String fileName) throws IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
     try {
       verify(query);
-    } catch (PlanningException e) {
+    } catch (TajoException e) {
       return;
     }
     fail("Cannot catch any planning error from: " + query);
