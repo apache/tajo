@@ -150,7 +150,9 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       LOG.info("Path " + lastFileName.getParent() + " already exists!");
     } else {
       fs.mkdirs(lastFileName.getParent());
-      LOG.info("Add subpartition path directory :" + lastFileName.getParent());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Add subpartition path directory :" + lastFileName.getParent());
+      }
     }
 
     if (fs.exists(lastFileName)) {

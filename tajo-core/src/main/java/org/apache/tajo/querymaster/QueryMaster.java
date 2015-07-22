@@ -312,7 +312,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
         if (stats.getPartitions() != null && stats.getPartitions().size() > 0) {
           CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
           // Store partitions to CatalogStore using alter table statement.
-          catalog.addPartitions(databaseName, simpleTableName, stats.getPartitions(), true);
+          boolean result = catalog.addPartitions(databaseName, simpleTableName, stats.getPartitions(), true);
+          if (result) {
+            LOG.info(String.format("Complete adding for partition %s", stats.getPartitions().size()));
+          } else {
+            LOG.info(String.format("Incomplete adding for partition %s", stats.getPartitions().size()));
+          }
+        } else {
+          LOG.info("Can't find partitions for adding.");
         }
       }
 
