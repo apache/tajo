@@ -304,6 +304,7 @@ message AlterTableNode {
     optional string location = 3;
     optional bool purge = 4;
     optional bool ifNotExists = 5;
+    optional bool ifExists = 6;
   }
 
   required string tableName = 1;

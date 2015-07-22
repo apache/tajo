@@ -613,6 +613,7 @@ public class LogicalNodeDeserializer {
       alterTable.setPartitionValues(alterPartition.getPartitionValuesList().toArray(new String[alterPartition
         .getPartitionValuesCount()]));
       alterTable.setPurge(alterPartition.getPurge());
+      alterTable.setIfExists(alterPartition.getIfExists());
       break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());

@@ -469,6 +469,7 @@ public class TestSQLAnalyzer {
     LiteralValue value2 = (LiteralValue)alterTable.getValues()[1];
     assertEquals("2", value2.getValue());
     assertFalse(alterTable.isPurge());
+    assertFalse(alterTable.isIfExists());
   }
 
   @Test
@@ -490,6 +491,7 @@ public class TestSQLAnalyzer {
     LiteralValue value3 = (LiteralValue)alterTable.getValues()[2];
     assertEquals("11", value3.getValue());
     assertFalse(alterTable.isPurge());
+    assertFalse(alterTable.isIfExists());
   }
 
   @Test
@@ -505,6 +507,23 @@ public class TestSQLAnalyzer {
     LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
     assertEquals("TAJO", value1.getValue());
     assertTrue(alterTable.isPurge());
+    assertFalse(alterTable.isIfExists());
+  }
+
+  @Test
+  public void testAlterTableDropPartition4() throws IOException {
+    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_drop_partition_4.sql");
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.DROP_PARTITION);
+    assertEquals(1, alterTable.getColumns().length);
+    assertEquals(1, alterTable.getValues().length);
+    assertEquals("col1", alterTable.getColumns()[0].getName());
+    LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
+    assertEquals("TAJO", value1.getValue());
+    assertTrue(alterTable.isPurge());
+    assertTrue(alterTable.isIfExists());
   }
 
   @Test

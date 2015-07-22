@@ -25,6 +25,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.exception.DuplicatePartitionException;
+import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -87,15 +88,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col4");
 
     executeDDL("alter_table_add_partition1.sql", null);
-
-    // checking a duplicated partition
-    boolean duplicatedPartition = false;
-    try {
-      executeDDL("alter_table_add_partition2.sql", null);
-    } catch (DuplicatePartitionException npe) {
-      duplicatedPartition = true;
-    }
-    assertFalse(duplicatedPartition);
+    executeDDL("alter_table_add_partition2.sql", null);
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
@@ -113,6 +106,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
     executeDDL("alter_table_drop_partition1.sql", null);
+    executeDDL("alter_table_drop_partition2.sql", null);
 
     partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);

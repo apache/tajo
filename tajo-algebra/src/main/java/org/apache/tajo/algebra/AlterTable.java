@@ -56,6 +56,8 @@ public class AlterTable extends Expr {
 
   @Expose @SerializedName("IfNotExists")
   private boolean ifNotExists;
+  @Expose @SerializedName("IfExists")
+  private boolean ifExists;
 
   public AlterTable(final String tableName) {
     super(OpType.AlterTable);
@@ -151,10 +153,18 @@ public class AlterTable extends Expr {
     this.ifNotExists = ifNotExists;
   }
 
+  public boolean isIfExists() {
+    return ifExists;
+  }
+
+  public void setIfExists(boolean ifExists) {
+    this.ifExists = ifExists;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName, newTableName, columnName, newColumnName, addNewColumn, alterTableOpType,
-      columns, values, location, params, purge, ifNotExists
+      columns, values, location, params, purge, ifNotExists, ifExists
     );
 
   }
@@ -173,7 +183,8 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(location, another.location) &&
         TUtil.checkEquals(params, another.params) &&
         TUtil.checkEquals(purge, another.purge) &&
-        TUtil.checkEquals(ifNotExists, another.ifNotExists)
+        TUtil.checkEquals(ifNotExists, another.ifNotExists) &&
+        TUtil.checkEquals(ifExists, another.ifExists)
     ;
   }
 
@@ -196,6 +207,7 @@ public class AlterTable extends Expr {
     }
     alter.purge = purge;
     alter.ifNotExists = ifNotExists;
+    alter.ifExists = ifExists;
     return alter;
   }
 }

@@ -484,7 +484,7 @@ public class DDLExecutor {
       boolean duplicatedPartition = true;
       try {
         catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
-      } catch (UndefinedPartitionException npe) {
+      } catch (UndefinedPartitionException e) {
         duplicatedPartition = false;
       }
 
@@ -522,25 +522,32 @@ public class DDLExecutor {
     case DROP_PARTITION:
       ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());
       pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
-      partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
 
-      if (partitionDescProto == null) {
-        throw new UndefinedPartitionException(pair.getSecond());
+      boolean undefinedPartition = false;
+      try {
+        partitionDescProto = catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
+      } catch (UndefinedPartitionException e) {
+        undefinedPartition = true;
       }
 
-      catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
-        alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
+      if (undefinedPartition && !alterTable.isIfExists()) {
+        throw new UndefinedPartitionException(pair.getSecond());
+      } else if (!undefinedPartition) {
+        catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
+          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
 
-      // When dropping partition on an managed table, the data will be delete from file system.
-      if (!desc.isExternal()) {
-        deletePartitionPath(partitionDescProto);
-      } else {
-        // When dropping partition on an external table, the data in the table will NOT be deleted from the file
-        // system. But if PURGE is specified, the partition data will be deleted.
-        if (alterTable.isPurge()) {
+        // When dropping partition on an managed table, the data will be delete from file system.
+        if (!desc.isExternal()) {
           deletePartitionPath(partitionDescProto);
+        } else {
+          // When dropping partition on an external table, the data in the table will NOT be deleted from the file
+          // system. But if PURGE is specified, the partition data will be deleted.
+          if (alterTable.isPurge()) {
+            deletePartitionPath(partitionDescProto);
+          }
         }
       }
+
       break;
     default:
       //TODO
