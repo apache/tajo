@@ -230,37 +230,37 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   @Override
-  public IndexDescProto getIndex(String indexName) throws ServiceException {
+  public IndexDescProto getIndex(String indexName) throws SQLException {
     return catalogClient.getIndex(indexName);
   }
 
   @Override
-  public boolean existIndex(String indexName) throws ServiceException {
+  public boolean existIndex(String indexName) throws SQLException {
     return catalogClient.existIndex(indexName);
   }
 
   @Override
-  public List<IndexDescProto> getIndexes(String tableName) throws ServiceException {
+  public List<IndexDescProto> getIndexes(String tableName) throws SQLException {
     return catalogClient.getIndexes(tableName);
   }
 
   @Override
-  public boolean hasIndexes(String tableName) throws ServiceException {
+  public boolean hasIndexes(String tableName) throws SQLException {
     return catalogClient.hasIndexes(tableName);
   }
 
   @Override
-  public IndexDescProto getIndex(String tableName, String[] columnNames) throws ServiceException {
+  public IndexDescProto getIndex(String tableName, String[] columnNames) throws SQLException {
     return catalogClient.getIndex(tableName, columnNames);
   }
 
   @Override
-  public boolean existIndex(String tableName, String[] columnName) throws ServiceException {
+  public boolean existIndex(String tableName, String[] columnName) throws SQLException {
     return catalogClient.existIndex(tableName, columnName);
   }
 
   @Override
-  public boolean dropIndex(String indexName) throws ServiceException {
+  public boolean dropIndex(String indexName) throws SQLException {
     return catalogClient.dropIndex(indexName);
   }
 }

@@ -143,8 +143,10 @@ message GetQueryStatusResponse {
   optional int64 submitTime = 5;
   optional int64 finishTime = 7;
   optional bool hasResult = 8;
-  optional string queryMasterHost = 9;
-  optional int32 queryMasterPort = 10;
+  optional string errorMessage = 9;
+  optional string errorTrace = 10;
+  optional string queryMasterHost = 11;
+  optional int32 queryMasterPort = 12;
 }
 
 message GetQueryResultDataRequest {

@@ -29,7 +29,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.AlreadyExistsIndexException;
+import org.apache.tajo.catalog.exception.DuplicateIndexException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -41,7 +41,6 @@ import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.QueryManager;
@@ -62,7 +61,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.util.IPCUtil;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -107,9 +105,6 @@ public class QueryExecutor {
 
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-      ddlExecutor.execute(queryContext, plan);
-      response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      response.setState(OK);
 
       if (PlannerUtil.isDistExecDDL(rootNode)) {
         if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
@@ -118,7 +113,7 @@ public class QueryExecutor {
         executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        response.setResult(IPCUtil.buildOkRequestResult());
+        response.setState(OK);
         ddlExecutor.execute(queryContext, plan);
       }
 
@@ -535,7 +530,7 @@ public class QueryExecutor {
     }
 
     if (catalog.existIndexByName(databaseName, simpleIndexName)) {
-      throw new AlreadyExistsIndexException(qualifiedIndexName);
+      throw new DuplicateIndexException(qualifiedIndexName);
     }
   }
 

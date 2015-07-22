@@ -537,10 +537,6 @@ public class TajoCli {
           onError(response.getState().getMessage(), null);
         }
       }
-    } else {
-      if (response.getResult().hasErrorMessage()) {
-        onError(response.getResult().getErrorMessage(), null);
-      }
     }
 
     return wasError ? -1 : 0;

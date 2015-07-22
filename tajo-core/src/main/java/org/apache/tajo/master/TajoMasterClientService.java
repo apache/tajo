@@ -36,9 +36,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionListResponse;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
@@ -904,7 +902,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public IndexDescProto getIndexWithName(RpcController controller, SessionedStringProto request)
+    public IndexResponse getIndexWithName(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -919,14 +917,21 @@ public class TajoMasterClientService extends AbstractService {
           databaseName = session.getCurrentDatabase();
           indexName = request.getValue();
         }
-        return catalog.getIndexByName(databaseName, indexName).getProto();
+        IndexDescProto indexProto = catalog.getIndexByName(databaseName, indexName).getProto();
+        return IndexResponse.newBuilder()
+            .setState(OK)
+            .setIndexDesc(indexProto)
+            .build();
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return IndexResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
     @Override
-    public BoolProto existIndexWithName(RpcController controller, SessionedStringProto request)
+    public ReturnState existIndexWithName(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -941,15 +946,19 @@ public class TajoMasterClientService extends AbstractService {
           databaseName = session.getCurrentDatabase();
           indexName = request.getValue();
         }
-        return catalog.existIndexByName(databaseName, indexName) ?
-            ProtoUtil.TRUE : ProtoUtil.FALSE;
+
+        if (catalog.existIndexByName(databaseName, indexName)) {
+          return OK;
+        } else {
+          return errUndefinedIndexName(indexName);
+        }
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
     }
 
     @Override
-    public GetIndexesResponse getIndexesForTable(RpcController controller, SessionedStringProto request)
+    public IndexListResponse getIndexesForTable(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -977,7 +986,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto existIndexesForTable(RpcController controller, SessionedStringProto request)
+    public ReturnState existIndexesForTable(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -992,15 +1001,18 @@ public class TajoMasterClientService extends AbstractService {
           databaseName = session.getCurrentDatabase();
           tableName = request.getValue();
         }
-        return catalog.existIndexesByTable(databaseName, tableName) ?
-            ProtoUtil.TRUE : ProtoUtil.FALSE;
+        if (catalog.existIndexesByTable(databaseName, tableName)) {
+          return OK;
+        } else {
+          return errUndefinedIndex(tableName);
+        }
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
     }
 
     @Override
-    public GetIndexWithColumnsResponse getIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
+    public IndexResponse getIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -1028,7 +1040,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto existIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
+    public ReturnState existIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -1053,7 +1065,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public BoolProto dropIndex(RpcController controller, SessionedStringProto request)
+    public ReturnState dropIndex(RpcController controller, SessionedStringProto request)
         throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
