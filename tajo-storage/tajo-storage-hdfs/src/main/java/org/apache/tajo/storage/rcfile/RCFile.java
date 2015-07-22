@@ -1648,6 +1648,8 @@ public class RCFile {
 
     @Override
     public float getProgress() {
+      if(!inited) return super.getProgress();
+
       try {
         if(!more) {
           return 1.0f;
