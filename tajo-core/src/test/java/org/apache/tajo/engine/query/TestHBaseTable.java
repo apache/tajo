@@ -735,8 +735,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -791,8 +791,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -849,8 +849,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -907,8 +907,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id1", Type.TEXT);
@@ -964,8 +964,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -1020,8 +1020,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("rk", Type.TEXT);
@@ -1109,8 +1109,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -1181,8 +1181,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   public void testCTAS() throws Exception {
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -1302,8 +1302,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     try {
       // create test table
       KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.TEXT);

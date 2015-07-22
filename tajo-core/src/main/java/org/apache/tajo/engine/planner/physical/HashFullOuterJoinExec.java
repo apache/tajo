@@ -25,22 +25,26 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List<Tuple>>> {
+public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, TupleList>> {
 
   private boolean finalLoop; // final loop for right unmatched
+  private final List<Tuple> nullTupleList;
 
   public HashFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                PhysicalExec inner) {
     super(context, plan, outer, inner);
+    nullTupleList = nullTupleList(rightNumCols);
   }
 
   public Iterator<Tuple> getUnmatchedRight() {
 
     return new Iterator<Tuple>() {
 
-      private Iterator<Pair<Boolean, List<Tuple>>> iterator1 = tupleSlots.values().iterator();
+      private Iterator<Pair<Boolean, TupleList>> iterator1 = tupleSlots.values().iterator();
       private Iterator<Tuple> iterator2;
 
       @Override
@@ -49,7 +53,7 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
           return true;
         }
         for (iterator2 = null; !hasMore() && iterator1.hasNext();) {
-          Pair<Boolean, List<Tuple>> next = iterator1.next();
+          Pair<Boolean, TupleList> next = iterator1.next();
           if (!next.getFirst()) {
             iterator2 = next.getSecond().iterator();
           }
@@ -81,8 +85,7 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
     while (!context.isStopped() && !finished) {
       if (iterator != null && iterator.hasNext()) {
         frameTuple.setRight(iterator.next());
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        return projector.eval(frameTuple);
       }
       if (finalLoop) {
         finished = true;
@@ -100,18 +103,18 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
       frameTuple.setLeft(leftTuple);
 
       if (leftFiltered(leftTuple)) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       // getting corresponding right
-      Pair<Boolean, List<Tuple>> hashed = tupleSlots.get(toKey(leftTuple));
+      Pair<Boolean, TupleList> hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       if (hashed == null) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       Iterator<Tuple> rightTuples = rightFiltered(hashed.getSecond());
       if (!rightTuples.hasNext()) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       iterator = rightTuples;
@@ -122,12 +125,12 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
   }
 
   @Override
-  protected Map<Tuple, Pair<Boolean, List<Tuple>>> convert(Map<Tuple, List<Tuple>> hashed,
-                                                           boolean fromCache) throws IOException {
-    Map<Tuple, Pair<Boolean, List<Tuple>>> tuples = new HashMap<Tuple, Pair<Boolean, List<Tuple>>>(hashed.size());
-    for (Map.Entry<Tuple, List<Tuple>> entry : hashed.entrySet()) {
+  protected TupleMap<Pair<Boolean, TupleList>> convert(TupleMap<TupleList> hashed,
+                                                       boolean fromCache) throws IOException {
+    TupleMap<Pair<Boolean, TupleList>> tuples = new TupleMap<Pair<Boolean, TupleList>>(hashed.size());
+    for (Map.Entry<KeyTuple, TupleList> entry : hashed.entrySet()) {
       // flag: initially false (whether this join key had at least one match on the counter part)
-      tuples.put(entry.getKey(), new Pair<Boolean, List<Tuple>>(false, entry.getValue()));
+      tuples.putWihtoutKeyCopy(entry.getKey(), new Pair<Boolean, TupleList>(false, entry.getValue()));
     }
     return tuples;
   }
@@ -135,7 +138,7 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, List
   @Override
   public void rescan() throws IOException {
     super.rescan();
-    for (Pair<Boolean, List<Tuple>> value : tupleSlots.values()) {
+    for (Pair<Boolean, TupleList> value : tupleSlots.values()) {
       value.setFirst(false);
     }
     finalLoop = false;

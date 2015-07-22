@@ -22,12 +22,13 @@ import org.apache.tajo.ResourceProtos.TaskStatusProto;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 public interface Task {
 
   void init() throws IOException;
 
-  void fetch();
+  void fetch(ExecutorService fetcherExecutor);
 
   void run() throws Exception;
 

@@ -19,7 +19,7 @@
 package org.apache.tajo.plan.visitor;
 
 import org.apache.tajo.algebra.*;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 
 import java.util.Stack;
@@ -29,7 +29,7 @@ import java.util.Stack;
  */
 public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraVisitor<CONTEXT, RESULT> {
 
-  public RESULT visit(CONTEXT ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
+  public RESULT visit(CONTEXT ctx, Stack<Expr> stack, Expr expr) throws TajoException {
     RESULT result = null;
     if (expr instanceof UnaryOperator) {
       preHook(ctx, stack, expr);
@@ -46,14 +46,14 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
     return result;
   }
 
-  public RESULT visitUnaryOperator(CONTEXT ctx, Stack<Expr> stack, UnaryOperator expr) throws PlanningException {
+  public RESULT visitUnaryOperator(CONTEXT ctx, Stack<Expr> stack, UnaryOperator expr) throws TajoException {
     stack.push(expr);
     RESULT result = visit(ctx, stack, expr.getChild());
     stack.pop();
     return result;
   }
 
-  public RESULT visitBinaryOperator(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public RESULT visitBinaryOperator(CONTEXT ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     visit(ctx, stack, expr.getLeft());
     RESULT result = visit(ctx, stack, expr.getRight());
@@ -66,52 +66,52 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitProjection(CONTEXT ctx, Stack<Expr> stack, Projection expr) throws PlanningException {
+  public RESULT visitProjection(CONTEXT ctx, Stack<Expr> stack, Projection expr) throws TajoException {
     return super.visitProjection(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitLimit(CONTEXT ctx, Stack<Expr> stack, Limit expr) throws PlanningException {
+  public RESULT visitLimit(CONTEXT ctx, Stack<Expr> stack, Limit expr) throws TajoException {
     return super.visitLimit(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitSort(CONTEXT ctx, Stack<Expr> stack, Sort expr) throws PlanningException {
+  public RESULT visitSort(CONTEXT ctx, Stack<Expr> stack, Sort expr) throws TajoException {
     return super.visitSort(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitHaving(CONTEXT ctx, Stack<Expr> stack, Having expr) throws PlanningException {
+  public RESULT visitHaving(CONTEXT ctx, Stack<Expr> stack, Having expr) throws TajoException {
     return super.visitHaving(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitGroupBy(CONTEXT ctx, Stack<Expr> stack, Aggregation expr) throws PlanningException {
+  public RESULT visitGroupBy(CONTEXT ctx, Stack<Expr> stack, Aggregation expr) throws TajoException {
     return super.visitGroupBy(ctx, stack, expr);
   }
 
-  public RESULT visitFilter(CONTEXT ctx, Stack<Expr> stack, Selection expr) throws PlanningException {
+  public RESULT visitFilter(CONTEXT ctx, Stack<Expr> stack, Selection expr) throws TajoException {
     return super.visitFilter(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitJoin(CONTEXT ctx, Stack<Expr> stack, Join expr) throws PlanningException {
+  public RESULT visitJoin(CONTEXT ctx, Stack<Expr> stack, Join expr) throws TajoException {
     return super.visitJoin(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr) throws PlanningException {
+  public RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr) throws TajoException {
     return super.visitTableSubQuery(ctx, stack, expr);
   }
 
   @Override
   public RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr)
-      throws PlanningException {
+      throws TajoException {
     return super.visitSimpleTableSubquery(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws PlanningException {
+  public RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws TajoException {
     return super.visitRelationList(ctx, stack, expr);
   }
 
@@ -120,17 +120,17 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitCreateTable(CONTEXT ctx, Stack<Expr> stack, CreateTable expr) throws PlanningException {
+  public RESULT visitCreateTable(CONTEXT ctx, Stack<Expr> stack, CreateTable expr) throws TajoException {
     return super.visitCreateTable(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitDropTable(CONTEXT ctx, Stack<Expr> stack, DropTable expr) throws PlanningException {
+  public RESULT visitDropTable(CONTEXT ctx, Stack<Expr> stack, DropTable expr) throws TajoException {
     return super.visitDropTable(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws PlanningException {
+  public RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws TajoException {
     return super.visitAlterTable(ctx, stack, expr);
   }
 
@@ -138,7 +138,7 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   @Override
-  public RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws PlanningException {
+  public RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws TajoException {
     return super.visitInsert(ctx, stack, expr);
   }
 
@@ -148,17 +148,17 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitBetween(CONTEXT ctx, Stack<Expr> stack, BetweenPredicate expr) throws PlanningException {
+  public RESULT visitBetween(CONTEXT ctx, Stack<Expr> stack, BetweenPredicate expr) throws TajoException {
     return super.visitBetween(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitCaseWhen(CONTEXT ctx, Stack<Expr> stack, CaseWhenPredicate expr) throws PlanningException {
+  public RESULT visitCaseWhen(CONTEXT ctx, Stack<Expr> stack, CaseWhenPredicate expr) throws TajoException {
     return super.visitCaseWhen(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitValueListExpr(CONTEXT ctx, Stack<Expr> stack, ValueListExpr expr) throws PlanningException {
+  public RESULT visitValueListExpr(CONTEXT ctx, Stack<Expr> stack, ValueListExpr expr) throws TajoException {
     return super.visitValueListExpr(ctx, stack, expr);
   }
 
@@ -166,24 +166,24 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   // Functions and General Set Function Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   @Override
-  public RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
+  public RESULT visitFunction(CONTEXT ctx, Stack<Expr> stack, FunctionExpr expr) throws TajoException {
     return super.visitFunction(ctx, stack, expr);
   }
 
   @Override
   public RESULT visitCountRowsFunction(CONTEXT ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
-      throws PlanningException {
+      throws TajoException {
     return super.visitCountRowsFunction(ctx, stack, expr);
   }
 
   @Override
   public RESULT visitGeneralSetFunction(CONTEXT ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
-      throws PlanningException {
+      throws TajoException {
     return super.visitGeneralSetFunction(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws PlanningException {
+  public RESULT visitWindowFunction(CONTEXT ctx, Stack<Expr> stack, WindowFunctionExpr expr) throws TajoException {
     return super.visitWindowFunction(ctx, stack, expr);
   }
 
@@ -192,27 +192,27 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public RESULT visitDataType(CONTEXT ctx, Stack<Expr> stack, DataTypeExpr expr) throws PlanningException {
+  public RESULT visitDataType(CONTEXT ctx, Stack<Expr> stack, DataTypeExpr expr) throws TajoException {
     return super.visitDataType(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitLiteral(CONTEXT ctx, Stack<Expr> stack, LiteralValue expr) throws PlanningException {
+  public RESULT visitLiteral(CONTEXT ctx, Stack<Expr> stack, LiteralValue expr) throws TajoException {
     return super.visitLiteral(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitNullLiteral(CONTEXT ctx, Stack<Expr> stack, NullLiteral expr) throws PlanningException {
+  public RESULT visitNullLiteral(CONTEXT ctx, Stack<Expr> stack, NullLiteral expr) throws TajoException {
     return super.visitNullLiteral(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException {
+  public RESULT visitTimestampLiteral(CONTEXT ctx, Stack<Expr> stack, TimestampLiteral expr) throws TajoException {
     return super.visitTimestampLiteral(ctx, stack, expr);
   }
 
   @Override
-  public RESULT visitTimeLiteral(CONTEXT ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
+  public RESULT visitTimeLiteral(CONTEXT ctx, Stack<Expr> stack, TimeLiteral expr) throws TajoException {
     return super.visitTimeLiteral(ctx, stack, expr);
   }
 }

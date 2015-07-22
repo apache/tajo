@@ -111,7 +111,7 @@ public class TestBSTIndexExec {
     writer.open();
     long offset;
 
-    meta = CatalogUtil.newTableMeta("CSV");
+    meta = CatalogUtil.newTableMeta("TEXT");
     tablePath = StorageUtil.concatPath(workDir, "employee", "table.csv");
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());

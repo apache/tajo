@@ -1620,12 +1620,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Map<String, String> escapeTableMeta(Map<String, String> map) {
     Map<String, String> params = new HashMap<String, String>();
     for (Map.Entry<String, String> entry : map.entrySet()) {
-      if (entry.getKey().equals(StorageConstants.CSVFILE_DELIMITER)
-          || entry.getKey().equals(StorageConstants.TEXT_DELIMITER)) { //backward compatibility
+      if (entry.getKey().equals(StorageConstants.TEXT_DELIMITER)) {
         params.put(StorageConstants.TEXT_DELIMITER, StringUtils.unicodeEscapedDelimiter(entry.getValue()));
-      } else if (entry.getKey().equals(StorageConstants.CSVFILE_NULL)
-          || entry.getKey().equals(StorageConstants.TEXT_NULL)) { //backward compatibility
-        params.put(StorageConstants.TEXT_NULL, entry.getValue());
       } else {
         params.put(entry.getKey(), entry.getValue());
       }

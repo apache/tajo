@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;
@@ -33,8 +32,7 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
   private boolean allowArbitraryCrossJoin = true;
 
-  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right)
-      throws PlanningException {
+  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
     // TODO: the below will be improved after TAJO-1683
     allowArbitraryCrossJoin &= PlannerUtil.isCommutativeJoinType(edge.getJoinType())

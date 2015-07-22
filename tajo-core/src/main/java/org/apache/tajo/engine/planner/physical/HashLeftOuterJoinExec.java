@@ -31,10 +31,12 @@ import java.util.List;
 public class HashLeftOuterJoinExec extends HashJoinExec {
 
   private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
+  private final List<Tuple> nullTupleList;
 
   public HashLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                PhysicalExec rightChild) {
     super(context, plan, leftChild, rightChild);
+    nullTupleList = nullTupleList(rightNumCols);
   }
 
   @Override
@@ -46,8 +48,7 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
     while (!context.isStopped() && !finished) {
       if (iterator != null && iterator.hasNext()) {
         frameTuple.setRight(iterator.next());
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        return projector.eval(frameTuple);
       }
       Tuple leftTuple = leftChild.next(); // it comes from a disk
       if (leftTuple == null) { // if no more tuples in left tuples on disk, a join is completed.
@@ -57,17 +58,17 @@ public class HashLeftOuterJoinExec extends HashJoinExec {
       frameTuple.setLeft(leftTuple);
 
       if (leftFiltered(leftTuple)) {
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
 
       // getting corresponding right
-      List<Tuple> hashed = tupleSlots.get(toKey(leftTuple));
+      TupleList hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (!rightTuples.hasNext()) {
         //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway
         //output a tuple with the nulls padded rightTuple
-        iterator = nullIterator(rightNumCols);
+        iterator = nullTupleList.iterator();
         continue;
       }
       iterator = rightTuples;

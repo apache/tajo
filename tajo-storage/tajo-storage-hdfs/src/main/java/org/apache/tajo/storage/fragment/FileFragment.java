@@ -24,9 +24,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.storage.StorageFragmentProtos.*;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.storage.StorageFragmentProtos.FileFragmentProto;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -231,7 +230,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
-    fragmentBuilder.setStoreType(CatalogUtil.getStoreTypeString(StoreType.CSV));
+    fragmentBuilder.setStoreType(BuiltinStorages.TEXT);
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
   }

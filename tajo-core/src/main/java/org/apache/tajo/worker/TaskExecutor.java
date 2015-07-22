@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
@@ -25,19 +26,19 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.TaskRequestImpl;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.TaskStartEvent;
-import org.apache.tajo.ResourceProtos.TaskRequestProto;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -55,7 +56,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
   private final Map<TaskAttemptId, NodeResource> allocatedResourceMap;
   private final BlockingQueue<Task> taskQueue;
   private final AtomicInteger runningTasks;
-  private ExecutorService fetcherThreadPool;
+  private List<ExecutorService> fetcherThreadPoolList;
   private ExecutorService threadPool;
   private TajoConf tajoConf;
   private volatile boolean isStopped;
@@ -66,6 +67,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     this.allocatedResourceMap = Maps.newConcurrentMap();
     this.runningTasks = new AtomicInteger();
     this.taskQueue = new LinkedBlockingQueue<Task>();
+    this.fetcherThreadPoolList = Lists.newArrayList();
   }
 
   @Override
@@ -82,12 +84,12 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
         new ThreadFactoryBuilder().setNameFormat("Task executor #%d").build());
 
     int maxFetcherThreads = tajoConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
-    this.fetcherThreadPool = Executors.newFixedThreadPool(nThreads,
-        new ThreadFactoryBuilder().setNameFormat("Fetcher executor #%d").build());
-
-
     for (int i = 0; i < nThreads; i++) {
-      threadPool.submit(new TaskContainer(i, this));
+      ExecutorService fetcherThreadPool = Executors.newFixedThreadPool(maxFetcherThreads,
+          new ThreadFactoryBuilder().setNameFormat("TaskContainer[" + i + "] fetcher executor #%d").build());
+
+      threadPool.submit(new TaskContainer(i, this, fetcherThreadPool));
+      fetcherThreadPoolList.add(fetcherThreadPool);
     }
 
     super.serviceStart();
@@ -99,7 +101,9 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     isStopped = true;
 
     threadPool.shutdown();
-    fetcherThreadPool.shutdown();
+    for (ExecutorService fetcherThreadPool : fetcherThreadPoolList) {
+      fetcherThreadPool.shutdown();
+    }
     super.serviceStop();
   }
 
@@ -139,11 +143,6 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     }
   }
 
-  protected ExecutorService getFetcherExecutor() {
-    return fetcherThreadPool;
-  }
-
-
   protected Task createTask(ExecutionBlockContext executionBlockContext,
                             TaskRequestProto taskRequest) throws IOException {
     Task task = null;
@@ -153,7 +152,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
       LOG.error(errorMessage);
       executionBlockContext.fatalError(taskAttemptId, errorMessage);
     } else {
-      task = new TaskImpl(new TaskRequestImpl(taskRequest), executionBlockContext, getFetcherExecutor());
+      task = new TaskImpl(new TaskRequestImpl(taskRequest), executionBlockContext);
       executionBlockContext.getTasks().put(task.getTaskContext().getTaskId(), task);
     }
     return task;

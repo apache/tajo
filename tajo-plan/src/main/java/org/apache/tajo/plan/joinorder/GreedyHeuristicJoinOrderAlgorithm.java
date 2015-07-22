@@ -20,6 +20,8 @@ package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
@@ -42,7 +44,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
-      throws PlanningException {
+      throws TajoException {
 
     Set<JoinVertex> vertexes = TUtil.newHashSet();
     for (RelationNode relationNode : block.getRelations()) {
@@ -169,7 +171,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @throws PlanningException
    */
   private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraphContext graphContext, Set<JoinVertex> vertexes)
-      throws PlanningException {
+      throws TajoException {
     double minCost = Double.MAX_VALUE;
     JoinEdge bestJoin = null;
 
@@ -229,7 +231,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       }
       return swapLeftAndRightIfNecessary(bestJoin);
     } else {
-      throw new PlanningException("Cannot find the best join");
+      throw new TajoInternalError("Cannot find the best join order");
     }
   }
 
@@ -271,7 +273,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    */
   private static JoinEdge findJoin(final JoinEdgeFinderContext context, final JoinGraphContext graphContext,
                                    JoinVertex begin, final JoinVertex leftTarget, final JoinVertex rightTarget)
-      throws PlanningException {
+      throws TajoException {
 
     context.visited.add(begin);
 

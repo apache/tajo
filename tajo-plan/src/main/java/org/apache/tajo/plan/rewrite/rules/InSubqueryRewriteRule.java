@@ -19,15 +19,13 @@
 package org.apache.tajo.plan.rewrite.rules;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -80,7 +78,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     rewriter.visit(queryContext, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
@@ -89,7 +87,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
   private static final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
     @Override
     public Object visitFilter(Object context, LogicalPlan plan, LogicalPlan.QueryBlock block, SelectionNode node,
-                              Stack<LogicalNode> stack) throws PlanningException {
+                              Stack<LogicalNode> stack) throws TajoException {
       // Since InSubqueryRewriteRule is executed before FilterPushDownRule,
       // we can expect that in-subqueries are found at only SelectionNode.
 
@@ -164,7 +162,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
     }
 
     private void insertDistinctOperator(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                        ProjectionNode projectionNode, LogicalNode child) throws PlanningException {
+                                        ProjectionNode projectionNode, LogicalNode child) throws TajoException {
       if (projectionNode.getChild().getType() != NodeType.GROUP_BY) {
         Schema outSchema = projectionNode.getOutSchema();
         GroupbyNode dupRemoval = plan.createNode(GroupbyNode.class);
