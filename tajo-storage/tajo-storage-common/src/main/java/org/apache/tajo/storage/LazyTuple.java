@@ -123,6 +123,11 @@ public class LazyTuple implements Tuple, Cloneable {
     return get(fieldId).size();
   }
 
+  @Override
+  public void clearOffset() {
+    this.offset = -1;
+  }
+
   //////////////////////////////////////////////////////
   // Getter
   //////////////////////////////////////////////////////
