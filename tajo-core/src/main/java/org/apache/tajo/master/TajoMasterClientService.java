@@ -55,14 +55,16 @@ import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.*;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.util.IPCUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
@@ -953,7 +955,7 @@ public class TajoMasterClientService extends AbstractService {
           return errUndefinedIndexName(indexName);
         }
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -974,14 +976,15 @@ public class TajoMasterClientService extends AbstractService {
           tableName = request.getValue();
         }
 
-        GetIndexesResponse.Builder builder = GetIndexesResponse.newBuilder();
+        IndexListResponse.Builder builder = IndexListResponse.newBuilder().setState(OK);
         for (IndexDesc index : catalog.getAllIndexesByTable(databaseName, tableName)) {
-          builder.addIndexes(index.getProto());
+          builder.addIndexDesc(index.getProto());
         }
-        builder.setResult(IPCUtil.buildOkRequestResult());
         return builder.build();
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return IndexListResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
@@ -1007,7 +1010,7 @@ public class TajoMasterClientService extends AbstractService {
           return errUndefinedIndex(tableName);
         }
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -1030,12 +1033,15 @@ public class TajoMasterClientService extends AbstractService {
         String[] columnNames = new String[request.getColumnNamesCount()];
         columnNames = request.getColumnNamesList().toArray(columnNames);
 
-        GetIndexWithColumnsResponse.Builder builder = GetIndexWithColumnsResponse.newBuilder();
-        builder.setResult(IPCUtil.buildOkRequestResult());
-        builder.setIndexDesc(catalog.getIndexByColumnNames(databaseName, tableName, columnNames).getProto());
-        return builder.build();
+        return IndexResponse.newBuilder()
+            .setState(OK)
+            .setIndexDesc(catalog.getIndexByColumnNames(databaseName, tableName, columnNames).getProto())
+            .build();
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return IndexResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
@@ -1057,10 +1063,13 @@ public class TajoMasterClientService extends AbstractService {
         }
         String[] columnNames = new String[request.getColumnNamesCount()];
         columnNames = request.getColumnNamesList().toArray(columnNames);
-        return catalog.existIndexByColumnNames(databaseName, tableName, columnNames) ?
-            ProtoUtil.TRUE : ProtoUtil.FALSE;
+        if (catalog.existIndexByColumnNames(databaseName, tableName, columnNames)) {
+          return OK;
+        } else {
+          return errUndefinedIndex(tableName, request.getColumnNamesList());
+        }
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
 
@@ -1070,6 +1079,7 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        QueryContext queryContext = new QueryContext(conf, session);
 
         String indexName, databaseName;
         if (CatalogUtil.isFQTableName(request.getValue())) {
@@ -1080,10 +1090,11 @@ public class TajoMasterClientService extends AbstractService {
           databaseName = session.getCurrentDatabase();
           indexName = request.getValue();
         }
-        return catalog.dropIndex(databaseName, indexName) ?
-            ProtoUtil.TRUE : ProtoUtil.FALSE;
+        catalog.dropIndex(databaseName, indexName);
+
+        return OK;
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return returnError(t);
       }
     }
   }

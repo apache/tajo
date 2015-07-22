@@ -34,6 +34,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
@@ -509,7 +510,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
 
-      return isSuccess(stub.createIndex(null, index.getProto()));
+      final ReturnState state = stub.createIndex(null, index.getProto());
+      if (isSuccess(state)) {
+        return true;
+      } else {
+        // TODO
+        return false;
+      }
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);

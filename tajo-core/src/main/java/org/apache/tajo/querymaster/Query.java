@@ -45,6 +45,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
@@ -566,7 +567,7 @@ public class Query implements EventHandler<QueryEvent> {
           LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
         } else {
           LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-          throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
+          throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
         }
       }
     }

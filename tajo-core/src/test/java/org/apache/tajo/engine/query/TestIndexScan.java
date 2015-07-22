@@ -27,13 +27,14 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 @Category(IntegrationTest.class)
 public class TestIndexScan extends QueryTestCaseBase {
 
-  public TestIndexScan() throws ServiceException {
+  public TestIndexScan() throws ServiceException, SQLException {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     Map<String,String> sessionVars = new HashMap<String, String>();
     sessionVars.put(SessionVars.INDEX_ENABLED.keyname(), "true");

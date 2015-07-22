@@ -135,7 +135,7 @@ public class DDLExecutor {
     }
 
     if (catalog.existIndexByName(databaseName, simpleIndexName)) {
-      throw new AlreadyExistsIndexException(simpleIndexName);
+      throw new DuplicateIndexException(simpleIndexName);
     }
 
     ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
@@ -152,7 +152,7 @@ public class DDLExecutor {
       LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
     } else {
       LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-      throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
+      throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
     }
   }
 
@@ -168,14 +168,14 @@ public class DDLExecutor {
     }
 
     if (!catalog.existIndexByName(databaseName, simpleIndexName)) {
-      throw new NoSuchIndexException(simpleIndexName);
+      throw new UndefinedIndexException(simpleIndexName);
     }
 
     IndexDesc desc = catalog.getIndexByName(databaseName, simpleIndexName);
 
     if (!catalog.dropIndex(databaseName, simpleIndexName)) {
       LOG.info("Cannot drop index \"" + simpleIndexName + "\".");
-      throw new CatalogException("Cannot drop index \"" + simpleIndexName + "\".");
+      throw new TajoInternalError("Cannot drop index \"" + simpleIndexName + "\".");
     }
 
     Path indexPath = new Path(desc.getIndexPath());
