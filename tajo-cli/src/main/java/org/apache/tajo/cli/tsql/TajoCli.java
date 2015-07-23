@@ -585,7 +585,6 @@ public class TajoCli {
       int initRetries = 0;
       int progressRetries = 0;
       while (true) {
-        // TODO - configurable
         status = client.getQueryStatus(queryId);
         if(TajoClientUtil.isQueryWaitingForSchedule(status.getState())) {
           Thread.sleep(Math.min(20 * initRetries, 1000));

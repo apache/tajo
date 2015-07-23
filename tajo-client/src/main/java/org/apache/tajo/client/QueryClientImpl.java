@@ -183,24 +183,15 @@ public class QueryClientImpl implements QueryClient {
 
     QueryId queryId = new QueryId(response.getQueryId());
 
-    if (response.getIsForwarded()) {
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+    switch (response.getResultType()) {
+      case NO_RESULT:
         return this.createNullResultSet(queryId);
-      } else {
+      case ENCLOSED:
+        return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
+      case FETCH:
         return this.getQueryResultAndWait(queryId);
-      }
-
-    } else {
-      // If a non-forwarded insert into query
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() == 0) {
-        return this.createNullResultSet(queryId);
-      } else {
-        if (response.hasResultSet() || response.hasTableDesc()) {
-          return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
-        } else {
-          return this.createNullResultSet(queryId);
-        }
-      }
+      default:
+        throw new RuntimeException("Unknown Result Type");
     }
   }
 
@@ -211,22 +202,16 @@ public class QueryClientImpl implements QueryClient {
     throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
-    if (response.getIsForwarded()) {
 
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        return this.createNullResultSet(queryId);
-      } else {
-        return this.getQueryResultAndWait(queryId);
-      }
-
-    } else {
-
-      if (response.hasResultSet() || response.hasTableDesc()) {
-        return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
-      } else {
-        return this.createNullResultSet(queryId);
-      }
-
+    switch (response.getResultType()) {
+    case NO_RESULT:
+      return this.createNullResultSet(queryId);
+    case ENCLOSED:
+      return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
+    case FETCH:
+      return this.getQueryResultAndWait(queryId);
+    default:
+      throw new RuntimeException("Unknown Result Type");
     }
   }
 

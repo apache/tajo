@@ -23,6 +23,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.*;
@@ -163,18 +164,25 @@ public class TajoStatement implements Statement {
     SQLExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
-    if (response.getIsForwarded() && !queryId.isNull()) {
+
+    switch (response.getResultType()) {
+
+    case NO_RESULT:
+      return TajoClientUtil.createNullResultSet(queryId);
+
+    case ENCLOSED:
+      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+
+    case FETCH:
       WaitingResultSet result = new WaitingResultSet(tajoClient, queryId, fetchSize);
       if (blockWait) {
         result.getSchema();
       }
       return result;
-    }
 
-    if (response.hasResultSet() || response.hasTableDesc()) {
-      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+    default:
+      throw new TajoInternalError("Unknown Result Type: " + response.getResultType().name());
     }
-    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   protected void checkConnection(String errorMsg) throws SQLException {
