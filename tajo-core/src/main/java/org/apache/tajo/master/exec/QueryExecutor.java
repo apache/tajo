@@ -96,7 +96,6 @@ public class QueryExecutor {
                       LogicalPlan plan) throws Exception {
 
     SubmitQueryResponse.Builder response = SubmitQueryResponse.newBuilder();
-    response.setIsForwarded(false);
     response.setUserName(queryContext.get(SessionVars.USERNAME));
 
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
@@ -513,7 +512,6 @@ public class QueryExecutor {
 
     queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
 
-    responseBuilder.setIsForwarded(true);
     responseBuilder.setState(OK);
     responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
     responseBuilder.setResultType(ResultType.FETCH);

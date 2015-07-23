@@ -167,9 +167,6 @@ public class TajoStatement implements Statement {
 
     switch (response.getResultType()) {
 
-    case NO_RESULT:
-      return TajoClientUtil.createNullResultSet(queryId);
-
     case ENCLOSED:
       return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
 
@@ -181,7 +178,7 @@ public class TajoStatement implements Statement {
       return result;
 
     default:
-      throw new TajoInternalError("Unknown Result Type: " + response.getResultType().name());
+      return TajoClientUtil.createNullResultSet(queryId);
     }
   }
 

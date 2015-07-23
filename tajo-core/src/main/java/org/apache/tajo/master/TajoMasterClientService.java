@@ -282,7 +282,6 @@ public class TajoMasterClientService extends AbstractService {
         return ClientProtos.SubmitQueryResponse.newBuilder()
             .setState(returnError(e))
             .setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto())
-            .setIsForwarded(true)
             .setUserName(context.getConf().getVar(ConfVars.USERNAME))
             .build();
 

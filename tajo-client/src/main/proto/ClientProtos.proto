@@ -132,7 +132,6 @@ message SubmitQueryResponse {
 
   optional QueryIdProto queryId = 3;
   optional string userName = 4;
-  optional bool isForwarded = 5 [default = false];
 
   optional string queryMasterHost = 6;
   optional int32 queryMasterPort = 7;

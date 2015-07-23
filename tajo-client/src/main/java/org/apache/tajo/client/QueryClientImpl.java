@@ -184,14 +184,12 @@ public class QueryClientImpl implements QueryClient {
     QueryId queryId = new QueryId(response.getQueryId());
 
     switch (response.getResultType()) {
-      case NO_RESULT:
-        return this.createNullResultSet(queryId);
       case ENCLOSED:
         return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
       case FETCH:
         return this.getQueryResultAndWait(queryId);
       default:
-        throw new RuntimeException("Unknown Result Type");
+        return this.createNullResultSet(queryId);
     }
   }
 
@@ -204,14 +202,12 @@ public class QueryClientImpl implements QueryClient {
     QueryId queryId = new QueryId(response.getQueryId());
 
     switch (response.getResultType()) {
-    case NO_RESULT:
-      return this.createNullResultSet(queryId);
     case ENCLOSED:
       return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
     case FETCH:
       return this.getQueryResultAndWait(queryId);
     default:
-      throw new RuntimeException("Unknown Result Type");
+      return this.createNullResultSet(queryId);
     }
   }
 
