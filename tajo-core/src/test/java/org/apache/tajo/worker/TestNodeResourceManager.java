@@ -122,7 +122,7 @@ public class TestNodeResourceManager {
 
       @Override
       protected void serviceStop() throws Exception {
-        workerContext.getWorkerSystemMetrics().stop();
+        workerContext.getMetrics().stop();
         super.serviceStop();
       }
     };

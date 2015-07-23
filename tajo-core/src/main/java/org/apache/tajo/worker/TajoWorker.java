@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.metrics.Node;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
@@ -240,10 +241,10 @@ public class TajoWorker extends CompositeService {
   }
 
   private void initWorkerMetrics() {
-    workerSystemMetrics = new TajoSystemMetrics(systemConf, "worker", workerContext.getWorkerName());
+    workerSystemMetrics = new TajoSystemMetrics(systemConf, Node.class, workerContext.getWorkerName());
     workerSystemMetrics.start();
 
-    workerSystemMetrics.register("querymaster", "runningQueries", new Gauge<Integer>() {
+    workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM, new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         if(queryMasterManagerService != null) {
@@ -254,7 +255,7 @@ public class TajoWorker extends CompositeService {
       }
     });
 
-    workerSystemMetrics.register("task", "runningTasks", new Gauge<Integer>() {
+    workerSystemMetrics.register(Node.Tasks.RUNNING_TASKS, new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         if(taskExecutor != null) {
@@ -397,7 +398,7 @@ public class TajoWorker extends CompositeService {
 
     LocalDirAllocator getLocalDirAllocator();
 
-    TajoSystemMetrics getWorkerSystemMetrics();
+    TajoSystemMetrics getMetrics();
 
     HashShuffleAppenderManager getHashShuffleAppenderManager();
 
@@ -505,7 +506,7 @@ public class TajoWorker extends CompositeService {
       }
     }
 
-    public TajoSystemMetrics getWorkerSystemMetrics() {
+    public TajoSystemMetrics getMetrics() {
       return workerSystemMetrics;
     }
 

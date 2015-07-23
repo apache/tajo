@@ -78,6 +78,8 @@ public class StorageConstants {
   public static final String DEFAULT_BINARY_SERDE = "org.apache.tajo.storage.BinarySerializerDeserializer";
   public static final String DEFAULT_TEXT_SERDE = "org.apache.tajo.storage.TextSerializerDeserializer";
 
+  public static final String ORC_MAX_MERGE_DISTANCE = "orc.max.merge.distance";
+  public static final String DEFAULT_ORC_MAX_MERGE_DISTANCE = "1048576";  // 1MB
 
   // Parquet file properties -------------------------------------------------
   public static final String PARQUET_DEFAULT_BLOCK_SIZE;
