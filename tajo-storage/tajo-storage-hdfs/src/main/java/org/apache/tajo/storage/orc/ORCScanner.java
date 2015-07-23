@@ -30,7 +30,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.StorageConstants;
@@ -86,7 +85,7 @@ public class ORCScanner extends FileScanner {
 
       default:
         LOG.error("Not supported type for "+type.toString());
-        throw new UnimplementedException("This data type is not supported currently: "+type.toString());
+        throw new UnimplementedException("ORC type: "+type.toString());
     }
   }
 
@@ -268,7 +267,7 @@ public class ORCScanner extends FileScanner {
         return NullDatum.get();
 
       default:
-        throw new UnsupportedException("This data type is not supported currently: "+type.toString());
+        throw new UnimplementedException("ORC type: "+type.toString());
     }
   }
 
