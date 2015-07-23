@@ -24,37 +24,67 @@ import com.codahale.metrics.MetricSet;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.master.rm.NodeState;
+import org.apache.tajo.metrics.Master.Cluster;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class WorkerResourceMetricsGaugeSet implements MetricSet {
-  TajoMaster.MasterContext tajoMasterContext;
-  public WorkerResourceMetricsGaugeSet(TajoMaster.MasterContext tajoMasterContext) {
-    this.tajoMasterContext = tajoMasterContext;
+public class ClusterResourceMetricSet implements MetricSet {
+  TajoMaster.MasterContext masterContext;
+  public ClusterResourceMetricSet(TajoMaster.MasterContext masterContext) {
+    this.masterContext = masterContext;
   }
 
   @Override
   public Map<String, Metric> getMetrics() {
     Map<String, Metric> metricsMap = new HashMap<String, Metric>();
-    metricsMap.put("totalWorkers", new Gauge<Integer>() {
+
+    metricsMap.put(Cluster.TOTAL_NODES.name(), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
-        return tajoMasterContext.getResourceManager().getNodes().size();
+        return masterContext.getResourceManager().getNodes().size();
       }
     });
 
-    metricsMap.put("liveWorkers", new Gauge<Integer>() {
+    metricsMap.put(Cluster.ACTIVE_NODES.name(), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         return getNumWorkers(NodeState.RUNNING);
       }
     });
 
-    metricsMap.put("deadWorkers", new Gauge<Integer>() {
+    metricsMap.put(Cluster.LOST_NODES.name(), new Gauge<Integer>() {
       @Override
       public Integer getValue() {
         return getNumWorkers(NodeState.LOST);
+      }
+    });
+
+    metricsMap.put(Cluster.TOTAL_MEMORY.name(), new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        return masterContext.getResourceManager().getScheduler().getMaximumResourceCapability().getMemory();
+      }
+    });
+
+    metricsMap.put(Cluster.FREE_MEMORY.name(), new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        return masterContext.getResourceManager().getScheduler().getClusterResource().getMemory();
+      }
+    });
+
+    metricsMap.put(Cluster.TOTAL_VCPU.name(), new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        return masterContext.getResourceManager().getScheduler().getMaximumResourceCapability().getVirtualCores();
+      }
+    });
+
+    metricsMap.put(Cluster.FREE_VCPU.name(), new Gauge<Integer>() {
+      @Override
+      public Integer getValue() {
+        return masterContext.getResourceManager().getScheduler().getClusterResource().getVirtualCores();
       }
     });
 
@@ -63,7 +93,7 @@ public class WorkerResourceMetricsGaugeSet implements MetricSet {
 
   protected int getNumWorkers(NodeState status) {
     int numWorkers = 0;
-    for(NodeStatus eachNodeStatus : tajoMasterContext.getResourceManager().getNodes().values()) {
+    for(NodeStatus eachNodeStatus : masterContext.getResourceManager().getNodes().values()) {
       if(eachNodeStatus.getState() == status) {
         numWorkers++;
       }

@@ -230,7 +230,6 @@ public class QueryMasterManagerService extends CompositeService
   public void executeQuery(RpcController controller,
                            QueryExecutionRequest request,
                            RpcCallback<PrimitiveProtos.NullProto> done) {
-    workerContext.getWorkerSystemMetrics().counter("querymaster", "numQuery").inc();
 
     QueryId queryId = new QueryId(request.getQueryId());
     LOG.info("Receive executeQuery request:" + queryId);

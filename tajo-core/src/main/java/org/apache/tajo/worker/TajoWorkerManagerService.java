@@ -109,7 +109,6 @@ public class TajoWorkerManagerService extends CompositeService
   public void allocateTasks(RpcController controller,
                             BatchAllocationRequest request,
                             RpcCallback<BatchAllocationResponse> done) {
-    workerContext.getWorkerSystemMetrics().counter("query", "allocationRequestNum").inc();
     workerContext.getNodeResourceManager().getDispatcher().
         getEventHandler().handle(new NodeResourceAllocateEvent(request, done));
   }

@@ -56,6 +56,11 @@ public class SessionManager extends CompositeService implements EventHandler<Ses
     super.serviceStop();
   }
 
+  public int currentNum() {
+    return this.sessions.size();
+  }
+
+
   private void assertSessionExistence(String sessionId) throws InvalidSessionException {
     if (!sessions.containsKey(sessionId)) {
       throw new InvalidSessionException(sessionId);
