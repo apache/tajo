@@ -547,12 +547,16 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.setFiltersTobePushed(transformedMap.keySet());
 
     stack.push(projectionNode);
-    childNode = visit(context, plan, plan.getBlock(childNode), childNode, stack);
+    visit(context, plan, plan.getBlock(childNode), childNode, stack);
     stack.pop();
 
     // find not matched after visiting child
     for (EvalNode eval: context.pushingDownFilters) {
-      notMatched.add(transformedMap.get(eval));
+      if (transformedMap.containsKey(eval)) {
+        notMatched.add(transformedMap.get(eval));
+      } else {
+        notMatched.add(eval);
+      }
     }
 
     EvalNode qual = null;

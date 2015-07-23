@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
@@ -347,7 +348,7 @@ public class EvalTreeUtil {
   }
 
   private static boolean isJoinQualWithOnlyColumns(@Nullable LogicalPlan.QueryBlock block,
-                                            Column left, Column right) {
+                                                   Column left, Column right) {
     String leftQualifier = CatalogUtil.extractQualifier(left.getQualifiedName());
     String rightQualifier = CatalogUtil.extractQualifier(right.getQualifiedName());
 
