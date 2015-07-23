@@ -24,7 +24,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-	<tns:base version="5">
+	<tns:base version="6">
 		<tns:objects>
 			<tns:Object order="0" type="table" name="META">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -157,7 +157,8 @@
   				TID INT NOT NULL REFERENCES TABLES (TID) ON DELETE CASCADE,
   				PARTITION_NAME VARCHAR(767),
   				PATH VARCHAR(1024),
-  				CONSTRAINT C_PARTITION_PK PRIMARY KEY (PARTITION_ID)
+  				CONSTRAINT C_PARTITIONS_PK PRIMARY KEY (PARTITION_ID),
+  				CONSTRAINT C_PARTITIONS_UNIQ UNIQUE (TID, PARTITION_NAME)
 				)]]>
 				</tns:sql>
 			</tns:Object>

@@ -25,7 +25,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-  <tns:base version="5">
+  <tns:base version="6">
     <tns:objects>
   		<tns:Object order="0" type="table" name="meta">
   			<tns:sql><![CDATA[
@@ -214,7 +214,10 @@
 				END;]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object order="21" type="table" name="PARTITION_KEYS">
+      <tns:Object order="21" type="index" name="PARTITIONS_UNIQUE_IDX" dependsOn="PARTITIONS">
+        <tns:sql><![CDATA[CREATE UNIQUE INDEX PARTITIONS_UNIQUE_IDX on PARTITIONS (TID, PARTITION_NAME)]]></tns:sql>
+      </tns:Object>
+      <tns:Object order="22" type="table" name="PARTITION_KEYS">
         <tns:sql><![CDATA[
           CREATE TABLE PARTITION_KEYS (
             PARTITION_ID INT NOT NULL,
