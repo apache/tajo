@@ -47,8 +47,6 @@ public class TaskContainer implements Runnable {
       try {
         task = executor.getNextTask();
 
-        task.getExecutionBlockContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
-
         if (LOG.isDebugEnabled()) {
           LOG.debug(sequenceId + TaskContainer.class.getSimpleName() +
               " got task:" + task.getTaskContext().getTaskId());
