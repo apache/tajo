@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.FileUtil;
@@ -42,11 +43,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeCatalogUpgrade;
@@ -2192,7 +2189,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       sb = new StringBuilder();
 
-      for(int i = 0; i < partitions.size(); i++) {
+      int i = 0, lastIndex = 0;
+      int batchSize = conf.getInt(TajoConf.ConfVars.PARTITION_BULK_INSERT_BATCH_SIZE.varname, 1000);
+      for(i = 0; i < partitions.size(); i++) {
         PartitionDescProto partition = partitions.get(i);
         partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
 
@@ -2206,8 +2205,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
         addPartition(tableId, partition, stmt, sb);
         addPartitionKeys(tableId, partition, stmt, sb);
+
+        if (i >= lastIndex + batchSize && lastIndex != i) {
+          stmt.executeBatch();
+          stmt.clearBatch();
+          lastIndex = i;
+        }
+      }
+
+      if (lastIndex != i) {
         stmt.executeBatch();
-        stmt.clearBatch();
       }
 
       if (conn != null) {

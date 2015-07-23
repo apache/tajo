@@ -290,6 +290,10 @@ public class TajoConf extends Configuration {
     PYTHON_CODE_DIR("tajo.function.python.code-dir", ""),
     PYTHON_CONTROLLER_LOG_DIR("tajo.function.python.controller.log-dir", ""),
 
+    // Partition
+    PARTITION_BULK_INSERT_BATCH_SIZE("tajo.partition.bulk.insert.batch.size", 1000),
+
+
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration
     //
