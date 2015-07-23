@@ -198,6 +198,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
+    context.pushingDownFilters.addAll(nonPushableQuals);
     List<EvalNode> matched = TUtil.newList();
 
     // If the query involves a subquery, the stack can be empty.
@@ -232,13 +233,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     context.pushingDownFilters.removeAll(matched);
 
-    if (nonPushableQuals.size() > 0) {
-      List<EvalNode> nonEquiThetaJoinQuals = extractNonEquiThetaJoinQuals(nonPushableQuals, block, joinNode);
+    if (context.pushingDownFilters.size() > 0) {
+      List<EvalNode> nonEquiThetaJoinQuals = extractNonEquiThetaJoinQuals(context.pushingDownFilters, block, joinNode);
       if (nonEquiThetaJoinQuals.size() > 0) {
         SelectionNode selectionNode = createSelectionParentForNonEquiThetaJoinQuals(plan, block, stack, joinNode,
             nonEquiThetaJoinQuals);
 
-        nonPushableQuals.removeAll(nonEquiThetaJoinQuals);
+        context.pushingDownFilters.removeAll(nonEquiThetaJoinQuals);
         return selectionNode;
       }
     }
@@ -589,11 +590,12 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     // find not matched after visiting child
     for (EvalNode eval: context.pushingDownFilters) {
-      if (transformedMap.containsKey(eval)) {
-        notMatched.add(transformedMap.get(eval));
-      } else {
-        notMatched.add(eval);
-      }
+//      if (transformedMap.containsKey(eval)) {
+//        notMatched.add(transformedMap.get(eval));
+//      } else {
+//        notMatched.add(eval);
+//      }
+      notMatched.add(transformedMap.get(eval));
     }
 
     EvalNode qual = null;
