@@ -34,11 +34,13 @@ import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.ProtoUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
 
 import static org.apache.tajo.ResourceProtos.*;
+import static org.apache.tajo.util.ProtoUtil.TRUE;
 
 public class QueryCoordinatorService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(QueryCoordinatorService.class);
@@ -48,9 +50,6 @@ public class QueryCoordinatorService extends AbstractService {
   private final ProtocolServiceHandler masterHandler;
   private AsyncRpcServer server;
   private InetSocketAddress bindAddress;
-
-  private final BoolProto BOOL_TRUE = BoolProto.newBuilder().setValue(true).build();
-  private final BoolProto BOOL_FALSE = BoolProto.newBuilder().setValue(false).build();
 
   public QueryCoordinatorService(TajoMaster.MasterContext context) {
     super(QueryCoordinatorService.class.getName());
@@ -106,7 +105,7 @@ public class QueryCoordinatorService extends AbstractService {
       command = queryManager.queryHeartbeat(request);
 
       TajoHeartbeatResponse.Builder builder = TajoHeartbeatResponse.newBuilder();
-      builder.setHeartbeatResult(BOOL_TRUE);
+      builder.setHeartbeatResult(TRUE);
       if(command != null) {
         builder.setResponseCommand(command);
       }
