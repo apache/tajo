@@ -590,11 +590,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     // find not matched after visiting child
     for (EvalNode eval: context.pushingDownFilters) {
-//      if (transformedMap.containsKey(eval)) {
-//        notMatched.add(transformedMap.get(eval));
-//      } else {
-//        notMatched.add(eval);
-//      }
       notMatched.add(transformedMap.get(eval));
     }
 
