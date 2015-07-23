@@ -56,6 +56,7 @@ public class ORCScanner extends FileScanner {
   private Vector [] vectors;
   private int currentPosInBatch = 0;
   private int batchSize = 0;
+  private Tuple outTuple;
 
   public ORCScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
     super(conf, schema, meta, fragment);
@@ -111,6 +112,8 @@ public class ORCScanner extends FileScanner {
     }
 
     super.init();
+
+    outTuple = new VTuple(targets.length);
 
     Path path = fragment.getPath();
 
@@ -174,15 +177,13 @@ public class ORCScanner extends FileScanner {
       }
     }
 
-    Tuple tuple = new VTuple(targets.length);
-
     for (int i=0; i<targetColInfo.length; i++) {
-      tuple.put(i, createValueDatum(vectors[i], targetColInfo[i].type));
+      outTuple.put(i, createValueDatum(vectors[i], targetColInfo[i].type));
     }
 
     currentPosInBatch++;
 
-    return tuple;
+    return outTuple;
   }
 
   // TODO: support more types
