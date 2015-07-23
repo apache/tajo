@@ -72,10 +72,10 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
   }
 
   @Override
-  public TajoSystemMetrics getWorkerSystemMetrics() {
+  public TajoSystemMetrics getMetrics() {
 
     if (tajoSystemMetrics == null) {
-      tajoSystemMetrics = new TajoSystemMetrics(getConf(), "test-file-group", "localhost");
+      tajoSystemMetrics = new TajoSystemMetrics(getConf(), org.apache.tajo.metrics.Node.class, "localhost");
       tajoSystemMetrics.start();
     }
     return tajoSystemMetrics;

@@ -101,8 +101,6 @@ public class QueryMasterTask extends CompositeService {
 
   private volatile boolean isStopped;
 
-  private TajoMetrics queryMetrics;
-
   private Throwable initError;
 
   private NodeResource allocation;
@@ -149,12 +147,6 @@ public class QueryMasterTask extends CompositeService {
     dispatcher.register(TaskSchedulerEvent.EventType.class, new TaskSchedulerDispatcher());
     dispatcher.register(LocalTaskEventType.class, new LocalTaskEventHandler());
 
-    try {
-      queryMetrics = new TajoMetrics(queryId.toString());
-    } catch (Throwable t) {
-      LOG.error(t.getMessage(), t);
-      initError = t;
-    }
     super.serviceInit(systemConf);
   }
 
@@ -189,15 +181,6 @@ public class QueryMasterTask extends CompositeService {
 
     if (!queryContext.getBool(SessionVars.DEBUG_ENABLED)) {
       cleanupQuery(getQueryId());
-    }
-
-    if (queryMetrics != null) {
-      queryMasterContext.getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          queryMetrics.report(new MetricsConsoleReporter());
-        }
-      });
     }
 
     super.serviceStop();
@@ -559,10 +542,6 @@ public class QueryMasterTask extends CompositeService {
         return 0.0f;
       }
       return query.getProgress();
-    }
-
-    public TajoMetrics getQueryMetrics() {
-      return queryMetrics;
     }
 
     /**

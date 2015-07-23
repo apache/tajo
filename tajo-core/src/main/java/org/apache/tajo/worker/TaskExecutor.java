@@ -175,8 +175,6 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
         }
         taskQueue.put(task);
         runningTasks.incrementAndGet();
-        context.getWorkerContext().getWorkerSystemMetrics()
-            .histogram("tasks", "running").update(runningTasks.get());
       } else {
         LOG.warn("Release duplicate task resource: " + event.getAllocatedResource());
         stopTask(event.getTaskAttemptId());
