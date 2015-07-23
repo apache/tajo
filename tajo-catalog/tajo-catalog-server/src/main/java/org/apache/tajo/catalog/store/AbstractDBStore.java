@@ -1001,7 +1001,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           if(partitionDesc != null) {
             throw new DuplicatePartitionException(partitionName);
           }
-          addPartition(tableId, alterTableDescProto.getPartitionDesc(), null);
+          addPartition(tableId, alterTableDescProto.getPartitionDesc());
           break;
         case DROP_PARTITION:
           partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
@@ -1009,7 +1009,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           if(partitionDesc == null) {
             throw new UndefinedPartitionException(partitionName);
           }
-          dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
+          dropPartition(partitionDesc.getId());
           break;
         case SET_PROPERTY:
           setProperties(tableId, alterTableDescProto.getParams());
@@ -1243,47 +1243,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition,
-                           Connection connection) throws CatalogException {
+  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition) throws CatalogException {
     Connection conn = null;
-    PreparedStatement pstmt = null;
-    final String ADD_PARTITION_SQL =
-      "INSERT INTO " + TB_PARTTIONS
-        + " (" + COL_TABLES_PK + ", PARTITION_NAME, PATH) VALUES (?,?,?)";
-
-    final String ADD_PARTITION_KEYS_SQL =
-      "INSERT INTO " + TB_PARTTION_KEYS + " (" + COL_PARTITIONS_PK + ", " + COL_COLUMN_NAME + ", "
-      + COL_PARTITION_VALUE + ") VALUES (?,?,?)";
+    Statement stmt = null;
 
     try {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(ADD_PARTITION_SQL);
-      }
+      conn = getConnection();
+      conn.setAutoCommit(false);
+      stmt = conn.createStatement();
 
-      if (connection == null) {
-        conn = getConnection();
-        conn.setAutoCommit(false);
-        pstmt = conn.prepareStatement(ADD_PARTITION_SQL);
-      } else {
-        pstmt = connection.prepareStatement(ADD_PARTITION_SQL);
-      }
-
-      pstmt.setInt(1, tableId);
-      pstmt.setString(2, partition.getPartitionName());
-      pstmt.setString(3, partition.getPath());
-      pstmt.executeUpdate();
-      pstmt.close();
-
-      if (partition.getPartitionKeysCount() > 0) {
-        if (conn != null) {
-          pstmt = conn.prepareStatement(ADD_PARTITION_KEYS_SQL);
-        } else {
-          pstmt = connection.prepareStatement(ADD_PARTITION_KEYS_SQL);
-        }
-        int partitionId = getPartitionId(tableId, partition.getPartitionName());
-        addPartitionKeys(pstmt, partitionId, partition);
-        pstmt.executeBatch();
-      }
+      addPartition(tableId, partition, stmt, new StringBuilder());
+      stmt.executeBatch();
 
       if (conn != null) {
         conn.commit();
@@ -1298,84 +1268,85 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(pstmt);
+      CatalogUtil.closeQuietly(stmt);
     }
   }
 
-  public int getPartitionId(int tableId, String partitionName) throws CatalogException {
-    Connection conn = null;
-    ResultSet res = null;
-    PreparedStatement pstmt = null;
-    int retValue = -1;
-
+  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition,
+                           Statement stmt, StringBuilder sb) throws CatalogException {
     try {
-      String sql = "SELECT " + COL_PARTITIONS_PK + " FROM " + TB_PARTTIONS +
-        " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
+      sb.delete(0, sb.length());
 
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
+      sb.append("INSERT INTO ").append(TB_PARTTIONS).append(" ");
+      sb.append(" (").append(COL_TABLES_PK).append(", PARTITION_NAME, PATH)");
+      sb.append(" VALUES (").append(tableId).append(", '").append(partition.getPartitionName());
+      sb.append("' , '").append(partition.getPath()).append("')");
+      stmt.addBatch(sb.toString());
+
+      if (partition.getPartitionKeysCount() > 0) {
+        for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
+          PartitionKeyProto partitionKey = partition.getPartitionKeys(i);
+
+          sb.delete(0, sb.length());
+          sb.append("INSERT INTO ").append(TB_PARTTION_KEYS).append(" (").append(COL_PARTITIONS_PK);
+          sb.append(", ").append(COL_COLUMN_NAME).append(", ").append(COL_PARTITION_VALUE).append(")");
+          sb.append(" VALUES ( (");
+          sb.append("SELECT ").append(COL_PARTITIONS_PK).append(" FROM ").append(TB_PARTTIONS);
+          sb.append(" WHERE ").append(COL_TABLES_PK).append(" = ").append(tableId);
+          sb.append(" AND PARTITION_NAME = '").append(partition.getPartitionName()).append("'");
+          sb.append(" ), '").append(partitionKey.getColumnName()).append("'");
+          sb.append(", '").append(partitionKey.getPartitionValue()).append("' )");
+
+          stmt.addBatch(sb.toString());
+        }
       }
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, tableId);
-      pstmt.setString(2, partitionName);
-      res = pstmt.executeQuery();
-
-      if (res.next()) {
-        retValue = res.getInt(1);
-      }
-    } catch (SQLException se) {
-      throw new TajoInternalError(se);
-    } finally {
-      CatalogUtil.closeQuietly(pstmt, res);
-    }
-    return retValue;
-  }
-
-  private void addPartitionKeys(PreparedStatement pstmt, int partitionId, PartitionDescProto partition) throws
-    SQLException {
-    for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
-      PartitionKeyProto partitionKey = partition.getPartitionKeys(i);
-
-      pstmt.setInt(1, partitionId);
-      pstmt.setString(2, partitionKey.getColumnName());
-      pstmt.setString(3, partitionKey.getPartitionValue());
-
-      pstmt.addBatch();
-      pstmt.clearParameters();
-    }
-  }
-
-
-  private void dropPartition(int tableId, String partitionName) throws CatalogException {
-    Connection conn = null;
-    PreparedStatement pstmt = null;
-
-    try {
-      int partitionId = getPartitionId(tableId, partitionName);
-
-      String sqlDeletePartitionKeys = "DELETE FROM " + TB_PARTTION_KEYS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
-      String sqlDeletePartition = "DELETE FROM " + TB_PARTTIONS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sqlDeletePartitionKeys);
-      }
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(sqlDeletePartitionKeys);
-      pstmt.setInt(1, partitionId);
-      pstmt.executeUpdate();
-      pstmt.close();
-
-      pstmt = conn.prepareStatement(sqlDeletePartition);
-      pstmt.setInt(1, partitionId);
-      pstmt.executeUpdate();
 
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    }
+  }
+
+  private void dropPartition(int partitionId) throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+
+    try {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      dropPartition(partitionId, stmt, new StringBuilder());
+
+      if(stmt != null) {
+        stmt.executeBatch();
+      }
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
+      throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(pstmt);
+      CatalogUtil.closeQuietly(stmt);
+    }
+  }
+
+
+  private void dropPartition(int partitionId, Statement stmt, StringBuilder sb) throws CatalogException {
+    try {
+      sb.delete(0, sb.length());
+      sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
+      sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" = ").append(partitionId);
+      stmt.addBatch(sb.toString());
+
+      sb.delete(0, sb.length());
+      sb.append("DELETE FROM ").append(TB_PARTTIONS);
+      sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" = ").append(partitionId);
+      stmt.addBatch(sb.toString());
+
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
     }
   }
 
@@ -2077,6 +2048,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       if (res.next()) {
         builder = PartitionDescProto.newBuilder();
+        builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
@@ -2196,7 +2168,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
     , boolean ifNotExists) throws CatalogException {
     Connection conn = null;
-    PreparedStatement pstmt = null;
+    Statement stmt = null;
+    PartitionDescProto partitionDesc = null;
+    StringBuilder sb = null;
 
     try {
       int databaseId = getDatabaseId(databaseName);
@@ -2205,47 +2179,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       conn.setAutoCommit(false);
 
-      StringBuilder sb = new StringBuilder();
-      if (ifNotExists) {
-        sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
-        sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" IN (");
-        sb.append(" SELECT ").append(COL_PARTITIONS_PK).append(" FROM ").append(TB_PARTTIONS);
-        sb.append(" WHERE PARTITION_NAME = ? )");
+      stmt = conn.createStatement();
+      sb = new StringBuilder();
 
-        pstmt = conn.prepareStatement(sb.toString());
-        for(PartitionDescProto partition : partitions) {
-          pstmt.setString(1, partition.getPartitionName());
-          pstmt.addBatch();
-          pstmt.clearParameters();
-        }
-        pstmt.executeBatch();
-        pstmt.close();
+      for(PartitionDescProto partition : partitions) {
+        partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
 
-        sb.delete(0, sb.length());
-        sb.append("DELETE FROM ").append(TB_PARTTIONS);
-        sb.append(" WHERE PARTITION_NAME = ? ");
-
-        pstmt = conn.prepareStatement(sb.toString());
-        for(PartitionDescProto partition : partitions) {
-          pstmt.setString(1, partition.getPartitionName());
-          pstmt.addBatch();
-          pstmt.clearParameters();
-        }
-        pstmt.executeBatch();
-        pstmt.close();
-      } else {
-        PartitionDescProto existingPartition = null;
-        for (PartitionDescProto partition : partitions) {
-          existingPartition = getPartition(databaseName, tableName, partition.getPartitionName());
-          if (existingPartition != null) {
+        if (partitionDesc != null) {
+          if(ifNotExists) {
+            dropPartition(partitionDesc.getId());
+          } else {
             throw new DuplicatePartitionException(partition.getPartitionName());
           }
         }
+
+        addPartition(tableId, partition, stmt, sb);
       }
 
-      for(PartitionDescProto partition : partitions) {
-        addPartition(tableId, partition, conn);
+      if (stmt != null) {
+        stmt.executeBatch();
       }
+
       if (conn != null) {
         conn.commit();
       }
@@ -2259,7 +2213,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(pstmt);
+      CatalogUtil.closeQuietly(stmt);
     }
   }
 

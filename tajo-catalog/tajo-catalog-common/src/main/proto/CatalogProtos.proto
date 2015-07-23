@@ -267,6 +267,7 @@ message PartitionDescProto {
   required string partitionName = 1;
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
+  optional int32 id = 4;
 }
 
 message PartitionKeyProto {

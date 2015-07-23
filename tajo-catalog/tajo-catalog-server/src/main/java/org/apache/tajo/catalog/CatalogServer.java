@@ -948,13 +948,16 @@ public class CatalogServer extends AbstractService {
 
             if (store.existPartitionMethod(dbName, tbName)) {
               PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
-
-
-              return GetPartitionDescResponse.newBuilder()
+              if (partitionDesc != null) {
+                return GetPartitionDescResponse.newBuilder()
                   .setState(OK)
                   .setPartition(partitionDesc)
                   .build();
-
+              } else {
+                return GetPartitionDescResponse.newBuilder()
+                  .setState(errUndefinedPartition(partitionName))
+                  .build();
+              }
             } else {
               return GetPartitionDescResponse.newBuilder()
                   .setState(errUndefinedPartitionMethod(tbName))
