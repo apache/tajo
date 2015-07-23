@@ -29,6 +29,8 @@ import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.tajo.client.TajoClientUtil.NULL_RESULT_SET;
+
 public class TajoStatement implements Statement {
   protected JdbcConnection conn;
   protected TajoClient tajoClient;
@@ -210,7 +212,7 @@ public class TajoStatement implements Statement {
     Map<String, String> variable = new HashMap<String, String>();
     variable.put(tokens[0].trim(), tokens[1].trim());
     client.updateSessionVariables(variable);
-    return TajoClientUtil.createNullResultSet();
+    return NULL_RESULT_SET;
   }
 
   private ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
@@ -225,7 +227,7 @@ public class TajoStatement implements Statement {
     }
     client.unsetSessionVariables(Lists.newArrayList(key));
 
-    return TajoClientUtil.createNullResultSet();
+    return NULL_RESULT_SET;
   }
 
   @Override

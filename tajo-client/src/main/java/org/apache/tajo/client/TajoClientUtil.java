@@ -106,9 +106,8 @@ public class TajoClientUtil {
     }
   }
 
-  public static ResultSet createNullResultSet() {
-    return new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
-  }
+  public static final ResultSet NULL_RESULT_SET =
+      new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
 
   public static ResultSet createNullResultSet(QueryId queryId) {
     return new TajoMemoryResultSet(queryId, new Schema(), null, 0, null);
