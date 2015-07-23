@@ -2192,8 +2192,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       sb = new StringBuilder();
 
-      int i = 0, batchSize = 100, lastIndex = 0, rowCount = 0;
-      for(i = 0; i < partitions.size(); i++) {
+      for(int i = 0; i < partitions.size(); i++) {
         PartitionDescProto partition = partitions.get(i);
         partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
 
@@ -2206,44 +2205,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         }
 
         addPartition(tableId, partition, stmt, sb);
-
-        if (i >= lastIndex + batchSize && lastIndex != i) {
-          int[] result = stmt.executeBatch();
-          stmt.clearBatch();
-          rowCount += result.length;
-          LOG.info(result.length + " partitions are added. (total:" + rowCount + ")");
-          lastIndex = i;
-        }
-      }
-
-      if (lastIndex != i) {
-        int[] result = stmt.executeBatch();
-        stmt.clearBatch();
-        rowCount += result.length;
-        LOG.info(result.length + " partitions are added. (total:" + rowCount + ")");
-      }
-
-      lastIndex = 0;
-      rowCount = 0;
-      for(i = 0; i < partitions.size(); i++) {
-        PartitionDescProto partition = partitions.get(i);
-
         addPartitionKeys(tableId, partition, stmt, sb);
-
-        if (i >= lastIndex + batchSize && lastIndex != i) {
-          int[] result = stmt.executeBatch();
-          stmt.clearBatch();
-          lastIndex = i;
-          rowCount += result.length;
-          LOG.info(result.length + " partition keys are added. (total:" + rowCount + ")");
-        }
-      }
-
-      if (lastIndex != i) {
-        int[] result = stmt.executeBatch();
+        stmt.executeBatch();
         stmt.clearBatch();
-        rowCount += result.length;
-        LOG.info(result.length + " partition keys are added. (total:" + rowCount + ")");
       }
 
       if (conn != null) {
