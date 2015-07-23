@@ -23,6 +23,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.metrics.Master;
+import org.apache.tajo.metrics.MetricsUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.metrics.reporter.TajoMetricsScheduledReporter;
 import org.junit.After;
@@ -54,13 +56,13 @@ public class TestSystemMetrics {
     out.write("reporter.file=org.apache.tajo.util.metrics.reporter.MetricsFileScheduledReporter\n".getBytes());
     out.write("reporter.console=org.apache.tajo.util.metrics.reporter.MetricsConsoleScheduledReporter\n".getBytes());
 
-    out.write("test-file-group-jvm.reporters=console\n".getBytes());
-    out.write("test-file-group.reporters=file\n".getBytes());
+    out.write("MASTER-JVM.reporters=console\n".getBytes());
+    out.write("MASTER.reporters=file\n".getBytes());
     out.write("test-console-group.reporters=console\n".getBytes());
     out.write("test-find-console-group.reporters=console,file\n".getBytes());
 
-    out.write(("test-file-group.file.filename=" + metricsOutputFile.toUri().getPath() + "\n").getBytes());
-    out.write("test-file-group.file.period=5\n".getBytes());
+    out.write(("MASTER.file.filename=" + metricsOutputFile.toUri().getPath() + "\n").getBytes());
+    out.write("MASTER.file.period=5\n".getBytes());
     out.close();
   }
 
@@ -68,7 +70,8 @@ public class TestSystemMetrics {
   public void testMetricsReporter() throws Exception {
     TajoConf tajoConf = new TajoConf();
     tajoConf.set("tajo.metrics.property.file", testPropertyFile.toUri().getPath());
-    TajoSystemMetrics tajoSystemMetrics = new TajoSystemMetrics(tajoConf, "test-file-group", "localhost");
+    TajoSystemMetrics tajoSystemMetrics = new TajoSystemMetrics(tajoConf, org.apache.tajo.metrics.Master.class,
+        "localhost");
     tajoSystemMetrics.start();
 
     Collection<TajoMetricsScheduledReporter> reporters = tajoSystemMetrics.getMetricsReporters();
@@ -79,36 +82,40 @@ public class TestSystemMetrics {
     assertEquals(5, reporter.getPeriod());
 
     for(int i = 0; i < 10; i++) {
-      tajoSystemMetrics.counter("test-group01", "test-item1").inc();
-      tajoSystemMetrics.counter("test-group01", "test-item2").inc(2);
-      tajoSystemMetrics.counter("test-group02", "test-item1").inc(3);
+      tajoSystemMetrics.counter(Master.Query.FAILED).inc();
+      tajoSystemMetrics.counter(Master.Query.COMPLETED).inc(2);
+      tajoSystemMetrics.counter(Master.Cluster.ACTIVE_NODES).inc(3);
     }
 
     SortedMap<String, Counter> counterMap = tajoSystemMetrics.getRegistry().getCounters();
-    Counter counter1 = counterMap.get("test-file-group.test-group01.test-item1");
+    Counter counter1 = counterMap.get("MASTER.QUERY.FAILED");
     assertNotNull(counter1);
     assertEquals(10, counter1.getCount());
 
-    Counter counter2 = counterMap.get("test-file-group.test-group01.test-item2");
+    Counter counter2 = counterMap.get("MASTER.QUERY.COMPLETED");
     assertNotNull(counter2);
     assertEquals(20, counter2.getCount());
+
+    Counter counter3 = counterMap.get("MASTER.CLUSTER.ACTIVE_NODES");
+    assertNotNull(counter3);
+    assertEquals(30, counter3.getCount());
 
     //test findMetricsItemGroup method
     Map<String, Map<String, Counter>> groupItems = reporter.findMetricsItemGroup(counterMap);
     assertEquals(2, groupItems.size());
 
-    Map<String, Counter> group01Items = groupItems.get("test-file-group.test-group01");
+    Map<String, Counter> group01Items = groupItems.get(MetricsUtil.getCanonicalContextName(Master.Query.class));
     assertEquals(2, group01Items.size());
 
-    counter1 = group01Items.get("test-item1");
+    counter1 = group01Items.get(Master.Query.FAILED.name());
     assertNotNull(counter1);
     assertEquals(10, counter1.getCount());
 
-    counter2 = group01Items.get("test-item2");
+    counter2 = group01Items.get(Master.Query.COMPLETED.name());
     assertNotNull(counter2);
     assertEquals(20, counter2.getCount());
 
-    Map<String, Counter> group02Items = groupItems.get("test-file-group.test-group02");
+    Map<String, Counter> group02Items = groupItems.get(MetricsUtil.getCanonicalContextName(Master.Cluster.class));
     assertEquals(1, group02Items.size());
 
     reporter.report();
@@ -116,7 +123,7 @@ public class TestSystemMetrics {
     BufferedReader reader = new BufferedReader(new InputStreamReader(
         new FileInputStream(metricsOutputFile.toUri().getPath())));
 
-    String line = null;
+    String line;
 
     List<String> lines = new ArrayList<String>();
     while((line = reader.readLine()) != null) {

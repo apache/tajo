@@ -302,6 +302,8 @@ public class CatalogUtil {
       return StoreType.ROWFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
       return StoreType.RCFILE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.ORC.name())) {
+      return StoreType.ORC;
     } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
       return StoreType.PARQUET;
     } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {

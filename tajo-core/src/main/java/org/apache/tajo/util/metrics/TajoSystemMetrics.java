@@ -31,6 +31,7 @@ import org.apache.commons.configuration.reloading.FileChangedReloadingStrategy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.metrics.MetricsUtil;
 import org.apache.tajo.util.metrics.reporter.TajoMetricsScheduledReporter;
 
 import java.util.*;
@@ -50,8 +51,8 @@ public class TajoSystemMetrics extends TajoMetrics {
 
   private String metricsPropertyFileName;
 
-  public TajoSystemMetrics(TajoConf tajoConf, String metricsGroupName, String hostAndPort) {
-    super(metricsGroupName);
+  public TajoSystemMetrics(TajoConf tajoConf, Class clazz, String hostAndPort) {
+    super(MetricsUtil.getGroupName(clazz));
 
     this.hostAndPort = hostAndPort;
     try {
@@ -65,8 +66,8 @@ public class TajoSystemMetrics extends TajoMetrics {
       LOG.warn(e.getMessage(), e);
     }
 
-    //PropertiesConfiguration fire configurationChanged after getXXX()
-    //So neeaded calling getXXX periodically
+    // PropertiesConfiguration fire configurationChanged after getXXX()
+    // So neeaded calling getXXX periodically
     propertyChangeChecker = new Thread() {
       public void run() {
         while(!stop.get()) {
@@ -110,21 +111,21 @@ public class TajoSystemMetrics extends TajoMetrics {
   public void start() {
     setMetricsReporter(metricsGroupName);
 
-    String jvmMetricsName = metricsGroupName + "-jvm";
+    final String jvmMetricsName = metricsGroupName + "-JVM";
     setMetricsReporter(jvmMetricsName);
 
     if(!inited) {
-      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "Heap"), new MemoryUsageGaugeSet());
-      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "File"), new FileDescriptorRatioGauge());
+      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "MEMORY"), new MemoryUsageGaugeSet());
+      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "FILE"), new FileDescriptorRatioGauge());
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "GC"), new GarbageCollectorMetricSet());
-      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "Thread"), new ThreadStatesGaugeSet());
-      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "Log"), new LogEventGaugeSet());
+      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "THREAD"), new ThreadStatesGaugeSet());
+      metricRegistry.register(MetricRegistry.name(jvmMetricsName, "LOG"), new LogEventGaugeSet());
     }
     inited = true;
   }
 
   private void setMetricsReporter(String groupName) {
-    //reporter name -> class name
+    // reporter name -> class name
     Map<String, String> reporters = new HashMap<String, String>();
 
     List<String> reporterNames = metricsProps.getList(groupName + ".reporters");
