@@ -42,9 +42,13 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TajoCli {
+
   public static final String ERROR_PREFIX = "ERROR: ";
   public static final String KILL_PREFIX = "KILL: ";
 
@@ -496,10 +500,7 @@ public class TajoCli {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
       } else {
-        if (!response.hasTableDesc() && !response.hasResultSet()) {
-          displayFormatter.printMessage(sout, "OK");
-          wasError = true;
-        } else {
+        if (response.hasTableDesc() || response.hasResultSet()) {
           localQueryCompleted(response, startTime);
         }
       }
@@ -507,6 +508,10 @@ public class TajoCli {
       if (ReturnStateUtil.isError(response.getState())) {
         onError(response.getState().getMessage(), null);
       }
+    }
+
+    if (!wasError) {
+      displayFormatter.printQueryTypeMessage(sout, response.hasPlanType(), response.getPlanType());
     }
   }
 
@@ -526,9 +531,7 @@ public class TajoCli {
           QueryId queryId = new QueryId(response.getQueryId());
           waitForQueryCompleted(queryId);
         } else {
-          if (!response.hasTableDesc() && !response.hasResultSet()) {
-            displayFormatter.printMessage(sout, "OK");
-          } else {
+          if (response.hasTableDesc() || response.hasResultSet()) {
             localQueryCompleted(response, startTime);
           }
         }
@@ -537,6 +540,10 @@ public class TajoCli {
           onError(response.getState().getMessage(), null);
         }
       }
+    }
+
+    if (!wasError) {
+      displayFormatter.printQueryTypeMessage(sout, response.hasPlanType(), response.getPlanType());
     }
 
     return wasError ? -1 : 0;

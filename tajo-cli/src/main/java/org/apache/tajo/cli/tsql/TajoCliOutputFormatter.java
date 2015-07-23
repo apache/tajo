@@ -21,6 +21,7 @@ package org.apache.tajo.cli.tsql;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.common.PlanTypesProto;
 
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -92,6 +93,15 @@ public interface TajoCliOutputFormatter {
    * @param status
    */
   void printErrorMessage(PrintWriter sout, QueryStatus status);
+
+  /**
+   * Print the query type if the query is one of the DDL statements.
+   *
+   * @param sout
+   * @param isDDL
+   * @param planNodeType
+   */
+  public void printQueryTypeMessage(PrintWriter sout, boolean isDDL, PlanTypesProto.PlanNodeType planNodeType);
 
   void setScriptMode();
 }

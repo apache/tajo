@@ -22,8 +22,8 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
+import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedPartitionException;
@@ -548,7 +548,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public boolean existIndexByColumnNames(final String databaseName, final String tableName, final String [] columnNames) {
     try {
-
       GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       for (String colunName : columnNames) {
@@ -568,8 +567,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
 
-      return isSuccess(
-          stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)));
+      return isSuccess(stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }

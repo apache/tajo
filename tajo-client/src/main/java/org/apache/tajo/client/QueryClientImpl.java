@@ -21,8 +21,11 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -46,7 +49,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
-import static org.apache.tajo.exception.ReturnStateUtil.returnError;
 import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
@@ -161,7 +163,6 @@ public class QueryClientImpl implements QueryClient {
     }
 
     return response;
-
   }
 
   @Override

@@ -42,6 +42,7 @@ import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.QueryManager;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.exec.prehook.CreateIndexHook;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
@@ -86,6 +87,7 @@ public class QueryExecutor {
     this.hookManager = new DistributedQueryHookManager();
     this.hookManager.addHook(new CreateTableHook());
     this.hookManager.addHook(new InsertIntoHook());
+    this.hookManager.addHook(new CreateIndexHook());
   }
 
   public SubmitQueryResponse execute(QueryContext queryContext, Session session, String sql, String jsonExpr,
@@ -104,7 +106,7 @@ public class QueryExecutor {
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
 
       if (PlannerUtil.isDistExecDDL(rootNode)) {
-        if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
+        if (PlannerUtil.extractPlanType(rootNode) == NodeType.CREATE_INDEX) {
           checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
         }
         executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -113,6 +115,7 @@ public class QueryExecutor {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         response.setState(OK);
       }
+      response.setPlanType(PlannerUtil.convertType(PlannerUtil.extractPlanType(rootNode)));
 
     } else if (plan.isExplain()) { // explain query
       execExplain(plan, queryContext, plan.isExplainGlobal(), response);

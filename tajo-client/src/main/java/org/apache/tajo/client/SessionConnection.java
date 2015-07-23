@@ -56,11 +56,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.exception.ReturnStateUtil.isError;
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
-import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
+import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
-import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 
 public class SessionConnection implements Closeable {
 

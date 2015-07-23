@@ -24,12 +24,12 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.common.PlanTypesProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -57,6 +57,19 @@ public class PlannerUtil {
 
   }
 
+  public static PlanTypesProto.PlanNodeType convertType(NodeType type) {
+    return PlanTypesProto.PlanNodeType.valueOf(type.name());
+  }
+
+  public static NodeType extractPlanType(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    return baseNode.getType();
+  }
+
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {
@@ -68,7 +81,7 @@ public class PlannerUtil {
     return
         type == NodeType.CREATE_DATABASE ||
             type == NodeType.DROP_DATABASE ||
-            (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
+            type == NodeType.CREATE_TABLE ||
             type == NodeType.DROP_TABLE ||
             type == NodeType.ALTER_TABLESPACE ||
             type == NodeType.ALTER_TABLE ||

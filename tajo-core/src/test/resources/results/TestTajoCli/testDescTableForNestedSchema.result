@@ -1,4 +1,4 @@
-OK
+CREATE TABLE OK
 
 table name: default.TEST_DESC_TABLE_NESTED
 table uri: ${table.path}

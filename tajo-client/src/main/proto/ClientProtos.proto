@@ -27,6 +27,7 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "PlanTypes.proto";
 
 message CreateSessionRequest {
   required string username = 1;
@@ -132,7 +133,9 @@ message SubmitQueryResponse {
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
-  optional KeyValueSetProto sessionVars = 12;
+  optional KeyValueSetProto sessionVars = 10;
+
+  optional PlanNodeType planType = 11;
 }
 
 message GetQueryStatusResponse {
