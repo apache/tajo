@@ -1,9 +1,9 @@
 explain
 -------------------------------
-SELECTION(11)
-  => Search Cond: CAST (default.n.n_nationkey (INT4) AS INT8) > default.t.cnt (INT8)
-   SORT(8)
-     => Sort Keys: default.n.n_nationkey (INT4) (asc)
+SORT(8)
+  => Sort Keys: default.n.n_nationkey (INT4) (asc)
+   SELECTION(11)
+     => Search Cond: CAST (default.n.n_nationkey (INT4) AS INT8) > default.t.cnt (INT8)
       JOIN(13)(INNER)
         => Join Cond: default.n.n_regionkey (INT4) = default.t.r_regionkey (INT4)
         => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)
@@ -97,31 +97,33 @@ Block Id: eb_0000000000000_0000_000006 [INTERMEDIATE]
 
 SORT(21)
   => Sort Keys: default.n.n_nationkey (INT4) (asc)
-   JOIN(13)(INNER)
-     => Join Cond: default.n.n_regionkey (INT4) = default.t.r_regionkey (INT4)
-     => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)
-     => out schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
-     => in schema: {(5) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8), default.t.r_regionkey (INT4)}
-      SCAN(0) on default.nation as n
-        => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-        => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-        => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-      TABLE_SUBQUERY(6) as default.t
-        => Targets: default.t.cnt (INT8), default.t.r_regionkey (INT4)
-        => out schema: {(2) default.t.cnt (INT8), default.t.r_regionkey (INT4)}
-        => in  schema: {(2) default.t.cnt (INT8), default.t.r_regionkey (INT4)}
-         PROJECTION(5)
-           => Targets: default.r.r_regionkey (INT4), cnt (INT8)
-           => out schema: {(2) cnt (INT8), default.r.r_regionkey (INT4)}
-           => in  schema: {(2) cnt (INT8), default.r.r_regionkey (INT4)}
-            GROUP_BY(4)(r_regionkey)
-              => exprs: (count(?count_5 (INT8)))
-              => target list: default.r.r_regionkey (INT4), cnt (INT8)
-              => out schema:{(2) cnt (INT8), default.r.r_regionkey (INT4)}
-              => in schema:{(2) default.r.r_regionkey (INT4), ?count_5 (INT8)}
-               SCAN(18) on eb_0000000000000_0000_000003
-                 => out schema: {(2) default.r.r_regionkey (INT4), ?count_5 (INT8)}
-                 => in schema: {(2) default.r.r_regionkey (INT4), ?count_5 (INT8)}
+   SELECTION(11)
+     => Search Cond: CAST (default.n.n_nationkey (INT4) AS INT8) > default.t.cnt (INT8)
+      JOIN(13)(INNER)
+        => Join Cond: default.n.n_regionkey (INT4) = default.t.r_regionkey (INT4)
+        => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)
+        => out schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
+        => in schema: {(5) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8), default.t.r_regionkey (INT4)}
+         SCAN(0) on default.nation as n
+           => target list: default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+           => out schema: {(3) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+           => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+         TABLE_SUBQUERY(6) as default.t
+           => Targets: default.t.cnt (INT8), default.t.r_regionkey (INT4)
+           => out schema: {(2) default.t.cnt (INT8), default.t.r_regionkey (INT4)}
+           => in  schema: {(2) default.t.cnt (INT8), default.t.r_regionkey (INT4)}
+            PROJECTION(5)
+              => Targets: default.r.r_regionkey (INT4), cnt (INT8)
+              => out schema: {(2) cnt (INT8), default.r.r_regionkey (INT4)}
+              => in  schema: {(2) cnt (INT8), default.r.r_regionkey (INT4)}
+               GROUP_BY(4)(r_regionkey)
+                 => exprs: (count(?count_5 (INT8)))
+                 => target list: default.r.r_regionkey (INT4), cnt (INT8)
+                 => out schema:{(2) cnt (INT8), default.r.r_regionkey (INT4)}
+                 => in schema:{(2) default.r.r_regionkey (INT4), ?count_5 (INT8)}
+                  SCAN(18) on eb_0000000000000_0000_000003
+                    => out schema: {(2) default.r.r_regionkey (INT4), ?count_5 (INT8)}
+                    => in schema: {(2) default.r.r_regionkey (INT4), ?count_5 (INT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000007 [ROOT]
@@ -133,13 +135,11 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
 [Enforcers]
  0: sorted input=eb_0000000000000_0000_000006
 
-SELECTION(11)
-  => Search Cond: CAST (default.n.n_nationkey (INT4) AS INT8) > default.t.cnt (INT8)
-   SORT(8)
-     => Sort Keys: default.n.n_nationkey (INT4) (asc)
-      SCAN(22) on eb_0000000000000_0000_000006
-        => out schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
-        => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
+SORT(8)
+  => Sort Keys: default.n.n_nationkey (INT4) (asc)
+   SCAN(22) on eb_0000000000000_0000_000006
+     => out schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
+     => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000008 [TERMINAL]
