@@ -35,6 +35,8 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
@@ -310,7 +312,16 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         // If there is partitions
         if (stats.getPartitions() != null && stats.getPartitions().size() > 0) {
-          LOG.info("### Adding partitions START ###");
+
+          List<String> partitions = TUtil.newList();
+          for (CatalogProtos.PartitionDescProto partition: stats.getPartitions()) {
+            if (!partitions.contains(partition.getPartitionName())) {
+              partitions.add(partition.getPartitionName());
+            }
+          }
+
+          LOG.info("### Adding partitions START ###"); // Debug logs
+
           CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
           // Store partitions to CatalogStore using alter table statement.
           boolean result = catalog.addPartitions(databaseName, simpleTableName, stats.getPartitions(), true);
@@ -319,7 +330,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
           } else {
             LOG.info(String.format("Incomplete adding for partition %s", stats.getPartitions().size()));
           }
-          LOG.info("### Adding partitions END ###");
+
+          LOG.info("### Adding partitions END ###"); // Debug logs
         } else {
           LOG.info("Can't find partitions for adding.");
         }

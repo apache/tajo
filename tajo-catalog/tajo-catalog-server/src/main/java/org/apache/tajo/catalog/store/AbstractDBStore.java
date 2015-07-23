@@ -1253,6 +1253,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
 
       addPartition(tableId, partition, stmt, new StringBuilder());
+      addPartitionKeys(tableId, partition, stmt, new StringBuilder());
       stmt.executeBatch();
 
       if (conn != null) {
@@ -1281,7 +1282,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       sb.append(" (").append(COL_TABLES_PK).append(", PARTITION_NAME, PATH)");
       sb.append(" VALUES (").append(tableId).append(", '").append(partition.getPartitionName());
       sb.append("' , '").append(partition.getPath()).append("')");
+
       stmt.addBatch(sb.toString());
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    }
+  }
+
+  public void addPartitionKeys(int tableId, CatalogProtos.PartitionDescProto partition,
+                           Statement stmt, StringBuilder sb) throws CatalogException {
+    try {
 
       if (partition.getPartitionKeysCount() > 0) {
         for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
@@ -2182,22 +2192,58 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       sb = new StringBuilder();
 
-      for(PartitionDescProto partition : partitions) {
+      int i = 0, batchSize = 100, lastIndex = 0, rowCount = 0;
+      for(i = 0; i < partitions.size(); i++) {
+        PartitionDescProto partition = partitions.get(i);
         partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
 
         if (partitionDesc != null) {
           if(ifNotExists) {
-            dropPartition(partitionDesc.getId());
+            dropPartition(partitionDesc.getId(), stmt, sb);
           } else {
             throw new DuplicatePartitionException(partition.getPartitionName());
           }
         }
 
         addPartition(tableId, partition, stmt, sb);
+
+        if (i >= lastIndex + batchSize && lastIndex != i) {
+          int[] result = stmt.executeBatch();
+          stmt.clearBatch();
+          rowCount += result.length;
+          LOG.info(result.length + " partitions are added. (total:" + rowCount + ")");
+          lastIndex = i;
+        }
       }
 
-      if (stmt != null) {
-        stmt.executeBatch();
+      if (lastIndex != i) {
+        int[] result = stmt.executeBatch();
+        stmt.clearBatch();
+        rowCount += result.length;
+        LOG.info(result.length + " partitions are added. (total:" + rowCount + ")");
+      }
+
+      lastIndex = 0;
+      rowCount = 0;
+      for(i = 0; i < partitions.size(); i++) {
+        PartitionDescProto partition = partitions.get(i);
+
+        addPartitionKeys(tableId, partition, stmt, sb);
+
+        if (i >= lastIndex + batchSize && lastIndex != i) {
+          int[] result = stmt.executeBatch();
+          stmt.clearBatch();
+          lastIndex = i;
+          rowCount += result.length;
+          LOG.info(result.length + " partition keys are added. (total:" + rowCount + ")");
+        }
+      }
+
+      if (lastIndex != i) {
+        int[] result = stmt.executeBatch();
+        stmt.clearBatch();
+        rowCount += result.length;
+        LOG.info(result.length + " partition keys are added. (total:" + rowCount + ")");
       }
 
       if (conn != null) {
