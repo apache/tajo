@@ -399,6 +399,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1464: Add ORCFileScanner to read ORCFile table. (Contributed by 
+    Jongyoung Park, Committed by jihoon)
+
     TAJO-1693: Rearrange metric names. (hyunsik)
 
     TAJO-1496: Remove legacy CSVFile. (jinho)
