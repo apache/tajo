@@ -742,7 +742,7 @@ public class Stage implements EventHandler<StageEvent> {
     String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
     if (storeType == null) {
       // get default or store type
-      storeType = "CSV";
+      storeType = "TEXT";
     }
 
     schema = channel.getSchema();

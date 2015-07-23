@@ -23,7 +23,6 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -33,10 +32,10 @@ import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -159,7 +158,7 @@ public class TestSortIntersectExec {
   };
 
   @Test
-  public final void testSortIntersectAll() throws IOException, PlanningException {
+  public final void testSortIntersectAll() throws IOException, TajoException {
     FileFragment[] empFrags1 = ((FileTablespace) TablespaceManager.getLocalFs()).
         splitNG(conf, "default.e1", employee1.getMeta(),
             new Path(employee1.getUri()), Integer.MAX_VALUE);
@@ -226,7 +225,7 @@ public class TestSortIntersectExec {
   }
 
   @Test
-  public final void testSortIntersect() throws IOException, PlanningException {
+  public final void testSortIntersect() throws IOException, TajoException {
     FileFragment[] empFrags1 = ((FileTablespace) TablespaceManager.getLocalFs())
         .splitNG(conf, "default.e1", employee1.getMeta(),
             new Path(employee1.getUri()), Integer.MAX_VALUE);

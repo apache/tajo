@@ -38,12 +38,16 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,orc,sequencefile,avro</value>
+    <value>text,json,raw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
   </property>
 
   <!--- Fragment Class Configurations -->
   <property>
-    <name>tajo.storage.fragment.csv.class</name>
+    <name>tajo.storage.fragment.text.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.json.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
@@ -59,16 +63,12 @@
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
-    <name>tajo.storage.fragment.trevni.class</name>
+    <name>tajo.storage.fragment.parquet.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
-    <name>tajo.storage.fragment.parquet.class</name>
-    <value>org.apache.tajo.storage.FileFragment</value>
-  </property>
-  <property>
     <name>tajo.storage.fragment.orc.class</name>
-    <value>org.apache.tajo.storage.FileFragment</value>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
     <name>tajo.storage.fragment.sequencefile.class</name>
@@ -78,11 +78,20 @@
     <name>tajo.storage.fragment.avro.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
+  <property>
+    <name>tajo.storage.fragment.hbase.class</name>
+    <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
+  </property>
 
   <!--- Scanner Handler -->
   <property>
-    <name>tajo.storage.scanner-handler.csv.class</name>
-    <value>org.apache.tajo.storage.CSVFile$CSVScanner</value>
+    <name>tajo.storage.scanner-handler.text.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.json.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
   </property>
 
   <property>
@@ -98,11 +107,6 @@
   <property>
     <name>tajo.storage.scanner-handler.rowfile.class</name>
     <value>org.apache.tajo.storage.RowFile$RowFileScanner</value>
-  </property>
-
-  <property>
-    <name>tajo.storage.scanner-handler.trevni.class</name>
-    <value>org.apache.tajo.storage.trevni.TrevniScanner</value>
   </property>
 
   <property>
@@ -125,15 +129,25 @@
     <value>org.apache.tajo.storage.avro.AvroScanner</value>
   </property>
 
+  <property>
+    <name>tajo.storage.scanner-handler.hbase.class</name>
+    <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
+  </property>
+
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>text,raw,rcfile,row,parquet,sequencefile,avro,hbase</value>
   </property>
 
   <property>
-    <name>tajo.storage.appender-handler.csv.class</name>
-    <value>org.apache.tajo.storage.CSVFile$CSVAppender</value>
+    <name>tajo.storage.appender-handler.text.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.json.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
   </property>
 
   <property>
@@ -152,11 +166,6 @@
   </property>
 
   <property>
-    <name>tajo.storage.appender-handler.trevni.class</name>
-    <value>org.apache.tajo.storage.trevni.TrevniAppender</value>
-  </property>
-
-  <property>
     <name>tajo.storage.appender-handler.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetAppender</value>
   </property>
@@ -169,6 +178,16 @@
   <property>
     <name>tajo.storage.appender-handler.avro.class</name>
     <value>org.apache.tajo.storage.avro.AvroAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.hbase.class</name>
+    <value>org.apache.tajo.storage.hbase.HFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.hfile.class</name>
+    <value>org.apache.tajo.storage.hbase.HFileAppender</value>
   </property>
 
   <!--- Storage buffer -->

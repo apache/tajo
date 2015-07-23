@@ -23,6 +23,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.UndefinedColumnException;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.ConstEval;
@@ -55,14 +56,14 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
-  public void preHook(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
+  public void preHook(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Expr expr) throws TajoException {
     ctx.queryBlock.setAlgebraicExpr(expr);
     ctx.plan.mapExprToBlock(expr, ctx.queryBlock.getName());
   }
 
   @Override
   public LogicalNode postHook(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Expr expr, LogicalNode result)
-      throws PlanningException {
+      throws TajoException {
     // If non-from statement, result can be null. It avoids that case.
     if (result != null) {
       // setNode method registers each node to corresponding block and plan.
@@ -78,10 +79,10 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
    * @param ctx
    * @param asteriskExpr
    * @return array of columns
-   * @throws PlanningException
+   * @throws TajoException
    */
   public static Column[] getColumns(LogicalPlanner.PlanContext ctx, QualifiedAsteriskExpr asteriskExpr)
-      throws PlanningException {
+      throws TajoException {
     RelationNode relationOp = null;
     QueryBlock block = ctx.queryBlock;
     Collection<QueryBlock> queryBlocks = ctx.plan.getQueryBlocks();
@@ -140,10 +141,10 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
    * @param ctx context
    * @param asteriskExpr asterisk expression
    * @return a list of NamedExpr each of which has ColumnReferenceExprs as its child
-   * @throws PlanningException
+   * @throws TajoException
    */
   private static List<NamedExpr> resolveAsterisk(LogicalPlanner.PlanContext ctx, QualifiedAsteriskExpr asteriskExpr)
-      throws PlanningException {
+      throws TajoException {
     Column[] columns = getColumns(ctx, asteriskExpr);
     List<NamedExpr> newTargetExprs = new ArrayList<NamedExpr>(columns.length);
     int i;
@@ -163,7 +164,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   private static NamedExpr [] voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
-                                                           NamedExpr [] namedExprs) throws PlanningException {
+                                                           NamedExpr [] namedExprs) throws TajoException {
     List<NamedExpr> rewrittenTargets = TUtil.newList();
     for (NamedExpr originTarget : namedExprs) {
       if (originTarget.getExpr().getType() == OpType.Asterisk) {
@@ -178,14 +179,14 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitSetSession(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, SetSession expr)
-      throws PlanningException {
+      throws TajoException {
     SetSessionNode setSession = ctx.plan.createNode(SetSessionNode.class);
     return setSession;
   }
 
   @Override
   public LogicalNode visitProjection(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Projection expr)
-      throws PlanningException {
+      throws TajoException {
     // If Non-from statement, it immediately returns.
     if (!expr.hasChild()) {
       EvalExprNode exprNode = ctx.plan.createNode(EvalExprNode.class);
@@ -231,7 +232,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     return projectionNode;
   }
 
-  private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws PlanningException {
+  private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws TajoException {
     Target [] targets = new Target[exprs.length];
     for (int i = 0; i < exprs.length; i++) {
       NamedExpr namedExpr = exprs[i];
@@ -249,7 +250,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitLimit(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Limit expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr);
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
@@ -261,7 +262,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
-  public LogicalNode visitSort(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Sort expr) throws PlanningException {
+  public LogicalNode visitSort(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Sort expr) throws TajoException {
     stack.push(expr);
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
@@ -274,7 +275,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitHaving(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Having expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr);
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
@@ -287,7 +288,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitGroupBy(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Aggregation expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr); // <--- push
     LogicalNode child = visit(ctx, stack, expr.getChild());
 
@@ -319,7 +320,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitUnion(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, SetOperation expr)
-      throws PlanningException {
+      throws TajoException {
     LogicalPlan.QueryBlock leftBlock = ctx.plan.newQueryBlock();
     LogicalPlanner.PlanContext leftContext = new LogicalPlanner.PlanContext(ctx, leftBlock);
     LogicalNode leftChild = visit(leftContext, new Stack<Expr>(), expr.getLeft());
@@ -343,7 +344,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   public LogicalNode visitFilter(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Selection expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr);
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
@@ -355,7 +356,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
-  public LogicalNode visitJoin(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Join expr) throws PlanningException {
+  public LogicalNode visitJoin(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Join expr) throws TajoException {
     stack.push(expr);
     LogicalNode left = visit(ctx, stack, expr.getLeft());
     LogicalNode right = visit(ctx, stack, expr.getRight());
@@ -372,7 +373,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitRelation(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Relation expr)
-      throws PlanningException {
+      throws TajoException {
     Relation relation = expr;
 
     String actualRelationName;
@@ -400,7 +401,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitTableSubQuery(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
-      throws PlanningException {
+      throws TajoException {
 
     LogicalPlanner.PlanContext newContext;
     // Note: TableSubQuery always has a table name.
@@ -423,21 +424,21 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitCreateDatabase(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, CreateDatabase expr)
-      throws PlanningException {
+      throws TajoException {
     CreateDatabaseNode createDatabaseNode = ctx.plan.createNode(CreateDatabaseNode.class);
     return createDatabaseNode;
   }
 
   @Override
   public LogicalNode visitDropDatabase(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DropDatabase expr)
-      throws PlanningException {
+      throws TajoException {
     DropDatabaseNode dropDatabaseNode = ctx.plan.createNode(DropDatabaseNode.class);
     return dropDatabaseNode;
   }
 
   @Override
   public LogicalNode visitCreateTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, CreateTable expr)
-      throws PlanningException {
+      throws TajoException {
 
     CreateTableNode createTableNode = ctx.plan.createNode(CreateTableNode.class);
 
@@ -452,28 +453,28 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
   @Override
   public LogicalNode visitDropTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DropTable expr)
-      throws PlanningException {
+      throws TajoException {
     DropTableNode dropTable = ctx.plan.createNode(DropTableNode.class);
     return dropTable;
   }
 
   @Override
   public LogicalNode visitAlterTablespace(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, AlterTablespace expr)
-      throws PlanningException {
+      throws TajoException {
     AlterTablespaceNode alterTablespace = ctx.plan.createNode(AlterTablespaceNode.class);
     return alterTablespace;
   }
 
   @Override
   public LogicalNode visitAlterTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, AlterTable expr)
-      throws PlanningException {
+      throws TajoException {
     AlterTableNode alterTableNode = ctx.plan.createNode(AlterTableNode.class);
     return alterTableNode;
   }
 
   @Override
   public LogicalNode visitTruncateTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TruncateTable expr)
-      throws PlanningException {
+      throws TajoException {
     TruncateTableNode truncateTableNode = ctx.plan.createNode(TruncateTableNode.class);
     return truncateTableNode;
   }
@@ -483,7 +484,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   public LogicalNode visitInsert(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Insert expr)
-      throws PlanningException {
+      throws TajoException {
     LogicalNode child = super.visitInsert(ctx, stack, expr);
 
     InsertNode insertNode = new InsertNode(ctx.plan.newPID());
@@ -499,14 +500,14 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       instance = new NameRefInSelectListNormalizer();
     }
 
-    public static void normalize(LogicalPlanner.PlanContext context, Expr expr) throws PlanningException {
+    public static void normalize(LogicalPlanner.PlanContext context, Expr expr) throws TajoException {
       NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
       normalizer.visit(context,new Stack<Expr>(), expr);
     }
 
     @Override
     public Expr visitColumnReference(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
-        throws PlanningException {
+        throws TajoException {
 
       String normalized = NameResolver.resolve(ctx.plan, ctx.queryBlock, expr,
       NameResolvingMode.RELS_ONLY).getQualifiedName();

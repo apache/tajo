@@ -20,21 +20,18 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 /**
  * common exec for all hash join execs
@@ -47,19 +44,18 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   // temporal tuples and states for nested loop join
   protected boolean first = true;
-  protected Map<Tuple, T> tupleSlots;
+  protected TupleMap<T> tupleSlots;
 
   protected Iterator<Tuple> iterator;
-
-  protected final Tuple keyTuple;
 
   protected final int rightNumCols;
   protected final int leftNumCols;
 
-  protected final int[] leftKeyList;
-  protected final int[] rightKeyList;
+  protected final Column[] leftKeyList;
+  protected final Column[] rightKeyList;
 
   protected boolean finished;
+  protected final KeyProjector leftKeyExtractor;
 
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
@@ -68,21 +64,18 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
         inner.getSchema(), false);
 
-    leftKeyList = new int[joinKeyPairs.size()];
-    rightKeyList = new int[joinKeyPairs.size()];
+    leftKeyList = new Column[joinKeyPairs.size()];
+    rightKeyList = new Column[joinKeyPairs.size()];
 
     for (int i = 0; i < joinKeyPairs.size(); i++) {
-      leftKeyList[i] = outer.getSchema().getColumnId(joinKeyPairs.get(i)[0].getQualifiedName());
-    }
-
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
+      leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
+      rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
     leftNumCols = outer.getSchema().size();
     rightNumCols = inner.getSchema().size();
 
-    keyTuple = new VTuple(leftKeyList.length);
+    leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -102,12 +95,12 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   protected void loadRightFromCache(TableCacheKey key) throws IOException {
     ExecutionBlockSharedResource sharedResource = context.getSharedResource();
 
-    CacheHolder<Map<Tuple, List<Tuple>>> holder;
+    CacheHolder<TupleMap<TupleList>> holder;
     synchronized (sharedResource.getLock()) {
       if (sharedResource.hasBroadcastCache(key)) {
         holder = sharedResource.getBroadcastCache(key);
       } else {
-        Map<Tuple, List<Tuple>> built = buildRightToHashTable();
+        TupleMap<TupleList> built = buildRightToHashTable();
         holder = new CacheHolder.BroadcastCacheHolder(built, rightChild.getInputStats(), null);
         sharedResource.addBroadcastCache(key, holder);
       }
@@ -115,49 +108,26 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
     this.tupleSlots = convert(holder.getData(), true);
   }
 
-  protected Map<Tuple, List<Tuple>> buildRightToHashTable() throws IOException {
+  protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
     Tuple tuple;
-    Map<Tuple, List<Tuple>> map = new HashMap<Tuple, List<Tuple>>(100000);
+    TupleMap<TupleList> map = new TupleMap<TupleList>(100000);
+    KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-      Tuple keyTuple = new VTuple(joinKeyPairs.size());
-      for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.asDatum(rightKeyList[i]));
-      }
-
-      /*
-       * TODO
-       * Currently, some physical executors can return new instances of tuple, but others not.
-       * This sometimes causes wrong results due to the singleton Tuple instance.
-       * The below line is a temporal solution to fix this problem.
-       * This will be improved at https://issues.apache.org/jira/browse/TAJO-1343.
-       */
-      try {
-        tuple = tuple.clone();
-      } catch (CloneNotSupportedException e) {
-        throw new IOException(e);
-      }
-
-      List<Tuple> newValue = map.get(keyTuple);
+      KeyTuple keyTuple = keyProjector.project(tuple);
+      TupleList newValue = map.get(keyTuple);
       if (newValue == null) {
-        map.put(keyTuple, newValue = new ArrayList<Tuple>());
+        map.put(keyTuple, newValue = new TupleList());
       }
       // if source is scan or groupby, it needs not to be cloned
-      newValue.add(new VTuple(tuple));
+      newValue.add(tuple);
     }
     return map;
   }
 
   // todo: convert loaded data to cache condition
-  protected abstract Map<Tuple, T> convert(Map<Tuple, List<Tuple>> hashed, boolean fromCache)
+  protected abstract TupleMap<T> convert(TupleMap<TupleList> hashed, boolean fromCache)
       throws IOException;
-
-  protected Tuple toKey(final Tuple outerTuple) {
-    for (int i = 0; i < leftKeyList.length; i++) {
-      keyTuple.put(i, outerTuple.asDatum(leftKeyList[i]));
-    }
-    return keyTuple;
-  }
 
   @Override
   public void rescan() throws IOException {

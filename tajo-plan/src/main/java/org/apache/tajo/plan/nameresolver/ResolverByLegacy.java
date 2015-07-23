@@ -23,6 +23,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.AmbiguousColumnException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -36,7 +38,7 @@ import java.util.List;
 public class ResolverByLegacy extends NameResolver {
   @Override
   public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException {
+      throws TajoException {
 
     if (columnRef.hasQualifier()) {
       return resolveColumnWithQualifier(plan, block, columnRef);
@@ -46,7 +48,7 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                   ColumnReferenceExpr columnRef) throws PlanningException {
+                                                   ColumnReferenceExpr columnRef) throws TajoException {
     final String qualifier;
     final String qualifiedName;
 
@@ -97,7 +99,7 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                     ColumnReferenceExpr columnRef)throws PlanningException {
+                                                     ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
 
     Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     if (found != null) {
