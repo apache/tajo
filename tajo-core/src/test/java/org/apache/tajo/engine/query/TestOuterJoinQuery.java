@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.junit.AfterClass;
@@ -28,7 +27,6 @@ import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 @Category(IntegrationTest.class)
