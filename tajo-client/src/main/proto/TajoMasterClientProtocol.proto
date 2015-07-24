@@ -37,7 +37,7 @@ service TajoMasterClientProtocolService {
   rpc removeSession(SessionIdProto) returns (ReturnState);
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
   rpc existSessionVariable(SessionedStringProto) returns (ReturnState);
-  rpc getSessionVariable(SessionedStringProto) returns (StringProto);
+  rpc getSessionVariable(SessionedStringProto) returns (StringResponse);
   rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetResponse);
 
   // Query Submission and Result APIs

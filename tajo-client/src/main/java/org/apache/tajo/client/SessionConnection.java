@@ -36,7 +36,9 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -54,8 +56,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
 import static org.apache.tajo.exception.ReturnStateUtil.isError;
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
+import static org.apache.tajo.exception.ReturnStateUtil.isThisError;
 import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
@@ -278,9 +282,18 @@ public class SessionConnection implements Closeable {
 
   public Boolean existSessionVariable(final String varname) throws SQLException {
 
-    BlockingInterface stub = getTMStub();
     try {
-      return isSuccess(stub.existSessionVariable(null, getSessionedString(varname)));
+      final BlockingInterface stub = getTMStub();
+      ReturnState state = stub.existSessionVariable(null, getSessionedString(varname));
+
+      if (isThisError(state, NO_SUCH_SESSION_VARIABLE)) {
+        return false;
+      } else if (isError(state)){
+        throw SQLExceptionUtil.toSQLException(state);
+      }
+
+      return isSuccess(state);
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
