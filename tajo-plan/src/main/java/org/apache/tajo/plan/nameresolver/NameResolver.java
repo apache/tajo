@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.exception.UndefinedColumnException;
 import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.exception.AmbiguousColumnException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.RelationNode;
@@ -149,12 +150,30 @@ public abstract class NameResolver {
    * @throws PlanningException
    */
   static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                  ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
+                                           ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
     String qualifier;
     String canonicalName;
 
     if (columnRef.hasQualifier()) {
-      Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
+      Pair<String, String> normalized;
+      try {
+        normalized = lookupQualifierAndCanonicalName(block, columnRef);
+      } catch (UndefinedColumnException udce) {
+        // is it correlated subquery?
+        // if the search column is not found at the current block, find it at all ancestors of the block.
+        LogicalPlan.QueryBlock current = block;
+        while (!plan.getRootBlock().getName().equals(current.getName())) {
+          LogicalPlan.QueryBlock parentBlock = plan.getParentBlock(current);
+          for (RelationNode relationNode : parentBlock.getRelations()) {
+            if (relationNode.getLogicalSchema().containsByQualifiedName(columnRef.getCanonicalName())) {
+              throw new UnimplementedException("Correlated subquery");
+            }
+          }
+          current = parentBlock;
+        }
+
+        throw udce;
+      }
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
 
@@ -224,9 +243,11 @@ public abstract class NameResolver {
     List<Column> candidates = TUtil.newList();
 
     for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getLogicalSchema().getColumn(columnName);
-      if (found != null) {
-        candidates.add(found);
+      if (rel.isNameResolveBase()) {
+        Column found = rel.getLogicalSchema().getColumn(columnName);
+        if (found != null) {
+          candidates.add(found);
+        }
       }
     }
 
@@ -359,7 +380,7 @@ public abstract class NameResolver {
 
     // throw exception if no column cannot be founded or two or more than columns are founded
     if (guessedRelations.size() == 0) {
-      throw new UndefinedColumnException(columnRef.getQualifier());
+      throw new UndefinedColumnException(columnRef.getCanonicalName());
     } else if (guessedRelations.size() > 1) {
       throw new AmbiguousColumnException(columnRef.getCanonicalName());
     }

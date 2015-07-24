@@ -20,7 +20,6 @@ package org.apache.tajo.plan.visitor;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 
 import java.util.Stack;
@@ -103,6 +102,12 @@ public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraV
   @Override
   public RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr) throws TajoException {
     return super.visitTableSubQuery(ctx, stack, expr);
+  }
+
+  @Override
+  public RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr)
+      throws TajoException {
+    return super.visitSimpleTableSubquery(ctx, stack, expr);
   }
 
   @Override

@@ -1112,7 +1112,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitTableSubQuery(Context upperContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     Context childContext = new Context(plan, upperContext.requiredSet);
     stack.push(node);
     LogicalNode child = super.visitTableSubQuery(childContext, plan, block, node, stack);

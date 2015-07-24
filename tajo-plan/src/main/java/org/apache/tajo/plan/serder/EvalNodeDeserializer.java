@@ -35,6 +35,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
@@ -104,7 +105,7 @@ public class EvalNodeDeserializer {
 
         switch (type) {
         case IN:
-          current = new InEval(lhs, (RowConstantEval) rhs, binProto.getNegative());
+          current = new InEval(lhs, (ValueSetEval) rhs, binProto.getNegative());
           break;
         case LIKE: {
           PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
@@ -140,6 +141,12 @@ public class EvalNodeDeserializer {
           values[i] = deserialize(rowConstProto.getValues(i));
         }
         current = new RowConstantEval(values);
+
+      } else if (type == EvalType.SUBQUERY) {
+        PlanProto.SubqueryEval subqueryProto = protoNode.getSubquery();
+        TableSubQueryNode subQueryNode = (TableSubQueryNode) LogicalNodeDeserializer.deserialize(context, evalContext,
+            subqueryProto.getSubquery());
+        current = new SubqueryEval(subQueryNode);
 
       } else if (type == EvalType.FIELD) {
         CatalogProtos.ColumnProto columnProto = protoNode.getField();

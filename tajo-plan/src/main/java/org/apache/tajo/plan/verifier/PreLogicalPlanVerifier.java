@@ -33,7 +33,6 @@ import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.TUtil;

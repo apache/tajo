@@ -953,4 +953,21 @@ public class PlannerUtil {
 
     return tableDescTobeCreated;
   }
+
+  /**
+   * Extract all in-subqueries from the given qual.
+   *
+   * @param qual
+   * @return
+   */
+  public static List<Expr> extractInSubquery(Expr qual) {
+    List<Expr> inSubqueries = TUtil.newList();
+    for (Expr eachIn : ExprFinder.findsInOrder(qual, OpType.InPredicate)) {
+      InPredicate inPredicate = (InPredicate) eachIn;
+      if (inPredicate.getInValue().getType() == OpType.SimpleTableSubquery) {
+        inSubqueries.add(eachIn);
+      }
+    }
+    return inSubqueries;
+  }
 }

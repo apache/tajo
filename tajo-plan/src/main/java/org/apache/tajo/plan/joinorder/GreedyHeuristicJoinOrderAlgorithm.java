@@ -305,7 +305,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           if (interchangeableWithRightVertex.contains(rightTarget)) {
             JoinEdge targetEdge = joinGraph.getEdge(leftTarget, rightTarget);
             if (targetEdge == null) {
-              if (joinGraph.isSymmetricJoinOnly()) {
+              if (joinGraph.allowArbitraryCrossJoin()) {
                 // Since the targets of the both sides are searched with symmetric characteristics,
                 // the join type is assumed as CROSS.
                 // TODO: This must be improved to consider a case when a query involves multiple commutative and
@@ -378,6 +378,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
               SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema()),
                   SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
                   SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
+          break;
+        case LEFT_ANTI:
+        case LEFT_SEMI:
+          factor *= DEFAULT_SELECTION_FACTOR * SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
           break;
         case INNER:
         default:

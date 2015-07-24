@@ -37,6 +37,7 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.util.Pair;
@@ -362,12 +363,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode visitInPredicate(Context ctx, Stack<Expr> stack, InPredicate expr) throws TajoException {
     stack.push(expr);
     EvalNode lhs = visit(ctx, stack, expr.getLeft());
-    RowConstantEval rowConstantEval = (RowConstantEval) visit(ctx, stack, expr.getInValue());
+    ValueSetEval valueSetEval = (ValueSetEval) visit(ctx, stack, expr.getInValue());
     stack.pop();
 
-    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(ctx, lhs, rowConstantEval);
+    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(ctx, lhs, valueSetEval);
 
-    return new InEval(pair.getFirst(), (RowConstantEval) pair.getSecond(), expr.isNot());
+    return new InEval(pair.getFirst(), (ValueSetEval) pair.getSecond(), expr.isNot());
   }
 
   @Override
@@ -385,6 +386,16 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
+  public EvalNode visitSimpleTableSubquery(Context ctx, Stack<Expr> stack, SimpleTableSubquery expr)
+      throws TajoException {
+    if (stack.peek().getType() == OpType.InPredicate) {
+      // In the case of in-subquery, stop visiting because the subquery expr is not expression.
+      return new SubqueryEval((TableSubQueryNode) ctx.currentBlock.getNodeFromExpr(expr));
+    } else {
+      return super.visitSimpleTableSubquery(ctx, stack, expr);
+    }
+  }
+
   public EvalNode visitExistsPredicate(Context ctx, Stack<Expr> stack, ExistsPredicate expr) throws TajoException {
     throw new UnimplementedException("EXISTS clause");
   }

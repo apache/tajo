@@ -16,21 +16,39 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.algebra;
+package org.apache.tajo.plan.expr;
 
-public class SimpleTableSubQuery extends UnaryOperator {
+import org.apache.tajo.datum.Datum;
 
-  public SimpleTableSubQuery(Expr subquery) {
-    super(OpType.SimpleTableSubQuery);
-    setChild(subquery);
+/**
+ * ValueSetEval is an abstract class to represent both {@link RowConstantEval} and {@link SubqueryEval}.
+ * This is allowed only for the right child of {@link InEval}.
+ */
+public abstract class ValueSetEval extends EvalNode implements Cloneable {
+
+  public ValueSetEval(EvalType evalType) {
+    super(evalType);
   }
 
-  public Expr getSubQuery() {
-    return getChild();
+  public abstract Datum[] getValues();
+
+  @Override
+  public int childNum() {
+    return 0;
   }
 
   @Override
-  boolean equalsTo(Expr expr) {
-    return true;
+  public EvalNode getChild(int idx) {
+    return null;
+  }
+
+  @Override
+  public void preOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
+  }
+
+  @Override
+  public void postOrder(EvalNodeVisitor visitor) {
+    visitor.visit(this);
   }
 }

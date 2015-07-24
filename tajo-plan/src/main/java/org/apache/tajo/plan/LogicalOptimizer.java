@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -28,10 +29,12 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
+import org.apache.tajo.plan.expr.EvalType;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
@@ -248,9 +251,15 @@ public class LogicalOptimizer {
     @Override
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
-      // all join predicate candidates must be collected before building the join tree
-      context.addCandidateJoinFilters(
-          TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
+      // all join predicate candidates must be collected before building the join tree except non-equality conditions
+      // TODO: non-equality conditions should also be considered as join conditions after TAJO-1554
+      List<EvalNode> candidateJoinQuals = TUtil.newList();
+      for (EvalNode eachEval : AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())) {
+        if (EvalTreeUtil.isJoinQual(eachEval, false)) {
+          candidateJoinQuals.add(eachEval);
+        }
+      }
+      context.addCandidateJoinFilters(candidateJoinQuals);
       super.visitFilter(context, plan, block, node, stack);
       return node;
     }
@@ -261,51 +270,74 @@ public class LogicalOptimizer {
         throws TajoException {
       super.visitJoin(context, plan, block, joinNode, stack);
 
-      // given a join node, find the relations which are nearest to the join in the query.
-      RelationNode leftChild = findMostRightRelation(plan, block, joinNode.getLeftChild());
-      RelationNode rightChild = findMostLeftRelation(plan, block, joinNode.getRightChild());
-      RelationVertex leftVertex = new RelationVertex(leftChild);
-      RelationVertex rightVertex = new RelationVertex(rightChild);
+      if (joinNode.getJoinType() == JoinType.LEFT_SEMI || joinNode.getJoinType() == JoinType.LEFT_ANTI) {
+        // In case of in-subquery, the left vertex must be the relation of the left column of the in qual.
+        // In addition, the join qual can be evaluated only at the join node for in-subquery,
+        // we don't need to consider moving it to other joins.
 
-      JoinEdge edge = context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
+        BinaryEval joinQual = (BinaryEval) joinNode.getJoinQual();
+        Preconditions.checkArgument(joinQual.getLeftExpr().getType() == EvalType.FIELD ||
+            joinQual.getLeftExpr().getType() == EvalType.CAST);
+        FieldEval leftColumn = null;
+        if (joinQual.getLeftExpr().getType() == EvalType.FIELD) {
+          leftColumn = joinQual.getLeftExpr();
+        } else if (joinQual.getLeftExpr().getType() == EvalType.CAST) {
+          leftColumn = (FieldEval) ((CastEval)joinQual.getLeftExpr()).getOperand();
+        }
+        RelationNode leftChild = block.getRelation(leftColumn.getQualifier());
+        RelationNode rightChild = joinNode.getRightChild();
+        RelationVertex leftVertex = new RelationVertex(leftChild);
+        RelationVertex rightVertex = new RelationVertex(rightChild);
 
-      // find all possible predicates for this join edge
-      Set<EvalNode> joinConditions = TUtil.newHashSet();
-      if (joinNode.hasJoinQual()) {
-        Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
-        for (EvalNode predicate : joinNode.getJoinSpec().getPredicates()) {
-          if (EvalTreeUtil.isJoinQual(block, leftVertex.getSchema(), rightVertex.getSchema(), predicate, false)) {
-            if (JoinOrderingUtil.checkIfEvaluatedAtEdge(predicate, edge, true)) {
+        context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
+      } else {
+
+        // given a join node, find the relations which are nearest to the join in the query.
+        RelationNode leftChild = findMostRightRelation(plan, block, joinNode.getLeftChild());
+        RelationNode rightChild = findMostLeftRelation(plan, block, joinNode.getRightChild());
+        RelationVertex leftVertex = new RelationVertex(leftChild);
+        RelationVertex rightVertex = new RelationVertex(rightChild);
+
+        JoinEdge edge = context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
+
+        // find all possible predicates for this join edge
+        Set<EvalNode> joinConditions = TUtil.newHashSet();
+        if (joinNode.hasJoinQual()) {
+          Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
+          for (EvalNode predicate : joinNode.getJoinSpec().getPredicates()) {
+            if (EvalTreeUtil.isJoinQual(block, leftVertex.getSchema(), rightVertex.getSchema(), predicate, false)) {
+              if (JoinOrderingUtil.checkIfEvaluatedAtEdge(predicate, edge, true)) {
+                joinConditions.add(predicate);
+              }
+            } else {
               joinConditions.add(predicate);
             }
-          } else {
-            joinConditions.add(predicate);
           }
+          // find predicates which cannot be evaluated at this join
+          originPredicates.removeAll(joinConditions);
+          context.addCandidateJoinConditions(originPredicates);
+          originPredicates.clear();
+          originPredicates.addAll(joinConditions);
         }
-        // find predicates which cannot be evaluated at this join
-        originPredicates.removeAll(joinConditions);
-        context.addCandidateJoinConditions(originPredicates);
-        originPredicates.clear();
-        originPredicates.addAll(joinConditions);
-      }
 
-      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), edge,
-          true));
-      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), edge,
-          false));
-      context.markAsEvaluatedJoinConditions(joinConditions);
-      context.markAsEvaluatedJoinFilters(joinConditions);
-      edge.addJoinPredicates(joinConditions);
-      if (edge.getJoinType() == JoinType.INNER && edge.getJoinQual().isEmpty()) {
-        edge.getJoinSpec().setType(JoinType.CROSS);
-      }
-
-      if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
-        JoinEdge commutativeEdge = context.getCachedOrNewJoinEdge(edge.getJoinSpec(), edge.getRightVertex(),
-            edge.getLeftVertex());
-        commutativeEdge.addJoinPredicates(joinConditions);
-        context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),
-            commutativeEdge);
+        joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), edge,
+            true));
+        joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), edge,
+            false));
+        context.markAsEvaluatedJoinConditions(joinConditions);
+        context.markAsEvaluatedJoinFilters(joinConditions);
+        edge.addJoinPredicates(joinConditions);
+        if (edge.getJoinType() == JoinType.INNER && edge.getJoinQual().isEmpty()) {
+          edge.getJoinSpec().setType(JoinType.CROSS);
+        }
+        
+        if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
+          JoinEdge commutativeEdge = context.getCachedOrNewJoinEdge(edge.getJoinSpec(), edge.getRightVertex(),
+              edge.getLeftVertex());
+          commutativeEdge.addJoinPredicates(joinConditions);
+          context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),
+              commutativeEdge);
+        }
       }
 
       return joinNode;

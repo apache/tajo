@@ -97,7 +97,7 @@ public class GlobalEngine extends AbstractService {
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog(), TablespaceManager.getInstance());
       optimizer = new LogicalOptimizer(context.getConf());
-      annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
+      annotatedPlanVerifier = new LogicalPlanVerifier();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
       throw new RuntimeException(t);
@@ -281,8 +281,8 @@ public class GlobalEngine extends AbstractService {
     LOG.info("Optimized Query: \n" + plan.toString());
     LOG.info("=============================================");
 
-    annotatedPlanVerifier.verify(queryContext, state, plan);
-    verifyInsertTableSchema(queryContext, state, plan);
+    annotatedPlanVerifier.verify(state, plan);
+    verifyInsertTableSchema(state, plan);
 
     if (!state.verified()) {
       for (Throwable error : state.getErrors()) {
@@ -293,7 +293,7 @@ public class GlobalEngine extends AbstractService {
     return plan;
   }
 
-  private void verifyInsertTableSchema(QueryContext queryContext, VerificationState state, LogicalPlan plan) {
+  private void verifyInsertTableSchema(VerificationState state, LogicalPlan plan) {
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
