@@ -41,6 +41,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -65,8 +68,12 @@ import java.net.InetSocketAddress;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.exception.ExceptionUtil.printStackTraceIfError;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
 
+/**
+ * It provides Client Remote API service for TajoMaster.
+ */
 public class TajoMasterClientService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(TajoMasterClientService.class);
   private final MasterContext context;
@@ -76,8 +83,6 @@ public class TajoMasterClientService extends AbstractService {
   private BlockingRpcServer server;
   private InetSocketAddress bindAddress;
 
-  private final BoolProto BOOL_TRUE =
-      BoolProto.newBuilder().setValue(true).build();
 
   public TajoMasterClientService(MasterContext context) {
     super(TajoMasterClientService.class.getName());
@@ -140,6 +145,9 @@ public class TajoMasterClientService extends AbstractService {
         return builder.build();
 
       } catch (Throwable t) {
+
+        printStackTraceIfError(LOG, t);
+
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
         builder.setState(returnError(t));
         return builder.build();
@@ -150,8 +158,13 @@ public class TajoMasterClientService extends AbstractService {
     public ReturnState removeSession(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
 
-      if (request != null) {
-        context.getSessionManager().removeSession(request.getId());
+      try {
+        if (request != null) {
+          context.getSessionManager().removeSession(request.getId());
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return ReturnStateUtil.returnError(t);
       }
 
       return OK;
@@ -179,20 +192,29 @@ public class TajoMasterClientService extends AbstractService {
         return builder.build();
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         builder.setState(returnError(t));
         return builder.build();
       }
     }
 
     @Override
-    public StringProto getSessionVariable(RpcController controller, SessionedStringProto request)
+    public StringResponse getSessionVariable(RpcController controller, SessionedStringProto request)
         throws ServiceException {
 
       try {
-        return ProtoUtil.convertString(
-            context.getSessionManager().getVariable(request.getSessionId().getId(), request.getValue()));
+        String value = context.getSessionManager().getVariable(request.getSessionId().getId(), request.getValue());
+
+        return StringResponse.newBuilder()
+            .setState(OK)
+            .setValue(value)
+            .build();
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        printStackTraceIfError(LOG, t);
+        return StringResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
@@ -207,6 +229,7 @@ public class TajoMasterClientService extends AbstractService {
           return errNoSessionVar(request.getValue());
         }
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -227,6 +250,7 @@ public class TajoMasterClientService extends AbstractService {
             .build();
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return KeyValueSetResponse.newBuilder()
             .setState(returnError(t))
             .build();
@@ -243,6 +267,7 @@ public class TajoMasterClientService extends AbstractService {
             .build();
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return StringResponse.newBuilder()
             .setState(returnError(t))
             .build();
@@ -262,6 +287,7 @@ public class TajoMasterClientService extends AbstractService {
           return errUndefinedDatabase(databaseName);
         }
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -277,10 +303,11 @@ public class TajoMasterClientService extends AbstractService {
 
         return context.getGlobalEngine().executeQuery(session, request.getQuery(), request.getIsJson());
 
-      } catch (Exception e) {
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
 
         return ClientProtos.SubmitQueryResponse.newBuilder()
-            .setState(returnError(e))
+            .setState(returnError(t))
             .setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto())
             .setIsForwarded(true)
             .setUserName(context.getConf().getVar(ConfVars.USERNAME))
@@ -300,6 +327,7 @@ public class TajoMasterClientService extends AbstractService {
         builder.setState(OK);
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         builder.setState(returnError(t));
       }
       return builder.build();
@@ -351,20 +379,22 @@ public class TajoMasterClientService extends AbstractService {
             builder.setState(errIncompleteQuery(queryId));
         }
 
-        return builder.build();
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        printStackTraceIfError(LOG, t);
+        builder.setState(returnError(t));
       }
+
+      return builder.build();
     }
 
     @Override
     public GetQueryListResponse getRunningQueryList(RpcController controller, TajoIdProtos.SessionIdProto request)
-
         throws ServiceException {
+
+      GetQueryListResponse.Builder builder = GetQueryListResponse.newBuilder();
 
       try {
         context.getSessionManager().touch(request.getId());
-        GetQueryListResponse.Builder builder= GetQueryListResponse.newBuilder();
 
         Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
         queries.addAll(context.getQueryJobManager().getRunningQueries());
@@ -387,11 +417,14 @@ public class TajoMasterClientService extends AbstractService {
           builder.addQueryList(infoBuilder.build());
         }
 
-        GetQueryListResponse result = builder.build();
-        return result;
+        builder.setState(OK);
+
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        printStackTraceIfError(LOG, t);
+        builder.setState(returnError(t));
       }
+
+      return builder.build();
     }
 
     @Override
@@ -424,7 +457,9 @@ public class TajoMasterClientService extends AbstractService {
         }
 
         builder.setState(OK);
+
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         builder.setState(returnError(t));
       }
 
@@ -435,10 +470,11 @@ public class TajoMasterClientService extends AbstractService {
     public GetQueryStatusResponse getQueryStatus(RpcController controller, GetQueryStatusRequest request)
         throws ServiceException {
 
+      GetQueryStatusResponse.Builder builder = GetQueryStatusResponse.newBuilder();
+
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
 
-        GetQueryStatusResponse.Builder builder = GetQueryStatusResponse.newBuilder();
         QueryId queryId = new QueryId(request.getQueryId());
         builder.setQueryId(request.getQueryId());
 
@@ -485,11 +521,13 @@ public class TajoMasterClientService extends AbstractService {
             }
           }
         }
-        return builder.build();
 
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        printStackTraceIfError(LOG, t);
+        builder.setState(returnError(t));
       }
+
+      return builder.build();
     }
 
     @Override
@@ -539,8 +577,10 @@ public class TajoMasterClientService extends AbstractService {
             request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
 
       } catch (Throwable t) {
-        builder.setResultSet(resultSetBuilder.build()); // required field
+        printStackTraceIfError(LOG, t);
+
         builder.setState(returnError(t));
+        builder.setResultSet(resultSetBuilder.build()); // required field
       }
 
       return builder.build();
@@ -559,6 +599,7 @@ public class TajoMasterClientService extends AbstractService {
         return OK;
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -587,6 +628,7 @@ public class TajoMasterClientService extends AbstractService {
         builder.setState(OK);
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         builder.setState(returnError(t));
       }
 
@@ -611,6 +653,7 @@ public class TajoMasterClientService extends AbstractService {
         return OK;
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -646,6 +689,7 @@ public class TajoMasterClientService extends AbstractService {
         builder.setState(OK);
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         builder.setState(returnError(t));
       }
 
@@ -665,6 +709,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -680,6 +725,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -697,6 +743,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -714,6 +761,7 @@ public class TajoMasterClientService extends AbstractService {
             .build();
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return StringListResponse.newBuilder()
             .setState(returnError(t))
             .build();
@@ -744,6 +792,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -767,6 +816,7 @@ public class TajoMasterClientService extends AbstractService {
           .build();
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return StringListResponse.newBuilder()
             .setState(returnError(t))
             .build();
@@ -807,7 +857,10 @@ public class TajoMasterClientService extends AbstractService {
               .build();
         }
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        printStackTraceIfError(LOG, t);
+        return TableResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
       }
     }
 
@@ -850,6 +903,7 @@ public class TajoMasterClientService extends AbstractService {
             .setTable(desc.getProto()).build();
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return TableResponse.newBuilder()
             .setState(returnError(t))
             .build();
@@ -867,6 +921,7 @@ public class TajoMasterClientService extends AbstractService {
         return OK;
 
       } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
         return returnError(t);
       }
     }
@@ -898,7 +953,11 @@ public class TajoMasterClientService extends AbstractService {
             .build();
 
       } catch (Throwable t) {
-        return FunctionListResponse.newBuilder().setState(returnError(t)).build();
+        printStackTraceIfError(LOG, t);
+
+        return FunctionListResponse.newBuilder().
+            setState(returnError(t))
+            .build();
       }
     }
   }
