@@ -32,6 +32,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
+import org.apache.tajo.plan.expr.EvalType;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
@@ -248,9 +249,15 @@ public class LogicalOptimizer {
     @Override
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
-      // all join predicate candidates must be collected before building the join tree
-      context.addCandidateJoinFilters(
-          TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
+      // all join predicate candidates must be collected before building the join tree except non-equality conditions
+      // TODO: non-equality conditions should also be considered as join conditions after TAJO-1554
+      List<EvalNode> candidateJoinQuals = TUtil.newList();
+      for (EvalNode eachEval : AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())) {
+        if (EvalTreeUtil.isJoinQual(eachEval, false)) {
+          candidateJoinQuals.add(eachEval);
+        }
+      }
+      context.addCandidateJoinFilters(candidateJoinQuals);
       super.visitFilter(context, plan, block, node, stack);
       return node;
     }
