@@ -2189,10 +2189,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       sb = new StringBuilder();
 
-      int i = 0, lastIndex = 0;
+      int currentIndex = 0, lastIndex = 0;
+
+      // Set a batch size like 1000. This avoids SQL injection and also takes care of out of memory issue.
       int batchSize = conf.getInt(TajoConf.ConfVars.PARTITION_BULK_INSERT_BATCH_SIZE.varname, 1000);
-      for(i = 0; i < partitions.size(); i++) {
-        PartitionDescProto partition = partitions.get(i);
+      for(currentIndex = 0; currentIndex < partitions.size(); currentIndex++) {
+        PartitionDescProto partition = partitions.get(currentIndex);
         partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
 
         if (partitionDesc != null) {
@@ -2206,14 +2208,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         addPartition(tableId, partition, stmt, sb);
         addPartitionKeys(tableId, partition, stmt, sb);
 
-        if (i >= lastIndex + batchSize && lastIndex != i) {
+        if (currentIndex >= lastIndex + batchSize && lastIndex != currentIndex) {
           stmt.executeBatch();
           stmt.clearBatch();
-          lastIndex = i;
+          lastIndex = currentIndex;
         }
       }
 
-      if (lastIndex != i) {
+      if (lastIndex != currentIndex) {
         stmt.executeBatch();
       }
 
