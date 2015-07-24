@@ -411,12 +411,10 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
-<<<<<<< HEAD
     TAJO-1302: Support index metadata backup and restore. (jihoon)
-=======
+
     TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
     committed by hyunsik)
->>>>>>> bcec5eb7e247dc983184b37a3dbb4143afd19ac8
 
     TAJO-1464: Add ORCFileScanner to read ORCFile table. (Contributed by 
     Jongyoung Park, Committed by jihoon)
