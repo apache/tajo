@@ -31,7 +31,9 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -1094,7 +1096,12 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        return store.existIndexByName(dbName, indexName) ? OK : errUndefinedIndexName(indexName);
+
+        if (store.existDatabase(dbName)) {
+          return store.existIndexByName(dbName, indexName) ? OK : errUndefinedIndexName(indexName);
+        } else {
+          return errUndefinedDatabase(dbName);
+        }
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -1116,8 +1123,18 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        return store.existIndexByColumns(databaseName, tableName,
-            columnNames.toArray(new String[columnNames.size()])) ? OK : errUndefinedIndex(tableName, columnNames);
+
+        if (store.existDatabase(databaseName)) {
+          if (store.existTable(databaseName, tableName)) {
+            return store.existIndexByColumns(databaseName, tableName,
+                columnNames.toArray(new String[columnNames.size()])) ? OK : errUndefinedIndex(tableName, columnNames);
+          } else {
+            return errUndefinedTable(tableName);
+          }
+        } else {
+          return errUndefinedDatabase(databaseName);
+        }
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         return returnError(t);
@@ -1127,13 +1144,24 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public ReturnState existIndexesByTable(RpcController controller, TableIdentifierProto request) throws ServiceException {
+    public ReturnState existIndexesByTable(RpcController controller, TableIdentifierProto request)
+        throws ServiceException {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
 
       rlock.lock();
       try {
-        return store.existIndexesByTable(databaseName, tableName) ? OK : errUndefinedIndex(tableName);
+
+        if (store.existDatabase(databaseName)) {
+          if (store.existTable(databaseName, tableName)) {
+            return store.existIndexesByTable(databaseName, tableName) ? OK : errUndefinedIndex(tableName);
+          } else {
+            return errUndefinedTable(tableName);
+          }
+        } else {
+          return errUndefinedDatabase(databaseName);
+        }
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         return returnError(t);
@@ -1143,8 +1171,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public IndexResponse getIndexByName(RpcController controller, IndexNameProto request)
-        throws ServiceException {
+    public IndexResponse getIndexByName(RpcController controller, IndexNameProto request) throws ServiceException {
 
       String databaseName = request.getDatabaseName();
       String indexName = request.getIndexName();
