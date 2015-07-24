@@ -67,9 +67,14 @@ import static com.google.common.base.Preconditions.checkArgument;
  * sub-types. Each of the TreeWriters writes the column's data as a set of
  * streams.
  *
- * This class is synchronized so that multi-threaded access is ok. In
- * particular, because the MemoryManager is shared between writers, this class
- * assumes that checkMemory may be called from a separate thread.
+ * This class is unsynchronized like most Stream objects, so from the creation of an OrcFile and all
+ * access to a single instance has to be from a single thread.
+ *
+ * There are no known cases where these happen between different threads today.
+ *
+ * Caveat: the MemoryManager is created during WriterOptions create, that has to be confined to a single
+ * thread as well.
+ *
  */
 public class WriterImpl implements Writer, MemoryManager.Callback {
 
@@ -313,7 +318,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
   }
 
   @Override
-  public synchronized boolean checkMemory(double newScale) throws IOException {
+  public boolean checkMemory(double newScale) throws IOException {
     long limit = (long) Math.round(adjustedStripeSize * newScale);
     long size = estimateStripeSize();
     if (LOG.isDebugEnabled()) {
@@ -2089,20 +2094,18 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
   }
 
   @Override
-  public synchronized void addUserMetadata(String name, ByteBuffer value) {
+  public void addUserMetadata(String name, ByteBuffer value) {
     userMetadata.put(name, ByteString.copyFrom(value));
   }
 
   public void addTuple(Tuple tuple) throws IOException {
-    synchronized (this) {
-      ((StructTreeWriter)treeWriter).writeTuple(tuple);
-      rowsInStripe += 1;
-      if (buildIndex) {
-        rowsInIndex += 1;
+    ((StructTreeWriter)treeWriter).writeTuple(tuple);
+    rowsInStripe += 1;
+    if (buildIndex) {
+      rowsInIndex += 1;
 
-        if (rowsInIndex >= rowIndexStride) {
-          createRowIndexEntry();
-        }
+      if (rowsInIndex >= rowIndexStride) {
+        createRowIndexEntry();
       }
     }
     memoryManager.addedRow();
@@ -2116,13 +2119,11 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     // remove us from the memory manager so that we don't get any callbacks
     memoryManager.removeWriter(path);
     // actually close the file
-    synchronized (this) {
-      flushStripe();
-      int metadataLength = writeMetadata(rawWriter.getPos());
-      int footerLength = writeFooter(rawWriter.getPos() - metadataLength);
-      rawWriter.writeByte(writePostScript(footerLength, metadataLength));
-      rawWriter.close();
-    }
+    flushStripe();
+    int metadataLength = writeMetadata(rawWriter.getPos());
+    int footerLength = writeFooter(rawWriter.getPos() - metadataLength);
+    rawWriter.writeByte(writePostScript(footerLength, metadataLength));
+    rawWriter.close();
   }
 
   /**
@@ -2144,7 +2145,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
   }
 
   @Override
-  public synchronized long writeIntermediateFooter() throws IOException {
+  public long writeIntermediateFooter() throws IOException {
     // flush any buffered rows
     flushStripe();
     // write a footer
