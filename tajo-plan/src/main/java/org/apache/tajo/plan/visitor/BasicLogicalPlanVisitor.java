@@ -18,6 +18,8 @@
 
 package org.apache.tajo.plan.visitor;
 
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
@@ -31,7 +33,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
    */
   @SuppressWarnings("unused")
   public void preHook(LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack, CONTEXT data)
-      throws PlanningException {
+      throws TajoException {
   }
 
   /**
@@ -39,11 +41,11 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
    */
   @SuppressWarnings("unused")
   public void postHook(LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack, CONTEXT data)
-      throws PlanningException {
+      throws TajoException {
   }
 
   public CONTEXT visit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block)
-      throws PlanningException {
+      throws TajoException {
     visit(context, plan, block, block.getRoot(), new Stack<LogicalNode>());
     return context;
   }
@@ -53,7 +55,8 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
    */
   public RESULT visit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode node,
                       Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
+    preHook(plan, node, stack, context);
     RESULT current;
     switch (node.getType()) {
       case ROOT:
@@ -138,15 +141,16 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
         break;
       default:
-        throw new PlanningException("Unknown logical node type: " + node.getType());
+        throw new TajoInternalError("Unknown logical node type: " + node.getType());
     }
 
+    postHook(plan, node, stack, context);
     return current;
   }
 
   @Override
   public RESULT visitRoot(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalRootNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -155,20 +159,20 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitSetSession(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SetSessionNode node,
-                                Stack<LogicalNode> stack) throws PlanningException {
+                                Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 
   @Override
   public RESULT visitEvalExpr(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, EvalExprNode node,
-                              Stack<LogicalNode> stack) throws PlanningException {
+                              Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 
   @Override
   public RESULT visitProjection(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ProjectionNode node,
                                 Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -177,7 +181,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitLimit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, LimitNode node,
-                           Stack<LogicalNode> stack) throws PlanningException {
+                           Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -186,7 +190,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitSort(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SortNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -195,7 +199,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitHaving(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, HavingNode node,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -204,7 +208,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitGroupBy(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
-                             Stack<LogicalNode> stack) throws PlanningException {
+                             Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -213,7 +217,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitWindowAgg(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -221,7 +225,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   public RESULT visitDistinctGroupby(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     DistinctGroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -230,7 +234,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitFilter(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SelectionNode node,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -239,7 +243,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitJoin(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getLeftChild(), stack);
     visit(context, plan, block, node.getRightChild(), stack);
@@ -249,7 +253,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitUnion(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
-                           Stack<LogicalNode> stack) throws PlanningException {
+                           Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = null;
     if (plan != null) {
@@ -268,7 +272,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitExcept(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ExceptNode node,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getLeftChild(), stack);
     visit(context, plan, block, node.getRightChild(), stack);
@@ -278,7 +282,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitIntersect(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, IntersectNode node,
-                               Stack<LogicalNode> stack) throws PlanningException {
+                               Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getLeftChild(), stack);
     visit(context, plan, block, node.getRightChild(), stack);
@@ -288,7 +292,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitTableSubQuery(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = null;
     if (plan != null) {
@@ -303,20 +307,20 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
-                          Stack<LogicalNode> stack) throws PlanningException {
+                          Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 
   @Override
   public RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
-      throws PlanningException {
+      throws TajoException {
     return null;
   }
 
   @Override
   public RESULT visitStoreTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, StoreTableNode node,
-                                Stack<LogicalNode> stack) throws PlanningException {
+                                Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -325,7 +329,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitInsert(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, InsertNode node,
-                            Stack<LogicalNode> stack) throws PlanningException {
+                            Stack<LogicalNode> stack) throws TajoException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -334,18 +338,19 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitCreateDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    CreateDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    CreateDatabaseNode node, Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 
   @Override
-  public RESULT visitDropDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+  public RESULT visitDropDatabase(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                  DropDatabaseNode node, Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 
   @Override
   public RESULT visitCreateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, CreateTableNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
+                                 Stack<LogicalNode> stack) throws TajoException {
     RESULT result = null;
     stack.push(node);
     if (node.hasSubQuery()) {
@@ -363,7 +368,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitAlterTablespace(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                     AlterTablespaceNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                     AlterTablespaceNode node, Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 
@@ -375,7 +380,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   @Override
   public RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TruncateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   TruncateTableNode node, Stack<LogicalNode> stack) throws TajoException {
     return null;
   }
 }

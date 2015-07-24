@@ -31,7 +31,7 @@ import org.apache.tajo.util.TUtil;
  * This includes some basic information for materializing data.
  */
 public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
-  @Expose protected String storageType = "CSV";
+  @Expose protected String storageType = "TEXT";
   @Expose protected KeyValueSet options = new KeyValueSet();
 
   protected PersistentStoreNode(int pid, NodeType nodeType) {

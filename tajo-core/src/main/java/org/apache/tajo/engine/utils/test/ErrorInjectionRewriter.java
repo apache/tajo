@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.utils.test;
 
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
@@ -36,7 +37,7 @@ public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
     throw new NullPointerException();
   }
 }

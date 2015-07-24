@@ -160,7 +160,11 @@ public abstract class TajoMetricsReporter {
     if(hostAndPort != null && !hostAndPort.isEmpty()) {
       sb.append(hostAndPort).append(" ");
     }
-    sb.append("histo").append(" ");
+    sb.append("histogram").append(" ");
+
+    if(!groupName.isEmpty()) {
+      sb.append(groupName).append(" ");
+    }
 
     String prefix = "";
     for(Map.Entry<String, Histogram> eachHistogram: histograms.entrySet()) {

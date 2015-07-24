@@ -24,7 +24,6 @@
 <%@ page import="org.apache.tajo.TaskAttemptId" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
 <%@ page import="org.apache.tajo.plan.util.PlannerUtil" %>
-<%@ page import="org.apache.tajo.ipc.QueryCoordinatorProtocol" %>
 <%@ page import="org.apache.tajo.querymaster.*" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
@@ -33,6 +32,8 @@
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.*" %>
 <%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.TajoProtos" %>
+<%@ page import="org.apache.tajo.master.cluster.WorkerConnectionInfo" %>
 
 <%
   String paramQueryId = request.getParameter("queryId");
@@ -60,20 +61,21 @@
   }
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
-  List<QueryCoordinatorProtocol.WorkerResourceProto> allWorkers = tajoWorker.getWorkerContext()
+  List<TajoProtos.WorkerConnectionInfoProto> allWorkers = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getAllWorker();
 
-  Map<Integer, QueryCoordinatorProtocol.WorkerResourceProto> workerMap = new HashMap<Integer, QueryCoordinatorProtocol.WorkerResourceProto>();
+  Map<Integer, TajoProtos.WorkerConnectionInfoProto> workerMap = new HashMap<Integer, TajoProtos.WorkerConnectionInfoProto>();
   if(allWorkers != null) {
-    for(QueryCoordinatorProtocol.WorkerResourceProto eachWorker: allWorkers) {
-      workerMap.put(eachWorker.getConnectionInfo().getId(), eachWorker);
+    for(TajoProtos.WorkerConnectionInfoProto eachWorker: allWorkers) {
+      workerMap.put(eachWorker.getId(), eachWorker);
     }
   }
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
-          .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId, true);
+          .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId);
 
   if(queryMasterTask == null) {
-    out.write("<script type='text/javascript'>alert('no query'); history.back(0); </script>");
+    String tajoMasterHttp = request.getScheme() + "://" + JSPUtil.getTajoMasterHttpAddr(tajoWorker.getConfig());
+    response.sendRedirect(tajoMasterHttp + request.getRequestURI() + "?" + request.getQueryString());
     return;
   }
 
@@ -220,7 +222,7 @@
 %>
   <div align="right"># Tasks: <%=numOfTasks%> / # Pages: <%=totalPage%></div>
   <table border="1" width="100%" class="border_table">
-    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
+    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th>Retry</th><th><a href='<%=url%>host'>Host</a></th></tr>
 <%
   for(Task eachTask : tasks) {
     int taskSeq = eachTask.getId().getId();
@@ -228,26 +230,22 @@
             "&page=" + currentPage + "&pageSize=" + pageSize +
             "&taskSeq=" + taskSeq + "&sort=" + sort + "&sortOrder=" + sortOrder;
 
-    String taskHost = eachTask.getSucceededHost() == null ? "-" : eachTask.getSucceededHost();
-    if(eachTask.getSucceededHost() != null) {
-        QueryCoordinatorProtocol.WorkerResourceProto worker =
-                workerMap.get(eachTask.getLastAttempt().getWorkerConnectionInfo().getId());
-        if(worker != null) {
-            TaskAttempt lastAttempt = eachTask.getLastAttempt();
-            if(lastAttempt != null) {
-              TaskAttemptId lastAttemptId = lastAttempt.getId();
-              taskHost = "<a href='http://" + eachTask.getSucceededHost() + ":" + worker.getConnectionInfo().getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + eachTask.getSucceededHost() + "</a>";
-            }
-        }
+    TaskAttempt lastAttempt = eachTask.getLastAttempt();
+    String taskHost = lastAttempt == null ? "-" : lastAttempt.getWorkerConnectionInfo().getHost();
+    if(lastAttempt != null) {
+      WorkerConnectionInfo conn = lastAttempt.getWorkerConnectionInfo();
+      TaskAttemptId lastAttemptId = lastAttempt.getId();
+      taskHost = "<a href='http://" + conn.getHost() + ":" + conn.getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + conn.getHost() + "</a>";
     }
 %>
     <tr>
-      <td><%=rowNo%></td>
+      <td align='center'><%=rowNo%></td>
       <td><a href="<%=taskDetailUrl%>"><%=eachTask.getId()%></a></td>
-      <td><%=eachTask.getLastAttemptStatus()%></td>
-      <td><%=JSPUtil.percentFormat(eachTask.getLastAttempt().getProgress())%>%</td>
-      <td><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
+      <td align='center'><%=eachTask.getLastAttemptStatus()%></td>
+      <td align='center'><%=JSPUtil.percentFormat(eachTask.getLastAttempt().getProgress())%>%</td>
+      <td align='center'><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
       <td align='right'><%=eachTask.getLaunchTime() == 0 ? "-" : eachTask.getRunningTime() + " ms"%></td>
+      <td align='center'><%=eachTask.getRetryCount()%></td>
       <td><%=taskHost%></td>
     </tr>
     <%

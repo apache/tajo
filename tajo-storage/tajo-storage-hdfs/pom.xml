@@ -352,6 +352,11 @@
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.facebook.presto</groupId>
+      <artifactId>presto-orc</artifactId>
+      <version>0.86</version>
+    </dependency>
   </dependencies>
 
   <profiles>

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -25,9 +26,7 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -35,25 +34,23 @@ import java.util.Map.Entry;
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
-  private Map<Tuple, FunctionContext[]> hashTable;
+  private TupleMap<FunctionContext[]> hashTable;
+  private KeyProjector hashKeyProjector;
   private boolean computed = false;
-  private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
+  private Iterator<Entry<KeyTuple, FunctionContext []>> iterator = null;
 
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
-    hashTable = new HashMap<Tuple, FunctionContext []>(100000);
+    hashKeyProjector = new KeyProjector(inSchema, plan.getGroupingColumns());
+    hashTable = new TupleMap<FunctionContext []>(10000);
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 
   private void compute() throws IOException {
     Tuple tuple;
-    Tuple keyTuple;
+    KeyTuple keyTuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      keyTuple = new VTuple(groupingKeyIds.length);
-      // build one key tuple
-      for(int i = 0; i < groupingKeyIds.length; i++) {
-        keyTuple.put(i, tuple.asDatum(groupingKeyIds[i]));
-      }
+      keyTuple = hashKeyProjector.project(tuple);
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
       if(contexts != null) {
@@ -92,7 +89,7 @@ public class HashAggregateExec extends AggregationExec {
     FunctionContext [] contexts;
 
     if (iterator.hasNext()) {
-      Entry<Tuple, FunctionContext []> entry = iterator.next();
+      Entry<KeyTuple, FunctionContext []> entry = iterator.next();
       Tuple keyTuple = entry.getKey();
       contexts =  entry.getValue();
 

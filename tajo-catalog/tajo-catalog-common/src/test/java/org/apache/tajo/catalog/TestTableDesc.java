@@ -44,7 +44,7 @@ public class TestTableDesc {
 	  schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    info = CatalogUtil.newTableMeta("CSV");
+    info = CatalogUtil.newTableMeta("TEXT");
     path = new Path(CommonTestingUtil.getTestDir(), "table1");
     desc = new TableDesc("table1", schema, info, path.toUri());
     stats = new TableStats();
@@ -70,7 +70,7 @@ public class TestTableDesc {
     Schema schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    TableMeta info = CatalogUtil.newTableMeta("CSV");
+    TableMeta info = CatalogUtil.newTableMeta("TEXT");
     testClone(info);
 
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");

@@ -28,9 +28,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -44,7 +42,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
-  private SQLParser parser;
 
   public SQLAnalyzer() {
   }
@@ -53,18 +50,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     ANTLRInputStream input = new ANTLRInputStream(sql);
     SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
-    this.parser = new SQLParser(tokens);
-    parser.setBuildParseTree(true);
-    parser.removeErrorListeners();
-
-    parser.setErrorHandler(new SQLErrorStrategy());
-    parser.addErrorListener(new SQLErrorListener());
-
     SqlContext context;
     try {
+      SQLParser parser = new SQLParser(tokens);
+      parser.setBuildParseTree(true);
+      parser.removeErrorListeners();
+
+      parser.setErrorHandler(new SQLErrorStrategy());
+      parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      e.printStackTrace();
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);
@@ -1628,12 +1623,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Map<String, String> escapeTableMeta(Map<String, String> map) {
     Map<String, String> params = new HashMap<String, String>();
     for (Map.Entry<String, String> entry : map.entrySet()) {
-      if (entry.getKey().equals(StorageConstants.CSVFILE_DELIMITER)
-          || entry.getKey().equals(StorageConstants.TEXT_DELIMITER)) { //backward compatibility
+      if (entry.getKey().equals(StorageConstants.TEXT_DELIMITER)) {
         params.put(StorageConstants.TEXT_DELIMITER, StringUtils.unicodeEscapedDelimiter(entry.getValue()));
-      } else if (entry.getKey().equals(StorageConstants.CSVFILE_NULL)
-          || entry.getKey().equals(StorageConstants.TEXT_NULL)) { //backward compatibility
-        params.put(StorageConstants.TEXT_NULL, entry.getValue());
       } else {
         params.put(entry.getKey(), entry.getValue());
       }

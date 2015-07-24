@@ -18,34 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class CatalogException extends RuntimeException {
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoRuntimeException;
+
+public class CatalogException extends TajoRuntimeException {
   private static final long serialVersionUID = -26362412527118618L;
 
-  /**
-   * 
-   */
-  public CatalogException() {
-  }
-
-  /**
-   * @param message
-   */
-  public CatalogException(String message) {
-    super(message);
-  }
-
-  /**
-   * @param cause
-   */
-  public CatalogException(Throwable cause) {
-    super(cause);
-  }
-
-  /**
-   * @param message
-   * @param cause
-   */
-  public CatalogException(String message, Throwable cause) {
-    super(message, cause);
+  public CatalogException(ResultCode code, String...args) {
+    super(code, args);
   }
 }

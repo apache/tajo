@@ -20,15 +20,14 @@ package org.apache.tajo.engine.utils;
 
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.engine.planner.physical.TupleList;
+import org.apache.tajo.engine.planner.physical.TupleMap;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 public interface CacheHolder<T> {
 
@@ -52,19 +51,19 @@ public interface CacheHolder<T> {
    * This is a cache-holder for a join table
    * It will release when execution block is finished
    */
-  public static class BroadcastCacheHolder implements CacheHolder<Map<Tuple, List<Tuple>>> {
-    private Map<Tuple, List<Tuple>> data;
+  class BroadcastCacheHolder implements CacheHolder<TupleMap<TupleList>> {
+    private TupleMap<TupleList> data;
     private Deallocatable rowBlock;
     private TableStats tableStats;
 
-    public BroadcastCacheHolder(Map<Tuple, List<Tuple>> data, TableStats tableStats, Deallocatable rowBlock){
+    public BroadcastCacheHolder(TupleMap<TupleList> data, TableStats tableStats, Deallocatable rowBlock){
       this.data = data;
       this.tableStats = tableStats;
       this.rowBlock = rowBlock;
     }
 
     @Override
-    public Map<Tuple, List<Tuple>> getData() {
+    public TupleMap<TupleList> getData() {
       return data;
     }
 

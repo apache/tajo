@@ -21,26 +21,23 @@ option java_outer_classname = "QueryMasterProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "yarn_protos.proto";
-import "tajo_protos.proto";
 import "TajoIdProtos.proto";
-import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
-import "TajoWorkerProtocol.proto";
-import "ContainerProtocol.proto";
+import "ResourceProtos.proto";
 
 package hadoop.yarn;
 
 service QueryMasterProtocolService {
   //from Worker
-  rpc getTask(GetTaskRequestProto) returns (TaskRequestProto);
   rpc statusUpdate (TaskStatusProto) returns (NullProto);
   rpc ping (ExecutionBlockIdProto) returns (NullProto);
   rpc fatalError(TaskFatalErrorReport) returns (NullProto);
   rpc done (TaskCompletionReport) returns (NullProto);
   rpc doneExecutionBlock(ExecutionBlockReport) returns (NullProto);
+  rpc getExecutionBlockContext(ExecutionBlockContextRequest) returns (ExecutionBlockContextResponse);
 
   //from TajoMaster's QueryJobManager
   rpc killQuery(QueryIdProto) returns (NullProto);
-  rpc executeQuery(QueryExecutionRequestProto) returns (NullProto);
+  rpc executeQuery(QueryExecutionRequest) returns (NullProto);
+  rpc allocateQueryMaster(AllocationResourceProto) returns (BoolProto);
 }

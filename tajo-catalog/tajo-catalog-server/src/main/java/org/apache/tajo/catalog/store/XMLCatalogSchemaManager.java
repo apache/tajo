@@ -55,6 +55,7 @@ import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.store.object.*;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.TUtil;
 
 public class XMLCatalogSchemaManager {
@@ -71,7 +72,7 @@ public class XMLCatalogSchemaManager {
       
       loadFromXmlFiles();
     } catch (Exception e) {
-      throw new CatalogException(e.getMessage(), e);
+      throw new TajoInternalError(e);
     }
   }
   
@@ -102,7 +103,7 @@ public class XMLCatalogSchemaManager {
 
   public void dropBaseSchema(Connection conn) throws CatalogException {
     if (!isLoaded()) {
-      throw new CatalogException("Schema files are not loaded yet.");
+      throw new TajoInternalError("Schema files are not loaded yet.");
     }
     
     List<DatabaseObject> failedObjects = new ArrayList<DatabaseObject>();
@@ -111,7 +112,7 @@ public class XMLCatalogSchemaManager {
     try {
       stmt = conn.createStatement();
     } catch (SQLException e) {
-      throw new CatalogException(e.getMessage(), e);
+      throw new TajoInternalError(e);
     }
     
     for (DatabaseObject object: catalogStore.getSchema().getObjects()) {
@@ -230,7 +231,7 @@ public class XMLCatalogSchemaManager {
       pstmt = getExistQuery(conn, type);
       
       if (pstmt == null) {
-        throw new CatalogException("Finding " + type
+        throw new TajoInternalError("Finding " + type
             + " type of database object is not supported on this database system.");
       }
       
@@ -274,13 +275,13 @@ public class XMLCatalogSchemaManager {
     Statement stmt;
     
     if (!isLoaded()) {
-      throw new CatalogException("Database schema files are not loaded.");
+      throw new TajoInternalError("Database schema files are not loaded.");
     }
     
     try {
       stmt = conn.createStatement();
     } catch (SQLException e) {
-      throw new CatalogException(e.getMessage(), e);
+      throw new TajoInternalError(e);
     }
     
     for (DatabaseObject object: catalogStore.getSchema().getObjects()) {
@@ -304,7 +305,7 @@ public class XMLCatalogSchemaManager {
           LOG.info(object.getName() + " " + object.getType() + " is created.");
         }
       } catch (SQLException e) {
-        throw new CatalogException(e.getMessage(), e);
+        throw new TajoInternalError(e);
       }
     }
 
@@ -313,7 +314,7 @@ public class XMLCatalogSchemaManager {
   
   public void upgradeBaseSchema(Connection conn, int currentVersion) {
     if (!isLoaded()) {
-      throw new CatalogException("Database schema files are not loaded.");
+      throw new TajoInternalError("Database schema files are not loaded.");
     }
     
     final List<SchemaPatch> candidatePatches = new ArrayList<SchemaPatch>();
@@ -329,7 +330,7 @@ public class XMLCatalogSchemaManager {
     try {
       stmt = conn.createStatement();
     } catch (SQLException e) {
-      throw new CatalogException(e.getMessage(), e);
+      throw new TajoInternalError(e);
     }
     
     for (SchemaPatch patch: candidatePatches) {
@@ -338,7 +339,7 @@ public class XMLCatalogSchemaManager {
           stmt.executeUpdate(object.getSql());
           LOG.info(object.getName() + " " + object.getType() + " was created or altered.");
         } catch (SQLException e) {
-          throw new CatalogException(e.getMessage(), e);
+          throw new TajoInternalError(e);
         }
       }
     }
@@ -369,14 +370,14 @@ public class XMLCatalogSchemaManager {
       }
 
     } catch (SQLException e) {
-      throw new CatalogException(e.getMessage(), e);
+      throw new TajoInternalError(e);
     }
     return result;
   }
 
   public boolean isInitialized(Connection conn) throws CatalogException {
     if (!isLoaded()) {
-      throw new CatalogException("Database schema files are not loaded.");
+      throw new TajoInternalError("Database schema files are not loaded.");
     }
     
     boolean result = true;
@@ -390,7 +391,7 @@ public class XMLCatalogSchemaManager {
           result &= checkExistence(conn, object.getType(), object.getName());
         }
       } catch (SQLException e) {
-        throw new CatalogException(e.getMessage(), e);
+        throw new TajoInternalError(e);
       }
       
       if (!result) {
@@ -490,7 +491,7 @@ public class XMLCatalogSchemaManager {
   
   protected void mergeXmlSchemas(final List<StoreObject> storeObjects) throws CatalogException {
     if (storeObjects.size() <= 0) {
-      throw new CatalogException("Unable to find a schema file.");
+      throw new TajoInternalError("Unable to find a schema file.");
     }
     
     this.catalogStore = new StoreObjectsMerger(storeObjects).merge();
@@ -571,7 +572,7 @@ public class XMLCatalogSchemaManager {
             !targetStore.getSchema().getSchemaName().isEmpty() &&
             !targetStore.getSchema().getSchemaName().equalsIgnoreCase(
                 sourceStore.getSchema().getSchemaName())) {
-          throw new CatalogException("different schema names are specified. One is " + 
+          throw new TajoInternalError("different schema names are specified. One is " +
             sourceStore.getSchema().getSchemaName() + " and other is " + 
               targetStore.getSchema().getSchemaName());
         }
@@ -610,7 +611,7 @@ public class XMLCatalogSchemaManager {
           int objIdx = object.getOrder();
           
           if (objIdx < orderedObjects.size() && orderedObjects.get(objIdx) != null) {
-            throw new CatalogException("This catalog configuration contains duplicated order of DatabaseObject");
+            throw new TajoInternalError("This catalog configuration contains duplicated order of DatabaseObject");
           }
           
           orderedObjects.add(objIdx, object);
@@ -637,7 +638,7 @@ public class XMLCatalogSchemaManager {
     
     protected void validatePatch(List<SchemaPatch> patches, SchemaPatch testPatch) {
       if (testPatch.getPriorVersion() > testPatch.getNextVersion()) {
-        throw new CatalogException("Prior version cannot proceed to next version of patch.");
+        throw new TajoInternalError("Prior version cannot proceed to next version of patch.");
       }
       
       for (SchemaPatch patch: patches) {
@@ -649,7 +650,7 @@ public class XMLCatalogSchemaManager {
           LOG.warn("It has the same prior version (" + testPatch.getPriorVersion() + ") of patch.");
           
           if (testPatch.getNextVersion() == patch.getNextVersion()) {
-            throw new CatalogException("Duplicate versions of patch found. It will terminate Catalog Store. ");
+            throw new TajoInternalError("Duplicate versions of patch found. It will terminate Catalog Store. ");
           }
         }
         
@@ -687,7 +688,7 @@ public class XMLCatalogSchemaManager {
       }
       
       if (occurredCount > 1) {
-        throw new CatalogException("Duplicate Query type (" + testQuery.getType() + ") has found.");
+        throw new TajoInternalError("Duplicate Query type (" + testQuery.getType() + ") has found.");
       }
     }
     

@@ -24,7 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -39,6 +39,7 @@ import org.apache.tajo.catalog.store.OracleStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -93,7 +94,7 @@ public class TestCatalog {
     // MySQLStore/MariaDB/PostgreSQL requires username (and password).
     if (isConnectionIdRequired(driverClass)) {
       if (connectionId == null) {
-        throw new CatalogException(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
+        throw new TajoInternalError(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
       }
       conf.set(CatalogConstants.CONNECTION_ID, connectionId);
       if (password != null) {
@@ -263,7 +264,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema1,
-        new TableMeta("CSV", new KeyValueSet()),
+        new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     return table;
   }
@@ -316,7 +317,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema,
-        new TableMeta("CSV", new KeyValueSet()),
+        new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     
     assertTrue(catalog.createTable(table));
@@ -330,7 +331,7 @@ public class TestCatalog {
     table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema,
-        new TableMeta("CSV", new KeyValueSet()),
+        new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     
     assertTrue(catalog.createTable(table));
@@ -420,7 +421,7 @@ public class TestCatalog {
     TableDesc meta = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
         schema1,
-        "CSV",
+        "TEXT",
         new KeyValueSet(),
         path.toUri());
 
@@ -440,7 +441,7 @@ public class TestCatalog {
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
         schema,
-        "CSV",
+        "TEXT",
         new KeyValueSet(),
         path.toUri());
 
@@ -560,7 +561,7 @@ public class TestCatalog {
 
     String tableName = "indexed";
 
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     return new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), schema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
@@ -694,7 +695,7 @@ public class TestCatalog {
       assertFalse(catalog.containFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
       catalog.getFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
       fail();
-    } catch (NoSuchFunctionException nsfe) {
+    } catch (UndefinedFunctionException nsfe) {
       // succeed test
     } catch (Throwable e) {
       fail(e.getMessage());
@@ -731,7 +732,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
 
     Schema partSchema = new Schema();
@@ -771,7 +772,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -809,7 +810,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -846,7 +847,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -883,7 +884,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -1020,7 +1021,7 @@ public class TestCatalog {
     TableDesc setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
     KeyValueSet options = new KeyValueSet();
     options.set("timezone", "GMT+9");   // Seoul, Korea
-    setPropertyDesc.setMeta(new TableMeta("CSV", options));
+    setPropertyDesc.setMeta(new TableMeta("TEXT", options));
     String prevTimeZone = setPropertyDesc.getMeta().getOption("timezone");
     String newTimeZone = "GMT-7";       // Silicon Valley, California
     catalog.alterTable(createMockAlterTableSetProperty(newTimeZone));
@@ -1119,7 +1120,7 @@ public class TestCatalog {
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
-  @Test(expected=NoSuchFunctionException.class)
+  @Test(expected=UndefinedFunctionException.class)
   public final void testFindIntInvalidFunc() throws Exception {
     assertFalse(catalog.containFunction("testintinvalid", FunctionType.GENERAL));
     FunctionDesc meta = new FunctionDesc("testintinvalid", TestIntFunc.class, FunctionType.GENERAL,
@@ -1148,7 +1149,7 @@ public class TestCatalog {
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
-  @Test(expected=NoSuchFunctionException.class)
+  @Test(expected=UndefinedFunctionException.class)
   public final void testFindFloatInvalidFunc() throws Exception {
     assertFalse(catalog.containFunction("testfloatinvalid", FunctionType.GENERAL));
     FunctionDesc meta = new FunctionDesc("testfloatinvalid", TestFloatFunc.class, FunctionType.GENERAL,

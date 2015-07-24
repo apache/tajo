@@ -32,12 +32,13 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.util.SQLFinderWithPartitionFilter;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
@@ -79,7 +80,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     rewriter.visit(queryContext, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
@@ -414,7 +415,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   private void updateTableStat(OverridableConf queryContext, PartitionedTableScanNode scanNode)
-      throws PlanningException {
+      throws TajoException {
     if (scanNode.getInputPaths().length > 0) {
       try {
         FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(queryContext.getConf());
@@ -426,8 +427,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           totalVolume += summary.getFileCount();
         }
         scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
-      } catch (IOException e) {
-        throw new PlanningException(e);
+      } catch (Throwable e) {
+        throw new TajoInternalError(e);
       }
     }
   }
@@ -499,7 +500,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private final class Rewriter extends BasicLogicalPlanVisitor<OverridableConf, Object> {
     @Override
     public Object visitScan(OverridableConf queryContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                            ScanNode scanNode, Stack<LogicalNode> stack) throws PlanningException {
+                            ScanNode scanNode, Stack<LogicalNode> stack) throws TajoException {
 
       TableDesc table = scanNode.getTableDesc();
       if (!table.hasPartition()) {
@@ -520,7 +521,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
         }
       } catch (IOException e) {
-        throw new PlanningException("Partitioned Table Rewrite Failed: \n" + e.getMessage());
+        throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
       }
       return null;
     }

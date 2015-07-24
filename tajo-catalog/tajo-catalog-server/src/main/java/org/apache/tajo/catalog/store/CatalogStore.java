@@ -32,6 +32,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import java.io.Closeable;
 
 import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
 import java.util.Collection;
 import java.util.List;
@@ -81,8 +83,8 @@ public interface CatalogStore extends Closeable {
   void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException;
   
   List<TableDescriptorProto> getAllTables() throws CatalogException;
-  
-  List<TableOptionProto> getAllTableOptions() throws CatalogException;
+
+  List<TableOptionProto> getAllTableProperties() throws CatalogException;
   
   List<TableStatsProto> getAllTableStats() throws CatalogException;
   

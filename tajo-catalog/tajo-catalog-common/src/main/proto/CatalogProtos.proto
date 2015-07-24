@@ -27,18 +27,18 @@ import "PrimitiveProtos.proto";
 
 enum StoreType {
   MEM = 0;
-  CSV = 1;
+  TEXTFILE = 1;
   RAW = 2;
   RCFILE = 3;
   ROWFILE = 4;
   HCFILE = 5;
+  ORC = 6;
   PARQUET = 7;
   SEQUENCEFILE = 8;
   AVRO = 9;
-  TEXTFILE = 10;
-  JSON = 11;
-  HBASE = 12;
-  SYSTEM = 13;
+  JSON = 10;
+  HBASE = 11;
+  SYSTEM = 12;
 }
 
 enum OrderType {
@@ -133,40 +133,8 @@ enum IndexMethod {
   BITMAP_IDX = 3;
 }
 
-message GetAllTableNamesResponse {
-  repeated string tableName = 1;
-}
-
-message GetTablespacesProto {
-  repeated TablespaceProto tablespace = 1;
-}
-
-message GetDatabasesProto {
-  repeated DatabaseProto database = 1;
-}
-
-message GetTablesProto {
-  repeated TableDescriptorProto table = 1;
-}
-
-message GetColumnsProto {
-  repeated ColumnProto column = 1;
-}
-
 message GetIndexesProto {
   repeated IndexProto index = 1;
-}
-
-message GetTableOptionsProto {
-  repeated TableOptionProto tableOption = 1;
-}
-
-message GetTableStatsProto {
-  repeated TableStatsProto stat = 1;
-}
-
-message GetTablePartitionsProto {
-  repeated TablePartitionProto part = 1;
 }
 
 message IndexProto {
@@ -281,11 +249,6 @@ message SortSpecProto {
   optional bool nullFirst = 3 [default = false];
 }
 
-
-message PartitionsProto {
-  repeated PartitionDescProto partition = 1;
-}
-
 message PartitionMethodProto {
   required TableIdentifierProto tableIdentifier = 1;
   required PartitionType partitionType = 2;
@@ -304,7 +267,6 @@ message PartitionKeyProto {
   required string partitionValue = 2;
 }
 
-
 message PartitionIdentifierProto {
   required string databaseName = 1;
   required string tableName = 2;
@@ -320,9 +282,9 @@ message TablespaceProto {
 }
 
 message DatabaseProto {
-	required int32 spaceId = 1;
-	required int32 id = 2;
-	required string name = 3;
+ 	required int32 spaceId = 1;
+ 	required int32 id = 2;
+ 	required string name = 3;
 }
 
 message TableDescriptorProto {
@@ -430,4 +392,19 @@ message PythonInvocationDescProto {
   required string funcName = 1;
   required string filePath = 2;
   required bool isScalarFunction = 3;
+}
+
+message TableResponse {
+  required ReturnState state = 1;
+  optional TableDescProto table = 2;
+}
+
+message FunctionResponse {
+  required ReturnState state = 1;
+  optional FunctionDescProto function = 2;
+}
+
+message FunctionListResponse {
+  required ReturnState state = 1;
+  repeated FunctionDescProto function = 2;
 }
