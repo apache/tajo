@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
@@ -40,11 +41,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * This rule tries to push down all filter conditions into logical nodes as lower as possible.
@@ -201,7 +198,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
-    context.addFiltersTobePushed(nonPushableQuals);
+    context.pushingDownFilters.addAll(nonPushableQuals);
     List<EvalNode> matched = TUtil.newList();
 
     // If the query involves a subquery, the stack can be empty.
@@ -235,7 +232,51 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     context.pushingDownFilters.removeAll(matched);
+
+    // The selection node for non-equi theta join conditions should be created here
+    // to process those conditions as early as possible.
+    // This should be removed after TAJO-742.
+    if (context.pushingDownFilters.size() > 0) {
+      List<EvalNode> nonEquiThetaJoinQuals = extractNonEquiThetaJoinQuals(context.pushingDownFilters, block, joinNode);
+      if (nonEquiThetaJoinQuals.size() > 0) {
+        SelectionNode selectionNode = createSelectionParentForNonEquiThetaJoinQuals(plan, block, stack, joinNode,
+            nonEquiThetaJoinQuals);
+
+        context.pushingDownFilters.removeAll(nonEquiThetaJoinQuals);
+        return selectionNode;
+      }
+    }
+
     return joinNode;
+  }
+
+  private SelectionNode createSelectionParentForNonEquiThetaJoinQuals(LogicalPlan plan,
+                                                                      QueryBlock block,
+                                                                      Stack<LogicalNode> stack,
+                                                                      JoinNode joinNode,
+                                                                      List<EvalNode> nonEquiThetaJoinQuals) {
+    SelectionNode selectionNode = plan.createNode(SelectionNode.class);
+    selectionNode.setInSchema(joinNode.getOutSchema());
+    selectionNode.setOutSchema(joinNode.getOutSchema());
+    selectionNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(nonEquiThetaJoinQuals));
+    block.registerNode(selectionNode);
+
+    LogicalNode parent = stack.peek();
+    if (parent instanceof UnaryNode) {
+      ((UnaryNode) parent).setChild(selectionNode);
+    } else if (parent instanceof BinaryNode) {
+      BinaryNode binaryParent = (BinaryNode) parent;
+      if (binaryParent.getLeftChild().getPID() == joinNode.getPID()) {
+        binaryParent.setLeftChild(selectionNode);
+      } else if (binaryParent.getRightChild().getPID() == joinNode.getPID()) {
+        binaryParent.setRightChild(selectionNode);
+      }
+    } else if (parent instanceof TableSubQueryNode) {
+      ((TableSubQueryNode) parent).setSubQuery(selectionNode);
+    }
+
+    selectionNode.setChild(joinNode);
+    return selectionNode;
   }
 
   private static Set<EvalNode> extractNonPushableJoinQuals(final LogicalPlan plan,
@@ -547,7 +588,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.setFiltersTobePushed(transformedMap.keySet());
 
     stack.push(projectionNode);
-    childNode = visit(context, plan, plan.getBlock(childNode), childNode, stack);
+    visit(context, plan, plan.getBlock(childNode), childNode, stack);
     stack.pop();
 
     // find not matched after visiting child

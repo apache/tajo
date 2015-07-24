@@ -31,9 +31,9 @@ import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
 import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
@@ -42,7 +42,10 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TajoCli {
   public static final String ERROR_PREFIX = "ERROR: ";
@@ -491,18 +494,21 @@ public class TajoCli {
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
       onError("response is null", null);
+
     } else if (ReturnStateUtil.isSuccess(response.getState())) {
-      if (response.getIsForwarded()) {
+
+      switch (response.getResultType()) {
+      case FETCH:
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
-      } else {
-        if (!response.hasTableDesc() && !response.hasResultSet()) {
-          displayFormatter.printMessage(sout, "OK");
-          wasError = true;
-        } else {
-          localQueryCompleted(response, startTime);
-        }
+        break;
+      case ENCLOSED:
+        localQueryCompleted(response, startTime);
+        break;
+      default:
+        displayFormatter.printMessage(sout, "OK");
       }
+
     } else {
       if (ReturnStateUtil.isError(response.getState())) {
         onError(response.getState().getMessage(), null);
@@ -521,17 +527,21 @@ public class TajoCli {
     }
 
     if (response != null) {
+
       if (ReturnStateUtil.isSuccess(response.getState())) {
-        if (response.getIsForwarded()) {
+
+        switch (response.getResultType()) {
+        case FETCH:
           QueryId queryId = new QueryId(response.getQueryId());
           waitForQueryCompleted(queryId);
-        } else {
-          if (!response.hasTableDesc() && !response.hasResultSet()) {
-            displayFormatter.printMessage(sout, "OK");
-          } else {
-            localQueryCompleted(response, startTime);
-          }
+          break;
+        case ENCLOSED:
+          localQueryCompleted(response, startTime);
+          break;
+        default:
+          displayFormatter.printMessage(sout, "OK");
         }
+
       } else {
         if (ReturnStateUtil.isError(response.getState())) {
           onError(response.getState().getMessage(), null);
@@ -585,7 +595,6 @@ public class TajoCli {
       int initRetries = 0;
       int progressRetries = 0;
       while (true) {
-        // TODO - configurable
         status = client.getQueryStatus(queryId);
         if(TajoClientUtil.isQueryWaitingForSchedule(status.getState())) {
           Thread.sleep(Math.min(20 * initRetries, 1000));

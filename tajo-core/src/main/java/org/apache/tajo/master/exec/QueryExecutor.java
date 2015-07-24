@@ -40,7 +40,9 @@ import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
+import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse.ResultType;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.QueryManager;
 import org.apache.tajo.master.TajoMaster;
@@ -94,7 +96,6 @@ public class QueryExecutor {
                       LogicalPlan plan) throws Exception {
 
     SubmitQueryResponse.Builder response = SubmitQueryResponse.newBuilder();
-    response.setIsForwarded(false);
     response.setUserName(queryContext.get(SessionVars.USERNAME));
 
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
@@ -105,12 +106,12 @@ public class QueryExecutor {
 
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       ddlExecutor.execute(queryContext, plan);
-      response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      response.setState(OK);
 
+      response.setState(OK);
+      response.setResultType(ResultType.NO_RESULT);
 
     } else if (plan.isExplain()) { // explain query
-      execExplain(plan, queryContext, plan.isExplainGlobal(), response);
+      execExplain(session, sql, plan, queryContext, plan.isExplainGlobal(), response);
 
     } else if (PlannerUtil.checkIfQueryTargetIsVirtualTable(plan)) {
       execQueryOnVirtualTable(queryContext, session, sql, plan, response);
@@ -121,7 +122,7 @@ public class QueryExecutor {
 
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
-      execNonFromQuery(queryContext, plan, response);
+      execNonFromQuery(queryContext, session, sql, plan, response);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -162,9 +163,9 @@ public class QueryExecutor {
     response.setState(OK);
   }
 
-  public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
-                          SubmitQueryResponse.Builder response)
-      throws Exception {
+  public void execExplain(Session session, String query, LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
+                          SubmitQueryResponse.Builder response) throws Exception {
+
     String explainStr;
     boolean isTest = queryContext.getBool(SessionVars.TEST_PLAN_SHAPE_FIX_ENABLED);
     if (isTest) {
@@ -188,7 +189,7 @@ public class QueryExecutor {
     schema.addColumn("explain", TajoDataTypes.Type.TEXT);
     RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
 
-    ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
+    SerializedResultSet.Builder serializedResBuilder = SerializedResultSet.newBuilder();
 
     VTuple tuple = new VTuple(1);
     String[] lines = explainStr.split("\n");
@@ -202,10 +203,14 @@ public class QueryExecutor {
     serializedResBuilder.setSchema(schema.getProto());
     serializedResBuilder.setBytesNum(bytesNum);
 
+    QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
+        (LogicalRootNode) plan.getRootBlock().getRoot());
+
     response.setState(OK);
+    response.setQueryId(queryInfo.getQueryId().getProto());
+    response.setResultType(ResultType.ENCLOSED);
     response.setResultSet(serializedResBuilder.build());
     response.setMaxRowNum(lines.length);
-    response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
   }
 
   public void execQueryOnVirtualTable(QueryContext queryContext, Session session, String query, LogicalPlan plan,
@@ -215,16 +220,22 @@ public class QueryExecutor {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
       maxRow = (int) limitNode.getFetchFirstNum();
     }
-    QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
+    QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
+        (LogicalRootNode) plan.getRootBlock().getRoot());
 
-    NonForwardQueryResultScanner queryResultScanner =
-            new NonForwardQueryResultSystemScanner(context, plan, queryId, session.getSessionId(), maxRow);
+    NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultSystemScanner(
+        context,
+        plan,
+        queryInfo.getQueryId(),
+        session.getSessionId(),
+        maxRow);
 
     queryResultScanner.init();
     session.addNonForwardQueryResultScanner(queryResultScanner);
 
     response.setState(OK);
-    response.setQueryId(queryId.getProto());
+    response.setQueryId(queryInfo.getQueryId().getProto());
+    response.setResultType(ResultType.ENCLOSED);
     response.setMaxRowNum(maxRow);
     response.setTableDesc(queryResultScanner.getTableDesc().getProto());
   }
@@ -261,11 +272,12 @@ public class QueryExecutor {
 
     response.setState(OK);
     response.setQueryId(queryInfo.getQueryId().getProto());
+    response.setResultType(ResultType.ENCLOSED);
     response.setMaxRowNum(maxRow);
     response.setTableDesc(desc.getProto());
   }
 
-  public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
+  public void execNonFromQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
       throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
@@ -291,15 +303,19 @@ public class QueryExecutor {
         Schema schema = PlannerUtil.targetToSchema(targets);
         RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
         byte[] serializedBytes = encoder.toBytes(outTuple);
-        ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
+        SerializedResultSet.Builder serializedResBuilder = SerializedResultSet.newBuilder();
         serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
         serializedResBuilder.setSchema(schema.getProto());
         serializedResBuilder.setBytesNum(serializedBytes.length);
 
+        QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
+            (LogicalRootNode) plan.getRootBlock().getRoot());
+
         responseBuilder.setState(OK);
+        responseBuilder.setResultType(ResultType.ENCLOSED);
+        responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
         responseBuilder.setResultSet(serializedResBuilder);
         responseBuilder.setMaxRowNum(1);
-        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       }
     } finally {
       // stop script executor
@@ -461,6 +477,7 @@ public class QueryExecutor {
       // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
       responseBuilder.setMaxRowNum(-1);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setResultType(ResultType.NO_RESULT);
       responseBuilder.setState(OK);
     } catch (Throwable t) {
       throw new RuntimeException(t);
@@ -495,9 +512,9 @@ public class QueryExecutor {
 
     queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
 
-    responseBuilder.setIsForwarded(true);
-    responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
     responseBuilder.setState(OK);
+    responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+    responseBuilder.setResultType(ResultType.FETCH);
     if (queryInfo.getQueryMasterHost() != null) {
       responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
     }
