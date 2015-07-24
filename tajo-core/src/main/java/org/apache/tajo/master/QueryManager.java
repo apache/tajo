@@ -239,6 +239,7 @@ public class QueryManager extends CompositeService {
     if (queryInProgress == null) {
       queryInProgress = runningQueries.get(queryId);
     }
+
     return queryInProgress;
   }
 

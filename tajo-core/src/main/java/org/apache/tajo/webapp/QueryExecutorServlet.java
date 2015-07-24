@@ -308,30 +308,17 @@ public class QueryExecutorServlet extends HttpServlet {
     }
 
     public void run() {
+
       startTime = System.currentTimeMillis();
+
       try {
-        if (!tajoClient.getCurrentDatabase().equals(database))
+        if (!tajoClient.getCurrentDatabase().equals(database)) {
           tajoClient.selectDatabase(database);
+        }
 
         response = tajoClient.executeQuery(query);
 
-        if (response == null) {
-          LOG.error("Internal Error: SubmissionResponse is NULL");
-          error = new Exception("Internal Error: SubmissionResponse is NULL");
-
-        } else if (isSuccess(response.getState())) {
-          if (response.getIsForwarded()) {
-            queryId = new QueryId(response.getQueryId());
-            getQueryResult(queryId);
-          } else {
-            if (!response.hasTableDesc() && !response.hasResultSet()) {
-            } else {
-              getSimpleQueryResult(response);
-            }
-
-            progress.set(100);
-          }
-        } else if (isError(response.getState())) {
+        if (isError(response.getState())) {
           StringBuffer errorMessage = new StringBuffer(response.getState().getMessage());
           String modifiedMessage;
 
@@ -345,7 +332,23 @@ public class QueryExecutorServlet extends HttpServlet {
           modifiedMessage = modifiedMessage.replaceAll(lineSeparator, "<br/>");
 
           error = new Exception(modifiedMessage);
+
+        } else {
+
+          switch (response.getResultType()) {
+          case ENCLOSED:
+            getSimpleQueryResult(response);
+            break;
+          case FETCH:
+            queryId = new QueryId(response.getQueryId());
+            getQueryResult(queryId);
+            break;
+          default:;
+          }
+
+          progress.set(100);
         }
+
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         error = e;

@@ -32,6 +32,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1701: Remove forward or non-forward query concept in TajoClient. 
+    (hyunsik)
+
     TAJO-1651: Too long fetcher default retries. (jinho)
 
     TAJO-1700: Add better exception handling in TajoMasterClientService. 

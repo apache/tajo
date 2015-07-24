@@ -184,24 +184,13 @@ public class QueryClientImpl implements QueryClient {
 
     QueryId queryId = new QueryId(response.getQueryId());
 
-    if (response.getIsForwarded()) {
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        return this.createNullResultSet(queryId);
-      } else {
+    switch (response.getResultType()) {
+      case ENCLOSED:
+        return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
+      case FETCH:
         return this.getQueryResultAndWait(queryId);
-      }
-
-    } else {
-      // If a non-forwarded insert into query
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() == 0) {
+      default:
         return this.createNullResultSet(queryId);
-      } else {
-        if (response.hasResultSet() || response.hasTableDesc()) {
-          return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
-        } else {
-          return this.createNullResultSet(queryId);
-        }
-      }
     }
   }
 
@@ -212,22 +201,14 @@ public class QueryClientImpl implements QueryClient {
     throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
-    if (response.getIsForwarded()) {
 
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        return this.createNullResultSet(queryId);
-      } else {
-        return this.getQueryResultAndWait(queryId);
-      }
-
-    } else {
-
-      if (response.hasResultSet() || response.hasTableDesc()) {
-        return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
-      } else {
-        return this.createNullResultSet(queryId);
-      }
-
+    switch (response.getResultType()) {
+    case ENCLOSED:
+      return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
+    case FETCH:
+      return this.getQueryResultAndWait(queryId);
+    default:
+      return this.createNullResultSet(queryId);
     }
   }
 

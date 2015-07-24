@@ -204,7 +204,6 @@ public class GlobalEngine extends AbstractService {
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setIsForwarded(true);
       responseBuilder.setState(ReturnStateUtil.returnError(t));
       return responseBuilder.build();
     }
