@@ -88,14 +88,15 @@ public class Fetcher {
 
     if (!useLocalFile) {
       bootstrap = new Bootstrap()
-        .group(
-            RpcChannelFactory.getSharedClientEventloopGroup(RpcChannelFactory.ClientChannelId.FETCHER,
-                conf.getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM)))
-        .channel(NioSocketChannel.class)
-        .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000) // set 5 sec
-        .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
-        .option(ChannelOption.TCP_NODELAY, true);
+          .group(
+              RpcChannelFactory.getSharedClientEventloopGroup(RpcChannelFactory.ClientChannelId.FETCHER,
+                  conf.getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM)))
+          .channel(NioSocketChannel.class)
+          .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
+              conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CONNECT_TIMEOUT) * 1000)
+          .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
+          .option(ChannelOption.TCP_NODELAY, true);
 
       ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
       bootstrap.handler(initializer);
