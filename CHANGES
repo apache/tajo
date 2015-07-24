@@ -191,6 +191,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1702: Fix race condition in finished query cache. (jinho)
+
     TAJO-1597: Problem of ignoring theta join condition. (jihoon)
 
     TAJO-1697: RCFile progress causes NPE occasionally. (jinho)
