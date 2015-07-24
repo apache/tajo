@@ -1,8 +1,8 @@
 explain
 -------------------------------
-SELECTION(3)
+SELECTION(6)
   => Search Cond: default.a.r_name (TEXT) <= default.b.r_name (TEXT)
-   JOIN(6)(INNER)
+   JOIN(7)(INNER)
      => Join Cond: default.a.r_regionkey (INT4) = default.b.r_regionkey (INT4)
      => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)
      => out schema: {(3) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)}
@@ -36,9 +36,9 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 [Enforcers]
  0: type=Broadcast, tables=default.a
 
-SELECTION(3)
+SELECTION(6)
   => Search Cond: default.a.r_name (TEXT) <= default.b.r_name (TEXT)
-   JOIN(6)(INNER)
+   JOIN(7)(INNER)
      => Join Cond: default.a.r_regionkey (INT4) = default.b.r_regionkey (INT4)
      => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)
      => out schema: {(3) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)}

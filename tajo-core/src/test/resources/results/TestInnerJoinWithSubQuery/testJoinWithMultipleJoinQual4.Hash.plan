@@ -1,8 +1,8 @@
 explain
 -------------------------------
-SELECTION(9)
+SELECTION(12)
   => Search Cond: default.t.n_nationkey (INT4) > default.s.s_suppkey (INT4)
-   JOIN(14)(INNER)
+   JOIN(15)(INNER)
      => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
      => target list: default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
      => out schema: {(6) default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
@@ -11,7 +11,7 @@ SELECTION(9)
         => Targets: default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
         => out schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
         => in  schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-         JOIN(12)(INNER)
+         JOIN(13)(INNER)
            => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
            => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
            => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
@@ -25,7 +25,7 @@ SELECTION(9)
               => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
               => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
               => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-      JOIN(13)(INNER)
+      JOIN(14)(INNER)
         => Join Cond: default.s.s_suppkey (INT4) = default.ps.ps_suppkey (INT4)
         => target list: default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
         => out schema: {(3) default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
@@ -61,9 +61,9 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
  1: type=Broadcast, tables=default.s
  2: type=Broadcast, tables=default.r
 
-SELECTION(9)
+SELECTION(12)
   => Search Cond: default.t.n_nationkey (INT4) > default.s.s_suppkey (INT4)
-   JOIN(14)(INNER)
+   JOIN(15)(INNER)
      => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
      => target list: default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
      => out schema: {(6) default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
@@ -76,7 +76,7 @@ SELECTION(9)
            => Targets: default.n.n_nationkey (INT4), default.n.n_name (TEXT), default.n.n_regionkey (INT4), default.n.n_comment (TEXT)
            => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
            => in  schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-            JOIN(12)(INNER)
+            JOIN(13)(INNER)
               => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
               => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
               => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
@@ -90,7 +90,7 @@ SELECTION(9)
                  => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
                  => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
                  => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-      JOIN(13)(INNER)
+      JOIN(14)(INNER)
         => Join Cond: default.s.s_suppkey (INT4) = default.ps.ps_suppkey (INT4)
         => target list: default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
         => out schema: {(3) default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
