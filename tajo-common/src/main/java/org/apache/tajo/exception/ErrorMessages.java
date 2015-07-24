@@ -65,6 +65,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_PARTITION, "partition '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
     ADD_MESSAGE(UNDEFINED_INDEX, "index ''%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_INDEX, "index does not exist for '%s' columns of '%s' table", 2);
     ADD_MESSAGE(UNDEFINED_INDEX_NAME, "index name '%s' does not exist", 1);
 
     ADD_MESSAGE(DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
