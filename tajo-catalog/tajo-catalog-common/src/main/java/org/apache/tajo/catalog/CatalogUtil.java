@@ -21,15 +21,21 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -50,7 +56,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
 
-  public static final String TEXTFILE_NAME = "TEXT";
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
    *
@@ -278,17 +283,22 @@ public class CatalogUtil {
     return sb.toString();
   }
 
+
+  public static String getBackwardCompitablityStoreType(String storeType) {
+    return getStoreTypeString(getStoreType(storeType));
+  }
+
   public static String getStoreTypeString(final StoreType type) {
     if (type == StoreType.TEXTFILE) {
-      return TEXTFILE_NAME;
+      return BuiltinStorages.TEXT;
     } else {
       return type.name();
     }
   }
 
   public static StoreType getStoreType(final String typeStr) {
-    if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
-      return StoreType.CSV;
+    if (typeStr.equalsIgnoreCase("CSV")) {
+      return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
       return StoreType.RAW;
     } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
@@ -303,7 +313,7 @@ public class CatalogUtil {
       return StoreType.SEQUENCEFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
       return StoreType.AVRO;
-    } else if (typeStr.equalsIgnoreCase(TEXTFILE_NAME)) {
+    } else if (typeStr.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.JSON.name())) {
       return StoreType.JSON;
@@ -681,8 +691,7 @@ public class CatalogUtil {
       if (types[i].getType() != Type.NULL_TYPE) {
         Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
         if (candidate == null) {
-          throw new InvalidOperationException("No matched operation for those types: " + StringUtils.join
-              (types));
+          throw new TajoRuntimeException(new UndefinedOperatorException(StringUtils.join(types)));
         }
         widest = newSimpleDataType(candidate);
       }
@@ -691,11 +700,11 @@ public class CatalogUtil {
     return widest;
   }
 
-  public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
-    CatalogProtos.TableIdentifierProto.Builder builder = CatalogProtos.TableIdentifierProto.newBuilder();
-    builder.setDatabaseName(databaseName);
-    builder.setTableName(tableName);
-    return builder.build();
+  public static TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
+    return TableIdentifierProto.newBuilder()
+        .setDatabaseName(databaseName)
+        .setTableName(tableName)
+        .build();
   }
 
   public static void closeQuietly(Connection conn) {
@@ -794,6 +803,70 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
+  /**
+   * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
+   * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
+   *
+   * @param tableName table name
+   * @param columns partition column names
+   * @param values partition values
+   * @param location partition location
+   * @param alterTableType ADD_PARTITION or DROP_PARTITION
+   * @return AlterTableDesc
+   */
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
+                                            String[] values, String location, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    Pair<List<PartitionKeyProto>, String> pair = getPartitionKeyNamePair(columns, values);
+
+    partitionDesc.setPartitionKeys(pair.getFirst());
+    partitionDesc.setPartitionName(pair.getSecond());
+
+    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
+      partitionDesc.setPath(location);
+    }
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  /**
+   * Get partition key/value list and partition name
+   *
+   * ex) partition key/value list :
+   *   - col1, 2015-07-01
+   *   - col2, tajo
+   *     partition name : col1=2015-07-01/col2=tajo
+   *
+   * @param columns partition column names
+   * @param values partition values
+   * @return partition key/value list and partition name
+   */
+  public static Pair<List<PartitionKeyProto>, String> getPartitionKeyNamePair(String[] columns, String[] values) {
+    Pair<List<PartitionKeyProto>, String> pair = null;
+    List<PartitionKeyProto> partitionKeyList = TUtil.newList();
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < columns.length; i++) {
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(columns[i]);
+      builder.setPartitionValue(values[i]);
+
+      if (i > 0) {
+        sb.append("/");
+      }
+      sb.append(columns[i]).append("=").append(values[i]);
+      partitionKeyList.add(builder.build());
+    }
+
+    pair = new Pair<List<PartitionKeyProto>, String>(partitionKeyList, sb.toString());
+    return pair;
+  }
+
   /* It is the relationship graph of type conversions. */
   public static final Map<Type, Map<Type, Type>> OPERATION_CASTING_MAP = Maps.newHashMap();
 
@@ -875,7 +948,7 @@ public class CatalogUtil {
    */
   public static KeyValueSet newDefaultProperty(String storeType) {
     KeyValueSet options = new KeyValueSet();
-    if (storeType.equalsIgnoreCase("CSV") ||  storeType.equalsIgnoreCase("TEXT")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     } else if (storeType.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");

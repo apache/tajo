@@ -26,7 +26,7 @@
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.history.QueryHistory" %>
 <%@ page import="org.apache.tajo.util.history.StageHistory" %>
-<%@ page import="org.apache.tajo.master.rm.Worker" %>
+<%@ page import="org.apache.tajo.master.rm.NodeStatus" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.util.history.TaskHistory" %>
 <%@ page import="org.apache.tajo.util.*" %>
@@ -74,12 +74,12 @@
     status = "ALL";
   }
 
-  Collection<Worker> allWorkers = master.getContext().getResourceManager().getWorkers().values();
+  Collection<NodeStatus> allWorkers = master.getContext().getResourceManager().getNodes().values();
 
-  Map<String, Worker> workerMap = new HashMap<String, Worker>();
+  Map<String, NodeStatus> nodeMap = new HashMap<String, NodeStatus>();
   if(allWorkers != null) {
-    for(Worker eachWorker: allWorkers) {
-      workerMap.put(eachWorker.getConnectionInfo().getHostAndPeerRpcPort(), eachWorker);
+    for(NodeStatus eachWorker: allWorkers) {
+      nodeMap.put(eachWorker.getConnectionInfo().getHostAndPeerRpcPort(), eachWorker);
     }
   }
 
@@ -99,7 +99,7 @@
     totalWriteRows = stage.getTotalWriteRows();
   }
 
-  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId);
+  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId, NumberUtils.toLong(startTime, 0));
   int numTasks = allTasks.size();
   int numShuffles = 0;
   float totalProgress = 0.0f;
@@ -132,6 +132,9 @@
       "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
 
   NumberFormat nf = NumberFormat.getInstance(Locale.US);
+
+  String masterLabel = master.getContext().getTajoMasterService().getBindAddress().getHostName()+ ":"
+          + master.getContext().getTajoMasterService().getBindAddress().getPort();
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -144,7 +147,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
+  <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
   <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId.toString()%></a></h3>
   <hr/>
@@ -204,7 +207,7 @@
 %>
   <div align="right"># Tasks: <%=numOfTasks%> / # Pages: <%=totalPage%></div>
   <table border="1" width="100%" class="border_table">
-    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
+    <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th>Retry</th><th><a href='<%=url%>host'>Host</a></th></tr>
 <%
   int rowNo = (currentPage - 1) * pageSize + 1;
   for (TaskHistory eachTask: tasks) {
@@ -215,10 +218,10 @@
     }
     String taskHost = eachTask.getHostAndPort() == null ? "-" : eachTask.getHostAndPort();
     if (eachTask.getHostAndPort() != null) {
-      Worker worker = workerMap.get(eachTask.getHostAndPort());
-      if (worker != null) {
+      NodeStatus nodeStatus = nodeMap.get(eachTask.getHostAndPort());
+      if (nodeStatus != null) {
         String[] hostTokens = eachTask.getHostAndPort().split(":");
-        taskHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +
+        taskHost = "<a href='http://" + hostTokens[0] + ":" + nodeStatus.getConnectionInfo().getHttpInfoPort() +
             "/taskhistory.jsp?taskAttemptId=" + eachTask.getId() + "&startTime=" + eachTask.getLaunchTime() +
             "'>" + eachTask.getHostAndPort() + "</a>";
       }
@@ -226,12 +229,13 @@
 
 %>
     <tr>
-      <td><%=rowNo%></td>
+      <td align='center'><%=rowNo%></td>
       <td><a href="<%=taskDetailUrl%>"><%=eachTask.getId()%></a></td>
-      <td><%=eachTask.getState()%></td>
-      <td><%=JSPUtil.percentFormat(eachTask.getProgress())%>%</td>
-      <td><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
+      <td align='center'><%=eachTask.getState()%></td>
+      <td align='center'><%=JSPUtil.percentFormat(eachTask.getProgress())%>%</td>
+      <td align='center'><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
       <td align='right'><%=eachTask.getLaunchTime() == 0 ? "-" : eachTask.getRunningTime() + " ms"%></td>
+      <td align='center'><%=eachTask.getRetryCount()%></td>
       <td><%=taskHost%></td>
     </tr>
     <%

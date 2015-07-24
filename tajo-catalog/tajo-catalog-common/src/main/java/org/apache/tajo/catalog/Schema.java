@@ -24,7 +24,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
-import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
+import org.apache.tajo.catalog.exception.DuplicateColumnException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
@@ -420,7 +420,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     String normalized = name;
     if(fieldsByQualifiedName.containsKey(normalized)) {
       LOG.error("Already exists column " + normalized);
-      throw new AlreadyExistsFieldException(normalized);
+      throw new DuplicateColumnException(normalized);
     }
 
     Column newCol = new Column(normalized, typeDesc);

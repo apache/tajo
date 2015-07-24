@@ -24,7 +24,7 @@ import org.apache.tajo.util.KeyValueSet;
 import java.io.Closeable;
 
 @ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
 
+public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
   KeyValueSet getProperties();
 }

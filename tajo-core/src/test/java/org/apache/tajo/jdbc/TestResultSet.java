@@ -71,7 +71,7 @@ public class TestResultSet {
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
-    scoreMeta = CatalogUtil.newTableMeta("CSV");
+    scoreMeta = CatalogUtil.newTableMeta("TEXT");
     TableStats stats = new TableStats();
 
     Path p = new Path(sm.getTableUri("default", "score"));

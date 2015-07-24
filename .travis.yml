@@ -33,8 +33,8 @@ notifications:
   - issues@tajo.apache.org
   irc: "chat.freenode.net#tajo"
 
-before_install: ulimit -t 514029
+before_install: ulimit -t 514029 -u 2048 -n 3000
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
-  mvn clean install -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2
+  mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2

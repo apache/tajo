@@ -29,8 +29,8 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.apache.tajo.TajoProtos.TaskAttemptState;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.FetcherHistoryProto;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
+import static org.apache.tajo.ResourceProtos.FetcherHistoryProto;
+import static org.apache.tajo.ResourceProtos.TaskHistoryProto;
 
 /**
  * The history class for Task processing.

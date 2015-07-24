@@ -18,12 +18,6 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.function.FunctionUtil;
-import org.codehaus.jackson.schema.JsonSerializableSchema;
-
-import java.util.Collection;
-
 public class NoSuchPartitionException extends RuntimeException {
 
   private static final long serialVersionUID = 277182608283894938L;
@@ -32,8 +26,12 @@ public class NoSuchPartitionException extends RuntimeException {
     super(message);
   }
 
+  public NoSuchPartitionException(String tableName, String partitionName) {
+    super(String.format("ERROR: \"%s\" is not the partition of \"%s\".", partitionName, tableName));
+  }
+
   public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" does not exist in \"%s.%s\".", partitionName, databaseName, tableName));
+    super(String.format("ERROR: \"%s\" is not the partition of \"%s.%s\".", partitionName, databaseName, tableName));
   }
 
 }

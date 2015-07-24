@@ -49,11 +49,11 @@ limitations under the License.
       <plugin>
         <groupId>org.tomdz.maven</groupId>
         <artifactId>sphinx-maven-plugin</artifactId>
-        <version>1.0.2</version>
+        <version>1.0.3</version>
         <configuration>
           <fork>true</fork>
           <force>true</force>
-          <warningsAsErrors>true</warningsAsErrors>
+          <warningsAsErrors>false</warningsAsErrors>
           <sourceDirectory>${project.basedir}/src/main/sphinx</sourceDirectory>
           <outputDirectory>${project.build.directory}/html</outputDirectory>
         </configuration>

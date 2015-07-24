@@ -302,14 +302,6 @@ public class ComparableVector {
       return new ComparableTuple(keyTypes, keyIndex);
     }
 
-    public VTuple toVTuple() {
-      VTuple vtuple = new VTuple(keyIndex.length);
-      for (int i = 0; i < keyIndex.length; i++) {
-        vtuple.put(i, toDatum(i));
-      }
-      return vtuple;
-    }
-
     public Datum toDatum(int i) {
       if (keys[i] == null) {
         return NullDatum.get();

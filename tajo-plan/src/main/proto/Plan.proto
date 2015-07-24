@@ -24,6 +24,7 @@ option java_generate_equals_and_hash = true;
 import "PrimitiveProtos.proto";
 import "CatalogProtos.proto";
 import "DataTypes.proto";
+import "TajoIdProtos.proto";
 
 enum NodeType {
   SET_SESSION = 0;
@@ -280,6 +281,8 @@ message AlterTableNode {
     RENAME_COLUMN = 1;
     ADD_COLUMN = 2;
     SET_PROPERTY = 3;
+    ADD_PARTITION = 4;
+    DROP_PARTITION = 5;
   }
 
   message RenameTable {
@@ -295,12 +298,20 @@ message AlterTableNode {
     required ColumnProto addColumn = 1;
   }
 
+  message AlterPartition {
+    repeated string columnNames = 1;
+    repeated string partitionValues = 21;
+    optional string location = 3;
+    optional bool purge = 4;
+  }
+
   required string tableName = 1;
   required Type setType = 2;
   optional RenameTable renameTable = 3;
   optional RenameColumn renameColumn = 4;
   optional AddColumn addColumn = 5;
   optional KeyValueSetProto properties = 6;
+  optional AlterPartition alterPartition = 7;
 }
 
 enum EvalType {
@@ -495,4 +506,128 @@ enum TransmitType {
   PUSH_TRANSMIT = 0;
   PULL_TRANSMIT = 1;
   FILE_WRITE = 2;
+}
+
+message DataChannelProto {
+  required ExecutionBlockIdProto srcId = 1;
+  required ExecutionBlockIdProto targetId = 2;
+
+  required TransmitType transmitType = 3 [default = PULL_TRANSMIT];
+  required ShuffleType shuffleType = 4;
+
+  optional SchemaProto schema = 5;
+
+  repeated ColumnProto shuffleKeys = 7;
+  optional int32 numOutputs = 9 [default = 1];
+
+  optional string storeType = 10;
+}
+
+message EnforcerProto {
+  repeated EnforceProperty properties = 1;
+}
+
+message EnforceProperty {
+  enum EnforceType {
+    SORTED_INPUT = 0;
+    OUTPUT_DISTINCT = 1;
+    GROUP_BY = 2;
+    JOIN = 3;
+    SORT = 4;
+    BROADCAST = 5;
+    COLUMN_PARTITION = 6;
+    DISTINCT_GROUP_BY = 7;
+  }
+
+  // Identifies which field is filled in.
+  required EnforceType type = 1;
+
+  // One of the following will be filled in.
+  optional SortedInputEnforce sortedInput = 2;
+  optional OutputDistinctEnforce outputDistinct = 3;
+  optional GroupbyEnforce groupby = 4;
+  optional JoinEnforce join = 5;
+  optional SortEnforce sort = 6;
+  optional BroadcastEnforce broadcast = 7;
+  optional ColumnPartitionEnforcer columnPartition = 8;
+  optional DistinctGroupbyEnforcer distinct = 9;
+}
+
+message SortedInputEnforce {
+  required string tableName = 1;
+  repeated SortSpecProto sortSpecs = 2;
+}
+
+message OutputDistinctEnforce {
+}
+
+message JoinEnforce {
+  enum JoinAlgorithm {
+    NESTED_LOOP_JOIN = 0;
+    BLOCK_NESTED_LOOP_JOIN = 1;
+    IN_MEMORY_HASH_JOIN = 2;
+    HYBRID_HASH_JOIN = 3;
+    MERGE_JOIN = 4;
+  }
+
+  required int32 nodeId = 1;
+  required JoinAlgorithm algorithm = 2;
+}
+
+message GroupbyEnforce {
+  enum GroupbyAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  required int32 nodeId = 1;
+  required GroupbyAlgorithm algorithm = 2;
+  repeated SortSpecProto sortSpecs = 3;
+}
+
+message SortEnforce {
+  enum SortAlgorithm {
+    IN_MEMORY_SORT = 0;
+    MERGE_SORT = 1;
+  }
+
+  required int32 nodeId = 1;
+  required SortAlgorithm algorithm = 2;
+}
+
+message BroadcastEnforce {
+  required string tableName = 1;
+}
+
+message ColumnPartitionEnforcer {
+  enum ColumnPartitionAlgorithm {
+    HASH_PARTITION = 0;
+    SORT_PARTITION = 1;
+  }
+
+  required int32 nodeId = 1;
+  required ColumnPartitionAlgorithm algorithm = 2;
+}
+
+message DistinctGroupbyEnforcer {
+  enum DistinctAggregationAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  enum MultipleAggregationStage {
+    FIRST_STAGE = 0;
+    SECOND_STAGE = 1;
+    THRID_STAGE = 3;
+  }
+
+  message SortSpecArray {
+    required int32 nodeId = 1;
+    repeated SortSpecProto sortSpecs = 2;
+  }
+  required int32 nodeId = 1;
+  required DistinctAggregationAlgorithm algorithm = 2;
+  repeated SortSpecArray sortSpecArrays = 3;
+  required bool isMultipleAggregation = 4 [default = false];
+  optional MultipleAggregationStage multipleAggregationStage = 5;
 }

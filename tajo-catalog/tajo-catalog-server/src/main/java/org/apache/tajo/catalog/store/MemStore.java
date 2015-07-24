@@ -76,7 +76,7 @@ public class MemStore implements CatalogStore {
   @Override
   public void createTablespace(String spaceName, String spaceUri) throws CatalogException {
     if (tablespaces.containsKey(spaceName)) {
-      throw new AlreadyExistsTablespaceException(spaceName);
+      throw new DuplicateTablespaceException(spaceName);
     }
 
     tablespaces.put(spaceName, spaceUri);
@@ -90,7 +90,7 @@ public class MemStore implements CatalogStore {
   @Override
   public void dropTablespace(String spaceName) throws CatalogException {
     if (!tablespaces.containsKey(spaceName)) {
-      throw new NoSuchTablespaceException(spaceName);
+      throw new UndefinedTablespaceException(spaceName);
     }
     tablespaces.remove(spaceName);
   }
@@ -119,7 +119,7 @@ public class MemStore implements CatalogStore {
   @Override
   public TablespaceProto getTablespace(String spaceName) throws CatalogException {
     if (!tablespaces.containsKey(spaceName)) {
-      throw new NoSuchTablespaceException(spaceName);
+      throw new UndefinedTablespaceException(spaceName);
     }
 
     TablespaceProto.Builder builder = TablespaceProto.newBuilder();
@@ -131,7 +131,7 @@ public class MemStore implements CatalogStore {
   @Override
   public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws CatalogException {
     if (!tablespaces.containsKey(alterProto.getSpaceName())) {
-      throw new NoSuchTablespaceException(alterProto.getSpaceName());
+      throw new UndefinedTablespaceException(alterProto.getSpaceName());
     }
 
     if (alterProto.getCommandList().size() > 0) {
@@ -147,7 +147,7 @@ public class MemStore implements CatalogStore {
   @Override
   public void createDatabase(String databaseName, String tablespaceName) throws CatalogException {
     if (databases.containsKey(databaseName)) {
-      throw new AlreadyExistsDatabaseException(databaseName);
+      throw new DuplicateDatabaseException(databaseName);
     }
 
     databases.put(databaseName, new HashMap<String, CatalogProtos.TableDescProto>());
@@ -161,7 +161,7 @@ public class MemStore implements CatalogStore {
   @Override
   public void dropDatabase(String databaseName) throws CatalogException {
     if (!databases.containsKey(databaseName)) {
-      throw new NoSuchDatabaseException(databaseName);
+      throw new UndefinedDatabaseException(databaseName);
     }
     databases.remove(databaseName);
   }
@@ -197,7 +197,7 @@ public class MemStore implements CatalogStore {
     if (databaseMap.containsKey(databaseName)) {
       return databaseMap.get(databaseName);
     } else {
-      throw new NoSuchDatabaseException(databaseName);
+      throw new UndefinedDatabaseException(databaseName);
     }
   }
 
@@ -215,7 +215,7 @@ public class MemStore implements CatalogStore {
 
     String tbName = tableName;
     if (database.containsKey(tbName)) {
-      throw new AlreadyExistsTableException(tbName);
+      throw new DuplicateTableException(tbName);
     }
     database.put(tbName, request);
   }
@@ -251,7 +251,7 @@ public class MemStore implements CatalogStore {
     if (database.containsKey(tbName)) {
       database.remove(tbName);
     } else {
-      throw new NoSuchTableException(tbName);
+      throw new UndefinedTableException(tbName);
     }
   }
 
@@ -280,7 +280,7 @@ public class MemStore implements CatalogStore {
     switch (alterTableDescProto.getAlterTableType()) {
       case RENAME_TABLE:
         if (database.containsKey(alterTableDescProto.getNewTableName())) {
-          throw new AlreadyExistsTableException(alterTableDescProto.getNewTableName());
+          throw new DuplicateTableException(alterTableDescProto.getNewTableName());
         }
         // Currently, we only use the default table space (i.e., WAREHOUSE directory).
         String spaceUri = tablespaces.get(TajoConstants.DEFAULT_TABLESPACE_NAME);
@@ -315,20 +315,18 @@ public class MemStore implements CatalogStore {
         partitionName = partitionDesc.getPartitionName();
 
         if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
-          throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+          throw new DuplicatePartitionException(partitionName);
         } else {
           CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
           builder.setPartitionName(partitionName);
           builder.setPath(partitionDesc.getPath());
 
           if (partitionDesc.getPartitionKeysCount() > 0) {
-            int i = 0;
             for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
               CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
               keyBuilder.setColumnName(eachKey.getColumnName());
               keyBuilder.setPartitionValue(eachKey.getPartitionValue());
-              builder.setPartitionKeys(i, keyBuilder.build());
-              i++;
+              builder.addPartitionKeys(keyBuilder.build());
             }
           }
 
@@ -346,9 +344,9 @@ public class MemStore implements CatalogStore {
         partitionDesc = alterTableDescProto.getPartitionDesc();
         partitionName = partitionDesc.getPartitionName();
         if(!partitions.containsKey(tableName)) {
-          throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+          throw new UndefinedPartitionException(partitionName);
         } else {
-          partitions.remove(partitionName);
+          partitions.get(tableName).remove(partitionName);
         }
         break;
       case SET_PROPERTY:
@@ -397,7 +395,7 @@ public class MemStore implements CatalogStore {
       builder.setSchema(schemaProto);
       return builder.build();
     } else {
-      throw new NoSuchTableException(tableName);
+      throw new UndefinedTableException(tableName);
     }
   }
 
@@ -441,7 +439,7 @@ public class MemStore implements CatalogStore {
   }
   
   @Override
-  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+  public List<TableOptionProto> getAllTableProperties() throws CatalogException {
     List<TableOptionProto> optionList = new ArrayList<CatalogProtos.TableOptionProto>();
     int tid = 0;
     
@@ -536,7 +534,7 @@ public class MemStore implements CatalogStore {
       CatalogProtos.TableDescProto table = database.get(tableName);
       return table.hasPartition() ? table.getPartition() : null;
     } else {
-      throw new NoSuchTableException(tableName);
+      throw new UndefinedTableException(tableName);
     }
   }
 
@@ -549,7 +547,7 @@ public class MemStore implements CatalogStore {
       CatalogProtos.TableDescProto table = database.get(tableName);
       return table.hasPartition();
     } else {
-      throw new NoSuchTableException(tableName);
+      throw new UndefinedTableException(tableName);
     }
   }
 
@@ -576,7 +574,7 @@ public class MemStore implements CatalogStore {
     if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
       return partitions.get(tableName).get(partitionName);
     } else {
-      throw new NoSuchPartitionException(partitionName);
+      throw new UndefinedPartitionException(partitionName);
     }
   }
 
@@ -616,7 +614,7 @@ public class MemStore implements CatalogStore {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
 
     if (index.containsKey(proto.getIndexName())) {
-      throw new AlreadyExistsIndexException(proto.getIndexName());
+      throw new DuplicateIndexException(proto.getIndexName());
     }
 
     index.put(proto.getIndexName(), proto);
@@ -631,7 +629,7 @@ public class MemStore implements CatalogStore {
   public void dropIndex(String databaseName, String indexName) throws CatalogException {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     if (!index.containsKey(indexName)) {
-      throw new NoSuchIndexException(indexName);
+      throw new UndefinedIndexException(indexName);
     }
     index.remove(indexName);
   }
@@ -643,7 +641,7 @@ public class MemStore implements CatalogStore {
   public IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     if (!index.containsKey(indexName)) {
-      throw new NoSuchIndexException(indexName);
+      throw new UndefinedIndexException(indexName);
     }
 
     return index.get(indexName);
@@ -658,7 +656,7 @@ public class MemStore implements CatalogStore {
 
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     if (!indexByColumn.containsKey(columnName)) {
-      throw new NoSuchIndexException(columnName);
+      throw new UndefinedIndexException(CatalogUtil.buildFQName(databaseName, tableName), columnName);
     }
 
     return indexByColumn.get(columnName);

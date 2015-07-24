@@ -30,7 +30,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.StorageConstants;
@@ -56,6 +56,7 @@ public class ORCScanner extends FileScanner {
   private Vector [] vectors;
   private int currentPosInBatch = 0;
   private int batchSize = 0;
+  private Tuple outTuple;
 
   public ORCScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
     super(conf, schema, meta, fragment);
@@ -64,7 +65,6 @@ public class ORCScanner extends FileScanner {
   private Vector createOrcVector(TajoDataTypes.DataType type) {
     switch (type.getType()) {
       case INT1: case INT2: case INT4: case INT8:
-      case UINT1: case UINT2: case UINT4: case UINT8:
       case INET4:
       case TIMESTAMP:
       case DATE:
@@ -85,7 +85,7 @@ public class ORCScanner extends FileScanner {
         return new SliceVector();
 
       default:
-        throw new UnsupportedException("This data type is not supported currently: "+type.toString());
+        throw new UnimplementedException("ORC type: "+type.toString());
     }
   }
 
@@ -111,6 +111,8 @@ public class ORCScanner extends FileScanner {
     }
 
     super.init();
+
+    outTuple = new VTuple(targets.length);
 
     Path path = fragment.getPath();
 
@@ -174,38 +176,32 @@ public class ORCScanner extends FileScanner {
       }
     }
 
-    Tuple tuple = new VTuple(targets.length);
-
     for (int i=0; i<targetColInfo.length; i++) {
-      tuple.put(i, createValueDatum(vectors[i], targetColInfo[i].type));
+      outTuple.put(i, createValueDatum(vectors[i], targetColInfo[i].type));
     }
 
     currentPosInBatch++;
 
-    return tuple;
+    return outTuple;
   }
 
   // TODO: support more types
   private Datum createValueDatum(Vector vector, TajoDataTypes.DataType type) {
     switch (type.getType()) {
       case INT1:
-      case UINT1:
       case INT2:
-      case UINT2:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
 
         return DatumFactory.createInt2((short) ((LongVector) vector).vector[currentPosInBatch]);
 
       case INT4:
-      case UINT4:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
 
         return DatumFactory.createInt4((int) ((LongVector) vector).vector[currentPosInBatch]);
 
       case INT8:
-      case UINT8:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
 
@@ -283,7 +279,7 @@ public class ORCScanner extends FileScanner {
         return NullDatum.get();
 
       default:
-        throw new UnsupportedException("This data type is not supported currently: "+type.toString());
+        throw new UnimplementedException("ORC type: "+type.toString());
     }
   }
 

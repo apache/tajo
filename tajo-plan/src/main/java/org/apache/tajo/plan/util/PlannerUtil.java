@@ -21,19 +21,21 @@ package org.apache.tajo.plan.util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
@@ -214,7 +216,7 @@ public class PlannerUtil {
     return tableNames;
   }
 
-  public static String getTopRelationInLineage(LogicalPlan plan, LogicalNode from) throws PlanningException {
+  public static String getTopRelationInLineage(LogicalPlan plan, LogicalNode from) throws TajoException {
     RelationFinderVisitor visitor = new RelationFinderVisitor(true);
     visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
     if (visitor.getFoundRelations().isEmpty()) {
@@ -222,20 +224,6 @@ public class PlannerUtil {
     } else {
       return visitor.getFoundRelations().iterator().next();
     }
-  }
-
-  /**
-   * Get all RelationNodes which are descendant of a given LogicalNode.
-   * The finding is restricted within a query block.
-   *
-   * @param from The LogicalNode to start visiting LogicalNodes.
-   * @return an array of all descendant RelationNode of LogicalNode.
-   */
-  public static Collection<String> getRelationLineageWithinQueryBlock(LogicalPlan plan, LogicalNode from)
-      throws PlanningException {
-    RelationFinderVisitor visitor = new RelationFinderVisitor(false);
-    visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
-    return visitor.getFoundRelations();
   }
 
   public static class RelationFinderVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
@@ -252,7 +240,7 @@ public class PlannerUtil {
 
     @Override
     public LogicalNode visit(Object context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block, LogicalNode node,
-                             Stack<LogicalNode> stack) throws PlanningException {
+                             Stack<LogicalNode> stack) throws TajoException {
       if (topOnly && foundRelNameSet.size() > 0) {
         return node;
       }
@@ -307,8 +295,8 @@ public class PlannerUtil {
     LogicalNodeReplaceVisitor replacer = new LogicalNodeReplaceVisitor(oldNode, newNode);
     try {
       replacer.visit(new ReplacerContext(), plan, null, startNode, new Stack<LogicalNode>());
-    } catch (PlanningException e) {
-      e.printStackTrace();
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
   }
 
@@ -334,7 +322,7 @@ public class PlannerUtil {
 
     @Override
     public LogicalNode visit(ReplacerContext context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block,
-                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+                             LogicalNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode left = null;
       LogicalNode right = null;
 
@@ -389,15 +377,13 @@ public class PlannerUtil {
 
     @Override
     public LogicalNode visitScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
-                                 Stack<LogicalNode> stack) throws PlanningException {
+                                 Stack<LogicalNode> stack) throws TajoException {
       return node;
     }
 
     @Override
     public LogicalNode visitPartitionedTableScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.
-        QueryBlock block, PartitionedTableScanNode node, Stack<LogicalNode> stack)
-
-        throws PlanningException {
+        QueryBlock block, PartitionedTableScanNode node, Stack<LogicalNode> stack) {
       return node;
     }
   }
@@ -487,7 +473,7 @@ public class PlannerUtil {
     Preconditions.checkNotNull(type);
 
     ParentNodeFinder finder = new ParentNodeFinder(type);
-    node.postOrder(finder);
+    node.preOrder(finder);
 
     if (finder.getFoundNodes().size() == 0) {
       return null;
@@ -770,22 +756,23 @@ public class PlannerUtil {
     }
   }
 
-  public static boolean isCommutativeJoin(JoinType joinType) {
-    return joinType == JoinType.INNER;
+  public static boolean isCommutativeJoinType(JoinType joinType) {
+    // Full outer join is also commutative.
+    return joinType == JoinType.INNER || joinType == JoinType.CROSS || joinType == JoinType.FULL_OUTER;
   }
 
-  public static boolean isOuterJoin(JoinType joinType) {
+  public static boolean isOuterJoinType(JoinType joinType) {
     return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
   }
 
-  public static boolean existsAggregationFunction(Expr expr) throws PlanningException {
+  public static boolean existsAggregationFunction(Expr expr) throws TajoException {
     AggregationFunctionFinder finder = new AggregationFunctionFinder();
     AggFunctionFoundResult result = new AggFunctionFoundResult();
     finder.visit(result, new Stack<Expr>(), expr);
     return result.generalSetFunction;
   }
 
-  public static boolean existsDistinctAggregationFunction(Expr expr) throws PlanningException {
+  public static boolean existsDistinctAggregationFunction(Expr expr) throws TajoException {
     AggregationFunctionFinder finder = new AggregationFunctionFinder();
     AggFunctionFoundResult result = new AggFunctionFoundResult();
     finder.visit(result, new Stack<Expr>(), expr);
@@ -800,14 +787,14 @@ public class PlannerUtil {
   static class AggregationFunctionFinder extends SimpleAlgebraVisitor<AggFunctionFoundResult, Object> {
     @Override
     public Object visitCountRowsFunction(AggFunctionFoundResult ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
-        throws PlanningException {
+        throws TajoException {
       ctx.generalSetFunction = true;
       return super.visitCountRowsFunction(ctx, stack, expr);
     }
 
     @Override
     public Object visitGeneralSetFunction(AggFunctionFoundResult ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
-        throws PlanningException {
+        throws TajoException {
       ctx.generalSetFunction = true;
       ctx.distinctSetFunction = expr.isDistinct();
       return super.visitGeneralSetFunction(ctx, stack, expr);
@@ -843,8 +830,8 @@ public class PlannerUtil {
         explains.append(
             ExplainLogicalPlanVisitor.printDepthString(explainContext.getMaxDepth(), explainContext.explains.pop()));
       }
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
 
     return explains.toString();

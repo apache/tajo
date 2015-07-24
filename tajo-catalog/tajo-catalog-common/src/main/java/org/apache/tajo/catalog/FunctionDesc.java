@@ -38,7 +38,6 @@ import java.lang.reflect.Constructor;
  *
  */
 public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, GsonObject, Comparable<FunctionDesc> {
-  private FunctionDescProto.Builder builder = FunctionDescProto.newBuilder();
 
   @Expose private FunctionSignature signature;
   @Expose private FunctionInvocation invocation;
@@ -184,11 +183,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
 
   @Override
   public FunctionDescProto getProto() {
-    if (builder == null) {
-      builder = FunctionDescProto.newBuilder();
-    } else {
-      builder.clear();
-    }
+    FunctionDescProto.Builder builder = FunctionDescProto.newBuilder();
     builder.setSignature(signature.getProto());
     builder.setSupplement(supplement.getProto());
     builder.setInvocation(invocation.getProto());

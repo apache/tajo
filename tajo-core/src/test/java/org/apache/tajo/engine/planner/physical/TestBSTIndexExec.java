@@ -111,7 +111,7 @@ public class TestBSTIndexExec {
     writer.open();
     long offset;
 
-    meta = CatalogUtil.newTableMeta("CSV");
+    meta = CatalogUtil.newTableMeta("TEXT");
     tablePath = StorageUtil.concatPath(workDir, "employee", "table.csv");
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());
@@ -143,8 +143,8 @@ public class TestBSTIndexExec {
     writer.close();
 
     TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        sm.getTableUri(TajoConstants.DEFAULT_DATABASE_NAME, "employee"));
+      CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
+      tablePath.toUri());
     catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();

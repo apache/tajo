@@ -34,8 +34,8 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -85,7 +85,7 @@ public class TestPlannerUtil {
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
 
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc people = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
@@ -93,13 +93,13 @@ public class TestPlannerUtil {
 
     TableDesc student =
         new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "CSV",
+            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "TEXT",
             new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score =
         new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "CSV",
+            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "TEXT",
             new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 
@@ -118,7 +118,7 @@ public class TestPlannerUtil {
   }
 
   @Test
-  public final void testFindTopNode() throws CloneNotSupportedException, PlanningException {
+  public final void testFindTopNode() throws CloneNotSupportedException, TajoException {
     // two relations
     Expr expr = analyzer.parse(TestLogicalPlanner.QUERIES[1]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(util.getConfiguration()),

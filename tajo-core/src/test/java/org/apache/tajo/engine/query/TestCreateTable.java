@@ -441,6 +441,22 @@ public class TestCreateTable extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testCreateExternalTable1FromOnlyPath() throws Exception {
+    // This test verifies CREATE EXTERNAL TABLE from just a path instead of a full qualified URI.
+    ResultSet res = null;
+    try {
+      res = executeString(
+          "INSERT INTO LOCATION '/testCreateExternalTable1FromOnlyPath' SELECT * FROM default.lineitem");
+      res = executeString(
+          "CREATE EXTERNAL TABLE table1 (col1 INTEGER) USING CSV LOCATION '/testCreateExternalTable1FromOnlyPath';");
+    } catch (Throwable t) {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  @Test
   public final void testCreateTableLike1() throws Exception {
     // //HiveCatalogStore does not support varchar type in hive-0.12.0
     if (testingCluster.isHiveCatalogStoreRunning()) {
@@ -470,7 +486,7 @@ public class TestCreateTable extends QueryTestCaseBase {
       executeString("DROP TABLE table2");
 
       // Table with non-default meta options
-      executeString("CREATE TABLE table1 (c1 int, c2 text) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
+      executeString("CREATE TABLE table1 (c1 int, c2 text) USING text WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
       executeString("CREATE TABLE table2 LIKE table1");
       testMsg = "testCreateTableLike1: Table with non-default meta options test failed";
       assertTrue(testMsg, isClonedTable("table1","table2"));
@@ -536,7 +552,7 @@ public class TestCreateTable extends QueryTestCaseBase {
       executeString("DROP TABLE table2");
 
       // Table with non-default meta options
-      executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING csv WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
+      executeString("CREATE TABLE table1 (c1 int, c2 varchar) USING text WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec');").close();
       executeString("CREATE TABLE table2 LIKE table1");
       testMsg = "testCreateTableLike1: Table with non-default meta options test failed";
       assertTrue(testMsg, isClonedTable("table1","table2"));
