@@ -41,6 +41,7 @@ import java.util.Set;
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
   public static final double DEFAULT_SELECTION_FACTOR = 0.1;
+  public static final int DEFAULT_JOIN_SCALE_ADJUST_FACTOR = 10 * 1024 * 1024; // 10MB
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
@@ -203,7 +204,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         JoinOrderingUtil.updateQualIfNecessary(graphContext, foundJoin);
         double cost = getCost(foundJoin);
 
-        if (cost < minCost) {
+        if (cost < minCost ||
+            (cost == minCost && cost == Double.MAX_VALUE)) {
           minCost = cost;
           bestJoin = foundJoin;
         }
@@ -398,7 +400,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           getCost(joinEdge.getRightVertex()), 2);
     }
 
-    return cost * COMPUTATION_FACTOR;
+    return checkInfinity(cost * COMPUTATION_FACTOR);
   }
 
   public static double getCost(JoinVertex joinVertex) {
@@ -409,6 +411,21 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       cost = getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
     }
     return cost;
+  }
+
+  /**
+   * If a calculated cost is a infinity value, return Long.MAX_VALUE
+   * @param cost
+   * @return
+   */
+  private static double checkInfinity(double cost) {
+    if (cost == Double.POSITIVE_INFINITY) {
+      return Long.MAX_VALUE;
+    } else if (cost == Double.NEGATIVE_INFINITY) {
+      return Long.MIN_VALUE;
+    } else {
+      return cost;
+    }
   }
 
   // TODO - costs of other operator operators (e.g., group-by and sort) should be computed in proper manners.
@@ -447,9 +464,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     case SCAN:
       ScanNode scanNode = (ScanNode) node;
       if (scanNode.getTableDesc().getStats() != null) {
-        cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
+        cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes() / DEFAULT_JOIN_SCALE_ADJUST_FACTOR;
       } else {
-        cost = Long.MAX_VALUE;
+        cost = Integer.MAX_VALUE;
       }
       break;
 
