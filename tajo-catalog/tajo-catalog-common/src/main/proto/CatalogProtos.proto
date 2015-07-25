@@ -161,6 +161,12 @@ message TablePartitionProto {
   optional string path = 4;
 }
 
+message TablePartitionKeysProto {
+  required int32 partition_id = 1;
+  required string columnName = 2;
+  required string partitionValue = 3;
+}
+
 message GetIndexByColumnRequest {
   required TableIdentifierProto tableIdentifier = 1;
   required string columnName = 2;

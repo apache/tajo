@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionKeysProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
@@ -194,6 +195,8 @@ public interface CatalogService {
   List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName);
 
   List<TablePartitionProto> getAllPartitions();
+
+  List<TablePartitionKeysProto> getAllPartitionKeys();
 
   boolean createIndex(IndexDesc index);
 

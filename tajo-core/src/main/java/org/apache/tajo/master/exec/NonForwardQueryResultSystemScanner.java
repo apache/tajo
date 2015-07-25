@@ -422,7 +422,34 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     
     return tuples;
   }
-  
+
+  private List<Tuple> getAllPartitionKeys(Schema outSchema) {
+    List<TablePartitionKeysProto> partitionKeyList = masterContext.getCatalog().getAllPartitionKeys();
+    List<Tuple> tuples = new ArrayList<Tuple>(partitionKeyList.size());
+    List<Column> columns = outSchema.getRootColumns();
+    Tuple aTuple;
+
+    for (TablePartitionKeysProto partitionKey: partitionKeyList) {
+      aTuple = new VTuple(outSchema.size());
+
+      for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
+        Column column = columns.get(fieldId);
+
+        if ("partition_id".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(partitionKey.getPartitionId()));
+        } else if ("column_name".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(partitionKey.getColumnName()));
+        } else if ("partition_value".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(partitionKey.getPartitionValue()));
+        }
+      }
+
+      tuples.add(aTuple);
+    }
+
+    return tuples;
+  }
+
   private Tuple getQueryMasterTuple(Schema outSchema, NodeStatus aNodeStatus) {
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple = new VTuple(outSchema.size());
@@ -581,6 +608,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       tuples = getAllTableStats(inSchema);
     } else if ("partitions".equalsIgnoreCase(tableName)) {
       tuples = getAllPartitions(inSchema);
+    } else if ("partition_keys".equalsIgnoreCase(tableName)) {
+      tuples = getAllPartitionKeys(inSchema);
     } else if ("cluster".equalsIgnoreCase(tableName)) {
       tuples = getClusterInfo(inSchema);
     } else if ("session".equalsIgnoreCase(tableName)) {

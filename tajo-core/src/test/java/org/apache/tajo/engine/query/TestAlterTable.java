@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import javax.xml.transform.Result;
 import java.sql.ResultSet;
 import java.util.List;
 
@@ -102,6 +103,32 @@ public class TestAlterTable extends QueryTestCaseBase {
     FileSystem fs = partitionPath.getFileSystem(conf);
     assertTrue(fs.exists(partitionPath));
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
+
+    List<CatalogProtos.TablePartitionProto> tablePartitions = catalog.getAllPartitions();
+    assertEquals(tablePartitions.size(), 1);
+    assertEquals(tablePartitions.get(0).getPartitionName(), "col3=1/col4=2");
+
+    List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
+    assertEquals(tablePartitionKeys.size(), 2);
+    assertEquals(tablePartitionKeys.get(0).getColumnName(), "col3");
+    assertEquals(tablePartitionKeys.get(0).getPartitionValue(), "1");
+    assertEquals(tablePartitionKeys.get(1).getColumnName(), "col4");
+    assertEquals(tablePartitionKeys.get(1).getPartitionValue(), "2");
+
+    ResultSet resultSet = executeString("SELECT partition_name FROM INFORMATION_SCHEMA.PARTITIONS");
+    String actualResult = resultSetToString(resultSet);
+    String expectedResult = "partition_name\n" +
+      "-------------------------------\n" +
+      "col3=1/col4=2\n";
+    assertEquals(expectedResult, actualResult);
+
+    resultSet = executeString("SELECT * FROM INFORMATION_SCHEMA.PARTITION_KEYS");
+    actualResult = resultSetToString(resultSet);
+    expectedResult = "partition_id,column_name,partition_value\n" +
+      "-------------------------------\n" +
+      "0,col3,1\n" +
+      "0,col4,2\n";
+    assertEquals(expectedResult, actualResult);
 
     executeDDL("alter_table_drop_partition1.sql", null);
 

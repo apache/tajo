@@ -27,13 +27,12 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionKeysProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 
 import java.io.Closeable;
 
 import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
 import java.util.Collection;
 import java.util.List;
@@ -116,6 +115,8 @@ public interface CatalogStore extends Closeable {
                                                 String partitionName) throws CatalogException;
 
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
+
+  List<TablePartitionKeysProto> getAllPartitionKeys() throws CatalogException;
 
   /**************************** INDEX *******************************/
   void createIndex(IndexDescProto proto) throws CatalogException;

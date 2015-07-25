@@ -2171,6 +2171,37 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return partitions;
   }
 
+  @Override
+  public List<TablePartitionKeysProto> getAllPartitionKeys() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<TablePartitionKeysProto> partitions = new ArrayList<TablePartitionKeysProto>();
+
+    try {
+      String sql = "SELECT " + COL_PARTITIONS_PK + ", COLUMN_NAME, PARTITION_VALUE FROM " + TB_PARTTION_KEYS;
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        TablePartitionKeysProto.Builder builder = TablePartitionKeysProto.newBuilder();
+
+        builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
+        builder.setColumnName(resultSet.getString("COLUMN_NAME"));
+        builder.setPartitionValue(resultSet.getString("PARTITION_VALUE"));
+
+        partitions.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+
+    return partitions;
+  }
 
   @Override
   public void createIndex(final IndexDescProto proto) throws CatalogException {

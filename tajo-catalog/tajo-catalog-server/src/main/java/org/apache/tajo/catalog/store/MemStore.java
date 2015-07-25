@@ -39,6 +39,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionKeysProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import org.apache.tajo.util.KeyValueSet;
@@ -598,6 +600,28 @@ public class MemStore implements CatalogStore {
         builder.setTid(0);
 
         protos.add(builder.build());
+      }
+    }
+    return protos;
+  }
+
+  public List<TablePartitionKeysProto> getAllPartitionKeys() throws CatalogException {
+    List<TablePartitionKeysProto> protos = new ArrayList<TablePartitionKeysProto>();
+    Set<String> tables = partitions.keySet();
+    int partitionId = 0;
+    for (String table : tables) {
+      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(table);
+      for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
+        CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
+
+        for (PartitionKeyProto partitionKey : partitionDescProto.getPartitionKeysList()) {
+          TablePartitionKeysProto.Builder builder = TablePartitionKeysProto.newBuilder();
+          builder.setColumnName(partitionKey.getColumnName());
+          builder.setPartitionValue(partitionKey.getPartitionValue());
+          builder.setPartitionId(partitionId);
+          protos.add(builder.build());
+        }
+        partitionId++;
       }
     }
     return protos;

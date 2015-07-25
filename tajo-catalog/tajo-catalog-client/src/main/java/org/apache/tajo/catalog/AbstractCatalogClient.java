@@ -402,6 +402,20 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
+  public List<TablePartitionKeysProto> getAllPartitionKeys() {
+    try {
+      final BlockingInterface stub = getStub();
+      final GetTablePartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);
+      ensureOk(response.getState());
+
+      return response.getPartKeyList();
+
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   public final Collection<String> getAllTableNames(final String databaseName) {
     try {
       final BlockingInterface stub = getStub();

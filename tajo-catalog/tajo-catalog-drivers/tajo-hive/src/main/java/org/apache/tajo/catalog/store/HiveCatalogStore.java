@@ -45,6 +45,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionKeysProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -937,6 +938,11 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TablePartitionKeysProto> getAllPartitionKeys() throws CatalogException {
     throw new UnsupportedOperationException();
   }
 
