@@ -20,7 +20,6 @@ package org.apache.tajo.plan.visitor;
 
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 
 import java.util.Stack;
@@ -76,6 +75,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
                    Stack<LogicalNode> stack) throws TajoException;
 
+  RESULT visitIndexScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, IndexScanNode node,
+                        Stack<LogicalNode> stack) throws TajoException;
+
   RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    PartitionedTableScanNode node, Stack<LogicalNode> stack) throws TajoException;
 
@@ -102,6 +104,12 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
 
   RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
                          Stack<LogicalNode> stack) throws TajoException;
+
+  RESULT visitCreateIndex(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, CreateIndexNode node,
+                               Stack<LogicalNode> stack) throws TajoException;
+
+  RESULT visitDropIndex(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropIndexNode node,
+                        Stack<LogicalNode> stack) throws TajoException;
 
   RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, TruncateTableNode node,
                          Stack<LogicalNode> stack) throws TajoException;

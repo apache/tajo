@@ -69,14 +69,14 @@ message GetPartitionDescResponse {
   optional PartitionDescProto partition = 2;
 }
 
-message GetIndexResponse {
+message GetIndexeDescResponse {
   required ReturnState state = 1;
   optional IndexDescProto index = 2;
 }
 
-message GetIndexesResponse {
-  required ReturnState state = 1;
-  repeated IndexProto index = 2;
+message GetIndexByColumnNamesRequest {
+  required TableIdentifierProto tableIdentifier = 1;
+  repeated string columnNames = 2;
 }
 
 message GetPartitionsResponse {
@@ -128,10 +128,12 @@ service CatalogProtocolService {
   rpc createIndex(IndexDescProto) returns (ReturnState);
   rpc dropIndex(IndexNameProto) returns (ReturnState);
   rpc existIndexByName(IndexNameProto) returns (ReturnState);
-  rpc existIndexByColumn(GetIndexByColumnRequest) returns (ReturnState);
-  rpc getIndexByName(IndexNameProto) returns (GetIndexResponse);
-  rpc getIndexByColumn(GetIndexByColumnRequest) returns (GetIndexResponse);
-  rpc getAllIndexes(NullProto) returns (GetIndexesResponse);
+  rpc existIndexByColumnNames(GetIndexByColumnNamesRequest) returns (ReturnState);
+  rpc existIndexesByTable(TableIdentifierProto) returns (ReturnState);
+  rpc getIndexByName(IndexNameProto) returns (IndexResponse);
+  rpc getIndexByColumnNames(GetIndexByColumnNamesRequest) returns (IndexResponse);
+  rpc getAllIndexesByTable(TableIdentifierProto) returns (IndexListResponse);
+  rpc getAllIndexes(NullProto) returns (IndexListResponse);
 
   rpc createFunction(FunctionDescProto) returns (ReturnState);
   rpc dropFunction(UnregisterFunctionRequest) returns (ReturnState);

@@ -198,6 +198,13 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1608: Fix test failure in index_support branch. (jihoon)
+
+    TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
+    names only without invalid external table info. 
+
     TAJO-1702: Fix race condition in finished query cache. (jinho)
 
     TAJO-1597: Problem of ignoring theta join condition. (jihoon)
@@ -412,6 +419,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1302: Support index metadata backup and restore. (jihoon)
 
     TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
     committed by hyunsik)

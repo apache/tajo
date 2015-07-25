@@ -119,11 +119,12 @@ message NamespaceProto {
 message IndexDescProto {
   required TableIdentifierProto tableIdentifier = 1;
   required string indexName = 2;
-  required ColumnProto column = 3;
-  required IndexMethod indexMethod = 4;
-  optional bool isUnique = 5 [default = false];
-  optional bool isClustered = 6 [default = false];
-  optional bool isAscending = 7 [default = false];
+  required IndexMethod indexMethod = 3;
+  required string indexPath = 4;
+  repeated SortSpecProto key_sort_specs = 5;
+  required SchemaProto targetRelationSchema = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
 }
 
 enum IndexMethod {
@@ -133,20 +134,10 @@ enum IndexMethod {
   BITMAP_IDX = 3;
 }
 
-message GetIndexesProto {
-  repeated IndexProto index = 1;
-}
-
-message IndexProto {
-  required int32 dbId = 1;
-  required int32 tId = 2;
+message IndexNameProto {
+  required string databaseName = 1;
+  optional string namespace = 2;
   required string indexName = 3;
-  required string columnName = 4;
-  required string dataType = 5;
-  required string indexType = 6;
-  optional bool isUnique = 7 [default = false];
-  optional bool isClustered = 8 [default = false];
-  optional bool isAscending = 9 [default = false];
 }
 
 message TableOptionProto {
@@ -159,17 +150,6 @@ message TablePartitionProto {
   required int32 tid = 2;
   optional string partitionName = 3;
   optional string path = 4;
-}
-
-message GetIndexByColumnRequest {
-  required TableIdentifierProto tableIdentifier = 1;
-  required string columnName = 2;
-}
-
-message IndexNameProto {
-  required string databaseName = 1;
-  optional string namespace = 2;
-  required string indexName = 3;
 }
 
 message GetFunctionsResponse {
@@ -406,4 +386,14 @@ message FunctionResponse {
 message FunctionListResponse {
   required ReturnState state = 1;
   repeated FunctionDescProto function = 2;
+}
+
+message IndexListResponse {
+  required ReturnState state = 1;
+  repeated IndexDescProto indexDesc = 2;
+}
+
+message IndexResponse {
+  required ReturnState state = 1;
+  optional IndexDescProto indexDesc = 2;
 }

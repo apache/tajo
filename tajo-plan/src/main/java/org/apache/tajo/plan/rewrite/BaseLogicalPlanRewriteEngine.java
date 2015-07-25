@@ -69,18 +69,19 @@ public class BaseLogicalPlanRewriteEngine implements LogicalPlanRewriteEngine {
   /**
    * Rewrite a logical plan with all query rewrite rules added to this engine.
    *
-   * @param plan The plan to be rewritten with all query rewrite rule.
+   * @param context
    * @return The rewritten plan.
    */
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlanRewriteRule rule;
+    LogicalPlan plan = null;
     for (Entry<String, LogicalPlanRewriteRule> rewriteRule : rewriteRules.entrySet()) {
       rule = rewriteRule.getValue();
-      if (rule.isEligible(queryContext, plan)) {
-        plan = rule.rewrite(queryContext, plan);
+      if (rule.isEligible(context)) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("The rule \"" + rule.getName() + " \" rewrites the query.");
         }
+        plan = rule.rewrite(context);
       }
     }
 

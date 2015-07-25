@@ -18,13 +18,11 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.QueryInProgress;
 import org.apache.tajo.master.QueryInfo;
@@ -263,7 +261,7 @@ public class QueryResource {
         return ResourcesUtil.createBadRequestResponse(LOG, "Provided session id (" + sessionId + ") is invalid.");
       }
       
-      SubmitQueryResponse response = 
+      SubmitQueryResponse response =
         masterContext.getGlobalEngine().executeQuery(session, request.getQuery(), false);
       if (ReturnStateUtil.isError(response.getState())) {
         return ResourcesUtil.createExceptionResponse(LOG, response.getState().getMessage());

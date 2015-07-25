@@ -100,7 +100,7 @@ public class TestKillQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
 
     LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -164,7 +164,7 @@ public class TestKillQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
 
     LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
