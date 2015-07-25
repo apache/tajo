@@ -173,12 +173,12 @@ public class ReturnStateUtil {
   }
 
   public static ReturnState errUndefinedIndex(String tbName) {
-    return returnError(ResultCode.UNDEFINED_INDEX, tbName);
+    return returnError(ResultCode.UNDEFINED_INDEX_FOR_TABLE, tbName);
   }
 
   public static ReturnState errUndefinedIndex(String tbName, List<String> columnNameList) {
     String columnNames = StringUtils.join(columnNameList, ",");
-    return returnError(ResultCode.UNDEFINED_INDEX, columnNames, tbName);
+    return returnError(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, columnNames, tbName);
   }
 
   public static ReturnState errUndefinedIndexName(String indexName) {

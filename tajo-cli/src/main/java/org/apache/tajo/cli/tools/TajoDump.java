@@ -185,9 +185,12 @@ public class TajoDump {
           writer.write(DDLBuilder.buildDDLForBaseTable(table));
         }
 
-        List<CatalogProtos.IndexDescProto> indexeProtos = client.getIndexes(tableName);
-        for (CatalogProtos.IndexDescProto eachIndexProto : indexeProtos) {
-          writer.write(DDLBuilder.buildDDLForIndex(new IndexDesc(eachIndexProto)));
+        if (client.hasIndexes(tableName)) {
+          List<CatalogProtos.IndexDescProto> indexeProtos = client.getIndexes(tableName);
+          for (CatalogProtos.IndexDescProto eachIndexProto : indexeProtos) {
+            writer.write("\n\n");
+            writer.write(DDLBuilder.buildDDLForIndex(new IndexDesc(eachIndexProto)));
+          }
         }
         writer.write("\n\n");
       } catch (Exception e) {
