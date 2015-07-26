@@ -32,13 +32,13 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
-import org.apache.tajo.plan.expr.EvalType;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
@@ -58,8 +58,15 @@ public class LogicalOptimizer {
   private BaseLogicalPlanRewriteEngine rulesBeforeJoinOpt;
   private BaseLogicalPlanRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
+  private final boolean testEnabled;
 
   public LogicalOptimizer(TajoConf conf) {
+
+    if (conf.get(CommonTestingUtil.TAJO_TEST_KEY).equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
+      testEnabled = true;
+    } else {
+      testEnabled = false;
+    }
 
     Class clazz = conf.getClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
     LogicalPlanRewriteRuleProvider provider = (LogicalPlanRewriteRuleProvider) ReflectionUtil.newInstance(clazz, conf);
@@ -103,7 +110,7 @@ public class LogicalOptimizer {
       double nonOptimizedJoinCost = JoinCostComputer.computeCost(plan, block);
 
       // finding relations and filter expressions
-      JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
+      JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block, testEnabled);
 
       // finding join order and restore remaining filters
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
@@ -231,9 +238,9 @@ public class LogicalOptimizer {
      * scan operators. In other words, filter push down must be performed before this method.
      * Otherwise, this method may build incorrectly a join graph.
      */
-    public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
+    public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block, boolean isTestEnabled)
         throws TajoException {
-      JoinGraphContext context = new JoinGraphContext();
+      JoinGraphContext context = new JoinGraphContext(isTestEnabled);
       instance.visit(context, plan, block);
       return context;
     }
