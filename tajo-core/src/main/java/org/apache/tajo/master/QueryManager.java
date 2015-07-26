@@ -119,14 +119,16 @@ public class QueryManager extends CompositeService {
     return Collections.unmodifiableCollection(runningQueries.values());
   }
 
-  public synchronized Collection<QueryInfo> getFinishedQueries() {
+  public Collection<QueryInfo> getFinishedQueries() {
     Set<QueryInfo> result = Sets.newTreeSet();
     synchronized (historyCache) {
       result.addAll(historyCache.values());
     }
 
     try {
-      result.addAll(this.masterContext.getHistoryReader().getQueries(null));
+      synchronized (this) {
+        result.addAll(this.masterContext.getHistoryReader().getQueries(null));
+      }
       return result;
     } catch (Throwable e) {
       LOG.error(e, e);
@@ -134,11 +136,16 @@ public class QueryManager extends CompositeService {
     }
   }
 
-  public synchronized QueryInfo getFinishedQuery(QueryId queryId) {
+  public QueryInfo getFinishedQuery(QueryId queryId) {
     try {
-      QueryInfo queryInfo = (QueryInfo) historyCache.get(queryId);
+      QueryInfo queryInfo;
+      synchronized (historyCache) {
+        queryInfo = (QueryInfo) historyCache.get(queryId);
+      }
       if (queryInfo == null) {
-        queryInfo = this.masterContext.getHistoryReader().getQueryInfo(queryId.toString());
+        synchronized (this) {
+          queryInfo = this.masterContext.getHistoryReader().getQueryInfo(queryId.toString());
+        }
       }
       return queryInfo;
     } catch (Throwable e) {
@@ -232,6 +239,7 @@ public class QueryManager extends CompositeService {
     if (queryInProgress == null) {
       queryInProgress = runningQueries.get(queryId);
     }
+
     return queryInProgress;
   }
 
@@ -240,13 +248,13 @@ public class QueryManager extends CompositeService {
     QueryInProgress queryInProgress = getQueryInProgress(queryId);
     if(queryInProgress != null) {
       queryInProgress.stopProgress();
-      submittedQueries.remove(queryId);
-      runningQueries.remove(queryId);
-
       QueryInfo queryInfo = queryInProgress.getQueryInfo();
       synchronized (historyCache) {
         historyCache.put(queryInfo.getQueryId(), queryInfo);
       }
+
+      submittedQueries.remove(queryId);
+      runningQueries.remove(queryId);
 
       long executionTime = queryInfo.getFinishTime() - queryInfo.getStartTime();
       if (executionTime < minExecutionTime.get()) {
