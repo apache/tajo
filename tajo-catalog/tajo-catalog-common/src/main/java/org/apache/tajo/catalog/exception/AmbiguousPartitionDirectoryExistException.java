@@ -21,10 +21,10 @@ package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
 
-public class AssumedPartitionDirectoryException extends CatalogException {
+public class AmbiguousPartitionDirectoryExistException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894931L;
 
-	public AssumedPartitionDirectoryException(String columnName) {
-		super(ResultCode.ASSUMED_PARTITION_DIRECTORY, columnName);
+	public AmbiguousPartitionDirectoryExistException(String columnName) {
+		super(ResultCode.AMBIGUOUS_PARTITION_DIRECTORY, columnName);
 	}
 }
