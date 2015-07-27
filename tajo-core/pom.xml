@@ -474,6 +474,19 @@
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.goldmansachs</groupId>
+      <artifactId>gs-collections-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.goldmansachs</groupId>
+      <artifactId>gs-collections</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.goldmansachs</groupId>
+      <artifactId>gs-collections-testutils</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
