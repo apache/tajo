@@ -35,8 +35,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
@@ -303,10 +302,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
       Query query = queryMasterTask.getQuery();
       if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED && query.getResultDesc() != null) {
         TableDesc desc = query.getResultDesc();
-        TableStats stats = desc.getStats();
 
-        String databaseName;
-        String simpleTableName;
+        String databaseName, simpleTableName;
 
         if (CatalogUtil.isFQTableName(desc.getName())) {
           String[] split = CatalogUtil.splitFQTableName(desc.getName());
@@ -318,22 +315,15 @@ public class QueryMaster extends CompositeService implements EventHandler {
         }
 
         // If there is partitions
-        if (stats.getPartitions() != null && stats.getPartitions().size() > 0) {
-
-          List<String> partitions = TUtil.newList();
-          for (CatalogProtos.PartitionDescProto partition: stats.getPartitions()) {
-            if (!partitions.contains(partition.getPartitionName())) {
-              partitions.add(partition.getPartitionName());
-            }
-          }
-
+        List<PartitionDescProto> partitions = query.getPartitions();
+        if (partitions!= null && !partitions.isEmpty()) {
           CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
           // Store partitions to CatalogStore using alter table statement.
-          boolean result = catalog.addPartitions(databaseName, simpleTableName, stats.getPartitions(), true);
+          boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
           if (result) {
-            LOG.info(String.format("Complete adding for partition %s", stats.getPartitions().size()));
+            LOG.info(String.format("Complete adding for partition %s", partitions.size()));
           } else {
-            LOG.info(String.format("Incomplete adding for partition %s", stats.getPartitions().size()));
+            LOG.info(String.format("Incomplete adding for partition %s", partitions.size()));
           }
         } else {
           LOG.info("Can't find partitions for adding.");

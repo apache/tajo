@@ -33,6 +33,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
@@ -326,6 +327,17 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setSessionVariables(sessionVariables);
 
     return queryHistory;
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
+    for(Stage eachStage : getStages()) {
+      if (!eachStage.getPartitions().isEmpty()) {
+        partitions.addAll(eachStage.getPartitions());
+      }
+    }
+
+    return partitions;
   }
 
   public List<String> getDiagnostics() {

@@ -21,7 +21,6 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 
 import java.util.List;
 
@@ -50,6 +49,7 @@ public class StatisticsUtil {
    * @param stats The TableStats to be aggregated
    */
   public static void aggregateTableStat(TableStats result, TableStats stats) {
+
     if (stats.getColumnStats().size() > 0) {
       if (result.getColumnStats().size() == 0) {
         for (int i = 0; i < stats.getColumnStats().size(); i++) {
@@ -83,14 +83,6 @@ public class StatisticsUtil {
       }
     }
 
-    // If there is partitions
-    if (stats.getPartitions().size() > 0) {
-      // Aggregate partitions for each table
-      for (PartitionDescProto partition : stats.getPartitions()) {
-        result.addPartition(partition);
-      }
-    }
-
     result.setNumRows(result.getNumRows() + stats.getNumRows());
     result.setNumBytes(result.getNumBytes() + stats.getNumBytes());
     result.setReadBytes(result.getReadBytes() + stats.getReadBytes());
@@ -120,14 +112,6 @@ public class StatisticsUtil {
     }
 
     for (TableStats ts : tableStatses) {
-      // If there is partitions
-      if (ts.getPartitions().size() > 0) {
-        // Aggregate partitions for each table
-        for (PartitionDescProto partition : ts.getPartitions()) {
-          aggregated.addPartition(partition);
-        }
-      }
-
       // if there is empty stats
       if (ts.getColumnStats().size() > 0) {
         // aggregate column stats for each table

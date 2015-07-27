@@ -184,9 +184,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       builder.setPath(this.plan.getUri().toString() + "/" + partition);
     }
 
-    if(!appender.getStats().getPartitions().contains(builder)) {
-      appender.getStats().addPartition(builder.build());
-    }
+    context.addPartition(builder.build());
   }
 
   public void openAppender(int suffixId) throws IOException {

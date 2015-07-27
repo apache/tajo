@@ -25,7 +25,6 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
@@ -37,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, GsonObject {
-
   @Expose private Long numRows = null; // required
   @Expose private Long numBytes = null; // required
   @Expose private Integer numBlocks = null; // optional
@@ -45,7 +43,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   @Expose private Long avgRows = null; // optional
   @Expose private Long readBytes = null; //optional
   @Expose private List<ColumnStats> columnStatses = null; // repeated
-  @Expose private List<PartitionDescProto> partitions = null; // repeated
 
   public TableStats() {
     reset();
@@ -59,7 +56,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     avgRows = 0l;
     readBytes = 0l;
     columnStatses = TUtil.newList();
-    partitions = TUtil.newList();
   }
 
   public TableStats(CatalogProtos.TableStatsProto proto) {
@@ -93,11 +89,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
         continue;
       }
       columnStatses.add(new ColumnStats(colProto));
-    }
-
-    this.partitions = TUtil.newList();
-    for (PartitionDescProto partition : proto.getPartitionsList()) {
-      partitions.add(partition);
     }
   }
 
@@ -157,20 +148,8 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     this.columnStatses = new ArrayList<ColumnStats>(columnStatses);
   }
 
-  public List<PartitionDescProto> getPartitions() {
-    return partitions;
-  }
-
-  public void setPartitions(List<PartitionDescProto> partitions) {
-    this.partitions = partitions;
-  }
-
   public void addColumnStat(ColumnStats columnStats) {
     this.columnStatses.add(columnStats);
-  }
-
-  public void addPartition(PartitionDescProto partitionDesc) {
-    this.partitions.add(partitionDesc);
   }
 
   public boolean equals(Object obj) {
@@ -184,7 +163,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       eq = eq && TUtil.checkEquals(this.avgRows, other.avgRows);
       eq = eq && TUtil.checkEquals(this.readBytes, other.readBytes);
       eq = eq && TUtil.checkEquals(this.columnStatses, other.columnStatses);
-      eq = eq && TUtil.checkEquals(this.partitions, other.partitions);
       return eq;
     } else {
       return false;
@@ -193,7 +171,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
 
   public int hashCode() {
     return Objects.hashCode(numRows, numBytes,
-        numBlocks, numShuffleOutputs, columnStatses, partitions);
+        numBlocks, numShuffleOutputs, columnStatses);
   }
 
   public Object clone() throws CloneNotSupportedException {
@@ -206,8 +184,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     stat.readBytes = readBytes != null ? readBytes : null;
 
     stat.columnStatses = new ArrayList<ColumnStats>(this.columnStatses);
-
-    stat.partitions = new ArrayList<PartitionDescProto>(this.partitions);
 
     return stat;
   }
@@ -282,11 +258,6 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     if (this.columnStatses != null) {
       for (ColumnStats colStat : columnStatses) {
         builder.addColStat(colStat.getProto());
-      }
-    }
-    if (this.partitions != null) {
-      for (PartitionDescProto partition: partitions) {
-        builder.addPartitions(partition);
       }
     }
     return builder.build();
