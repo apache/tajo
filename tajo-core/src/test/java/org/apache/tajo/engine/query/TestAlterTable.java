@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
@@ -37,6 +39,8 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
+  private static final Log logger = LogFactory.getLog(TestAlterTable.class);
+
   @Test
   public final void testAlterTableName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "ABC");
@@ -105,10 +109,22 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
     List<CatalogProtos.TablePartitionProto> tablePartitions = catalog.getAllPartitions();
+    /// Debug Log
+    for(CatalogProtos.TablePartitionProto tablePartition : tablePartitions) {
+      logger.info("### tablePartition:" + tablePartition.getPartitionName()
+        + ", path:" + tablePartition.getPath());
+    }
+
     assertEquals(tablePartitions.size(), 1);
     assertEquals(tablePartitions.get(0).getPartitionName(), "col3=1/col4=2");
 
     List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
+    /// Debug Log
+    for(CatalogProtos.TablePartitionKeysProto tablePartitionKey : tablePartitionKeys) {
+      logger.info("### tablePartitionKey:" + tablePartitionKey.getColumnName()
+        + ", value:" + tablePartitionKey.getPartitionValue());
+    }
+
     assertEquals(tablePartitionKeys.size(), 2);
     assertEquals(tablePartitionKeys.get(0).getColumnName(), "col3");
     assertEquals(tablePartitionKeys.get(0).getPartitionValue(), "1");
