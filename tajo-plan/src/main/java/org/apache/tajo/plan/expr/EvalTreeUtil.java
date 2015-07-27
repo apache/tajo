@@ -347,7 +347,7 @@ public class EvalTreeUtil {
   }
 
   private static boolean isJoinQualWithOnlyColumns(@Nullable LogicalPlan.QueryBlock block,
-                                            Column left, Column right) {
+                                                   Column left, Column right) {
     String leftQualifier = CatalogUtil.extractQualifier(left.getQualifiedName());
     String rightQualifier = CatalogUtil.extractQualifier(right.getQualifiedName());
 

@@ -1,0 +1,57 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package tajo.metrics;
+
+option java_package = "org.apache.tajo.metrics";
+option java_outer_classname = "Master";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+// Category
+// * 'Cluster' - About overall cluster and resources
+// * 'Query'   - Query submission, scheduler, and statistic information about queries
+
+enum Cluster {
+  UPTIME = 0;
+
+  TOTAL_NODES       = 1;
+  ACTIVE_NODES      = 2;
+  LOST_NODES        = 3;
+
+  TOTAL_MEMORY      = 4;
+  FREE_MEMORY       = 5;
+  TOTAL_VCPU        = 6;
+  FREE_VCPU         = 7;
+}
+
+// Query Coordinator
+enum Query {
+  SUBMITTED         = 1;
+  COMPLETED         = 2;
+  RUNNING           = 3;
+  ERROR             = 4;
+  FAILED            = 5;
+  KILLED            = 6;
+
+  NUM_PER_HOUR      = 6;
+  MAX_IO_THROUGHPUT = 7;
+  AVG_IO_THROUGHPUT = 8;
+
+  PENDING_QUERIES   = 9;
+}

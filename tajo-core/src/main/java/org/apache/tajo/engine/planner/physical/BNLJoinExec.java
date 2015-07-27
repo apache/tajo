@@ -18,22 +18,18 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class BNLJoinExec extends CommonJoinExec {
 
-  private List<Tuple> leftTupleSlots;
-  private List<Tuple> rightTupleSlots;
+  private TupleList leftTupleSlots;
+  private TupleList rightTupleSlots;
   private Iterator<Tuple> leftIterator;
   private Iterator<Tuple> rightIterator;
 
@@ -41,9 +37,7 @@ public class BNLJoinExec extends CommonJoinExec {
   private boolean rightEnd;
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
-  private Tuple outputTuple = null;
   private Tuple rightNext = null;
 
   private final static int TUPLE_SLOT_SIZE = 10000;
@@ -51,8 +45,8 @@ public class BNLJoinExec extends CommonJoinExec {
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
     super(context, plan, leftExec, rightExec);
-    this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
-    this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
+    this.leftTupleSlots = new TupleList(TUPLE_SLOT_SIZE);
+    this.rightTupleSlots = new TupleList(TUPLE_SLOT_SIZE);
     this.leftIterator = leftTupleSlots.iterator();
     this.rightIterator = rightTupleSlots.iterator();
     this.rightEnd = false;
@@ -62,10 +56,6 @@ public class BNLJoinExec extends CommonJoinExec {
     if (!plan.hasTargets()) {
       plan.setTargets(PlannerUtil.schemaToTargets(outSchema));
     }
-
-    // for join
-    frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.size());
   }
 
   public Tuple next() throws IOException {
@@ -108,7 +98,7 @@ public class BNLJoinExec extends CommonJoinExec {
           if (rightEnd) {
             rightChild.rescan();
             rightEnd = false;
-            
+
             if (leftEnd) {
               return null;
             }
@@ -126,12 +116,12 @@ public class BNLJoinExec extends CommonJoinExec {
             }
             leftIterator = leftTupleSlots.iterator();
             leftTuple = leftIterator.next();
-            
+
           } else {
             leftIterator = leftTupleSlots.iterator();
             leftTuple = leftIterator.next();
           }
-          
+
           rightTupleSlots.clear();
           if (rightNext != null) {
             rightTupleSlots.add(rightNext);
@@ -153,7 +143,7 @@ public class BNLJoinExec extends CommonJoinExec {
               rightTupleSlots.add(t);
             }
           }
-          
+
           if ((rightNext = rightChild.next()) == null) {
             rightEnd = true;
           }
@@ -163,8 +153,7 @@ public class BNLJoinExec extends CommonJoinExec {
 
       frameTuple.set(leftTuple, rightIterator.next());
       if (!hasJoinQual || joinQual.eval(frameTuple).isTrue()) {
-        projector.eval(frameTuple, outputTuple);
-        return outputTuple;
+        return projector.eval(frameTuple);
       }
     }
     return null;

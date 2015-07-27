@@ -32,6 +32,18 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1703: Remove hardcoded value in NodeStatusUpdater. (jinho)
+
+    TAJO-1701: Remove forward or non-forward query concept in TajoClient. 
+    (hyunsik)
+
+    TAJO-1651: Too long fetcher default retries. (jinho)
+
+    TAJO-1700: Add better exception handling in TajoMasterClientService. 
+    (hyunsik)
+
+    TAJO-1343: Improve the memory usage of physical executors. (jihoon)
+
     TAJO-1696: Resource calculator should consider the requested disk resource 
     at the first stage. (jihoon)
 
@@ -185,6 +197,12 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1702: Fix race condition in finished query cache. (jinho)
+
+    TAJO-1597: Problem of ignoring theta join condition. (jihoon)
+
+    TAJO-1697: RCFile progress causes NPE occasionally. (jinho)
 
     TAJO-1689: Metrics file reporter prints histogram metric without group name.
     (hyunsik)
@@ -341,6 +359,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1628: Add a documentation for join operation. (jihoon)
+
     TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
     (Contributed by Jongyoung Park, Committed by jihoon)
 
@@ -392,6 +412,16 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
+    committed by hyunsik)
+
+    TAJO-1464: Add ORCFileScanner to read ORCFile table. (Contributed by 
+    Jongyoung Park, Committed by jihoon)
+
+    TAJO-1693: Rearrange metric names. (hyunsik)
+
+    TAJO-1496: Remove legacy CSVFile. (jinho)
 
     TAJO-1691: Refactor visitors and planner to throw TajoException. (hyunsik)
 
@@ -2534,3 +2564,4 @@ Release 0.2.0
     TAJO-252: Add DISCLAIMER file. (hyunsik)
 
     TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
+

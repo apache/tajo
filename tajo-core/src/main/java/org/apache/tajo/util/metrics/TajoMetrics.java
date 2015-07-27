@@ -19,12 +19,13 @@
 package org.apache.tajo.util.metrics;
 
 import com.codahale.metrics.*;
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.metrics.MetricsUtil;
 import org.apache.tajo.util.metrics.reporter.TajoMetricsReporter;
 
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoMetrics {
@@ -67,67 +68,30 @@ public class TajoMetrics {
     return metricRegistry.getMetrics();
   }
 
-  public SortedMap<String, Gauge> getGuageMetrics(MetricFilter filter) {
-    if(filter == null) {
-      filter = MetricFilter.ALL;
-    }
-    return metricRegistry.getGauges(filter);
+  public void register(Enum<?> item, Gauge gauge) {
+    Preconditions.checkArgument(metricsGroupName.equals(MetricsUtil.getGroupName(item)));
+    metricRegistry.register(MetricsUtil.getCanonicalName(item), gauge);
   }
 
-  public SortedMap<String, Counter> getCounterMetrics(MetricFilter filter) {
-    if(filter == null) {
-      filter = MetricFilter.ALL;
-    }
-    return metricRegistry.getCounters(filter);
+  public void register(Class<? extends Enum<?>> context, MetricSet metricSet) {
+    Preconditions.checkArgument(metricsGroupName.equals(MetricsUtil.getGroupName(context)));
+
+    metricRegistry.register(MetricsUtil.getCanonicalContextName(context), metricSet);
   }
 
-  public SortedMap<String, Histogram> getHistogramMetrics(MetricFilter filter) {
-    if(filter == null) {
-      filter = MetricFilter.ALL;
-    }
-    return metricRegistry.getHistograms(filter);
+  public Counter counter(Enum<?> item) {
+    return metricRegistry.counter(MetricsUtil.getCanonicalName(item));
   }
 
-  public SortedMap<String, Meter> getMeterMetrics(MetricFilter filter) {
-    if(filter == null) {
-      filter = MetricFilter.ALL;
-    }
-    return metricRegistry.getMeters(filter);
+  public Histogram histogram(Enum<?> item) {
+    return metricRegistry.histogram(MetricsUtil.getCanonicalName(item));
   }
 
-  public SortedMap<String, Timer> getTimerMetrics(MetricFilter filter) {
-    if(filter == null) {
-      filter = MetricFilter.ALL;
-    }
-    return metricRegistry.getTimers(filter);
+  public Meter meter(Enum<?> item) {
+    return metricRegistry.meter(MetricsUtil.getCanonicalName(item));
   }
 
-  public void register(String contextName, MetricSet metricSet) {
-    metricRegistry.register(MetricRegistry.name(metricsGroupName, contextName), metricSet);
+  public Timer timer(Enum<?> item) {
+    return metricRegistry.timer(MetricsUtil.getCanonicalName(item));
   }
-
-  public void register(String contextName, String itemName, Gauge gauge) {
-    metricRegistry.register(makeMetricsName(metricsGroupName, contextName, itemName), gauge);
-  }
-
-  public Counter counter(String contextName, String itemName) {
-    return metricRegistry.counter(makeMetricsName(metricsGroupName, contextName, itemName));
-  }
-
-  public Histogram histogram(String contextName, String itemName) {
-    return metricRegistry.histogram(makeMetricsName(metricsGroupName, contextName, itemName));
-  }
-
-  public Meter meter(String contextName, String itemName) {
-    return metricRegistry.meter(makeMetricsName(metricsGroupName, contextName, itemName));
-  }
-
-  public Timer timer(String contextName, String itemName) {
-    return metricRegistry.timer(makeMetricsName(metricsGroupName, contextName, itemName));
-  }
-
-  public static String makeMetricsName(String metricsGroupName, String contextName, String itemName) {
-    return MetricRegistry.name(metricsGroupName, contextName, itemName);
-  }
-
 }

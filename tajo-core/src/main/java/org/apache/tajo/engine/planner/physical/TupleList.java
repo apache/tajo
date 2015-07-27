@@ -16,24 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.engine.planner.physical;
 
-import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.ArrayList;
 
-public class SplitLineReader extends LineReader {
-  public SplitLineReader(InputStream in, byte[] recordDelimiterBytes) {
-    super(in, recordDelimiterBytes);
+/**
+ * In TupleList, input tuples are automatically cloned whenever the add() method is called.
+ * This data structure is usually used in physical operators like hash join or hash aggregation.
+ */
+public class TupleList extends ArrayList<Tuple> {
+
+  public TupleList() {
+    super();
   }
 
-  public SplitLineReader(InputStream in, Configuration conf,
-                         byte[] recordDelimiterBytes) throws IOException {
-    super(in, conf, recordDelimiterBytes);
+  public TupleList(int initialCapacity) {
+    super(initialCapacity);
   }
 
-  public boolean needAdditionalRecordAfterSplit() {
-    return false;
+  @Override
+  public boolean add(Tuple tuple) {
+    return super.add(new VTuple(tuple));
   }
 }

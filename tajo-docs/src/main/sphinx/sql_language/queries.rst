@@ -127,6 +127,8 @@ For example:
 
   FROM (SELECT * FROM table1) AS alias_name
 
+For more detailed information, please refer to :doc:`joins`.
+
 =====================
 Where Clause
 =====================

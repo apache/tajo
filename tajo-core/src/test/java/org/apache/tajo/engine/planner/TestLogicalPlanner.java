@@ -40,6 +40,7 @@ import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.*;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -99,19 +100,19 @@ public class TestLogicalPlanner {
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", Type.INT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc people = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(people);
 
     TableDesc student = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "CSV", new KeyValueSet(),
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "TEXT", new KeyValueSet(),
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "CSV", new KeyValueSet(),
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "TEXT", new KeyValueSet(),
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 
@@ -128,7 +129,7 @@ public class TestLogicalPlanner {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpchTables) {
-      TableMeta m = CatalogUtil.newTableMeta("CSV");
+      TableMeta m = CatalogUtil.newTableMeta("TEXT");
       TableDesc d = CatalogUtil.newTableDesc(
           CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m,
           CommonTestingUtil.getTestDir());
@@ -993,7 +994,7 @@ public class TestLogicalPlanner {
     assertEquals(Type.INT8, def.getColumn(2).getDataType().getType());
     assertEquals("score", def.getColumn(3).getSimpleName());
     assertEquals(Type.FLOAT4, def.getColumn(3).getDataType().getType());
-    assertTrue("CSV".equalsIgnoreCase(createTable.getStorageType()));
+    assertTrue("TEXT".equalsIgnoreCase(createTable.getStorageType()));
     assertEquals("file://tmp/data", createTable.getUri().toString());
     assertTrue(createTable.hasOptions());
     assertEquals("|", createTable.getOptions().get("csv.delimiter"));
@@ -1268,7 +1269,7 @@ public class TestLogicalPlanner {
     TableDesc desc = null;
 
     try {
-      desc = new TableDesc(qualifiedTableName, schema, "CSV", new KeyValueSet(),
+      desc = new TableDesc(qualifiedTableName, schema, "TEXT", new KeyValueSet(),
         CommonTestingUtil.getTestDir().toUri());
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -1334,5 +1335,4 @@ public class TestLogicalPlanner {
     assertEquals(alterTableNode.getPartitionValues()[1], "01");
     assertEquals(alterTableNode.getPartitionValues()[2], "11");
   }
-
 }

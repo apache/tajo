@@ -5,9 +5,9 @@ GROUP_BY(18)()
   => target list: ?sum (FLOAT8)
   => out schema:{(1) ?sum (FLOAT8)}
   => in schema:{(2) default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)}
-   SELECTION(16)
+   SELECTION(20)
      => Search Cond: default.b.l_quantity (FLOAT8) > default.f.avg_quantity (FLOAT8)
-      JOIN(23)(INNER)
+      JOIN(24)(INNER)
         => Join Cond: default.c.o_orderkey (INT4) = default.f.l_orderkey (INT4)
         => target list: default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)
         => out schema: {(2) default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)}
@@ -25,7 +25,7 @@ GROUP_BY(18)()
                  => Targets: default.e.l_orderkey (INT4), default.e.l_quantity (FLOAT8)
                  => out schema: {(2) default.e.l_orderkey (INT4), default.e.l_quantity (FLOAT8)}
                  => in  schema: {(2) default.e.l_orderkey (INT4), default.e.l_quantity (FLOAT8)}
-                  JOIN(21)(INNER)
+                  JOIN(22)(INNER)
                     => Join Cond: default.d.l_partkey (INT4) = default.part.p_partkey (INT4)
                     => target list: default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)
                     => out schema: {(2) default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)}
@@ -38,7 +38,7 @@ GROUP_BY(18)()
                        => target list: default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)
                        => out schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
                        => in schema: {(16) default.d.l_comment (TEXT), default.d.l_commitdate (TEXT), default.d.l_discount (FLOAT8), default.d.l_extendedprice (FLOAT8), default.d.l_linenumber (INT4), default.d.l_linestatus (TEXT), default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.d.l_receiptdate (TEXT), default.d.l_returnflag (TEXT), default.d.l_shipdate (TEXT), default.d.l_shipinstruct (TEXT), default.d.l_shipmode (TEXT), default.d.l_suppkey (INT4), default.d.l_tax (FLOAT8)}
-         JOIN(22)(INNER)
+         JOIN(23)(INNER)
            => Join Cond: default.c.o_orderkey (INT4) = default.b.l_orderkey (INT4)
            => target list: default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)
            => out schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
@@ -52,7 +52,7 @@ GROUP_BY(18)()
               => Targets: default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)
               => out schema: {(2) default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8)}
               => in  schema: {(3) default.b.l_linenumber (INT4), default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8)}
-               JOIN(20)(INNER)
+               JOIN(21)(INNER)
                  => Join Cond: default.a.l_partkey (INT4) = default.part.p_partkey (INT4)
                  => target list: default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)
                  => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
@@ -142,15 +142,15 @@ TABLE_SUBQUERY(4) as default.b
      => Targets: default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_linenumber (INT4)
      => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
      => in  schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
-      JOIN(20)(INNER)
+      JOIN(21)(INNER)
         => Join Cond: default.a.l_partkey (INT4) = default.part.p_partkey (INT4)
         => target list: default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)
         => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
         => in schema: {(5) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.part.p_partkey (INT4)}
-         SCAN(26) on eb_0000000000000_0000_000002
+         SCAN(27) on eb_0000000000000_0000_000002
            => out schema: {(1) default.part.p_partkey (INT4)}
            => in schema: {(1) default.part.p_partkey (INT4)}
-         SCAN(25) on eb_0000000000000_0000_000001
+         SCAN(26) on eb_0000000000000_0000_000001
            => out schema: {(4) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
            => in schema: {(4) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
 
@@ -202,15 +202,15 @@ Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
 [Outgoing]
 [q_0000000000000_0000] 5 => 10 (type=HASH_SHUFFLE, key=default.c.o_orderkey (INT4), num=32)
 
-JOIN(22)(INNER)
+JOIN(23)(INNER)
   => Join Cond: default.c.o_orderkey (INT4) = default.b.l_orderkey (INT4)
   => target list: default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)
   => out schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
   => in schema: {(3) default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
-   SCAN(28) on eb_0000000000000_0000_000004
+   SCAN(29) on eb_0000000000000_0000_000004
      => out schema: {(1) default.c.o_orderkey (INT4)}
      => in schema: {(1) default.c.o_orderkey (INT4)}
-   SCAN(27) on eb_0000000000000_0000_000003
+   SCAN(28) on eb_0000000000000_0000_000003
      => out schema: {(2) default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)}
      => in schema: {(2) default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)}
 
@@ -225,7 +225,7 @@ Block Id: eb_0000000000000_0000_000008 [INTERMEDIATE]
 [Outgoing]
 [q_0000000000000_0000] 8 => 9 (type=HASH_SHUFFLE, key=default.e.l_orderkey (INT4), num=32)
 
-GROUP_BY(31)(l_orderkey)
+GROUP_BY(32)(l_orderkey)
   => exprs: (avg(default.e.l_quantity (FLOAT8)))
   => target list: default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)
   => out schema:{(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
@@ -238,15 +238,15 @@ GROUP_BY(31)(l_orderkey)
         => Targets: default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)
         => out schema: {(2) default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)}
         => in  schema: {(2) default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)}
-         JOIN(21)(INNER)
+         JOIN(22)(INNER)
            => Join Cond: default.d.l_partkey (INT4) = default.part.p_partkey (INT4)
            => target list: default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)
            => out schema: {(2) default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)}
            => in schema: {(4) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.part.p_partkey (INT4)}
-            SCAN(30) on eb_0000000000000_0000_000007
+            SCAN(31) on eb_0000000000000_0000_000007
               => out schema: {(1) default.part.p_partkey (INT4)}
               => in schema: {(1) default.part.p_partkey (INT4)}
-            SCAN(29) on eb_0000000000000_0000_000006
+            SCAN(30) on eb_0000000000000_0000_000006
               => out schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
               => in schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
 
@@ -273,7 +273,7 @@ TABLE_SUBQUERY(14) as default.f
         => target list: default.e.l_orderkey (INT4), avg_quantity (FLOAT8)
         => out schema:{(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
         => in schema:{(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
-         SCAN(32) on eb_0000000000000_0000_000008
+         SCAN(33) on eb_0000000000000_0000_000008
            => out schema: {(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
            => in schema: {(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
 
@@ -288,22 +288,22 @@ Block Id: eb_0000000000000_0000_000010 [INTERMEDIATE]
 [Outgoing]
 [q_0000000000000_0000] 10 => 11 (type=HASH_SHUFFLE, key=, num=1)
 
-GROUP_BY(35)()
+GROUP_BY(36)()
   => exprs: (sum(default.b.l_quantity (FLOAT8)))
   => target list: ?sum_12 (FLOAT8)
   => out schema:{(1) ?sum_12 (FLOAT8)}
   => in schema:{(2) default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)}
-   SELECTION(16)
+   SELECTION(20)
      => Search Cond: default.b.l_quantity (FLOAT8) > default.f.avg_quantity (FLOAT8)
-      JOIN(23)(INNER)
+      JOIN(24)(INNER)
         => Join Cond: default.c.o_orderkey (INT4) = default.f.l_orderkey (INT4)
         => target list: default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)
         => out schema: {(2) default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)}
         => in schema: {(4) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4), default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
-         SCAN(34) on eb_0000000000000_0000_000009
+         SCAN(35) on eb_0000000000000_0000_000009
            => out schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
            => in schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
-         SCAN(33) on eb_0000000000000_0000_000005
+         SCAN(34) on eb_0000000000000_0000_000005
            => out schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
            => in schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
 
@@ -319,7 +319,7 @@ GROUP_BY(18)()
   => target list: ?sum (FLOAT8)
   => out schema:{(1) ?sum (FLOAT8)}
   => in schema:{(1) ?sum_12 (FLOAT8)}
-   SCAN(36) on eb_0000000000000_0000_000010
+   SCAN(37) on eb_0000000000000_0000_000010
      => out schema: {(1) ?sum_12 (FLOAT8)}
      => in schema: {(1) ?sum_12 (FLOAT8)}
 

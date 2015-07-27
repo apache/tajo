@@ -23,11 +23,14 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.tajo.client.TajoClientUtil.NULL_RESULT_SET;
 
 public class TajoStatement implements Statement {
   protected JdbcConnection conn;
@@ -161,18 +164,22 @@ public class TajoStatement implements Statement {
     SQLExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
-    if (response.getIsForwarded() && !queryId.isNull()) {
+
+    switch (response.getResultType()) {
+
+    case ENCLOSED:
+      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+
+    case FETCH:
       WaitingResultSet result = new WaitingResultSet(tajoClient, queryId, fetchSize);
       if (blockWait) {
         result.getSchema();
       }
       return result;
-    }
 
-    if (response.hasResultSet() || response.hasTableDesc()) {
-      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+    default:
+      return TajoClientUtil.createNullResultSet(queryId);
     }
-    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   protected void checkConnection(String errorMsg) throws SQLException {
@@ -210,7 +217,7 @@ public class TajoStatement implements Statement {
     Map<String, String> variable = new HashMap<String, String>();
     variable.put(tokens[0].trim(), tokens[1].trim());
     client.updateSessionVariables(variable);
-    return TajoClientUtil.createNullResultSet();
+    return NULL_RESULT_SET;
   }
 
   private ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
@@ -225,7 +232,7 @@ public class TajoStatement implements Statement {
     }
     client.unsetSessionVariables(Lists.newArrayList(key));
 
-    return TajoClientUtil.createNullResultSet();
+    return NULL_RESULT_SET;
   }
 
   @Override

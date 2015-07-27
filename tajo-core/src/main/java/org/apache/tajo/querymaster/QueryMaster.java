@@ -215,12 +215,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   @Deprecated
   public QueryMasterTask getQueryMasterTask(QueryId queryId, boolean includeFinished) {
-    QueryMasterTask queryMasterTask =  queryMasterTasks.get(queryId);
-    if(queryMasterTask != null) {
+    QueryMasterTask queryMasterTask = queryMasterTasks.get(queryId);
+    if (queryMasterTask != null) {
       return queryMasterTask;
     } else {
-      if(includeFinished) {
-        return (QueryMasterTask) finishedQueryMasterTasksCache.get(queryId);
+      if (includeFinished) {
+        synchronized (finishedQueryMasterTasksCache) {
+          return (QueryMasterTask) finishedQueryMasterTasksCache.get(queryId);
+        }
       } else {
         return null;
       }
@@ -237,7 +239,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   @Deprecated
   public Collection<QueryMasterTask> getFinishedQueryMasterTasks() {
-    return finishedQueryMasterTasksCache.values();
+    synchronized (finishedQueryMasterTasksCache) {
+      return new ArrayList<QueryMasterTask>(finishedQueryMasterTasksCache.values());
+    }
   }
 
   public class QueryMasterContext {
@@ -284,13 +288,17 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     public void stopQuery(QueryId queryId) {
-      QueryMasterTask queryMasterTask = queryMasterTasks.remove(queryId);
+      QueryMasterTask queryMasterTask = queryMasterTasks.get(queryId);
       if(queryMasterTask == null) {
         LOG.warn("No query info:" + queryId);
         return;
       }
 
-      finishedQueryMasterTasksCache.put(queryId, queryMasterTask);
+      synchronized (finishedQueryMasterTasksCache) {
+        finishedQueryMasterTasksCache.put(queryId, queryMasterTask);
+      }
+
+      queryMasterTasks.remove(queryId);
 
       // In INSERT .. SELECT ... queries or CTAS, dynamic partitions should be added to catalog.
       Query query = queryMasterTask.getQuery();
@@ -511,11 +519,14 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     private void cleanExpiredFinishedQueryMasterTask(long expireTime) {
-      List<QueryId> expiredQueryIds = new ArrayList<QueryId>();
-      for(Object key: new ArrayList<Object>(finishedQueryMasterTasksCache.keySet())) {
-        QueryId queryId = (QueryId) key;
+      List<Object> finishedList;
+      synchronized (finishedQueryMasterTasksCache) {
+        finishedList = new ArrayList<Object>(finishedQueryMasterTasksCache.values());
+      }
+
+      for(Object finishedTask: finishedList) {
+        QueryMasterTask queryMasterTask = (QueryMasterTask) finishedTask;
           /* If a query are abnormal termination, the finished time will be zero. */
-        QueryMasterTask queryMasterTask = (QueryMasterTask) finishedQueryMasterTasksCache.get(queryId);
         long finishedTime = queryMasterTask.getStartTime();
         Query query = queryMasterTask.getQuery();
         if (query != null && query.getFinishTime() > 0) {
@@ -523,12 +534,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
         }
 
         if(finishedTime < expireTime) {
-          expiredQueryIds.add(queryId);
+          synchronized (finishedQueryMasterTasksCache) {
+            finishedQueryMasterTasksCache.remove(queryMasterTask.getQueryId());
+          }
         }
-      }
-
-      for(QueryId eachId: expiredQueryIds) {
-        finishedQueryMasterTasksCache.remove(eachId);
       }
     }
   }

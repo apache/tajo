@@ -21,6 +21,7 @@ package org.apache.tajo.storage.index;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -37,7 +38,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.CSVFile.CSVScanner;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -72,7 +72,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta("CSV");
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindValueInSingleCSV", "table.csv");
     fs.mkdirs(tablePath.getParent());
@@ -111,7 +111,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner fileScanner = new CSVScanner(conf, schema, meta, tablet);
+    SeekableScanner fileScanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
     fileScanner.init();
     Tuple keyTuple;
     long offset;
@@ -135,7 +135,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner = new CSVScanner(conf, schema, meta, tablet);
+    fileScanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
     fileScanner.init();
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
       tuple.put(0, DatumFactory.createInt8(i));
@@ -161,7 +161,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindNextKeyValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta("CSV");
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindNextKeyValueInSingleCSV",
         "table1.csv");
@@ -200,7 +200,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
     
-    SeekableScanner fileScanner  = new CSVScanner(conf, schema, meta, tablet);
+    SeekableScanner fileScanner  = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
     fileScanner.init();
     Tuple keyTuple;
     long offset;
@@ -221,7 +221,7 @@ public class TestSingleCSVFileBSTIndex {
     
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = new CSVScanner(conf, schema, meta, tablet);
+    fileScanner  = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
     fileScanner.init();
     Tuple result;
     for(int i = 0 ; i < TUPLE_NUM -1 ; i ++) {

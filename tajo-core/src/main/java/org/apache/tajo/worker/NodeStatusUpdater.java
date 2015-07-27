@@ -87,12 +87,13 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
   @Override
   public void serviceStart() throws Exception {
-    // if resource changed over than 50%, send reports
     DefaultResourceCalculator calculator = new DefaultResourceCalculator();
     int maxContainer = calculator.computeAvailableContainers(workerContext.getNodeResourceManager().getTotalResource(),
         NodeResources.createResource(tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY), 1));
 
-    this.queueingThreshold = Math.max((int) Math.floor(maxContainer * 0.5), 1);
+    // if resource changed over than 30%, send reports
+    float queueingRate = tajoConf.getFloatVar(TajoConf.ConfVars.WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE);
+    this.queueingThreshold = Math.max((int) Math.floor(maxContainer * queueingRate), 1);
     LOG.info("Queueing threshold:" + queueingThreshold);
 
     updaterThread.start();
