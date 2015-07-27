@@ -21,6 +21,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 6 - 2015-07-24: Add unique index for partition keys (TAJO-1346)
       * 5 - 2015-06-15: Implement TablespaceManager to load Tablespaces (TAJO-1616)
       * 5 - 2015-06-15: Implement TablespaceManager to load Tablespaces (TAJO-1616)
       * 4 - 2015-03-27: Partition Schema (TAJO-1284)
