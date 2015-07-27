@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -102,17 +104,23 @@ public class TestJoinOrderAlgorithm {
     Schema schema4 = new Schema();
     schema4.addColumn("deptname", Type.TEXT);
     schema4.addColumn("manager", Type.TEXT);
-    //If table's store type is StoreType.SYSTEM, Planner doesn't update table stats.
-    TableMeta largeTableMeta = CatalogUtil.newTableMeta("SYSTEM");
-    TableDesc largeDept =
-        new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "large_dept"), schema4, "TEXT", new KeyValueSet(),
-            CommonTestingUtil.getTestDir().toUri());
-    largeDept.setMeta(largeTableMeta);
-    TableStats largeTableStats = new TableStats();
-    largeTableStats.setNumBytes(1024L * 1024L * 1024L * 1024L *  1024L);  //1 PB
-    largeDept.setStats(largeTableStats);
-    catalog.createTable(largeDept);
+    // Set store type as FAKEFILE to prevent auto update of physical information in LogicalPlanner.updatePhysicalInfo()
+    TableMeta largeTableMeta = CatalogUtil.newTableMeta("FAKEFILE");
+    TableDesc largeDept;
+    TableStats largeTableStats;
+    FileSystem fs = FileSystem.getLocal(util.getConfiguration());
+    for (int i = 0; i < 6; i++) {
+      Path tablePath = new Path(CommonTestingUtil.getTestDir(), "" + (i+1));
+      fs.create(tablePath);
+      largeDept =
+          new TableDesc(
+              CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "large_dept"+(i+1)), schema4, largeTableMeta,
+              tablePath.toUri());
+      largeTableStats = new TableStats();
+      largeTableStats.setNumBytes(1024L * 1024L * 1024L * 1024L *  1024L * (i+1));  //1 PB * i
+      largeDept.setStats(largeTableStats);
+      catalog.createTable(largeDept);
+    }
     ///////////////////////////////////////////////////////////////////////////
 
     sqlAnalyzer = new SQLAnalyzer();
@@ -128,38 +136,10 @@ public class TestJoinOrderAlgorithm {
   }
 
   @Test
-  public final void testFindBestJoinOrder() throws Exception {
-    String query = "select e.name, d.manager from employee as e, dept as d, score as s, large_dept as ld " +
-        "where e.deptName = d.deptName and d.deptname = s.deptname and s.deptname=ld.deptname";
-    Expr expr = sqlAnalyzer.parse(query);
-    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
-
-    //Not optimized plan has 3 join nodes
-    // [[employee-dept]-score]-large_dept
-    LogicalNode[] joinNodes = PlannerUtil.findAllNodes(newPlan. getRootBlock().getRoot() , NodeType.JOIN);
-    assertNotNull(joinNodes);
-    assertEquals(3, joinNodes.length);
-    assertJoinNode(joinNodes[0], "default.e", "default.d");
-    assertJoinNode(joinNodes[1], null, "default.s");
-    assertJoinNode(joinNodes[2], null, "default.ld");
-
-    optimizer.optimize(newPlan);
-
-    //Optimized plan has 3 join nodes
-    // [employee-dept]-[score-large_dept]
-    joinNodes = PlannerUtil.findAllNodes(newPlan. getRootBlock().getRoot() , NodeType.JOIN);
-    assertNotNull(joinNodes);
-    assertEquals(3, joinNodes.length);
-    assertJoinNode(joinNodes[0], "default.e", "default.d");
-    assertJoinNode(joinNodes[1], "default.s", "default.ld");
-    assertJoinNode(joinNodes[2], null, null);
-  }
-
-  @Test
   public final void testCheckingInfinityJoinScore() throws Exception {
     // Test for TAJO-1552
-    String query = "select a.deptname from large_dept a, large_dept b, large_dept c, " +
-        "large_dept d, large_dept e, large_dept f ";
+    String query = "select a.deptname from large_dept1 a, large_dept2 b, large_dept3 c, " +
+        "large_dept4 d, large_dept5 e, large_dept6 f ";
 
     Expr expr = sqlAnalyzer.parse(query);
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -177,11 +157,11 @@ public class TestJoinOrderAlgorithm {
     joinNodes = PlannerUtil.findAllNodes(newPlan. getRootBlock().getRoot() , NodeType.JOIN);
     assertNotNull(joinNodes);
     assertEquals(5, joinNodes.length);
-    assertJoinNode(joinNodes[0], "default.f", "default.d");
-    assertJoinNode(joinNodes[1], "default.c", "default.b");
+    assertJoinNode(joinNodes[0], "default.d", "default.c");
+    assertJoinNode(joinNodes[1], "default.b", "default.a");
     assertJoinNode(joinNodes[2], null, null);
-    assertJoinNode(joinNodes[2], "default.e", "default.a");
-    assertJoinNode(joinNodes[3], null, null);
+    assertJoinNode(joinNodes[3], "default.f", "default.e");
+    assertJoinNode(joinNodes[4], null, null);
 
   }
 
