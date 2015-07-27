@@ -1249,8 +1249,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn.setAutoCommit(false);
       stmt = conn.createStatement();
 
-      addPartition(tableId, partition, stmt, new StringBuilder());
-      addPartitionKeys(tableId, partition, stmt, new StringBuilder());
+      addPartition(tableId, partition, stmt);
+      addPartitionKeys(tableId, partition, stmt);
       stmt.executeBatch();
 
       if (conn != null) {
@@ -1271,9 +1271,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition,
-                           Statement stmt, StringBuilder sb) throws CatalogException {
+                           Statement stmt) throws CatalogException {
     try {
-      sb.delete(0, sb.length());
+      StringBuilder sb = new StringBuilder();
 
       sb.append("INSERT INTO ").append(TB_PARTTIONS).append(" ");
       sb.append(" (").append(COL_TABLES_PK).append(", PARTITION_NAME, PATH)");
@@ -1287,8 +1287,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   public void addPartitionKeys(int tableId, CatalogProtos.PartitionDescProto partition,
-                           Statement stmt, StringBuilder sb) throws CatalogException {
+                           Statement stmt) throws CatalogException {
     try {
+      StringBuilder sb = new StringBuilder();
 
       if (partition.getPartitionKeysCount() > 0) {
         for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
@@ -1320,7 +1321,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       conn = getConnection();
       stmt = conn.createStatement();
-      dropPartition(partitionId, stmt, new StringBuilder());
+      dropPartition(partitionId, stmt);
 
       if(stmt != null) {
         stmt.executeBatch();
@@ -1340,8 +1341,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
 
-  private void dropPartition(int partitionId, Statement stmt, StringBuilder sb) throws CatalogException {
+  private void dropPartition(int partitionId, Statement stmt) throws CatalogException {
     try {
+      StringBuilder sb = new StringBuilder();
       sb.delete(0, sb.length());
       sb.append("DELETE FROM ").append(TB_PARTTION_KEYS);
       sb.append(" WHERE ").append(COL_PARTITIONS_PK).append(" = ").append(partitionId);
@@ -2199,14 +2201,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
         if (partitionDesc != null) {
           if(ifNotExists) {
-            dropPartition(partitionDesc.getId(), stmt, sb);
+            dropPartition(partitionDesc.getId(), stmt);
           } else {
             throw new DuplicatePartitionException(partition.getPartitionName());
           }
         }
 
-        addPartition(tableId, partition, stmt, sb);
-        addPartitionKeys(tableId, partition, stmt, sb);
+        addPartition(tableId, partition, stmt);
+        addPartitionKeys(tableId, partition, stmt);
 
         if (currentIndex >= lastIndex + batchSize && lastIndex != currentIndex) {
           stmt.executeBatch();
