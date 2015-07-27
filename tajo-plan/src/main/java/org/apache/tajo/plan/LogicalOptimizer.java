@@ -62,7 +62,8 @@ public class LogicalOptimizer {
 
   public LogicalOptimizer(TajoConf conf) {
 
-    if (conf.get(CommonTestingUtil.TAJO_TEST_KEY).equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
+    String testKey = conf.get(CommonTestingUtil.TAJO_TEST_KEY);
+    if (testKey != null && testKey.equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
       testEnabled = true;
     } else {
       testEnabled = false;

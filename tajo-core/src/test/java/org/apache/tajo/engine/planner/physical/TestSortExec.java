@@ -72,6 +72,7 @@ public class TestSortExec {
   @BeforeClass
   public static void setUp() throws Exception {
     conf = new TajoConf();
+    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
