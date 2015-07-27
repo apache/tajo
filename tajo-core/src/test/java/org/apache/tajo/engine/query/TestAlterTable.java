@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
@@ -30,16 +28,13 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import javax.xml.transform.Result;
 import java.sql.ResultSet;
 import java.util.List;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
-  private static final Log logger = LogFactory.getLog(TestAlterTable.class);
 
   @Test
   public final void testAlterTableName() throws Exception {
@@ -110,8 +105,9 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     List<CatalogProtos.TablePartitionProto> tablePartitions = catalog.getAllPartitions();
     /// Debug Log
+    System.out.println("### tablePartitions - size:" + tablePartitions.size());
     for(CatalogProtos.TablePartitionProto tablePartition : tablePartitions) {
-      logger.info("### tablePartition:" + tablePartition.getPartitionName()
+      System.out.println("### tablePartition:" + tablePartition.getPartitionName()
         + ", path:" + tablePartition.getPath());
     }
 
@@ -120,8 +116,9 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
     /// Debug Log
+    System.out.println("### tablePartitionKeys - size:" + tablePartitionKeys.size());
     for(CatalogProtos.TablePartitionKeysProto tablePartitionKey : tablePartitionKeys) {
-      logger.info("### tablePartitionKey:" + tablePartitionKey.getColumnName()
+      System.out.println("### tablePartitionKey:" + tablePartitionKey.getColumnName()
         + ", value:" + tablePartitionKey.getPartitionValue());
     }
 
