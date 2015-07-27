@@ -139,9 +139,9 @@ public class TajoDump {
         }
       }
     } else {
-			if (isAcceptableDumpingDatabase(baseDatabaseName)) {
-				dumpDatabase(client, baseDatabaseName, out);
-			}
+      if (isAcceptableDumpingDatabase(baseDatabaseName)) {
+        dumpDatabase(client, baseDatabaseName, out);
+      }
     }
     out.flush();
   }
