@@ -16,13 +16,39 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.client.v2;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.TajoException;
 
-public class InvalidClientSessionException extends TajoRuntimeException {
-  public InvalidClientSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
-  }
+import java.sql.ResultSet;
+import java.util.concurrent.Future;
+
+public interface QueryFuture extends Future<ResultSet> {
+  /**
+   * Get a query id
+   *
+   * @return query id
+   */
+  String getId();
+
+  /**
+   * Get a normalized progress (0 ~ 1.0f) of a query running
+   *
+   * @return progress
+   */
+  float progress();
+
+  /**
+   * Get a query state
+   *
+   * @return query state
+   */
+  QueryState state();
+
+  /**
+   * Get the last exception if any error occurs.
+   *
+   * @return Exception
+   */
+  TajoException getException();
 }

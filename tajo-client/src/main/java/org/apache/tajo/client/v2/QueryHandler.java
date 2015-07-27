@@ -16,13 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.client.v2;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoRuntimeException;
+public interface QueryHandler {
+  String queryid();
 
-public class InvalidClientSessionException extends TajoRuntimeException {
-  public InvalidClientSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
-  }
+  boolean isOk();
+
+  boolean isError();
+
+  boolean isKilled();
+
+  QueryState state();
+
+  float progress();
+
+  void cancel();
+
+  QueryFuture toFuture();
+
+  long startTime();
+
+  long finishTime();
 }

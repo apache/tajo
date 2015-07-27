@@ -16,13 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.client.v2;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.error.Errors.ResultCode;
 
-public class InvalidClientSessionException extends TajoRuntimeException {
-  public InvalidClientSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
-  }
+import java.sql.ResultSet;
+
+public interface QueryEventListener {
+  void onProgress(float progress);
+
+  void onFailed(ResultCode errorCode, String message);
+
+  void onError(ResultCode errorCode, String message);
+
+  void onCompleted(ResultSet set);
 }

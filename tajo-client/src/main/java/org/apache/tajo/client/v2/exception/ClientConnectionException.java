@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.client.v2.exception;
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoRuntimeException;
 
-public class InvalidClientSessionException extends TajoRuntimeException {
-  public InvalidClientSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+public class ClientConnectionException extends TajoRuntimeException {
+  public ClientConnectionException(Throwable t) {
+    super(Errors.ResultCode.CLIENT_CONNECTION_EXCEPTION, t.getMessage());
   }
 }

@@ -16,13 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.client.v2;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.TajoException;
 
-public class InvalidClientSessionException extends TajoRuntimeException {
-  public InvalidClientSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
-  }
+import java.sql.ResultSet;
+
+/**
+ * ClientDelegate is a delegate for various wired protocols like protocol buffer, rest API, and proxy.
+ */
+public interface ClientDelegate {
+
+  QueryHandler executeSQL(String sql) throws TajoException;
+
+  QueryFuture executeSQLAsync(String sql) throws TajoException;
+
+  String currentDB();
+
+  void selectDB(String db) throws UndefinedDatabaseException;
 }

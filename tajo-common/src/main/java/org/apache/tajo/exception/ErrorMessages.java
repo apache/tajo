@@ -91,6 +91,9 @@ public class ErrorMessages {
     ADD_MESSAGE(MDC_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     ADD_MESSAGE(UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
+
+    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
+    ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {

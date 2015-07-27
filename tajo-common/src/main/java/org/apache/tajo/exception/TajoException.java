@@ -27,6 +27,11 @@ import org.apache.tajo.error.Errors.ResultCode;
 public class TajoException extends Exception implements TajoExceptionInterface {
   private ResultCode code;
 
+  public TajoException(TajoRuntimeException e) {
+    super(e.getMessage());
+    this.code = e.getErrorCode();
+  }
+
   public TajoException(ResultCode code) {
     super(ErrorMessages.getMessage(code));
     this.code = code;
