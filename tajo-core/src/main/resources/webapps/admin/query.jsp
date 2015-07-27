@@ -59,14 +59,9 @@
     }
   }
 
-  List<QueryInfo> allFinishedQueries = new ArrayList<QueryInfo>(master.getContext().getQueryJobManager().getFinishedQueries());
-  Collections.sort(allFinishedQueries, java.util.Collections.reverseOrder());
-
-  int numOfFinishedQueries = allFinishedQueries.size();
-  int totalPage = numOfFinishedQueries % pageSize == 0 ?
-      numOfFinishedQueries / pageSize : numOfFinishedQueries / pageSize + 1;
-
-  List<QueryInfo> finishedQueries = JSPUtil.getPageNavigationList(allFinishedQueries, currentPage, pageSize);
+  List<QueryInfo> finishedQueries = new ArrayList<QueryInfo>(
+          master.getContext().getQueryJobManager().getFinishedQueries(currentPage, pageSize));
+  Collections.sort(finishedQueries, java.util.Collections.reverseOrder());
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -220,7 +215,7 @@
     %>
   </table>
   <div align="center">
-    <%=JSPUtil.getPageNavigation(currentPage, totalPage, "query.jsp?pageSize=" + pageSize)%>
+      <%=JSPUtil.getPageNavigation(currentPage, finishedQueries.size() == pageSize, "query.jsp?pageSize=" + pageSize)%>
   </div>
   <p/>
 <%
