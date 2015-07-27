@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.gs.collections.api.map.MutableMap;
+import com.gs.collections.impl.map.mutable.UnifiedMap;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
@@ -34,7 +36,7 @@ import java.util.Map.Entry;
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
-  private TupleMap<FunctionContext[]> hashTable;
+  private MutableMap<KeyTuple, FunctionContext[]> hashTable;
   private KeyProjector hashKeyProjector;
   private boolean computed = false;
   private Iterator<Entry<KeyTuple, FunctionContext []>> iterator = null;
@@ -42,7 +44,7 @@ public class HashAggregateExec extends AggregationExec {
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
     hashKeyProjector = new KeyProjector(inSchema, plan.getGroupingColumns());
-    hashTable = new TupleMap<FunctionContext []>(10000);
+    hashTable = UnifiedMap.newMap();
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 
