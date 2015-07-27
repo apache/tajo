@@ -38,12 +38,9 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.List;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
