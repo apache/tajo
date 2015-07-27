@@ -41,7 +41,6 @@ import java.util.Set;
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
   public static final double DEFAULT_SELECTION_FACTOR = 0.1;
-  public static final int DEFAULT_JOIN_SCALE_ADJUST_FACTOR = 10 * 1024 * 1024; // 10MB
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
@@ -238,7 +237,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
-    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
+    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
       double leftCost = getCost(edge.getLeftVertex());
       double rightCost = getCost(edge.getRightVertex());
       if (leftCost < rightCost) {
@@ -414,7 +413,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   /**
-   * If a calculated cost is a infinity value, return Long.MAX_VALUE
+   * Return the MAX(MIN) value if the given cost is positive(negative) infinity.
+   *
    * @param cost
    * @return
    */
@@ -464,7 +464,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     case SCAN:
       ScanNode scanNode = (ScanNode) node;
       if (scanNode.getTableDesc().getStats() != null) {
-        cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes() / DEFAULT_JOIN_SCALE_ADJUST_FACTOR;
+        cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
       } else {
         cost = Integer.MAX_VALUE;
       }
