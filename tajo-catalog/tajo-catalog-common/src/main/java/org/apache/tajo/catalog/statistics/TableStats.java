@@ -24,8 +24,6 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
@@ -39,7 +37,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, GsonObject {
-  private static Log LOG = LogFactory.getLog(TableStats.class);
 
   @Expose private Long numRows = null; // required
   @Expose private Long numBytes = null; // required
