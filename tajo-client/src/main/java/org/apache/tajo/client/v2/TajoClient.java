@@ -26,6 +26,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -99,6 +100,15 @@ public class TajoClient implements Closeable {
     delegate = ClientDeligateFactory.newDefaultDeligate(discovery, properties);
   }
 
+  /**
+   * Submit and executes the given SQL statement, which may be an <code>INSERT (INTO)</code>,
+   * or <code>CREATE TABLE AS SELECT</code> statement or anSQL statement that returns nothing,
+   * such as an SQL DDL statement.
+   *
+   * @param sql a SQL statement
+   * @return inserted row number
+   * @throws TajoException
+   */
   public int executeUpdate(String sql) throws TajoException {
     return delegate.executeUpdate(sql);
   }
@@ -121,11 +131,12 @@ public class TajoClient implements Closeable {
    * @return
    * @throws TajoException
    */
-  public QueryFuture executeSQLAsync(String sql) throws TajoException {
+  public QueryFuture executeQueryAsync(String sql) throws TajoException {
     return delegate.executeSQLAsync(sql);
   }
 
-  public void close() {
+  public void close() throws IOException {
+    delegate.close();
   }
 
   /**

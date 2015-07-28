@@ -18,12 +18,8 @@
 
 package org.apache.tajo.client.v2;
 
-import net.jcip.annotations.NotThreadSafe;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
@@ -31,12 +27,15 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-@NotThreadSafe
-public class TestTajoClient extends QueryTestCaseBase {
+public class TestTajoClientV2 extends QueryTestCaseBase {
   private static TajoClient clientv2;
 
   @BeforeClass
@@ -68,6 +67,57 @@ public class TestTajoClient extends QueryTestCaseBase {
       clientv2.selectDB("tajoclientv2");
       fail();
     } catch (UndefinedDatabaseException e) {
+    }
+  }
+
+  @Test
+  public void testExecuteQueryType1() throws TajoException, IOException, SQLException {
+    ResultSet res = null;
+    try {
+      res = clientv2.executeQuery("select * from lineitem");
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  @Test
+  public void testExecuteQueryType2() throws TajoException, IOException, SQLException {
+    ResultSet res = null;
+    try {
+      res = clientv2.executeQuery("select * from lineitem where l_orderkey > 2");
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+    }
+  }
+
+  @Test
+  public void testExecuteQueryType3() throws TajoException, IOException, SQLException {
+    ResultSet res = null;
+    try {
+      clientv2.executeUpdate("create database client_v2_type3");
+      clientv2.selectDB("client_v2_type3");
+      clientv2.executeUpdate("create table t1 (c1 int)");
+      clientv2.executeUpdate("create table t2 (c2 int)");
+
+      // why we shouldn't use join directly on virtual tables? Currently, join on virtual tables is not supported.
+      res = clientv2.executeQuery("select db_id from information_schema.databases where db_name = 'client_v2_type3'");
+      assertTrue(res.next());
+      int dbId = res.getInt(1);
+      res.close();
+
+      res = clientv2.executeQuery(
+          "select table_name from information_schema.tables where db_id = " + dbId + " order by table_name");
+      assertResultSet(res);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
     }
   }
 }
