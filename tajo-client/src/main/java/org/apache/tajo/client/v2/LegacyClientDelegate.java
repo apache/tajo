@@ -354,7 +354,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
   }
 
-  private static class DelegateServiceTracker implements ServiceTracker {
+  public static class DelegateServiceTracker implements ServiceTracker {
 
     private final ServiceDiscovery discovery;
     DelegateServiceTracker(ServiceDiscovery discovery) {
