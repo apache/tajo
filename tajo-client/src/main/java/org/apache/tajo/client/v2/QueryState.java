@@ -19,9 +19,18 @@
 package org.apache.tajo.client.v2;
 
 public enum QueryState {
+  /** successfully submitted */
   SCHEDULED,
+  /** Running */
   RUNNING,
+  /** Error before a query execution */
   ERROR,
+  /** Failure after a query launches */
   FAILED,
+  /** Killed */
+  KILLED,
+  /** Wait for completely kill */
+  KILLING,
+  /** Successfully completed */
   COMPLETED
 }

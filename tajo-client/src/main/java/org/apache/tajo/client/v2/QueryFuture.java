@@ -18,6 +18,8 @@
 
 package org.apache.tajo.client.v2;
 
+import com.google.common.base.Optional;
+import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.exception.TajoException;
 
 import java.sql.ResultSet;
@@ -29,14 +31,9 @@ public interface QueryFuture extends Future<ResultSet> {
    *
    * @return query id
    */
-  String getId();
+  String id();
 
-  /**
-   * Get a normalized progress (0 ~ 1.0f) of a query running
-   *
-   * @return progress
-   */
-  float progress();
+  String queue();
 
   /**
    * Get a query state
@@ -46,9 +43,73 @@ public interface QueryFuture extends Future<ResultSet> {
   QueryState state();
 
   /**
-   * Get the last exception if any error occurs.
+   * Get a normalized progress (0 ~ 1.0f) of a query running
    *
-   * @return Exception
+   * @return progress
    */
-  TajoException getException();
+  float progress();
+
+  /**
+   * A submitted or running query state is normal
+   *
+   * @return True if a query state is normal
+   */
+  boolean isOk();
+
+  /**
+   * Get whether the query is successfully completed or not.
+   *
+   * @return True if the query is successfully completed.
+   */
+  boolean isCompleted();
+
+  /**
+   * Get whether the query is abort due to error.
+   *
+   * @return True if the query is abort due to error.
+   */
+  boolean isFailed();
+
+  /**
+   * Get whether the query is killed. This is equivalent to
+   * @{link Future#cancel}.
+   *
+   * @return True if the query is already killed.
+   */
+  boolean isKilled();
+
+  /**
+   * Get an user information
+   *
+   * @return UserRoleInfo
+   */
+  UserRoleInfo user();
+
+  /**
+   * Kill this query
+   */
+  void kill();
+
+  /**
+   * Get the time when a query is submitted.
+   * This time can be different from @{link QueryFuture#startTime}
+   * due to scheduling delay.
+   *
+   * @return Millisecond since epoch
+   */
+  long submitTime();
+
+  /**
+   * Get the time when a query is actually launched.
+   *
+   * @return Millisecond since epoch
+   */
+  long startTime();
+
+  /**
+   * Get the time when a query is finished.
+   *
+   * @return Millisecond since epoch
+   */
+  long finishTime();
 }

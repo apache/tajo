@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.tajo.exception.ReturnStateUtil.ensureOk;
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 import static org.apache.tajo.exception.ReturnStateUtil.returnError;
 import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
@@ -144,7 +145,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) throws SQLException {
+  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(sql, false);
@@ -211,7 +212,7 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  private ResultSet getQueryResultAndWait(QueryId queryId) throws SQLException {
+  public ResultSet getQueryResultAndWait(QueryId queryId) {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
@@ -234,8 +235,7 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  @Override
-  public QueryStatus getQueryStatus(QueryId queryId) throws SQLException {
+  public GetQueryStatusResponse getRawQueryStatus(QueryId queryId) {
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryStatusRequest request = GetQueryStatusRequest.newBuilder()
@@ -250,19 +250,39 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
+    return res;
+  }
+
+  @Override
+  public QueryStatus getQueryStatus(QueryId queryId) {
+
+    final BlockingInterface stub = conn.getTMStub();
+    final GetQueryStatusRequest request = GetQueryStatusRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .setQueryId(queryId.getProto())
+        .build();
+
+    GetQueryStatusResponse res;
+    try {
+      res = stub.getQueryStatus(null, request);
+    } catch (ServiceException t) {
+      throw new RuntimeException(t);
+    }
+
+    ensureOk(res.getState());
     return new QueryStatus(res);
   }
 
   @Override
-  public ResultSet getQueryResult(QueryId queryId) throws SQLException {
+  public ResultSet getQueryResult(QueryId queryId) {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
 
     GetQueryResultResponse response = getResultResponse(queryId);
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
     return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
@@ -273,7 +293,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public GetQueryResultResponse getResultResponse(QueryId queryId) throws SQLException {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return null;
     }
@@ -291,7 +311,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return response;
   }
 
@@ -324,7 +344,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public boolean updateQuery(final String sql) throws SQLException {
+  public boolean updateQuery(final String sql) {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(sql, false);
@@ -336,7 +356,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     conn.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
 
     return true;
@@ -411,7 +431,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public QueryStatus killQuery(final QueryId queryId) throws SQLException {
+  public QueryStatus killQuery(final QueryId queryId) {
 
     final BlockingInterface stub = conn.getTMStub();
     QueryStatus status = getQueryStatus(queryId);

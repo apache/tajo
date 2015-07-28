@@ -18,5 +18,8 @@
 
 package org.apache.tajo.client.v2;
 
-public class ServiceDiscovery {
+import java.net.InetSocketAddress;
+
+public interface ServiceDiscovery {
+  InetSocketAddress clientAddress();
 }

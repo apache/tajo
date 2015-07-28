@@ -416,8 +416,8 @@ public class TajoAdmin {
       } else {
         writer.write("ERROR:" + status.getErrorMessage());
       }
-    } catch (SQLException e) {
-      writer.write("ERROR:" + e.getMessage());
+    } catch (Throwable t) {
+      writer.write("ERROR:" + t.getMessage());
     }
   }
 

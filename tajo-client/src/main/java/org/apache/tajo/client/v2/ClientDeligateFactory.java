@@ -18,9 +18,25 @@
 
 package org.apache.tajo.client.v2;
 
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
+
+import java.util.Map;
+
 public class ClientDeligateFactory {
 
-  public static ClientDelegate newDefaultDeligate() {
-    return null;
+  public static ClientDelegate newDefaultDeligate(String host,
+                                                  int port,
+                                                  @Nullable Map<String, String> props)
+      throws ClientUnableToConnectException {
+
+    return new LegacyClientDelegate(host, port, props);
+  }
+
+  public static ClientDelegate newDefaultDeligate(ServiceDiscovery discovery,
+                                                  @Nullable Map<String, String> props)
+      throws ClientUnableToConnectException {
+
+    return new LegacyClientDelegate(discovery, props);
   }
 }

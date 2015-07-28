@@ -21,14 +21,17 @@ package org.apache.tajo.client.v2;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.exception.TajoException;
 
+import java.io.Closeable;
 import java.sql.ResultSet;
 
 /**
  * ClientDelegate is a delegate for various wired protocols like protocol buffer, rest API, and proxy.
  */
-public interface ClientDelegate {
+public interface ClientDelegate extends Closeable {
 
-  QueryHandler executeSQL(String sql) throws TajoException;
+  int executeUpdate(String sql) throws TajoException;
+
+  ResultSet executeSQL(String sql) throws TajoException;
 
   QueryFuture executeSQLAsync(String sql) throws TajoException;
 

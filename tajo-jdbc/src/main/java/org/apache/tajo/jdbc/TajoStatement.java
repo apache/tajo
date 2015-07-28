@@ -149,7 +149,6 @@ public class TajoStatement implements Statement {
   public ResultSet executeQuery(String sql) throws SQLException {
     checkConnection("Can't execute");
     return executeSQL(sql);
-
   }
 
   protected ResultSet executeSQL(String sql) throws SQLException {

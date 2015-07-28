@@ -19,16 +19,25 @@
 package org.apache.tajo.client.v2;
 
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
+import java.io.Closeable;
 import java.sql.ResultSet;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class TajoClient {
+public class TajoClient implements Closeable {
+  /**
+   * default client port number
+   */
+  public static final int DEFAULT_PORT = 26002;
+
   private final ClientDelegate delegate;
 
   /**
@@ -36,8 +45,8 @@ public class TajoClient {
    *
    * @param host hostname to connect
    */
-  public TajoClient(String host) {
-    delegate = ClientDeligateFactory.newDefaultDeligate();
+  public TajoClient(String host) throws ClientUnableToConnectException {
+    delegate = ClientDeligateFactory.newDefaultDeligate(host, DEFAULT_PORT, null);
   }
 
   /**
@@ -46,8 +55,8 @@ public class TajoClient {
    * @param host       Hostname to connect
    * @param properties Connection properties
    */
-  public TajoClient(String host, Map<String, String> properties) {
-    delegate = ClientDeligateFactory.newDefaultDeligate();
+  public TajoClient(String host, Map<String, String> properties) throws ClientUnableToConnectException {
+    delegate = ClientDeligateFactory.newDefaultDeligate(host, DEFAULT_PORT, properties);
   }
 
   /**
@@ -56,8 +65,8 @@ public class TajoClient {
    * @param host Hostname to connect
    * @param port Port number to connect
    */
-  public TajoClient(String host, int port) {
-    delegate = ClientDeligateFactory.newDefaultDeligate();
+  public TajoClient(String host, int port) throws ClientUnableToConnectException {
+    delegate = ClientDeligateFactory.newDefaultDeligate(host, port, null);
   }
 
   /**
@@ -67,8 +76,8 @@ public class TajoClient {
    * @param port       Port number to connect
    * @param properties Connection properties
    */
-  public TajoClient(String host, int port, Map<String, String> properties) {
-    delegate = ClientDeligateFactory.newDefaultDeligate();
+  public TajoClient(String host, int port, Map<String, String> properties) throws ClientUnableToConnectException {
+    delegate = ClientDeligateFactory.newDefaultDeligate(host, port, properties);
   }
 
   /**
@@ -76,8 +85,8 @@ public class TajoClient {
    *
    * @param discovery Service discovery
    */
-  public TajoClient(ServiceDiscovery discovery) {
-    delegate = ClientDeligateFactory.newDefaultDeligate();
+  public TajoClient(ServiceDiscovery discovery) throws ClientUnableToConnectException {
+    delegate = ClientDeligateFactory.newDefaultDeligate(discovery, null);
   }
 
   /**
@@ -86,53 +95,54 @@ public class TajoClient {
    * @param discovery Service discovery
    * @param properties Connection properties
    */
-  public TajoClient(ServiceDiscovery discovery, Map<String, String> properties) {
-    delegate = ClientDeligateFactory.newDefaultDeligate();
+  public TajoClient(ServiceDiscovery discovery, Map<String, String> properties) throws ClientUnableToConnectException {
+    delegate = ClientDeligateFactory.newDefaultDeligate(discovery, properties);
+  }
+
+  public int executeUpdate(String sql) throws TajoException {
+    return delegate.executeUpdate(sql);
   }
 
   /**
+   * Submit a SQL query statement
    *
-   * @param sql
-   * @return
+   * @param sql a SQL statement
+   * @return QueryHandler
+   * @throws TajoException
    */
-  public QueryHandler executeSQL(String sql) throws TajoException {
+  public ResultSet executeQuery(String sql) throws TajoException {
     return delegate.executeSQL(sql);
   }
 
-  public ResultSet waitForComplete(QueryHandler handler) throws TajoException {
-    try {
-      return handler.toFuture().get();
-    } catch (TajoRuntimeException e) {
-      throw new TajoException(e);
-    } catch (Throwable t) {
-      throw new RuntimeException(t);
-    }
-  }
-
-  public ResultSet waitForComplete(QueryHandler handler, long duration, TimeUnit unit) throws TimeoutException {
-    try {
-      return handler.toFuture().get(duration, unit);
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public ResultSet executeSQLAndWaitForComplete(String sql) throws TajoException {
-    try {
-      return waitForComplete(executeSQL(sql));
-    } catch (Throwable t) {
-      throw new RuntimeException(t);
-    }
-  }
-
+  /**
+   * Execute a SQL statement through asynchronous API
+   *
+   * @param sql
+   * @return
+   * @throws TajoException
+   */
   public QueryFuture executeSQLAsync(String sql) throws TajoException {
-    return null;
+    return delegate.executeSQLAsync(sql);
   }
 
+  public void close() {
+  }
+
+  /**
+   * Select working database
+   *
+   * @param database Database name
+   * @throws UndefinedDatabaseException
+   */
   public void selectDB(String database) throws UndefinedDatabaseException {
     delegate.selectDB(database);
   }
 
+  /**
+   * Get the current working database
+   *
+   * @return Current working database
+   */
   public String currentDB() {
     return delegate.currentDB();
   }

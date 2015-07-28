@@ -82,7 +82,7 @@ public interface QueryClient extends Closeable {
    * The response only contains a query id, and submission status.
    * In order to get the result, you should use {@link #getQueryResult(org.apache.tajo.QueryId)}.
    */
-  SubmitQueryResponse executeQuery(final String sql) throws SQLException;
+  SubmitQueryResponse executeQuery(final String sql);
 
   SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException;
 
@@ -98,7 +98,7 @@ public interface QueryClient extends Closeable {
 
   ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException;
 
-  QueryStatus getQueryStatus(QueryId queryId) throws SQLException;
+  QueryStatus getQueryStatus(QueryId queryId);
 
   ResultSet getQueryResult(QueryId queryId) throws SQLException;
 
@@ -108,7 +108,7 @@ public interface QueryClient extends Closeable {
 
   TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException;
 
-  boolean updateQuery(final String sql) throws SQLException;
+  boolean updateQuery(final String sql);
 
   boolean updateQueryWithJson(final String json) throws SQLException;
 
@@ -118,7 +118,7 @@ public interface QueryClient extends Closeable {
 
   List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws SQLException;
 
-  QueryStatus killQuery(final QueryId queryId) throws SQLException;
+  QueryStatus killQuery(final QueryId queryId);
 
   QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException;
 

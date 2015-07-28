@@ -18,16 +18,13 @@
 
 package org.apache.tajo.client.v2;
 
-import org.apache.tajo.error.Errors.ResultCode;
+public class ClientUtil {
 
-import java.sql.ResultSet;
+  public static boolean isOk(QueryState state) {
+    return !(state == QueryState.ERROR || state == QueryState.FAILED);
+  }
 
-public interface QueryEventListener {
-  void onProgress(float progress);
-
-  void onFailed(ResultCode errorCode, String message);
-
-  void onError(ResultCode errorCode, String message);
-
-  void onCompleted(ResultSet set);
+  public static boolean isFailed(QueryState state) {
+    return state == QueryState.ERROR || state == QueryState.FAILED;
+  }
 }

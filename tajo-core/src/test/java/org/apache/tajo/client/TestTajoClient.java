@@ -35,6 +35,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
@@ -540,7 +542,7 @@ public class TestTajoClient {
     try {
       client.updateQuery(rangeSql);
       fail();
-    } catch (SQLException se) {
+    } catch (TajoRuntimeException se) {
       assertEquals(Errors.ResultCode.FEATURE_NOT_SUPPORTED.getNumber(), se.getErrorCode());
     }
  
@@ -552,7 +554,7 @@ public class TestTajoClient {
     try {
       assertFalse(client.updateQuery(listSql));
       fail();
-    } catch (SQLException se) {
+    } catch (TajoRuntimeException se) {
       assertEquals(Errors.ResultCode.FEATURE_NOT_SUPPORTED.getNumber(), se.getErrorCode());
     }
 
@@ -563,7 +565,7 @@ public class TestTajoClient {
     try {
       assertFalse(client.updateQuery(hashSql));
       fail();
-    } catch (SQLException se) {
+    } catch (TajoRuntimeException se) {
       assertEquals(Errors.ResultCode.FEATURE_NOT_SUPPORTED.getNumber(), se.getErrorCode());
     }
   }

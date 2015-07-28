@@ -100,7 +100,7 @@ public class SessionConnection implements Closeable {
    * @throws SQLException
    */
   public SessionConnection(@NotNull ServiceTracker tracker, @Nullable String baseDatabase,
-                           @NotNull KeyValueSet properties) throws SQLException {
+                           @NotNull KeyValueSet properties) {
     this.serviceTracker = tracker;
     this.baseDatabase = baseDatabase;
     this.properties = properties;

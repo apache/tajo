@@ -97,7 +97,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     queryClient.closeNonForwardQuery(queryId);
   }
 
-  public SubmitQueryResponse executeQuery(final String sql) throws SQLException {
+  public SubmitQueryResponse executeQuery(final String sql) {
     return queryClient.executeQuery(sql);
   }
 
@@ -113,7 +113,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.executeJsonQueryAndGetResult(json);
   }
 
-  public QueryStatus getQueryStatus(QueryId queryId) throws SQLException {
+  public QueryStatus getQueryStatus(QueryId queryId) {
     return queryClient.getQueryStatus(queryId);
   }
 
@@ -133,7 +133,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.fetchNextQueryResult(queryId, fetchRowNum);
   }
 
-  public boolean updateQuery(final String sql) throws SQLException {
+  public boolean updateQuery(final String sql) {
     return queryClient.updateQuery(sql);
   }
 
@@ -141,7 +141,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.updateQueryWithJson(json);
   }
 
-  public QueryStatus killQuery(final QueryId queryId) throws SQLException {
+  public QueryStatus killQuery(final QueryId queryId) {
     return queryClient.killQuery(queryId);
   }
 
