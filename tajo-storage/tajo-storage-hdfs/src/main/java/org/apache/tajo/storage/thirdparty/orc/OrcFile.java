@@ -26,6 +26,7 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import static org.apache.tajo.storage.thirdparty.orc.OrcConf.ConfVars.*;
 
 import java.io.IOException;
+import java.util.TimeZone;
 
 /**
  * Contains factory methods to read or write ORC files.
@@ -195,6 +196,7 @@ public final class OrcFile {
     private float paddingTolerance;
     private String bloomFilterColumns;
     private double bloomFilterFpp;
+    private TimeZone timezone;
 
     WriterOptions(Configuration conf) {
       configuration = conf;
@@ -366,6 +368,13 @@ public final class OrcFile {
       return this;
     }
 
+    /**
+     * Tajo-specific
+     */
+    WriterOptions timezone(TimeZone value) {
+      timezone = value;
+      return this;
+    }
   }
 
   /**
@@ -396,7 +405,8 @@ public final class OrcFile {
                           opts.versionValue, opts.callback,
                           opts.encodingStrategy, opts.compressionStrategy,
                           opts.paddingTolerance, opts.blockSizeValue,
-                          opts.bloomFilterColumns, opts.bloomFilterFpp);
+                          opts.bloomFilterColumns, opts.bloomFilterFpp,
+                          opts.timezone);
   }
 
   /**
@@ -420,7 +430,8 @@ public final class OrcFile {
                                     long stripeSize,
                                     CompressionKind compress,
                                     int bufferSize,
-                                    int rowIndexStride) throws IOException {
+                                    int rowIndexStride,
+                                    TimeZone timeZone) throws IOException {
     return createWriter(path,
                         writerOptions(conf)
                         .fileSystem(fs)
@@ -428,7 +439,8 @@ public final class OrcFile {
                         .stripeSize(stripeSize)
                         .compress(compress)
                         .bufferSize(bufferSize)
-                        .rowIndexStride(rowIndexStride));
+                        .rowIndexStride(rowIndexStride)
+                        .timezone(timeZone));
   }
 
   private static ThreadLocal<MemoryManager> memoryManager = null;

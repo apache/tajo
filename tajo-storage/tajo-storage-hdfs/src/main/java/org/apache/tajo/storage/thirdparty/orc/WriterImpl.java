@@ -129,6 +129,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
   private final boolean[] bloomFilterColumns;
   private final double bloomFilterFpp;
   private boolean writeTimeZone;
+  private TimeZone timeZone;
 
   WriterImpl(FileSystem fs,
       Path path,
@@ -147,7 +148,8 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       float paddingTolerance,
       long blockSizeValue,
       String bloomFilterColumnNames,
-      double bloomFilterFpp) throws IOException {
+      double bloomFilterFpp,
+      TimeZone timeZone) throws IOException {
     this.fs = fs;
     this.path = path;
     this.conf = conf;
@@ -174,6 +176,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     this.compress = compress;
     this.rowIndexStride = rowIndexStride;
     this.memoryManager = memoryManager;
+    this.timeZone = timeZone;
     buildIndex = rowIndexStride > 0;
     codec = createCodec(compress);
     String allColumns = conf.get(IOConstants.COLUMNS);
@@ -601,6 +604,10 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     public boolean hasWriterTimeZone() {
       return writeTimeZone;
     }
+
+    public TimeZone getTimeZone() {
+      return timeZone;
+    }
   }
 
   /**
@@ -803,7 +810,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
 
       builder.addColumns(getEncoding());
       if (streamFactory.hasWriterTimeZone()) {
-        builder.setWriterTimezone(TimeZone.getDefault().getID());
+        builder.setWriterTimezone(streamFactory.getTimeZone().getID());
       }
       if (rowIndexStream != null) {
         if (rowIndex.getEntryCount() != requiredIndexEntries) {

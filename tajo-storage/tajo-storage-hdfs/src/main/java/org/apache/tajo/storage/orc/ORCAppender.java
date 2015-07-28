@@ -20,6 +20,7 @@ package org.apache.tajo.storage.orc;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -34,15 +35,19 @@ import org.apache.tajo.storage.thirdparty.orc.OrcFile;
 import org.apache.tajo.storage.thirdparty.orc.Writer;
 
 import java.io.IOException;
+import java.util.TimeZone;
 
 public class ORCAppender extends FileAppender {
   private Writer writer;
   private TableStatistics stats;
-
+  private TimeZone timezone;
 
   public ORCAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
                      TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
+
+    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+        TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
   @Override
@@ -54,7 +59,8 @@ public class ORCAppender extends FileAppender {
       Integer.parseInt(meta.getOption(StorageConstants.ORC_BUFFER_SIZE,
         StorageConstants.DEFAULT_ORC_BUFFER_SIZE)),
       Integer.parseInt(meta.getOption(StorageConstants.ORC_ROW_INDEX_STRIDE,
-        StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)));
+        StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)),
+      timezone);
 
     if (enabledStats) {
       this.stats = new TableStatistics(schema);
