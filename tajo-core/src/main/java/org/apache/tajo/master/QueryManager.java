@@ -147,12 +147,12 @@ public class QueryManager extends CompositeService {
 
     List<QueryInfo> cacheList = Lists.newArrayList();
     synchronized (historyCache) {
+      // request size fits in cache
       if (page == 1 && size <= historyCache.size()) {
         cacheList.addAll(historyCache.values());
       }
     }
 
-    // request size fits in cache
     if (cacheList.size() > 0) {
       result.addAll(cacheList.subList(0, size));
       return result;
