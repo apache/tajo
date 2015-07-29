@@ -198,6 +198,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1716: Repartitioner.makeEvenDistributedFetchImpl() does not distribute 
+    fetches evenly. (jihoon)
+
     TAJO-1681: Fix TajoDump invalid null check for database name.
     (Contributed by DaeMyung Kang, Committed by jihoon)
 
