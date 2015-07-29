@@ -34,7 +34,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.UUID;
 
@@ -144,9 +143,7 @@ public class TestByteBufLineReader {
     assertTrue(file.exists());
 
     FileInputStream inputStream = new FileInputStream(file);
-    FileChannel channel = inputStream.getChannel();
-
-    ByteBufLineReader lineReader = new ByteBufLineReader(new LocalFileInputChannel(channel));
+    ByteBufLineReader lineReader = new ByteBufLineReader(new LocalFileInputChannel(inputStream));
 
     assertEquals(LINE, lineReader.readLine());
     lineReader.seek(0);
@@ -154,7 +151,6 @@ public class TestByteBufLineReader {
     assertNull(lineReader.readLine());
 
     lineReader.close();
-    channel.close();
     inputStream.close();
   }
 }

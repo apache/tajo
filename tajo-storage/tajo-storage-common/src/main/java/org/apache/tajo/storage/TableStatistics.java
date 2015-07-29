@@ -69,6 +69,10 @@ public class TableStatistics {
     numRows++;
   }
 
+  public void incrementRows(long num) {
+    numRows += num;
+  }
+
   public long getNumRows() {
     return this.numRows;
   }
