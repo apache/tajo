@@ -136,7 +136,7 @@ public class TestRepartitioner {
     assertFetchImpl(fetches, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 2);
-    long expected0 [] = {130, 165};
+    long expected0 [] = {140, 155};
     assertFetchVolumes(expected0, results.getFirst());
     assertFetchImpl(fetches, results.getSecond());
 
