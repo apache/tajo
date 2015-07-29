@@ -200,6 +200,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
+    infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
+
     TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
     (jinho)
 
