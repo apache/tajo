@@ -18,9 +18,7 @@
 
 package org.apache.tajo.client.v2;
 
-import com.google.common.base.Optional;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.exception.TajoException;
 
 import java.sql.ResultSet;
 import java.util.concurrent.Future;
@@ -112,4 +110,16 @@ public interface QueryFuture extends Future<ResultSet> {
    * @return Millisecond since epoch
    */
   long finishTime();
+
+  /**
+   * Release a query future. It will be automatically released after the session invalidation.
+   */
+  void release();
+
+  /**
+   * Add a listener which will be executed after this query is completed, error, failed or killed.
+   *
+   * @param future
+   */
+  void addListener(FutureListener<QueryFuture> future);
 }

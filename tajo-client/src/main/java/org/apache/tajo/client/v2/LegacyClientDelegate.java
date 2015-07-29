@@ -53,7 +53,7 @@ import static org.apache.tajo.exception.ReturnStateUtil.ensureOk;
 public class LegacyClientDelegate extends SessionConnection implements ClientDelegate {
 
   private QueryClientImpl queryClient;
-  private ExecutorService executor = Executors.newFixedThreadPool(8);
+  private final ExecutorService executor = Executors.newFixedThreadPool(8);
 
   public LegacyClientDelegate(String host, int port, Map<String, String> props) {
     super(new DummyServiceTracker(NetUtils.createSocketAddr(host, port)), null, new KeyValueSet(props));
@@ -110,7 +110,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   }
 
   private class QueryFutureForNoFetch implements QueryFuture {
-    private final QueryId id;
+    protected final QueryId id;
     private final long now = System.currentTimeMillis();
 
     QueryFutureForNoFetch(QueryId id) {
@@ -182,6 +182,16 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
+    public void release() {
+      queryClient.closeQuery(id);
+    }
+
+    @Override
+    public void addListener(FutureListener<QueryFuture> future) {
+      future.processingCompleted(this);
+    }
+
+    @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
       return false;
     }
@@ -235,6 +245,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
     public AsyncQueryFuture(QueryId queryId) {
       this.queryId = queryId;
+      this.lastState = QueryState.SCHEDULED;
     }
 
     @Override
@@ -302,6 +313,22 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
       return finishTime;
     }
 
+    @Override
+    public void release() {
+      queryClient.closeQuery(queryId);
+    }
+
+    @Override
+    public void addListener(final FutureListener<QueryFuture> listener) {
+      final QueryFuture f = this;
+      addListener(new Runnable() {
+        @Override
+        public void run() {
+          listener.processingCompleted(f);
+        }},
+        executor);
+    }
+
     private void updateState(GetQueryStatusResponse lastState) {
       this.startTime = lastState.getSubmitTime();
       this.finishTime = lastState.getFinishTime();
@@ -317,12 +344,12 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
       while(!TajoClientUtil.isQueryComplete(response.getQueryState())) {
         try {
           Thread.sleep(500);
-          updateState(response);
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
 
         response = queryClient.getRawQueryStatus(queryId);
+        updateState(response);
         ensureOk(response.getState());
       }
       return response;

@@ -21,10 +21,11 @@ package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateDatabaseException extends CatalogException {
 
-  public DuplicateDatabaseException(PrimitiveProtos.ReturnState state) {
+  public DuplicateDatabaseException(ReturnState state) {
     super(state);
   }
 	public DuplicateDatabaseException(String dbName) {

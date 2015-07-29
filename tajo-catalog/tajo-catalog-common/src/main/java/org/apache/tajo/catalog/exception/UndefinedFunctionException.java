@@ -19,19 +19,16 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.function.FunctionUtil;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.util.Collection;
 
 public class UndefinedFunctionException extends CatalogException {
 	private static final long serialVersionUID = 5062193018697228028L;
 
-  public UndefinedFunctionException(PrimitiveProtos.ReturnState state) {
+  public UndefinedFunctionException(ReturnState state) {
     super(state);
   }
 

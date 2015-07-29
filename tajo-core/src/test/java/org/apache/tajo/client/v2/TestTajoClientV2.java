@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client.v2;
 
+import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
@@ -33,9 +34,11 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class TestTajoClientV2 extends QueryTestCaseBase {
   private static TajoClient clientv2;
@@ -125,6 +128,97 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
     }
   }
 
+  @Test
+  public void testExecuteQueryAsync() throws TajoException, IOException, SQLException, ExecutionException,
+      InterruptedException {
+    QueryFuture future = clientv2.executeQueryAsync("select * from lineitem where l_orderkey > 0");
+
+    ResultSet result = future.get();
+    assertResultSet(result);
+
+    assertTrue(future.isDone());
+    assertEquals(QueryState.COMPLETED, future.state());
+    assertTrue(future.isCompleted());
+    assertFalse(future.isFailed());
+    assertFalse(future.isKilled());
+    assertTrue(1.0f == future.progress());
+    assertEquals("default", future.queue());
+
+    assertTrue(future.submitTime() > 0);
+    assertTrue(future.startTime() > 0);
+    assertTrue(future.finishTime() > 0);
+
+    result.close();
+  }
+
+  @Test(timeout = 10 * 1000)
+  public void testExecuteQueryAsyncWithListener() throws TajoException, IOException, SQLException, ExecutionException,
+      InterruptedException {
+    QueryFuture future = clientv2.executeQueryAsync(
+        "select l_orderkey, sleep(1) from lineitem where l_orderkey > 3");
+
+    final AtomicBoolean success = new AtomicBoolean(false);
+    final List<ResultSet> resultContainer = Lists.newArrayList();
+
+    future.addListener(new FutureListener<QueryFuture>() {
+      @Override
+      public void processingCompleted(QueryFuture future) {
+        try {
+          ResultSet result = future.get();
+          resultContainer.add(result); // for better error handling, it should be verified outside this future.
+
+          assertTrue(future.isDone());
+          assertEquals(QueryState.COMPLETED, future.state());
+          assertTrue(future.isCompleted());
+          assertFalse(future.isFailed());
+          assertFalse(future.isKilled());
+          assertTrue(1.0f == future.progress());
+          assertEquals("default", future.queue());
+
+          assertTrue(future.submitTime() > 0);
+          assertTrue(future.startTime() > 0);
+          assertTrue(future.finishTime() > 0);
+
+          success.set(true);
+
+        } catch (Throwable t) {
+          throw new RuntimeException(t);
+        }
+      }
+    });
+
+    while(!future.isDone()) {
+      Thread.sleep(100);
+    }
+
+    assertTrue(success.get());
+    assertResultSet(resultContainer.get(0));
+    resultContainer.get(0).close();
+  }
+
+  @Test(timeout = 10 * 1000)
+  public void testQueryFutureKill() throws TajoException, ExecutionException, InterruptedException, SQLException {
+    QueryFuture future = clientv2.executeQueryAsync("select sleep(1) from lineitem where l_orderkey > 4");
+
+    assertTrue(future.isOk());
+    assertFalse(future.isDone());
+    assertFalse(future.isCompleted());
+    assertFalse(future.isFailed());
+    assertFalse(future.isKilled());
+
+    future.kill();
+    while(!future.isDone()) {
+      Thread.sleep(100);
+    }
+
+    assertTrue(future.isOk());
+    assertTrue(future.isDone());
+    assertFalse(future.isCompleted());
+    assertFalse(future.isFailed());
+    assertTrue(future.isKilled());
+  }
+
+
   @Test(expected = DuplicateDatabaseException.class)
   public void testErrorOnExecuteUpdate() throws TajoException, IOException, SQLException {
     clientv2.executeUpdate("create database default");
@@ -133,5 +227,10 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
   @Test(expected = UndefinedTableException.class)
   public void testErrorOnExecuteQuery() throws TajoException, IOException, SQLException {
     clientv2.executeQuery("select * from unknown_table");
+  }
+
+  @Test(expected = UndefinedTableException.class)
+  public void testErrorOnExecuteQueryAsync() throws TajoException {
+    clientv2.executeQueryAsync("select * from unknown_table");
   }
 }

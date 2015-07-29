@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.exception;
+package org.apache.tajo.client.v2;
 
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import java.util.EventListener;
 
-/**
- * Exception for Internal Bugs and Unexpected exception
- */
-public class TajoInternalError extends TajoError {
-
-  public TajoInternalError(ReturnState state) {
-    super(state);
-  }
-
-  public TajoInternalError(String message) {
-    super(ResultCode.INTERNAL_ERROR, message);
-  }
-
-  public TajoInternalError(Throwable t) {
-    super(ResultCode.INTERNAL_ERROR, t.getMessage());
-  }
-
-  public TajoInternalError(TajoException t) {
-    super(t.getErrorCode(), t.getMessage());
-  }
+public interface FutureListener<V> extends EventListener {
+  void processingCompleted(V future);
 }

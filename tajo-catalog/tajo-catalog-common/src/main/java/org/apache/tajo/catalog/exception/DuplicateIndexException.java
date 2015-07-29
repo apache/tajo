@@ -19,9 +19,14 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateIndexException extends CatalogException {
   private static final long serialVersionUID = 3705839985189534673L;
+
+  public DuplicateIndexException(ReturnState state) {
+    super(state);
+  }
 
   public DuplicateIndexException(String indexName) {
     super(Errors.ResultCode.DUPLICATE_INDEX, indexName);

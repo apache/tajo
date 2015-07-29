@@ -19,8 +19,13 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UndefinedOperatorException extends TajoException {
+
+  public UndefinedOperatorException(ReturnState state) {
+    super(state);
+  }
 
   public UndefinedOperatorException(String operation) {
     super(Errors.ResultCode.UNDEFINED_OPERATOR, operation);
