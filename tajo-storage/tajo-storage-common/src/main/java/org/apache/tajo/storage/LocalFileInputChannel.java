@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.hadoop.io.IOUtils;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -27,11 +28,15 @@ import java.nio.channels.FileChannel;
 /**
  * LocalFileInputChannel is a FileChannel wrapper of seek ability
  */
-public final class LocalFileInputChannel extends InputChannel implements SeekableChannel {
+public final class LocalFileInputChannel extends SeekableInputChannel {
+  private FileInputStream fileInputStream;
   private FileChannel channel;
+  private long size;
 
-  public LocalFileInputChannel(FileChannel channel) {
-    this.channel = channel;
+  public LocalFileInputChannel(FileInputStream fileInputStream) throws IOException {
+    this.fileInputStream = fileInputStream;
+    this.channel = fileInputStream.getChannel();
+    this.size = channel.size();
   }
 
   @Override
@@ -45,7 +50,17 @@ public final class LocalFileInputChannel extends InputChannel implements Seekabl
   }
 
   @Override
+  public long position() throws IOException {
+    return channel.position();
+  }
+
+  @Override
+  public long size() throws IOException {
+    return size;
+  }
+
+  @Override
   protected void implCloseChannel() throws IOException {
-    IOUtils.cleanup(null, channel);
+    IOUtils.cleanup(null, channel, fileInputStream);
   }
 }
