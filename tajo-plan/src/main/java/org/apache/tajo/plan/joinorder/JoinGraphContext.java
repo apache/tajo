@@ -33,7 +33,7 @@ public class JoinGraphContext {
 
   // New join edges are frequently created during join order optimization.
   // This cache is to reduce such overhead.
-  private LRUMap edgeCache;
+  private LRUMap edgeCache = new LRUMap(10000);
 
   // candidate predicates contain the predicates which are not pushed to any join nodes yet.
   // evaluated predicates contain the predicates which are already pushed to some join nodes.
@@ -41,14 +41,6 @@ public class JoinGraphContext {
   private Set<EvalNode> candidateJoinFilters = TUtil.newHashSet();    // predicates from the where clause
   private Set<EvalNode> evaluatedJoinConditions = TUtil.newHashSet(); // predicates from the on clause
   private Set<EvalNode> evaluatedJoinFilters = TUtil.newHashSet();    // predicates from the where clause
-
-  public JoinGraphContext(boolean isTestEnabled) {
-    if (isTestEnabled) {
-      edgeCache = new LRUMap(100);
-    } else {
-      edgeCache = new LRUMap(10000);
-    }
-  }
 
   public JoinGraph getJoinGraph() {
     return joinGraph;

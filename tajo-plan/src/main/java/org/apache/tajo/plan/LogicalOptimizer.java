@@ -38,7 +38,6 @@ import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
@@ -58,17 +57,8 @@ public class LogicalOptimizer {
   private BaseLogicalPlanRewriteEngine rulesBeforeJoinOpt;
   private BaseLogicalPlanRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
-  private final boolean testEnabled;
 
   public LogicalOptimizer(TajoConf conf) {
-
-    String testKey = conf.get(CommonTestingUtil.TAJO_TEST_KEY);
-    if (testKey != null && testKey.equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
-      testEnabled = true;
-    } else {
-      testEnabled = false;
-    }
-
     Class clazz = conf.getClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
     LogicalPlanRewriteRuleProvider provider = (LogicalPlanRewriteRuleProvider) ReflectionUtil.newInstance(clazz, conf);
 
@@ -111,7 +101,7 @@ public class LogicalOptimizer {
       double nonOptimizedJoinCost = JoinCostComputer.computeCost(plan, block);
 
       // finding relations and filter expressions
-      JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block, testEnabled);
+      JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
 
       // finding join order and restore remaining filters
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
@@ -239,9 +229,9 @@ public class LogicalOptimizer {
      * scan operators. In other words, filter push down must be performed before this method.
      * Otherwise, this method may build incorrectly a join graph.
      */
-    public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block, boolean isTestEnabled)
+    public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
         throws TajoException {
-      JoinGraphContext context = new JoinGraphContext(isTestEnabled);
+      JoinGraphContext context = new JoinGraphContext();
       instance.visit(context, plan, block);
       return context;
     }
