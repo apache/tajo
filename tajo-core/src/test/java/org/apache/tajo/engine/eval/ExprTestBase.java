@@ -324,7 +324,7 @@ public class ExprTestBase {
       if (!condition) {
         assertEquals(expected[0], e.getMessage());
       } else {
-        assertFalse(e.getMessage(), true);
+        throw e;
       }
     } finally {
       if (schema != null) {

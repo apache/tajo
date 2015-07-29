@@ -41,6 +41,7 @@ public class ClientExceptionUtil {
 
     // General Errors
     ADD_EXCEPTION(INTERNAL_ERROR, TajoInternalError.class);
+    ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, UnsupportedException.class);
 
     ADD_EXCEPTION(UNDEFINED_TABLESPACE, UndefinedTablespaceException.class);
     ADD_EXCEPTION(UNDEFINED_DATABASE, UndefinedDatabaseException.class);
@@ -80,12 +81,23 @@ public class ClientExceptionUtil {
       throw new TajoInternalError(state);
 
     } else if (EXCEPTIONS.containsKey(state.getReturnCode())) {
+      Object exception = null;
       try {
-        Constructor c = EXCEPTIONS.get(state.getReturnCode()).getConstructor(ReturnState.class);
-        return (TajoException) c.newInstance(new Object[] {state});
+        Class clazz = EXCEPTIONS.get(state.getReturnCode());
+        Constructor c = clazz.getConstructor(ReturnState.class);
+        exception = c.newInstance(new Object[]{state});
       } catch (Throwable t) {
         throw new TajoInternalError(t);
       }
+
+      if (exception instanceof TajoException) {
+        return (TajoException) exception;
+      } else if (exception instanceof TajoRuntimeException) {
+        throw ((TajoRuntimeException) exception);
+      } else {
+        throw ((TajoError) exception);
+      }
+
     } else {
       throw new TajoInternalError("Unregistred Exception (" + state.getReturnCode().name() +"): "
           + state.getMessage());

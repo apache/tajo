@@ -21,6 +21,8 @@ package org.apache.tajo.client;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
@@ -50,17 +52,17 @@ public class TestTajoClientFailures {
     client.close();
   }
 
-  @Test
+  @Test(expected = DuplicateDatabaseException.class)
   public final void testCreateDatabase() throws TajoException {
     assertFalse(client.createDatabase("default")); // duplicate database
   }
 
-  @Test
+  @Test(expected = UndefinedDatabaseException.class)
   public final void testDropDatabase() throws TajoException {
     assertFalse(client.dropDatabase("unknown-database")); // unknown database
   }
 
-  @Test
+  @Test(expected = UndefinedTableException.class)
   public final void testDropTable() throws UndefinedTableException {
     assertFalse(client.dropTable("unknown-table")); // unknown table
   }

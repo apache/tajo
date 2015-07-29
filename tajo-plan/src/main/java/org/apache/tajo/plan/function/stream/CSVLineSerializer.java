@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
@@ -110,7 +111,6 @@ public class CSVLineSerializer extends TextLineSerializer {
 
   @Override
   public void release() {
-
   }
 
   public static String getTypeString(Datum val) {

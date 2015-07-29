@@ -24,6 +24,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
@@ -381,7 +382,7 @@ public class RowStoreUtil {
         writer.skipField();
         break;
       default:
-        throw new UnsupportedException("Unknown data type: " + writer.dataTypes()[i]);
+        throw new UnsupportedException("data type " + writer.dataTypes()[i]);
       }
     }
     writer.endRow();

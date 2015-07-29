@@ -37,6 +37,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
@@ -542,8 +543,7 @@ public class TestTajoClient {
     try {
       client.updateQuery(rangeSql);
       fail();
-    } catch (TajoRuntimeException se) {
-      assertEquals(Errors.ResultCode.FEATURE_NOT_SUPPORTED.getNumber(), se.getErrorCode());
+    } catch (UnsupportedException se) {
     }
  
     String listSql = "create table " + tableName + " (deptname text, score int4)";
@@ -554,8 +554,7 @@ public class TestTajoClient {
     try {
       assertFalse(client.updateQuery(listSql));
       fail();
-    } catch (TajoRuntimeException se) {
-      assertEquals(Errors.ResultCode.FEATURE_NOT_SUPPORTED.getNumber(), se.getErrorCode());
+    } catch (UnsupportedException se) {
     }
 
     String hashSql = "create table " + tableName + " (deptname text, score int4)";
@@ -565,8 +564,7 @@ public class TestTajoClient {
     try {
       assertFalse(client.updateQuery(hashSql));
       fail();
-    } catch (TajoRuntimeException se) {
-      assertEquals(Errors.ResultCode.FEATURE_NOT_SUPPORTED.getNumber(), se.getErrorCode());
+    } catch (UnsupportedException se) {
     }
   }
 
