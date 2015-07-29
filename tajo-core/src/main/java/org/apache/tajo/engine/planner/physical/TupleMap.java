@@ -54,7 +54,11 @@ public class TupleMap<E> extends HashMap<KeyTuple, E> {
   @Override
   public E put(@Nullable KeyTuple key, E value) {
     if (key != null) {
-      return super.put(new KeyTuple(key.getValues()), value);
+      try {
+        return super.put(key.clone(), value);
+      } catch (CloneNotSupportedException e) {
+        throw new RuntimeException(e);
+      }
     } else {
       return super.put(null, value);
     }
