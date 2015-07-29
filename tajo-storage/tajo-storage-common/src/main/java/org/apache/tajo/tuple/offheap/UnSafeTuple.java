@@ -100,7 +100,7 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(bb.address() + relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
+    return UNSAFE.getInt(bb.address() + (long)(relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));
   }
 
   public long getFieldAddr(int fieldId) {
@@ -278,7 +278,7 @@ public abstract class UnSafeTuple implements Tuple {
   public Datum getProtobufDatum(int fieldId) {
     byte [] bytes = getBytes(fieldId);
 
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId].getCode());
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId]);
     Message.Builder builder = factory.newBuilder();
     try {
       builder.mergeFrom(bytes);
