@@ -41,8 +41,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.ErrorUtil;
-import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
@@ -884,11 +882,10 @@ public class TajoMasterClientService extends AbstractService {
           partitionDesc = new PartitionMethodDesc(request.getPartition());
         }
 
-        TableDesc desc = context.getGlobalEngine().getDDLExecutor().createTable(
+        TableDesc desc = context.getGlobalEngine().getDDLExecutor().getCreateTableExecutor().create(
             queryContext,
             request.getName(),
             null,
-            meta.getStoreType(),
             schema,
             meta,
             path.toUri(),
