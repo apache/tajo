@@ -19,7 +19,9 @@
 package org.apache.tajo.client.v2;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
@@ -118,6 +120,18 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
       if (res != null) {
         res.close();
       }
+
+      clientv2.executeUpdate("drop database IF EXISTS client_v2_types3");
     }
+  }
+
+  @Test(expected = DuplicateDatabaseException.class)
+  public void testErrorOnExecuteUpdate() throws TajoException, IOException, SQLException {
+    clientv2.executeUpdate("create database default");
+  }
+
+  @Test(expected = UndefinedTableException.class)
+  public void testErrorOnExecuteQuery() throws TajoException, IOException, SQLException {
+    clientv2.executeQuery("select * from unknown_table");
   }
 }

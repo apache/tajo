@@ -25,10 +25,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.client.DummyServiceTracker;
-import org.apache.tajo.client.QueryClientImpl;
-import org.apache.tajo.client.SessionConnection;
-import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnimplementedException;
@@ -86,7 +83,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   @Override
   public QueryFuture executeSQLAsync(String sql) throws TajoException {
     ClientProtos.SubmitQueryResponse response = queryClient.executeQuery(sql);
-    ensureOk(response.getState());
+    ClientExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 

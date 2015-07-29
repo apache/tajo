@@ -193,7 +193,7 @@ public class MemStore implements CatalogStore {
    * Get a database namespace from a Map instance.
    */
   private <T> Map<String, T> checkAndGetDatabaseNS(final Map<String, Map<String, T>> databaseMap,
-                                                   String databaseName) {
+                                                   String databaseName) throws UndefinedDatabaseException {
     if (databaseMap.containsKey(databaseName)) {
       return databaseMap.get(databaseName);
     } else {

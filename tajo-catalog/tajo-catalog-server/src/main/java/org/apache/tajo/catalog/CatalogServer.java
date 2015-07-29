@@ -545,20 +545,22 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public TableResponse getTableDesc(RpcController controller,
-                                       TableIdentifierProto request) throws ServiceException {
+                                      TableIdentifierProto request) {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        return TableResponse.newBuilder()
-            .setState(OK)
-            .setTable(metaDictionary.getTableDesc(tbName))
-            .build();
-      } else {
-        rlock.lock();
-        try {
-          boolean contain;
+      rlock.lock();
+      try {
 
+        if (metaDictionary.isSystemDatabase(dbName)) {
+
+          return TableResponse.newBuilder()
+              .setState(OK)
+              .setTable(metaDictionary.getTableDesc(tbName))
+              .build();
+
+        } else {
+          boolean contain;
           contain = store.existDatabase(dbName);
 
           if (contain) {
@@ -578,17 +580,17 @@ public class CatalogServer extends AbstractService {
                 .setState(errUndefinedDatabase(dbName))
                 .build();
           }
-
-        } catch (Throwable t) {
-          printStackTraceIfError(LOG, t);
-
-          return TableResponse.newBuilder()
-              .setState(returnError(t))
-              .build();
-
-        } finally {
-          rlock.unlock();
         }
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return TableResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
+      } finally {
+        rlock.unlock();
       }
     }
 
@@ -716,15 +718,15 @@ public class CatalogServer extends AbstractService {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        return metaDictionary.existTable(tbName) ? OK : errUndefinedTable(tbName);
+      rlock.lock();
+      try {
 
-      } else {
-        rlock.lock();
-        try {
+        if (metaDictionary.isSystemDatabase(dbName)) {
+          return metaDictionary.existTable(tbName) ? OK : errUndefinedTable(tbName);
+
+        } else {
 
           boolean contain = store.existDatabase(dbName);
-
           if (contain) {
             if (store.existTable(dbName, tbName)) {
               return OK;
@@ -734,14 +736,14 @@ public class CatalogServer extends AbstractService {
           } else {
             return errUndefinedDatabase(dbName);
           }
-
-        } catch (Throwable t) {
-          printStackTraceIfError(LOG, t);
-          return returnError(t);
-
-        } finally {
-          rlock.unlock();
         }
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+
+      } finally {
+        rlock.unlock();
       }
     }
     

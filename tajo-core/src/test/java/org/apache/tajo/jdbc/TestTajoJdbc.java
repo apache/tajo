@@ -401,52 +401,6 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   }
 
   @Test
-  public void testSetStatement() throws Exception {
-    assertTrue(TajoStatement.isSetVariableQuery("Set JOIN_TASK_INPUT_SIZE 123"));
-    assertTrue(TajoStatement.isSetVariableQuery("SET JOIN_TASK_INPUT_SIZE 123"));
-    assertFalse(TajoStatement.isSetVariableQuery("--SET JOIN_TASK_INPUT_SIZE 123"));
-
-    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-      DEFAULT_DATABASE_NAME);
-
-    Connection conn = DriverManager.getConnection(connUri);
-
-    Statement stmt = null;
-    ResultSet res = null;
-    try {
-      stmt = conn.createStatement();
-      res = stmt.executeQuery("Set JOIN_TASK_INPUT_SIZE 123");
-      assertFalse(res.next());
-      ResultSetMetaData rsmd = res.getMetaData();
-      assertNotNull(rsmd);
-      assertEquals(0, rsmd.getColumnCount());
-
-      QueryClient connTajoClient = ((JdbcConnection) stmt.getConnection()).getQueryClient();
-      Map<String, String> variables = connTajoClient.getAllSessionVariables();
-      String value = variables.get("JOIN_TASK_INPUT_SIZE");
-      assertNotNull(value);
-      assertEquals("123", value);
-
-      res.close();
-
-      res = stmt.executeQuery("unset JOIN_TASK_INPUT_SIZE");
-      variables = connTajoClient.getAllSessionVariables();
-      value = variables.get("JOIN_TASK_INPUT_SIZE");
-      assertNull(value);
-    } finally {
-      if (res != null) {
-        res.close();
-      }
-      if (stmt != null) {
-        stmt.close();
-      }
-      if (conn != null) {
-        conn.close();
-      }
-    }
-  }
-
-  @Test
   public void testSetPreparedStatement() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
       DEFAULT_DATABASE_NAME);

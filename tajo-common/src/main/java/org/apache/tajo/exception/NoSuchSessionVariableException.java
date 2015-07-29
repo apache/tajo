@@ -16,25 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
-public class UndefinedTableException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
+public class NoSuchSessionVariableException extends TajoException {
 
-  public UndefinedTableException(PrimitiveProtos.ReturnState state) {
+  public NoSuchSessionVariableException(PrimitiveProtos.ReturnState state) {
     super(state);
   }
 
-  public UndefinedTableException(String dbName, String tbName) {
-		super(ResultCode.UNDEFINED_TABLE, CatalogUtil.buildFQName(dbName, tbName));
+  public NoSuchSessionVariableException(String variableName) {
+    super(Errors.ResultCode.NO_SUCH_SESSION_VARIABLE, variableName);
   }
-
-	public UndefinedTableException(String relName) {
-		super(ResultCode.UNDEFINED_TABLE, relName);
-	}
 }

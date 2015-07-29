@@ -34,6 +34,7 @@ import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
@@ -296,7 +297,7 @@ public class TajoCli {
     }
   }
 
-  private void processSessionVarCommand(String[] confCommands) throws SQLException {
+  private void processSessionVarCommand(String[] confCommands) throws TajoException {
     for (String eachParam: confCommands) {
       String[] tokens = eachParam.split("=");
       if (tokens.length != 2) {
@@ -488,7 +489,7 @@ public class TajoCli {
     return 0;
   }
 
-  private void executeJsonQuery(String json) throws SQLException {
+  private void executeJsonQuery(String json) throws TajoException {
 
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
@@ -581,7 +582,7 @@ public class TajoCli {
     }
   }
 
-  private void waitForQueryCompleted(QueryId queryId) throws SQLException {
+  private void waitForQueryCompleted(QueryId queryId) {
     // if query is empty string
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return;

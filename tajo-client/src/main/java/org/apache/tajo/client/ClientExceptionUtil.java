@@ -16,25 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.client;
 
-
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
-public class UndefinedTableException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894937L;
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
 
-  public UndefinedTableException(PrimitiveProtos.ReturnState state) {
-    super(state);
+public class ClientExceptionUtil {
+
+  public static void throwIfError(PrimitiveProtos.ReturnState state) throws TajoException {
+    if (isError(state)) {
+      throw toTajoException(state);
+    }
   }
 
-  public UndefinedTableException(String dbName, String tbName) {
-		super(ResultCode.UNDEFINED_TABLE, CatalogUtil.buildFQName(dbName, tbName));
+  public static TajoException toTajoException(PrimitiveProtos.ReturnState state) {
+    switch (state.getReturnCode()) {
+    case DUPLICATE_DATABASE:
+      return new DuplicateDatabaseException(state);
+    case UNDEFINED_TABLE:
+      return new UndefinedTableException(state);
+    default:
+      return new TajoException(state);
+    }
   }
-
-	public UndefinedTableException(String relName) {
-		super(ResultCode.UNDEFINED_TABLE, relName);
-	}
 }

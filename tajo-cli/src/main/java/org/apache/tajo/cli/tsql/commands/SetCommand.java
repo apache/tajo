@@ -21,6 +21,7 @@ package org.apache.tajo.cli.tsql.commands;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.exception.NoSuchSessionVariableException;
 import org.apache.tajo.util.StringUtils;
 
 import java.sql.SQLException;
@@ -46,13 +47,13 @@ public class SetCommand extends TajoShellCommand {
     }
   }
 
-  private void updateSessionVariable(String key, String val) throws SQLException {
+  private void updateSessionVariable(String key, String val) throws NoSuchSessionVariableException {
     Map<String, String> variables = new HashMap<String, String>();
     variables.put(key, val);
     client.updateSessionVariables(variables);
   }
 
-  public void set(String key, String val) throws SQLException {
+  public void set(String key, String val) throws NoSuchSessionVariableException {
     SessionVars sessionVar;
 
     if (SessionVars.exists(key)) { // if the variable is one of the session variables

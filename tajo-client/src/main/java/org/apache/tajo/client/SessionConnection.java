@@ -28,6 +28,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientConnectionException;
+import org.apache.tajo.exception.NoSuchSessionVariableException;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
@@ -201,7 +202,7 @@ public class SessionConnection implements Closeable {
     return response.getValue();
   }
 
-  public Map<String, String> updateSessionVariables(final Map<String, String> variables) throws SQLException {
+  public Map<String, String> updateSessionVariables(final Map<String, String> variables) {
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
 
@@ -220,15 +221,12 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    if (isSuccess(response.getState())) {
-      updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-      return Collections.unmodifiableMap(sessionVarsCache);
-    } else {
-      throw toSQLException(response.getState());
-    }
+    ensureOk(response.getState());
+    updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+    return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public Map<String, String> unsetSessionVariables(final List<String> variables) throws SQLException {
+  public Map<String, String> unsetSessionVariables(final List<String> variables) throws NoSuchSessionVariableException {
 
     final BlockingInterface stub = getTMStub();
     final UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
@@ -243,12 +241,13 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    if (isSuccess(response.getState())) {
-      updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-      return Collections.unmodifiableMap(sessionVarsCache);
-    } else {
-      throw toSQLException(response.getState());
+    if (isThisError(response.getState(), NO_SUCH_SESSION_VARIABLE)) {
+      throw new NoSuchSessionVariableException(response.getState());
     }
+
+    ensureOk(response.getState());
+    updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+    return Collections.unmodifiableMap(sessionVarsCache);
   }
 
   void updateSessionVarsCache(Map<String, String> variables) {
@@ -258,7 +257,7 @@ public class SessionConnection implements Closeable {
     }
   }
 
-  public String getSessionVariable(final String varname) throws SQLException {
+  public String getSessionVariable(final String varname) throws NoSuchSessionVariableException {
     synchronized (sessionVarsCache) {
       // If a desired variable is client side one and exists in the cache, immediately return the variable.
       if (sessionVarsCache.containsKey(varname)) {
@@ -270,35 +269,41 @@ public class SessionConnection implements Closeable {
     checkSessionAndGet(client);
 
     BlockingInterface stub = client.getStub();
-
+    StringResponse response;
     try {
-      return stub.getSessionVariable(null, getSessionedString(varname)).getValue();
+      response = stub.getSessionVariable(null, getSessionedString(varname));
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    if (isThisError(response.getState(), NO_SUCH_SESSION_VARIABLE)) {
+      throw new NoSuchSessionVariableException(response.getState());
+    }
+
+    ensureOk(response.getState());
+    return response.getValue();
   }
 
-  public Boolean existSessionVariable(final String varname) throws SQLException {
+  public Boolean existSessionVariable(final String varname) {
 
+    ReturnState state;
     try {
       final BlockingInterface stub = getTMStub();
-      ReturnState state = stub.existSessionVariable(null, getSessionedString(varname));
-
-      if (isThisError(state, NO_SUCH_SESSION_VARIABLE)) {
-        return false;
-      } else if (isError(state)){
-        throw SQLExceptionUtil.toSQLException(state);
-      }
-
-      return isSuccess(state);
-
+      state = stub.existSessionVariable(null, getSessionedString(varname));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    if (isThisError(state, NO_SUCH_SESSION_VARIABLE)) {
+      return false;
+    }
+
+    ensureOk(state);
+    return true;
   }
 
-  public Map<String, String> getAllSessionVariables() throws SQLException {
+  public Map<String, String> getAllSessionVariables() {
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
 
@@ -310,7 +315,7 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return ProtoUtil.convertToMap(response.getValue());
   }
 

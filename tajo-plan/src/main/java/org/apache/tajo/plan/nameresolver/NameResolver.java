@@ -149,7 +149,9 @@ public abstract class NameResolver {
    * @throws PlanningException
    */
   static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                  ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
+                                                  ColumnReferenceExpr columnRef)
+      throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException, UndefinedTableException {
+
     String qualifier;
     String canonicalName;
 
@@ -306,7 +308,7 @@ public abstract class NameResolver {
    */
   static Pair<String, String> lookupQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
                                                               ColumnReferenceExpr columnRef)
-      throws AmbiguousColumnException {
+      throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException {
 
     Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
 

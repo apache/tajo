@@ -24,11 +24,16 @@ import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.util.Collection;
 
 public class UndefinedFunctionException extends CatalogException {
 	private static final long serialVersionUID = 5062193018697228028L;
+
+  public UndefinedFunctionException(PrimitiveProtos.ReturnState state) {
+    super(state);
+  }
 
   public UndefinedFunctionException(String signature) {
     super(ResultCode.UNDEFINED_FUNCTION, signature);

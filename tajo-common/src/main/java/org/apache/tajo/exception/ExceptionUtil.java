@@ -21,6 +21,11 @@ package org.apache.tajo.exception;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+
+import java.sql.SQLException;
+
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
 
 public class ExceptionUtil {
 

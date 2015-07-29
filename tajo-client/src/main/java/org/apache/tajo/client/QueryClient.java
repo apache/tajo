@@ -21,6 +21,9 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.auth.UserRoleInfo;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.NoSuchSessionVariableException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
@@ -59,23 +62,23 @@ public interface QueryClient extends Closeable {
    * Call to QueryMaster closing query resources
    * @param queryId
    */
-  void closeQuery(final QueryId queryId) throws SQLException;
+  void closeQuery(final QueryId queryId);
 
   void closeNonForwardQuery(final QueryId queryId) throws SQLException;
 
-  String getCurrentDatabase() throws SQLException;
+  String getCurrentDatabase();
 
-  Boolean selectDatabase(final String databaseName) throws SQLException;
+  Boolean selectDatabase(final String databaseName) throws UndefinedDatabaseException;
 
-  Map<String, String> updateSessionVariables(final Map<String, String> variables) throws SQLException;
+  Map<String, String> updateSessionVariables(final Map<String, String> variables) throws NoSuchSessionVariableException;
 
-  Map<String, String> unsetSessionVariables(final List<String> variables) throws SQLException;
+  Map<String, String> unsetSessionVariables(final List<String> variables) throws NoSuchSessionVariableException;
 
-  String getSessionVariable(final String varname) throws SQLException;
+  String getSessionVariable(final String varname) throws NoSuchSessionVariableException;
 
-  Boolean existSessionVariable(final String varname) throws SQLException;
+  Boolean existSessionVariable(final String varname);
 
-  Map<String, String> getAllSessionVariables() throws SQLException;
+  Map<String, String> getAllSessionVariables();
 
   /**
    * It submits a query statement and get a response immediately.
@@ -84,7 +87,7 @@ public interface QueryClient extends Closeable {
    */
   SubmitQueryResponse executeQuery(final String sql);
 
-  SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException;
+  SubmitQueryResponse executeQueryWithJson(final String json);
 
   /**
    * It submits a query statement and get a response.
@@ -94,9 +97,9 @@ public interface QueryClient extends Closeable {
    *
    * @return If failed, return null.
    */
-  ResultSet executeQueryAndGetResult(final String sql) throws SQLException;
+  ResultSet executeQueryAndGetResult(final String sql) throws TajoException;
 
-  ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException;
+  ResultSet executeJsonQueryAndGetResult(final String json) throws TajoException;
 
   QueryStatus getQueryStatus(QueryId queryId);
 
@@ -108,13 +111,13 @@ public interface QueryClient extends Closeable {
 
   TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException;
 
-  boolean updateQuery(final String sql);
+  boolean updateQuery(final String sql) throws TajoException;
 
-  boolean updateQueryWithJson(final String json) throws SQLException;
+  boolean updateQueryWithJson(final String json) throws TajoException;
 
   List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws SQLException;
 
-  List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws SQLException;
+  List<ClientProtos.BriefQueryInfo> getFinishedQueryList();
 
   List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws SQLException;
 

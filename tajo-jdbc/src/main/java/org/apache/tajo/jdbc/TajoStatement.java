@@ -152,13 +152,6 @@ public class TajoStatement implements Statement {
   }
 
   protected ResultSet executeSQL(String sql) throws SQLException {
-    if (isSetVariableQuery(sql)) {
-      return setSessionVariable(tajoClient, sql);
-    }
-    if (isUnSetVariableQuery(sql)) {
-      return unSetSessionVariable(tajoClient, sql);
-    }
-
     ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
     SQLExceptionUtil.throwIfError(response.getState());
 
@@ -185,53 +178,6 @@ public class TajoStatement implements Statement {
     if (isClosed) {
       throw new SQLException(errorMsg + " after statement has been closed");
     }
-  }
-
-  public static boolean isSetVariableQuery(String sql) {
-    if (sql == null || sql.trim().isEmpty()) {
-      return false;
-    }
-
-    return sql.trim().toLowerCase().startsWith("set");
-  }
-
-  public static boolean isUnSetVariableQuery(String sql) {
-    if (sql == null || sql.trim().isEmpty()) {
-      return false;
-    }
-
-    return sql.trim().toLowerCase().startsWith("unset");
-  }
-
-  private ResultSet setSessionVariable(TajoClient client, String sql) throws SQLException {
-    int index = sql.toLowerCase().indexOf("set");
-    if (index < 0) {
-      throw new SQLException("SET statement should be started 'SET' keyword: " + sql);
-    }
-
-    String[] tokens = sql.substring(index + 3).trim().split(" ");
-    if (tokens.length != 2) {
-      throw new SQLException("SET statement should be <KEY> <VALUE>: " + sql);
-    }
-    Map<String, String> variable = new HashMap<String, String>();
-    variable.put(tokens[0].trim(), tokens[1].trim());
-    client.updateSessionVariables(variable);
-    return NULL_RESULT_SET;
-  }
-
-  private ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
-    int index = sql.toLowerCase().indexOf("unset");
-    if (index < 0) {
-      throw new SQLException("UNSET statement should be started 'UNSET' keyword: " + sql);
-    }
-
-    String key = sql.substring(index + 5).trim();
-    if (key.isEmpty()) {
-      throw new SQLException("UNSET statement should be <KEY>: " + sql);
-    }
-    client.unsetSessionVariables(Lists.newArrayList(key));
-
-    return NULL_RESULT_SET;
   }
 
   @Override

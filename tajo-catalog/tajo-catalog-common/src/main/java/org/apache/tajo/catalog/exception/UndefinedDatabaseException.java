@@ -20,9 +20,14 @@ package org.apache.tajo.catalog.exception;
 
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 public class UndefinedDatabaseException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
+
+  public UndefinedDatabaseException(PrimitiveProtos.ReturnState state) {
+    super(state);
+  }
 
 	public UndefinedDatabaseException(String dbName) {
 		super(Errors.ResultCode.UNDEFINED_DATABASE, dbName);
