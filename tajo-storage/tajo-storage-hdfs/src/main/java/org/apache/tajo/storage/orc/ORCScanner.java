@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
@@ -46,6 +47,7 @@ import org.joda.time.DateTimeZone;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TimeZone;
 
 /**
  * OrcScanner for reading ORC files
@@ -152,11 +154,13 @@ public class ORCScanner extends FileScanner {
 
     orcReader = new OrcReader(orcDataSource, new OrcMetadataReader());
 
+    TimeZone timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+      TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+
     // TODO: make OrcPredicate useful
-    // TODO: TimeZone should be from conf
-    // TODO: it might be splittable
+    // presto-orc uses joda timezone, so it needs to be converted.
     recordReader = orcReader.createRecordReader(columnSet, OrcPredicate.TRUE,
-        fragment.getStartKey(), fragment.getLength(), DateTimeZone.getDefault());
+        fragment.getStartKey(), fragment.getLength(), DateTimeZone.forTimeZone(timezone));
 
     LOG.debug("file fragment { path: " + fragment.getPath() +
       ", start offset: " + fragment.getStartKey() +
@@ -185,7 +189,6 @@ public class ORCScanner extends FileScanner {
     return outTuple;
   }
 
-  // TODO: support more types
   private Datum createValueDatum(Vector vector, TajoDataTypes.DataType type) {
     switch (type.getType()) {
       case INT1:
