@@ -112,7 +112,7 @@ public class DelimitedLineReader implements Closeable {
         FileChannel channel = inputStream.getChannel();
         channel.position(startOffset);
         is = inputStream;
-        lineReader = new ByteBufLineReader(new LocalFileInputChannel(channel),
+        lineReader = new ByteBufLineReader(new LocalFileInputChannel(inputStream),
             BufferPool.directBuffer((int) Math.min(bufferSize, end)));
       } else {
         fis = fs.open(fragment.getPath());

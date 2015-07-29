@@ -203,7 +203,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         JoinOrderingUtil.updateQualIfNecessary(graphContext, foundJoin);
         double cost = getCost(foundJoin);
 
-        if (cost < minCost) {
+        if (cost < minCost ||
+            (cost == minCost && cost == Double.MAX_VALUE)) {
           minCost = cost;
           bestJoin = foundJoin;
         }
@@ -236,7 +237,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
-    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
+    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
       double leftCost = getCost(edge.getLeftVertex());
       double rightCost = getCost(edge.getRightVertex());
       if (leftCost < rightCost) {
@@ -403,7 +404,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           getCost(joinEdge.getRightVertex()), 2);
     }
 
-    return cost * COMPUTATION_FACTOR;
+    return checkInfinity(cost * COMPUTATION_FACTOR);
   }
 
   public static double getCost(JoinVertex joinVertex) {
@@ -414,6 +415,22 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       cost = getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
     }
     return cost;
+  }
+
+  /**
+   * Return the MAX(MIN) value if the given cost is positive(negative) infinity.
+   *
+   * @param cost
+   * @return
+   */
+  private static double checkInfinity(double cost) {
+    if (cost == Double.POSITIVE_INFINITY) {
+      return Long.MAX_VALUE;
+    } else if (cost == Double.NEGATIVE_INFINITY) {
+      return Long.MIN_VALUE;
+    } else {
+      return cost;
+    }
   }
 
   // TODO - costs of other operator operators (e.g., group-by and sort) should be computed in proper manners.
@@ -454,7 +471,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (scanNode.getTableDesc().getStats() != null) {
         cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
       } else {
-        cost = Long.MAX_VALUE;
+        cost = Integer.MAX_VALUE;
       }
       break;
 

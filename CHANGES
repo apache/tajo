@@ -200,6 +200,12 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
+    infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
+
+    TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
+    (jinho)
+
     TAJO-1716: Repartitioner.makeEvenDistributedFetchImpl() does not distribute 
     fetches evenly. (jihoon)
 
@@ -366,6 +372,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1273: Merge DirectRawFile to master branch. (jinho)
 
     TAJO-1628: Add a documentation for join operation. (jihoon)
 
