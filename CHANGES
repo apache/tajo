@@ -32,6 +32,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
+
     TAJO-1703: Remove hardcoded value in NodeStatusUpdater. (jinho)
 
     TAJO-1701: Remove forward or non-forward query concept in TajoClient. 
