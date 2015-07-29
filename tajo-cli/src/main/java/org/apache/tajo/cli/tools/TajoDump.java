@@ -19,12 +19,10 @@
 package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
-
 import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
@@ -120,7 +118,7 @@ public class TajoDump {
   }
   
   private static boolean isAcceptableDumpingDatabase(String databaseName) {
-    return (databaseName == null || !databaseName.equalsIgnoreCase(CatalogConstants.INFORMATION_SCHEMA_DB_NAME));
+    return (databaseName != null && !databaseName.equalsIgnoreCase(CatalogConstants.INFORMATION_SCHEMA_DB_NAME));
   }
 
   public static void dump(TajoClient client, UserRoleInfo userInfo, String baseDatabaseName,
@@ -139,7 +137,9 @@ public class TajoDump {
         }
       }
     } else {
-      dumpDatabase(client, baseDatabaseName, out);
+      if (isAcceptableDumpingDatabase(baseDatabaseName)) {
+        dumpDatabase(client, baseDatabaseName, out);
+      }
     }
     out.flush();
   }

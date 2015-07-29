@@ -111,16 +111,18 @@
 
   float totalProgress = 0.0f;
   for(Task eachTask : allTasks) {
-    totalProgress += eachTask.getLastAttempt() != null ? eachTask.getLastAttempt().getProgress(): 0.0f;
+
     numShuffles = eachTask.getShuffleOutpuNum();
-    if (eachTask.getLastAttempt() != null) {
-      TableStats inputStats = eachTask.getLastAttempt().getInputStats();
+    TaskAttempt lastAttempt = eachTask.getLastAttempt();
+    if (lastAttempt != null) {
+      totalProgress +=  lastAttempt.getProgress();
+      TableStats inputStats = lastAttempt.getInputStats();
       if (inputStats != null) {
         totalInputBytes += inputStats.getNumBytes();
         totalReadBytes += inputStats.getReadBytes();
         totalReadRows += inputStats.getNumRows();
       }
-      TableStats outputStats = eachTask.getLastAttempt().getResultStats();
+      TableStats outputStats = lastAttempt.getResultStats();
       if (outputStats != null) {
         totalWriteBytes += outputStats.getNumBytes();
         totalWriteRows += outputStats.getNumRows();
@@ -231,18 +233,20 @@
             "&taskSeq=" + taskSeq + "&sort=" + sort + "&sortOrder=" + sortOrder;
 
     TaskAttempt lastAttempt = eachTask.getLastAttempt();
-    String taskHost = lastAttempt == null ? "-" : lastAttempt.getWorkerConnectionInfo().getHost();
-    if(lastAttempt != null) {
+    String taskHost = "-";
+    float progress = 0.0f;
+    if(lastAttempt != null && lastAttempt.getWorkerConnectionInfo() != null) {
       WorkerConnectionInfo conn = lastAttempt.getWorkerConnectionInfo();
       TaskAttemptId lastAttemptId = lastAttempt.getId();
       taskHost = "<a href='http://" + conn.getHost() + ":" + conn.getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + conn.getHost() + "</a>";
+      progress = eachTask.getLastAttempt().getProgress();
     }
 %>
     <tr>
       <td align='center'><%=rowNo%></td>
       <td><a href="<%=taskDetailUrl%>"><%=eachTask.getId()%></a></td>
       <td align='center'><%=eachTask.getLastAttemptStatus()%></td>
-      <td align='center'><%=JSPUtil.percentFormat(eachTask.getLastAttempt().getProgress())%>%</td>
+      <td align='center'><%=JSPUtil.percentFormat(progress)%>%</td>
       <td align='center'><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
       <td align='right'><%=eachTask.getLaunchTime() == 0 ? "-" : eachTask.getRunningTime() + " ms"%></td>
       <td align='center'><%=eachTask.getRetryCount()%></td>

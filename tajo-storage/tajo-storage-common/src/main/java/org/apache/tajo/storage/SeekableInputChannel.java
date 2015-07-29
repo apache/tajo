@@ -16,17 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+package org.apache.tajo.storage;
 
-public class BuiltinStorages {
-  public static final String TEXT = "TEXT";
-  public static final String JSON = "JSON";
-  public static final String RAW = "RAW";
-  public static final String DRAW = "DRAW";
-  public static final String RCFILE = "RCFILE";
-  public static final String ROW = "ROW";
-  public static final String PARQUET = "PARQUET";
-  public static final String SEQUENCE_FILE = "SEQUENCEFILE";
-  public static final String AVRO = "AVRO";
-  public static final String HBASE = "HBASE";
+import java.nio.ByteBuffer;
+
+public abstract class SeekableInputChannel extends InputChannel implements SeekableChannel {
+
+  @Override
+  public long read(ByteBuffer[] dsts, int offset, int length) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public long read(ByteBuffer[] dsts) {
+    return read(dsts, 0, dsts.length);
+  }
 }

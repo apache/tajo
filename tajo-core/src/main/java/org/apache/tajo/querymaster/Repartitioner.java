@@ -914,8 +914,9 @@ public class Repartitioner {
     // algorithm.
     Iterator<FetchGroupMeta> iterator = fetchGroupMetaList.iterator();
 
-    int p = 0;
+    int p;
     while(iterator.hasNext()) {
+      p = 0;
       while (p < num && iterator.hasNext()) {
         FetchGroupMeta fetchGroupMeta = iterator.next();
         assignedVolumes[p] += fetchGroupMeta.getVolume();
@@ -925,13 +926,13 @@ public class Repartitioner {
       }
 
       p = num - 1;
-      while (p > 0 && iterator.hasNext()) {
+      while (p >= 0 && iterator.hasNext()) {
         FetchGroupMeta fetchGroupMeta = iterator.next();
         assignedVolumes[p] += fetchGroupMeta.getVolume();
         TUtil.putCollectionToNestedList(fetchesArray[p], tableName, fetchGroupMeta.fetchUrls);
 
         // While the current one is smaller than next one, it adds additional fetches to current one.
-        while(iterator.hasNext() && assignedVolumes[p - 1] > assignedVolumes[p]) {
+        while(iterator.hasNext() && (p > 0 && assignedVolumes[p - 1] > assignedVolumes[p])) {
           FetchGroupMeta additionalFetchGroup = iterator.next();
           assignedVolumes[p] += additionalFetchGroup.getVolume();
           TUtil.putCollectionToNestedList(fetchesArray[p], tableName, additionalFetchGroup.fetchUrls);

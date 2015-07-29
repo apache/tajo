@@ -22,16 +22,8 @@ import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
@@ -184,10 +176,10 @@ public interface CatalogService {
 
   boolean existPartitionMethod(String databaseName, String tableName);
 
-  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
+  PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
       throws UndefinedPartitionException;
 
-  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName);
+  List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
   List<TablePartitionProto> getAllPartitions();
 
