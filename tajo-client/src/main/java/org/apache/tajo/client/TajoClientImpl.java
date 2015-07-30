@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.service.ServiceTracker;
@@ -226,5 +227,40 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws SQLException {
     return catalogClient.getFunctions(functionName);
+  }
+
+  @Override
+  public IndexDescProto getIndex(String indexName) throws SQLException {
+    return catalogClient.getIndex(indexName);
+  }
+
+  @Override
+  public boolean existIndex(String indexName) throws SQLException {
+    return catalogClient.existIndex(indexName);
+  }
+
+  @Override
+  public List<IndexDescProto> getIndexes(String tableName) throws SQLException {
+    return catalogClient.getIndexes(tableName);
+  }
+
+  @Override
+  public boolean hasIndexes(String tableName) throws SQLException {
+    return catalogClient.hasIndexes(tableName);
+  }
+
+  @Override
+  public IndexDescProto getIndex(String tableName, String[] columnNames) throws SQLException {
+    return catalogClient.getIndex(tableName, columnNames);
+  }
+
+  @Override
+  public boolean existIndex(String tableName, String[] columnName) throws SQLException {
+    return catalogClient.existIndex(tableName, columnName);
+  }
+
+  @Override
+  public boolean dropIndex(String indexName) throws SQLException {
+    return catalogClient.dropIndex(indexName);
   }
 }

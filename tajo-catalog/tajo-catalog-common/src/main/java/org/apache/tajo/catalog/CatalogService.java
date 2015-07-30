@@ -21,26 +21,11 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionKeysProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
-
 
 public interface CatalogService {
 
@@ -159,6 +144,8 @@ public interface CatalogService {
    */
   List<ColumnProto> getAllColumns();
 
+  List<IndexDescProto> getAllIndexes();
+
   /**
    *
    * @return All FunctionDescs
@@ -189,10 +176,10 @@ public interface CatalogService {
 
   boolean existPartitionMethod(String databaseName, String tableName);
 
-  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
+  PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
       throws UndefinedPartitionException;
 
-  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName);
+  List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
   List<TablePartitionProto> getAllPartitions();
 
@@ -202,15 +189,21 @@ public interface CatalogService {
 
   boolean existIndexByName(String databaseName, String indexName);
 
-  boolean existIndexByColumn(String databaseName, String tableName, String columnName);
+  boolean existIndexByColumns(String databaseName, String tableName, Column[] columns);
+
+  boolean existIndexByColumnNames(String databaseName, String tableName, String [] columnNames);
+
+  boolean existIndexesByTable(String databaseName, String tableName);
 
   IndexDesc getIndexByName(String databaseName, String indexName);
 
-  IndexDesc getIndexByColumn(String databaseName, String tableName, String columnName);
+  IndexDesc getIndexByColumns(String databaseName, String tableName, Column [] columns);
+
+  IndexDesc getIndexByColumnNames(String databaseName, String tableName, String [] columnNames);
+
+  Collection<IndexDesc> getAllIndexesByTable(String databaseName, String tableName);
 
   boolean dropIndex(String databaseName, String indexName);
-  
-  List<IndexProto> getAllIndexes();
 
   boolean createFunction(FunctionDesc funcDesc);
 

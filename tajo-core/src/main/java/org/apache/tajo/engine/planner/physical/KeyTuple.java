@@ -27,7 +27,7 @@ import org.apache.tajo.storage.VTuple;
  * Datum.hashCode() uses MurmurHash, so its cost is not so cheap.
  *
  */
-public class KeyTuple extends VTuple {
+public class KeyTuple extends VTuple implements Cloneable {
   private int hashCode;
 
   public KeyTuple(int size) {
@@ -71,6 +71,11 @@ public class KeyTuple extends VTuple {
   public void put(Datum [] values) {
     super.put(values);
     updateHashCode();
+  }
+
+  @Override
+  public KeyTuple clone() throws CloneNotSupportedException {
+    return (KeyTuple) super.clone();
   }
 
   @Override

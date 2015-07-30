@@ -104,24 +104,10 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
     List<CatalogProtos.TablePartitionProto> tablePartitions = catalog.getAllPartitions();
-    /// Debug Log
-    System.out.println("### tablePartitions - size:" + tablePartitions.size());
-    for(CatalogProtos.TablePartitionProto tablePartition : tablePartitions) {
-      System.out.println("### tablePartition:" + tablePartition.getPartitionName()
-        + ", path:" + tablePartition.getPath());
-    }
-
     assertEquals(tablePartitions.size(), 1);
     assertEquals(tablePartitions.get(0).getPartitionName(), "col3=1/col4=2");
 
     List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
-    /// Debug Log
-    System.out.println("### tablePartitionKeys - size:" + tablePartitionKeys.size());
-    for(CatalogProtos.TablePartitionKeysProto tablePartitionKey : tablePartitionKeys) {
-      System.out.println("### tablePartitionKey:" + tablePartitionKey.getColumnName()
-        + ", value:" + tablePartitionKey.getPartitionValue());
-    }
-
     assertEquals(tablePartitionKeys.size(), 2);
     assertEquals(tablePartitionKeys.get(0).getColumnName(), "col3");
     assertEquals(tablePartitionKeys.get(0).getPartitionValue(), "1");

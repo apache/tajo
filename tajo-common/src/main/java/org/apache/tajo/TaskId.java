@@ -25,10 +25,12 @@ public class TaskId implements Comparable<TaskId> {
 
   private ExecutionBlockId executionBlockId;
   private int id;
+  private final int hashValue;
 
   public TaskId(ExecutionBlockId executionBlockId, int id) {
     this.executionBlockId = executionBlockId;
     this.id = id;
+    this.hashValue = Objects.hashCode(executionBlockId, id);
   }
 
   public TaskId(TajoIdProtos.TaskIdProto proto) {
@@ -76,7 +78,7 @@ public class TaskId implements Comparable<TaskId> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(executionBlockId, id);
+    return hashValue;
   }
 
   @Override

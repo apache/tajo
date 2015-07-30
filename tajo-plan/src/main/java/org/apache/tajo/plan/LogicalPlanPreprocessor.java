@@ -473,6 +473,23 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
+  public LogicalNode visitCreateIndex(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, CreateIndex expr)
+      throws TajoException {
+    stack.push(expr);
+    LogicalNode child = visit(ctx, stack, expr.getChild());
+    stack.pop();
+
+    CreateIndexNode createIndex = ctx.plan.createNode(CreateIndexNode.class);
+    createIndex.setInSchema(child.getOutSchema());
+    createIndex.setOutSchema(child.getOutSchema());
+    return createIndex;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DropIndex expr) {
+    return ctx.plan.createNode(DropIndexNode.class);
+  }
+
   public LogicalNode visitTruncateTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TruncateTable expr)
       throws TajoException {
     TruncateTableNode truncateTableNode = ctx.plan.createNode(TruncateTableNode.class);

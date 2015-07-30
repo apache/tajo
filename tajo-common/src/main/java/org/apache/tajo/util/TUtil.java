@@ -21,6 +21,8 @@ package org.apache.tajo.util;
 import com.google.common.base.Objects;
 
 import java.lang.reflect.Array;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -266,6 +268,14 @@ public class TUtil {
     final StackTraceElement[] ste = Thread.currentThread().getStackTrace();
     StackTraceElement element = ste[2 + depth];
     return element.getClassName() + ":" + element.getMethodName() + "(" + element.getLineNumber() +")";
+  }
+
+  public static URI stringToURI(String str) {
+    try {
+      return new URI(str);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Cannot convert " + str + " to the URI type", e);
+    }
   }
 
   public static <T> T checkTypeAndGet(Object instance, Class<T> type) {

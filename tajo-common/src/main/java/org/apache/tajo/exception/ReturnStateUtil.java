@@ -30,8 +30,10 @@ import org.apache.tajo.exception.TajoExceptionInterface;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Collection;
+import java.util.List;
 
 public class ReturnStateUtil {
 
@@ -170,8 +172,13 @@ public class ReturnStateUtil {
     return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);
   }
 
-  public static ReturnState errUndefinedIndex(String tbName, String columnName) {
-    return returnError(ResultCode.UNDEFINED_INDEX, tbName, columnName);
+  public static ReturnState errUndefinedIndex(String tbName) {
+    return returnError(ResultCode.UNDEFINED_INDEX_FOR_TABLE, tbName);
+  }
+
+  public static ReturnState errUndefinedIndex(String tbName, List<String> columnNameList) {
+    String columnNames = StringUtils.join(columnNameList, ",");
+    return returnError(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, columnNames, tbName);
   }
 
   public static ReturnState errUndefinedIndexName(String indexName) {
