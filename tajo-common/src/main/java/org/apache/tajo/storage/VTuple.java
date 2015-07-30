@@ -221,8 +221,8 @@ public class VTuple implements Tuple, Cloneable {
   public VTuple clone() throws CloneNotSupportedException {
     VTuple tuple = (VTuple) super.clone();
 
-    tuple.values = new Datum[size()];
-    System.arraycopy(values, 0, tuple.values, 0, size()); //shallow copy
+    tuple.values = new Datum[values.length];
+    System.arraycopy(values, 0, tuple.values, 0, values.length); //shallow copy
     return tuple;
   }
 

@@ -32,6 +32,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
+
     TAJO-1703: Remove hardcoded value in NodeStatusUpdater. (jinho)
 
     TAJO-1701: Remove forward or non-forward query concept in TajoClient. 
@@ -198,6 +200,18 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
+    infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
+
+    TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
+    (jinho)
+
+    TAJO-1716: Repartitioner.makeEvenDistributedFetchImpl() does not distribute 
+    fetches evenly. (jihoon)
+
+    TAJO-1681: Fix TajoDump invalid null check for database name.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
     TAJO-1702: Fix race condition in finished query cache. (jinho)
 
     TAJO-1597: Problem of ignoring theta join condition. (jihoon)
@@ -209,7 +223,7 @@ Release 0.11.0 - unreleased
 
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
     table names only without invalid external table info. 
-    (Contributed by  DaeMyung Kang, Committed by jihoon)
+    (Contributed by DaeMyung Kang, Committed by jihoon)
 
     TAJO-1644: When inserting empty data into a partitioned table,
     existing data would be removed. (jaehwa)
@@ -358,6 +372,11 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1713: Change the type of edge cache in JoinGraphContext from 
+    HashMap to LRUMap. (jihoon)
+
+    TAJO-1273: Merge DirectRawFile to master branch. (jinho)
 
     TAJO-1628: Add a documentation for join operation. (jihoon)
 

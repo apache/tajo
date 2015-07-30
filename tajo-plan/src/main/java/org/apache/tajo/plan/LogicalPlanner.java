@@ -1357,7 +1357,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   private void updatePhysicalInfo(PlanContext planContext, TableDesc desc) {
     if (desc.getUri() != null &&
-        desc.getMeta().getStoreType() != "SYSTEM" && PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
+        !desc.getMeta().getStoreType().equals("SYSTEM") &&
+        !desc.getMeta().getStoreType().equals("FAKEFILE") && // FAKEFILE is used for test
+        PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
       try {
         Path path = new Path(desc.getUri());
         FileSystem fs = path.getFileSystem(planContext.queryContext.getConf());

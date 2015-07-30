@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.storage.SeekableInputChannel;
 import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.SizeOf;
@@ -129,6 +130,42 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
 
   public void setRows(int rowNum) {
     this.rowNum = rowNum;
+  }
+
+
+  public boolean copyFromChannel(SeekableInputChannel channel, TableStats stats) throws IOException {
+    if (channel.position() < channel.size()) {
+      clear();
+
+      buffer.clear();
+      channel.read(buffer);
+      memorySize = buffer.position();
+
+      while (position < memorySize) {
+        long recordPtr = address + position;
+
+        if (remain() < SizeOf.SIZE_OF_INT) {
+          channel.seek(channel.position() - remain());
+          memorySize = (int) (memorySize - remain());
+          return true;
+        }
+
+        int recordSize = UNSAFE.getInt(recordPtr);
+
+        if (remain() < recordSize) {
+          channel.seek(channel.position() - remain());
+          memorySize = (int) (memorySize - remain());
+          return true;
+        }
+
+        position += recordSize;
+        rowNum++;
+      }
+
+      return true;
+    } else {
+      return false;
+    }
   }
 
   public boolean copyFromChannel(FileChannel channel, TableStats stats) throws IOException {
