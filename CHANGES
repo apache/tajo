@@ -33,6 +33,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1645: Bump up hbase to 1.1.1. (hyunsik)
+
     TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
 
     TAJO-1703: Remove hardcoded value in NodeStatusUpdater. (jinho)
