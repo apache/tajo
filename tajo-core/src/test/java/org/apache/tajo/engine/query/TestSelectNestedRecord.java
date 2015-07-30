@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 

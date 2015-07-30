@@ -20,8 +20,6 @@ package org.apache.tajo.storage.json;
 
 
 import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableMap;
 import io.netty.buffer.ByteBuf;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -41,8 +39,6 @@ import org.apache.tajo.storage.text.TextLineParsingError;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {

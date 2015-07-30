@@ -23,14 +23,12 @@ import net.minidev.json.JSONObject;
 import org.apache.commons.net.util.Base64;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
-import org.codehaus.jettison.json.JSONWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
