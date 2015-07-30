@@ -1068,17 +1068,11 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public ReturnState addPartitions(RpcController controller, AddPartitionsProto request)
-      throws ServiceException {
+    public ReturnState addPartitions(RpcController controller, AddPartitionsProto request) {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
       String databaseName = identifier.getDatabaseName();
       String tableName = identifier.getTableName();
-
-
-      if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system database. It does not contain any partitioned tables.");
-      }
 
       rlock.lock();
       try {
