@@ -1,0 +1,1 @@
+create index l_orderkey_100_lt10_idx on lineitem (l_orderkey*100 asc null first) where l_orderkey*100 > 10;

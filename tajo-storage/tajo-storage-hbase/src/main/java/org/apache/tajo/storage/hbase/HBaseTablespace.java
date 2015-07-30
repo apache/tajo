@@ -49,6 +49,7 @@ import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.*;
@@ -1091,8 +1092,8 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public void rewritePlan(OverridableConf context, LogicalPlan plan) throws TajoException {
-    if (REWRITE_RULE.isEligible(context, plan)) {
-      REWRITE_RULE.rewrite(context, plan);
+    if (REWRITE_RULE.isEligible(new LogicalPlanRewriteRuleContext(context, plan))) {
+      REWRITE_RULE.rewrite(new LogicalPlanRewriteRuleContext(context, plan));
     }
   }
 

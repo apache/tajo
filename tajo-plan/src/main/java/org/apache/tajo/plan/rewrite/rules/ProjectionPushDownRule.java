@@ -37,6 +37,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -61,13 +62,13 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    LogicalNode toBeOptimized = context.getPlan().getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
       return false;
     }
-    for (QueryBlock eachBlock: plan.getQueryBlocks()) {
+    for (QueryBlock eachBlock: context.getPlan().getQueryBlocks()) {
       if (eachBlock.hasTableExpression()) {
         return true;
       }
@@ -76,7 +77,8 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws TajoException {
+    LogicalPlan plan = rewriteRuleContext.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
@@ -523,6 +525,11 @@ public class ProjectionPushDownRule extends
           CreateTableNode createTableNode = (CreateTableNode) parentNode;
           createTableNode.setChild(child);
           createTableNode.setInSchema(child.getOutSchema());
+          break;
+        case CREATE_INDEX:
+          CreateIndexNode createIndexNode = (CreateIndexNode) parentNode;
+          createIndexNode.setChild(child);
+          createIndexNode.setInSchema(child.getOutSchema());
           break;
         default:
           throw new TajoInternalError("unexpected parent node: " + parentNode.getType());
@@ -1108,6 +1115,12 @@ public class ProjectionPushDownRule extends
     node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
+  }
+
+  @Override
+  public LogicalNode visitIndexScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
+    return visitScan(context, plan, block,node, stack);
   }
 
   @Override

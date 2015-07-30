@@ -68,6 +68,28 @@ public class DDLBuilder {
     return sb.toString();
   }
 
+  public static String buildDDLForIndex(IndexDesc desc) {
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("--\n")
+        .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: INDEX;")
+        .append(" Index Method: ").append(desc.getIndexMethod());
+    sb.append("\n--\n");
+    sb.append("CREATE INDEX ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
+    sb.append(" on ").append(CatalogUtil.denormalizeIdentifier(desc.getTableName())).append(" ( ");
+
+    for (SortSpec sortSpec : desc.getKeySortSpecs()) {
+      sb.append(sortSpec.getSortKey().getQualifiedName()).append(" ");
+      sb.append(sortSpec.isAscending() ? "asc" : "desc").append(" ");
+      sb.append(sortSpec.isNullFirst() ? "null first" : "null last").append(", ");
+    }
+    sb.replace(sb.length()-2, sb.length()-1, " )");
+
+    sb.append(" location '").append(desc.getIndexPath()).append("';");
+
+    return sb.toString();
+  }
+
   public static void buildSchema(StringBuilder sb, Schema schema) {
     boolean first = true;
 

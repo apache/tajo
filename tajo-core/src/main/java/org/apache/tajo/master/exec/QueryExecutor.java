@@ -25,10 +25,8 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.exception.DuplicateIndexException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -71,8 +69,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;
 import static org.apache.tajo.exception.ReturnStateUtil.OK;
+import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;
 
 public class QueryExecutor {
   private static final Log LOG = LogFactory.getLog(QueryExecutor.class);
@@ -105,10 +103,17 @@ public class QueryExecutor {
 
 
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
-      ddlExecutor.execute(queryContext, plan);
 
-      response.setState(OK);
-      response.setResultType(ResultType.NO_RESULT);
+      if (PlannerUtil.isDistExecDDL(rootNode)) {
+        if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
+          checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
+        }
+        executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
+      } else {
+        ddlExecutor.execute(queryContext, plan);
+        response.setState(OK);
+        response.setResultType(ResultType.NO_RESULT);
+      }
 
     } else if (plan.isExplain()) { // explain query
       execExplain(session, sql, plan, queryContext, plan.isExplainGlobal(), response);
@@ -135,7 +140,7 @@ public class QueryExecutor {
 
   public void execSetSession(Session session, LogicalPlan plan,
                              SubmitQueryResponse.Builder response) {
-    SetSessionNode setSessionNode = ((LogicalRootNode)plan.getRootBlock().getRoot()).getChild();
+    SetSessionNode setSessionNode = ((LogicalRootNode) plan.getRootBlock().getRoot()).getChild();
 
     final String varName = setSessionNode.getName();
 
@@ -521,6 +526,25 @@ public class QueryExecutor {
     responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
     LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
         " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+  }
+
+  private void checkIndexExistence(final QueryContext queryContext, final CreateIndexNode createIndexNode)
+      throws IOException {
+    String databaseName, simpleIndexName, qualifiedIndexName;
+    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String[] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+      qualifiedIndexName = createIndexNode.getIndexName();
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = createIndexNode.getIndexName();
+      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+    }
+
+    if (catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new DuplicateIndexException(qualifiedIndexName);
+    }
   }
 
   public MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
