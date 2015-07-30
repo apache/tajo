@@ -30,6 +30,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -55,8 +56,8 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    for (LogicalNode eachNode : PlannerUtil.findAllNodes(plan.getRootNode(), NodeType.SELECTION)) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    for (LogicalNode eachNode : PlannerUtil.findAllNodes(context.getPlan().getRootNode(), NodeType.SELECTION)) {
       SelectionNode selectionNode = (SelectionNode) eachNode;
       if (!extractInSubquery(selectionNode.getQual()).isEmpty()) {
         return true;
@@ -78,9 +79,10 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
-    LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
-    rewriter.visit(queryContext, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
+    LogicalPlan.QueryBlock rootBlock = context.getPlan().getRootBlock();
+    LogicalPlan plan = context.getPlan();
+    rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
 
