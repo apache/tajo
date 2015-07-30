@@ -36,6 +36,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
@@ -59,8 +60,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    for (LogicalPlan.QueryBlock block : context.getPlan().getQueryBlocks()) {
       for (RelationNode relation : block.getRelations()) {
         if (relation.getType() == NodeType.SCAN) {
           TableDesc table = ((ScanNode)relation).getTableDesc();
@@ -74,9 +75,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
+    LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
-    rewriter.visit(queryContext, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
+    rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
 

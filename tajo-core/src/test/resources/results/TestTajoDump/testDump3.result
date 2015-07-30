@@ -1,0 +1,20 @@
+--
+-- Tajo database dump
+--
+
+
+--
+-- Database name: "TestTajoDump"
+--
+
+CREATE DATABASE IF NOT EXISTS "TestTajoDump";
+
+--
+-- Name: "TestTajoDump"."TableName1"; Type: TABLE; Storage: TEXT
+--
+CREATE TABLE "TestTajoDump"."TableName1" ("Age" INT4, "FirstName" TEXT, lastname TEXT) USING TEXT WITH ('text.delimiter'='|');
+
+--
+-- Name: test_idx; Type: INDEX; Index Method: TWO_LEVEL_BIN_TREE
+--
+CREATE INDEX test_idx on "TableName1" ( TestTajoDump.TableName1.Age asc null first, TestTajoDump.TableName1.FirstName desc null last )  location '${index.path}';

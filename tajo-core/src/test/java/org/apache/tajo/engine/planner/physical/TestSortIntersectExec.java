@@ -140,7 +140,7 @@ public class TestSortIntersectExec {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(conf);
+    optimizer = new LogicalOptimizer(conf, catalog);
   }
 
   @After

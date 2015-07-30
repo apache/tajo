@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util.history;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -25,9 +26,11 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.ResourceProtos.TaskHistoryProto;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.Bytes;
 
@@ -54,7 +57,28 @@ public class HistoryReader {
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
   }
 
-  public List<QueryInfo> getQueries(String keyword) throws IOException {
+  @Deprecated
+  public List<QueryInfo> getQueriesInHistory() throws IOException {
+    return getQueriesInHistory(-1, Integer.MAX_VALUE);
+  }
+
+  public List<QueryInfo> getQueriesInHistory(int page, int size) throws IOException {
+    List<QueryInfo> queryList = getQueryInfoInHistory(page, size, null);
+    if (queryList.size() > size) {
+      queryList = queryList.subList(0, size);
+    }
+
+    Collections.sort(queryList, new Comparator<QueryInfo>() {
+      @Override
+      public int compare(QueryInfo query1, QueryInfo query2) {
+        return query2.compareTo(query1);
+      }
+    });
+
+    return queryList;
+  }
+
+  private List<QueryInfo> getQueryInfoInHistory(int page, int size, @Nullable QueryId queryId) throws IOException {
     List<QueryInfo> queryInfos = new ArrayList<QueryInfo>();
 
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(historyParentPath, tajoConf);
@@ -62,7 +86,7 @@ public class HistoryReader {
       if (!fs.exists(historyParentPath)) {
         return queryInfos;
       }
-    } catch (Throwable e){
+    } catch (Throwable e) {
       return queryInfos;
     }
 
@@ -71,7 +95,11 @@ public class HistoryReader {
       return queryInfos;
     }
 
-    for (FileStatus eachDateFile: files) {
+    int startIndex = page < 1 ? page : (page - 1) * size; // set index to last index of previous page
+    int currentIndex = 0;
+
+    ArrayUtils.reverse(files);
+    for (FileStatus eachDateFile : files) {
       Path queryListPath = new Path(eachDateFile.getPath(), HistoryWriter.QUERY_LIST);
       if (eachDateFile.isFile() || !fs.exists(queryListPath)) {
         continue;
@@ -82,50 +110,68 @@ public class HistoryReader {
         continue;
       }
 
-      for (FileStatus eachFile: dateFiles) {
+      ArrayUtils.reverse(dateFiles);
+      for (FileStatus eachFile : dateFiles) {
         Path path = eachFile.getPath();
         if (eachFile.isDirectory() || !path.getName().endsWith(HistoryWriter.HISTORY_FILE_POSTFIX)) {
           continue;
         }
 
         FSDataInputStream in = null;
+        long totalLength = 0;
+
         try {
           in = fs.open(path);
 
-          byte[] buf = new byte[100 * 1024];
-          while (true) {
+          while (totalLength < eachFile.getLen()) {
             int length = in.readInt();
-            if (length > buf.length) {
-              buf = new byte[length];
+            totalLength += 4;
+
+            currentIndex++;
+            //skip previous page
+            if (startIndex >= currentIndex) {
+              totalLength += in.skipBytes(length);
+              continue;
             }
+
+            byte[] buf = new byte[length];
             in.readFully(buf, 0, length);
+            totalLength += length;
+
             String queryInfoJson = new String(buf, 0, length, Bytes.UTF8_CHARSET);
             QueryInfo queryInfo = QueryInfo.fromJson(queryInfoJson);
-            if (keyword != null) {
-              if (queryInfo.getSql().indexOf(keyword) >= 0) {
+
+            if (queryId != null) {
+              if (queryInfo.getQueryId().equals(queryId)) {
                 queryInfos.add(queryInfo);
+                return queryInfos;
               }
             } else {
               queryInfos.add(queryInfo);
             }
           }
-        } catch (EOFException e) {
         } catch (Throwable e) {
-          LOG.warn("Reading error:" + path + ", " +e.getMessage());
+          LOG.warn("Reading error:" + path + ", " + e.getMessage());
         } finally {
           IOUtils.cleanup(LOG, in);
+        }
+
+        if (queryInfos.size() >= size) {
+          return queryInfos;
         }
       }
     }
 
-    Collections.sort(queryInfos, new Comparator<QueryInfo>() {
-      @Override
-      public int compare(QueryInfo query1, QueryInfo query2) {
-        return query2.getQueryIdStr().toString().compareTo(query1.getQueryIdStr().toString());
-      }
-    });
-
     return queryInfos;
+  }
+
+  public QueryInfo getQueryByQueryId(QueryId queryId) throws IOException {
+    List<QueryInfo> queryInfoList = getQueryInfoInHistory(-1, Integer.MAX_VALUE, queryId);
+    if (queryInfoList.size() > 0) {
+      return queryInfoList.get(0);
+    } else {
+      return null;
+    }
   }
 
   private Path getQueryHistoryFilePath(String queryId, long startTime) throws IOException {
@@ -296,20 +342,6 @@ public class HistoryReader {
         }
       }
     }
-    return null;
-  }
-
-  public QueryInfo getQueryInfo(String queryId) throws IOException {
-    List<QueryInfo> queries = getQueries(null);
-
-    if (queries != null) {
-      for (QueryInfo queryInfo: queries) {
-        if (queryId.equals(queryInfo.getQueryId().toString())) {
-          return queryInfo;
-        }
-      }
-    }
-
     return null;
   }
 }

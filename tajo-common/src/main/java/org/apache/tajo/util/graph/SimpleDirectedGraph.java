@@ -37,6 +37,17 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   /** map: parent -> child */
   protected Map<V, Map<V, E>> reversedEdges = TUtil.newLinkedHashMap();
 
+  public void clear() {
+    for (Map<V, E> eachEdge : directedEdges.values()) {
+      eachEdge.clear();
+    }
+    for (Map<V, E> eachEdge : reversedEdges.values()) {
+      eachEdge.clear();
+    }
+    directedEdges.clear();
+    reversedEdges.clear();
+  }
+
   @Override
   public int getVertexSize() {
     return directedEdges.size();

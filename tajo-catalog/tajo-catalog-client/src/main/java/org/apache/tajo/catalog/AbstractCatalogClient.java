@@ -34,8 +34,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -315,6 +317,18 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
+  public List<IndexDescProto> getAllIndexes() {
+    try {
+      CatalogProtocolService.BlockingInterface stub = getStub();
+      IndexListResponse response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+      return response.getIndexDescList();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
   public final PartitionMethodDesc getPartitionMethod(final String databaseName, final String tableName) {
 
     try {
@@ -496,7 +510,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
 
-      return isSuccess(stub.createIndex(null, index.getProto()));
+      final ReturnState state = stub.createIndex(null, index.getProto());
+      if (isSuccess(state)) {
+        return true;
+      } else {
+        // TODO
+        return false;
+      }
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -521,18 +541,35 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean existIndexByColumn(final String databaseName, final String tableName, final String columnName) {
+  public boolean existIndexByColumns(final String databaseName, final String tableName, final Column [] columns) {
+    return existIndexByColumnNames(databaseName, tableName, extractColumnNames(columns));
+  }
+
+  @Override
+  public boolean existIndexByColumnNames(final String databaseName, final String tableName, final String [] columnNames) {
     try {
 
-      final GetIndexByColumnRequest request = GetIndexByColumnRequest.newBuilder()
-          .setTableIdentifier(buildTableIdentifier(databaseName, tableName))
-          .setColumnName(columnName)
-          .build();
+      GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
+      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      for (String colunName : columnNames) {
+        builder.addColumnNames(colunName);
+      }
 
       final BlockingInterface stub = getStub();
 
-      return isSuccess(stub.existIndexByColumn(null, request));
+      return isSuccess(stub.existIndexByColumnNames(null, builder.build()));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
+  @Override
+  public boolean existIndexesByTable(final String databaseName, final String tableName) {
+    try {
+      final BlockingInterface stub = getStub();
+
+      return isSuccess(
+          stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -548,33 +585,67 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
 
       final BlockingInterface stub = getStub();
-      final GetIndexResponse response = stub.getIndexByName(null, request);
+      final IndexResponse response = stub.getIndexByName(null, request);
       ensureOk(response.getState());
 
-      return new IndexDesc(response.getIndex());
+      return new IndexDesc(response.getIndexDesc());
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
 
-  @Override
-  public final IndexDesc getIndexByColumn(final String databaseName,
-                                          final String tableName,
-                                          final String columnName) {
-    try {
+  private static String[] extractColumnNames(Column[] columns) {
+    String[] columnNames = new String [columns.length];
+    for (int i = 0; i < columnNames.length; i++) {
+      columnNames[i] = columns[i].getSimpleName();
+    }
+    return columnNames;
+  }
 
-      final GetIndexByColumnRequest request = GetIndexByColumnRequest.newBuilder()
-          .setTableIdentifier(buildTableIdentifier(databaseName, tableName))
-          .setColumnName(columnName)
-          .build();
+  @Override
+  public final IndexDesc getIndexByColumns(final String databaseName,
+                                               final String tableName,
+                                               final Column [] columns) {
+    return getIndexByColumnNames(databaseName, tableName, extractColumnNames(columns));
+  }
+
+  @Override
+  public final IndexDesc getIndexByColumnNames(final String databaseName,
+                                           final String tableName,
+                                           final String [] columnNames) {
+    try {
+      GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
+      builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      for (String columnName : columnNames) {
+        builder.addColumnNames(columnName);
+      }
 
       final BlockingInterface stub = getStub();
-      final GetIndexResponse response = stub.getIndexByColumn(null, request);
-      ensureOk(response.getState());;
+      final IndexResponse response = stub.getIndexByColumnNames(null, builder.build());
+      ensureOk(response.getState());
 
-      return new IndexDesc(response.getIndex());
+      return new IndexDesc(response.getIndexDesc());
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
+  @Override
+  public final Collection<IndexDesc> getAllIndexesByTable(final String databaseName,
+                                                          final String tableName) {
+    try {
+      TableIdentifierProto proto = CatalogUtil.buildTableIdentifier(databaseName, tableName);
+
+      final BlockingInterface stub = getStub();
+      final IndexListResponse response = stub.getAllIndexesByTable(null, proto);
+      ensureOk(response.getState());
+
+      List<IndexDesc> indexDescs = TUtil.newList();
+      for (IndexDescProto descProto : response.getIndexDescList()) {
+        indexDescs.add(new IndexDesc(descProto));
+      }
+      return indexDescs;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -591,21 +662,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final BlockingInterface stub = getStub();
 
       return isSuccess(stub.dropIndex(null, request));
-
-    } catch (ServiceException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public List<IndexProto> getAllIndexes() {
-
-    try {
-      final BlockingInterface stub = getStub();
-      final GetIndexesResponse response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
-
-      return response.getIndexList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);

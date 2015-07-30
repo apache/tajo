@@ -103,11 +103,12 @@ enum ResultCode {
   UNDEFINED_TABLE                       = 514; // ?
   UNDEFINED_COLUMN                      = 515; // SQLState: 42703
   UNDEFINED_FUNCTION                    = 516; // SQLState: 42883
-  UNDEFINED_INDEX                       = 517; // ?
-  UNDEFINED_INDEX_NAME                  = 518; // ?
-  UNDEFINED_PARTITION                   = 519; // ?
-  UNDEFINED_PARTITION_METHOD            = 520; // ?
-  UNDEFINED_OPERATOR                    = 521; // SQLState: 42883 (=UNDEFINED_FUNCTION)
+  UNDEFINED_INDEX_FOR_TABLE             = 517; // ?
+  UNDEFINED_INDEX_FOR_COLUMNS           = 518; // ?
+  UNDEFINED_INDEX_NAME                  = 519; // ?
+  UNDEFINED_PARTITION                   = 520; // ?
+  UNDEFINED_PARTITION_METHOD            = 521; // ?
+  UNDEFINED_OPERATOR                    = 522; // SQLState: 42883 (=UNDEFINED_FUNCTION)
 
   DUPLICATE_TABLESPACE                  = 531;
   DUPLICATE_DATABASE                    = 532; // SQLState: 42P04

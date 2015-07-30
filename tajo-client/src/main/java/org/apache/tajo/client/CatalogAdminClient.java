@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.exception.TajoException;
 
 import java.io.Closeable;
@@ -138,4 +139,18 @@ public interface CatalogAdminClient extends Closeable {
 
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName)
       throws AmbiguousFunctionException, UndefinedFunctionException;
+
+  IndexDescProto getIndex(final String indexName) throws SQLException;
+
+  boolean existIndex(final String indexName) throws SQLException;
+
+  List<IndexDescProto> getIndexes(final String tableName) throws SQLException;
+
+  boolean hasIndexes(final String tableName) throws SQLException;
+
+  IndexDescProto getIndex(final String tableName, final String[] columnNames) throws SQLException;
+
+  boolean existIndex(final String tableName, final String[] columnName) throws SQLException;
+
+  boolean dropIndex(final String indexName) throws SQLException;
 }

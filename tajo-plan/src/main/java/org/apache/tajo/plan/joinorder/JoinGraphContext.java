@@ -18,13 +18,13 @@
 
 package org.apache.tajo.plan.joinorder;
 
+import org.apache.commons.collections.map.LRUMap;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 
 public class JoinGraphContext {
@@ -32,8 +32,8 @@ public class JoinGraphContext {
   private JoinGraph joinGraph = new JoinGraph();
 
   // New join edges are frequently created during join order optimization.
-  // This cache is to reduce the overhead of join edge creation.
-  private Map<Pair<JoinVertex,JoinVertex>, JoinEdge> edgeCache = TUtil.newHashMap();
+  // This cache is to reduce such overhead.
+  private LRUMap edgeCache = new LRUMap(10000);
 
   // candidate predicates contain the predicates which are not pushed to any join nodes yet.
   // evaluated predicates contain the predicates which are already pushed to some join nodes.
@@ -129,9 +129,27 @@ public class JoinGraphContext {
   public JoinEdge getCachedOrNewJoinEdge(JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
     Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>(left, right);
     if (edgeCache.containsKey(cacheKey)) {
-      return edgeCache.get(cacheKey);
+      return (JoinEdge) edgeCache.get(cacheKey);
     } else {
       return cacheEdge(new JoinEdge(joinSpec, left, right));
     }
+  }
+
+  public void clear() {
+    rootVertexes.clear();
+    candidateJoinConditions.clear();
+    candidateJoinFilters.clear();
+    evaluatedJoinConditions.clear();
+    evaluatedJoinFilters.clear();
+    edgeCache.clear();
+    joinGraph.clear();
+
+    rootVertexes = null;
+    candidateJoinConditions = null;
+    candidateJoinFilters = null;
+    evaluatedJoinConditions = null;
+    evaluatedJoinFilters = null;
+    edgeCache = null;
+    joinGraph = null;
   }
 }

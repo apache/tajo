@@ -22,6 +22,9 @@ import java.io.IOException;
 
 public interface SeekableChannel {
 
-  public abstract void seek(long offset) throws IOException;
+  void seek(long offset) throws IOException;
 
+  long position() throws IOException;
+
+  long size() throws IOException;
 }

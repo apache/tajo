@@ -20,7 +20,6 @@ package org.apache.tajo.plan.visitor;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 
 import java.util.Stack;

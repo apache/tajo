@@ -22,7 +22,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 
 import java.util.Stack;
@@ -231,6 +230,19 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     super.visitInsert(context, plan, block, node, stack);
     stack.pop();
     context.depth--;
+    context.add(context.depth, node.getPlanString());
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitCreateIndex(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     CreateIndexNode node, Stack<LogicalNode> stack) throws TajoException {
+    return visitUnaryNode(context, plan, block, node, stack);
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    DropIndexNode node, Stack<LogicalNode> stack) {
     context.add(context.depth, node.getPlanString());
     return node;
   }

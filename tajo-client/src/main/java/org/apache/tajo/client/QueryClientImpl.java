@@ -165,6 +165,7 @@ public class QueryClientImpl implements QueryClient {
     }
 
     return response;
+
   }
 
   @Override
@@ -328,7 +329,6 @@ public class QueryClientImpl implements QueryClient {
         .setFetchRowNum(fetchRowNum)
         .build();
 
-
     GetQueryResultDataResponse response;
     try {
       response = stub.getQueryResultData(null, request);
@@ -474,7 +474,7 @@ public class QueryClientImpl implements QueryClient {
   public int getMaxRows() {
   	return this.maxRows;
   }
-  
+
   public QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException {
 
     final BlockingInterface stub = conn.getTMStub();
