@@ -60,6 +60,10 @@ public class JsonLineSerializer extends TextLineSerializer {
                         Tuple input) throws IOException {
     String fieldName = pathElements[depth];
 
+    if (input.isBlankOrNull(fieldIndex)) {
+      return;
+    }
+
     switch (types.get(fullPath)) {
 
     case BOOLEAN:
