@@ -24,7 +24,7 @@ public class UndefinedIndexException extends CatalogException {
   private static final long serialVersionUID = 3705839985189534673L;
 
   public UndefinedIndexException(String tableName, String columnName) {
-    super(ResultCode.UNDEFINED_INDEX, tableName, columnName);
+    super(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, tableName, columnName);
   }
 
   public UndefinedIndexException(String indexName) {

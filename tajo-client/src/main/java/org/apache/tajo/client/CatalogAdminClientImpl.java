@@ -26,8 +26,10 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
@@ -217,6 +219,110 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
     throwIfError(res.getState());
     return res.getFunctionList();
+  }
+
+  @Override
+  public IndexDescProto getIndex(final String indexName) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    IndexResponse res;
+    try {
+      res = stub.getIndexWithName(null, conn.getSessionedString(indexName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(res.getState());
+    return res.getIndexDesc();
+  }
+
+  @Override
+  public boolean existIndex(final String indexName) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.existIndexWithName(null, conn.getSessionedString(indexName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<IndexDescProto> getIndexes(final String tableName) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    IndexListResponse response;
+    try {
+      response = stub.getIndexesForTable(null,
+          conn.getSessionedString(tableName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(response.getState());
+    return response.getIndexDescList();
+  }
+
+  @Override
+  public boolean hasIndexes(final String tableName) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.existIndexesForTable(null, conn.getSessionedString(tableName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
+    builder.setSessionId(conn.sessionId);
+    builder.setTableName(tableName);
+    for (String eachColumnName : columnNames) {
+      builder.addColumnNames(eachColumnName);
+    }
+
+    IndexResponse response;
+    try {
+      response = stub.getIndexWithColumns(null, builder.build());
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwIfError(response.getState());
+    return response.getIndexDesc();
+  }
+
+  @Override
+  public boolean existIndex(final String tableName, final String[] columnName) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
+    builder.setSessionId(conn.sessionId);
+    builder.setTableName(tableName);
+    for (String eachColumnName : columnName) {
+      builder.addColumnNames(eachColumnName);
+    }
+
+    try {
+      return isSuccess(stub.existIndexWithColumns(null, builder.build()));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public boolean dropIndex(final String indexName) throws SQLException {
+    final BlockingInterface stub = conn.getTMStub();
+
+    try {
+      return isSuccess(stub.dropIndex(null, conn.getSessionedString(indexName)));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

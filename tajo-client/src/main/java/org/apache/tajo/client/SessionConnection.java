@@ -374,7 +374,6 @@ public class SessionConnection implements Closeable {
         builder.setBaseDatabaseName(baseDatabase);
       }
 
-
       CreateSessionResponse response = null;
 
       try {

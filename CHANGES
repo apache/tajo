@@ -1,5 +1,6 @@
 Tajo Change Log 
 
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -200,6 +201,14 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1608: Fix test failure in index_support branch. (jihoon)
+
+    TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
+    names only without invalid external table info. 
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
     TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
     infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
 
@@ -373,6 +382,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1300: Merge the index branch into the master branch. (jihoon)
+
     TAJO-1713: Change the type of edge cache in JoinGraphContext from 
     HashMap to LRUMap. (jihoon)
 
@@ -431,6 +442,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1302: Support index metadata backup and restore. (jihoon)
 
     TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
     committed by hyunsik)
