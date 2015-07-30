@@ -81,7 +81,8 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testInsert() throws Exception {
+  public final void testInsertType1() throws Exception {
+    // all columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample3");
     assertEquals(TUtil.newList("sample3"), tables);
 
@@ -89,6 +90,20 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
 
     executeString("INSERT INTO clone (title, name.first_name, name.last_name) SELECT title, name.first_name, name.last_name from sample3").close();
     ResultSet res = executeString("select title, name.first_name, name.last_name from clone");
+    assertResultSet(res);
+    res.close();
+  }
+
+  @Test
+  public final void testInsertType2() throws Exception {
+    // some columns
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample4");
+    assertEquals(TUtil.newList("sample4"), tables);
+
+    executeString("CREATE TABLE clone2 (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
+
+    executeString("INSERT INTO clone2 (title, name.last_name) SELECT title, name.last_name from sample4").close();
+    ResultSet res = executeString("select title, name.first_name, name.last_name from clone2");
     assertResultSet(res);
     res.close();
   }

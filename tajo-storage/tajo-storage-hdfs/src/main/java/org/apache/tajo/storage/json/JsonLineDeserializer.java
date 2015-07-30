@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.json;
 
 
+import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
 import io.netty.buffer.ByteBuf;
@@ -40,6 +41,8 @@ import org.apache.tajo.storage.text.TextLineParsingError;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
@@ -52,25 +55,13 @@ public class JsonLineDeserializer extends TextLineDeserializer {
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
 
-    projectedPaths = NestedPathUtil.convertColumnsToPaths(projected);
+    projectedPaths = NestedPathUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
     types = NestedPathUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
   }
 
   @Override
   public void init() {
     parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
-  }
-
-  private static String makePath(String [] path, int depth) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i <= depth; i++) {
-      sb.append(path[i]);
-      if (i < depth) {
-        sb.append(NestedPathUtil.PATH_DELIMITER);
-      }
-    }
-
-    return sb.toString();
   }
 
   /**

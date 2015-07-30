@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
@@ -90,19 +91,22 @@ public class NestedPathUtil {
     }
   }
 
-  public static String [] convertColumnsToPaths(Column [] columns) {
-    String [] paths = new String[columns.length];
+  public static String [] convertColumnsToPaths(Iterable<Column> columns, boolean onlyLeaves) {
+    List<String> paths = Lists.newArrayList();
 
-    for (int i = 0; i < columns.length; i++) {
-      paths[i] = columns[i].getSimpleName();
+    for (Column c : columns) {
+      if (onlyLeaves && c.getDataType().getType() == Type.RECORD) {
+        continue;
+      }
+      paths.add(c.getSimpleName());
     }
 
-    return paths;
+    return paths.toArray(new String [paths.size()]);
   }
 
   public static ImmutableMap<String, Type> buildTypeMap(Iterable<Column> schema, String [] targetPaths) {
 
-    ImmutableMap.Builder<String, Type> builder = ImmutableMap.builder();
+    HashMap<String, Type> builder = new HashMap<String, Type>();
     for (Column column : schema) {
 
       // Keep types which only belong to projected paths
@@ -117,6 +121,6 @@ public class NestedPathUtil {
       }
     }
 
-    return builder.build();
+    return ImmutableMap.copyOf(builder);
   }
 }
