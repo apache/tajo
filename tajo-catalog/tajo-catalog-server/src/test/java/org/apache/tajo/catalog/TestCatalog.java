@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
@@ -937,14 +936,22 @@ public class TestCatalog {
     String[] partitionNames = partitionName.split("/");
 
     List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
+    String lastColumnName = null;
     for(int i = 0; i < partitionNames.length; i++) {
       String columnName = partitionNames[i].split("=")[0];
+      String partitionValue = partitionNames[i].split("=")[1];
 
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(partitionNames[i]);
+      builder.setColumnName(partitionValue);
+
+      if (i > 0) {
+        builder.setParentColumnName(lastColumnName);
+      }
+
       builder.setPartitionValue(columnName);
 
       partitionKeyList.add(builder.build());
+      lastColumnName = columnName;
     }
 
     partitionDesc.setPartitionKeys(partitionKeyList);

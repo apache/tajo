@@ -32,7 +32,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -1272,7 +1273,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     ResultSet res = executeString(query.toString());
 
     StringBuilder partitionName = new StringBuilder();
-    CatalogProtos.PartitionDescProto partitionDescProto = null;
+    PartitionDescProto partitionDescProto = null;
 
     // Check whether that partition's directory exist or doesn't exist.
     while(res.next()) {
@@ -1288,6 +1289,15 @@ public class TestTablePartitions extends QueryTestCaseBase {
       partitionDescProto = catalog.getPartition(databaseName, tableName, partitionName.toString());
       assertNotNull(partitionDescProto);
       assertTrue(partitionDescProto.getPath().indexOf(tableName + "/" + partitionName.toString()) > 0);
+
+      for (int i = 0; i < partitionDescProto.getPartitionKeysCount(); i++) {
+        PartitionKeyProto partitionKey = partitionDescProto.getPartitionKeys(i);
+        if (i > 0) {
+          assertEquals(partitionKey.getParentColumnName(), partitionDescProto.getPartitionKeys(i-1).getColumnName());
+        } else {
+          assertEquals(partitionKey.getParentColumnName(), "");
+        }
+      }
       rowCount++;
     }
 

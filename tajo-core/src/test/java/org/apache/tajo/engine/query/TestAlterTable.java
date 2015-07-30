@@ -24,8 +24,6 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.exception.DuplicatePartitionException;
-import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

@@ -854,6 +854,11 @@ public class CatalogUtil {
     for (int i = 0; i < columns.length; i++) {
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
       builder.setColumnName(columns[i]);
+
+      if (i > 0) {
+        builder.setParentColumnName(columns[i-1]);
+      }
+
       builder.setPartitionValue(values[i]);
 
       if (i > 0) {

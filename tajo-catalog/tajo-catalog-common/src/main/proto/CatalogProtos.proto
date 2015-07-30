@@ -272,7 +272,8 @@ message PartitionDescProto {
 
 message PartitionKeyProto {
   required string columnName = 1;
-  required string partitionValue = 2;
+  optional string parentColumnName = 2;
+  required string partitionValue = 3;
 }
 
 message PartitionIdentifierProto {

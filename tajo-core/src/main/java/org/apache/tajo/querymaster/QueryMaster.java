@@ -292,31 +292,26 @@ public class QueryMaster extends CompositeService implements EventHandler {
         return;
       }
 
-      synchronized (finishedQueryMasterTasksCache) {
-        finishedQueryMasterTasksCache.put(queryId, queryMasterTask);
-      }
-
-      queryMasterTasks.remove(queryId);
-
-      // In INSERT .. SELECT ... queries or CTAS, dynamic partitions should be added to catalog.
+      // Create dynamic partitions to CatalogStore by running insert query or CTAS query.
       Query query = queryMasterTask.getQuery();
       if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED && query.getResultDesc() != null) {
         TableDesc desc = query.getResultDesc();
 
-        String databaseName, simpleTableName;
-
-        if (CatalogUtil.isFQTableName(desc.getName())) {
-          String[] split = CatalogUtil.splitFQTableName(desc.getName());
-          databaseName = split[0];
-          simpleTableName = split[1];
-        } else {
-          databaseName = queryContext.getCurrentDatabase();
-          simpleTableName = desc.getName();
-        }
-
         // If there is partitions
         List<PartitionDescProto> partitions = query.getPartitions();
         if (partitions!= null && !partitions.isEmpty()) {
+
+          String databaseName, simpleTableName;
+
+          if (CatalogUtil.isFQTableName(desc.getName())) {
+            String[] split = CatalogUtil.splitFQTableName(desc.getName());
+            databaseName = split[0];
+            simpleTableName = split[1];
+          } else {
+            databaseName = queryContext.getCurrentDatabase();
+            simpleTableName = desc.getName();
+          }
+
           CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
           // Store partitions to CatalogStore using alter table statement.
           boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
@@ -329,6 +324,12 @@ public class QueryMaster extends CompositeService implements EventHandler {
           LOG.info("Can't find partitions for adding.");
         }
       }
+
+      synchronized (finishedQueryMasterTasksCache) {
+        finishedQueryMasterTasksCache.put(queryId, queryMasterTask);
+      }
+
+      queryMasterTasks.remove(queryId);
 
       TajoHeartbeatRequest queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
       CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
