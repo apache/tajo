@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.rewrite;
 
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule;
 import org.apache.tajo.plan.rewrite.rules.InSubqueryRewriteRule;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
@@ -56,7 +57,8 @@ public class BaseLogicalPlanRewriteRuleProvider extends LogicalPlanRewriteRulePr
   public Collection<Class<? extends LogicalPlanRewriteRule>> getPostRules() {
     List<Class<? extends LogicalPlanRewriteRule>> rules = TUtil.newList(
         ProjectionPushDownRule.class,
-        PartitionedTableRewriter.class
+        PartitionedTableRewriter.class,
+        AccessPathRewriter.class
     );
     return rules;
   }

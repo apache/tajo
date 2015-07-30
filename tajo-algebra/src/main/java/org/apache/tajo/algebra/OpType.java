@@ -53,6 +53,8 @@ public enum OpType {
   DropTable(DropTable.class),
   AlterTablespace(AlterTablespace.class),
   AlterTable(AlterTable.class),
+  CreateIndex(CreateIndex.class),
+  DropIndex(DropIndex.class),
   TruncateTable(TruncateTable.class),
 
   // Insert or Update

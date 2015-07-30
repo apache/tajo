@@ -27,12 +27,8 @@ class IndexesTableDescriptor extends AbstractTableDescriptor {
       new ColumnDescriptor("db_id", Type.INT4, 0),
       new ColumnDescriptor("tid", Type.INT4, 0),
       new ColumnDescriptor("index_name", Type.TEXT, 0),
-      new ColumnDescriptor("column_name", Type.TEXT, 0),
-      new ColumnDescriptor("data_type", Type.TEXT, 0),
-      new ColumnDescriptor("index_type", Type.TEXT, 0),
-      new ColumnDescriptor("is_unique", Type.BOOLEAN, 0),
-      new ColumnDescriptor("is_clustered", Type.BOOLEAN, 0),
-      new ColumnDescriptor("is_ascending", Type.BOOLEAN, 0)
+      new ColumnDescriptor("index_method", Type.TEXT, 0),
+      new ColumnDescriptor("index_path", Type.TEXT, 0),
   };
 
   public IndexesTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {

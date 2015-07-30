@@ -141,6 +141,7 @@ public class NamedExprsManager {
 
   /**
    * Adds an expression and returns a reference name.
+   * @param expr added expression
    */
   public String addExpr(Expr expr) {
     if (idToExprBiMap.inverse().containsKey(expr)) {
