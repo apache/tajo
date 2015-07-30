@@ -133,6 +133,8 @@ public class LogicalOptimizer {
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
       block.addPlanHistory("Non-optimized join order: " + originalOrder + " (cost: " + nonOptimizedJoinCost + ")");
       block.addPlanHistory("Optimized join order    : " + optimizedOrder + " (cost: " + order.getCost() + ")");
+
+      joinGraphContext.clear();
     }
   }
 
