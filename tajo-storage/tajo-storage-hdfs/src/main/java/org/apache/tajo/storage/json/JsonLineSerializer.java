@@ -111,7 +111,7 @@ public class JsonLineSerializer extends TextLineSerializer {
         break;
 
       default:
-        throw new UnimplementedException(types[i].name() + " is not supported.");
+        throw new UnimplementedException(fieldName + "(" + types[i].name() + ") is not supported.");
       }
     }
 

@@ -19,6 +19,8 @@
 package org.apache.tajo.storage.json;
 
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableMap;
 import io.netty.buffer.ByteBuf;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -42,35 +44,20 @@ import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
   private JSONParser parser;
+
   // Full Path -> Type
-  private Map<String, Type> types;
-  private String [] projectedPaths;
+  private final Map<String, Type> types;
+  private final String [] projectedPaths;
 
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
 
-    projectedPaths = new String[projected.length];
-    for (int i = 0; i < projected.length; i++) {
-      this.projectedPaths[i] = projected[i].getSimpleName();
-    }
+    projectedPaths = NestedPathUtil.convertColumnsToPaths(projected);
+    types = NestedPathUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
   }
 
   @Override
   public void init() {
-    types = TUtil.newHashMap();
-    for (Column column : schema.getAllColumns()) {
-
-      // Keep types which only belong to projected paths
-      // For example, assume that a projected path is 'name/first_name', where name is RECORD and first_name is TEXT.
-      // In this case, we should keep two types:
-      // * name - RECORD
-      // * name/first_name TEXT
-      for (String p :projectedPaths) {
-        if (p.startsWith(column.getSimpleName())) {
-          types.put(column.getSimpleName(), column.getDataType().getType());
-        }
-      }
-    }
     parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
   }
 

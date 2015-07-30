@@ -19,11 +19,12 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Utility methods for nested field
@@ -65,24 +66,6 @@ public class NestedPathUtil {
     return sb.toString();
   }
 
-  /**
-   * Lookup the actual column corresponding to a given path.
-   * We assume that a path starts with the slash '/' and it
-   * does not include the root field.
-   *
-   * @param nestedField Nested column
-   * @param path Path which starts with '/';
-   * @return Column corresponding to the path
-   */
-  public static Column lookupPath(Column nestedField, String path) {
-    Preconditions.checkArgument(path.charAt(0) == PATH_DELIMITER.charAt(0),
-        "A nested field path must start with slash '/'.");
-
-    // We assume that path starts with '/', causing an empty string "" at 0 in the path splits.
-    // So, we should start the index from 1 instead of 0.
-    return lookupPath(nestedField, path.split(PATH_DELIMITER));
-  }
-
   public static Column lookupPath(Column nestedField, String [] paths) {
     // We assume that path starts with '/', causing an empty string "" at 0 in the path splits.
     // So, we should start the index from 1 instead of 0.
@@ -105,5 +88,35 @@ public class NestedPathUtil {
     } else {
       throw new NoSuchFieldError(makePath(paths));
     }
+  }
+
+  public static String [] convertColumnsToPaths(Column [] columns) {
+    String [] paths = new String[columns.length];
+
+    for (int i = 0; i < columns.length; i++) {
+      paths[i] = columns[i].getSimpleName();
+    }
+
+    return paths;
+  }
+
+  public static ImmutableMap<String, Type> buildTypeMap(Iterable<Column> schema, String [] targetPaths) {
+
+    ImmutableMap.Builder<String, Type> builder = ImmutableMap.builder();
+    for (Column column : schema) {
+
+      // Keep types which only belong to projected paths
+      // For example, assume that a projected path is 'name/first_name', where name is RECORD and first_name is TEXT.
+      // In this case, we should keep two types:
+      // * name - RECORD
+      // * name/first_name TEXT
+      for (String p : targetPaths) {
+        if (p.startsWith(column.getSimpleName())) {
+          builder.put(column.getSimpleName(), column.getDataType().getType());
+        }
+      }
+    }
+
+    return builder.build();
   }
 }

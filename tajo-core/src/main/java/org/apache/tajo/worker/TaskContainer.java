@@ -66,7 +66,7 @@ public class TaskContainer implements Runnable {
         }
 
         task.cleanup();
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
         if (task != null) {
           try {

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 
@@ -30,9 +31,19 @@ import static org.junit.Assert.assertEquals;
 public class TestSelectNestedRecord extends QueryTestCaseBase {
 
   @Test
-  public final void testSelect1() throws Exception {
+  public final void testSelect0() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample1");
     assertEquals(TUtil.newList("sample1"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelect1() throws Exception {
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample2");
+    assertEquals(TUtil.newList("sample2"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -67,5 +78,18 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testInsert() throws Exception {
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample3");
+    assertEquals(TUtil.newList("sample3"), tables);
+
+    executeString("CREATE TABLE clone (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
+
+    executeString("INSERT INTO clone (title, name.first_name, name.last_name) SELECT title, name.first_name, name.last_name from sample3").close();
+    ResultSet res = executeString("select title, name.first_name, name.last_name from clone");
+    assertResultSet(res);
+    res.close();
   }
 }
