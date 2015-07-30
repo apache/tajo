@@ -43,6 +43,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -400,10 +401,14 @@ public class TaskImpl implements Task {
         }
       }
     } catch (Throwable e) {
+      // clean up TaskImpl resource
       error = e ;
-      LOG.error(e.getMessage(), e);
       stopScriptExecutors();
       context.stop();
+
+      // rethrow the exception in order to propagate the abnormal status to TaskContainer
+      throw new TajoInternalError(e);
+
     } finally {
       if (executor != null) {
         try {
