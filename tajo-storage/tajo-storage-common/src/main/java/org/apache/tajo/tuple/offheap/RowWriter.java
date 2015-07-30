@@ -33,41 +33,43 @@ import org.apache.tajo.datum.ProtobufDatum;
  */
 public interface RowWriter {
 
-  public TajoDataTypes.DataType [] dataTypes();
+  TajoDataTypes.DataType [] dataTypes();
 
-  public boolean startRow();
+  boolean startRow();
 
-  public void endRow();
+  void endRow();
 
-  public void skipField();
+  void skipField();
 
-  public void putBool(boolean val);
+  void putByte(byte val);
 
-  public void putInt2(short val);
+  void putBool(boolean val);
 
-  public void putInt4(int val);
+  void putInt2(short val);
 
-  public void putInt8(long val);
+  void putInt4(int val);
 
-  public void putFloat4(float val);
+  void putInt8(long val);
 
-  public void putFloat8(double val);
+  void putFloat4(float val);
 
-  public void putText(String val);
+  void putFloat8(double val);
 
-  public void putText(byte[] val);
+  void putText(String val);
 
-  public void putBlob(byte[] val);
+  void putText(byte[] val);
 
-  public void putTimestamp(long val);
+  void putBlob(byte[] val);
 
-  public void putTime(long val);
+  void putTimestamp(long val);
 
-  public void putDate(int val);
+  void putTime(long val);
 
-  public void putInterval(IntervalDatum val);
+  void putDate(int val);
 
-  public void putInet4(int val);
+  void putInterval(IntervalDatum val);
 
-  public void putProtoDatum(ProtobufDatum datum);
+  void putInet4(int val);
+
+  void putProtoDatum(ProtobufDatum datum);
 }
