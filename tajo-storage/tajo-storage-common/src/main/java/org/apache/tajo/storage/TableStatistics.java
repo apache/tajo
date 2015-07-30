@@ -42,8 +42,6 @@ public class TableStatistics {
 
   private boolean [] comparable;
 
-  private TableStats stat;
-
   public TableStatistics(Schema schema) {
     this.schema = schema;
     minValues = new VTuple(schema.size());
@@ -61,8 +59,6 @@ public class TableStatistics {
         comparable[i] = true;
       }
     }
-
-    stat = new TableStats();
   }
 
   public Schema getSchema() {
@@ -113,6 +109,8 @@ public class TableStatistics {
   }
 
   public TableStats getTableStat() {
+    TableStats stat = new TableStats();
+
     for (int i = 0; i < schema.size(); i++) {
       Column column = schema.getColumn(i);
       ColumnStats columnStats = new ColumnStats(column);
