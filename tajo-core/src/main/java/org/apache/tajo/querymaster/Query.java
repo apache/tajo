@@ -504,6 +504,35 @@ public class Query implements EventHandler<QueryEvent> {
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
+        TableDesc desc = query.getResultDesc();
+
+        // If there is partitions
+        List<PartitionDescProto> partitions = query.getPartitions();
+        if (partitions!= null && !partitions.isEmpty()) {
+
+          String databaseName, simpleTableName;
+
+          if (CatalogUtil.isFQTableName(desc.getName())) {
+            String[] split = CatalogUtil.splitFQTableName(desc.getName());
+            databaseName = split[0];
+            simpleTableName = split[1];
+          } else {
+            databaseName = queryContext.getCurrentDatabase();
+            simpleTableName = desc.getName();
+          }
+
+          // Store partitions to CatalogStore using alter table statement.
+          boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+          if (result) {
+            LOG.info(String.format("Complete adding for partition %s", partitions.size()));
+          } else {
+            LOG.info(String.format("Incomplete adding for partition %s", partitions.size()));
+          }
+        } else {
+          LOG.info("Can't find partitions for adding.");
+        }
+
+
       } catch (Exception e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;

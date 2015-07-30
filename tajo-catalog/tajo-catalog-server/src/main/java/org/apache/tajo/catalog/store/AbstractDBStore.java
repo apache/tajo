@@ -2180,7 +2180,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt4 = conn.prepareStatement(insertPartitionKeysSql);
 
       // Set a batch size like 1000. This avoids SQL injection and also takes care of out of memory issue.
-      int batchSize = conf.getInt(TajoConf.ConfVars.PARTITION_BULK_INSERT_BATCH_SIZE.varname, 1000);
+      int batchSize = conf.getInt(TajoConf.ConfVars.PARTITION_DYNAMIC_BULK_INSERT_BATCH_SIZE.varname, 1000);
       for(currentIndex = 0; currentIndex < partitions.size(); currentIndex++) {
         PartitionDescProto partition = partitions.get(currentIndex);
         partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());

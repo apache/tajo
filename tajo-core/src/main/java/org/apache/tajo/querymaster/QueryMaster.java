@@ -32,10 +32,6 @@ import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.QueryId;
 
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
@@ -187,7 +183,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       CallFuture<WorkerConnectionsResponse> callBack = new CallFuture<WorkerConnectionsResponse>();
       masterService.getAllWorkers(callBack.getController(),
-        PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
+          PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
       WorkerConnectionsResponse connectionsProto =
           callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
@@ -292,39 +288,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
         return;
       }
 
-      // Create dynamic partitions to CatalogStore by running insert query or CTAS query.
-      Query query = queryMasterTask.getQuery();
-      if (query.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED && query.getResultDesc() != null) {
-        TableDesc desc = query.getResultDesc();
-
-        // If there is partitions
-        List<PartitionDescProto> partitions = query.getPartitions();
-        if (partitions!= null && !partitions.isEmpty()) {
-
-          String databaseName, simpleTableName;
-
-          if (CatalogUtil.isFQTableName(desc.getName())) {
-            String[] split = CatalogUtil.splitFQTableName(desc.getName());
-            databaseName = split[0];
-            simpleTableName = split[1];
-          } else {
-            databaseName = queryContext.getCurrentDatabase();
-            simpleTableName = desc.getName();
-          }
-
-          CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
-          // Store partitions to CatalogStore using alter table statement.
-          boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
-          if (result) {
-            LOG.info(String.format("Complete adding for partition %s", partitions.size()));
-          } else {
-            LOG.info(String.format("Incomplete adding for partition %s", partitions.size()));
-          }
-        } else {
-          LOG.info("Can't find partitions for adding.");
-        }
-      }
-
       synchronized (finishedQueryMasterTasksCache) {
         finishedQueryMasterTasksCache.put(queryId, queryMasterTask);
       }
@@ -354,7 +317,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
       }
-      query = queryMasterTask.getQuery();
+      Query query = queryMasterTask.getQuery();
       if (query != null) {
         QueryHistory queryHisory = query.getQueryHistory();
         if (queryHisory != null) {

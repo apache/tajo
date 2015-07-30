@@ -291,7 +291,7 @@ public class TajoConf extends Configuration {
     PYTHON_CONTROLLER_LOG_DIR("tajo.function.python.controller.log-dir", ""),
 
     // Partition
-    PARTITION_BULK_INSERT_BATCH_SIZE("tajo.partition.bulk.insert.batch.size", 1000),
+    PARTITION_DYNAMIC_BULK_INSERT_BATCH_SIZE("tajo.partition.dynamic.bulk-insert.batch-size", 1000),
 
 
     /////////////////////////////////////////////////////////////////////////////////
