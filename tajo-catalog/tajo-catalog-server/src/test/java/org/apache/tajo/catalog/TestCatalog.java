@@ -949,22 +949,14 @@ public class TestCatalog {
     String[] partitionNames = partitionName.split("/");
 
     List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
-    String lastColumnName = null;
     for(int i = 0; i < partitionNames.length; i++) {
       String columnName = partitionNames[i].split("=")[0];
       String partitionValue = partitionNames[i].split("=")[1];
 
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
       builder.setColumnName(partitionValue);
-
-      if (i > 0) {
-        builder.setParentColumnName(lastColumnName);
-      }
-
       builder.setPartitionValue(columnName);
-
       partitionKeyList.add(builder.build());
-      lastColumnName = columnName;
     }
 
     partitionDesc.setPartitionKeys(partitionKeyList);

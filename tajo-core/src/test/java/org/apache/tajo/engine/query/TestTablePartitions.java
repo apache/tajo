@@ -1289,14 +1289,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertNotNull(partitionDescProto);
       assertTrue(partitionDescProto.getPath().indexOf(tableName + "/" + partitionName.toString()) > 0);
 
-      for (int i = 0; i < partitionDescProto.getPartitionKeysCount(); i++) {
-        PartitionKeyProto partitionKey = partitionDescProto.getPartitionKeys(i);
-        if (i > 0) {
-          assertEquals(partitionKey.getParentColumnName(), partitionDescProto.getPartitionKeys(i-1).getColumnName());
-        } else {
-          assertEquals(partitionKey.getParentColumnName(), "");
-        }
-      }
       rowCount++;
     }
 

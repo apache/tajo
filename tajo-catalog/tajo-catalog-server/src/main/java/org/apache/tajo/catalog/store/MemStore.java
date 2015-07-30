@@ -357,7 +357,6 @@ public class MemStore implements CatalogStore {
       for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
         CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
         keyBuilder.setColumnName(eachKey.getColumnName());
-        keyBuilder.setParentColumnName(eachKey.getParentColumnName());
         keyBuilder.setPartitionValue(eachKey.getPartitionValue());
         builder.addPartitionKeys(keyBuilder.build());
       }

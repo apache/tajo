@@ -61,11 +61,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   protected final String insertPartitionKeysSql = "INSERT INTO " + TB_PARTTION_KEYS  + "("
     + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", "
-    + COL_COLUMN_NAME + ", " +  COL_PARENT_COLUMN_NAME + ", " + COL_PARTITION_VALUE + ")"
+    + COL_COLUMN_NAME + ", " + COL_PARTITION_VALUE + ")"
     + " VALUES ( ("
     + " SELECT " + COL_PARTITIONS_PK + " FROM " + TB_PARTTIONS
     + " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ) "
-    + " , ?, ?, ? , ?)";
+    + " , ?, ?, ?)";
 
   protected final String deletePartitionSql = "DELETE FROM " + TB_PARTTIONS
     + " WHERE " + COL_PARTITIONS_PK + " = ? ";
@@ -1277,8 +1277,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt2.setString(2, partition.getPartitionName());
         pstmt2.setInt(3, tableId);
         pstmt2.setString(4, partitionKey.getColumnName());
-        pstmt2.setString(5, partitionKey.getParentColumnName());
-        pstmt2.setString(6, partitionKey.getPartitionValue());
+        pstmt2.setString(5, partitionKey.getPartitionValue());
         pstmt2.addBatch();
         pstmt2.clearParameters();
       }
@@ -2056,7 +2055,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     try {
-      String sql = "SELECT "+ COL_COLUMN_NAME  + ", " + COL_PARENT_COLUMN_NAME + " , "+ COL_PARTITION_VALUE
+      String sql = "SELECT "+ COL_COLUMN_NAME  + " , "+ COL_PARTITION_VALUE
         + " FROM " + TB_PARTTION_KEYS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
 
       conn = getConnection();
@@ -2067,7 +2066,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       while (res.next()) {
         PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
         builder.setColumnName(res.getString(COL_COLUMN_NAME));
-        builder.setParentColumnName(res.getString(COL_PARENT_COLUMN_NAME));
         builder.setPartitionValue(res.getString(COL_PARTITION_VALUE));
         partitionDesc.addPartitionKeys(builder);
       }
@@ -2216,8 +2214,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           pstmt4.setString(2, partition.getPartitionName());
           pstmt4.setInt(3, tableId);
           pstmt4.setString(4, partitionKey.getColumnName());
-          pstmt4.setString(5, partitionKey.getParentColumnName());
-          pstmt4.setString(6, partitionKey.getPartitionValue());
+          pstmt4.setString(5, partitionKey.getPartitionValue());
 
           pstmt4.addBatch();
           pstmt4.clearParameters();

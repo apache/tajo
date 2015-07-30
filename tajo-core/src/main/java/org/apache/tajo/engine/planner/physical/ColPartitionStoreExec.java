@@ -167,21 +167,15 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     String[] partitionKeyPairs = partition.split("/");
 
-    String lastColumnName = null;
     for(int i = 0; i < partitionKeyPairs.length; i++) {
       String partitionKeyPair = partitionKeyPairs[i];
       String[] split = partitionKeyPair.split("=");
+
       PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
       keyBuilder.setColumnName(split[0]);
-
-      if (i > 0) {
-        keyBuilder.setParentColumnName(lastColumnName);
-      }
-
       keyBuilder.setPartitionValue(split[1]);
-      builder.addPartitionKeys(keyBuilder.build());
 
-      lastColumnName = split[0];
+      builder.addPartitionKeys(keyBuilder.build());
     }
 
     if (this.plan.getUri() == null) {
