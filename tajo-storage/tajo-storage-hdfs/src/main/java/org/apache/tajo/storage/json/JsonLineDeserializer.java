@@ -36,7 +36,6 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.Map;
@@ -51,8 +50,8 @@ public class JsonLineDeserializer extends TextLineDeserializer {
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
 
-    projectedPaths = NestedPathUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
-    types = NestedPathUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
+    projectedPaths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
+    types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
   }
 
   @Override

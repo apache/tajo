@@ -89,36 +89,4 @@ public class NestedPathUtil {
     }
   }
 
-  public static String [] convertColumnsToPaths(Iterable<Column> columns, boolean onlyLeaves) {
-    List<String> paths = Lists.newArrayList();
-
-    for (Column c : columns) {
-      if (onlyLeaves && c.getDataType().getType() == Type.RECORD) {
-        continue;
-      }
-      paths.add(c.getSimpleName());
-    }
-
-    return paths.toArray(new String [paths.size()]);
-  }
-
-  public static ImmutableMap<String, Type> buildTypeMap(Iterable<Column> schema, String [] targetPaths) {
-
-    HashMap<String, Type> builder = new HashMap<String, Type>();
-    for (Column column : schema) {
-
-      // Keep types which only belong to projected paths
-      // For example, assume that a projected path is 'name/first_name', where name is RECORD and first_name is TEXT.
-      // In this case, we should keep two types:
-      // * name - RECORD
-      // * name/first_name TEXT
-      for (String p : targetPaths) {
-        if (p.startsWith(column.getSimpleName())) {
-          builder.put(column.getSimpleName(), column.getDataType().getType());
-        }
-      }
-    }
-
-    return ImmutableMap.copyOf(builder);
-  }
 }
