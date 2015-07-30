@@ -317,11 +317,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
         // If there is partitions
         List<PartitionDescProto> partitions = query.getPartitions();
         if (partitions!= null && !partitions.isEmpty()) {
-          LOG.info("### Add partitions START ###");
           CatalogService catalog = catalog = queryMasterContext.getWorkerContext().getCatalog();
           // Store partitions to CatalogStore using alter table statement.
           boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
-          LOG.info("### Add partitions END ###");
           if (result) {
             LOG.info(String.format("Complete adding for partition %s", partitions.size()));
           } else {
