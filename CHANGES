@@ -373,6 +373,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1713: Change the type of edge cache in JoinGraphContext from 
+    HashMap to LRUMap. (jihoon)
+
     TAJO-1273: Merge DirectRawFile to master branch. (jinho)
 
     TAJO-1628: Add a documentation for join operation. (jihoon)

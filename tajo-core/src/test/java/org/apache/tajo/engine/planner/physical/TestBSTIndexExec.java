@@ -83,6 +83,7 @@ public class TestBSTIndexExec {
   public void setup() throws Exception {
     this.randomValues = new HashMap<Integer, Integer>();
     this.conf = new TajoConf();
+    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
     util = new TajoTestingCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
