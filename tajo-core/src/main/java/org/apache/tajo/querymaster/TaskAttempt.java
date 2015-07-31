@@ -23,18 +23,20 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
-import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
+import org.apache.tajo.ResourceProtos.TaskCompletionReport;
+import org.apache.tajo.ResourceProtos.ShuffleFileOutput;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
-import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -42,8 +44,6 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 
 public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
@@ -55,7 +55,6 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private final Task task;
   final EventHandler eventHandler;
 
-  private TajoContainerId containerId;
   private WorkerConnectionInfo workerConnectionInfo;
   private int expire;
 
@@ -69,6 +68,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private float progress;
   private CatalogProtos.TableStatsProto inputStats;
   private CatalogProtos.TableStatsProto resultStats;
+
+  private List<PartitionDescProto> partitions;
 
   protected static final StateMachineFactory
       <TaskAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -109,6 +110,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
           TaskAttemptEventType.TA_DONE, new SucceededTransition())
       .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_FAILED,
           TaskAttemptEventType.TA_FATAL_ERROR, new FailedTransition())
+      .addTransition(TaskAttemptState.TA_ASSIGNED, TaskAttemptState.TA_UNASSIGNED,
+          TaskAttemptEventType.TA_ASSIGN_CANCEL, new CancelTransition())
 
       // Transitions from TA_RUNNING state
       .addTransition(TaskAttemptState.TA_RUNNING,
@@ -167,6 +170,10 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
               TaskAttemptEventType.TA_ASSIGNED,
               TaskAttemptEventType.TA_DONE),
           new TaskKilledCompleteTransition())
+
+          // Transitions from TA_FAILED state
+      .addTransition(TaskAttemptState.TA_FAILED, TaskAttemptState.TA_FAILED,
+          TaskAttemptEventType.TA_KILL)
       .installTopology();
 
   private final StateMachine<TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -187,6 +194,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     this.writeLock = readWriteLock.writeLock();
 
     stateMachine = stateMachineFactory.make(this);
+
+    this.partitions = TUtil.newList();
   }
 
   public TaskAttemptState getState() {
@@ -212,10 +221,6 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
   public WorkerConnectionInfo getWorkerConnectionInfo() {
     return this.workerConnectionInfo;
-  }
-
-  public void setContainerId(TajoContainerId containerId) {
-    this.containerId = containerId;
   }
 
   public synchronized void setExpireTime(int expire) {
@@ -251,6 +256,14 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       return null;
     }
     return new TableStats(resultStats);
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    return partitions;
+  }
+
+  public void setPartitions(List<PartitionDescProto> partitions) {
+    this.partitions = partitions;
   }
 
   private void fillTaskStatistics(TaskCompletionReport report) {
@@ -311,11 +324,21 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
         throw new IllegalArgumentException("event should be a TaskAttemptAssignedEvent type.");
       }
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
-      taskAttempt.containerId = castEvent.getContainerId();
       taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
       taskAttempt.eventHandler.handle(
           new TaskTAttemptEvent(taskAttempt.getId(),
               TaskEventType.T_ATTEMPT_LAUNCHED));
+    }
+  }
+
+  private static class CancelTransition
+      implements SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
+
+    @Override
+    public void transition(TaskAttempt taskAttempt,
+                           TaskAttemptEvent event) {
+
+      taskAttempt.workerConnectionInfo = null;
     }
   }
 
@@ -383,6 +406,10 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       TaskCompletionReport report = ((TaskCompletionEvent)event).getReport();
 
       try {
+        if (report.getPartitionsCount() > 0) {
+          taskAttempt.setPartitions(report.getPartitionsList());
+        }
+
         taskAttempt.fillTaskStatistics(report);
         taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_SUCCEEDED));
       } catch (Throwable t) {
@@ -396,7 +423,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
     @Override
     public void transition(TaskAttempt taskAttempt, TaskAttemptEvent event) {
-      taskAttempt.eventHandler.handle(new LocalTaskEvent(taskAttempt.getId(), taskAttempt.containerId,
+      taskAttempt.eventHandler.handle(new LocalTaskEvent(taskAttempt.getId(),
+          taskAttempt.getWorkerConnectionInfo().getId(),
           LocalTaskEventType.KILL));
     }
   }

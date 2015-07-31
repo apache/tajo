@@ -1,8 +1,8 @@
 explain
 -------------------------------
-SELECTION(3)
+SELECTION(6)
   => Search Cond: default.a.r_name (TEXT) < default.b.c_name (TEXT)
-   JOIN(6)(RIGHT_OUTER)
+   JOIN(7)(RIGHT_OUTER)
      => Join Cond: default.a.r_regionkey (INT4) = default.b.c_custkey (INT4)
      => target list: default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)
      => out schema: {(11) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}
@@ -36,9 +36,9 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 [Enforcers]
  0: type=Broadcast, tables=default.a
 
-SELECTION(3)
+SELECTION(6)
   => Search Cond: default.a.r_name (TEXT) < default.b.c_name (TEXT)
-   JOIN(6)(RIGHT_OUTER)
+   JOIN(7)(RIGHT_OUTER)
      => Join Cond: default.a.r_regionkey (INT4) = default.b.c_custkey (INT4)
      => target list: default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)
      => out schema: {(11) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.c_acctbal (FLOAT8), default.b.c_address (TEXT), default.b.c_comment (TEXT), default.b.c_custkey (INT4), default.b.c_mktsegment (TEXT), default.b.c_name (TEXT), default.b.c_nationkey (INT4), default.b.c_phone (TEXT)}

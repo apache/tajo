@@ -35,11 +35,11 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
@@ -57,22 +57,13 @@ import org.junit.runner.Description;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -208,7 +199,7 @@ public class QueryTestCaseBase {
   }
 
   @AfterClass
-  public static void tearDownClass() throws ServiceException {
+  public static void tearDownClass() throws SQLException {
     for (String tableName : createdTableGlobalSet) {
       client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
     }
@@ -231,7 +222,7 @@ public class QueryTestCaseBase {
     /* protect a travis stalled build */
     System.out.println("Run: " + name.getMethodName() +
         " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
-        / (1024 * 1024)) + "MBytes");
+        / (1024 * 1024)) + " MBytes, Active Threads:" + Thread.activeCount());
   }
 
   public QueryTestCaseBase() {
@@ -289,14 +280,16 @@ public class QueryTestCaseBase {
     return currentDatabase;
   }
 
-  private static VerificationState verify(String query) throws PlanningException {
+  private static VerificationState verify(String query) throws TajoException {
 
     VerificationState state = new VerificationState();
     QueryContext context = LocalTajoTestingUtility.createDummyContext(conf);
 
     Expr expr = sqlParser.parse(query);
+
     verifier.verify(context, state, expr);
-    if (state.getErrorMessages().size() > 0) {
+
+    if (state.getErrors().size() > 0) {
       return state;
     }
     LogicalPlan plan = planner.createPlan(context, expr);
@@ -306,38 +299,50 @@ public class QueryTestCaseBase {
     return state;
   }
 
-  public void assertValidSQL(String query) throws PlanningException, IOException {
-    VerificationState state = verify(query);
-    if (state.getErrorMessages().size() > 0) {
-      fail(state.getErrorMessages().get(0));
+  public void assertValidSQL(String query) throws IOException {
+    VerificationState state = null;
+    try {
+      state = verify(query);
+      if (state.getErrors().size() > 0) {
+        fail(state.getErrors().get(0).getMessage());
+      }
+    } catch (TajoException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  public void assertValidSQLFromFile(String fileName) throws PlanningException, IOException {
+  public void assertValidSQLFromFile(String fileName) throws IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
     assertValidSQL(query);
   }
 
-  public void assertInvalidSQL(String query) throws PlanningException, IOException {
-    VerificationState state = verify(query);
-    if (state.getErrorMessages().size() == 0) {
-      fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
+  public void assertInvalidSQL(String query) throws IOException {
+    VerificationState state = null;
+    try {
+      state = verify(query);
+
+      if (state.getErrors().size() == 0) {
+        fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
+      }
+
+    } catch (TajoException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  public void assertInvalidSQLFromFile(String fileName) throws PlanningException, IOException {
+  public void assertInvalidSQLFromFile(String fileName) throws IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
     assertInvalidSQL(query);
   }
 
-  public void assertPlanError(String fileName) throws PlanningException, IOException {
+  public void assertPlanError(String fileName) throws IOException {
     Path queryFilePath = getQueryFilePath(fileName);
     String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
     try {
       verify(query);
-    } catch (PlanningException e) {
+    } catch (TajoException e) {
       return;
     }
     fail("Cannot catch any planning error from: " + query);
@@ -539,7 +544,7 @@ public class QueryTestCaseBase {
       for (String cleanup : annotation.cleanup()) {
         try {
           client.executeQueryAndGetResult(cleanup).close();
-        } catch (ServiceException e) {
+        } catch (SQLException e) {
           // ignore
         }
       }
@@ -668,7 +673,7 @@ public class QueryTestCaseBase {
    * Assert that the database exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseExists(String databaseName) throws ServiceException {
+  public void assertDatabaseExists(String databaseName) throws SQLException {
     assertTrue(client.existDatabase(databaseName));
   }
 
@@ -676,7 +681,7 @@ public class QueryTestCaseBase {
    * Assert that the database does not exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseNotExists(String databaseName) throws ServiceException {
+  public void assertDatabaseNotExists(String databaseName) throws SQLException {
     assertTrue(!client.existDatabase(databaseName));
   }
 
@@ -686,7 +691,7 @@ public class QueryTestCaseBase {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @throws ServiceException
    */
-  public void assertTableExists(String tableName) throws ServiceException {
+  public void assertTableExists(String tableName) throws SQLException {
     assertTrue(client.existTable(tableName));
   }
 
@@ -695,21 +700,23 @@ public class QueryTestCaseBase {
    *
    * @param tableName The table name to be checked. This name is case sensitive.
    */
-  public void assertTableNotExists(String tableName) throws ServiceException {
+  public void assertTableNotExists(String tableName) throws SQLException {
     assertTrue(!client.existTable(tableName));
   }
 
-  public void assertColumnExists(String tableName,String columnName) throws ServiceException {
-    TableDesc tableDesc = fetchTableMetaData(tableName);
+  public void assertColumnExists(String tableName,String columnName) throws ServiceException, SQLException {
+    TableDesc tableDesc = getTableDesc(tableName);
     assertTrue(tableDesc.getSchema().containsByName(columnName));
   }
 
-  private TableDesc fetchTableMetaData(String tableName) throws ServiceException {
+  private TableDesc getTableDesc(String tableName) throws ServiceException, SQLException {
     return client.getTableDesc(tableName);
   }
 
-  public void assertTablePropertyEquals(String tableName, String key, String expectedValue) throws ServiceException {
-    TableDesc tableDesc = fetchTableMetaData(tableName);
+  public void assertTablePropertyEquals(String tableName, String key, String expectedValue)
+      throws ServiceException, SQLException {
+
+    TableDesc tableDesc = getTableDesc(tableName);
     assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
   }
 
@@ -827,7 +834,7 @@ public class QueryTestCaseBase {
    *   CREATE EXTERNAL TABLE ${0} (
    *     t_timestamp  TIMESTAMP,
    *     t_date    DATE
-   *   ) USING CSV LOCATION ${table.path}
+   *   ) USING TEXT LOCATION ${table.path}
    * </pre>
    *
    * @param ddlFileName A file name, containing a data definition statement.
@@ -894,6 +901,9 @@ public class QueryTestCaseBase {
         if (isLocalTable) {
           createdTableGlobalSet.remove(tableName);
         }
+      } else if (expr.getType() == OpType.CreateIndex) {
+        // TODO: index existence check
+        client.executeQuery(compiled);
       } else {
         assertTrue(ddlFilePath + " is not a Create or Drop Table statement", false);
       }

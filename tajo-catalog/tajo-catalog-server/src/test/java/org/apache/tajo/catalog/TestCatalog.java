@@ -19,27 +19,21 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.collect.Sets;
-
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
-import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.store.DerbyStore;
-import org.apache.tajo.catalog.store.MySQLStore;
-import org.apache.tajo.catalog.store.MariaDBStore;
-import org.apache.tajo.catalog.store.OracleStore;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -49,6 +43,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -94,7 +90,7 @@ public class TestCatalog {
     // MySQLStore/MariaDB/PostgreSQL requires username (and password).
     if (isConnectionIdRequired(driverClass)) {
       if (connectionId == null) {
-        throw new CatalogException(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
+        throw new TajoInternalError(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
       }
       conf.set(CatalogConstants.CONNECTION_ID, connectionId);
       if (password != null) {
@@ -264,7 +260,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema1,
-        new TableMeta("CSV", new KeyValueSet()),
+        new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     return table;
   }
@@ -317,7 +313,7 @@ public class TestCatalog {
     TableDesc table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema,
-        new TableMeta("CSV", new KeyValueSet()),
+        new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     
     assertTrue(catalog.createTable(table));
@@ -331,7 +327,7 @@ public class TestCatalog {
     table = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         schema,
-        new TableMeta("CSV", new KeyValueSet()),
+        new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     
     assertTrue(catalog.createTable(table));
@@ -421,7 +417,7 @@ public class TestCatalog {
     TableDesc meta = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
         schema1,
-        "CSV",
+        "TEXT",
         new KeyValueSet(),
         path.toUri());
 
@@ -441,7 +437,7 @@ public class TestCatalog {
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
         schema,
-        "CSV",
+        "TEXT",
         new KeyValueSet(),
         path.toUri());
 
@@ -537,34 +533,41 @@ public class TestCatalog {
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;
-
-  static {
-    desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-
-    desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
-
-    desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-  }
+  static Schema relationSchema;
 
   public static TableDesc prepareTable() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("indexed.id", Type.INT4)
-        .addColumn("indexed.name", Type.TEXT)
-        .addColumn("indexed.age", Type.INT4)
-        .addColumn("indexed.score", Type.FLOAT8);
+    relationSchema = new Schema();
+    relationSchema.addColumn(DEFAULT_DATABASE_NAME + ".indexed.id", Type.INT4)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.name", Type.TEXT)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.age", Type.INT4)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.score", Type.FLOAT8);
 
     String tableName = "indexed";
 
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     return new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), schema, meta,
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
+  }
+
+  public static void prepareIndexDescs() throws IOException, URISyntaxException {
+    SortSpec[] colSpecs1 = new SortSpec[1];
+    colSpecs1[0] = new SortSpec(new Column("default.indexed.id", Type.INT4), true, true);
+    desc1 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test", new URI("idx_test"), colSpecs1,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
+
+    SortSpec[] colSpecs2 = new SortSpec[1];
+    colSpecs2[0] = new SortSpec(new Column("default.indexed.score", Type.FLOAT8), false, false);
+    desc2 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test2", new URI("idx_test2"), colSpecs2,
+        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, relationSchema);
+
+    SortSpec[] colSpecs3 = new SortSpec[1];
+    colSpecs3[0] = new SortSpec(new Column("default.indexed.id", Type.INT4), true, false);
+    desc3 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test", new URI("idx_test"), colSpecs3,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
   }
 
   @Test
@@ -602,25 +605,34 @@ public class TestCatalog {
 	@Test
 	public void testAddAndDelIndex() throws Exception {
 	  TableDesc desc = prepareTable();
+    prepareIndexDescs();
 	  assertTrue(catalog.createTable(desc));
 	  
-	  assertFalse(catalog.existIndexByName("db1", desc1.getIndexName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
 	  catalog.createIndex(desc1);
-	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
+	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
 
 
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
+	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
 	  catalog.createIndex(desc2);
-	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
+	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
+	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
+
+    Set<IndexDesc> indexDescs = TUtil.newHashSet();
+    indexDescs.add(desc1);
+    indexDescs.add(desc2);
+    indexDescs.add(desc3);
+    for (IndexDesc index : catalog.getAllIndexesByTable(DEFAULT_DATABASE_NAME, "indexed")) {
+      assertTrue(indexDescs.contains(index));
+    }
 	  
-	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getIndexName());
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
-	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getIndexName());
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
+	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getName());
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getName());
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  
 	  catalog.dropTable(desc.getName());
     assertFalse(catalog.existsTable(desc.getName()));
@@ -695,7 +707,7 @@ public class TestCatalog {
       assertFalse(catalog.containFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
       catalog.getFunction("test123", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
       fail();
-    } catch (NoSuchFunctionException nsfe) {
+    } catch (UndefinedFunctionException nsfe) {
       // succeed test
     } catch (Throwable e) {
       fail(e.getMessage());
@@ -732,7 +744,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
 
     Schema partSchema = new Schema();
@@ -772,7 +784,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -810,7 +822,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -847,7 +859,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -884,7 +896,7 @@ public class TestCatalog {
     String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
-    TableMeta meta = CatalogUtil.newTableMeta("CSV", opts);
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
@@ -936,10 +948,15 @@ public class TestCatalog {
 
     String[] partitionNames = partitionName.split("/");
 
-    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
     for(int i = 0; i < partitionNames.length; i++) {
       String columnName = partitionNames[i].split("=")[0];
-      partitionKeyList.add(new PartitionKey(partitionNames[i], columnName));
+      String partitionValue = partitionNames[i].split("=")[1];
+
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(partitionValue);
+      builder.setPartitionValue(columnName);
+      partitionKeyList.add(builder.build());
     }
 
     partitionDesc.setPartitionKeys(partitionKeyList);
@@ -999,7 +1016,7 @@ public class TestCatalog {
     TableDesc setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
     KeyValueSet options = new KeyValueSet();
     options.set("timezone", "GMT+9");   // Seoul, Korea
-    setPropertyDesc.setMeta(new TableMeta("CSV", options));
+    setPropertyDesc.setMeta(new TableMeta("TEXT", options));
     String prevTimeZone = setPropertyDesc.getMeta().getOption("timezone");
     String newTimeZone = "GMT-7";       // Silicon Valley, California
     catalog.alterTable(createMockAlterTableSetProperty(newTimeZone));
@@ -1098,7 +1115,7 @@ public class TestCatalog {
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
-  @Test(expected=NoSuchFunctionException.class)
+  @Test(expected=UndefinedFunctionException.class)
   public final void testFindIntInvalidFunc() throws Exception {
     assertFalse(catalog.containFunction("testintinvalid", FunctionType.GENERAL));
     FunctionDesc meta = new FunctionDesc("testintinvalid", TestIntFunc.class, FunctionType.GENERAL,
@@ -1127,7 +1144,7 @@ public class TestCatalog {
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
-  @Test(expected=NoSuchFunctionException.class)
+  @Test(expected=UndefinedFunctionException.class)
   public final void testFindFloatInvalidFunc() throws Exception {
     assertFalse(catalog.containFunction("testfloatinvalid", FunctionType.GENERAL));
     FunctionDesc meta = new FunctionDesc("testfloatinvalid", TestFloatFunc.class, FunctionType.GENERAL,

@@ -20,7 +20,8 @@ package org.apache.tajo.worker;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.TajoProtos;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * The driver class for Tajo Task processing.
@@ -30,10 +31,12 @@ public class TaskContainer implements Runnable {
 
   private final TaskExecutor executor;
   private final int sequenceId;
+  private final ExecutorService fetchExecutor;
 
-  public TaskContainer(int sequenceId, TaskExecutor executor) {
+  public TaskContainer(int sequenceId, TaskExecutor executor, ExecutorService fetchExecutor) {
     this.sequenceId = sequenceId;
     this.executor = executor;
+    this.fetchExecutor = fetchExecutor;
   }
 
   @Override
@@ -43,8 +46,6 @@ public class TaskContainer implements Runnable {
       Task task = null;
       try {
         task = executor.getNextTask();
-
-        task.getExecutionBlockContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sequenceId + TaskContainer.class.getSimpleName() +
@@ -57,7 +58,7 @@ public class TaskContainer implements Runnable {
         task.init();
 
         if (task.hasFetchPhase()) {
-          task.fetch(); // The fetch is performed in an asynchronous way.
+          task.fetch(fetchExecutor); // The fetch is performed in an asynchronous way.
         }
 
         if (!taskAttemptContext.isStopped()) {

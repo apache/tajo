@@ -30,14 +30,12 @@ import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestName;
 
 import java.io.*;
@@ -85,7 +83,7 @@ public class TestTajoCli {
   }
 
   private static void setVar(TajoCli cli, ConfigKey key, String val) throws Exception {
-    cli.executeMetaCommand("\\set " + key.keyname() +" " + val);
+    cli.executeMetaCommand("\\set " + key.keyname() + " " + val);
   }
 
   private static void assertSessionVar(TajoCli cli, String key, String expectedVal) {
@@ -431,22 +429,31 @@ public class TestTajoCli {
   }
 
   @Test
-  public void testAlterTableAddPartition() throws Exception {
+  public void testAlterTableAddDropPartition() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
 
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");
     tajoCli.executeScript("alter table " + tableName + " add partition (key = 0.1)");
-
-    String consoleResult = new String(out.toByteArray());
-    assertOutputResult(consoleResult);
-  }
-
-  @Test
-  public void testAlterTableDropPartition() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableDropPartition");
-
-    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
     tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
+    tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
+
+    tajoCli.executeScript("drop table " + tableName);
+    tajoCli.executeScript("create table " + tableName
+      + " (col1 int4, col2 int4) partition by column(col3 float8, col4 int4)");
+
+    TajoClient client = testBase.getTestingCluster().newTajoClient();
+    TableDesc tableDesc = client.getTableDesc(tableName);
+
+    String partitionLocation = tableDesc.getUri().toString() + "/col5=0.1/col6=10";
+    tajoCli.executeScript("alter table " + tableName + " add partition (col3 = 0.1, col4 = 10)"
+      + " location '" + partitionLocation + "'");
+
+    Path partitionPath = new Path(partitionLocation);
+    FileSystem fs = testBase.getTestingCluster().getDefaultFileSystem();
+    assertTrue(fs.exists(partitionPath));
+
+    tajoCli.executeScript("alter table " + tableName + " drop partition (col3 = 0.1, col4 = 10)");
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);

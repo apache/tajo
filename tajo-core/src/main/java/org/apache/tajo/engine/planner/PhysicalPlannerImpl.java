@@ -29,7 +29,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -40,21 +39,21 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.IndexUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -66,12 +65,13 @@ import java.util.Stack;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.GroupbyEnforce.GroupbyAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce;
+import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
+import static org.apache.tajo.plan.serder.PlanProto.GroupbyEnforce.GroupbyAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.JoinEnforce.JoinAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
+import static org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
@@ -235,10 +235,17 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         return new LimitExec(ctx, limitNode.getInSchema(),
             limitNode.getOutSchema(), leftExec, limitNode);
 
-      case BST_INDEX_SCAN:
+      case INDEX_SCAN:
         IndexScanNode indexScanNode = (IndexScanNode) logicalNode;
         leftExec = createIndexScanExec(ctx, indexScanNode);
         return leftExec;
+
+      case CREATE_INDEX:
+        CreateIndexNode createIndexNode = (CreateIndexNode) logicalNode;
+        stack.push(createIndexNode);
+        leftExec = createPlanRecursive(ctx, createIndexNode.getChild(), stack);
+        stack.pop();
+        return new StoreIndexExec(ctx, createIndexNode, leftExec);
 
       default:
         return null;
@@ -885,7 +892,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     List<EnforceProperty> property = enforcer.getEnforceProperties(EnforceType.SORTED_INPUT);
     if (property != null && property.size() > 0 && node.peek().getType() == NodeType.SORT) {
       SortNode sortNode = (SortNode) node.peek();
-      TajoWorkerProtocol.SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
+      SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
 
       boolean condition = scanNode.getTableName().equals(sortEnforcer.getTableName());
       SortSpec [] sortSpecs = LogicalNodeDeserializer.convertSortSpecs(sortEnforcer.getSortSpecsList());
@@ -1185,21 +1192,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Preconditions.checkNotNull(ctx.getTable(annotation.getCanonicalName()),
         "Error: There is no table matched to %s", annotation.getCanonicalName());
 
-    FragmentProto [] fragmentProtos = ctx.getTables(annotation.getTableName());
-    List<FileFragment> fragments =
-        FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
-
-    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    FileTablespace sm = (FileTablespace) TablespaceManager.get(fragments.get(0).getPath().toUri()).get();
-    String dbName = CatalogUtil.extractQualifier(annotation.getTableName());
-    String simpleName = CatalogUtil.extractSimpleName(annotation.getTableName());
-    Path indexPath = new Path(new Path(sm.getTableUri(dbName, simpleName)), "index");
-
-    TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
-        annotation.getSortKeys());
-    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), new Path(indexPath, indexName),
-        annotation.getKeySchema(), comp, annotation.getDatum());
-
+    FragmentProto [] fragments = ctx.getTables(annotation.getTableName());
+    Preconditions.checkState(fragments.length == 1);
+    return new BSTIndexScanExec(ctx, annotation, fragments[0], annotation.getIndexPath(),
+        annotation.getKeySchema(), annotation.getPredicates());
   }
 
   public static EnforceProperty getAlgorithmEnforceProperty(Enforcer enforcer, LogicalNode node) {

@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 
+package tajo.client;
+
 option java_package = "org.apache.tajo.ipc";
 option java_outer_classname = "ClientProtos";
 option java_generic_services = true;
@@ -26,21 +28,15 @@ import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 
-enum ResultCode {
-  OK = 0;
-  ERROR = 1;
-}
-
 message CreateSessionRequest {
   required string username = 1;
   optional string baseDatabaseName = 2;
 }
 
 message CreateSessionResponse {
-  required ResultCode resultCode = 1;
+  required ReturnState state = 1;
   optional SessionIdProto sessionId = 2;
   optional KeyValueSetProto sessionVars = 3;
-  optional string message = 4;
 }
 
 message UpdateSessionVariableRequest {
@@ -50,9 +46,8 @@ message UpdateSessionVariableRequest {
 }
 
 message SessionUpdateResponse {
-  required ResultCode resultCode = 1;
+  required ReturnState state = 1;
   optional KeyValueSetProto sessionVars = 2;
-  optional string message = 3;
 }
 
 message SessionedStringProto {
@@ -61,9 +56,8 @@ message SessionedStringProto {
 }
 
 message ExplainQueryResponse {
-  required ResultCode resultCode = 1;
+  required ReturnState state = 1;
   optional string explain = 2;
-  optional string errorMessage = 3;
 }
 
 message QueryRequest {
@@ -74,9 +68,8 @@ message QueryRequest {
 }
 
 message UpdateQueryResponse {
-  required ResultCode resultCode = 1;
-  optional string errorMessage = 2;
-  optional KeyValueSetProto sessionVars = 3;
+  required ReturnState state = 1;
+  optional KeyValueSetProto sessionVars = 2;
 }
 
 message GetQueryResultRequest {
@@ -85,8 +78,8 @@ message GetQueryResultRequest {
 }
 
 message GetQueryResultResponse {
-  optional TableDescProto tableDesc = 1;
-  optional string errorMessage = 2;
+  required ReturnState state = 1;
+  optional TableDescProto tableDesc = 2;
   optional string tajoUserName = 3;
 }
 
@@ -111,7 +104,8 @@ message BriefQueryInfo {
 }
 
 message GetQueryListResponse {
-  repeated BriefQueryInfo queryList = 1;
+  required ReturnState state = 1;
+  repeated BriefQueryInfo queryList = 2;
 }
 
 message GetQueryStatusRequest {
@@ -126,28 +120,33 @@ message SerializedResultSet {
 }
 
 message SubmitQueryResponse {
-  required ResultCode resultCode = 1;
-  required QueryIdProto queryId = 2;
-  required string userName = 3;
-  optional bool isForwarded = 4 [default = false];
+  required ReturnState state = 1;
 
-  optional string queryMasterHost = 5;
-  optional int32 queryMasterPort = 6;
+  enum ResultType {
+    NO_RESULT = 0; // this query does not have any result.
+    ENCLOSED  = 1; // the response encloses the query result.
+    FETCH     = 2; // the query result should be fetched
+  }
 
-  optional SerializedResultSet resultSet = 7;
-  optional TableDescProto tableDesc = 8;
-  optional int32 maxRowNum = 9;
+  optional ResultType result_type = 2;
 
-  optional string errorMessage = 10;
-  optional string errorTrace = 11;
+  optional QueryIdProto queryId = 3;
+  optional string userName = 4;
 
-  optional KeyValueSetProto sessionVars = 12;
+  optional string queryMasterHost = 6;
+  optional int32 queryMasterPort = 7;
+
+  optional SerializedResultSet resultSet = 8;
+  optional TableDescProto tableDesc = 9;
+  optional int32 maxRowNum = 10;
+
+  optional KeyValueSetProto sessionVars = 11;
 }
 
 message GetQueryStatusResponse {
-  required ResultCode resultCode = 1;
-  required QueryIdProto queryId = 2;
-  optional QueryState state = 3;
+  required ReturnState state = 1;
+  optional QueryIdProto queryId = 2;
+  optional QueryState query_state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;
   optional int64 finishTime = 7;
@@ -165,10 +164,8 @@ message GetQueryResultDataRequest {
 }
 
 message GetQueryResultDataResponse {
-  required ResultCode resultCode = 1;
-  required SerializedResultSet resultSet = 2;
-  optional string errorMessage = 3;
-  optional string errorTrace = 4;
+  required ReturnState state = 1;
+  optional SerializedResultSet resultSet = 2;
 }
 
 message GetClusterInfoRequest {
@@ -177,23 +174,17 @@ message GetClusterInfoRequest {
 
 message WorkerResourceInfo {
   required WorkerConnectionInfoProto connectionInfo = 1;
-  required float diskSlots = 2;
-  required int32 cpuCoreSlots = 3;
-  required int32 memoryMB = 4;
-  required float usedDiskSlots = 5;
-  required int32 usedMemoryMB = 6;
-  required int32 usedCpuCoreSlots = 7;
-  required int64 maxHeap = 8;
-  required int64 freeHeap = 9;
-  required int64 totalHeap = 10;
-  required int32 numRunningTasks = 11;
-  required string workerStatus = 12;
-  required int64 lastHeartbeat = 13;
-  required int32 numQueryMasterTasks = 14;
+  required NodeResourceProto totalResource = 2;
+  required NodeResourceProto availableResource = 3;
+  required int32 numRunningTasks = 4;
+  required string workerStatus = 5;
+  required int64 lastHeartbeat = 6;
+  required int32 numQueryMasterTasks = 7;
 }
 
 message GetClusterInfoResponse {
-  repeated WorkerResourceInfo workerList = 1;
+  required ReturnState state = 1;
+  repeated WorkerResourceInfo workerList = 2;
 }
 
 message CreateTableRequest {
@@ -209,18 +200,6 @@ message DropTableRequest {
   optional SessionIdProto sessionId = 1;
   required string name = 2;
   optional bool purge = 3 [default = false];
-}
-
-message TableResponse {
-  required ResultCode resultCode = 1;
-  optional TableDescProto tableDesc = 2;
-  optional string errorMessage = 3;
-}
-
-message FunctionResponse {
-  required ResultCode resultCode = 1;
-  repeated FunctionDescProto functions = 2;
-  optional string errorMessage = 3;
 }
 
 message QueryInfoProto {
@@ -273,14 +252,22 @@ message QueryHistoryProto {
 }
 
 message GetQueryHistoryResponse {
-  required ResultCode resultCode = 1;
+  required ReturnState state = 1;
   optional QueryHistoryProto queryHistory = 2;
-  optional string errorMessage = 3;
 }
 
 message GetQueryInfoResponse {
-  required ResultCode resultCode = 1;
+  required ReturnState state = 1;
   optional QueryInfoProto queryInfo = 2;
-  optional string errorMessage = 3;
 }
 
+message CreateIndexResponse {
+  required ReturnState result = 1;
+  optional IndexDescProto indexDesc = 2;
+}
+
+message GetIndexWithColumnsRequest {
+  required SessionIdProto sessionId = 1;
+  required string tableName = 2;
+  repeated string columnNames = 3;
+}

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.client;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
@@ -29,12 +28,11 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
-import org.apache.tajo.jdbc.TajoResultSetBase;
-import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class TajoClientUtil {
 
@@ -60,7 +58,7 @@ public class TajoClientUtil {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
   }
 
-  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws ServiceException {
+  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws SQLException {
     QueryStatus status = client.getQueryStatus(queryId);
 
     while(!isQueryComplete(status.getState())) {
@@ -82,8 +80,7 @@ public class TajoClientUtil {
     return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 
-  public static ResultSet createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows)
-      throws IOException {
+  public static ResultSet createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows) {
     if (response.hasTableDesc()) {
       // non-forward query
       // select * from table1 [limit 10]
@@ -109,9 +106,8 @@ public class TajoClientUtil {
     }
   }
 
-  public static ResultSet createNullResultSet() {
-    return new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
-  }
+  public static final ResultSet NULL_RESULT_SET =
+      new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
 
   public static ResultSet createNullResultSet(QueryId queryId) {
     return new TajoMemoryResultSet(queryId, new Schema(), null, 0, null);

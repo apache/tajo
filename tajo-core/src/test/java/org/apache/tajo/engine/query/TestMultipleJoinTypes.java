@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.QueryTestCaseBase;
@@ -28,6 +27,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.sql.SQLException;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
@@ -44,7 +45,7 @@ public class TestMultipleJoinTypes extends TestJoinQuery {
   }
 
   @AfterClass
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     TestJoinQuery.classTearDown();
   }
 

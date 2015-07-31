@@ -28,15 +28,16 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -50,7 +51,7 @@ import java.io.IOException;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -103,7 +104,7 @@ public class TestLeftOuterHashJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
@@ -132,7 +133,7 @@ public class TestLeftOuterHashJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(job3Meta, job3Schema, job3Path);
@@ -172,7 +173,7 @@ public class TestLeftOuterHashJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(emp3Meta, emp3Schema, emp3Path);
@@ -225,7 +226,7 @@ public class TestLeftOuterHashJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
     Path phone3Path = new Path(testDir, "phone3.csv");
     Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
@@ -262,7 +263,7 @@ public class TestLeftOuterHashJoinExec {
   };
 
   @Test
-  public final void testLeftOuterHashJoinExec0() throws IOException, PlanningException {
+  public final void testLeftOuterHashJoinExec0() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -298,7 +299,7 @@ public class TestLeftOuterHashJoinExec {
 
 
   @Test
-  public final void testLeftOuter_HashJoinExec1() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec1() throws IOException, TajoException {
     FileFragment[] job3Frags = FileTablespace.splitNG(conf, JOB3_NAME, job3.getMeta(),
         new Path(job3.getUri()), Integer.MAX_VALUE);
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
@@ -331,7 +332,7 @@ public class TestLeftOuterHashJoinExec {
   }
 
     @Test
-  public final void testLeftOuter_HashJoinExec2() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec2() throws IOException, TajoException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
         new Path(emp3.getUri()), Integer.MAX_VALUE);
@@ -367,7 +368,7 @@ public class TestLeftOuterHashJoinExec {
 
 
    @Test
-  public final void testLeftOuter_HashJoinExec3() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec3() throws IOException, TajoException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, EMP3_NAME, emp3.getMeta(),
         new Path(emp3.getUri()), Integer.MAX_VALUE);
@@ -402,7 +403,7 @@ public class TestLeftOuterHashJoinExec {
 
   
    @Test
-  public final void testLeftOuter_HashJoinExec4() throws IOException, PlanningException {
+  public final void testLeftOuter_HashJoinExec4() throws IOException, TajoException {
     
     FileFragment[] emp3Frags = FileTablespace.splitNG(conf, "default.emp3", emp3.getMeta(),
         new Path(emp3.getUri()), Integer.MAX_VALUE);

@@ -72,7 +72,6 @@ public class TestBSTIndex {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"CSV"},
         {"RAW"},
         {"TEXT"}
     });
@@ -125,7 +124,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -148,7 +148,8 @@ public class TestBSTIndex {
     tuple = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + storeType + ".idx"), keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
@@ -227,7 +228,8 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
@@ -290,7 +292,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -362,7 +365,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -385,7 +389,8 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyValue_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple result;
@@ -453,7 +458,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -476,7 +482,8 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyOmittedValue_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple result;
@@ -533,7 +540,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -558,7 +566,8 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindMinValue_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     tuple.put(0, DatumFactory.createInt8(0));
@@ -617,7 +626,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -723,7 +733,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -805,7 +816,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -830,7 +842,8 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValueDescOrder_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     for (int i = (TUPLE_NUM - 1); i > 0; i--) {
@@ -895,7 +908,8 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -923,7 +937,8 @@ public class TestBSTIndex {
     assertEquals(keySchema, reader.getKeySchema());
     assertEquals(comp, reader.getComparator());
 
-    scanner = OldStorageManager.getSeekableScanner(conf, meta, schema, tablet, schema);
+    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+        getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
     Tuple result;

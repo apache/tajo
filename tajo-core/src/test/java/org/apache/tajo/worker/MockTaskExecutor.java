@@ -18,33 +18,35 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.ResourceProtos.TaskRequestProto;
+import org.apache.tajo.ResourceProtos.TaskStatusProto;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.worker.event.TaskExecutorEvent;
+import org.apache.tajo.worker.event.TaskStartEvent;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 
 public class MockTaskExecutor extends TaskExecutor {
 
   protected final Semaphore barrier;
 
-  public MockTaskExecutor(Semaphore barrier, TaskManager taskManager, EventHandler rmEventHandler) {
-    super(taskManager, rmEventHandler);
+  public MockTaskExecutor(Semaphore barrier, TajoWorker.WorkerContext workerContext) {
+    super(workerContext);
     this.barrier = barrier;
   }
 
   @Override
-  public void handle(TaskExecutorEvent event) {
+  public void handle(TaskStartEvent event) {
     super.handle(event);
     barrier.release();
   }
 
   @Override
-  protected Task createTask(final ExecutionBlockContext context, TajoWorkerProtocol.TaskRequestProto taskRequest) {
+  protected Task createTask(final ExecutionBlockContext context, TaskRequestProto taskRequest) {
     final TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
 
     //ignore status changed log
@@ -69,7 +71,7 @@ public class MockTaskExecutor extends TaskExecutor {
       }
 
       @Override
-      public void fetch() {
+      public void fetch(ExecutorService executorService) {
 
       }
 
@@ -126,8 +128,8 @@ public class MockTaskExecutor extends TaskExecutor {
       }
 
       @Override
-      public TajoWorkerProtocol.TaskStatusProto getReport() {
-        TajoWorkerProtocol.TaskStatusProto.Builder builder = TajoWorkerProtocol.TaskStatusProto.newBuilder();
+      public TaskStatusProto getReport() {
+        TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
       builder.setWorkerName("localhost:0");
       builder.setId(taskAttemptContext.getTaskId().getProto())
           .setProgress(taskAttemptContext.getProgress())
@@ -135,6 +137,16 @@ public class MockTaskExecutor extends TaskExecutor {
 
       builder.setInputStats(new TableStats().getProto());
       return builder.build();
+      }
+
+      @Override
+      public TaskHistory createTaskHistory() {
+        return null;
+      }
+
+      @Override
+      public List<Fetcher> getFetchers() {
+        return null;
       }
     };
   }

@@ -21,7 +21,8 @@ package org.apache.tajo.plan;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.exception.NoSuchColumnException;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
@@ -111,11 +112,11 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     }
   }
 
-  public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr) throws PlanningException {
+  public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr) throws TajoException {
     return normalize(context, expr, false);
   }
   public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr, boolean subexprElimination)
-      throws PlanningException {
+      throws TajoException {
     ExprNormalizedResult exprNormalizedResult = new ExprNormalizedResult(context, subexprElimination);
     Stack<Expr> stack = new Stack<Expr>();
     stack.push(expr);
@@ -126,7 +127,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
   @Override
   public Object visitCaseWhen(ExprNormalizedResult ctx, Stack<Expr> stack, CaseWhenPredicate expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr);
     for (CaseWhenPredicate.WhenExpr when : expr.getWhens()) {
       visit(ctx, stack, when.getCondition());
@@ -158,7 +159,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   }
 
   @Override
-  public Expr visitUnaryOperator(ExprNormalizedResult ctx, Stack<Expr> stack, UnaryOperator expr) throws PlanningException {
+  public Expr visitUnaryOperator(ExprNormalizedResult ctx, Stack<Expr> stack, UnaryOperator expr) throws TajoException {
     super.visitUnaryOperator(ctx, stack, expr);
     if (OpType.isAggregationFunction(expr.getChild().getType())) {
       // Get an anonymous column name and replace the aggregation function by the column name
@@ -176,7 +177,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   }
 
   @Override
-  public Expr visitBinaryOperator(ExprNormalizedResult ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public Expr visitBinaryOperator(ExprNormalizedResult ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
 
     visit(ctx, new Stack<Expr>(), expr.getLeft());
@@ -220,7 +221,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public Expr visitFunction(ExprNormalizedResult ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
+  public Expr visitFunction(ExprNormalizedResult ctx, Stack<Expr> stack, FunctionExpr expr) throws TajoException {
     stack.push(expr);
 
     Expr param;
@@ -244,7 +245,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
   @Override
   public Expr visitGeneralSetFunction(ExprNormalizedResult ctx, Stack<Expr> stack, GeneralSetFunctionExpr expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr);
 
     Expr param;
@@ -266,7 +267,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   }
 
   public Expr visitWindowFunction(ExprNormalizedResult ctx, Stack<Expr> stack, WindowFunctionExpr expr)
-      throws PlanningException {
+      throws TajoException {
     stack.push(expr);
 
     WindowSpec windowSpec = expr.getWindowSpec();
@@ -318,7 +319,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public Expr visitCastExpr(ExprNormalizedResult ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
+  public Expr visitCastExpr(ExprNormalizedResult ctx, Stack<Expr> stack, CastExpr expr) throws TajoException {
     super.visitCastExpr(ctx, stack, expr);
     if (OpType.isAggregationFunction(expr.getType())) {
       String referenceName = ctx.block.namedExprsMgr.addExpr(expr.getChild());
@@ -330,7 +331,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
   @Override
   public Expr visitColumnReference(ExprNormalizedResult ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
-      throws PlanningException {
+      throws TajoException {
 
     if (ctx.block.isAliasedName(expr.getCanonicalName())) {
       String originalName = ctx.block.getOriginalName(expr.getCanonicalName());
@@ -344,7 +345,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
           String normalized =
               NameResolver.resolve(ctx.plan, ctx.block, expr, NameResolvingMode.LEGACY).getQualifiedName();
           expr.setName(normalized);
-        } catch (NoSuchColumnException nsc) {
+        } catch (UndefinedColumnException nsc) {
         }
       }
     }

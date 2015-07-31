@@ -18,7 +18,6 @@
 
 package org.apache.tajo.client;
 
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
@@ -29,12 +28,12 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.sql.ResultSet;
@@ -58,7 +57,8 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
    * @throws java.io.IOException
    */
   public TajoClientImpl(ServiceTracker tracker, @Nullable String baseDatabase, KeyValueSet properties)
-      throws IOException {
+      throws SQLException {
+
     super(tracker, baseDatabase, properties);
 
     this.queryClient = new QueryClientImpl(this);
@@ -75,94 +75,94 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
    * @throws java.io.IOException
    */
   public TajoClientImpl(InetSocketAddress addr, @Nullable String baseDatabase, KeyValueSet properties)
-      throws IOException {
+      throws SQLException {
     this(new DummyServiceTracker(addr), baseDatabase, properties);
   }
 
-  public TajoClientImpl(ServiceTracker serviceTracker) throws IOException {
+  public TajoClientImpl(ServiceTracker serviceTracker) throws SQLException {
     this(serviceTracker, null);
   }
 
-  public TajoClientImpl(ServiceTracker serviceTracker, @Nullable String baseDatabase) throws IOException {
+  public TajoClientImpl(ServiceTracker serviceTracker, @Nullable String baseDatabase) throws SQLException {
     this(serviceTracker, baseDatabase, new KeyValueSet());
   }
   /*------------------------------------------------------------------------*/
   // QueryClient wrappers
   /*------------------------------------------------------------------------*/
 
-  public void closeQuery(final QueryId queryId) {
+  public void closeQuery(final QueryId queryId) throws SQLException {
     queryClient.closeQuery(queryId);
   }
 
-  public void closeNonForwardQuery(final QueryId queryId) {
+  public void closeNonForwardQuery(final QueryId queryId) throws SQLException {
     queryClient.closeNonForwardQuery(queryId);
   }
 
-  public SubmitQueryResponse executeQuery(final String sql) throws ServiceException {
+  public SubmitQueryResponse executeQuery(final String sql) throws SQLException {
     return queryClient.executeQuery(sql);
   }
 
-  public SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException {
+  public SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException {
     return queryClient.executeQueryWithJson(json);
   }
 
-  public ResultSet executeQueryAndGetResult(final String sql) throws ServiceException, IOException {
+  public ResultSet executeQueryAndGetResult(final String sql) throws SQLException {
     return queryClient.executeQueryAndGetResult(sql);
   }
 
-  public ResultSet executeJsonQueryAndGetResult(final String json) throws ServiceException, IOException {
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException {
     return queryClient.executeJsonQueryAndGetResult(json);
   }
 
-  public QueryStatus getQueryStatus(QueryId queryId) throws ServiceException {
+  public QueryStatus getQueryStatus(QueryId queryId) throws SQLException {
     return queryClient.getQueryStatus(queryId);
   }
 
-  public ResultSet getQueryResult(QueryId queryId) throws ServiceException, IOException {
+  public ResultSet getQueryResult(QueryId queryId) throws SQLException {
     return queryClient.getQueryResult(queryId);
   }
 
-  public ResultSet createNullResultSet(QueryId queryId) throws IOException {
+  public ResultSet createNullResultSet(QueryId queryId) throws SQLException {
     return TajoClientUtil.createNullResultSet(queryId);
   }
 
-  public GetQueryResultResponse getResultResponse(QueryId queryId) throws ServiceException {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) throws SQLException {
     return queryClient.getResultResponse(queryId);
   }
 
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws ServiceException {
+  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException {
     return queryClient.fetchNextQueryResult(queryId, fetchRowNum);
   }
 
-  public boolean updateQuery(final String sql) throws ServiceException {
+  public boolean updateQuery(final String sql) throws SQLException {
     return queryClient.updateQuery(sql);
   }
 
-  public boolean updateQueryWithJson(final String json) throws ServiceException {
+  public boolean updateQueryWithJson(final String json) throws SQLException {
     return queryClient.updateQueryWithJson(json);
   }
 
-  public QueryStatus killQuery(final QueryId queryId) throws ServiceException, IOException {
+  public QueryStatus killQuery(final QueryId queryId) throws SQLException {
     return queryClient.killQuery(queryId);
   }
 
-  public List<BriefQueryInfo> getRunningQueryList() throws ServiceException {
+  public List<BriefQueryInfo> getRunningQueryList() throws SQLException {
     return queryClient.getRunningQueryList();
   }
 
-  public List<BriefQueryInfo> getFinishedQueryList() throws ServiceException {
+  public List<BriefQueryInfo> getFinishedQueryList() throws SQLException {
     return queryClient.getFinishedQueryList();
   }
 
-  public List<WorkerResourceInfo> getClusterInfo() throws ServiceException {
+  public List<WorkerResourceInfo> getClusterInfo() throws SQLException {
     return queryClient.getClusterInfo();
   }
 
-  public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException {
     return queryClient.getQueryInfo(queryId);
   }
 
-  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException {
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws SQLException {
     return queryClient.getQueryHistory(queryId);
   }
 
@@ -178,54 +178,89 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   // CatalogClient wrappers
   /*------------------------------------------------------------------------*/
 
-  public boolean createDatabase(final String databaseName) throws ServiceException {
+  public boolean createDatabase(final String databaseName) throws SQLException {
     return catalogClient.createDatabase(databaseName);
   }
 
-  public boolean existDatabase(final String databaseName) throws ServiceException {
+  public boolean existDatabase(final String databaseName) throws SQLException {
     return catalogClient.existDatabase(databaseName);
   }
 
-  public boolean dropDatabase(final String databaseName) throws ServiceException {
+  public boolean dropDatabase(final String databaseName) throws SQLException {
     return catalogClient.dropDatabase(databaseName);
   }
 
-  public List<String> getAllDatabaseNames() throws ServiceException {
+  public List<String> getAllDatabaseNames() throws SQLException {
     return catalogClient.getAllDatabaseNames();
   }
 
-  public boolean existTable(final String tableName) throws ServiceException {
+  public boolean existTable(final String tableName) throws SQLException {
     return catalogClient.existTable(tableName);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws SQLException, ServiceException {
+                                       final TableMeta meta) throws SQLException {
     return catalogClient.createExternalTable(tableName, schema, path, meta);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException, ServiceException {
+      throws SQLException {
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);
   }
 
-  public boolean dropTable(final String tableName) throws ServiceException {
+  public boolean dropTable(final String tableName) throws SQLException {
     return dropTable(tableName, false);
   }
 
-  public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
+  public boolean dropTable(final String tableName, final boolean purge) throws SQLException {
     return catalogClient.dropTable(tableName, purge);
   }
 
-  public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
+  public List<String> getTableList(@Nullable final String databaseName) throws SQLException {
     return catalogClient.getTableList(databaseName);
   }
 
-  public TableDesc getTableDesc(final String tableName) throws ServiceException {
+  public TableDesc getTableDesc(final String tableName) throws SQLException {
     return catalogClient.getTableDesc(tableName);
   }
 
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
+  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws SQLException {
     return catalogClient.getFunctions(functionName);
+  }
+
+  @Override
+  public IndexDescProto getIndex(String indexName) throws SQLException {
+    return catalogClient.getIndex(indexName);
+  }
+
+  @Override
+  public boolean existIndex(String indexName) throws SQLException {
+    return catalogClient.existIndex(indexName);
+  }
+
+  @Override
+  public List<IndexDescProto> getIndexes(String tableName) throws SQLException {
+    return catalogClient.getIndexes(tableName);
+  }
+
+  @Override
+  public boolean hasIndexes(String tableName) throws SQLException {
+    return catalogClient.hasIndexes(tableName);
+  }
+
+  @Override
+  public IndexDescProto getIndex(String tableName, String[] columnNames) throws SQLException {
+    return catalogClient.getIndex(tableName, columnNames);
+  }
+
+  @Override
+  public boolean existIndex(String tableName, String[] columnName) throws SQLException {
+    return catalogClient.existIndex(tableName, columnName);
+  }
+
+  @Override
+  public boolean dropIndex(String indexName) throws SQLException {
+    return catalogClient.dropIndex(indexName);
   }
 }

@@ -20,14 +20,15 @@ package org.apache.tajo.plan.nameresolver;
 
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.AmbiguousColumnException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.logical.NoSuchColumnException;
 
 public class ResolverBySubExprsAndRels extends NameResolver {
   @Override
   public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws PlanningException {
+      throws AmbiguousColumnException{
 
     Column column = resolveFromCurrentAndChildNode(block, columnRef);
     if (column == null) {
@@ -35,7 +36,7 @@ public class ResolverBySubExprsAndRels extends NameResolver {
     }
 
     if (column == null) {
-      throw new NoSuchColumnException(columnRef.getCanonicalName());
+      throw new UndefinedColumnException(columnRef.getCanonicalName());
     }
     return column;
   }

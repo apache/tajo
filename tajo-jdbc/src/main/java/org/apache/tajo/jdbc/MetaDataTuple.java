@@ -93,6 +93,11 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
+  public void clearOffset() {
+    throw new UnsupportedException("clearOffset");
+  }
+
+  @Override
   public Datum asDatum(int fieldId) {
     return values.get(fieldId);
   }

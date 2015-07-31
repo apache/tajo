@@ -28,16 +28,20 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlanner;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -50,7 +54,7 @@ import java.io.IOException;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.*;
 
 public class TestFullOuterHashJoinExec {
@@ -102,7 +106,7 @@ public class TestFullOuterHashJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
@@ -131,7 +135,7 @@ public class TestFullOuterHashJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
@@ -170,7 +174,7 @@ public class TestFullOuterHashJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
@@ -222,7 +226,7 @@ public class TestFullOuterHashJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
     Path phone3Path = new Path(testDir, "phone3.csv");
     Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
@@ -256,7 +260,7 @@ public class TestFullOuterHashJoinExec {
   };
 
   @Test
-  public final void testFullOuterHashJoinExec0() throws IOException, PlanningException {
+  public final void testFullOuterHashJoinExec0() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -295,7 +299,7 @@ public class TestFullOuterHashJoinExec {
 
 
   @Test
-  public final void testFullOuterHashJoinExec1() throws IOException, PlanningException {
+  public final void testFullOuterHashJoinExec1() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -333,7 +337,7 @@ public class TestFullOuterHashJoinExec {
   }
 
   @Test
-  public final void testFullOuterHashJoinExec2() throws IOException, PlanningException {
+  public final void testFullOuterHashJoinExec2() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -372,7 +376,7 @@ public class TestFullOuterHashJoinExec {
 
 
   @Test
-  public final void testFullOuterHashJoinExec3() throws IOException, PlanningException {
+  public final void testFullOuterHashJoinExec3() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[3]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);

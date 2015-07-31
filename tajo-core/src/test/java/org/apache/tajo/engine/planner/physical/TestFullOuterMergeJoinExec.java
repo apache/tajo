@@ -33,13 +33,16 @@ import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
@@ -52,7 +55,7 @@ import java.io.IOException;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.JoinEnforce.JoinAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.JoinEnforce.JoinAlgorithm;
 import static org.junit.Assert.*;
 
 public class TestFullOuterMergeJoinExec {
@@ -107,7 +110,7 @@ public class TestFullOuterMergeJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
@@ -145,7 +148,7 @@ public class TestFullOuterMergeJoinExec {
     dep4Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep4Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta dep4Meta = CatalogUtil.newTableMeta("TEXT");
     Path dep4Path = new Path(testDir, "dep4.csv");
     Appender appender4 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
@@ -176,7 +179,7 @@ public class TestFullOuterMergeJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
@@ -215,7 +218,7 @@ public class TestFullOuterMergeJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
@@ -267,7 +270,7 @@ public class TestFullOuterMergeJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta("CSV");
+    TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
     Path phone3Path = new Path(testDir, "phone3.csv");
     Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
@@ -304,7 +307,7 @@ public class TestFullOuterMergeJoinExec {
   };
 
   @Test
-  public final void testFullOuterMergeJoin0() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin0() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -341,7 +344,7 @@ public class TestFullOuterMergeJoinExec {
 
 
   @Test
-  public final void testFullOuterMergeJoin1() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin1() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -378,7 +381,7 @@ public class TestFullOuterMergeJoinExec {
   }
 
   @Test
-  public final void testFullOuterMergeJoin2() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin2() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -416,7 +419,7 @@ public class TestFullOuterMergeJoinExec {
   }
 
   @Test
-  public final void testFullOuterMergeJoin3() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin3() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[3]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -456,7 +459,7 @@ public class TestFullOuterMergeJoinExec {
 
 
   @Test
-  public final void testFullOuterMergeJoin4() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin4() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[4]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);
@@ -495,7 +498,7 @@ public class TestFullOuterMergeJoinExec {
 
 
   @Test
-  public final void testFullOuterMergeJoin5() throws IOException, PlanningException {
+  public final void testFullOuterMergeJoin5() throws IOException, TajoException {
     Expr expr = analyzer.parse(QUERIES[5]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
     JoinNode joinNode = PlannerUtil.findTopNode(plan, NodeType.JOIN);

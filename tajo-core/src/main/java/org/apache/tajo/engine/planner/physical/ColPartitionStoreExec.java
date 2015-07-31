@@ -29,6 +29,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
@@ -63,17 +65,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
 
-    if (plan.getType() == NodeType.CREATE_TABLE) {
-      if (!(plan instanceof CreateTableNode)) {
-        throw new IllegalArgumentException("plan should be a CreateTableNode type.");
-      }
-      this.outSchema = ((CreateTableNode)plan).getTableSchema();
-    } else if (plan.getType() == NodeType.INSERT) {
-      if (!(plan instanceof InsertNode)) {
-        throw new IllegalArgumentException("plan should be a InsertNode type.");
-      }
-      this.outSchema = ((InsertNode)plan).getTableSchema();
-    }
+    this.outSchema = plan.getTableSchema();
 
     // set table meta
     if (this.plan.hasOptions()) {
@@ -145,7 +137,9 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       LOG.info("Path " + lastFileName.getParent() + " already exists!");
     } else {
       fs.mkdirs(lastFileName.getParent());
-      LOG.info("Add subpartition path directory :" + lastFileName.getParent());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Add subpartition path directory :" + lastFileName.getParent());
+      }
     }
 
     if (fs.exists(lastFileName)) {
@@ -156,7 +150,45 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     openAppender(0);
 
+    addPartition(partition);
+
     return appender;
+  }
+
+  /**
+   * Add partition information to TableStats for storing to CatalogStore.
+   *
+   * @param partition partition name
+   * @throws IOException
+   */
+  private void addPartition(String partition) throws IOException {
+    PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
+    builder.setPartitionName(partition);
+
+    String[] partitionKeyPairs = partition.split("/");
+
+    for(int i = 0; i < partitionKeyPairs.length; i++) {
+      String partitionKeyPair = partitionKeyPairs[i];
+      String[] split = partitionKeyPair.split("=");
+
+      PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
+      keyBuilder.setColumnName(split[0]);
+      keyBuilder.setPartitionValue(split[1]);
+
+      builder.addPartitionKeys(keyBuilder.build());
+    }
+
+    if (this.plan.getUri() == null) {
+      // In CTAS, the uri would be null. So,
+      String[] split = CatalogUtil.splitTableName(plan.getTableName());
+      int endIndex = storeTablePath.toString().indexOf(split[1]) + split[1].length();
+      String outputPath = storeTablePath.toString().substring(0, endIndex);
+      builder.setPath(outputPath + "/" + partition);
+    } else {
+      builder.setPath(this.plan.getUri().toString() + "/" + partition);
+    }
+
+    context.addPartition(builder.build());
   }
 
   public void openAppender(int suffixId) throws IOException {
@@ -170,5 +202,10 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     appender.enableStats();
     appender.init();
+  }
+
+  @Override
+  public void rescan() throws IOException {
+    // nothing to do
   }
 }

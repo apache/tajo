@@ -25,12 +25,16 @@ import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
 import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
+
+import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeMDCNoMatchedDataType;
+import static org.apache.tajo.exception.ExceptionUtil.makeNotSupported;
 
 public class HiveCatalogUtil {
   public static void validateSchema(Table tblSchema) throws CatalogException {
@@ -38,38 +42,38 @@ public class HiveCatalogUtil {
       String fieldType = fieldSchema.getType();
       if (fieldType.equalsIgnoreCase("ARRAY") || fieldType.equalsIgnoreCase("STRUCT")
         || fieldType.equalsIgnoreCase("MAP")) {
-        throw new CatalogException("Unsupported field type :" + fieldType.toUpperCase());
+        throw makeNotSupported(fieldType.toUpperCase());
       }
     }
   }
 
-  public static TajoDataTypes.Type getTajoFieldType(String fieldType)  {
-    Preconditions.checkNotNull(fieldType);
+  public static TajoDataTypes.Type getTajoFieldType(String dataType)  {
+    Preconditions.checkNotNull(dataType);
 
-    if(fieldType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
+    if(dataType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
       return TajoDataTypes.Type.INT4;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.TINYINT_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.TINYINT_TYPE_NAME)) {
       return TajoDataTypes.Type.INT1;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.SMALLINT_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.SMALLINT_TYPE_NAME)) {
       return TajoDataTypes.Type.INT2;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.BIGINT_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.BIGINT_TYPE_NAME)) {
       return TajoDataTypes.Type.INT8;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.BOOLEAN_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.BOOLEAN_TYPE_NAME)) {
       return TajoDataTypes.Type.BOOLEAN;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.FLOAT_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.FLOAT_TYPE_NAME)) {
       return TajoDataTypes.Type.FLOAT4;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.DOUBLE_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.DOUBLE_TYPE_NAME)) {
       return TajoDataTypes.Type.FLOAT8;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.STRING_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.STRING_TYPE_NAME)) {
       return TajoDataTypes.Type.TEXT;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.BINARY_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.BINARY_TYPE_NAME)) {
       return TajoDataTypes.Type.BLOB;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.TIMESTAMP_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.TIMESTAMP_TYPE_NAME)) {
       return TajoDataTypes.Type.TIMESTAMP;
-    } else if(fieldType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
+    } else if(dataType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
       return TajoDataTypes.Type.DATE;
     } else {
-      throw new CatalogException("Cannot find a matched type against from '" + fieldType + "'");
+      throw makeMDCNoMatchedDataType(dataType);
     }
   }
 
@@ -95,7 +99,7 @@ public class HiveCatalogUtil {
     case DATE: return serdeConstants.DATE_TYPE_NAME;
     case TIMESTAMP: return serdeConstants.TIMESTAMP_TYPE_NAME;
     default:
-      throw new CatalogException(dataType + " is not supported.");
+      throw ExceptionUtil.makeInvalidDataType(dataType);
     }
   }
 
@@ -104,12 +108,12 @@ public class HiveCatalogUtil {
 
     String[] fileFormatArrary = fileFormat.split("\\.");
     if(fileFormatArrary.length < 1) {
-      throw new CatalogException("Hive file output format is wrong. - file output format:" + fileFormat);
+      throw makeNotSupported(fileFormat);
     }
 
     String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
     if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
-      return CatalogUtil.TEXTFILE_NAME;
+      return BuiltinStorages.TEXT;
     } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.SEQUENCEFILE.name();
     } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
@@ -117,7 +121,7 @@ public class HiveCatalogUtil {
     } else if(outputFormatClass.equals(DeprecatedParquetOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.PARQUET.name();
     } else {
-      throw new CatalogException("Not supported file output format. - file output format:" + fileFormat);
+      throw makeNotSupported(fileFormat);
     }
   }
 

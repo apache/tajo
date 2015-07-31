@@ -20,25 +20,16 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 
 import java.io.Closeable;
 
 import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
 import java.util.Collection;
 import java.util.List;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionMethodProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 
 public interface CatalogStore extends Closeable {
   /*************************** Tablespace ******************************/
@@ -81,8 +72,8 @@ public interface CatalogStore extends Closeable {
   void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException;
   
   List<TableDescriptorProto> getAllTables() throws CatalogException;
-  
-  List<TableOptionProto> getAllTableOptions() throws CatalogException;
+
+  List<TableOptionProto> getAllTableProperties() throws CatalogException;
   
   List<TableStatsProto> getAllTableStats() throws CatalogException;
   
@@ -115,24 +106,29 @@ public interface CatalogStore extends Closeable {
 
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
 
+  void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException;
+
   /**************************** INDEX *******************************/
   void createIndex(IndexDescProto proto) throws CatalogException;
   
   void dropIndex(String databaseName, String indexName) throws CatalogException;
   
   IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException;
-  
-  IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
+
+  IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException;
   
   boolean existIndexByName(String databaseName, String indexName) throws CatalogException;
-  
-  boolean existIndexByColumn(String databaseName, String tableName, String columnName)
+
+  boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException;
 
-  IndexDescProto [] getIndexes(String databaseName, String tableName) throws CatalogException;
-  
-  List<IndexProto> getAllIndexes() throws CatalogException;
+  List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException;
+
+  boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException;
+
+  List<IndexDescProto> getAllIndexes() throws CatalogException;
 
   /************************** FUNCTION *****************************/
 

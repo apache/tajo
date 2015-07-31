@@ -247,9 +247,8 @@ public class SeqScanExec extends ScanExec {
   public Tuple next() throws IOException {
 
     while(scanIt.hasNext()) {
-      Tuple outTuple = new VTuple(outColumnNum);
       Tuple t = scanIt.next();
-      projector.eval(t, outTuple);
+      Tuple outTuple = projector.eval(t);
       outTuple.setOffset(t.getOffset());
       return outTuple;
     }

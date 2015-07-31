@@ -25,6 +25,7 @@ public class TaskAttemptId implements Comparable<TaskAttemptId> {
 
   private TaskId taskId;
   private int id;
+  private final int hashValue;
 
   public TaskId getTaskId() {
     return taskId;
@@ -41,6 +42,7 @@ public class TaskAttemptId implements Comparable<TaskAttemptId> {
   public TaskAttemptId(TaskId taskId, int id) {
     this.taskId = taskId;
     this.id = id;
+    this.hashValue = Objects.hashCode(taskId, id);
   }
 
   public TaskAttemptId(TajoIdProtos.TaskAttemptIdProto proto) {
@@ -80,7 +82,7 @@ public class TaskAttemptId implements Comparable<TaskAttemptId> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(taskId, id);
+    return hashValue;
   }
 
   @Override

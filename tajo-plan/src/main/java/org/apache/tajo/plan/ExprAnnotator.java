@@ -27,14 +27,15 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
@@ -43,7 +44,6 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.io.IOException;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -54,6 +54,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.plan.logical.WindowSpec.*;
+import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
 
 /**
  * <code>ExprAnnotator</code> makes an annotated expression called <code>EvalNode</code> from an
@@ -85,15 +86,14 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public EvalNode createEvalNode(LogicalPlanner.PlanContext planContext, Expr expr,
-                                 NameResolvingMode colRsvLevel)
-      throws PlanningException {
+                                 NameResolvingMode colRsvLevel) throws TajoException {
     Context context = new Context(planContext, colRsvLevel);
     return planContext.evalOptimizer.optimize(planContext, visit(context, new Stack<Expr>(), expr));
   }
 
-  public static void assertEval(boolean condition, String message) throws PlanningException {
+  public static void assertEval(boolean condition, String message) throws TajoException {
     if (!condition) {
-      throw new PlanningException(message);
+      throw makeSyntaxError(message);
     }
   }
 
@@ -197,7 +197,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public EvalNode visitAnd(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitAnd(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -207,7 +207,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitOr(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitOr(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -217,7 +217,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitNot(Context ctx, Stack<Expr> stack, NotExpr expr) throws PlanningException {
+  public EvalNode visitNot(Context ctx, Stack<Expr> stack, NotExpr expr) throws TajoException {
     stack.push(expr);
     EvalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
@@ -228,37 +228,37 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   // Comparison Predicates Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   @Override
-  public EvalNode visitEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     return visitCommonComparison(ctx, stack, expr);
   }
 
   @Override
-  public EvalNode visitNotEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitNotEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     return visitCommonComparison(ctx, stack, expr);
   }
 
   @Override
-  public EvalNode visitLessThan(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitLessThan(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     return visitCommonComparison(ctx, stack, expr);
   }
 
   @Override
-  public EvalNode visitLessThanOrEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitLessThanOrEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     return visitCommonComparison(ctx, stack, expr);
   }
 
   @Override
-  public EvalNode visitGreaterThan(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitGreaterThan(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     return visitCommonComparison(ctx, stack, expr);
   }
 
   @Override
   public EvalNode visitGreaterThanOrEquals(Context ctx, Stack<Expr> stack, BinaryOperator expr)
-      throws PlanningException {
+      throws TajoException {
     return visitCommonComparison(ctx, stack, expr);
   }
 
-  public EvalNode visitCommonComparison(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitCommonComparison(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -296,7 +296,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public EvalNode visitBetween(Context ctx, Stack<Expr> stack, BetweenPredicate between) throws PlanningException {
+  public EvalNode visitBetween(Context ctx, Stack<Expr> stack, BetweenPredicate between) throws TajoException {
     stack.push(between);
     EvalNode predicand = visit(ctx, stack, between.predicand());
     EvalNode begin = visit(ctx, stack, between.begin());
@@ -304,13 +304,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop();
 
     // implicit type conversion
-    DataType widestType = null;
-
-    try {
-      widestType = CatalogUtil.getWidestType(predicand.getValueType(), begin.getValueType(), end.getValueType());
-    } catch (InvalidOperationException ioe) {
-      throw new PlanningException(ioe);
-    }
+    DataType widestType = CatalogUtil.getWidestType(predicand.getValueType(), begin.getValueType(), end.getValueType());
 
     BetweenPredicateEval betweenEval = new BetweenPredicateEval(
         between.isNot(),
@@ -322,7 +316,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitCaseWhen(Context ctx, Stack<Expr> stack, CaseWhenPredicate caseWhen) throws PlanningException {
+  public EvalNode visitCaseWhen(Context ctx, Stack<Expr> stack, CaseWhenPredicate caseWhen) throws TajoException {
     CaseWhenEval caseWhenEval = new CaseWhenEval();
 
     EvalNode condition;
@@ -357,7 +351,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitIsNullPredicate(Context ctx, Stack<Expr> stack, IsNullPredicate expr) throws PlanningException {
+  public EvalNode visitIsNullPredicate(Context ctx, Stack<Expr> stack, IsNullPredicate expr) throws TajoException {
     stack.push(expr);
     EvalNode child = visit(ctx, stack, expr.getPredicand());
     stack.pop();
@@ -365,7 +359,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitInPredicate(Context ctx, Stack<Expr> stack, InPredicate expr) throws PlanningException {
+  public EvalNode visitInPredicate(Context ctx, Stack<Expr> stack, InPredicate expr) throws TajoException {
     stack.push(expr);
     EvalNode lhs = visit(ctx, stack, expr.getLeft());
     RowConstantEval rowConstantEval = (RowConstantEval) visit(ctx, stack, expr.getInValue());
@@ -377,13 +371,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitValueListExpr(Context ctx, Stack<Expr> stack, ValueListExpr expr) throws PlanningException {
+  public EvalNode visitValueListExpr(Context ctx, Stack<Expr> stack, ValueListExpr expr) throws TajoException {
     Datum[] values = new Datum[expr.getValues().length];
     EvalNode [] evalNodes = new EvalNode[expr.getValues().length];
     for (int i = 0; i < expr.getValues().length; i++) {
       evalNodes[i] = visit(ctx, stack, expr.getValues()[i]);
       if (!EvalTreeUtil.checkIfCanBeConstant(evalNodes[i])) {
-        throw new PlanningException("Non constant values cannot be included in IN PREDICATE.");
+        throw makeSyntaxError("Non constant values cannot be included in IN PREDICATE.");
       }
       values[i] = EvalTreeUtil.evaluateImmediately(null, evalNodes[i]);
     }
@@ -391,8 +385,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitExistsPredicate(Context ctx, Stack<Expr> stack, ExistsPredicate expr) throws PlanningException {
-    throw new PlanningException("Cannot support EXISTS clause yet");
+  public EvalNode visitExistsPredicate(Context ctx, Stack<Expr> stack, ExistsPredicate expr) throws TajoException {
+    throw new UnimplementedException("EXISTS clause");
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -400,24 +394,24 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   @Override
   public EvalNode visitLikePredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
-      throws PlanningException {
+      throws TajoException {
     return visitPatternMatchPredicate(ctx, stack, expr);
   }
 
   @Override
   public EvalNode visitSimilarToPredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
-      throws PlanningException {
+      throws TajoException {
     return visitPatternMatchPredicate(ctx, stack, expr);
   }
 
   @Override
   public EvalNode visitRegexpPredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
-      throws PlanningException {
+      throws TajoException {
     return visitPatternMatchPredicate(ctx, stack, expr);
   }
 
   @Override
-  public EvalNode visitConcatenate(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitConcatenate(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode lhs = visit(ctx, stack, expr.getLeft());
     EvalNode rhs = visit(ctx, stack, expr.getRight());
@@ -434,7 +428,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   private EvalNode visitPatternMatchPredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
-      throws PlanningException {
+      throws TajoException {
     EvalNode field = visit(ctx, stack, expr.getPredicand());
     ConstEval pattern = (ConstEval) visit(ctx, stack, expr.getPattern());
 
@@ -463,7 +457,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitPlus(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitPlus(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -473,7 +467,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitMinus(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitMinus(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -483,7 +477,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitMultiply(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitMultiply(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -493,7 +487,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitDivide(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitDivide(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -503,7 +497,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitModular(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+  public EvalNode visitModular(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
     EvalNode left = visit(ctx, stack, expr.getLeft());
     EvalNode right = visit(ctx, stack, expr.getRight());
@@ -517,7 +511,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public EvalNode visitSign(Context ctx, Stack<Expr> stack, SignedExpr expr) throws PlanningException {
+  public EvalNode visitSign(Context ctx, Stack<Expr> stack, SignedExpr expr) throws TajoException {
     stack.push(expr);
     EvalNode numericExpr = visit(ctx, stack, expr.getChild());
     stack.pop();
@@ -531,7 +525,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
   @Override
   public EvalNode visitColumnReference(Context ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
-      throws PlanningException {
+      throws TajoException {
     Column column;
 
     switch (ctx.columnRsvLevel) {
@@ -544,14 +538,14 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       column = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr, ctx.columnRsvLevel);
       break;
     default:
-      throw new PlanningException("Unsupported column resolving level: " + ctx.columnRsvLevel.name());
+      throw new TajoInternalError("Unsupported column resolving level: " + ctx.columnRsvLevel.name());
     }
     return new FieldEval(column);
   }
 
   @Override
-  public EvalNode visitTargetExpr(Context ctx, Stack<Expr> stack, NamedExpr expr) throws PlanningException {
-    throw new PlanningException("ExprAnnotator cannot take NamedExpr");
+  public EvalNode visitTargetExpr(Context ctx, Stack<Expr> stack, NamedExpr expr) throws TajoException {
+    throw new TajoInternalError("ExprAnnotator cannot take NamedExpr");
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -559,7 +553,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public EvalNode visitFunction(Context ctx, Stack<Expr> stack, FunctionExpr expr) throws PlanningException {
+  public EvalNode visitFunction(Context ctx, Stack<Expr> stack, FunctionExpr expr) throws TajoException {
     stack.push(expr); // <--- Push
 
     // Given parameters
@@ -579,7 +573,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new NoSuchFunctionException(expr.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(expr.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
@@ -605,37 +599,31 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
 
-    try {
-      FunctionType functionType = funcDesc.getFuncType();
-      if (functionType == FunctionType.GENERAL
-          || functionType == FunctionType.UDF) {
-        return new GeneralFunctionEval(ctx.queryContext, funcDesc, givenArgs);
-      } else if (functionType == FunctionType.AGGREGATION
-          || functionType == FunctionType.UDA) {
-        if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
-          ctx.currentBlock.setAggregationRequire();
-        }
-        return new AggregationFunctionCallEval(funcDesc, givenArgs);
-      } else if (functionType == FunctionType.DISTINCT_AGGREGATION
-          || functionType == FunctionType.DISTINCT_UDA) {
-        throw new PlanningException("Unsupported function: " + funcDesc.toString());
-      } else {
-        throw new PlanningException("Unsupported Function Type: " + functionType.name());
+    FunctionType functionType = funcDesc.getFuncType();
+    if (functionType == FunctionType.GENERAL
+        || functionType == FunctionType.UDF) {
+      return new GeneralFunctionEval(ctx.queryContext, funcDesc, givenArgs);
+    } else if (functionType == FunctionType.AGGREGATION
+        || functionType == FunctionType.UDA) {
+      if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
+        ctx.currentBlock.setAggregationRequire();
       }
-    } catch (InternalException e) {
-      throw new PlanningException(e);
-    } catch (IOException e) {
-      throw new PlanningException(e);
+      return new AggregationFunctionCallEval(funcDesc, givenArgs);
+    } else if (functionType == FunctionType.DISTINCT_AGGREGATION
+        || functionType == FunctionType.DISTINCT_UDA) {
+      throw new UnsupportedException(funcDesc.toString());
+    } else {
+      throw new UnsupportedException("function type '" + functionType.name() + "'");
     }
   }
 
   @Override
   public EvalNode visitCountRowsFunction(Context ctx, Stack<Expr> stack, CountRowsFunctionExpr expr)
-      throws PlanningException {
+      throws TajoException {
     FunctionDesc countRows = catalog.getFunction("count", FunctionType.AGGREGATION,
         new DataType[] {});
     if (countRows == null) {
-      throw new NoSuchFunctionException(expr.getSignature(), new DataType[]{});
+      throw new UndefinedFunctionException(expr.getSignature(), new DataType[]{});
     }
 
     ctx.currentBlock.setAggregationRequire();
@@ -644,7 +632,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
   @Override
   public EvalNode visitGeneralSetFunction(Context ctx, Stack<Expr> stack, GeneralSetFunctionExpr setFunction)
-      throws PlanningException {
+      throws TajoException {
 
     Expr[] params = setFunction.getParams();
     EvalNode[] givenArgs = new EvalNode[params.length];
@@ -660,7 +648,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(setFunction.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(setFunction.getSignature(), paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
@@ -676,7 +664,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
           Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value", "lag"));
 
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
-      throws PlanningException {
+      throws TajoException {
 
     WindowSpec windowSpec = windowFunc.getWindowSpec();
 
@@ -741,7 +729,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
     if (WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       if (distinct) {
-        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
+        throw new UndefinedFunctionException("row_number() does not support distinct keyword.");
       }
       functionType = FunctionType.WINDOW;
     } else {
@@ -749,7 +737,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
-      throw new NoSuchFunctionException(funcName, paramTypes);
+      throw new UndefinedFunctionException(funcName, paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);
@@ -762,12 +750,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   @Override
-  public EvalNode visitDataType(Context ctx, Stack<Expr> stack, DataTypeExpr expr) throws PlanningException {
+  public EvalNode visitDataType(Context ctx, Stack<Expr> stack, DataTypeExpr expr) throws TajoException {
     return super.visitDataType(ctx, stack, expr);
   }
 
   @Override
-  public EvalNode visitCastExpr(Context ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
+  public EvalNode visitCastExpr(Context ctx, Stack<Expr> stack, CastExpr expr) throws TajoException {
     EvalNode child = super.visitCastExpr(ctx, stack, expr);
 
     // if it is a casting operation for a constant value, it will be pre-computed and casted to a constant value.
@@ -792,7 +780,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitLiteral(Context ctx, Stack<Expr> stack, LiteralValue expr) throws PlanningException {
+  public EvalNode visitLiteral(Context ctx, Stack<Expr> stack, LiteralValue expr) throws TajoException {
     switch (expr.getValueType()) {
     case Boolean:
       return new ConstEval(DatumFactory.createBool(Boolean.parseBoolean(expr.getValue())));
@@ -810,12 +798,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitNullLiteral(Context ctx, Stack<Expr> stack, NullLiteral expr) throws PlanningException {
+  public EvalNode visitNullLiteral(Context ctx, Stack<Expr> stack, NullLiteral expr) throws TajoException {
     return new ConstEval(NullDatum.get());
   }
 
   @Override
-  public EvalNode visitDateLiteral(Context context, Stack<Expr> stack, DateLiteral expr) throws PlanningException {
+  public EvalNode visitDateLiteral(Context context, Stack<Expr> stack, DateLiteral expr) throws TajoException {
     DateValue dateValue = expr.getDate();
     int[] dates = dateToIntArray(dateValue.getYears(), dateValue.getMonths(), dateValue.getDays());
 
@@ -831,7 +819,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
   @Override
   public EvalNode visitTimestampLiteral(Context ctx, Stack<Expr> stack, TimestampLiteral expr)
-      throws PlanningException {
+      throws TajoException {
     DateValue dateValue = expr.getDate();
     TimeValue timeValue = expr.getTime();
 
@@ -863,12 +851,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   @Override
-  public EvalNode visitIntervalLiteral(Context ctx, Stack<Expr> stack, IntervalLiteral expr) throws PlanningException {
+  public EvalNode visitIntervalLiteral(Context ctx, Stack<Expr> stack, IntervalLiteral expr) throws TajoException {
     return new ConstEval(new IntervalDatum(expr.getExprStr()));
   }
 
   @Override
-  public EvalNode visitTimeLiteral(Context ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
+  public EvalNode visitTimeLiteral(Context ctx, Stack<Expr> stack, TimeLiteral expr) throws TajoException {
     TimeValue timeValue = expr.getTime();
     int [] times = timeToIntArray(timeValue.getHours(),
         timeValue.getMinutes(),
@@ -893,21 +881,21 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public static int [] dateToIntArray(String years, String months, String days)
-      throws PlanningException {
+      throws TajoException {
     int year = Integer.parseInt(years);
     int month = Integer.parseInt(months);
     int day = Integer.parseInt(days);
 
     if (!(1 <= year && year <= 9999)) {
-      throw new PlanningException(String.format("Years (%d) must be between 1 and 9999 integer value", year));
+      throw makeSyntaxError(String.format("Years (%d) must be between 1 and 9999 integer value", year));
     }
 
     if (!(1 <= month && month <= 12)) {
-      throw new PlanningException(String.format("Months (%d) must be between 1 and 12 integer value", month));
+      throw makeSyntaxError(String.format("Months (%d) must be between 1 and 12 integer value", month));
     }
 
     if (!(1<= day && day <= 31)) {
-      throw new PlanningException(String.format("Days (%d) must be between 1 and 31 integer value", day));
+      throw makeSyntaxError(String.format("Days (%d) must be between 1 and 31 integer value", day));
     }
 
     int [] results = new int[3];
@@ -919,7 +907,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public static int [] timeToIntArray(String hours, String minutes, String seconds, String fractionOfSecond)
-      throws PlanningException {
+      throws TajoException {
     int hour = Integer.parseInt(hours);
     int minute = Integer.parseInt(minutes);
     int second = Integer.parseInt(seconds);
@@ -929,20 +917,20 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!(0 <= hour && hour <= 23)) {
-      throw new PlanningException(String.format("Hours (%d) must be between 0 and 24 integer value", hour));
+      throw makeSyntaxError(String.format("Hours (%d) must be between 0 and 24 integer value", hour));
     }
 
     if (!(0 <= minute && minute <= 59)) {
-      throw new PlanningException(String.format("Minutes (%d) must be between 0 and 59 integer value", minute));
+      throw makeSyntaxError(String.format("Minutes (%d) must be between 0 and 59 integer value", minute));
     }
 
     if (!(0 <= second && second <= 59)) {
-      throw new PlanningException(String.format("Seconds (%d) must be between 0 and 59 integer value", second));
+      throw makeSyntaxError(String.format("Seconds (%d) must be between 0 and 59 integer value", second));
     }
 
     if (fraction != 0) {
       if (!(0 <= fraction && fraction <= 999)) {
-        throw new PlanningException(String.format("Seconds (%d) must be between 0 and 999 integer value", fraction));
+        throw makeSyntaxError(String.format("Seconds (%d) must be between 0 and 999 integer value", fraction));
       }
     }
 

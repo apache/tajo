@@ -1,8 +1,12 @@
 Tajo Change Log 
 
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
+
+    TAJO-1486: Text file should support to skip header rows when creating 
+    external table. (Contributed by Jongyoung Park. Committed by jinho)
 
     TAJO-1661: Implement CORR function. (jihoon)
 
@@ -28,6 +32,33 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1645: Bump up hbase to 1.1.1. (hyunsik)
+
+    TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
+
+    TAJO-1703: Remove hardcoded value in NodeStatusUpdater. (jinho)
+
+    TAJO-1701: Remove forward or non-forward query concept in TajoClient. 
+    (hyunsik)
+
+    TAJO-1651: Too long fetcher default retries. (jinho)
+
+    TAJO-1700: Add better exception handling in TajoMasterClientService. 
+    (hyunsik)
+
+    TAJO-1343: Improve the memory usage of physical executors. (jihoon)
+
+    TAJO-1696: Resource calculator should consider the requested disk resource 
+    at the first stage. (jihoon)
+
+    TAJO-1695: Shuffle fetcher executor should be consider random writing.
+    (jinho)
+
+    TAJO-1397: Resource allocation should be fine grained. (jinho)
+
+    TAJO-1352: Improve the join order algorithm to consider missed cases of 
+    associative join operators. (jihoon)
 
     TAJO-1677: Remove unnecessary messages for the Travis CI build. (jaehwa)
 
@@ -172,9 +203,38 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1608: Fix test failure in index_support branch. (jihoon)
+
+    TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
     names only without invalid external table info. 
-    (Contributed by  DaeMyung Kang, Committed by jihoon)
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
+    infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
+
+    TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
+    (jinho)
+
+    TAJO-1716: Repartitioner.makeEvenDistributedFetchImpl() does not distribute 
+    fetches evenly. (jihoon)
+
+    TAJO-1681: Fix TajoDump invalid null check for database name.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1702: Fix race condition in finished query cache. (jinho)
+
+    TAJO-1597: Problem of ignoring theta join condition. (jihoon)
+
+    TAJO-1697: RCFile progress causes NPE occasionally. (jinho)
+
+    TAJO-1689: Metrics file reporter prints histogram metric without group name.
+    (hyunsik)
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
+    table names only without invalid external table info. 
+    (Contributed by DaeMyung Kang, Committed by jihoon)
 
     TAJO-1644: When inserting empty data into a partitioned table,
     existing data would be removed. (jaehwa)
@@ -324,7 +384,22 @@ Release 0.11.0 - unreleased
   
   TASKS
 
-    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis, 
+    TAJO-1300: Merge the index branch into the master branch. (jihoon)
+
+    TAJO-1713: Change the type of edge cache in JoinGraphContext from 
+    HashMap to LRUMap. (jihoon)
+
+    TAJO-1273: Merge DirectRawFile to master branch. (jinho)
+
+    TAJO-1628: Add a documentation for join operation. (jihoon)
+
+    TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
+    (Contributed by Jongyoung Park, Committed by jihoon)
+
+    TAJO-1345: Implement logical plan part and DDL executor
+    for alter partition. (jaehwa)
+
+    TAJO-1450: Encapsulate Datum in Tuple. (Contributed by navis,
     Committed by jihoon)
 
     TAJO-1583: Remove ServerCallable in RPC client. (jinho)
@@ -369,6 +444,30 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1302: Support index metadata backup and restore. (jihoon)
+
+    TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
+    committed by hyunsik)
+
+    TAJO-1464: Add ORCFileScanner to read ORCFile table. (Contributed by 
+    Jongyoung Park, Committed by jihoon)
+
+    TAJO-1693: Rearrange metric names. (hyunsik)
+
+    TAJO-1496: Remove legacy CSVFile. (jinho)
+
+    TAJO-1691: Refactor visitors and planner to throw TajoException. (hyunsik)
+
+    TAJO-1525: Implement INTERSECT [ALL] physical operator. (Contributed 
+    Keuntae Park, Committed by hyunsik) 
+
+    TAJO-1684: CREATE EXTERNAL TABLE should allows just a path. (hyunsik)
+
+    TAJO-1670: Refactor client errors and exceptions. (hyunsik)
+
+    TAJO-1514: Distinguish UNION and UNION ALL. (contributed by Keuntae Park,
+    committed by hyunsik)
 
     TAJO-1658: Filter push down to underlying storages. (hyunsik)
 
@@ -2499,3 +2598,4 @@ Release 0.2.0
     TAJO-252: Add DISCLAIMER file. (hyunsik)
 
     TAJO-251: Rename the legacy name *.tql to *.sql. (hyunsik)
+

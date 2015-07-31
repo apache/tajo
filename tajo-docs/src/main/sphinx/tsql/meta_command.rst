@@ -80,7 +80,7 @@ Basic usages
 
   table name: orders
   table path: hdfs:/xxx/xxx/tpch/orders
-  store type: CSV
+  store type: TEXT
   number of rows: 0
   volume (bytes): 172.0 MB
   schema:

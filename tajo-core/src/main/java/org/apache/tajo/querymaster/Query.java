@@ -33,7 +33,9 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -43,6 +45,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
@@ -174,7 +177,16 @@ public class Query implements EventHandler<QueryEvent> {
               QueryEventType.KILL,
               QUERY_COMPLETED_TRANSITION)
 
-          // Transitions from FAILED state
+              // Transitions from KILLED state
+              // ignore-able transitions
+          .addTransition(QueryState.QUERY_KILLED, QueryState.QUERY_KILLED,
+              EnumSet.of(QueryEventType.START, QueryEventType.QUERY_COMPLETED,
+                  QueryEventType.KILL, QueryEventType.INTERNAL_ERROR))
+          .addTransition(QueryState.QUERY_KILLED, QueryState.QUERY_ERROR,
+              QueryEventType.INTERNAL_ERROR,
+              INTERNAL_ERROR_TRANSITION)
+
+              // Transitions from FAILED state
           .addTransition(QueryState.QUERY_FAILED, QueryState.QUERY_FAILED,
               QueryEventType.DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
@@ -305,7 +317,6 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setQueryId(getId().toString());
     queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
     queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
-    queryHistory.setLogicalPlan(plan.toString());
     queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
     queryHistory.setDistributedPlan(plan.toString());
 
@@ -318,6 +329,17 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setSessionVariables(sessionVariables);
 
     return queryHistory;
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
+    for(Stage eachStage : getStages()) {
+      if (!eachStage.getPartitions().isEmpty()) {
+        partitions.addAll(eachStage.getPartitions());
+      }
+    }
+
+    return partitions;
   }
 
   public List<String> getDiagnostics() {
@@ -482,6 +504,35 @@ public class Query implements EventHandler<QueryEvent> {
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
+        TableDesc desc = query.getResultDesc();
+
+        // If there is partitions
+        List<PartitionDescProto> partitions = query.getPartitions();
+        if (partitions!= null && !partitions.isEmpty()) {
+
+          String databaseName, simpleTableName;
+
+          if (CatalogUtil.isFQTableName(desc.getName())) {
+            String[] split = CatalogUtil.splitFQTableName(desc.getName());
+            databaseName = split[0];
+            simpleTableName = split[1];
+          } else {
+            databaseName = queryContext.getCurrentDatabase();
+            simpleTableName = desc.getName();
+          }
+
+          // Store partitions to CatalogStore using alter table statement.
+          boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+          if (result) {
+            LOG.info(String.format("Complete adding for partition %s", partitions.size()));
+          } else {
+            LOG.info(String.format("Incomplete adding for partition %s", partitions.size()));
+          }
+        } else {
+          LOG.info("Can't find partitions for adding.");
+        }
+
+
       } catch (Exception e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;
@@ -505,6 +556,7 @@ public class Query implements EventHandler<QueryEvent> {
         hookList.add(new MaterializedResultHook());
         hookList.add(new CreateTableHook());
         hookList.add(new InsertTableHook());
+        hookList.add(new CreateIndexHook());
       }
 
       public void execute(QueryContext queryContext, Query query,
@@ -514,6 +566,48 @@ public class Query implements EventHandler<QueryEvent> {
           if (hook.isEligible(queryContext, query, finalExecBlockId, finalOutputDir)) {
             hook.execute(context, queryContext, query, finalExecBlockId, finalOutputDir);
           }
+        }
+      }
+    }
+
+    private static class CreateIndexHook implements QueryHook {
+
+      @Override
+      public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) {
+        Stage lastStage = query.getStage(finalExecBlockId);
+        return  lastStage.getBlock().getPlan().getType() == NodeType.CREATE_INDEX;
+      }
+
+      @Override
+      public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) throws Exception {
+        CatalogService catalog = context.getWorkerContext().getCatalog();
+        Stage lastStage = query.getStage(finalExecBlockId);
+
+        CreateIndexNode createIndexNode = (CreateIndexNode) lastStage.getBlock().getPlan();
+        String databaseName, simpleIndexName, qualifiedIndexName;
+        if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+          String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+          databaseName = splits[0];
+          simpleIndexName = splits[1];
+          qualifiedIndexName = createIndexNode.getIndexName();
+        } else {
+          databaseName = queryContext.getCurrentDatabase();
+          simpleIndexName = createIndexNode.getIndexName();
+          qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+        }
+        ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
+        if (scanNode == null) {
+          throw new IOException("Cannot find the table of the relation");
+        }
+        IndexDesc indexDesc = new IndexDesc(databaseName, CatalogUtil.extractSimpleName(scanNode.getTableName()),
+            simpleIndexName, createIndexNode.getIndexPath(),
+            createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
+            createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
+        if (catalog.createIndex(indexDesc)) {
+          LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
+        } else {
+          LOG.info("Index creation " + qualifiedIndexName + " is failed.");
+          throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
         }
       }
     }
@@ -704,8 +798,17 @@ public class Query implements EventHandler<QueryEvent> {
             !executeNextBlock(query, castEvent.getExecutionBlockId())) {
           return;
         }
-         // if a query is completed due to finished, kill, failure, or error
-        query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+
+        //wait for stages is completed
+        if (query.completedStagesCount >= query.stages.size()) {
+          // if a query is completed due to finished, kill, failure, or error
+          query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
+        }
+        LOG.info(String.format("Complete Stage[%s], State: %s, %d/%d. ",
+            castEvent.getExecutionBlockId().toString(),
+            castEvent.getState().toString(),
+            query.completedStagesCount,
+            query.stages.size()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));

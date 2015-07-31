@@ -20,27 +20,26 @@ package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.master.container.TajoContainerId;
 
 /**
  * This event is sent to a running TaskAttempt on a worker.
  */
 public class LocalTaskEvent extends AbstractEvent<LocalTaskEventType> {
   private final TaskAttemptId taskAttemptId;
-  private final TajoContainerId containerId;
+  private final int workerId;
 
-  public LocalTaskEvent(TaskAttemptId taskAttemptId, TajoContainerId containerId,
+  public LocalTaskEvent(TaskAttemptId taskAttemptId, int workerId,
                         LocalTaskEventType eventType) {
     super(eventType);
     this.taskAttemptId = taskAttemptId;
-    this.containerId = containerId;
+    this.workerId = workerId;
   }
 
   public TaskAttemptId getTaskAttemptId() {
     return taskAttemptId;
   }
 
-  public TajoContainerId getContainerId() {
-    return containerId;
+  public int getWorkerId() {
+    return workerId;
   }
 }

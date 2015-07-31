@@ -4,4 +4,6 @@ SELECT
 FROM
   tweets
 GROUP BY
+  user.name
+order by
   user.name;

@@ -26,9 +26,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
-import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
@@ -85,7 +85,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testTableUsingTextFile() throws Exception {
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
@@ -177,7 +177,7 @@ public class TestHiveCatalogStore {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
     options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\u0003"));
-    TableMeta meta = new TableMeta("CSV", options);
+    TableMeta meta = new TableMeta("TEXT", options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
@@ -220,7 +220,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testAddTableByPartition() throws Exception {
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
@@ -286,11 +286,15 @@ public class TestHiveCatalogStore {
     PartitionDesc partitionDesc = new PartitionDesc();
     partitionDesc.setPartitionName(partitionName);
 
-    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
     String[] partitionNames = partitionName.split("/");
     for(int i = 0; i < partitionNames.length; i++) {
       String[] eachPartitionName = partitionNames[i].split("=");
-      partitionKeyList.add(new PartitionKey(eachPartitionName[0], eachPartitionName[1]));
+
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(eachPartitionName[0]);
+      builder.setPartitionValue(eachPartitionName[1]);
+      partitionKeyList.add(builder.build());
     }
     partitionDesc.setPartitionKeys(partitionKeyList);
     partitionDesc.setPath(path.toString());
@@ -328,7 +332,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testGetAllTableNames() throws Exception{
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
@@ -356,7 +360,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testDeleteTable() throws Exception {
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
@@ -468,7 +472,7 @@ public class TestHiveCatalogStore {
   public void testDataTypeCompatibility() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testDataTypeCompatibility");
 
-    TableMeta meta = new TableMeta("CSV", new KeyValueSet());
+    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);

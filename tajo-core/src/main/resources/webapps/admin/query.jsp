@@ -21,7 +21,7 @@
 
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.master.QueryInProgress" %>
-<%@ page import="org.apache.tajo.master.rm.Worker" %>
+<%@ page import="org.apache.tajo.master.rm.NodeStatus" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.StringUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
@@ -38,11 +38,13 @@
   InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
-  List<QueryInProgress> runningQueries =
+  List<QueryInProgress> submittedQueries =
           new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getSubmittedQueries());
+  JSPUtil.sortQueryInProgress(submittedQueries, true);
 
-  runningQueries.addAll(master.getContext().getQueryJobManager().getRunningQueries());
-          JSPUtil.sortQueryInProgress(runningQueries, true);
+  List<QueryInProgress> runningQueries =
+          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getRunningQueries());
+  JSPUtil.sortQueryInProgress(runningQueries, true);
 
   int currentPage = 1;
   if (request.getParameter("page") != null && !request.getParameter("page").isEmpty()) {
@@ -57,27 +59,21 @@
     }
   }
 
-  String keyword = request.getParameter("keyword");
-  HistoryReader historyReader = master.getContext().getHistoryReader();
-  List<QueryInfo> allFinishedQueries = historyReader.getQueries(keyword);
-
-  int numOfFinishedQueries = allFinishedQueries.size();
-  int totalPage = numOfFinishedQueries % pageSize == 0 ?
-      numOfFinishedQueries / pageSize : numOfFinishedQueries / pageSize + 1;
-
-  List<QueryInfo> finishedQueries = JSPUtil.getPageNavigationList(allFinishedQueries, currentPage, pageSize);
+  List<QueryInfo> finishedQueries = new ArrayList<QueryInfo>(
+          master.getContext().getQueryJobManager().getFinishedQueries(currentPage, pageSize));
+  Collections.sort(finishedQueries, java.util.Collections.reverseOrder());
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-  Map<Integer, Worker> workers = master.getContext().getResourceManager().getWorkers();
+  Map<Integer, NodeStatus> workers = master.getContext().getResourceManager().getNodes();
   Map<String, Integer> portMap = new HashMap<String, Integer>();
 
   Collection<Integer> queryMasters = master.getContext().getResourceManager().getQueryMasters();
   if (queryMasters == null || queryMasters.isEmpty()) {
-    queryMasters = master.getContext().getResourceManager().getWorkers().keySet();
+    queryMasters = master.getContext().getResourceManager().getNodes().keySet();
   }
   for(int eachQueryMasterKey: queryMasters) {
-    Worker queryMaster = workers.get(eachQueryMasterKey);
+      NodeStatus queryMaster = workers.get(eachQueryMasterKey);
     if(queryMaster != null) {
       portMap.put(queryMaster.getConnectionInfo().getHost(), queryMaster.getConnectionInfo().getHttpInfoPort());
     }
@@ -119,7 +115,39 @@
 <%@ include file="header.jsp"%>
 <div class='contents'>
   <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
-  <hr/>
+    <p />
+    <hr />
+    <h3>Submitted Queries</h3>
+    <%
+        if(submittedQueries.isEmpty()) {
+            out.write("No submitted queries");
+        } else {
+    %>
+    <table width="100%" border="1" class='border_table'>
+        <tr></tr><th>QueryId</th><th>Query Master</th><th>Submitted</th><th>Progress</th><th>Time</th><th>Status</th></th><th>sql</th><th>Kill Query</th></tr>
+        <%
+            for(QueryInProgress eachQuery: submittedQueries) {
+                long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
+        %>
+        <tr>
+            <td><%=eachQuery.getQueryId()%></td>
+            <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
+            <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
+            <td><%=(int)(eachQuery.getQueryInfo().getProgress() * 100.0f)%>%</td>
+            <td><%=StringUtils.formatTime(time)%></td>
+            <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
+            <td><%=eachQuery.getQueryInfo().getSql()%></td>
+            <td><input type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
+        </tr>
+        <%
+            }
+        %>
+    </table>
+    <%
+        }
+    %>
+    <p/>
+    <hr/>
   <h3>Running Queries</h3>
 <%
   if(runningQueries.isEmpty()) {
@@ -142,7 +170,7 @@
       <td><%=StringUtils.formatTime(time)%></td>
       <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
       <td><%=eachQuery.getQueryInfo().getSql()%></td>
-      <td><input id="btnSubmit" type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
+      <td><input type="submit" value="Kill" onClick="javascript:killQuery('<%=eachQuery.getQueryId()%>');"></td>
     </tr>
     <%
       }
@@ -187,7 +215,7 @@
     %>
   </table>
   <div align="center">
-    <%=JSPUtil.getPageNavigation(currentPage, totalPage, "query.jsp?pageSize=" + pageSize)%>
+      <%=JSPUtil.getPageNavigation(currentPage, finishedQueries.size() == pageSize, "query.jsp?pageSize=" + pageSize)%>
   </div>
   <p/>
 <%

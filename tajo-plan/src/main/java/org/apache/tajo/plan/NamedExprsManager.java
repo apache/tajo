@@ -141,8 +141,9 @@ public class NamedExprsManager {
 
   /**
    * Adds an expression and returns a reference name.
+   * @param expr added expression
    */
-  public String addExpr(Expr expr) throws PlanningException {
+  public String addExpr(Expr expr) {
     if (idToExprBiMap.inverse().containsKey(expr)) {
       int refId = idToExprBiMap.inverse().get(expr);
       return idToNamesMap.get(refId).get(0);
@@ -160,7 +161,7 @@ public class NamedExprsManager {
    * Adds an expression with an alias name and returns a reference name.
    * It specifies the alias as an reference name.
    */
-  public String addExpr(Expr expr, String alias) throws PlanningException {
+  public String addExpr(Expr expr, String alias) {
 
     if (OpType.isLiteralType(expr.getType())) {
       return alias;
@@ -193,7 +194,7 @@ public class NamedExprsManager {
    * Adds an expression and returns a reference name.
    * If an alias is given, it specifies the alias as an reference name.
    */
-  public String addNamedExpr(NamedExpr namedExpr) throws PlanningException {
+  public String addNamedExpr(NamedExpr namedExpr) {
     if (namedExpr.hasAlias()) {
       return addExpr(namedExpr.getExpr(), namedExpr.getAlias());
     } else {
@@ -205,7 +206,7 @@ public class NamedExprsManager {
    * Adds a list of expressions and returns a list of reference names.
    * If some NamedExpr has an alias, NamedExprsManager specifies the alias for the NamedExpr.
    */
-  public String [] addNamedExprArray(@Nullable Collection<NamedExpr> namedExprs) throws PlanningException {
+  public String [] addNamedExprArray(@Nullable Collection<NamedExpr> namedExprs) {
     if (namedExprs != null && namedExprs.size() > 0) {
       String [] names = new String[namedExprs.size()];
       int i = 0;
@@ -233,7 +234,7 @@ public class NamedExprsManager {
    * @param referenceName The reference name to be marked as 'evaluated'.
    * @param evalNode EvalNode to be added.
    */
-  public void markAsEvaluated(String referenceName, EvalNode evalNode) throws PlanningException {
+  public void markAsEvaluated(String referenceName, EvalNode evalNode) {
     String normalized = referenceName;
 
     int refId = nameToIdMap.get(normalized);

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util;
 
+import io.netty.util.CharsetUtil;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.SystemUtils;
@@ -77,10 +78,12 @@ public class StringUtils {
     }
     return buf.toString();
   }
-
-  static CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); // or "ISO-8859-1" for ISO Latin 1
-
+  /**
+   * Check Seven-bit ASCII
+   */
   public static boolean isPureAscii(String v) {
+    // get thread-safe encoder
+    CharsetEncoder asciiEncoder = CharsetUtil.getEncoder(CharsetUtil.US_ASCII);
     return asciiEncoder.canEncode(v);
   }
 
