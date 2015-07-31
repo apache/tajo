@@ -15,6 +15,10 @@
     "hbase": {
       "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
       "default-format": "hbase"
+    },
+    "jdbc": {
+      "handler": "org.apache.tajo.storage.jdbc.JdbcTablespace",
+      "default-format": "hbase"
     }
   }
 }
