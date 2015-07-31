@@ -25,6 +25,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -103,9 +104,34 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.exists(partitionPath));
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
-    List<CatalogProtos.TablePartitionProto> tablePartitions = catalog.getAllPartitions();
-    assertEquals(tablePartitions.size(), 1);
-    assertEquals(tablePartitions.get(0).getPartitionName(), "col3=1/col4=2");
+    List<CatalogProtos.DatabaseProto> allDatabases = catalog.getAllDatabases();
+    int dbId = -1;
+    for (CatalogProtos.DatabaseProto database : allDatabases) {
+      if (database.getName().equals("TestAlterTable")) {
+        dbId = database.getId();
+      }
+    }
+    assertNotEquals(dbId, -1);
+
+    int tableId = -1;
+    List<CatalogProtos.TableDescriptorProto>  allTables = catalog.getAllTables();
+    for(CatalogProtos.TableDescriptorProto table : allTables) {
+      if (table.getDbId() == dbId && table.getName().equals("partitioned_table")) {
+        tableId = table.getTid();
+      }
+    }
+    assertNotEquals(tableId, -1);
+
+    List<CatalogProtos.TablePartitionProto> allPartitions = catalog.getAllPartitions();
+    List<CatalogProtos.TablePartitionProto> resultPartitions = TUtil.newList();
+
+    for (CatalogProtos.TablePartitionProto partition : allPartitions) {
+      if (partition.getTid() == tableId) {
+        resultPartitions.add(partition);
+      }
+    }
+    assertEquals(resultPartitions.size(), 1);
+    assertEquals(resultPartitions.get(0).getPartitionName(), "col3=1/col4=2");
 
     List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
     assertEquals(tablePartitionKeys.size(), 2);
