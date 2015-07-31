@@ -65,8 +65,7 @@ public class TestCatalog {
 	static CatalogServer server;
 	static CatalogService catalog;
 
-	@BeforeClass
-	public static void setUp() throws Exception {
+  public static TajoConf newTajoConfForCatalogTest() throws IOException {
     final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
 
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
@@ -99,10 +98,17 @@ public class TestCatalog {
       }
     }
 
+    return conf;
+  }
+
+	@BeforeClass
+	public static void setUp() throws Exception {
+
+
     Path defaultTableSpace = CommonTestingUtil.getTestDir();
 
 	  server = new CatalogServer();
-    server.init(conf);
+    server.init(newTajoConfForCatalogTest());
     server.start();
     catalog = new LocalCatalogWrapper(server);
     if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {

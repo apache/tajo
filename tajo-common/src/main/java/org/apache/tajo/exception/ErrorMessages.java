@@ -21,6 +21,7 @@ package org.apache.tajo.exception;
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Map;
 
@@ -133,7 +134,7 @@ public class ErrorMessages {
         }
 
       } else {
-        throw new TajoRuntimeException(code, args);
+        throw new TajoInternalError("code=" + code.name() + ", args=" + StringUtils.join(args));
       }
     }
   }

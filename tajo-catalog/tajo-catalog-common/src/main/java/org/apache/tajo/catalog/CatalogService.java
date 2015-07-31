@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 
