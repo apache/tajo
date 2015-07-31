@@ -38,7 +38,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>text,json,raw,rcfile,row,parquet,sequencefile,avro</value>
+    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -55,6 +55,10 @@
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
+    <name>tajo.storage.fragment.draw.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
     <name>tajo.storage.fragment.rcfile.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
@@ -67,12 +71,20 @@
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
+    <name>tajo.storage.fragment.orc.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
     <name>tajo.storage.fragment.sequencefile.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
     <name>tajo.storage.fragment.avro.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.hbase.class</name>
+    <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
   </property>
 
   <!--- Scanner Handler -->
@@ -92,6 +104,11 @@
   </property>
 
   <property>
+    <name>tajo.storage.scanner-handler.draw.class</name>
+    <value>org.apache.tajo.storage.rawfile.DirectRawFileScanner</value>
+  </property>
+
+  <property>
     <name>tajo.storage.scanner-handler.rcfile.class</name>
     <value>org.apache.tajo.storage.rcfile.RCFile$RCFileScanner</value>
   </property>
@@ -107,6 +124,11 @@
   </property>
 
   <property>
+    <name>tajo.storage.scanner-handler.orc.class</name>
+    <value>org.apache.tajo.storage.orc.ORCScanner</value>
+  </property>
+
+  <property>
     <name>tajo.storage.scanner-handler.sequencefile.class</name>
     <value>org.apache.tajo.storage.sequencefile.SequenceFileScanner</value>
   </property>
@@ -116,10 +138,15 @@
     <value>org.apache.tajo.storage.avro.AvroScanner</value>
   </property>
 
+  <property>
+    <name>tajo.storage.scanner-handler.hbase.class</name>
+    <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
+  </property>
+
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>text,raw,rcfile,row,parquet,sequencefile,avro</value>
+    <value>text,raw,draw,rcfile,row,parquet,sequencefile,avro,hbase</value>
   </property>
 
   <property>
@@ -135,6 +162,11 @@
   <property>
     <name>tajo.storage.appender-handler.raw.class</name>
     <value>org.apache.tajo.storage.RawFile$RawFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.draw.class</name>
+    <value>org.apache.tajo.storage.rawfile.DirectRawFileWriter</value>
   </property>
 
   <property>
@@ -160,6 +192,16 @@
   <property>
     <name>tajo.storage.appender-handler.avro.class</name>
     <value>org.apache.tajo.storage.avro.AvroAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.hbase.class</name>
+    <value>org.apache.tajo.storage.hbase.HFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.hfile.class</name>
+    <value>org.apache.tajo.storage.hbase.HFileAppender</value>
   </property>
 
   <!--- Storage buffer -->

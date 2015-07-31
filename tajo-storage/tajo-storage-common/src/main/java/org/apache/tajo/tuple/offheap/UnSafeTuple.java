@@ -169,6 +169,7 @@ public abstract class UnSafeTuple implements Tuple {
       case FLOAT8:
         return DatumFactory.createFloat8(getFloat8(fieldId));
       case CHAR:
+        return DatumFactory.createChar(getBytes(fieldId));
       case TEXT:
         return DatumFactory.createText(getBytes(fieldId));
       case BLOB :
