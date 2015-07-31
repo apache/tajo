@@ -56,7 +56,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
 
       // tpch/lineitem.tbl
       long[] expectedNumRows = new long[]{5, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{604, 18, 18, 8};
+      long[] expectedNumBytes = new long[]{604, 18, 18, 48};
       long[] expectedReadBytes = new long[]{604, 604, 18, 0};
 
       assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -74,7 +74,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
 
       // tpch/lineitem.tbl
       long[] expectedNumRows = new long[]{5, 2, 2, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{604, 162, 162, 138, 138, 194};
+      long[] expectedNumBytes = new long[]{604, 162, 162, 138, 138, 236};
       long[] expectedReadBytes = new long[]{604, 604, 162, 0, 138, 0};
 
       assertStatus(3, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -102,7 +102,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
 
       // in/out * stage(4)
       long[] expectedNumRows = new long[]{5, 5, 2, 2, 7, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{20, 75, 8, 34, 109, 34, 34, 18};
+      long[] expectedNumBytes = new long[]{20, 75, 8, 34, 109, 34, 34, 64};
       long[] expectedReadBytes = new long[]{20, 20, 8, 8, 109, 0, 34, 0};
 
       assertStatus(4, expectedNumRows, expectedNumBytes, expectedReadBytes);
