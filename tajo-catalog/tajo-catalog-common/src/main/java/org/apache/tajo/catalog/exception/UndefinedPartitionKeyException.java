@@ -18,11 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class AlreadyExistsAssumedPartitionDirectoryException extends RuntimeException {
+import org.apache.tajo.error.Errors.ResultCode;
 
-  private static final long serialVersionUID = 277182608283894931L;
+public class UndefinedPartitionKeyException extends CatalogException {
 
-  public AlreadyExistsAssumedPartitionDirectoryException(String message) {
-    super(String.format("ERROR: There is a directory which is assumed to be a partitioned directory : %s", message));
+  private static final long serialVersionUID = 277182608283894939L;
+
+  public UndefinedPartitionKeyException(String partitionKey) {
+    super(ResultCode.UNDEFINED_PARTITION_KEY, partitionKey);
   }
 }

@@ -25,6 +25,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import java.io.Closeable;
 
 import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
 import java.util.Collection;
 import java.util.List;
@@ -105,6 +107,9 @@ public interface CatalogStore extends Closeable {
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
 
   List<TablePartitionKeysProto> getAllPartitionKeys() throws CatalogException;
+
+  void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException;
 
   /**************************** INDEX *******************************/
   void createIndex(IndexDescProto proto) throws CatalogException;

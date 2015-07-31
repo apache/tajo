@@ -19,6 +19,7 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 7 - 2015-07-30: Add a column and index for partition keys (TAJO-1346)
       * 6 - 2015-07-24: Merge the index branch into the master branch (TAJO-1300)
       * 5 - 2015-06-15: Implement TablespaceManager to load Tablespaces (TAJO-1616)
       * 4 - 2015-03-27: Partition Schema (TAJO-1284)
@@ -26,7 +27,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-  <tns:base version="6">
+  <tns:base version="7">
     <tns:objects>
       <tns:Object order="0" type="table" name="META">
         <tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -142,7 +143,7 @@
           TID INT NOT NULL,
           PARTITION_NAME VARCHAR(255) BINARY,
           PATH VARCHAR(4096) BINARY,
-          CONSTRAINT CONST_PARTITION_UNIQUE UNIQUE (PARTITION_NAME),
+          UNIQUE INDEX PARTITION_UNIQUE_IDX (TID, PARTITION_NAME),
           FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
         )]]>
         </tns:sql>
@@ -151,9 +152,10 @@
         <tns:sql><![CDATA[
         CREATE TABLE PARTITION_KEYS (
           PARTITION_ID INT NOT NULL,
+          TID INT NOT NULL,
           COLUMN_NAME VARCHAR(255) BINARY NOT NULL,
-          PARTITION_VALUE VARCHAR(255) BINARY NOT NULL,
-          UNIQUE INDEX PARTITION_KEYS_IDX (PARTITION_ID, COLUMN_NAME, PARTITION_VALUE),
+          PARTITION_VALUE VARCHAR(255) BINARY,
+          INDEX PARTITION_KEYS_IDX (TID, COLUMN_NAME, PARTITION_VALUE),
           FOREIGN KEY (PARTITION_ID) REFERENCES PARTITIONS (PARTITION_ID) ON DELETE CASCADE
         )]]>
         </tns:sql>

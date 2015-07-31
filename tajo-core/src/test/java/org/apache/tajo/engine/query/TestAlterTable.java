@@ -88,6 +88,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col4");
 
     executeDDL("alter_table_add_partition1.sql", null);
+    executeDDL("alter_table_add_partition2.sql", null);
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
@@ -156,6 +157,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(expectedResult, actualResult);
 
     executeDDL("alter_table_drop_partition1.sql", null);
+    executeDDL("alter_table_drop_partition2.sql", null);
 
     partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
