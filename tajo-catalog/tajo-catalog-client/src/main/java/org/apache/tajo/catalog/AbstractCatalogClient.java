@@ -416,6 +416,31 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
+  public boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
+    , boolean ifNotExists) {
+    try {
+      final BlockingInterface stub = getStub();
+      final AddPartitionsProto.Builder builder = AddPartitionsProto.newBuilder();
+
+      TableIdentifierProto.Builder identifier = TableIdentifierProto.newBuilder();
+      identifier.setDatabaseName(databaseName);
+      identifier.setTableName(tableName);
+      builder.setTableIdentifier(identifier.build());
+
+      for (PartitionDescProto partition: partitions) {
+        builder.addPartitionDesc(partition);
+      }
+
+      builder.setIfNotExists(ifNotExists);
+
+      return isSuccess(stub.addPartitions(null, builder.build()));
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
+
+  @Override
   public final Collection<String> getAllTableNames(final String databaseName) {
     try {
       final BlockingInterface stub = getStub();

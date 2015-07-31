@@ -1611,8 +1611,8 @@ alter_table_statement
   : ALTER TABLE table_name RENAME TO table_name
   | ALTER TABLE table_name RENAME COLUMN column_name TO column_name
   | ALTER TABLE table_name ADD COLUMN field_element
-  | ALTER TABLE table_name (if_not_exists)? ADD PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
-  | ALTER TABLE table_name (if_exists)? DROP PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (PURGE)?
+  | ALTER TABLE table_name ADD (if_not_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
+  | ALTER TABLE table_name DROP (if_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (PURGE)?
   | ALTER TABLE table_name SET PROPERTY property_list
   ;
 

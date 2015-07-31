@@ -692,7 +692,6 @@ public class HBaseTablespace extends Tablespace {
         HConstants.ZOOKEEPER_RECOVERABLE_WAITTIME,
         HConstants.HBASE_CLIENT_PAUSE, HConstants.HBASE_CLIENT_RETRIES_NUMBER,
         HConstants.HBASE_RPC_TIMEOUT_KEY,
-        HConstants.HBASE_CLIENT_PREFETCH_LIMIT,
         HConstants.HBASE_META_SCANNER_CACHING,
         HConstants.HBASE_CLIENT_INSTANCE_ID,
         HConstants.RPC_CODEC_CONF_KEY };

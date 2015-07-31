@@ -184,6 +184,9 @@ public interface CatalogService {
 
   List<TablePartitionProto> getAllPartitions();
 
+  boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
+    , boolean ifNotExists);
+
   boolean createIndex(IndexDesc index);
 
   boolean existIndexByName(String databaseName, String indexName);

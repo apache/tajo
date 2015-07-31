@@ -18,20 +18,13 @@
 
 package org.apache.tajo.catalog.exception;
 
-public class NoSuchPartitionException extends RuntimeException {
 
-  private static final long serialVersionUID = 277182608283894938L;
+import org.apache.tajo.error.Errors.ResultCode;
 
-  public NoSuchPartitionException(String message) {
-    super(message);
-  }
+public class AmbiguousPartitionDirectoryExistException extends CatalogException {
+	private static final long serialVersionUID = 277182608283894931L;
 
-  public NoSuchPartitionException(String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s\".", partitionName, tableName));
-  }
-
-  public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s.%s\".", partitionName, databaseName, tableName));
-  }
-
+	public AmbiguousPartitionDirectoryExistException(String columnName) {
+		super(ResultCode.AMBIGUOUS_PARTITION_DIRECTORY, columnName);
+	}
 }

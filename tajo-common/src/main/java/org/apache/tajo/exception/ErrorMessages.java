@@ -64,6 +64,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_COLUMN, "column '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_FUNCTION, "function does not exist: %s", 1);
     ADD_MESSAGE(UNDEFINED_PARTITION, "partition '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_PARTITION_KEY, "'%s' column is not the partition key", 1);
     ADD_MESSAGE(UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_TABLE, "index ''%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_COLUMNS, "index does not exist for '%s' columns of '%s' table", 2);
@@ -95,6 +96,10 @@ public class ErrorMessages {
     ADD_MESSAGE(MDC_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     ADD_MESSAGE(UNKNOWN_DATAFORMAT, "Unknown data format: '%s'", 1);
+
+    ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory" +
+      " : '%s'", 1);
+
 
     ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
     ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);
