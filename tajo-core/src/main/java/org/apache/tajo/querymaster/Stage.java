@@ -31,6 +31,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -59,6 +61,7 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
@@ -481,6 +484,18 @@ public class Stage implements EventHandler<StageEvent> {
     stageHistory.setNumShuffles(numShuffles);
     stageHistory.setProgress(getProgress());
     return stageHistory;
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    List<PartitionDescProto> partitions = TUtil.newList();
+
+    for(Task eachTask : getTasks()) {
+      if (eachTask.getLastAttempt() != null && !eachTask.getLastAttempt().getPartitions().isEmpty()) {
+        partitions.addAll(eachTask.getLastAttempt().getPartitions());
+      }
+    }
+
+    return partitions;
   }
 
   /**

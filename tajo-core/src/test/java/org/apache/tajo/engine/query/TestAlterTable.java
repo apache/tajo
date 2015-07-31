@@ -31,7 +31,6 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.List;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -87,6 +86,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col4");
 
     executeDDL("alter_table_add_partition1.sql", null);
+    executeDDL("alter_table_add_partition2.sql", null);
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
@@ -104,6 +104,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
     executeDDL("alter_table_drop_partition1.sql", null);
+    executeDDL("alter_table_drop_partition2.sql", null);
 
     partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
