@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.joinorder;
 
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;

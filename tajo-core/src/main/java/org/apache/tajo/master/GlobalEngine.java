@@ -96,7 +96,8 @@ public class GlobalEngine extends AbstractService {
       analyzer = new SQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog(), TablespaceManager.getInstance());
-      optimizer = new LogicalOptimizer(context.getConf());
+      // Access path rewriter is enabled only in QueryMasterTask
+      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
@@ -203,7 +204,6 @@ public class GlobalEngine extends AbstractService {
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setIsForwarded(true);
       responseBuilder.setState(ReturnStateUtil.returnError(t));
       return responseBuilder.build();
     }

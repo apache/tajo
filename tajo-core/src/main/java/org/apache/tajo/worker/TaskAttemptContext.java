@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
@@ -85,6 +86,8 @@ public class TaskAttemptContext {
 
   private EvalContext evalContext = new EvalContext();
 
+  private List<PartitionDescProto> partitions;
+
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
                             final TaskAttemptId taskId,
                             final FragmentProto[] fragments,
@@ -116,6 +119,8 @@ public class TaskAttemptContext {
     this.state = TaskAttemptState.TA_PENDING;
 
     this.partitionOutputVolume = Maps.newHashMap();
+
+    this.partitions = TUtil.newList();
   }
 
   @VisibleForTesting
@@ -367,7 +372,18 @@ public class TaskAttemptContext {
     }
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
-  
+
+  public String getUniqueKeyFromFragments() {
+    StringBuilder sb = new StringBuilder();
+    for (List<FragmentProto> fragments : fragmentMap.values()) {
+      for (FragmentProto f : fragments) {
+        FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
+        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
+      }
+    }
+    return sb.toString();
+  }
+
   public int hashCode() {
     return Objects.hashCode(taskId);
   }
@@ -402,5 +418,19 @@ public class TaskAttemptContext {
 
   public EvalContext getEvalContext() {
     return evalContext;
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    return partitions;
+  }
+
+  public void setPartitions(List<PartitionDescProto> partitions) {
+    this.partitions = partitions;
+  }
+
+  public void addPartition(PartitionDescProto partition) {
+    if (!partitions.contains(partition)) {
+      partitions.add(partition);
+    }
   }
 }

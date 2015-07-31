@@ -27,14 +27,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.FileUtil;
@@ -42,11 +41,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeCatalogUpgrade;
@@ -60,6 +55,23 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String connectionId;
   protected final String connectionPassword;
   protected final String catalogUri;
+
+  protected final String insertPartitionSql = "INSERT INTO " + TB_PARTTIONS
+    + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH) VALUES (?, ? , ?)";
+
+  protected final String insertPartitionKeysSql = "INSERT INTO " + TB_PARTTION_KEYS  + "("
+    + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", "
+    + COL_COLUMN_NAME + ", " + COL_PARTITION_VALUE + ")"
+    + " VALUES ( ("
+    + " SELECT " + COL_PARTITIONS_PK + " FROM " + TB_PARTTIONS
+    + " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ) "
+    + " , ?, ?, ?)";
+
+  protected final String deletePartitionSql = "DELETE FROM " + TB_PARTTIONS
+    + " WHERE " + COL_PARTITIONS_PK + " = ? ";
+
+  protected final String deletePartitionKeysSql = "DELETE FROM " + TB_PARTTIONS
+    + " WHERE " + COL_PARTITIONS_PK + " = ? ";
 
   private Connection conn;
   
@@ -1009,7 +1021,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           if(partitionDesc == null) {
             throw new UndefinedPartitionException(partitionName);
           }
-          dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
+          dropPartition(partitionDesc.getId());
           break;
         case SET_PROPERTY:
           setProperties(tableId, alterTableDescProto.getParams());
@@ -1245,116 +1257,81 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition) throws CatalogException {
     Connection conn = null;
-    PreparedStatement pstmt = null;
-    final String ADD_PARTITION_SQL =
-      "INSERT INTO " + TB_PARTTIONS
-        + " (" + COL_TABLES_PK + ", PARTITION_NAME, PATH) VALUES (?,?,?)";
-
-    final String ADD_PARTITION_KEYS_SQL =
-      "INSERT INTO " + TB_PARTTION_KEYS + " (" + COL_PARTITIONS_PK + ", " + COL_COLUMN_NAME + ", "
-      + COL_PARTITION_VALUE + ") VALUES (?,?,?)";
+    PreparedStatement pstmt1 = null, pstmt2 = null;
 
     try {
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(ADD_PARTITION_SQL);
-      }
-
       conn = getConnection();
-      pstmt = conn.prepareStatement(ADD_PARTITION_SQL);
-      pstmt.setInt(1, tableId);
-      pstmt.setString(2, partition.getPartitionName());
-      pstmt.setString(3, partition.getPath());
-      pstmt.executeUpdate();
-      pstmt.close();
+      conn.setAutoCommit(false);
 
-      if (partition.getPartitionKeysCount() > 0) {
-        pstmt = conn.prepareStatement(ADD_PARTITION_KEYS_SQL);
-        int partitionId = getPartitionId(tableId, partition.getPartitionName());
-        addPartitionKeys(pstmt, partitionId, partition);
-        pstmt.executeBatch();
+      pstmt1 = conn.prepareStatement(insertPartitionSql);
+      pstmt1.setInt(1, tableId);
+      pstmt1.setString(2, partition.getPartitionName());
+      pstmt1.setString(3, partition.getPath());
+      pstmt1.executeUpdate();
+
+      pstmt2 = conn.prepareStatement(insertPartitionKeysSql);
+
+      for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
+        PartitionKeyProto partitionKey = partition.getPartitionKeys(i);
+        pstmt2.setInt(1, tableId);
+        pstmt2.setString(2, partition.getPartitionName());
+        pstmt2.setInt(3, tableId);
+        pstmt2.setString(4, partitionKey.getColumnName());
+        pstmt2.setString(5, partitionKey.getPartitionValue());
+        pstmt2.addBatch();
+        pstmt2.clearParameters();
+      }
+      pstmt2.executeBatch();
+
+      if (conn != null) {
+        conn.commit();
       }
     } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(pstmt);
+      CatalogUtil.closeQuietly(pstmt1);
+      CatalogUtil.closeQuietly(pstmt2);
     }
   }
 
-  public int getPartitionId(int tableId, String partitionName) throws CatalogException {
+  private void dropPartition(int partitionId) throws CatalogException {
     Connection conn = null;
-    ResultSet res = null;
-    PreparedStatement pstmt = null;
-    int retValue = -1;
+    PreparedStatement pstmt1 = null, pstmt2 = null;
 
     try {
-      String sql = "SELECT " + COL_PARTITIONS_PK + " FROM " + TB_PARTTIONS +
-        " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
-      }
-
       conn = getConnection();
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, tableId);
-      pstmt.setString(2, partitionName);
-      res = pstmt.executeQuery();
+      conn.setAutoCommit(false);
 
-      if (res.next()) {
-        retValue = res.getInt(1);
+      pstmt1 = conn.prepareStatement(deletePartitionKeysSql);
+      pstmt1.setInt(1, partitionId);
+      pstmt1.executeUpdate();
+
+      pstmt2 = conn.prepareStatement(deletePartitionSql);
+      pstmt2.setInt(1, partitionId);
+      pstmt2.executeUpdate();
+
+      if (conn != null) {
+        conn.commit();
       }
     } catch (SQLException se) {
-      throw new TajoInternalError(se);
-    } finally {
-      CatalogUtil.closeQuietly(pstmt, res);
-    }
-    return retValue;
-  }
-
-  private void addPartitionKeys(PreparedStatement pstmt, int partitionId, PartitionDescProto partition) throws
-    SQLException {
-    for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
-      PartitionKeyProto partitionKey = partition.getPartitionKeys(i);
-
-      pstmt.setInt(1, partitionId);
-      pstmt.setString(2, partitionKey.getColumnName());
-      pstmt.setString(3, partitionKey.getPartitionValue());
-
-      pstmt.addBatch();
-      pstmt.clearParameters();
-    }
-  }
-
-
-  private void dropPartition(int tableId, String partitionName) throws CatalogException {
-    Connection conn = null;
-    PreparedStatement pstmt = null;
-
-    try {
-      int partitionId = getPartitionId(tableId, partitionName);
-
-      String sqlDeletePartitionKeys = "DELETE FROM " + TB_PARTTION_KEYS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
-      String sqlDeletePartition = "DELETE FROM " + TB_PARTTIONS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sqlDeletePartitionKeys);
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
       }
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(sqlDeletePartitionKeys);
-      pstmt.setInt(1, partitionId);
-      pstmt.executeUpdate();
-      pstmt.close();
-
-      pstmt = conn.prepareStatement(sqlDeletePartition);
-      pstmt.setInt(1, partitionId);
-      pstmt.executeUpdate();
-
-    } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(pstmt);
+      CatalogUtil.closeQuietly(pstmt1);
+      CatalogUtil.closeQuietly(pstmt2);
     }
   }
 
@@ -2056,6 +2033,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       if (res.next()) {
         builder = PartitionDescProto.newBuilder();
+        builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
@@ -2077,7 +2055,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     try {
-      String sql = "SELECT "+ COL_COLUMN_NAME + " , "+ COL_PARTITION_VALUE
+      String sql = "SELECT "+ COL_COLUMN_NAME  + " , "+ COL_PARTITION_VALUE
         + " FROM " + TB_PARTTION_KEYS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
 
       conn = getConnection();
@@ -2222,28 +2200,157 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return partitions;
   }
 
+  @Override
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException {
+    Connection conn = null;
+
+    // To delete existing partition keys
+    PreparedStatement pstmt1 = null;
+    // To delete existing partition;
+    PreparedStatement pstmt2 = null;
+    // To insert a partition
+    PreparedStatement pstmt3 = null;
+    // To insert partition keys
+    PreparedStatement pstmt4 = null;
+
+    PartitionDescProto partitionDesc = null;
+
+    try {
+      int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      int currentIndex = 0, lastIndex = 0;
+
+      pstmt1 = conn.prepareStatement(deletePartitionKeysSql);
+      pstmt2 = conn.prepareStatement(deletePartitionSql);
+      pstmt3 = conn.prepareStatement(insertPartitionSql);
+      pstmt4 = conn.prepareStatement(insertPartitionKeysSql);
+
+      // Set a batch size like 1000. This avoids SQL injection and also takes care of out of memory issue.
+      int batchSize = conf.getInt(TajoConf.ConfVars.PARTITION_DYNAMIC_BULK_INSERT_BATCH_SIZE.varname, 1000);
+      for(currentIndex = 0; currentIndex < partitions.size(); currentIndex++) {
+        PartitionDescProto partition = partitions.get(currentIndex);
+        partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
+
+        // Delete existing partition and partition keys
+        if (partitionDesc != null) {
+          if(ifNotExists) {
+            pstmt1.setInt(1, partitionDesc.getId());
+            pstmt1.addBatch();
+            pstmt1.clearParameters();
+
+            pstmt2.setInt(1, partitionDesc.getId());
+            pstmt2.addBatch();
+            pstmt2.clearParameters();
+          } else {
+            throw new DuplicatePartitionException(partition.getPartitionName());
+          }
+        }
+
+        // Insert partition
+        pstmt3.setInt(1, tableId);
+        pstmt3.setString(2, partition.getPartitionName());
+        pstmt3.setString(3, partition.getPath());
+        pstmt3.addBatch();
+        pstmt3.clearParameters();
+
+        // Insert partition keys
+        for (int i = 0; i < partition.getPartitionKeysCount(); i++) {
+          PartitionKeyProto partitionKey = partition.getPartitionKeys(i);
+          pstmt4.setInt(1, tableId);
+          pstmt4.setString(2, partition.getPartitionName());
+          pstmt4.setInt(3, tableId);
+          pstmt4.setString(4, partitionKey.getColumnName());
+          pstmt4.setString(5, partitionKey.getPartitionValue());
+
+          pstmt4.addBatch();
+          pstmt4.clearParameters();
+        }
+
+        // Execute batch
+        if (currentIndex >= lastIndex + batchSize && lastIndex != currentIndex) {
+          pstmt1.executeBatch();
+          pstmt1.clearBatch();
+          pstmt2.executeBatch();
+          pstmt2.clearBatch();
+          pstmt3.executeBatch();
+          pstmt3.clearBatch();
+          pstmt4.executeBatch();
+          pstmt4.clearBatch();
+          lastIndex = currentIndex;
+        }
+      }
+
+      // Execute existing batch queries
+      if (lastIndex != currentIndex) {
+        pstmt1.executeBatch();
+        pstmt2.executeBatch();
+        pstmt3.executeBatch();
+        pstmt4.executeBatch();
+      }
+
+      if (conn != null) {
+        conn.commit();
+      }
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt1);
+      CatalogUtil.closeQuietly(pstmt2);
+      CatalogUtil.closeQuietly(pstmt3);
+      CatalogUtil.closeQuietly(pstmt4);
+    }
+  }
 
   @Override
   public void createIndex(final IndexDescProto proto) throws CatalogException {
     Connection conn = null;
     PreparedStatement pstmt = null;
 
-    String databaseName = proto.getTableIdentifier().getDatabaseName();
-    String tableName = proto.getTableIdentifier().getTableName();
-    String columnName = CatalogUtil.extractSimpleName(proto.getColumn().getName());
+    final String databaseName = proto.getTableIdentifier().getDatabaseName();
+    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
+      // indexes table
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-          "" + COL_COLUMN_NAME + ", DATA_TYPE, INDEX_TYPE, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING) " +
-        "VALUES (?,?,?,?,?,?,?,?,?)";
+          "INDEX_TYPE, PATH, COLUMN_NAMES, DATA_TYPES, ORDERS, NULL_ORDERS, IS_UNIQUE, IS_CLUSTERED) " +
+          "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
+
+      StringBuilder columnNamesBuilder = new StringBuilder();
+      StringBuilder dataTypesBuilder= new StringBuilder();
+      StringBuilder ordersBuilder = new StringBuilder();
+      StringBuilder nullOrdersBuilder = new StringBuilder();
+      for (SortSpecProto columnSpec : proto.getKeySortSpecsList()) {
+        // Since the key columns are always sorted in order of their occurrence position in the relation schema,
+        // the concatenated name can be uniquely identified.
+        columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
+        dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
+        ordersBuilder.append(columnSpec.getAscending()).append(",");
+        nullOrdersBuilder.append(columnSpec.getNullFirst()).append(",");
+      }
+      columnNamesBuilder.deleteCharAt(columnNamesBuilder.length()-1);
+      dataTypesBuilder.deleteCharAt(dataTypesBuilder.length()-1);
+      ordersBuilder.deleteCharAt(ordersBuilder.length()-1);
+      nullOrdersBuilder.deleteCharAt(nullOrdersBuilder.length()-1);
 
       conn = getConnection();
       conn.setAutoCommit(false);
@@ -2251,13 +2358,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, proto.getIndexName());
-      pstmt.setString(4, columnName);
-      pstmt.setString(5, proto.getColumn().getDataType().getType().name());
-      pstmt.setString(6, proto.getIndexMethod().toString());
-      pstmt.setBoolean(7, proto.hasIsUnique() && proto.getIsUnique());
-      pstmt.setBoolean(8, proto.hasIsClustered() && proto.getIsClustered());
-      pstmt.setBoolean(9, proto.hasIsAscending() && proto.getIsAscending());
+      pstmt.setString(3, proto.getIndexName()); // index name
+      pstmt.setString(4, proto.getIndexMethod().toString()); // index type
+      pstmt.setString(5, proto.getIndexPath()); // index path
+      pstmt.setString(6, columnNamesBuilder.toString());
+      pstmt.setString(7, dataTypesBuilder.toString());
+      pstmt.setString(8, ordersBuilder.toString());
+      pstmt.setString(9, nullOrdersBuilder.toString());
+      pstmt.setBoolean(10, proto.hasIsUnique() && proto.getIsUnique());
+      pstmt.setBoolean(11, proto.hasIsClustered() && proto.getIsClustered());
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
@@ -2311,9 +2420,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   final static String GET_INDEXES_SQL =
-      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, " +
-          "IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
-
+      "SELECT * FROM " + TB_INDEXES;
 
   @Override
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
@@ -2344,6 +2451,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultToIndexDescProtoBuilder(builder, res);
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
       proto = builder.build();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
@@ -2355,9 +2463,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public IndexDescProto getIndexByColumn(final String databaseName,
-                                         final String tableName,
-                                         final String columnName) throws CatalogException {
+  public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws CatalogException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2365,25 +2472,35 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+      TableDescProto tableDescProto = getTable(databaseName, tableName);
 
-      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " +
+          COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
 
+      // Since the column names in the unified name are always sorted
+      // in order of occurrence position in the relation schema,
+      // they can be uniquely identified.
+      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
+          CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      ;
-      pstmt.setString(2, columnName);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new TajoInternalError("ERROR: there is no index matched to " + columnName);
+        throw new TajoInternalError("ERROR: there is no index matched to " + unifiedName);
       }
+
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      builder.setTargetRelationSchema(tableDescProto.getSchema());
       proto = builder.build();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
@@ -2428,7 +2545,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException {
     Connection conn = null;
     ResultSet res = null;
@@ -2438,18 +2555,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+      Schema relationSchema = new Schema(getTable(databaseName, tableName).getSchema());
 
       String sql =
-          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+          "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES +
+              " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
 
+      // Since the column names in the unified name are always sorted
+      // in order of occurrence position in the relation schema,
+      // they can be uniquely identified.
+      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
+          CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      pstmt.setString(2, columnName);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
@@ -2461,21 +2587,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public IndexDescProto[] getIndexes(String databaseName, final String tableName)
+  public List<String> getAllIndexNamesByTable(final String databaseName, final String tableName)
       throws CatalogException {
-    Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
-    final List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
+    final List<String> indexNames = new ArrayList<String>();
 
     try {
       final int databaseId = getDatabaseId(databaseName);
       final int tableId = getTableId(databaseId, databaseName, tableName);
-      final TableIdentifierProto tableIdentifier = CatalogUtil.buildTableIdentifier(databaseName, tableName);
-
 
       String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
-
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -2488,10 +2610,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-        resultToIndexDescProtoBuilder(builder, res);
-        builder.setTableIdentifier(tableIdentifier);
-        protos.add(builder.build());
+        indexNames.add(res.getString("index_name"));
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
@@ -2499,56 +2618,73 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       CatalogUtil.closeQuietly(pstmt, res);
     }
 
-    return protos.toArray(new IndexDescProto[protos.size()]);
+    return indexNames;
   }
-  
-  @Override
-  public List<IndexProto> getAllIndexes() throws CatalogException {
-    Connection conn = null;
-    Statement stmt = null;
-    ResultSet resultSet = null;
 
-    List<IndexProto> indexes = new ArrayList<IndexProto>();
+  @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+    ResultSet res = null;
+    PreparedStatement pstmt = null;
+    final List<String> indexNames = new ArrayList<String>();
 
     try {
-      String sql = "SELECT " + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-        "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
+      final int databaseId = getDatabaseId(databaseName);
+      final int tableId = getTableId(databaseId, databaseName, tableName);
+
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
       conn = getConnection();
-      stmt = conn.createStatement();
-      resultSet = stmt.executeQuery(sql);
-      while (resultSet.next()) {
-        IndexProto.Builder builder = IndexProto.newBuilder();
-        
-        builder.setDbId(resultSet.getInt(COL_DATABASES_PK));
-        builder.setTId(resultSet.getInt(COL_TABLES_PK));
-        builder.setIndexName(resultSet.getString("INDEX_NAME"));
-        builder.setColumnName(resultSet.getString("COLUMN_NAME"));
-        builder.setDataType(resultSet.getString("DATA_TYPE"));
-        builder.setIndexType(resultSet.getString("INDEX_TYPE"));
-        builder.setIsUnique(resultSet.getBoolean("IS_UNIQUE"));
-        builder.setIsClustered(resultSet.getBoolean("IS_CLUSTERED"));
-        builder.setIsAscending(resultSet.getBoolean("IS_ASCENDING"));
-        
-        indexes.add(builder.build());
-      }
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, databaseId);
+      pstmt.setInt(2, tableId);
+      res = pstmt.executeQuery();
+
+      return res.next();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(stmt, resultSet);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
-    
-    return indexes;
+  }
+
+  @Override
+  public List<IndexDescProto> getAllIndexes() throws CatalogException {
+    List<IndexDescProto> indexDescProtos = TUtil.newList();
+    for (String databaseName : getAllDatabaseNames()) {
+      for (String tableName : getAllTableNames(databaseName)) {
+        for (String indexName: getAllIndexNamesByTable(databaseName, tableName)) {
+          indexDescProtos.add(getIndexByName(databaseName, indexName));
+        }
+      }
+    }
+    return indexDescProtos;
   }
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
     builder.setIndexName(res.getString("index_name"));
-    builder.setColumn(indexResultToColumnProto(res));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
+    builder.setIndexPath(res.getString("path"));
+    String[] columnNames, dataTypes, orders, nullOrders;
+    columnNames = res.getString("column_names").trim().split(",");
+    dataTypes = res.getString("data_types").trim().split(",");
+    orders = res.getString("orders").trim().split(",");
+    nullOrders = res.getString("null_orders").trim().split(",");
+    int columnNum = columnNames.length;
+    for (int i = 0; i < columnNum; i++) {
+      SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
+      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(columnNames[i])
+          .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
+      colSpecBuilder.setAscending(orders[i].equals("true"));
+      colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
+      builder.addKeySortSpecs(colSpecBuilder.build());
+    }
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
-    builder.setIsAscending(res.getBoolean("is_ascending"));
   }
 
   /**

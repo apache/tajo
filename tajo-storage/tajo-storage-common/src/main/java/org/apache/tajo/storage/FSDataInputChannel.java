@@ -30,13 +30,14 @@ import java.nio.channels.ReadableByteChannel;
 /**
  * FSDataInputChannel is a NIO channel implementation of direct read ability to read from HDFS
  */
-public final class FSDataInputChannel extends InputChannel implements SeekableChannel {
+public final class FSDataInputChannel extends SeekableInputChannel {
 
   private ReadableByteChannel channel;
   private FSDataInputStream inputStream;
   private boolean isDirectRead;
+  private long size;
 
-  public FSDataInputChannel(FSDataInputStream inputStream) {
+  public FSDataInputChannel(FSDataInputStream inputStream) throws IOException {
     if (inputStream.getWrappedStream() instanceof ByteBufferReadable) {
       this.isDirectRead = true;
     } else {
@@ -44,6 +45,7 @@ public final class FSDataInputChannel extends InputChannel implements SeekableCh
       this.channel = Channels.newChannel(inputStream);
     }
     this.inputStream = inputStream;
+    this.size = inputStream.getPos() + inputStream.available();
   }
 
   @Override
@@ -58,6 +60,16 @@ public final class FSDataInputChannel extends InputChannel implements SeekableCh
   @Override
   public void seek(long offset) throws IOException {
     inputStream.seek(offset);
+  }
+
+  @Override
+  public long position() throws IOException {
+    return inputStream.getPos();
+  }
+
+  @Override
+  public long size() throws IOException {
+    return size;
   }
 
   @Override

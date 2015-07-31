@@ -1,5 +1,6 @@
 Tajo Change Log 
 
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -31,6 +32,20 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1645: Bump up hbase to 1.1.1. (hyunsik)
+
+    TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
+
+    TAJO-1703: Remove hardcoded value in NodeStatusUpdater. (jinho)
+
+    TAJO-1701: Remove forward or non-forward query concept in TajoClient. 
+    (hyunsik)
+
+    TAJO-1651: Too long fetcher default retries. (jinho)
+
+    TAJO-1700: Add better exception handling in TajoMasterClientService. 
+    (hyunsik)
 
     TAJO-1343: Improve the memory usage of physical executors. (jihoon)
 
@@ -188,6 +203,30 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1608: Fix test failure in index_support branch. (jihoon)
+
+    TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
+    names only without invalid external table info. 
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
+    infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
+
+    TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
+    (jinho)
+
+    TAJO-1716: Repartitioner.makeEvenDistributedFetchImpl() does not distribute 
+    fetches evenly. (jihoon)
+
+    TAJO-1681: Fix TajoDump invalid null check for database name.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1702: Fix race condition in finished query cache. (jinho)
+
+    TAJO-1597: Problem of ignoring theta join condition. (jihoon)
+
     TAJO-1697: RCFile progress causes NPE occasionally. (jinho)
 
     TAJO-1689: Metrics file reporter prints histogram metric without group name.
@@ -195,7 +234,7 @@ Release 0.11.0 - unreleased
 
     TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
     table names only without invalid external table info. 
-    (Contributed by  DaeMyung Kang, Committed by jihoon)
+    (Contributed by DaeMyung Kang, Committed by jihoon)
 
     TAJO-1644: When inserting empty data into a partitioned table,
     existing data would be removed. (jaehwa)
@@ -345,6 +384,13 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1300: Merge the index branch into the master branch. (jihoon)
+
+    TAJO-1713: Change the type of edge cache in JoinGraphContext from 
+    HashMap to LRUMap. (jihoon)
+
+    TAJO-1273: Merge DirectRawFile to master branch. (jinho)
+
     TAJO-1628: Add a documentation for join operation. (jihoon)
 
     TAJO-1687: sphinx-mavan-plugin version should be 1.0.3. 
@@ -398,6 +444,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1302: Support index metadata backup and restore. (jihoon)
 
     TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
     committed by hyunsik)

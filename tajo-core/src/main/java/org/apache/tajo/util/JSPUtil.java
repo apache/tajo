@@ -355,6 +355,25 @@ public class JSPUtil {
     return sb.toString();
   }
 
+  public static String getPageNavigation(int currentPage, boolean next, String url) {
+    StringBuilder sb = new StringBuilder();
+    if (currentPage > 1) {
+      sb.append("<a href='").append(url)
+          .append("&page=").append(currentPage - 1).append("'>")
+          .append("&lt;prev</a>");
+      sb.append("&nbsp;&nbsp;");
+    }
+
+    sb.append(currentPage);
+
+    if(next) {
+      sb.append("&nbsp;&nbsp;").append("<a href='").append(url)
+          .append("&page=").append(currentPage + 1).append("'>")
+          .append("next&gt;</a>");
+    }
+    return sb.toString();
+  }
+
   public static <T extends Object> List<T> getPageNavigationList(List<T> originList, int page, int pageSize) {
     if (originList == null) {
       return new ArrayList<T>();

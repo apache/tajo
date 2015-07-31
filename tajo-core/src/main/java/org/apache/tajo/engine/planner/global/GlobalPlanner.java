@@ -1362,6 +1362,15 @@ public class GlobalPlanner {
     }
 
     @Override
+    public LogicalNode visitIndexScan(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
+      ExecutionBlock newBlock = context.plan.newExecutionBlock();
+      newBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), newBlock);
+      return node;
+    }
+
+    @Override
     public LogicalNode visitPartitionedTableScan(GlobalPlanContext context, LogicalPlan plan,
                                                  LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
                                                  Stack<LogicalNode> stack)throws TajoException {
@@ -1404,6 +1413,20 @@ public class GlobalPlanner {
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
       ExecutionBlock newExecBlock = buildStorePlan(context, childBlock, node);
       context.execBlockMap.put(node.getPID(), newExecBlock);
+
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitCreateIndex(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                        CreateIndexNode node, Stack<LogicalNode> stack) throws TajoException {
+      LogicalNode child = super.visitCreateIndex(context, plan, queryBlock, node, stack);
+
+      // Don't separate execution block. CreateIndex is pushed to the first execution block.
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      node.setChild(childBlock.getPlan());
+      childBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), childBlock);
 
       return node;
     }

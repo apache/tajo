@@ -21,10 +21,13 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -32,19 +35,19 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
+import org.apache.tajo.plan.util.IndexUtil;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * This rule tries to push down all filter conditions into logical nodes as lower as possible.
@@ -54,6 +57,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     implements LogicalPlanRewriteRule {
   private final static Log LOG = LogFactory.getLog(FilterPushDownRule.class);
   private static final String NAME = "FilterPushDown";
+
+  private CatalogService catalog;
 
   static class FilterPushDownContext {
     Set<EvalNode> pushingDownFilters = TUtil.newHashSet();
@@ -88,8 +93,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    for (LogicalPlan.QueryBlock block : context.getPlan().getQueryBlocks()) {
       if (block.hasNode(NodeType.SELECTION) || block.hasNode(NodeType.JOIN)) {
         return true;
       }
@@ -98,7 +103,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws TajoException {
     /*
     FilterPushDown rule: processing when visits each node
       - If a target which is corresponding on a filter EvalNode's column is not FieldEval, do not PushDown.
@@ -110,6 +115,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         . It not, create new HavingNode and set parent's child.
      */
     FilterPushDownContext context = new FilterPushDownContext();
+    LogicalPlan plan = rewriteRuleContext.getPlan();
+    catalog = rewriteRuleContext.getCatalog();
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       context.clear();
       this.visit(context, plan, block, block.getRoot(), new Stack<LogicalNode>());
@@ -201,7 +208,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
-    context.addFiltersTobePushed(nonPushableQuals);
+    context.pushingDownFilters.addAll(nonPushableQuals);
     List<EvalNode> matched = TUtil.newList();
 
     // If the query involves a subquery, the stack can be empty.
@@ -235,7 +242,51 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     context.pushingDownFilters.removeAll(matched);
+
+    // The selection node for non-equi theta join conditions should be created here
+    // to process those conditions as early as possible.
+    // This should be removed after TAJO-742.
+    if (context.pushingDownFilters.size() > 0) {
+      List<EvalNode> nonEquiThetaJoinQuals = extractNonEquiThetaJoinQuals(context.pushingDownFilters, block, joinNode);
+      if (nonEquiThetaJoinQuals.size() > 0) {
+        SelectionNode selectionNode = createSelectionParentForNonEquiThetaJoinQuals(plan, block, stack, joinNode,
+            nonEquiThetaJoinQuals);
+
+        context.pushingDownFilters.removeAll(nonEquiThetaJoinQuals);
+        return selectionNode;
+      }
+    }
+
     return joinNode;
+  }
+
+  private SelectionNode createSelectionParentForNonEquiThetaJoinQuals(LogicalPlan plan,
+                                                                      QueryBlock block,
+                                                                      Stack<LogicalNode> stack,
+                                                                      JoinNode joinNode,
+                                                                      List<EvalNode> nonEquiThetaJoinQuals) {
+    SelectionNode selectionNode = plan.createNode(SelectionNode.class);
+    selectionNode.setInSchema(joinNode.getOutSchema());
+    selectionNode.setOutSchema(joinNode.getOutSchema());
+    selectionNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(nonEquiThetaJoinQuals));
+    block.registerNode(selectionNode);
+
+    LogicalNode parent = stack.peek();
+    if (parent instanceof UnaryNode) {
+      ((UnaryNode) parent).setChild(selectionNode);
+    } else if (parent instanceof BinaryNode) {
+      BinaryNode binaryParent = (BinaryNode) parent;
+      if (binaryParent.getLeftChild().getPID() == joinNode.getPID()) {
+        binaryParent.setLeftChild(selectionNode);
+      } else if (binaryParent.getRightChild().getPID() == joinNode.getPID()) {
+        binaryParent.setRightChild(selectionNode);
+      }
+    } else if (parent instanceof TableSubQueryNode) {
+      ((TableSubQueryNode) parent).setSubQuery(selectionNode);
+    }
+
+    selectionNode.setChild(joinNode);
+    return selectionNode;
   }
 
   private static Set<EvalNode> extractNonPushableJoinQuals(final LogicalPlan plan,
@@ -547,7 +598,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.setFiltersTobePushed(transformedMap.keySet());
 
     stack.push(projectionNode);
-    childNode = visit(context, plan, plan.getBlock(childNode), childNode, stack);
+    visit(context, plan, plan.getBlock(childNode), childNode, stack);
     stack.pop();
 
     // find not matched after visiting child
@@ -836,7 +887,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   @Override
   public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
-                               LogicalPlan.QueryBlock block, ScanNode scanNode,
+                               LogicalPlan.QueryBlock block, final ScanNode scanNode,
                                Stack<LogicalNode> stack) throws TajoException {
     List<EvalNode> matched = TUtil.newList();
 
@@ -906,8 +957,42 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       qual = matched.iterator().next();
     }
 
+    block.addAccessPath(scanNode, new SeqScanInfo(table));
     if (qual != null) { // if a matched qual exists
       scanNode.setQual(qual);
+
+      // Index path can be identified only after filters are pushed into each scan.
+      String databaseName, tableName;
+      databaseName = CatalogUtil.extractQualifier(table.getName());
+      tableName = CatalogUtil.extractSimpleName(table.getName());
+      Set<Predicate> predicates = TUtil.newHashSet();
+      for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
+        BinaryEval binaryEval = (BinaryEval) eval;
+        // TODO: consider more complex predicates
+        if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+            binaryEval.getRightExpr().getType() == EvalType.CONST) {
+          predicates.add(new Predicate(binaryEval.getType(),
+              ((FieldEval) binaryEval.getLeftExpr()).getColumnRef(),
+              ((ConstEval)binaryEval.getRightExpr()).getValue()));
+        } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
+            binaryEval.getRightExpr().getType() == EvalType.FIELD) {
+          predicates.add(new Predicate(binaryEval.getType(),
+              ((FieldEval) binaryEval.getRightExpr()).getColumnRef(),
+              ((ConstEval)binaryEval.getLeftExpr()).getValue()));
+        }
+      }
+
+      // for every subset of the set of columns, find all matched index paths
+      for (Set<Predicate> subset : Sets.powerSet(predicates)) {
+        if (subset.size() == 0)
+          continue;
+        Column[] columns = extractColumns(subset);
+        if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
+          IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
+          block.addAccessPath(scanNode, new IndexScanInfo(
+              table.getStats(), indexDesc, getSimplePredicates(indexDesc, subset)));
+        }
+      }
     }
 
     for (EvalNode matchedEval: matched) {
@@ -918,6 +1003,49 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     return scanNode;
+  }
+
+  private static class Predicate {
+    Column column;
+    Datum value;
+    EvalType evalType;
+
+    public Predicate(EvalType evalType, Column column, Datum value) {
+      this.evalType = evalType;
+      this.column = column;
+      this.value = value;
+    }
+  }
+
+  private static SimplePredicate[] getSimplePredicates(IndexDesc desc, Set<Predicate> predicates) {
+    SimplePredicate[] simplePredicates = new SimplePredicate[predicates.size()];
+    Map<Column, Datum> colToValue = TUtil.newHashMap();
+    for (Predicate predicate : predicates) {
+      colToValue.put(predicate.column, predicate.value);
+    }
+    SortSpec [] keySortSpecs = desc.getKeySortSpecs();
+    for (int i = 0; i < keySortSpecs.length; i++) {
+      simplePredicates[i] = new SimplePredicate(keySortSpecs[i],
+          colToValue.get(keySortSpecs[i].getSortKey()));
+    }
+    return simplePredicates;
+  }
+
+  private static Datum[] extractPredicateValues(List<Predicate> predicates) {
+    Datum[] values = new Datum[predicates.size()];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = predicates.get(i).value;
+    }
+    return values;
+  }
+
+  private static Column[] extractColumns(Set<Predicate> predicates) {
+    Column[] columns = new Column[predicates.size()];
+    int i = 0;
+    for (Predicate p : predicates) {
+      columns[i++] = p.column;
+    }
+    return columns;
   }
 
   private void errorFilterPushDown(LogicalPlan plan, LogicalNode node,

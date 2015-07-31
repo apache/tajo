@@ -178,7 +178,7 @@ public class OverridableConf extends KeyValueSet {
 
   @Override
   public float getFloat(ConfigKey key) {
-    return getLong(key, null);
+    return getFloat(key, null);
   }
 
   public void put(ConfigKey key, String val) {

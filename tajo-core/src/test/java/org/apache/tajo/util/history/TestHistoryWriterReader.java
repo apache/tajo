@@ -90,7 +90,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       assertTrue(histFiles[0].getPath().getName().endsWith(".hist"));
 
       HistoryReader reader = new HistoryReader("127.0.0.1:28090", tajoConf);
-      List<QueryInfo> queryInfos = reader.getQueries(null);
+      List<QueryInfo> queryInfos = reader.getQueriesInHistory(1, 2);
       assertNotNull(queryInfos);
       assertEquals(2, queryInfos.size());
 
@@ -99,7 +99,17 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       assertEquals(queryInfo2.getQueryState(), foundQueryInfo.getQueryState());
       assertEquals(queryInfo2.getProgress(), foundQueryInfo.getProgress(), 0);
 
+      foundQueryInfo = reader.getQueryByQueryId(queryInfo2.getQueryId());
+      assertEquals(queryInfo2.getQueryId(), foundQueryInfo.getQueryId());
+      assertEquals(queryInfo2.getQueryState(), foundQueryInfo.getQueryState());
+      assertEquals(queryInfo2.getProgress(), foundQueryInfo.getProgress(), 0);
+
       foundQueryInfo = queryInfos.get(1);
+      assertEquals(queryInfo1.getQueryId(), foundQueryInfo.getQueryId());
+      assertEquals(queryInfo1.getQueryState(), foundQueryInfo.getQueryState());
+      assertEquals(queryInfo1.getProgress(), foundQueryInfo.getProgress(), 0);
+
+      foundQueryInfo = reader.getQueryByQueryId(queryInfo1.getQueryId());
       assertEquals(queryInfo1.getQueryId(), foundQueryInfo.getQueryId());
       assertEquals(queryInfo1.getQueryState(), foundQueryInfo.getQueryState());
       assertEquals(queryInfo1.getProgress(), foundQueryInfo.getProgress(), 0);
