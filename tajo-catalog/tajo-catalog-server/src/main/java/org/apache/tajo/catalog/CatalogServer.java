@@ -1063,13 +1063,16 @@ public class CatalogServer extends AbstractService {
 
             if (store.existPartitionMethod(dbName, tbName)) {
               PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
-
-
-              return GetPartitionDescResponse.newBuilder()
+              if (partitionDesc != null) {
+                return GetPartitionDescResponse.newBuilder()
                   .setState(OK)
                   .setPartition(partitionDesc)
                   .build();
-
+              } else {
+                return GetPartitionDescResponse.newBuilder()
+                  .setState(errUndefinedPartition(partitionName))
+                  .build();
+              }
             } else {
               return GetPartitionDescResponse.newBuilder()
                   .setState(errUndefinedPartitionMethod(tbName))
@@ -1185,6 +1188,41 @@ public class CatalogServer extends AbstractService {
             .setState(returnError(t))
             .build();
 
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public ReturnState addPartitions(RpcController controller, AddPartitionsProto request) {
+
+      TableIdentifierProto identifier = request.getTableIdentifier();
+      String databaseName = identifier.getDatabaseName();
+      String tableName = identifier.getTableName();
+
+      rlock.lock();
+      try {
+        boolean contain;
+
+        contain = store.existDatabase(databaseName);
+        if (contain) {
+          contain = store.existTable(databaseName, tableName);
+          if (contain) {
+            if (store.existPartitionMethod(databaseName, tableName)) {
+              store.addPartitions(databaseName, tableName, request.getPartitionDescList(), request.getIfNotExists());
+              return OK;
+            } else {
+              return errUndefinedPartitionMethod(tableName);
+            }
+          } else {
+            return errUndefinedTable(tableName);
+          }
+        } else {
+          return errUndefinedDatabase(databaseName);
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
       } finally {
         rlock.unlock();
       }

@@ -164,13 +164,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   public void schedule() throws Exception{
     try {
-      if (remainingScheduledObjectNum() == 0) {
+      final int incompleteTaskNum = stage.getTotalScheduledObjectsCount() - stage.getSucceededObjectCount();
+      if (incompleteTaskNum == 0) {
         // all task is done, wait for stopping message
         synchronized (schedulingThread) {
           schedulingThread.wait(500);
         }
       } else {
-        LinkedList<TaskRequestEvent> taskRequests = createTaskRequest();
+        LinkedList<TaskRequestEvent> taskRequests = createTaskRequest(incompleteTaskNum);
 
         if (taskRequests.size() == 0) {
           synchronized (schedulingThread) {
@@ -274,12 +275,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
 
-  protected LinkedList<TaskRequestEvent> createTaskRequest() throws Exception {
+  protected LinkedList<TaskRequestEvent> createTaskRequest(final int incompleteTaskNum) throws Exception {
     LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
 
     //If scheduled tasks is long-term task, cluster resource can be the worst load balance.
     //This part is to throttle the maximum required container per request
-    int requestContainerNum = Math.min(remainingScheduledObjectNum(), maximumRequestContainer);
+    int requestContainerNum = Math.min(incompleteTaskNum, maximumRequestContainer);
     if (LOG.isDebugEnabled()) {
       LOG.debug("Try to schedule task resources: " + requestContainerNum);
     }

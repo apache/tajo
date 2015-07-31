@@ -55,6 +55,7 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
 import java.io.IOException;
@@ -768,14 +769,82 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
       throws CatalogException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    org.apache.hadoop.hive.ql.metadata.Table table;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+
+    PartitionMethodDesc partitionMethodDesc = null;
+    try {
+      try {
+        client = clientPool.getClient();
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      } catch (NoSuchObjectException nsoe) {
+        throw new UndefinedTableException(tableName);
+      } catch (Exception e) {
+        throw new TajoInternalError(e);
+      }
+
+      // set partition keys
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (partitionKeys != null && partitionKeys.size() > 0) {
+        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        StringBuilder sb = new StringBuilder();
+        if (partitionKeys.size() > 0) {
+          for (int i = 0; i < partitionKeys.size(); i++) {
+            FieldSchema fieldSchema = partitionKeys.get(i);
+            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
+              CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            expressionSchema.addColumn(new Column(fieldName, dataType));
+            if (i > 0) {
+              sb.append(",");
+            }
+            sb.append(fieldSchema.getName());
+          }
+          partitionMethodDesc = new PartitionMethodDesc(
+            databaseName,
+            tableName,
+            PartitionType.COLUMN,
+            sb.toString(),
+            expressionSchema);
+        }
+      } else {
+        throw new UndefinedPartitionMethodException(tableName);
+      }
+    } finally {
+      if(client != null) client.release();
+    }
+
+    return partitionMethodDesc.getProto();
   }
 
   @Override
   public boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    boolean exist = false;
+    org.apache.hadoop.hive.ql.metadata.Table table;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+
+    try {
+      try {
+        client = clientPool.getClient();
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      } catch (NoSuchObjectException nsoe) {
+        throw new UndefinedTableException(tableName);
+      } catch (Exception e) {
+        throw new TajoInternalError(e);
+      }
+
+      // set partition keys
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (partitionKeys != null && partitionKeys.size() > 0) {
+        exist = true;
+      }
+    } finally {
+      if(client != null) client.release();
+    }
+
+    return exist;
   }
 
   @Override
@@ -954,6 +1023,54 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    List<Partition> addPartitions = TUtil.newList();
+    CatalogProtos.PartitionDescProto existingPartition = null;
+
+    try {
+      client = clientPool.getClient();
+      for (CatalogProtos.PartitionDescProto partitionDescProto : partitions) {
+        existingPartition = getPartition(databaseName, tableName, partitionDescProto.getPartitionName());
+
+        // Unfortunately, hive client add_partitions doesn't run as expected. The method never read the ifNotExists
+        // parameter. So, if Tajo adds existing partition to Hive, it will threw AlreadyExistsException. To avoid
+        // above error, we need to filter existing partitions before call add_partitions.
+        if (existingPartition != null) {
+          Partition partition = new Partition();
+          partition.setDbName(databaseName);
+          partition.setTableName(tableName);
+
+          List<String> values = Lists.newArrayList();
+          for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+            values.add(keyProto.getPartitionValue());
+          }
+          partition.setValues(values);
+
+          Table table = client.getHiveClient().getTable(databaseName, tableName);
+          StorageDescriptor sd = table.getSd();
+          sd.setLocation(partitionDescProto.getPath());
+          partition.setSd(sd);
+
+          addPartitions.add(partition);
+        }
+      }
+
+      if (addPartitions.size() > 0) {
+        client.getHiveClient().add_partitions(addPartitions, true, true);
+      }
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+
   }
 
   @Override
