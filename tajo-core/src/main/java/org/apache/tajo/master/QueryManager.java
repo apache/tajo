@@ -144,20 +144,22 @@ public class QueryManager extends CompositeService {
       return result;
     }
 
-
-    synchronized (historyCache) {
-      result.addAll(historyCache.values());
-    }
-
-    // request size fits in cache
-    if (page == 1 && size <= result.size()) {
-      return new LinkedList<QueryInfo>(result).subList(0, size);
-    }
-
     try {
-      synchronized (this) {
-        result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory(page, size));
-        return result;
+      if (page == 1) {
+        //first, find in cache
+        synchronized (historyCache) {
+          result.addAll(historyCache.values());
+        }
+
+        if(size > result.size()) {
+          synchronized (this) {
+            result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory(page, size));
+          }
+        }
+
+        return new LinkedList<QueryInfo>(result).subList(0, size);
+      } else {
+         return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
       }
     } catch (Throwable e) {
       LOG.error(e, e);

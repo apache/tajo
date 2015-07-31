@@ -64,16 +64,10 @@ public class HistoryReader {
 
   public List<QueryInfo> getQueriesInHistory(int page, int size) throws IOException {
     List<QueryInfo> queryList = getQueryInfoInHistory(page, size, null);
+    Collections.sort(queryList, Collections.reverseOrder());
     if (queryList.size() > size) {
       queryList = queryList.subList(0, size);
     }
-
-    Collections.sort(queryList, new Comparator<QueryInfo>() {
-      @Override
-      public int compare(QueryInfo query1, QueryInfo query2) {
-        return query2.compareTo(query1);
-      }
-    });
 
     return queryList;
   }
