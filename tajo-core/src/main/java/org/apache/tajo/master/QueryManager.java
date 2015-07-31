@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.map.LRUMap;
@@ -140,27 +139,25 @@ public class QueryManager extends CompositeService {
    * Get query history in cache or persistent storage
    */
   public Collection<QueryInfo> getFinishedQueries(int page, int size) {
-    TreeSet<QueryInfo> result = Sets.newTreeSet();
-    if(page <= 0 || size <= 0) {
+    Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
+    if (page <= 0 || size <= 0) {
       return result;
     }
 
-    List<QueryInfo> cacheList = Lists.newArrayList();
+
     synchronized (historyCache) {
-      // request size fits in cache
-      if (page == 1 && size <= historyCache.size()) {
-        cacheList.addAll(historyCache.values());
-      }
+      result.addAll(historyCache.values());
     }
 
-    if (cacheList.size() > 0) {
-      result.addAll(cacheList.subList(0, size));
-      return result;
+    // request size fits in cache
+    if (page == 1 && size <= result.size()) {
+      return new LinkedList<QueryInfo>(result).subList(0, size);
     }
 
     try {
       synchronized (this) {
-        return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
+        result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory(page, size));
+        return result;
       }
     } catch (Throwable e) {
       LOG.error(e, e);

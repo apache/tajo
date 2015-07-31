@@ -118,25 +118,24 @@ public class HistoryReader {
         }
 
         FSDataInputStream in = null;
-        long totalLength = 0;
 
         try {
           in = fs.open(path);
 
-          while (totalLength < eachFile.getLen()) {
+          //If history file does not close, FileStatus.getLen() are not being updated
+          //So, this code block should check the EOFException
+          while (true) {
             int length = in.readInt();
-            totalLength += 4;
 
             currentIndex++;
             //skip previous page
             if (startIndex >= currentIndex) {
-              totalLength += in.skipBytes(length);
+              in.seek(in.getPos() + length);
               continue;
             }
 
             byte[] buf = new byte[length];
             in.readFully(buf, 0, length);
-            totalLength += length;
 
             String queryInfoJson = new String(buf, 0, length, Bytes.UTF8_CHARSET);
             QueryInfo queryInfo = QueryInfo.fromJson(queryInfoJson);
@@ -150,6 +149,7 @@ public class HistoryReader {
               queryInfos.add(queryInfo);
             }
           }
+        } catch (EOFException eof) {
         } catch (Throwable e) {
           LOG.warn("Reading error:" + path + ", " + e.getMessage());
         } finally {
