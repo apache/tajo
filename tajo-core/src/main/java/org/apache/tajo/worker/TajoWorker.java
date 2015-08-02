@@ -282,7 +282,8 @@ public class TajoWorker extends CompositeService {
   }
 
   private void initCleanupService() throws IOException {
-    deletionService = new DeletionService(getMountPath().size(), 0);
+    String[] localDirs = systemConf.getVar(ConfVars.WORKER_TEMPORAL_DIR).trim().split("\\s*,\\s*");
+    deletionService = new DeletionService(localDirs.length, 0);
     if (systemConf.getBoolVar(ConfVars.WORKER_TEMPORAL_DIR_CLEANUP)) {
       getWorkerContext().cleanupTemporalDirectories();
     }
@@ -609,40 +610,6 @@ public class TajoWorker extends CompositeService {
         stream.println("    " + frame.toString());
       }
       stream.println("");
-    }
-  }
-
-  public static List<File> getMountPath() throws IOException {
-    BufferedReader mountOutput = null;
-    Process mountProcess = null;
-    try {
-      mountProcess = Runtime.getRuntime ().exec("mount");
-      mountOutput = new BufferedReader(new InputStreamReader(mountProcess.getInputStream()));
-      List<File> mountPaths = new ArrayList<File>();
-      while (true) {
-        String line = mountOutput.readLine();
-        if (line == null) {
-          break;
-        }
-
-        int indexStart = line.indexOf(" on /");
-        int indexEnd = line.indexOf(" ", indexStart + 4);
-
-        mountPaths.add(new File(line.substring (indexStart + 4, indexEnd)));
-      }
-      return mountPaths;
-    } catch (IOException e) {
-      e.printStackTrace();
-      throw e;
-    } finally {
-      if(mountOutput != null) {
-        mountOutput.close();
-      }
-      if (mountProcess != null) {
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getInputStream());
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getOutputStream());
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getErrorStream());
-      }
     }
   }
 

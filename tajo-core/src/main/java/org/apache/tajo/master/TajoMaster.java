@@ -526,40 +526,6 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  public static List<File> getMountPath() throws Exception {
-    BufferedReader mountOutput = null;
-    Process mountProcess = null;
-    try {
-      mountProcess = Runtime.getRuntime ().exec("mount");
-      mountOutput = new BufferedReader(new InputStreamReader(mountProcess.getInputStream()));
-      List<File> mountPaths = new ArrayList<File>();
-      while (true) {
-        String line = mountOutput.readLine();
-        if (line == null) {
-          break;
-        }
-
-        int indexStart = line.indexOf(" on /");
-        int indexEnd = line.indexOf(" ", indexStart + 4);
-
-        mountPaths.add(new File(line.substring (indexStart + 4, indexEnd)));
-      }
-      return mountPaths;
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
-    } finally {
-      if(mountOutput != null) {
-        mountOutput.close();
-      }
-      if (mountProcess != null) {
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getInputStream());
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getOutputStream());
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getErrorStream());
-      }
-    }
-  }
-
   private class ShutdownHook implements Runnable {
     @Override
     public void run() {
