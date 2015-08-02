@@ -25,8 +25,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import java.io.Closeable;
 
 import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
 
 import java.util.Collection;
 import java.util.List;
@@ -101,6 +100,8 @@ public interface CatalogStore extends Closeable {
    */
   List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException;
 
+  boolean existPartitions(String databaseName, String tableName) throws CatalogException;
+
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                 String partitionName) throws CatalogException;
 
@@ -110,20 +111,13 @@ public interface CatalogStore extends Closeable {
    * it might be cause overload to NameNode. Thus, CatalogStore need to provide partition directories for specified
    * filter conditions. This scan right partition directories on CatalogStore with where clause.
    *
-   * For examples, users set parameters as following:
-   *  - databaseName: default
-   *  - tableName: table1
-   *  - directSql: COLUMN_NAME = 'col1' AND PARTITION_VALUE = '3' OR COLUMN_NAME = 'col2' AND PARTITION_VALUE IS NOT
-   *  NULL OR COLUMN_NAME = 'col3' AND PARTITION_VALUE IN ('1', '2', '3')
-   *
-   * @param databaseName the database name
-   * @param tableName the table name
-   * @param directSql where clause (included target column name and partition value, this should be DNF)
+   * @param request contains database name, table name, directSQL, parameter for executing PrepareStatement
    * @return list of TablePartitionProto
    * @throws CatalogException
    */
-  List<TablePartitionProto> getPartitionsByDirectSql(String databaseName, String tableName,
-                                               String directSql) throws CatalogException;
+
+
+  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request) throws CatalogException;
 
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
 

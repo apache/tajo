@@ -584,7 +584,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   }
 
   private final void verifyKeptExistingData(ResultSet res, String tableName) throws Exception {
-    res = executeString("select * from " + tableName + " where col2 = 1");
+    res = executeString("select * from " + tableName + " where col2 = 1 order by col4, col1, col2, col3");
     String resultSetData = resultSetToString(res);
     res.close();
     String expected = "col4,col1,col2,col3\n" +

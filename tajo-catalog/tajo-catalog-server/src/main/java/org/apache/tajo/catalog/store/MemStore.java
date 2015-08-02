@@ -42,6 +42,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -591,8 +592,17 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(String databaseName,
-                                                    String tableName, String directSql) throws CatalogException {
+  public boolean existPartitions(String databaseName, String tableName) throws CatalogException {
+    if (partitions.containsKey(tableName)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request)
+    throws CatalogException {
 
     // The filter parameter is WHERE clause. So, it just can be applied to AbstractDBStore, such as,
     // DerbyStore, MySQLStore. To apply in this class, we need to parse WHERE clause. But it looks like a unnecessary

@@ -38,6 +38,7 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -173,7 +174,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
       PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
       keyBuilder.setColumnName(split[0]);
-      keyBuilder.setPartitionValue(split[1]);
+      keyBuilder.setPartitionValue(StringUtils.unescapePathName(split[1]));
 
       builder.addPartitionKeys(keyBuilder.build());
     }

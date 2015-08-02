@@ -44,6 +44,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
@@ -988,14 +989,49 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, PartitionIdentifierProto request)
+    public ReturnState existPartitionsByTableName(RpcController controller, TableIdentifierProto request)
       throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
+      rlock.lock();
+      try {
+        boolean contain;
+
+        contain = store.existDatabase(dbName);
+        if (contain) {
+          contain = store.existTable(dbName, tbName);
+          if (contain) {
+            if (store.existPartitionMethod(dbName, tbName)) {
+              if (store.existPartitions(dbName, tbName)) {
+                return OK;
+              } else {
+                return errUndefinedPartitions(tbName);
+              }
+            } else {
+              return errUndefinedPartitionMethod(tbName);
+            }
+
+          } else {
+            return errUndefinedTable(tbName);
+          }
+        } else {
+          return errUndefinedDatabase(dbName);
+
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+      } finally {
+        rlock.unlock();
       }
+    }
+
+    @Override
+    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, TableIdentifierProto request)
+      throws ServiceException {
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
 
       rlock.lock();
       try {
@@ -1018,27 +1054,27 @@ public class CatalogServer extends AbstractService {
 
             } else {
               return GetPartitionsResponse.newBuilder()
-                  .setState(errUndefinedPartitionMethod(tbName))
-                  .build();
+                .setState(errUndefinedPartitionMethod(tbName))
+                .build();
             }
 
           } else {
             return GetPartitionsResponse.newBuilder()
-                .setState(errUndefinedTable(tbName))
-                .build();
+              .setState(errUndefinedTable(tbName))
+              .build();
           }
         } else {
           return GetPartitionsResponse.newBuilder()
-              .setState(errUndefinedDatabase(dbName))
-              .build();
+            .setState(errUndefinedDatabase(dbName))
+            .build();
 
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
         return GetPartitionsResponse.newBuilder()
-            .setState(returnError(t))
-            .build();
+          .setState(returnError(t))
+          .build();
 
       } finally {
         rlock.unlock();
@@ -1067,15 +1103,14 @@ public class CatalogServer extends AbstractService {
       }
     }
 
+    public CatalogProtocolHandler() {
+    }
+
     @Override
     public GetTablePartitionsResponse getPartitionsByDirectSql(RpcController controller,
-                                                           PartitionIdentifierProto request) throws ServiceException {
+                                                   GetPartitionsWithDirectSQLRequest request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
-
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
-      }
 
       rlock.lock();
       try {
@@ -1088,11 +1123,15 @@ public class CatalogServer extends AbstractService {
 
             if (store.existPartitionMethod(dbName, tbName)) {
               GetTablePartitionsResponse.Builder builder = GetTablePartitionsResponse.newBuilder();
-              List<TablePartitionProto> partitions = store.getPartitionsByDirectSql(dbName, tbName,
-                request.getDirectSql());
-              builder.addAllPart(partitions);
-              builder.setState(OK);
-
+              try {
+                List<TablePartitionProto> partitions = store.getPartitionsByDirectSql(request);
+                builder.addAllPart(partitions);
+                builder.setState(OK);
+              } catch (UnsupportedException ue) {
+                return GetTablePartitionsResponse.newBuilder()
+                  .setState(errFeatureNotSupported("getPartitionsByDirectSql"))
+                  .build();
+              }
               return builder.build();
             } else {
               return GetTablePartitionsResponse.newBuilder()

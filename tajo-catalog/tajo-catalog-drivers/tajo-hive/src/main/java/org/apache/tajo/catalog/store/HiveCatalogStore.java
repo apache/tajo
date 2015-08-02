@@ -47,6 +47,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -859,10 +860,14 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public boolean existPartitions(String databaseName, String tableName) throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(String databaseName,
-                                                      String tableName, String directSql) throws CatalogException {
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request)
+    throws CatalogException {
     throw new UnsupportedOperationException();
   }
 

@@ -168,6 +168,10 @@ public class ReturnStateUtil {
     return returnError(ResultCode.UNDEFINED_PARTITION, partitionName);
   }
 
+  public static ReturnState errUndefinedPartitions(String tbName) {
+    return returnError(ResultCode.UNDEFINED_PARTITIONS, tbName);
+  }
+
   public static ReturnState errUndefinedPartitionMethod(String tbName) {
     return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);
   }

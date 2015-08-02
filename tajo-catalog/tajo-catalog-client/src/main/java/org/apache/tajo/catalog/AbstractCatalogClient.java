@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -386,10 +387,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   public final List<PartitionDescProto> getPartitions(final String databaseName, final String tableName) {
     try {
       final BlockingInterface stub = getStub();
-      final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
-          .setDatabaseName(databaseName)
-          .setTableName(tableName)
-          .build();
+      final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
 
       final GetPartitionsResponse response = stub.getPartitionsByTableName(null, request);
       ensureOk(response.getState());
@@ -401,28 +399,30 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     }
   }
 
-
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(final String databaseName,
-                                                                     final String tableName,
-                                                                     final String directSql) {
+  public boolean existPartitions(String databaseName, String tableName) {
     try {
       final BlockingInterface stub = getStub();
-      final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
-        .setDatabaseName(databaseName)
-        .setTableName(tableName)
-        .setDirectSql(directSql)
-        .build();
+      final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
+      return isSuccess(stub.existPartitionsByTableName(null, request));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
 
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request) {
+    try {
+      final BlockingInterface stub = getStub();
       GetTablePartitionsResponse response = stub.getPartitionsByDirectSql(null, request);
       ensureOk(response.getState());
-
-      return response.getPartList();
+    return response.getPartList();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
     }
   }
+
   @Override
   public List<TablePartitionProto> getAllPartitions() {
     try {

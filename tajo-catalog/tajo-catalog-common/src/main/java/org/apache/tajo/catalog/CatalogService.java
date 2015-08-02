@@ -182,7 +182,9 @@ public interface CatalogService {
 
   List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
-  List<TablePartitionProto> getPartitionsByDirectSql(String databaseName, String tableName, String directSql);
+  boolean existPartitions(String databaseName, String tableName);
+
+  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request);
 
   List<TablePartitionProto> getAllPartitions();
 

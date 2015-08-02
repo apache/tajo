@@ -63,6 +63,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_COLUMN, "column '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_FUNCTION, "function does not exist: %s", 1);
     ADD_MESSAGE(UNDEFINED_PARTITION, "partition '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_PARTITIONS, "partitions does not exist: %s", 1);
     ADD_MESSAGE(UNDEFINED_PARTITION_KEY, "'%s' column is not the partition key", 1);
     ADD_MESSAGE(UNDEFINED_OPERATOR, "operator does not exist: '%s'", 1);
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_TABLE, "index ''%s' does not exist", 1);

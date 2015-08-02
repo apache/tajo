@@ -122,10 +122,11 @@ service CatalogProtocolService {
   rpc dropPartitionMethod(TableIdentifierProto) returns (ReturnState);
 
   rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
-  rpc getPartitionsByTableName(PartitionIdentifierProto) returns (GetPartitionsResponse);
+  rpc getPartitionsByTableName(TableIdentifierProto) returns (GetPartitionsResponse);
+  rpc existPartitionsByTableName(TableIdentifierProto) returns (ReturnState);
   rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
   rpc addPartitions(AddPartitionsProto) returns (ReturnState);
-  rpc getPartitionsByDirectSql(PartitionIdentifierProto) returns (GetTablePartitionsResponse);
+  rpc getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest) returns (GetTablePartitionsResponse);
 
   rpc createIndex(IndexDescProto) returns (ReturnState);
   rpc dropIndex(IndexNameProto) returns (ReturnState);

@@ -24,16 +24,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionFilterDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -45,20 +46,18 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
+  private CatalogService catalog;
+
   private static final Log LOG = LogFactory.getLog(PartitionedTableRewriter.class);
 
   private static final String NAME = "Partitioned Table Rewriter";
   private final Rewriter rewriter = new Rewriter();
-
-  private Path[] filteredPaths;
-  private String directSql;
 
   @Override
   public String getName() {
@@ -84,6 +83,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
+    this.catalog = context.getCatalog();
     rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
@@ -124,125 +124,154 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
-                                    Path tablePath)
-      throws IOException {
+  private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
+                                    Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
+      throws IOException  {
 
+    Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
+    String [] splits = CatalogUtil.splitFQTableName(tableName);
 
-    PathFilter [] filters;
-    String sql = null;
-    if (conjunctiveForms == null) {
-      filters = buildAllAcceptingPathFilters(partitionColumns);
+    boolean canUseDirectSql = true;
+
+    String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
+
+    if (store.equals("org.apache.tajo.catalog.store.MemStore")
+      || store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
+      canUseDirectSql = false;
+    }
+
+    if (canUseDirectSql && catalog.existPartitions(splits[0], splits[1])) {
+      GetPartitionsWithDirectSQLRequest request = null;
+      if (conjunctiveForms == null) {
+        request = buildDirectSQLForAllLevels(splits[0], splits[1], partitionColumns, null);
+      } else {
+        request = buildDirectSQLForAllLevels(splits[0], splits[1], partitionColumns, conjunctiveForms);
+      }
+
+      List<TablePartitionProto> partitions = catalog.getPartitionsByDirectSql(request);
+
+      filteredPaths = new Path[partitions.size()];
+
+      for (int i = 0; i < partitions.size(); i++) {
+        filteredPaths[i] = new Path(partitions.get(i).getPath());
+      }
     } else {
-      filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
-      sql = buildSQLFromFilterConditionsForAllLevels(partitionColumns, conjunctiveForms);
+      PathFilter [] filters;
+      if (conjunctiveForms == null) {
+        filters = buildAllAcceptingPathFilters(partitionColumns);
+      } else {
+        filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+      }
+
+      // loop from one to the number of partition columns
+      filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
+
+      for (int i = 1; i < partitionColumns.size(); i++) {
+        // Get all file status matched to a ith level path filter.
+        filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
+      }
     }
-
-    // loop from one to the number of partition columns
-    Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
-
-    for (int i = 1; i < partitionColumns.size(); i++) {
-      // Get all file status matched to a ith level path filter.
-      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
-    }
-
-    setFilteredPaths(filteredPaths);
-    setDirectSql(sql);
 
     LOG.info("Filtered directory or files: " + filteredPaths.length);
+
     return filteredPaths;
   }
 
-  /**
-   * Build SQL statements for all levels with a list of filter conditions.
-   *
-   * This will convert filter conditions to sql which consist of CatalogConstant.COL_COLUMN_NAME-CatalogConstants
-   * .COL_PARTITION_VALUE pair.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   *
-   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
-   * There is no filter condition corresponding to col2.
-   * Then, the SQL statement are corresponding to the followings:
-   *
-   * The first sql: PARTITION_VALUE = 'A' AND COLUMN_NAME = 'col1'
-   * The second sql: PARTITION_VALUE = 'A' AND COLUMN_NAME = 'col1'
-   *                     OR PARTITION_VALUE IS NOT NULL AND COLUMN_NAME = 'col2'
-   * The third sql: PARTITION_VALUE = 'A' AND COLUMN_NAME = 'col1'
-   *                     OR PARTITION_VALUE IS NOT NULL AND COLUMN_NAME = 'col2'
-   *                     OR PARTITION_VALUE = 'C' AND COLUMN_NAME = 'col3'
-   *
-   * 'IS NOT NULL' predicate is always true against the partition path.
-   *
-   * Finally, this will DNF which consist of ready-made SQL statements.
-   *
-   * @param partitionColumns
-   * @param conjunctiveForms
-   * @return
-   */
-  private String buildSQLFromFilterConditionsForAllLevels(Schema partitionColumns,
-                                                                 EvalNode [] conjunctiveForms) {
-    // Building partition path filters for all levels
+  // Yet to write description for this function.
+  private static GetPartitionsWithDirectSQLRequest buildDirectSQLForAllLevels(
+    String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
+
+    GetPartitionsWithDirectSQLRequest.Builder builder = GetPartitionsWithDirectSQLRequest.newBuilder();
+    builder.setDatabaseName(databaseName);
+    builder.setTableName(tableName);
+
     Column target;
+    String tableAlias;
 
-    List<EvalNode> accumulatedFilters = Lists.newArrayList();
+    SQLFinderWithPartitionFilter finder = new SQLFinderWithPartitionFilter();
 
-    EvalNode colColumnName = new FieldEval(new Column(CatalogConstants.COL_COLUMN_NAME, TajoDataTypes.Type.TEXT));
-    EvalNode colPartitionValue = new FieldEval(new Column(CatalogConstants.COL_PARTITION_VALUE,
-      TajoDataTypes.Type.TEXT));
+    List<EvalNode> accumulatedFilters = getAccumulatedFilters(partitionColumns, conjunctiveForms);
 
-    EvalNode singletonExpr = null;
-    List<EvalNode> filters  = Lists.newArrayList();
+    StringBuffer sb = new StringBuffer();
+    sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
+      .append(", A.PARTITION_NAME, A.PATH FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
+      .append("\n WHERE A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
+      .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
+      .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
 
-    for (int i = 0; i < partitionColumns.size(); i++) { // loop from one to level
-
+    for (int i = 1; i < partitionColumns.size(); i++) {
       target = partitionColumns.getColumn(i);
+      tableAlias = "T" + (i+1);
 
-      EvalNode rightExpr = new BinaryEval(EvalType.EQUAL, colColumnName,
-        new ConstEval(DatumFactory.createText(target.getSimpleName())));
+      finder.setColumn(target);
+      finder.setTableAlias(tableAlias);
+      finder.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
 
-      EvalNode leftExpr = null;
+      sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
+        .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
+        .append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK)
+        .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
+        .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
+        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
+      sb.append(finder.getResult());
 
-      for (EvalNode expr : conjunctiveForms) {
-        if (EvalTreeUtil.findUniqueColumns(expr).contains(target)) {
-          // Accumulate one qual per level
-          try {
-            leftExpr = (EvalNode)expr.clone();
-            EvalTreeUtil.replace(leftExpr, new FieldEval(target), colPartitionValue  );
-            accumulatedFilters.add(new BinaryEval(EvalType.AND, leftExpr, rightExpr));
-          } catch (CloneNotSupportedException e) {
+      List<String> list = TUtil.newList();
+      list.addAll(finder.getParameters());
 
-          }
-        }
-      }
+      PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
+      partitionFilter.setColumnName(target.getSimpleName());
+      partitionFilter.addAllParameterValue(list);
+      builder.addFilters(partitionFilter.build());
 
-      if (accumulatedFilters.size() < (i + 1)) {
-        leftExpr = new IsNullEval(true, colPartitionValue);
-        accumulatedFilters.add(new BinaryEval(EvalType.AND, leftExpr, rightExpr));
-      }
-
-//      filters.add(AlgebraicUtil.createSingletonExprFromDNF(
-//        accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()])));
-      filters.add(AlgebraicUtil.createSingletonExprFromCNF(
-        accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()])));
+      finder.clearParameters();
     }
 
-    singletonExpr = AlgebraicUtil.createSingletonExprFromDNF(filters.toArray(new EvalNode[filters.size()]));
-    return creatingSQLToGetPartitionsInforms(singletonExpr);
+    tableAlias = "T1";
+    finder.setColumn(partitionColumns.getColumn(0));
+    finder.setTableAlias(tableAlias);
+    finder.visit(null, accumulatedFilters.get(0), new Stack<EvalNode>());
+
+    sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND");
+    sb.append(finder.getResult())
+      .append("\n )");
+    List<String> list = TUtil.newList();
+    list.addAll(finder.getParameters());
+
+    PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
+    partitionFilter.setColumnName(partitionColumns.getColumn(0).getSimpleName());
+    partitionFilter.addAllParameterValue(list);
+    builder.addFilters(partitionFilter.build());
+
+    builder.setDirectSQL(sb.toString());
+
+    return builder.build();
   }
 
-  /**
-   * Create SQL statements for getting partitions informs on CatalogStore.
-   * This will convert each EvalNode to each SQL statement.
-   *
-   * @param expr
-   * @return
-   */
-  public String creatingSQLToGetPartitionsInforms(EvalNode expr) {
-    SQLFinderWithPartitionFilter finder = new SQLFinderWithPartitionFilter();
-    finder.visit(null, expr, new Stack<EvalNode>());
-    return finder.getResult();
+  private static List<EvalNode> getAccumulatedFilters(Schema partitionColumns, EvalNode [] conjunctiveForms) {
+    List<EvalNode> accumulatedFilters = Lists.newArrayList();
+    Column target;
+
+    for (int i = 0; i < partitionColumns.size(); i++) {
+      target = partitionColumns.getColumn(i);
+
+      if (conjunctiveForms == null) {
+        accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
+      } else {
+        for (EvalNode expr : conjunctiveForms) {
+          if (EvalTreeUtil.findUniqueColumns(expr).contains(target)) {
+            // Accumulate one qual per level
+            accumulatedFilters.add(expr);
+          }
+        }
+
+        if (accumulatedFilters.size() < (i + 1)) {
+          accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
+        }
+      }
+    }
+
+    return accumulatedFilters;
   }
 
   /**
@@ -292,8 +321,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
           accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
       filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
-      LOG.info("## filters[" + i + "] = " + filters[i].toString());
     }
+
     return filters;
   }
 
@@ -364,10 +393,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
-      return findFilteredPaths(queryContext, paritionValuesSchema,
+      return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema,
           indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()));
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPaths(queryContext, paritionValuesSchema, null, new Path(table.getUri()));
+      return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
     }
   }
 
@@ -527,21 +556,5 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
       return null;
     }
-  }
-
-  public void setFilteredPaths(Path[] filteredPaths) {
-    this.filteredPaths = filteredPaths;
-  }
-
-  public Path[] getFilteredPaths() {
-    return filteredPaths;
-  }
-
-  public String getDirectSql() {
-    return directSql;
-  }
-
-  public void setDirectSql(String directSql) {
-    this.directSql = directSql;
   }
 }

@@ -2116,8 +2116,44 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(String databaseName, String tableName,
-                                                                      String directSql) throws CatalogException {
+  public boolean existPartitions(String databaseName, String tableName) throws CatalogException {
+    Connection conn = null;
+    ResultSet res = null;
+    PreparedStatement pstmt = null;
+    boolean result = false;
+
+    try {
+      String sql = "SELECT COUNT(*) CNT FROM "
+        + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, tableId);
+      res = pstmt.executeQuery();
+
+      if (res.next()) {
+        if (res.getInt("CNT") > 0) {
+          result = true;
+        }
+      }
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, res);
+    }
+    return result;
+  }
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request)
+    throws CatalogException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -2125,27 +2161,28 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
 
     try {
-      int databaseId = getDatabaseId(databaseName);
-      int tableId = getTableId(databaseId, databaseName, tableName);
+      int databaseId = getDatabaseId(request.getDatabaseName());
+      int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
 
-      StringBuilder sb = new StringBuilder();
-      sb.append("SELECT A." + COL_PARTITIONS_PK + ", MAX(A.PARTITION_NAME) AS PARTITION_NAME, MAX(A.PATH) AS PATH");
-      sb.append("\n FROM PARTITIONS A, ( ");
-      sb.append("\n   SELECT B.PARTITION_ID ");
-      sb.append("\n   FROM PARTITION_KEYS B ");
-      sb.append("\n   WHERE B.PARTITION_ID > 0 ");
-      sb.append("\n   AND ( ").append(directSql).append(")");
-      sb.append("\n ) B ");
-      sb.append("\n WHERE A.PARTITION_ID > 0 ");
-      sb.append("\n AND A.TID = ? ");
-      sb.append("\n AND A.PARTITION_ID = B.PARTITION_ID ");
-      sb.append("\n GROUP BY A." + COL_PARTITIONS_PK);
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("### Query:" + request.getDirectSQL());
+      }
 
-      LOG.info("### Query:" + sb.toString());
       conn = getConnection();
-      pstmt = conn.prepareStatement(sb.toString());
-      pstmt.setInt(1, tableId);
-      res = pstmt.executeQuery();
+      pstmt = conn.prepareStatement(request.getDirectSQL());
+
+      int i = 1;
+      for (PartitionFilterDescProto filter : request.getFiltersList()) {
+        pstmt.setInt(i, tableId);
+        i++;
+
+        for (String parameterValue : filter.getParameterValueList()) {
+          pstmt.setString(i, parameterValue);
+          i++;
+        }
+      }
+
+     res = pstmt.executeQuery();
 
       while (res.next()) {
         TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
@@ -2266,7 +2303,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           pstmt4.setInt(3, tableId);
           pstmt4.setString(4, partitionKey.getColumnName());
           pstmt4.setString(5, partitionKey.getPartitionValue());
-
           pstmt4.addBatch();
           pstmt4.clearParameters();
         }
