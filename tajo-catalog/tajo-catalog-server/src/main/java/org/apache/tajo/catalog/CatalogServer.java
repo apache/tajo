@@ -1123,15 +1123,9 @@ public class CatalogServer extends AbstractService {
 
             if (store.existPartitionMethod(dbName, tbName)) {
               GetTablePartitionsResponse.Builder builder = GetTablePartitionsResponse.newBuilder();
-              try {
-                List<TablePartitionProto> partitions = store.getPartitionsByDirectSql(request);
-                builder.addAllPart(partitions);
-                builder.setState(OK);
-              } catch (UnsupportedException ue) {
-                return GetTablePartitionsResponse.newBuilder()
-                  .setState(errFeatureNotSupported("getPartitionsByDirectSql"))
-                  .build();
-              }
+              List<TablePartitionProto> partitions = store.getPartitionsByDirectSql(request);
+              builder.addAllPart(partitions);
+              builder.setState(OK);
               return builder.build();
             } else {
               return GetTablePartitionsResponse.newBuilder()
