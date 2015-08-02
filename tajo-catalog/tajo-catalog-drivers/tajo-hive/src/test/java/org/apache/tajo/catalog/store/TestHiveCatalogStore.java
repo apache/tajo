@@ -98,7 +98,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
@@ -111,7 +111,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
-      table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, CUSTOMER);
   }
 
@@ -127,7 +127,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -140,7 +140,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
-      table1.getMeta().getOption(StorageConstants.RCFILE_SERDE));
+        table1.getMeta().getOption(StorageConstants.RCFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -156,7 +156,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -189,7 +189,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("s_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, SUPPLIER)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, SUPPLIER)).toUri());
 
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, SUPPLIER));
@@ -203,16 +203,16 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(table.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
-      table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
 
     assertEquals(table.getMeta().getOption(StorageConstants.TEXT_NULL),
-      table1.getMeta().getOption(StorageConstants.TEXT_NULL));
+        table1.getMeta().getOption(StorageConstants.TEXT_NULL));
 
     assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
-      StringEscapeUtils.escapeJava("\u0002"));
+        StringEscapeUtils.escapeJava("\u0002"));
 
     assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_NULL),
-      StringEscapeUtils.escapeJava("\u0003"));
+        StringEscapeUtils.escapeJava("\u0003"));
 
     store.dropTable(DB_NAME, SUPPLIER);
 
@@ -229,16 +229,16 @@ public class TestHiveCatalogStore {
 
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, NATION), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, NATION)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, NATION)).toUri());
 
     org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
     expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
     expressionSchema.addColumn("n_date", TajoDataTypes.Type.TEXT);
 
     PartitionMethodDesc partitions = new PartitionMethodDesc(
-      DB_NAME,
-      NATION,
-      CatalogProtos.PartitionType.COLUMN, "n_nationkey,n_date", expressionSchema);
+        DB_NAME,
+        NATION,
+        CatalogProtos.PartitionType.COLUMN, "n_nationkey,n_date", expressionSchema);
     table.setPartitionMethod(partitions);
 
     store.createTable(table.getProto());
@@ -342,7 +342,7 @@ public class TestHiveCatalogStore {
 
     for(String tableName : tableNames){
       TableDesc table = new TableDesc(CatalogUtil.buildFQName("default", tableName), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
+          new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
       store.createTable(table.getProto());
     }
 
@@ -392,7 +392,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -405,7 +405,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
-      table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
+        table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -421,7 +421,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -453,7 +453,7 @@ public class TestHiveCatalogStore {
     schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
-      new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
