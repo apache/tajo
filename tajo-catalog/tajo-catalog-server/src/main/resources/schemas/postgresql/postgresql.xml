@@ -21,6 +21,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 7 - 2015-07-30: Add a column and index for partition keys (TAJO-1346)
       * 6 - 2015-07-24: Merge the index branch into the master branch (TAJO-1300)
       * 5 - 2015-06-15: Implement TablespaceManager to load Tablespaces (TAJO-1616)
       * 5 - 2015-06-15: Implement TablespaceManager to load Tablespaces (TAJO-1616)
@@ -29,7 +30,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-	<tns:base version="6">
+	<tns:base version="7">
 		<tns:objects>
 			<tns:Object name="META" type="table" order="0">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -161,23 +162,26 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   				PARTITION_NAME VARCHAR(128),
   				PARTITION_VALUE VARCHAR(1024),
   				PATH VARCHAR(4096),
-  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
-  				CONSTRAINT C_PARTITION_UNIQUE UNIQUE (PARTITION_NAME)
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
 				</tns:sql>
 			</tns:Object>
-      <tns:Object name="PARTITION_KEYS" type="table" order="16">
+      <tns:Object name="PARTITIONS_UNIQUE_IDX" type="index" order="16" dependsOn="PARTITIONS">
+        <tns:sql><![CDATA[CREATE UNIQUE INDEX PARTITIONS_UNIQUE_IDX on PARTITIONS (TID, PARTITION_NAME)]]></tns:sql>
+      </tns:Object>
+      <tns:Object name="PARTITION_KEYS" type="table" order="17">
         <tns:sql><![CDATA[
           CREATE TABLE PARTITION_KEYS (
             PARTITION_ID INT NOT NULL,
+            TID INT NOT NULL,
             COLUMN_NAME VARCHAR(255) NOT NULL,
             PARTITION_VALUE VARCHAR(255) NULL,
             FOREIGN KEY (PARTITION_ID) REFERENCES PARTITIONS (PARTITION_ID) ON DELETE CASCADE
 				)]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object name="PARTITION_KEYS_IDX" type="index" order="17" dependsOn="PARTITION_KEYS">
-        <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (PARTITION_ID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
+      <tns:Object name="PARTITION_KEYS_IDX" type="index" order="18" dependsOn="PARTITION_KEYS">
+        <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (TID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
       </tns:Object>
 		</tns:objects>
 	</tns:base>

@@ -33,6 +33,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1736: Remove unnecessary getMountPath(). 
+    (Contributed by YeonSu Han, Committed by jinho)
+
     TAJO-1645: Bump up hbase to 1.1.1. (hyunsik)
 
     TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
@@ -202,6 +205,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1731: With a task failure, query processing is hanged after first retry. 
+    (jihoon)
 
     TAJO-1608: Fix test failure in index_support branch. (jihoon)
 

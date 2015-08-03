@@ -1886,6 +1886,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         alterTable.setLocation(path);
       }
       alterTable.setPurge(checkIfExist(ctx.PURGE()));
+      alterTable.setIfNotExists(checkIfExist(ctx.if_not_exists()));
+      alterTable.setIfExists(checkIfExist(ctx.if_exists()));
     }
 
     if (checkIfExist(ctx.property_list())) {
