@@ -1,0 +1,1 @@
+ALTER TABLE partitioned_table ADD IF NOT EXISTS PARTITION (col3 = 1 , col4 = 2)

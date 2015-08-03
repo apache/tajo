@@ -41,7 +41,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
@@ -55,6 +55,7 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
 import java.io.IOException;
@@ -762,22 +763,94 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
       throws CatalogException {
-    return null;  // TODO - not implemented yet
+    org.apache.hadoop.hive.ql.metadata.Table table;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+
+    PartitionMethodDesc partitionMethodDesc = null;
+    try {
+      try {
+        client = clientPool.getClient();
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      } catch (NoSuchObjectException nsoe) {
+        throw new UndefinedTableException(tableName);
+      } catch (Exception e) {
+        throw new TajoInternalError(e);
+      }
+
+      // set partition keys
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (partitionKeys != null && partitionKeys.size() > 0) {
+        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        StringBuilder sb = new StringBuilder();
+        if (partitionKeys.size() > 0) {
+          for (int i = 0; i < partitionKeys.size(); i++) {
+            FieldSchema fieldSchema = partitionKeys.get(i);
+            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
+              CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            expressionSchema.addColumn(new Column(fieldName, dataType));
+            if (i > 0) {
+              sb.append(",");
+            }
+            sb.append(fieldSchema.getName());
+          }
+          partitionMethodDesc = new PartitionMethodDesc(
+            databaseName,
+            tableName,
+            PartitionType.COLUMN,
+            sb.toString(),
+            expressionSchema);
+        }
+      } else {
+        throw new UndefinedPartitionMethodException(tableName);
+      }
+    } finally {
+      if(client != null) client.release();
+    }
+
+    return partitionMethodDesc.getProto();
   }
 
   @Override
   public boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException {
-    return false;  // TODO - not implemented yet
+    boolean exist = false;
+    org.apache.hadoop.hive.ql.metadata.Table table;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+
+    try {
+      try {
+        client = clientPool.getClient();
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      } catch (NoSuchObjectException nsoe) {
+        throw new UndefinedTableException(tableName);
+      } catch (Exception e) {
+        throw new TajoInternalError(e);
+      }
+
+      // set partition keys
+      List<FieldSchema> partitionKeys = table.getPartitionKeys();
+
+      if (partitionKeys != null && partitionKeys.size() > 0) {
+        exist = true;
+      }
+    } finally {
+      if(client != null) client.release();
+    }
+
+    return exist;
   }
 
   @Override
   public void dropPartitionMethod(String databaseName, String tableName) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -827,63 +900,75 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public final void addFunction(final FunctionDesc func) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final void deleteFunction(final FunctionDesc func) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final void existFunction(final FunctionDesc func) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final List<String> getAllFunctionNames() throws CatalogException {
     // TODO - not implemented yet
-    return null;
-  }
-
-  @Override
-  public void dropIndex(String databaseName, String indexName) throws CatalogException {
-    // TODO - not implemented yet
-  }
-
-  @Override
-  public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
-    // TODO - not implemented yet
-    return false;
-  }
-
-  @Override
-  public CatalogProtos.IndexDescProto[] getIndexes(String databaseName, String tableName) throws CatalogException {
-    // TODO - not implemented yet
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void createIndex(CatalogProtos.IndexDescProto proto) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void dropIndex(String databaseName, String indexName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException {
     // TODO - not implemented yet
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException {
     // TODO - not implemented yet
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName) throws CatalogException {
+  public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
     // TODO - not implemented yet
-    return false;
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -931,13 +1016,61 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<IndexProto> getAllIndexes() throws CatalogException {
+  public List<IndexDescProto> getAllIndexes() throws CatalogException {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException {
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    List<Partition> addPartitions = TUtil.newList();
+    CatalogProtos.PartitionDescProto existingPartition = null;
+
+    try {
+      client = clientPool.getClient();
+      for (CatalogProtos.PartitionDescProto partitionDescProto : partitions) {
+        existingPartition = getPartition(databaseName, tableName, partitionDescProto.getPartitionName());
+
+        // Unfortunately, hive client add_partitions doesn't run as expected. The method never read the ifNotExists
+        // parameter. So, if Tajo adds existing partition to Hive, it will threw AlreadyExistsException. To avoid
+        // above error, we need to filter existing partitions before call add_partitions.
+        if (existingPartition != null) {
+          Partition partition = new Partition();
+          partition.setDbName(databaseName);
+          partition.setTableName(tableName);
+
+          List<String> values = Lists.newArrayList();
+          for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+            values.add(keyProto.getPartitionValue());
+          }
+          partition.setValues(values);
+
+          Table table = client.getHiveClient().getTable(databaseName, tableName);
+          StorageDescriptor sd = table.getSd();
+          sd.setLocation(partitionDescProto.getPath());
+          partition.setSd(sd);
+
+          addPartitions.add(partition);
+        }
+      }
+
+      if (addPartitions.size() > 0) {
+        client.getHiveClient().add_partitions(addPartitions, true, true);
+      }
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+
   }
 
   @Override

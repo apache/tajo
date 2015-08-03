@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,13 +16,37 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.plan.rewrite.rules;
 
-public class AlreadyExistsAssumedPartitionDirectoryException extends RuntimeException {
+import org.apache.tajo.catalog.statistics.TableStats;
 
-  private static final long serialVersionUID = 277182608283894931L;
+public abstract class AccessPathInfo {
+  public enum ScanTypeControl {
+    INDEX_SCAN,
+    SEQ_SCAN
+  }
 
-  public AlreadyExistsAssumedPartitionDirectoryException(String message) {
-    super(String.format("ERROR: There is a directory which is assumed to be a partitioned directory : %s", message));
+  private ScanTypeControl scanType;
+  private TableStats tableStats;
+
+  public AccessPathInfo(ScanTypeControl scanType, TableStats tableStats) {
+    this.scanType = scanType;
+    this.tableStats = tableStats;
+  }
+
+  public ScanTypeControl getScanType() {
+    return scanType;
+  }
+
+  public TableStats getTableStats() {
+    return tableStats;
+  }
+
+  public void setTableStats(TableStats tableStats) {
+    this.tableStats = tableStats;
+  }
+
+  public boolean hasTableStats() {
+    return this.tableStats != null;
   }
 }

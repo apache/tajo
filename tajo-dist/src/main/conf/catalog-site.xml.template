@@ -49,7 +49,7 @@
  </property>
  <property>
   <name>tajo.catalog.jdbc.uri</name>
-  <value>jdbc:mysql://<host name>:<mysql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  <value>jdbc:mysql://<host name>:<mysql port>/<database name for tajo>?rewriteBatchedStatements=true</value>
  </property>
  -->
 
@@ -61,7 +61,7 @@
  </property>
  <property>
   <name>tajo.catalog.jdbc.uri</name>
-  <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?rewriteBatchedStatements=true</value>
  </property>
  -->
 

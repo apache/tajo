@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,11 +16,39 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.algebra;
 
-public class NoPartitionedTableException extends Exception {
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
-  public NoPartitionedTableException(String databaseName, String relName) {
-    super(String.format("ERROR: table \"%s.%s\" is not a partitioned table", databaseName, relName));
+public class DropIndex extends Expr {
+  @Expose @SerializedName("IndexName")
+  private String indexName;
+
+  public DropIndex(final String indexName) {
+    super(OpType.DropIndex);
+    this.indexName = indexName;
+  }
+
+  @Override
+  public int hashCode() {
+    return indexName.hashCode();
+  }
+
+  @Override
+  boolean equalsTo(Expr expr) {
+    DropIndex other = (DropIndex) expr;
+    return this.indexName.equals(other.indexName);
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    DropIndex clone = (DropIndex) super.clone();
+    clone.indexName = indexName;
+    return clone;
+  }
+
+  public String getIndexName() {
+    return indexName;
   }
 }

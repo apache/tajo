@@ -20,10 +20,9 @@ package org.apache.tajo.jdbc;
 import com.google.common.collect.Lists;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.*;

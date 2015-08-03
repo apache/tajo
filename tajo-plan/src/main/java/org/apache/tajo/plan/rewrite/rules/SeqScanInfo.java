@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,22 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.plan.rewrite.rules;
 
-public class NoSuchPartitionException extends RuntimeException {
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStats;
 
-  private static final long serialVersionUID = 277182608283894938L;
+public class SeqScanInfo extends AccessPathInfo {
+  private TableDesc tableDesc;
 
-  public NoSuchPartitionException(String message) {
-    super(message);
+  public SeqScanInfo(TableStats tableStats) {
+    super(ScanTypeControl.SEQ_SCAN, tableStats);
   }
 
-  public NoSuchPartitionException(String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s\".", partitionName, tableName));
+  public SeqScanInfo(TableDesc tableDesc) {
+    this(tableDesc.getStats());
+    this.setTableDesc(tableDesc);
   }
 
-  public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s\" is not the partition of \"%s.%s\".", partitionName, databaseName, tableName));
+  public TableDesc getTableDesc() {
+    return tableDesc;
   }
 
+  public void setTableDesc(TableDesc tableDesc) {
+    this.tableDesc = tableDesc;
+  }
 }

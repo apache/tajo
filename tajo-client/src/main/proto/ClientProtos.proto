@@ -261,3 +261,13 @@ message GetQueryInfoResponse {
   optional QueryInfoProto queryInfo = 2;
 }
 
+message CreateIndexResponse {
+  required ReturnState result = 1;
+  optional IndexDescProto indexDesc = 2;
+}
+
+message GetIndexWithColumnsRequest {
+  required SessionIdProto sessionId = 1;
+  required string tableName = 2;
+  repeated string columnNames = 3;
+}
