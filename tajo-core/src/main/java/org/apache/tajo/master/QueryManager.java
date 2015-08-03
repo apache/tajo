@@ -125,9 +125,7 @@ public class QueryManager extends CompositeService {
     }
 
     try {
-      synchronized (this) {
-        result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory());
-      }
+      result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory());
       return result;
     } catch (Throwable e) {
       LOG.error(e, e);
@@ -136,7 +134,9 @@ public class QueryManager extends CompositeService {
   }
 
   /**
-   * Get query history in cache or persistent storage
+   * Get desc ordered query histories in cache or persistent storage
+   * @param page index of page
+   * @param size size of page
    */
   public Collection<QueryInfo> getFinishedQueries(int page, int size) {
     Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
@@ -145,21 +145,15 @@ public class QueryManager extends CompositeService {
     }
 
     try {
-      if (page == 1) {
-        //first, find in cache
+      if (page * size <= historyCache.size()) {
+        // request size fits in cache
         synchronized (historyCache) {
           result.addAll(historyCache.values());
         }
-
-        if(size > result.size()) {
-          synchronized (this) {
-            result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory(page, size));
-          }
-        }
-
-        return new LinkedList<QueryInfo>(result).subList(0, size);
+        int fromIndex = (page - 1) * size;
+        return new LinkedList<QueryInfo>(result).subList(fromIndex, fromIndex + size);
       } else {
-         return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
+        return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
       }
     } catch (Throwable e) {
       LOG.error(e, e);
@@ -174,9 +168,7 @@ public class QueryManager extends CompositeService {
         queryInfo = (QueryInfo) historyCache.get(queryId);
       }
       if (queryInfo == null) {
-        synchronized (this) {
-          queryInfo = this.masterContext.getHistoryReader().getQueryByQueryId(queryId);
-        }
+        queryInfo = this.masterContext.getHistoryReader().getQueryByQueryId(queryId);
       }
       return queryInfo;
     } catch (Throwable e) {
