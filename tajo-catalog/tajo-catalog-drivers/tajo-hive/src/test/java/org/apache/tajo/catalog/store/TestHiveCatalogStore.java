@@ -261,10 +261,37 @@ public class TestHiveCatalogStore {
     }
 
     testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
+    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150102");
+    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150101");
     testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
+    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150101");
+    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150102");
+
+    CatalogProtos.GetPartitionsWithDirectSQLRequest.Builder directSQLRequest = CatalogProtos
+      .GetPartitionsWithDirectSQLRequest.newBuilder();
+
+    directSQLRequest.setDatabaseName(DB_NAME);
+    directSQLRequest.setTableName(NATION);
+    directSQLRequest.setDirectSQL("n_nationkey = 10 or n_nationkey = 20");
+
+    List<CatalogProtos.TablePartitionProto> tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
+    assertEquals(tablePartitions.size(), 4);
+
+    directSQLRequest = CatalogProtos.GetPartitionsWithDirectSQLRequest.newBuilder();
+    directSQLRequest.setDatabaseName(DB_NAME);
+    directSQLRequest.setTableName(NATION);
+
+    directSQLRequest.setDirectSQL("n_nationkey = 10 and n_date = \"20150101\"");
+
+    tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
+    assertEquals(tablePartitions.size(), 1);
 
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
+    testDropPartition(NATION, "n_nationkey=10/n_date=20150102");
+    testDropPartition(NATION, "n_nationkey=20/n_date=20150101");
     testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
+    testDropPartition(NATION, "n_nationkey=30/n_date=20150101");
+    testDropPartition(NATION, "n_nationkey=30/n_date=20150102");
 
     CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
     assertNull(partition);

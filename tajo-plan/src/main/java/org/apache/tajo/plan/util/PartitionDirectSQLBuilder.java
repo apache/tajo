@@ -35,11 +35,21 @@ import java.util.Stack;
  */
 public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
 
+  private boolean isHiveCatalog = false;
+  private boolean existRowCostant = false;
   private String tableAlias;
   private Column column;
 
   private Stack<String> queries = new Stack<String>();
   private List<String> parameters = TUtil.newList();
+
+  public boolean isHiveCatalog() {
+    return isHiveCatalog;
+  }
+
+  public void setIsHiveCatalog(boolean isHiveCatalog) {
+    this.isHiveCatalog = isHiveCatalog;
+  }
 
   public String getTableAlias() {
     return tableAlias;
@@ -73,6 +83,14 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
     return queries.pop();
   }
 
+  public boolean isExistRowCostant() {
+    return existRowCostant;
+  }
+
+  public void setExistRowCostant(boolean existRowCostant) {
+    this.existRowCostant = existRowCostant;
+  }
+
   ///////////////////////////////////////////////////////////////////////////////////////////////
   // Value and Literal
   ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -80,25 +98,55 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
   @Override
   public EvalNode visitConst(Object context, ConstEval evalNode, Stack<EvalNode> stack) {
     StringBuilder sb = new StringBuilder();
-    sb.append("?").append(" )");
+
+    if (!isHiveCatalog) {
+      sb.append("?").append(" )");
+      parameters.add(evalNode.getValue().asChars());
+    } else {
+      switch (column.getDataType().getType()) {
+        case INT1:
+        case INT2:
+        case INT4:
+        case INT8:
+        case FLOAT4:
+        case FLOAT8:
+          sb.append(evalNode.getValue().asChars());
+          break;
+        default:
+          // In hive, Filtering can be done only on string partition keys. for example "part1 = \"p1_abc\" and part2
+          // <= "\p2_test\"".
+          sb.append("\"").append(evalNode.getValue().asChars()).append("\"");
+          break;
+      }
+
+    }
     queries.push(sb.toString());
-    parameters.add(evalNode.getValue().asChars());
 
     return evalNode;
   }
 
   @Override
   public EvalNode visitRowConstant(Object context, RowConstantEval evalNode, Stack<EvalNode> stack) {
+    existRowCostant = true;
+
     StringBuilder sb = new StringBuilder();
     sb.append("(");
     for(int i = 0; i < evalNode.getValues().length; i++) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append("?");
-      parameters.add(evalNode.getValues()[i].asChars());
+      if (!isHiveCatalog) {
+        sb.append("?");
+        parameters.add(evalNode.getValues()[i].asChars());
+      } else {
+
+      }
     }
-    sb.append(")").append(" )");
+    sb.append(")");
+
+    if (!isHiveCatalog) {
+      sb.append(" )");
+    }
     queries.push(sb.toString());
     return evalNode;
   }
@@ -107,10 +155,13 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
   public EvalNode visitField(Object context, Stack<EvalNode> stack, FieldEval evalNode) {
     StringBuilder sb = new StringBuilder();
 
-    sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
-      .append(" = '").append(evalNode.getColumnRef().getSimpleName()).append("'")
-      .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
-
+    if (!isHiveCatalog) {
+      sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
+        .append(" = '").append(evalNode.getColumnRef().getSimpleName()).append("'")
+        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
+    } else {
+      sb.append(evalNode.getColumnRef().getSimpleName());
+    }
 
     queries.push(sb.toString());
     return evalNode;
@@ -129,13 +180,13 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
 
     visit(context, evalNode.getBegin(), stack);
     String beginSql= queries.pop();
-    if (beginSql.endsWith(")")) {
+    if (!isHiveCatalog && beginSql.endsWith(")")) {
       beginSql = beginSql.substring(0, beginSql.length()-1);
     }
 
     visit(context, evalNode.getEnd(), stack);
     String endSql = queries.pop();
-    if (endSql.endsWith(")")) {
+    if (!isHiveCatalog && endSql.endsWith(")")) {
       endSql = beginSql.substring(0, endSql.length()-1);
     }
 
@@ -145,7 +196,9 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
     sb.append(beginSql);
     sb.append(" AND ");
     sb.append(endSql);
-    sb.append(")");
+    if (!isHiveCatalog) {
+      sb.append(")");
+    }
     queries.push(sb.toString());
 
     return evalNode;
@@ -161,7 +214,7 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
     for (CaseWhenEval.IfThenEval ifThenEval : evalNode.getIfThenEvals()) {
       visitIfThen(context, ifThenEval, stack);
       String whenSql = queries.pop();
-      if (whenSql.endsWith(")")) {
+      if (!isHiveCatalog && whenSql.endsWith(")")) {
         whenSql = whenSql.substring(0, whenSql.length()-1);
       }
 
@@ -171,13 +224,16 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
     if (evalNode.hasElse()) {
       visit(context, evalNode.getElse(), stack);
       String elseSql = queries.pop();
-      if (elseSql.endsWith(")")) {
+      if (!isHiveCatalog && elseSql.endsWith(")")) {
         elseSql = elseSql.substring(0, elseSql.length()-1);
       }
 
       sb.append("ELSE ").append(elseSql).append(" END");
     }
-    sb.append(")");
+
+    if (!isHiveCatalog) {
+      sb.append(")");
+    }
     stack.pop();
 
     return evalNode;
@@ -198,7 +254,10 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
     sb.append(conditionSql);
     sb.append(" THEN ");
     sb.append(resultSql);
-    sb.append(")");
+
+    if (!isHiveCatalog) {
+      sb.append(")");
+    }
     queries.push(sb.toString());
 
     stack.pop();
@@ -278,7 +337,10 @@ public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
       }
       sb.append(childSql);
     }
-    sb.append(" )");
+
+    if (!isHiveCatalog) {
+      sb.append(" )");
+    }
     queries.push(sb.toString());
 
     return unaryEval;

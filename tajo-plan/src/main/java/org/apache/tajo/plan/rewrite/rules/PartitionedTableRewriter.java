@@ -129,34 +129,41 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
+    GetPartitionsWithDirectSQLRequest request = null;
 
-    boolean canUseDirectSql = true;
+    boolean canUseDirectSql = true, existRowCostant = false;
 
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 
-    // Currently, tajo doesn't provide Catalog::getPartitionsByDirectSql in MemStore and HiveCatalogStore.
-    // In above case, this will build path filter with searching filesystem directories.
-    if (store.equals("org.apache.tajo.catalog.store.MemStore")
-      || store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
+    // Currently, tajo doesn't provide Catalog::getPartitionsByDirectSql in MemStore.
+    // In this case, this will build path filter with searching filesystem directories.
+    if (store.equals("org.apache.tajo.catalog.store.MemStore")) {
       canUseDirectSql = false;
     }
 
-    if (canUseDirectSql && catalog.existPartitions(splits[0], splits[1])) {
-      GetPartitionsWithDirectSQLRequest request = null;
-      if (conjunctiveForms == null) {
-        request = buildDirectSQLForAllLevels(splits[0], splits[1], partitionColumns, null);
-      } else {
-        request = buildDirectSQLForAllLevels(splits[0], splits[1], partitionColumns, conjunctiveForms);
+    if (canUseDirectSql) {
+      if (store.equals("org.apache.tajo.catalog.store.HiveStore")) {
+        request = buildDirectSQLForHive(splits[0], splits[1], partitionColumns,
+          conjunctiveForms);
+      } else if (!store.equals("org.apache.tajo.catalog.store.HiveStore")
+        && catalog.existPartitions(splits[0], splits[1])) {
+        if (conjunctiveForms == null) {
+          request = buildDirectSQLForRDBMS(splits[0], splits[1], partitionColumns, null);
+        } else {
+          request = buildDirectSQLForRDBMS(splits[0], splits[1], partitionColumns, conjunctiveForms);
+        }
       }
 
-      List<TablePartitionProto> partitions = catalog.getPartitionsByDirectSql(request);
-
-      filteredPaths = new Path[partitions.size()];
-
-      for (int i = 0; i < partitions.size(); i++) {
-        filteredPaths[i] = new Path(partitions.get(i).getPath());
+      if (request != null) {
+        List<TablePartitionProto> partitions = catalog.getPartitionsByDirectSql(request);
+        filteredPaths = new Path[partitions.size()];
+        for (int i = 0; i < partitions.size(); i++) {
+          filteredPaths[i] = new Path(partitions.get(i).getPath());
+        }
       }
-    } else {
+    }
+
+    if (!canUseDirectSql || (canUseDirectSql && request == null)) {
       PathFilter [] filters;
       if (conjunctiveForms == null) {
         filters = buildAllAcceptingPathFilters(partitionColumns);
@@ -205,7 +212,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  private static GetPartitionsWithDirectSQLRequest buildDirectSQLForAllLevels(
+  private static GetPartitionsWithDirectSQLRequest buildDirectSQLForRDBMS(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
     // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
@@ -213,7 +220,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
-    Column target;
     // Write table alias for all levels
     String tableAlias;
 
@@ -231,7 +237,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     // Write join clause from second column to last column.
     for (int i = 1; i < partitionColumns.size(); i++) {
-      target = partitionColumns.getColumn(i);
+      Column target = partitionColumns.getColumn(i);
       tableAlias = "T" + (i+1);
 
       sqlBuilder.setColumn(target);
@@ -278,6 +284,54 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     partitionFilter.addAllParameterValue(list);
 
     request.addFilters(partitionFilter.build());
+
+    // Set final direct sql
+    request.setDirectSQL(sb.toString());
+    LOG.info("### DirectSQL for RDBMS:" + sb.toString());
+
+    return request.build();
+  }
+
+  public static GetPartitionsWithDirectSQLRequest buildDirectSQLForHive(
+    String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
+
+    // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
+    GetPartitionsWithDirectSQLRequest.Builder request = GetPartitionsWithDirectSQLRequest.newBuilder();
+    request.setDatabaseName(databaseName);
+    request.setTableName(tableName);
+
+    // Write table alias for all levels
+    String tableAlias;
+
+    PartitionDirectSQLBuilder sqlBuilder = new PartitionDirectSQLBuilder();
+    sqlBuilder.setIsHiveCatalog(true);
+
+    List<EvalNode> accumulatedFilters = getAccumulatedFilters(partitionColumns, conjunctiveForms);
+
+    StringBuffer sb = new StringBuffer();
+
+    // Write join clause from second column to last column.
+    for (int i = 0; i < partitionColumns.size(); i++) {
+      Column target = partitionColumns.getColumn(i);
+
+      // Hive api doesn't support not null statement.
+      if (!(accumulatedFilters.get(i) instanceof IsNullEval)) {
+        if (sb.length() > 0) {
+          sb.append(" AND ");
+        }
+
+        sqlBuilder.setColumn(target);
+        sqlBuilder.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
+
+        // Hive api doesn't support row constant statement;
+        if (sqlBuilder.isExistRowCostant()) {
+          return null;
+        }
+
+        sb.append(sqlBuilder.getResult());
+        sqlBuilder.clearParameters();
+      }
+    }
 
     // Set final direct sql
     request.setDirectSQL(sb.toString());

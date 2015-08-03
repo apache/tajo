@@ -2213,7 +2213,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           }
           currentIndex++;
         }
-        columnIndex++;
       }
 
       res = pstmt.executeQuery();

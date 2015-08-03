@@ -868,7 +868,41 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request)
     throws CatalogException {
-    throw new UnsupportedOperationException();
+
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    List<TablePartitionProto> partitions = null;
+
+    try {
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
+      partitions = TUtil.newList();
+
+      client = clientPool.getClient();
+
+      List<Partition> hivePartitions = client.getHiveClient().listPartitionsByFilter(databaseName, tableName
+        , request.getDirectSQL(), (short) -1);
+
+      for (Partition hivePartition : hivePartitions) {
+        CatalogProtos.TablePartitionProto.Builder builder = CatalogProtos.TablePartitionProto.newBuilder();
+        builder.setPath(hivePartition.getSd().getLocation());
+
+        int startIndex = hivePartition.getSd().getLocation().indexOf(tableName) + tableName.length();
+        String partitionName = hivePartition.getSd().getLocation().substring(startIndex+1);
+        builder.setPartitionName(partitionName);
+
+        partitions.add(builder.build());
+      }
+    } catch (NoSuchObjectException e) {
+      return null;
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+
+    return partitions;
   }
 
   @Override
