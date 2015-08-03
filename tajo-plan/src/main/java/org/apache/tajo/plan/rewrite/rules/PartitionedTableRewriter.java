@@ -142,10 +142,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     if (canUseDirectSql) {
-      if (store.equals("org.apache.tajo.catalog.store.HiveStore")) {
+      if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
         request = buildDirectSQLForHive(splits[0], splits[1], partitionColumns,
           conjunctiveForms);
-      } else if (!store.equals("org.apache.tajo.catalog.store.HiveStore")
+      } else if (!store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")
         && catalog.existPartitions(splits[0], splits[1])) {
         if (conjunctiveForms == null) {
           request = buildDirectSQLForRDBMS(splits[0], splits[1], partitionColumns, null);
@@ -287,11 +287,27 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     // Set final direct sql
     request.setDirectSQL(sb.toString());
-    LOG.info("### DirectSQL for RDBMS:" + sb.toString());
 
     return request.build();
   }
 
+  /**
+   * This will build direct sql and parameters for querying partitions and partition keys in HiveCatalogStore.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
+   * There is no filter condition corresponding to col2.
+   *
+   * Then, the sql would be generated as following:
+   *
+   *  (col1 = \"1\" or col1 = \"100\") and col3 > 20
+   *
+   * @param databaseName
+   * @param tableName
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @return
+   */
   public static GetPartitionsWithDirectSQLRequest buildDirectSQLForHive(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 

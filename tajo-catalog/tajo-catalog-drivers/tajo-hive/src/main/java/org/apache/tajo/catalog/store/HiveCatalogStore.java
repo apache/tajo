@@ -67,8 +67,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
 
-  private static String HIVE_WAREHOUSE_DIR_CONF_KEY = "hive.metastore.warehouse.dir";
-
   protected Configuration conf;
   private static final int CLIENT_POOL_SIZE = 2;
   private final HiveCatalogStoreClientPool clientPool;
@@ -1085,7 +1083,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         // Unfortunately, hive client add_partitions doesn't run as expected. The method never read the ifNotExists
         // parameter. So, if Tajo adds existing partition to Hive, it will threw AlreadyExistsException. To avoid
         // above error, we need to filter existing partitions before call add_partitions.
-        if (existingPartition != null) {
+        if (existingPartition == null) {
           Partition partition = new Partition();
           partition.setDbName(databaseName);
           partition.setTableName(tableName);
@@ -1106,7 +1104,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
       if (addPartitions.size() > 0) {
-        client.getHiveClient().add_partitions(addPartitions, true, true);
+        List<Partition> results = client.getHiveClient().add_partitions(addPartitions, true, true);
       }
     } catch (Exception e) {
       throw new TajoInternalError(e);
