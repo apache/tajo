@@ -174,6 +174,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
       PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
       keyBuilder.setColumnName(split[0]);
+      // Partition path have been escaped to avoid URISyntaxException. But partition value of partition keys table
+      // need to contain unescaped value for comparing filter conditions in select statement.
       keyBuilder.setPartitionValue(StringUtils.unescapePathName(split[1]));
 
       builder.addPartitionKeys(keyBuilder.build());

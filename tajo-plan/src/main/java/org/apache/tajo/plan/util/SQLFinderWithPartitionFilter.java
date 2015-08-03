@@ -32,8 +32,6 @@ import java.util.Stack;
  *  This can get partition informs by two columns value, such as, column name, partition value.
  *  And above columns type are text type. Thus this will assume type of FieldEval to text type.
  *
- *  Also the SQL result will be executed on CatalogStore, such as, DerbyDB, MySQL, etc.
- *  Therefore, this need to avoid distinctive SQL usages (ie: cast(PARTITION_VALUE as INT8).
  */
 public class SQLFinderWithPartitionFilter extends SimpleEvalNodeVisitor<Object>{
 
@@ -85,6 +83,7 @@ public class SQLFinderWithPartitionFilter extends SimpleEvalNodeVisitor<Object>{
     sb.append("?").append(" )");
     queries.push(sb.toString());
     parameters.add(evalNode.getValue().asChars());
+
     return evalNode;
   }
 
@@ -107,10 +106,12 @@ public class SQLFinderWithPartitionFilter extends SimpleEvalNodeVisitor<Object>{
   @Override
   public EvalNode visitField(Object context, Stack<EvalNode> stack, FieldEval evalNode) {
     StringBuilder sb = new StringBuilder();
-    sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
-      .append(" = ? AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
 
-    parameters.add(evalNode.getColumnRef().getSimpleName());
+    sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
+      .append(" = '").append(evalNode.getColumnRef().getSimpleName()).append("'")
+      .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
+
+
     queries.push(sb.toString());
     return evalNode;
   }

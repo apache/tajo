@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionFilterDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
@@ -34,7 +33,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -136,6 +134,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 
+    // Currently, tajo doesn't provide Catalog::getPartitionsByDirectSql in MemStore and HiveCatalogStore.
+    // In above case, this will build path filter with searching filesystem directories.
     if (store.equals("org.apache.tajo.catalog.store.MemStore")
       || store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
       canUseDirectSql = false;
@@ -178,15 +178,43 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return filteredPaths;
   }
 
-  // Yet to write description for this function.
+  /**
+   * This will build direct sql and parameters for querying partitions and partition keys in CatalogStore.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
+   * There is no filter condition corresponding to col2.
+   *
+   * Then, the sql would be generated as following:
+   *
+   *  SELECT A.PARTITION_ID, A.PARTITION_NAME, A.PATH
+   *  FROM PARTITIONS A
+   *  WHERE A.PARTITION_ID IN (
+   *    SELECT T1.PARTITION_ID
+   *    FROM PARTITION_KEYS T1
+   *    JOIN ON PARTITION_KEYS T2 ON T1.TID = T2.TID AND T1.PARTITION_ID = T2.PARTITION_ID
+   *      AND T2.TID = ? AND (T2.COLUMN_NAME = 'col2' AND T2.PARTITION_VALUE IS NOT NULL)
+   *    JOIN PARTITION_KEYS T3 ON T1.TID = T3.TID AND T1.PARTITION_ID = T3.PARTITION_ID
+   *      AND T3.TID = ? AND (T3.COLUMN_NAME = 'col3' AND T3.PARTITION_VALUE > 20)
+   *    WHERE T1.TID = ? AND (T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = '1')
+   *    OR (T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE ='100')
+   *
+   * @param databaseName
+   * @param tableName
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @return
+   */
   private static GetPartitionsWithDirectSQLRequest buildDirectSQLForAllLevels(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
+    // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
     GetPartitionsWithDirectSQLRequest.Builder builder = GetPartitionsWithDirectSQLRequest.newBuilder();
     builder.setDatabaseName(databaseName);
     builder.setTableName(tableName);
 
     Column target;
+    // Write table alias for all levels
     String tableAlias;
 
     SQLFinderWithPartitionFilter finder = new SQLFinderWithPartitionFilter();
@@ -196,10 +224,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     StringBuffer sb = new StringBuffer();
     sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
       .append(", A.PARTITION_NAME, A.PATH FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
-      .append("\n WHERE A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
+      .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
+      .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
       .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
       .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
 
+    // Write join clause from second column to last column.
     for (int i = 1; i < partitionColumns.size(); i++) {
       target = partitionColumns.getColumn(i);
       tableAlias = "T" + (i+1);
@@ -216,38 +246,65 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
       sb.append(finder.getResult());
 
-      List<String> list = TUtil.newList();
-      list.addAll(finder.getParameters());
-
+      // Set parameters for executing PrepareStament
       PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
       partitionFilter.setColumnName(target.getSimpleName());
+
+      List<String> list = TUtil.newList();
+      list.addAll(finder.getParameters());
       partitionFilter.addAllParameterValue(list);
+
       builder.addFilters(partitionFilter.build());
 
       finder.clearParameters();
     }
 
+    // Write where clause for first column
     tableAlias = "T1";
     finder.setColumn(partitionColumns.getColumn(0));
     finder.setTableAlias(tableAlias);
     finder.visit(null, accumulatedFilters.get(0), new Stack<EvalNode>());
 
-    sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND");
+    sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
     sb.append(finder.getResult())
       .append("\n )");
-    List<String> list = TUtil.newList();
-    list.addAll(finder.getParameters());
 
+    // Set parameters for executing PrepareStament
     PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
     partitionFilter.setColumnName(partitionColumns.getColumn(0).getSimpleName());
+
+    List<String> list = TUtil.newList();
+    list.addAll(finder.getParameters());
     partitionFilter.addAllParameterValue(list);
+
     builder.addFilters(partitionFilter.build());
 
+    // Set final direct sql
     builder.setDirectSQL(sb.toString());
 
     return builder.build();
   }
 
+  /**
+   * Build EvalNodes for all columns with a list of filter conditions.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Then, this methods will create three EvalNodes for (col1), (col2), (col3).
+   *
+   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
+   * There is no filter condition corresponding to col2.
+   * Then, the path filter conditions are corresponding to the followings:
+   *
+   * The first EvalNode: col1 = 'A'
+   * The second EvalNode: col2 IS NOT NULL
+   * The third EvalNode: col3 = 'C'
+   *
+   * 'IS NOT NULL' predicate is always true against the partition path.
+   *
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @return
+   */
   private static List<EvalNode> getAccumulatedFilters(Schema partitionColumns, EvalNode [] conjunctiveForms) {
     List<EvalNode> accumulatedFilters = Lists.newArrayList();
     Column target;

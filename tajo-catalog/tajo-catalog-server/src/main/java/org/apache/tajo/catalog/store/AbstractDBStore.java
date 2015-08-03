@@ -2157,32 +2157,66 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
+    ColumnProto column = null;
+    int currentIndex = 1;
 
     List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
 
     try {
       int databaseId = getDatabaseId(request.getDatabaseName());
       int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
+      TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
 
       if(LOG.isDebugEnabled()) {
-        LOG.debug("### Query:" + request.getDirectSQL());
+        LOG.debug(request.getDirectSQL());
       }
 
       conn = getConnection();
       pstmt = conn.prepareStatement(request.getDirectSQL());
 
-      int i = 1;
+      // Set table id by force because first parameter of all direct sql is table id
+      pstmt.setInt(currentIndex, tableId);
+      currentIndex++;
+
       for (PartitionFilterDescProto filter : request.getFiltersList()) {
-        pstmt.setInt(i, tableId);
-        i++;
+        // Find column data type
+        for(ColumnProto field : tableDesc.getPartition().getExpressionSchema().getFieldsList()) {
+          if (field.getName().equals(filter.getColumnName())) {
+            column = field;
+            break;
+          }
+        }
+
+        // Set table id by force because all filters have table id as first parameter.
+        pstmt.setInt(currentIndex, tableId);
+        currentIndex++;
 
         for (String parameterValue : filter.getParameterValueList()) {
-          pstmt.setString(i, parameterValue);
-          i++;
+          switch (column.getDataType().getType()) {
+            case INT1:
+            case INT2:
+            case INT4:
+              pstmt.setInt(currentIndex, Integer.parseInt(parameterValue));
+              break;
+            case INT8:
+              pstmt.setLong(currentIndex, Long.parseLong(parameterValue));
+              break;
+            case FLOAT4:
+              pstmt.setFloat(currentIndex, Float.parseFloat(parameterValue));
+              break;
+            case FLOAT8:
+              pstmt.setDouble(currentIndex, Double.parseDouble(parameterValue));
+              break;
+            default:
+              pstmt.setString(currentIndex, parameterValue);
+              break;
+          }
+          currentIndex++;
         }
+        columnIndex++;
       }
 
-     res = pstmt.executeQuery();
+      res = pstmt.executeQuery();
 
       while (res.next()) {
         TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
