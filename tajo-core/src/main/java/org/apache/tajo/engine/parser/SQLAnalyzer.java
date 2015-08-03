@@ -28,6 +28,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
+import org.apache.tajo.algebra.DataTypeExpr.MapType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.engine.parser.SQLParser.*;
@@ -1603,8 +1604,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
 
     } else if (checkIfExist(predefined_type.record_type())) {
-      ColumnDefinition [] nestedRecordDefines = getDefinitions(predefined_type.record_type().table_elements());
-      typeDefinition = new DataTypeExpr(nestedRecordDefines);
+      ColumnDefinition [] nestedRecordDefine = getDefinitions(predefined_type.record_type().table_elements());
+      typeDefinition = new DataTypeExpr(new DataTypeExpr.RecordType(nestedRecordDefine));
+
+    } else if (checkIfExist(predefined_type.map_type())) {
+      Map_typeContext mapTypeContext = predefined_type.map_type();
+      typeDefinition = new DataTypeExpr(
+          new MapType(visitData_type(mapTypeContext.key_type), visitData_type(mapTypeContext.value_type)));
     }
 
     return typeDefinition;
