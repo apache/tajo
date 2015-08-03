@@ -208,6 +208,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1733: Finished query occasionally does not appear in Web-UI. (jinho)
+
     TAJO-1731: With a task failure, query processing is hanged after first retry. 
     (jihoon)
 
