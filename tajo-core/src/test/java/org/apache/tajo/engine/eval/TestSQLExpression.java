@@ -30,7 +30,6 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
@@ -39,7 +38,7 @@ import static org.junit.Assert.fail;
 public class TestSQLExpression extends ExprTestBase {
 
   @Test
-  public void testQuotedIdentifiers() throws Throwable {
+  public void testQuotedIdentifiers() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("컬럼1", TEXT);
     schema.addColumn("컬럼2", TEXT);

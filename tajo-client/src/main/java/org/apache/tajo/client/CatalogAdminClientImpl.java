@@ -240,8 +240,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public List<FunctionDescProto> getFunctions(final String functionName)
-      throws AmbiguousFunctionException, UndefinedFunctionException {
+  public List<FunctionDescProto> getFunctions(final String functionName) {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -251,12 +250,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       res = stub.getFunctionList(null, conn.getSessionedString(paramFunctionName));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
-    }
-
-    if (isThisError(res.getState(), Errors.ResultCode.AMBIGUOUS_FUNCTION)) {
-      throw new AmbiguousFunctionException(res.getState());
-    } else if (isThisError(res.getState(), Errors.ResultCode.UNDEFINED_FUNCTION)) {
-      throw new UndefinedFunctionException(res.getState());
     }
 
     ensureOk(res.getState());

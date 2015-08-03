@@ -106,7 +106,11 @@ public class InfoSchemaMetadataDictionary {
         break;
       }
     }
-    
+
+    if (tableDescriptor == null) {
+      throw new UndefinedTableException(tableName);
+    }
+
     return tableDescriptor;
   }
   

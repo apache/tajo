@@ -19,8 +19,6 @@
 package org.apache.tajo.client;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.sql.ResultSet;

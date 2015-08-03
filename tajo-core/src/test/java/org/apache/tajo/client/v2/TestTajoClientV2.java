@@ -138,7 +138,7 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
 
     assertTrue(future.isDone());
     assertEquals(QueryState.COMPLETED, future.state());
-    assertTrue(future.isCompleted());
+    assertTrue(future.isSuccessful());
     assertFalse(future.isFailed());
     assertFalse(future.isKilled());
     assertTrue(1.0f == future.progress());
@@ -169,7 +169,7 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
 
           assertTrue(future.isDone());
           assertEquals(QueryState.COMPLETED, future.state());
-          assertTrue(future.isCompleted());
+          assertTrue(future.isSuccessful());
           assertFalse(future.isFailed());
           assertFalse(future.isKilled());
           assertTrue(1.0f == future.progress());
@@ -202,7 +202,7 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
 
     assertTrue(future.isOk());
     assertFalse(future.isDone());
-    assertFalse(future.isCompleted());
+    assertFalse(future.isSuccessful());
     assertFalse(future.isFailed());
     assertFalse(future.isKilled());
 
@@ -213,7 +213,7 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
 
     assertTrue(future.isOk());
     assertTrue(future.isDone());
-    assertFalse(future.isCompleted());
+    assertFalse(future.isSuccessful());
     assertFalse(future.isFailed());
     assertTrue(future.isKilled());
   }

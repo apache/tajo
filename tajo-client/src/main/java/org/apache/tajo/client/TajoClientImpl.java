@@ -227,9 +227,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.getTableDesc(tableName);
   }
 
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName)
-      throws AmbiguousFunctionException, UndefinedFunctionException {
-
+  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) {
     return catalogClient.getFunctions(functionName);
   }
 

@@ -20,6 +20,9 @@ package org.apache.tajo.client.v2;
 
 import java.net.InetSocketAddress;
 
+/**
+ * Client service discovery interface
+ */
 public interface ServiceDiscovery {
   InetSocketAddress clientAddress();
 }

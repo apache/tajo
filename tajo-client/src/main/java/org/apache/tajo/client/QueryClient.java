@@ -18,7 +18,6 @@
 
 package org.apache.tajo.client;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
@@ -31,13 +30,10 @@ import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.tajo.TajoIdProtos.SessionIdProto;
 
 public interface QueryClient extends Closeable {
 

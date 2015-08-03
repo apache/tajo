@@ -23,9 +23,9 @@ import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 
 import java.util.Map;
 
-public class ClientDeligateFactory {
+public class ClientDelegateFactory {
 
-  public static ClientDelegate newDefaultDeligate(String host,
+  public static ClientDelegate newDefaultDelegate(String host,
                                                   int port,
                                                   @Nullable Map<String, String> props)
       throws ClientUnableToConnectException {
@@ -33,7 +33,7 @@ public class ClientDeligateFactory {
     return new LegacyClientDelegate(host, port, props);
   }
 
-  public static ClientDelegate newDefaultDeligate(ServiceDiscovery discovery,
+  public static ClientDelegate newDefaultDelegate(ServiceDiscovery discovery,
                                                   @Nullable Map<String, String> props)
       throws ClientUnableToConnectException {
 

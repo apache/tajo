@@ -21,17 +21,11 @@ package org.apache.tajo.client.v2;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class TajoClient implements Closeable {
   /**
@@ -47,7 +41,7 @@ public class TajoClient implements Closeable {
    * @param host hostname to connect
    */
   public TajoClient(String host) throws ClientUnableToConnectException {
-    delegate = ClientDeligateFactory.newDefaultDeligate(host, DEFAULT_PORT, null);
+    delegate = ClientDelegateFactory.newDefaultDelegate(host, DEFAULT_PORT, null);
   }
 
   /**
@@ -57,7 +51,7 @@ public class TajoClient implements Closeable {
    * @param properties Connection properties
    */
   public TajoClient(String host, Map<String, String> properties) throws ClientUnableToConnectException {
-    delegate = ClientDeligateFactory.newDefaultDeligate(host, DEFAULT_PORT, properties);
+    delegate = ClientDelegateFactory.newDefaultDelegate(host, DEFAULT_PORT, properties);
   }
 
   /**
@@ -67,7 +61,7 @@ public class TajoClient implements Closeable {
    * @param port Port number to connect
    */
   public TajoClient(String host, int port) throws ClientUnableToConnectException {
-    delegate = ClientDeligateFactory.newDefaultDeligate(host, port, null);
+    delegate = ClientDelegateFactory.newDefaultDelegate(host, port, null);
   }
 
   /**
@@ -78,7 +72,7 @@ public class TajoClient implements Closeable {
    * @param properties Connection properties
    */
   public TajoClient(String host, int port, Map<String, String> properties) throws ClientUnableToConnectException {
-    delegate = ClientDeligateFactory.newDefaultDeligate(host, port, properties);
+    delegate = ClientDelegateFactory.newDefaultDelegate(host, port, properties);
   }
 
   /**
@@ -87,7 +81,7 @@ public class TajoClient implements Closeable {
    * @param discovery Service discovery
    */
   public TajoClient(ServiceDiscovery discovery) throws ClientUnableToConnectException {
-    delegate = ClientDeligateFactory.newDefaultDeligate(discovery, null);
+    delegate = ClientDelegateFactory.newDefaultDelegate(discovery, null);
   }
 
   /**
@@ -97,7 +91,7 @@ public class TajoClient implements Closeable {
    * @param properties Connection properties
    */
   public TajoClient(ServiceDiscovery discovery, Map<String, String> properties) throws ClientUnableToConnectException {
-    delegate = ClientDeligateFactory.newDefaultDeligate(discovery, properties);
+    delegate = ClientDelegateFactory.newDefaultDelegate(discovery, properties);
   }
 
   /**

@@ -143,7 +143,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public boolean isCompleted() {
+    public boolean isSuccessful() {
       return true;
     }
 
@@ -259,7 +259,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public boolean isCompleted() {
+    public boolean isSuccessful() {
       return lastState == QueryState.COMPLETED;
     }
 

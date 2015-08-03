@@ -23,6 +23,9 @@ import org.apache.tajo.auth.UserRoleInfo;
 import java.sql.ResultSet;
 import java.util.concurrent.Future;
 
+/**
+ *
+ */
 public interface QueryFuture extends Future<ResultSet> {
   /**
    * Get a query id
@@ -31,6 +34,11 @@ public interface QueryFuture extends Future<ResultSet> {
    */
   String id();
 
+  /**
+   * Get the queue name that the query is running
+   *
+   * @return queue name
+   */
   String queue();
 
   /**
@@ -59,7 +67,7 @@ public interface QueryFuture extends Future<ResultSet> {
    *
    * @return True if the query is successfully completed.
    */
-  boolean isCompleted();
+  boolean isSuccessful();
 
   /**
    * Get whether the query is abort due to error.

@@ -137,8 +137,7 @@ public interface CatalogAdminClient extends Closeable {
    */
   TableDesc getTableDesc(final String tableName) throws UndefinedTableException;
 
-  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName)
-      throws AmbiguousFunctionException, UndefinedFunctionException;
+  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);
 
   IndexDescProto getIndex(final String indexName) throws SQLException;
 

@@ -170,11 +170,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             createBaseTable();
             LOG.info("The base tables of CatalogServer are created.");
           } catch (CatalogException ce) {
-            try {
-              dropBaseTable();
-            } catch (Throwable t) {
-              LOG.error(t, t);
-            }
+            dropBaseTable();
             throw ce;
           }
         }
