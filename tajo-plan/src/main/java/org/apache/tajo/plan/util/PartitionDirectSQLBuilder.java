@@ -33,7 +33,7 @@ import java.util.Stack;
  *  And above columns type are text type. Thus this will assume type of FieldEval to text type.
  *
  */
-public class SQLFinderWithPartitionFilter extends SimpleEvalNodeVisitor<Object>{
+public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
 
   private String tableAlias;
   private Column column;

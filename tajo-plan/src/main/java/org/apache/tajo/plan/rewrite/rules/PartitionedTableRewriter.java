@@ -38,8 +38,8 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
+import org.apache.tajo.plan.util.PartitionDirectSQLBuilder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.util.SQLFinderWithPartitionFilter;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -209,15 +209,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
     // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
-    GetPartitionsWithDirectSQLRequest.Builder builder = GetPartitionsWithDirectSQLRequest.newBuilder();
-    builder.setDatabaseName(databaseName);
-    builder.setTableName(tableName);
+    GetPartitionsWithDirectSQLRequest.Builder request = GetPartitionsWithDirectSQLRequest.newBuilder();
+    request.setDatabaseName(databaseName);
+    request.setTableName(tableName);
 
     Column target;
     // Write table alias for all levels
     String tableAlias;
 
-    SQLFinderWithPartitionFilter finder = new SQLFinderWithPartitionFilter();
+    PartitionDirectSQLBuilder sqlBuilder = new PartitionDirectSQLBuilder();
 
     List<EvalNode> accumulatedFilters = getAccumulatedFilters(partitionColumns, conjunctiveForms);
 
@@ -234,9 +234,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       target = partitionColumns.getColumn(i);
       tableAlias = "T" + (i+1);
 
-      finder.setColumn(target);
-      finder.setTableAlias(tableAlias);
-      finder.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
+      sqlBuilder.setColumn(target);
+      sqlBuilder.setTableAlias(tableAlias);
+      sqlBuilder.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
 
       sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
         .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
@@ -244,29 +244,29 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
         .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
         .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-      sb.append(finder.getResult());
+      sb.append(sqlBuilder.getResult());
 
       // Set parameters for executing PrepareStament
       PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
       partitionFilter.setColumnName(target.getSimpleName());
 
       List<String> list = TUtil.newList();
-      list.addAll(finder.getParameters());
+      list.addAll(sqlBuilder.getParameters());
       partitionFilter.addAllParameterValue(list);
 
-      builder.addFilters(partitionFilter.build());
+      request.addFilters(partitionFilter.build());
 
-      finder.clearParameters();
+      sqlBuilder.clearParameters();
     }
 
     // Write where clause for first column
     tableAlias = "T1";
-    finder.setColumn(partitionColumns.getColumn(0));
-    finder.setTableAlias(tableAlias);
-    finder.visit(null, accumulatedFilters.get(0), new Stack<EvalNode>());
+    sqlBuilder.setColumn(partitionColumns.getColumn(0));
+    sqlBuilder.setTableAlias(tableAlias);
+    sqlBuilder.visit(null, accumulatedFilters.get(0), new Stack<EvalNode>());
 
     sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-    sb.append(finder.getResult())
+    sb.append(sqlBuilder.getResult())
       .append("\n )");
 
     // Set parameters for executing PrepareStament
@@ -274,15 +274,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     partitionFilter.setColumnName(partitionColumns.getColumn(0).getSimpleName());
 
     List<String> list = TUtil.newList();
-    list.addAll(finder.getParameters());
+    list.addAll(sqlBuilder.getParameters());
     partitionFilter.addAllParameterValue(list);
 
-    builder.addFilters(partitionFilter.build());
+    request.addFilters(partitionFilter.build());
 
     // Set final direct sql
-    builder.setDirectSQL(sb.toString());
+    request.setDirectSQL(sb.toString());
 
-    return builder.build();
+    return request.build();
   }
 
   /**
