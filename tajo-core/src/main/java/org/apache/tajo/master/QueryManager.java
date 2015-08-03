@@ -138,26 +138,31 @@ public class QueryManager extends CompositeService {
    * @param page index of page
    * @param size size of page
    */
-  public Collection<QueryInfo> getFinishedQueries(int page, int size) {
-    Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
+  public List<QueryInfo> getFinishedQueries(int page, int size) {
     if (page <= 0 || size <= 0) {
-      return result;
+      return Collections.EMPTY_LIST;
     }
 
-    try {
-      if (page * size <= historyCache.size()) {
+    if (page * size <= historyCache.size()) {
+      Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
+      // request size fits in cache
+      synchronized (historyCache) {
+        result.addAll(historyCache.values());
+      }
+      int fromIndex = (page - 1) * size;
+      return new LinkedList<QueryInfo>(result).subList(fromIndex, fromIndex + size);
+    } else {
+      try {
+        return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
+      } catch (Throwable e) {
+        LOG.error(e, e);
+        Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
         // request size fits in cache
         synchronized (historyCache) {
           result.addAll(historyCache.values());
         }
-        int fromIndex = (page - 1) * size;
-        return new LinkedList<QueryInfo>(result).subList(fromIndex, fromIndex + size);
-      } else {
-        return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
+        return new LinkedList<QueryInfo>(result);
       }
-    } catch (Throwable e) {
-      LOG.error(e, e);
-      return result;
     }
   }
 
