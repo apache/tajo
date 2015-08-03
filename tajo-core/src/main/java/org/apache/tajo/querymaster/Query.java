@@ -34,8 +34,8 @@ import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -331,6 +331,17 @@ public class Query implements EventHandler<QueryEvent> {
     return queryHistory;
   }
 
+  public List<PartitionDescProto> getPartitions() {
+    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
+    for(Stage eachStage : getStages()) {
+      if (!eachStage.getPartitions().isEmpty()) {
+        partitions.addAll(eachStage.getPartitions());
+      }
+    }
+
+    return partitions;
+  }
+
   public List<String> getDiagnostics() {
     readLock.lock();
     try {
@@ -492,6 +503,35 @@ public class Query implements EventHandler<QueryEvent> {
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
+
+        TableDesc desc = query.getResultDesc();
+
+        // If there is partitions
+        List<PartitionDescProto> partitions = query.getPartitions();
+        if (partitions!= null && !partitions.isEmpty()) {
+
+          String databaseName, simpleTableName;
+
+          if (CatalogUtil.isFQTableName(desc.getName())) {
+            String[] split = CatalogUtil.splitFQTableName(desc.getName());
+            databaseName = split[0];
+            simpleTableName = split[1];
+          } else {
+            databaseName = queryContext.getCurrentDatabase();
+            simpleTableName = desc.getName();
+          }
+
+          // Store partitions to CatalogStore using alter table statement.
+          boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+          if (result) {
+            LOG.info(String.format("Complete adding for partition %s", partitions.size()));
+          } else {
+            LOG.info(String.format("Incomplete adding for partition %s", partitions.size()));
+          }
+        } else {
+          LOG.info("Can't find partitions for adding.");
+        }
+
 
       } catch (Exception e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));

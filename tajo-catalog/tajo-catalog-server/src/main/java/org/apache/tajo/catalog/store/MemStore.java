@@ -322,37 +322,13 @@ public class MemStore implements CatalogStore {
         if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
           throw new DuplicatePartitionException(partitionName);
         } else {
-          CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
-          builder.setPartitionName(partitionName);
-          builder.setPath(partitionDesc.getPath());
-
-          if (partitionDesc.getPartitionKeysCount() > 0) {
-            for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
-              CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
-              keyBuilder.setColumnName(eachKey.getColumnName());
-              keyBuilder.setPartitionValue(eachKey.getPartitionValue());
-              builder.addPartitionKeys(keyBuilder.build());
-            }
-          }
-
-          Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
-          if (!partitions.containsKey(tableName)) {
-            protoMap = Maps.newHashMap();
-          } else {
-            protoMap = partitions.get(tableName);
-          }
-          protoMap.put(partitionName, builder.build());
-          partitions.put(tableName, protoMap);
+          addPartition(partitionDesc, tableName, partitionName);
         }
         break;
       case DROP_PARTITION:
         partitionDesc = alterTableDescProto.getPartitionDesc();
         partitionName = partitionDesc.getPartitionName();
-        if(!partitions.containsKey(tableName)) {
-          throw new UndefinedPartitionException(partitionName);
-        } else {
-          partitions.get(tableName).remove(partitionName);
-        }
+        dropPartition(databaseName, tableName, partitionName);
         break;
       case SET_PROPERTY:
         KeyValueSet properties = new KeyValueSet(tableDescProto.getMeta().getParams());
@@ -372,6 +348,37 @@ public class MemStore implements CatalogStore {
     }
   }
 
+  private void addPartition(CatalogProtos.PartitionDescProto partitionDesc, String tableName, String partitionName) {
+    CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+    builder.setPartitionName(partitionName);
+    builder.setPath(partitionDesc.getPath());
+
+    if (partitionDesc.getPartitionKeysCount() > 0) {
+      for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
+        CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
+        keyBuilder.setColumnName(eachKey.getColumnName());
+        keyBuilder.setPartitionValue(eachKey.getPartitionValue());
+        builder.addPartitionKeys(keyBuilder.build());
+      }
+    }
+
+    Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
+    if (!partitions.containsKey(tableName)) {
+      protoMap = Maps.newHashMap();
+    } else {
+      protoMap = partitions.get(tableName);
+    }
+    protoMap.put(partitionName, builder.build());
+    partitions.put(tableName, protoMap);
+  }
+
+  private void dropPartition(String databaseName, String tableName, String partitionName) {
+    if(!partitions.containsKey(tableName)) {
+      throw new UndefinedPartitionException(partitionName);
+    } else {
+      partitions.get(tableName).remove(partitionName);
+    }
+  }
 
   private int getIndexOfColumnToBeRenamed(List<CatalogProtos.ColumnProto> fieldList, String columnName) {
     int fieldCount = fieldList.size();
@@ -606,6 +613,23 @@ public class MemStore implements CatalogStore {
       }
     }
     return protos;
+  }
+
+  @Override
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
+    , boolean ifNotExists) throws CatalogException {
+    for(CatalogProtos.PartitionDescProto partition: partitions) {
+      String partitionName = partition.getPartitionName();
+
+      if (this.partitions.containsKey(tableName) && this.partitions.get(tableName).containsKey(partitionName)) {
+        if (ifNotExists) {
+          dropPartition(databaseName, tableName, partitionName);
+        } else {
+          throw new DuplicatePartitionException(partitionName);
+        }
+      }
+      addPartition(partition, tableName, partitionName);
+    }
   }
 
   /* (non-Javadoc)

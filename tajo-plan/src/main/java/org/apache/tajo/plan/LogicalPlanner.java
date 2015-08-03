@@ -2153,6 +2153,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     alterTableNode.setPurge(alterTable.isPurge());
+    alterTableNode.setIfNotExists(alterTable.isIfNotExists());
+    alterTableNode.setIfExists(alterTable.isIfExists());
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
   }
