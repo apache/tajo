@@ -84,7 +84,6 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     for(ExecutionBlockContext context: executionBlockContextMap.values()) {
       context.stop();
     }
-    executionBlockContextMap.clear();
     super.serviceStop();
   }
 
