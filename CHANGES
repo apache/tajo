@@ -33,6 +33,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1721: Separate routine for CREATE TABLE from DDLExecutor. (hyunsik)
+
     TAJO-1736: Remove unnecessary getMountPath(). 
     (Contributed by YeonSu Han, Committed by jinho)
 
