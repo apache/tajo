@@ -212,7 +212,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  private static GetPartitionsWithDirectSQLRequest buildDirectSQLForRDBMS(
+  public static GetPartitionsWithDirectSQLRequest buildDirectSQLForRDBMS(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
     // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
