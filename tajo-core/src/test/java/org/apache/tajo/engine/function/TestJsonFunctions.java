@@ -20,15 +20,14 @@ package org.apache.tajo.engine.function;
 
 
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class TestJsonFunctions extends ExprTestBase {
   static final String JSON_DOCUMENT = "{\"map\" : {\"name\" : \"tajo\"}, \"array\" : [1,2,3]}";
 
   @Test
-  public void testJsonExtractPathText() throws IOException {
+  public void testJsonExtractPathText() throws TajoException {
     testSimpleEval("select json_extract_path_text('" + JSON_DOCUMENT + "', '$.map.name') ", new String[]{"tajo"});
     testSimpleEval("select json_extract_path_text('" + JSON_DOCUMENT + "', '$.array[1]') ", new String[]{"2"});
 

@@ -23,6 +23,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.exception.NoSuchSessionVariableException;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -34,7 +35,7 @@ import java.util.Map;
 @Category(IntegrationTest.class)
 public class TestIndexScan extends QueryTestCaseBase {
 
-  public TestIndexScan() throws ServiceException, SQLException {
+  public TestIndexScan() throws ServiceException, SQLException, NoSuchSessionVariableException {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     Map<String,String> sessionVars = new HashMap<String, String>();
     sessionVars.put(SessionVars.INDEX_ENABLED.keyname(), "true");

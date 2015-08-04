@@ -170,16 +170,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             createBaseTable();
             LOG.info("The base tables of CatalogServer are created.");
           } catch (CatalogException ce) {
-            try {
-              dropBaseTable();
-            } catch (Throwable t) {
-              LOG.error(t, t);
-            }
+            dropBaseTable();
             throw ce;
           }
         }
      }
-    } catch (Exception se) {
+    } catch (Throwable se) {
       throw new TajoInternalError(se);
     }
   }
@@ -200,7 +196,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogUri;
   }
 
-  protected boolean isConnValid(int timeout) throws CatalogException {
+  protected boolean isConnValid(int timeout) {
     boolean isValid = false;
 
     try {
@@ -703,7 +699,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private TableSpaceInternal getTableSpaceInfo(String spaceName) {
+  private TableSpaceInternal getTableSpaceInfo(String spaceName) throws UndefinedTablespaceException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -742,7 +738,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       return res.getInt(1);
     } catch (SQLException se) {
-      throw new UndefinedTableException(databaseName, tableName);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1034,7 +1030,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   }
 
-  private Map<String, String> getTableOptions(final int tableId) throws CatalogException {
+  private Map<String, String> getTableOptions(final int tableId) {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -1335,7 +1331,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private int getDatabaseId(String databaseName) throws SQLException {
+  private int getDatabaseId(String databaseName) throws SQLException, UndefinedDatabaseException {
     String sql = String.format("SELECT DB_ID from %s WHERE DB_NAME = ?", TB_DATABASES);
 
     if (LOG.isDebugEnabled()) {
@@ -1394,7 +1390,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   public void dropTableInternal(Connection conn, String databaseName, final String tableName)
-      throws SQLException {
+      throws SQLException, UndefinedDatabaseException {
 
     PreparedStatement pstmt = null;
 
@@ -1507,7 +1503,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public Pair<Integer, String> getDatabaseIdAndUri(String databaseName) throws SQLException {
+  public Pair<Integer, String> getDatabaseIdAndUri(String databaseName)
+      throws SQLException, UndefinedDatabaseException {
+
     String sql =
         "SELECT DB_ID, SPACE_URI from " + TB_DATABASES + " natural join " + TB_SPACES + " WHERE db_name = ?";
 

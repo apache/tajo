@@ -87,6 +87,6 @@ public class FetchResultSet extends TajoResultSetBase {
       currentResultSet.close();
       currentResultSet = null;
     }
-    tajoClient.closeNonForwardQuery(queryId);
+    tajoClient.closeQuery(queryId);
   }
 }

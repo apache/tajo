@@ -24,16 +24,16 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.ipc.ClientProtos.*;
-import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
+import org.apache.tajo.ipc.ClientProtos.GetIndexWithColumnsRequest;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 
 import java.io.IOException;
@@ -41,7 +41,7 @@ import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
+import static org.apache.tajo.exception.ReturnStateUtil.*;
 import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 
@@ -53,19 +53,27 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean createDatabase(final String databaseName) throws SQLException {
+  public boolean createDatabase(final String databaseName) throws DuplicateDatabaseException {
 
     final BlockingInterface stub = conn.getTMStub();
 
     try {
-      return isSuccess(stub.createDatabase(null, conn.getSessionedString(databaseName)));
+      PrimitiveProtos.ReturnState state = stub.createDatabase(null, conn.getSessionedString(databaseName));
+
+      if (isThisError(state, Errors.ResultCode.DUPLICATE_DATABASE)) {
+        throw new DuplicateDatabaseException(state);
+      }
+
+      ensureOk(state);
+      return true;
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public boolean existDatabase(final String databaseName) throws SQLException {
+  public boolean existDatabase(final String databaseName) {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -77,19 +85,24 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean dropDatabase(final String databaseName) throws SQLException {
+  public boolean dropDatabase(final String databaseName) throws UndefinedDatabaseException {
 
     final BlockingInterface stub = conn.getTMStub();
 
     try {
-      return isSuccess(stub.dropDatabase(null, conn.getSessionedString(databaseName)));
+      PrimitiveProtos.ReturnState state = stub.dropDatabase(null, conn.getSessionedString(databaseName));
+      if (isThisError(state, Errors.ResultCode.UNDEFINED_DATABASE)) {
+        throw new UndefinedDatabaseException(state);
+      }
+      ensureOk(state);
+      return true;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public List<String> getAllDatabaseNames() throws SQLException {
+  public List<String> getAllDatabaseNames() {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -100,26 +113,34 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     }
   }
 
-  public boolean existTable(final String tableName) throws SQLException {
+  public boolean existTable(final String tableName) {
 
     final BlockingInterface stub = conn.getTMStub();
 
+    PrimitiveProtos.ReturnState state;
     try {
-      return isSuccess(stub.existTable(null, conn.getSessionedString(tableName)));
+      state = stub.existTable(null, conn.getSessionedString(tableName));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    if (isThisError(state, Errors.ResultCode.UNDEFINED_TABLE)) {
+      return false;
+    }
+
+    ensureOk(state);
+    return true;
   }
 
   @Override
   public TableDesc createExternalTable(String tableName, Schema schema, URI path, TableMeta meta)
-      throws SQLException {
+      throws DuplicateTableException {
     return createExternalTable(tableName, schema, path, meta, null);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException {
+      throws DuplicateTableException {
 
     NettyClientBase client = conn.getTajoMasterConnection();
     conn.checkSessionAndGet(client);
@@ -143,20 +164,21 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    if (isSuccess(res.getState())) {
-      return CatalogUtil.newTableDesc(res.getTable());
-    } else {
-      throw SQLExceptionUtil.toSQLException(res.getState());
+    if (isThisError(res.getState(), Errors.ResultCode.DUPLICATE_TABLE)) {
+      throw new DuplicateTableException(res.getState());
     }
+
+    ensureOk(res.getState());
+    return CatalogUtil.newTableDesc(res.getTable());
   }
 
   @Override
-  public boolean dropTable(String tableName) throws SQLException {
+  public boolean dropTable(String tableName) throws UndefinedTableException {
     return dropTable(tableName, false);
   }
 
   @Override
-  public boolean dropTable(final String tableName, final boolean purge) throws SQLException {
+  public boolean dropTable(final String tableName, final boolean purge) throws UndefinedTableException {
 
     final BlockingInterface stub = conn.getTMStub();
     final DropTableRequest request = DropTableRequest.newBuilder()
@@ -165,15 +187,24 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
         .setPurge(purge)
         .build();
 
+
+    PrimitiveProtos.ReturnState state;
     try {
-      return isSuccess(stub.dropTable(null, request));
+      state = stub.dropTable(null, request);
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    if (isThisError(state, Errors.ResultCode.UNDEFINED_TABLE)) {
+      throw new UndefinedTableException(state);
+    }
+
+    ensureOk(state);
+    return true;
   }
 
   @Override
-  public List<String> getTableList(@Nullable final String databaseName) throws SQLException {
+  public List<String> getTableList(@Nullable final String databaseName) {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -184,12 +215,12 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return response.getValuesList();
   }
 
   @Override
-  public TableDesc getTableDesc(final String tableName) throws SQLException {
+  public TableDesc getTableDesc(final String tableName) throws UndefinedTableException {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -200,12 +231,16 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    if (isThisError(res.getState(), Errors.ResultCode.UNDEFINED_TABLE)) {
+      throw new UndefinedTableException(res.getState());
+    }
+
+    ensureOk(res.getState());
     return CatalogUtil.newTableDesc(res.getTable());
   }
 
   @Override
-  public List<FunctionDescProto> getFunctions(final String functionName) throws SQLException {
+  public List<FunctionDescProto> getFunctions(final String functionName) {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -217,7 +252,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
     return res.getFunctionList();
   }
 
