@@ -19,10 +19,15 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class CatalogException extends TajoRuntimeException {
+public class CatalogException extends TajoException {
   private static final long serialVersionUID = -26362412527118618L;
+
+  public CatalogException(ReturnState state) {
+    super(state);
+  }
 
   public CatalogException(ResultCode code, String...args) {
     super(code, args);

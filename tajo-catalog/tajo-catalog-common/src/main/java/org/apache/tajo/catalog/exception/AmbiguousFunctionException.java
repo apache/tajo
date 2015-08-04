@@ -20,10 +20,16 @@ package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
 public class AmbiguousFunctionException extends CatalogException {
+
+  public AmbiguousFunctionException(PrimitiveProtos.ReturnState state) {
+    super(state);
+  }
+
   public AmbiguousFunctionException(String funcName, DataType[] parameters) {
     super(Errors.ResultCode.AMBIGUOUS_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
   }

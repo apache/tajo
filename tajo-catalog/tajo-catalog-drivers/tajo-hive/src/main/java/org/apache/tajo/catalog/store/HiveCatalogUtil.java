@@ -47,7 +47,7 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static TajoDataTypes.Type getTajoFieldType(String dataType)  {
+  public static TajoDataTypes.Type getTajoFieldType(String dataType) throws CatalogException {
     Preconditions.checkNotNull(dataType);
 
     if(dataType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {

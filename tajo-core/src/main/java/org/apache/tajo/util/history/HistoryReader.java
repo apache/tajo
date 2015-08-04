@@ -18,6 +18,8 @@
 
 package org.apache.tajo.util.history;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -62,41 +64,37 @@ public class HistoryReader {
     return getQueriesInHistory(-1, Integer.MAX_VALUE);
   }
 
+  /**
+   * Get desc ordered query histories in persistent storage
+   * @param page index of page
+   * @param size size of page
+   */
   public List<QueryInfo> getQueriesInHistory(int page, int size) throws IOException {
-    List<QueryInfo> queryList = getQueryInfoInHistory(page, size, null);
-    if (queryList.size() > size) {
-      queryList = queryList.subList(0, size);
-    }
-
-    Collections.sort(queryList, new Comparator<QueryInfo>() {
-      @Override
-      public int compare(QueryInfo query1, QueryInfo query2) {
-        return query2.compareTo(query1);
-      }
-    });
-
-    return queryList;
+    return findQueryInfoInStorage(page, size, null);
   }
 
-  private List<QueryInfo> getQueryInfoInHistory(int page, int size, @Nullable QueryId queryId) throws IOException {
-    List<QueryInfo> queryInfos = new ArrayList<QueryInfo>();
+  private synchronized List<QueryInfo> findQueryInfoInStorage(int page, int size, @Nullable QueryId queryId)
+      throws IOException {
+    List<QueryInfo> result = Lists.newLinkedList();
 
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(historyParentPath, tajoConf);
     try {
       if (!fs.exists(historyParentPath)) {
-        return queryInfos;
+        return result;
       }
     } catch (Throwable e) {
-      return queryInfos;
+      return result;
     }
 
     FileStatus[] files = fs.listStatus(historyParentPath);
     if (files == null || files.length == 0) {
-      return queryInfos;
+      return result;
     }
 
-    int startIndex = page < 1 ? page : (page - 1) * size; // set index to last index of previous page
+    Set<QueryInfo> queryInfos = Sets.newTreeSet(Collections.reverseOrder());
+    int startIndex = page < 1 ? page : ((page - 1) * size) + 1;
     int currentIndex = 0;
+    int skipSize = 0;
 
     ArrayUtils.reverse(files);
     for (FileStatus eachDateFile : files) {
@@ -118,55 +116,60 @@ public class HistoryReader {
         }
 
         FSDataInputStream in = null;
-        long totalLength = 0;
 
+        List<String> jsonList = Lists.newArrayList();
         try {
           in = fs.open(path);
 
-          while (totalLength < eachFile.getLen()) {
+          //If history file does not close, FileStatus.getLen() are not being updated
+          //So, this code block should check the EOFException
+          while (true) {
             int length = in.readInt();
-            totalLength += 4;
-
-            currentIndex++;
-            //skip previous page
-            if (startIndex >= currentIndex) {
-              totalLength += in.skipBytes(length);
-              continue;
-            }
 
             byte[] buf = new byte[length];
             in.readFully(buf, 0, length);
-            totalLength += length;
 
-            String queryInfoJson = new String(buf, 0, length, Bytes.UTF8_CHARSET);
-            QueryInfo queryInfo = QueryInfo.fromJson(queryInfoJson);
-
-            if (queryId != null) {
-              if (queryInfo.getQueryId().equals(queryId)) {
-                queryInfos.add(queryInfo);
-                return queryInfos;
-              }
-            } else {
-              queryInfos.add(queryInfo);
-            }
+            jsonList.add(new String(buf, 0, length, Bytes.UTF8_CHARSET));
+            currentIndex++;
           }
+        } catch (EOFException eof) {
         } catch (Throwable e) {
           LOG.warn("Reading error:" + path + ", " + e.getMessage());
         } finally {
           IOUtils.cleanup(LOG, in);
         }
 
-        if (queryInfos.size() >= size) {
-          return queryInfos;
+        //skip previous page
+        if (startIndex > currentIndex) {
+          skipSize += jsonList.size();
+        } else {
+          for (String json : jsonList) {
+            QueryInfo queryInfo = QueryInfo.fromJson(json);
+            if (queryId != null) {
+              if (queryInfo.getQueryId().equals(queryId)) {
+                result.add(queryInfo);
+                return result;
+              }
+            } else {
+              queryInfos.add(queryInfo);
+            }
+          }
+        }
+
+        if (currentIndex - (startIndex - 1) >= size) {
+          result.addAll(queryInfos);
+          int fromIndex = (startIndex - 1) - skipSize;
+          return result.subList(fromIndex, fromIndex + size);
         }
       }
     }
 
-    return queryInfos;
+    result.addAll(queryInfos);
+    return result;
   }
 
   public QueryInfo getQueryByQueryId(QueryId queryId) throws IOException {
-    List<QueryInfo> queryInfoList = getQueryInfoInHistory(-1, Integer.MAX_VALUE, queryId);
+    List<QueryInfo> queryInfoList = findQueryInfoInStorage(-1, Integer.MAX_VALUE, queryId);
     if (queryInfoList.size() > 0) {
       return queryInfoList.get(0);
     } else {

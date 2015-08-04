@@ -21,6 +21,7 @@ package org.apache.tajo.plan.verifier;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.exception.TajoError;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoExceptionInterface;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -31,6 +32,11 @@ import java.util.List;
 public class VerificationState {
   private static final Log LOG = LogFactory.getLog(VerificationState.class);
   List<Throwable> errorMessages = Lists.newArrayList();
+
+  public void addVerification(TajoError error) {
+    LOG.warn(TUtil.getCurrentCodePoint(1) + " causes: " + error.getMessage());
+    errorMessages.add(error);
+  }
 
   public void addVerification(TajoException error) {
     LOG.warn(TUtil.getCurrentCodePoint(1) + " causes: " + error.getMessage());

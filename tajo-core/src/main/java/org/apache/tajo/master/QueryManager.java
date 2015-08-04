@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.map.LRUMap;
@@ -126,9 +125,7 @@ public class QueryManager extends CompositeService {
     }
 
     try {
-      synchronized (this) {
-        result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory());
-      }
+      result.addAll(this.masterContext.getHistoryReader().getQueriesInHistory());
       return result;
     } catch (Throwable e) {
       LOG.error(e, e);
@@ -137,34 +134,35 @@ public class QueryManager extends CompositeService {
   }
 
   /**
-   * Get query history in cache or persistent storage
+   * Get desc ordered query histories in cache or persistent storage
+   * @param page index of page
+   * @param size size of page
    */
-  public Collection<QueryInfo> getFinishedQueries(int page, int size) {
-    TreeSet<QueryInfo> result = Sets.newTreeSet();
-    if(page <= 0 || size <= 0) {
-      return result;
+  public List<QueryInfo> getFinishedQueries(int page, int size) {
+    if (page <= 0 || size <= 0) {
+      return Collections.EMPTY_LIST;
     }
 
-    List<QueryInfo> cacheList = Lists.newArrayList();
-    synchronized (historyCache) {
+    if (page * size <= historyCache.size()) {
+      Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
       // request size fits in cache
-      if (page == 1 && size <= historyCache.size()) {
-        cacheList.addAll(historyCache.values());
+      synchronized (historyCache) {
+        result.addAll(historyCache.values());
       }
-    }
-
-    if (cacheList.size() > 0) {
-      result.addAll(cacheList.subList(0, size));
-      return result;
-    }
-
-    try {
-      synchronized (this) {
+      int fromIndex = (page - 1) * size;
+      return new LinkedList<QueryInfo>(result).subList(fromIndex, fromIndex + size);
+    } else {
+      try {
         return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
+      } catch (Throwable e) {
+        LOG.error(e, e);
+        Set<QueryInfo> result = Sets.newTreeSet(Collections.reverseOrder());
+        // request size fits in cache
+        synchronized (historyCache) {
+          result.addAll(historyCache.values());
+        }
+        return new LinkedList<QueryInfo>(result);
       }
-    } catch (Throwable e) {
-      LOG.error(e, e);
-      return result;
     }
   }
 
@@ -175,9 +173,7 @@ public class QueryManager extends CompositeService {
         queryInfo = (QueryInfo) historyCache.get(queryId);
       }
       if (queryInfo == null) {
-        synchronized (this) {
-          queryInfo = this.masterContext.getHistoryReader().getQueryByQueryId(queryId);
-        }
+        queryInfo = this.masterContext.getHistoryReader().getQueryByQueryId(queryId);
       }
       return queryInfo;
     } catch (Throwable e) {
