@@ -128,17 +128,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     List<CatalogProtos.TablePartitionProto> allPartitions = catalog.getAllPartitions();
     List<CatalogProtos.TablePartitionProto> resultPartitions = TUtil.newList();
 
-    System.out.println("### tablePath:" + retrieved.getUri().toString());
-    System.out.println("### tableId:" + tableId);
-
     int partitionId = 0;
     for (CatalogProtos.TablePartitionProto partition : allPartitions) {
-      System.out.println("### partition - partitionId:" + partition.getPartitionId()
-        + ", tid:" + partition.getTid()
-          + ", name:" + partition.getPartitionName()
-        + ", path:" + partition.getPath()
-      );
-
       if (partition.getTid() == tableId
         && partition.getPartitionName().equals("col3=1/col4=2")
         && partition.getPath().equals(retrieved.getUri().toString() + "/col3=1/col4=2")
@@ -154,10 +145,6 @@ public class TestAlterTable extends QueryTestCaseBase {
     List<CatalogProtos.TablePartitionKeysProto> resultPartitionKeys = TUtil.newList();
 
     for (CatalogProtos.TablePartitionKeysProto partitionKey: tablePartitionKeys) {
-      System.out.println("### partitionKeys - partitionId:" + partitionKey.getPartitionId()
-          + ", column:" + partitionKey.getColumnName()
-          + ", value:" + partitionKey.getPartitionValue()
-      );
       if (partitionKey.getPartitionId() == partitionId
         && (partitionKey.getColumnName().equals("col3") && partitionKey.getPartitionValue().equals("1")
       || partitionKey.getColumnName().equals("col4") && partitionKey.getPartitionValue().equals("2"))) {
