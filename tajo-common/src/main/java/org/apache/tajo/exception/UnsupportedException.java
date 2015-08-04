@@ -19,9 +19,14 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UnsupportedException extends TajoRuntimeException {
   private static final long serialVersionUID = 6702291354858193578L;
+
+  public UnsupportedException(ReturnState state) {
+    super(state);
+  }
 
   public UnsupportedException(String featureName) {
     super(Errors.ResultCode.FEATURE_NOT_SUPPORTED, featureName);

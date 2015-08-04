@@ -18,12 +18,15 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
-
-import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class AmbiguousTableException extends CatalogException {
+
+  public AmbiguousTableException(ReturnState state) {
+    super(state);
+  }
+
   public AmbiguousTableException(String tableName) {
     super(Errors.ResultCode.AMBIGUOUS_TABLE, tableName);
   }

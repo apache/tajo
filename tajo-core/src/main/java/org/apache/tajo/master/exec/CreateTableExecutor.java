@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.exception.DuplicateTableException;
 import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.logical.CreateTableNode;
@@ -52,7 +53,7 @@ public class CreateTableExecutor {
   }
 
   public TableDesc create(QueryContext queryContext, CreateTableNode createTable, boolean ifNotExists)
-      throws IOException {
+      throws IOException, TajoException {
 
     TableMeta meta;
     if (createTable.hasOptions()) {
@@ -85,7 +86,7 @@ public class CreateTableExecutor {
                           @Nullable URI uri,
                           boolean isExternal,
                           @Nullable PartitionMethodDesc partitionDesc,
-                          boolean ifNotExists) throws IOException {
+                          boolean ifNotExists) throws IOException, TajoException {
 
     Pair<String, String> separatedNames = getQualifiedName(queryContext.getCurrentDatabase(), tableName);
     String databaseName = separatedNames.getFirst();
@@ -119,7 +120,7 @@ public class CreateTableExecutor {
     }
   }
 
-  private TableDesc handlExistence(boolean ifNotExists, String qualifiedName) {
+  private TableDesc handlExistence(boolean ifNotExists, String qualifiedName) throws DuplicateTableException {
     if (ifNotExists) {
       LOG.info("relation \"" + qualifiedName + "\" is already exists.");
       return catalog.getTableDesc(qualifiedName);
@@ -131,13 +132,15 @@ public class CreateTableExecutor {
   private Pair<String, String> getQualifiedName(String currentDatabase, String tableName) {
     if (CatalogUtil.isFQTableName(tableName)) {
       String [] splitted = CatalogUtil.splitFQTableName(tableName);
-      return new Pair<String, String>(splitted[0], splitted[1]);
+      return new Pair<>(splitted[0], splitted[1]);
     } else {
-      return new Pair<String, String>(currentDatabase, tableName);
+      return new Pair<>(currentDatabase, tableName);
     }
   }
 
-  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri) {
+  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri)
+      throws UndefinedTablespaceException {
+
     if (tableSpaceName != null) {
       Optional<Tablespace> ts = (Optional<Tablespace>) TablespaceManager.getByName(tableSpaceName);
       if (ts.isPresent()) {

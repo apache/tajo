@@ -19,11 +19,17 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 /**
  * Exception for Internal Bugs and Unexpected exception
  */
 public class TajoInternalError extends TajoError {
+
+  public TajoInternalError(ReturnState state) {
+    super(state);
+  }
 
   public TajoInternalError(String message) {
     super(ResultCode.INTERNAL_ERROR, message);

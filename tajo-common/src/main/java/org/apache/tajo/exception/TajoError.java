@@ -19,12 +19,19 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 /**
  * Unrecoverable errors
  */
 public class TajoError extends Error implements TajoExceptionInterface {
   private ResultCode code;
+
+  public TajoError(ReturnState state) {
+    super(state.getMessage());
+    code = state.getReturnCode();
+  }
 
   public TajoError(ResultCode code) {
     super(ErrorMessages.getMessage(code));

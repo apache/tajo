@@ -19,6 +19,7 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 /**
  * TajoException contains all exceptions with any exact reason.
@@ -26,6 +27,16 @@ import org.apache.tajo.error.Errors.ResultCode;
  */
 public class TajoException extends Exception implements TajoExceptionInterface {
   private ResultCode code;
+
+  public TajoException(ReturnState e) {
+    super(e.getMessage());
+    this.code = e.getReturnCode();
+  }
+
+  public TajoException(TajoRuntimeException e) {
+    super(e.getMessage());
+    this.code = e.getErrorCode();
+  }
 
   public TajoException(ResultCode code) {
     super(ErrorMessages.getMessage(code));
