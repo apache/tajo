@@ -46,6 +46,8 @@ public interface Tuple extends Cloneable {
 
   int size(int fieldId);
 
+  void clearOffset();
+
   void setOffset(long offset);
 
   long getOffset();

@@ -152,7 +152,7 @@ If you want to know DDL statements in more detail, please see Query Language. ::
 
   table name: table1
   table path: file:/home/x/table1
-  store type: CSV
+  store type: TEXT
   number of rows: 0
   volume (bytes): 78 B
   schema:

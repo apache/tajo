@@ -37,15 +37,17 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.*;
-import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
@@ -65,8 +67,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import static org.apache.tajo.ResourceProtos.*;
 
 public class TaskImpl implements Task {
   private static final Log LOG = LogFactory.getLog(TaskImpl.class);
@@ -78,7 +79,6 @@ public class TaskImpl implements Task {
   private final TaskRequest request;
   private final Map<String, TableDesc> descs;
   private final TableStats inputStats;
-  private final ExecutorService fetcherExecutor;
   private final Path taskDir;
 
   private final TaskAttemptContext context;
@@ -100,8 +100,7 @@ public class TaskImpl implements Task {
   private TupleComparator sortComp = null;
 
   public TaskImpl(final TaskRequest request,
-                  final ExecutionBlockContext executionBlockContext,
-                  final ExecutorService fetcherExecutor) throws IOException {
+                  final ExecutionBlockContext executionBlockContext) throws IOException {
 
     this.request = request;
     this.executionBlockContext = executionBlockContext;
@@ -109,7 +108,6 @@ public class TaskImpl implements Task {
     this.queryContext = request.getQueryContext(systemConf);
     this.inputStats = new TableStats();
     this.fetcherRunners = Lists.newArrayList();
-    this.fetcherExecutor = fetcherExecutor;
     this.descs = Maps.newHashMap();
 
     Path baseDirPath = executionBlockContext.createBaseDir();
@@ -127,21 +125,9 @@ public class TaskImpl implements Task {
 
   public void initPlan() throws IOException {
     plan = LogicalNodeDeserializer.deserialize(queryContext, context.getEvalContext(), request.getPlan());
-    LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
-    if (scanNode != null) {
-      for (LogicalNode node : scanNode) {
-        ScanNode scan = (ScanNode) node;
-        descs.put(scan.getCanonicalName(), scan.getTableDesc());
-      }
-    }
-
-    LogicalNode [] partitionScanNode = PlannerUtil.findAllNodes(plan, NodeType.PARTITIONS_SCAN);
-    if (partitionScanNode != null) {
-      for (LogicalNode node : partitionScanNode) {
-        PartitionedTableScanNode scan = (PartitionedTableScanNode) node;
-        descs.put(scan.getCanonicalName(), scan.getTableDesc());
-      }
-    }
+    updateDescsForScanNodes(NodeType.SCAN);
+    updateDescsForScanNodes(NodeType.PARTITIONS_SCAN);
+    updateDescsForScanNodes(NodeType.INDEX_SCAN);
 
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
@@ -179,6 +165,17 @@ public class TaskImpl implements Task {
       LOG.debug(plan.toString());
     }
     LOG.info("==================================");
+  }
+
+  private void updateDescsForScanNodes(NodeType nodeType) {
+    assert nodeType == NodeType.SCAN || nodeType == NodeType.PARTITIONS_SCAN || nodeType == NodeType.INDEX_SCAN;
+    LogicalNode[] scanNodes = PlannerUtil.findAllNodes(plan, nodeType);
+    if (scanNodes != null) {
+      for (LogicalNode node : scanNodes) {
+        ScanNode scanNode = (ScanNode) node;
+        descs.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+      }
+    }
   }
 
   private void startScriptExecutors() throws IOException {
@@ -253,7 +250,7 @@ public class TaskImpl implements Task {
   }
 
   @Override
-  public void fetch() {
+  public void fetch(ExecutorService fetcherExecutor) {
     for (Fetcher f : fetcherRunners) {
       fetcherExecutor.submit(new FetchRunner(context, f));
     }
@@ -330,6 +327,10 @@ public class TaskImpl implements Task {
       builder.setResultStats(context.getResultStats().getProto());
     } else {
       builder.setResultStats(new TableStats().getProto());
+    }
+
+    if (!context.getPartitions().isEmpty()) {
+      builder.addAllPartitions(context.getPartitions());
     }
 
     Iterator<Entry<Integer, String>> it = context.getShuffleFileOutputs();
@@ -466,6 +467,7 @@ public class TaskImpl implements Task {
 
   @Override
   public void cleanup() {
+    // history store in memory while running stage
     TaskHistory taskHistory = createTaskHistory();
     executionBlockContext.addTaskHistory(getId().getTaskId(), taskHistory);
     executionBlockContext.getTasks().remove(getId());
@@ -485,6 +487,7 @@ public class TaskImpl implements Task {
     stopScriptExecutors();
   }
 
+  @Override
   public TaskHistory createTaskHistory() {
     TaskHistory taskHistory = null;
     try {
@@ -508,16 +511,12 @@ public class TaskImpl implements Task {
         int i = 0;
         FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
         for (Fetcher fetcher : fetcherRunners) {
-          // TODO store the fetcher histories
-          if (systemConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
-            builder.setStartTime(fetcher.getStartTime());
-            builder.setFinishTime(fetcher.getFinishTime());
-            builder.setFileLength(fetcher.getFileLen());
-            builder.setMessageReceivedCount(fetcher.getMessageReceiveCount());
-            builder.setState(fetcher.getState());
-
-            taskHistory.addFetcherHistory(builder.build());
-          }
+          builder.setStartTime(fetcher.getStartTime());
+          builder.setFinishTime(fetcher.getFinishTime());
+          builder.setFileLength(fetcher.getFileLen());
+          builder.setMessageReceivedCount(fetcher.getMessageReceiveCount());
+          builder.setState(fetcher.getState());
+          taskHistory.addFetcherHistory(builder.build());
           if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED) i++;
         }
         taskHistory.setFinishedFetchCount(i);
@@ -527,6 +526,10 @@ public class TaskImpl implements Task {
     }
 
     return taskHistory;
+  }
+
+  public List<Fetcher> getFetchers() {
+    return fetcherRunners;
   }
 
   public int hashCode() {

@@ -1,0 +1,333 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package tajo.error;
+option java_package = "org.apache.tajo.error";
+
+import "stacktrace.proto";
+
+// Unstable - this is still evolving.
+
+
+// SQLState Class values that begin with 0, 1, 2, 3, 4, A, B, C, D, E, F, G or H
+// are called "standard-defined classes". This is borrowed from PostgreSQL and IBM DB2.
+
+// 00 - Successful Completion
+// 01 - Warning
+// 02 - No Data
+// 07 - Dynamic SQL Error
+// 08 - Connection Exception
+// 09 - Triggered Action Exception
+// 0A - Feature Not Supported
+// 0D - Invalid Target Type Specification
+// 0F - Invalid Token
+// 0K - Invalid RESIGNAL Statement
+// 0N - SQL/XML mapping error
+// 20 - Case Not Found for CASE Statement
+// 21 - Cardinality Violation
+// 22 - Data Exception
+// 23 - Constraint Violation
+// 24 - Invalid Cursor State
+// 25 - Invalid Transaction State
+// 26 - Invalid SQL Statement Identifier
+// 28 - Invalid Authorization Specification
+// 2D - Invalid Transaction Termination
+// 2E - Invalid Connection Name
+// 34 - Invalid Cursor Name
+// 36 - Cursor Sensitivity Exception
+// 38 - External Function Exception
+// 39 - External Function Call Exception
+// 3B - Invalid SAVEPOINT
+// 40 - Transaction Rollback
+// 42 - Syntax Error or Access Rule Violation
+// 44 - WITH CHECK OPTION Violation
+// 46 - Java DDL
+// 51 - Invalid Application State
+// 53 - Invalid Operand or Inconsistent Specification
+// 54 - SQL or Product Limit Exceeded
+// 55 - Object Not in Prerequisite State
+// 56 - Miscellaneous SQL or Product Error
+// 57 - Resource Not Available or Operator Intervention
+// 58 - System Error
+
+enum ResultCode {
+  // Class
+  // 00 - Successful Completion
+  OK                            = 0;
+
+  WARNING                       = 100; // Warning
+
+  // General Errors
+  INTERNAL_ERROR                = 201; // Error caused by internal bugs (See also TajoInternalException.java)
+  NOT_IMPLEMENTED               = 202; // Planned, but not implemented yet.
+  FEATURE_NOT_SUPPORTED         = 203; // SQLState: 0A000 - Unsupported feature (usually for unreasonable feature)
+  INVALID_RPC_CALL              = 204; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
+
+  // Query Management and Scheduler
+  NO_SUCH_QUERYID               = 301; // No query id in TajoMaster
+  NO_DATA                       = 302; // No data due to query fail or error
+  INCOMPLETE_QUERY              = 303; // It occurs when a client requests something of a completed query.
+
+  // Session
+  INVALID_SESSION               = 401; // Session already was invalid
+  NO_SUCH_SESSION_VARIABLE      = 402; // Session variable not found
+  INVALID_SESSION_VARIABLE      = 403; // Session variable is invalid (type mismatch or out of range)
+
+  // Data Exception (SQLState Class - 22)
+  DIVISION_BY_ZERO              = 451; // SQLState: 22012 - Division by zero
+
+
+  // Section: Class 42 - Syntax Error or Access Rule Violation
+  SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 501; // SQLState: 42000
+  SYNTAX_ERROR                          = 502; // SQLState: 42601
+  INSUFFICIENT_PRIVILEGE                = 503; // SQLState: 42501
+
+  UNDEFINED_TABLESPACE                  = 511; // ?
+  UNDEFINED_DATABASE                    = 512; // ?
+  UNDEFINED_SCHEMA                      = 513; // ?
+  UNDEFINED_TABLE                       = 514; // ?
+  UNDEFINED_COLUMN                      = 515; // SQLState: 42703
+  UNDEFINED_FUNCTION                    = 516; // SQLState: 42883
+  UNDEFINED_INDEX_FOR_TABLE             = 517; // ?
+  UNDEFINED_INDEX_FOR_COLUMNS           = 518; // ?
+  UNDEFINED_INDEX_NAME                  = 519; // ?
+  UNDEFINED_PARTITION                   = 520; // ?
+  UNDEFINED_PARTITION_METHOD            = 521; // ?
+  UNDEFINED_OPERATOR                    = 522; // SQLState: 42883 (=UNDEFINED_FUNCTION)
+  UNDEFINED_PARTITION_KEY               = 523; // ?
+
+  DUPLICATE_TABLESPACE                  = 531;
+  DUPLICATE_DATABASE                    = 532; // SQLState: 42P04
+  DUPLICATE_SCHEMA                      = 533; // SQLState: 42P06
+  DUPLICATE_TABLE                       = 534; // SQLState: 42P07
+  DUPLICATE_COLUMN                      = 535; // SQLState: 42701
+  DUPLICATE_ALIAS                       = 536; // SQLState: 42712
+  DUPLICATE_FUNCTION                    = 537; // SQLState: 42723
+  DUPLICATE_INDEX                       = 538; // SQLState: ?
+  DUPLICATE_PARTITION                   = 539; // SQLState: ?
+
+  AMBIGUOUS_TABLE                       = 541; // ?
+  AMBIGUOUS_COLUMN                      = 542; // SQLState: 42702;
+  AMBIGUOUS_FUNCTION                    = 543; // SQLState: 42725;
+  AMBIGUOUS_PARTITION_DIRECTORY         = 544; // ?
+
+  CANNOT_CAST                           = 601; // SQLState: 42846 - Cast from source type to target type is not supported.
+  GROUPING_ERROR                        = 602; // SQLState: 42803
+  WINDOWING_ERROR                       = 603; // SQLState: 42P20 - PgSQL implementation-defined
+  INVALID_RECURSION                     = 604; // SQLState: 42P19 - PgSQL implementation-defined
+  SET_OPERATION_SCHEMA_MISMATCH         = 605; // SQLState: 42601 (=SYNTAX_ERROR)
+  SET_OPERATION_DATATYPE_MISMATCH       = 606; // SQLState: 42601 (=SYNTAX_ERROR)
+  INVALID_FOREIGN_KEY                   = 621; // SQLState: 42830
+  INVALID_NAME                          = 622; // SQLState: 42602
+  INVALID_COLUMN_DEFINITION             = 623; // SQLState: 42611
+  NAME_TOO_LONG                         = 624; // SQLState: 42622
+  RESERVED_NAME                         = 625; // SQLState: 42939
+  DATATYPE_MISMATCH                     = 626; // SQLState: 42804
+  INDETERMINATE_DATATYPE                = 627; // SQLState: 42P18 - PgSQL implementation -defined
+
+
+
+  // Expressions
+  INVALID_EXPRESSION                    = 701;
+  INVALID_CAST                          = 702;
+  INVALID_DATATYPE                      = 703;
+
+  NUMERIC_OVERFLOW                      = 803;  // Numeric value overflow
+  VALUE_LARGER_THAN_PRECISION           = 804;  // Value larger than column precision
+
+  // Meta Catalog
+  CAT_UPGRADE_REQUIRED                  = 901;  // Migration
+  CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server
+
+  // MetaData Connector (MDC)
+  MDC_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
+
+  // Storage and Data Format
+  UNKNOWN_DATAFORMAT                    = 1001; // Unknown Data Format
+
+
+  CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
+  CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08001 -
+  CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1103; // SQLState: ?
+
+  // 53 - Invalid Operand or Inconsistent Specification
+  INSUFFICIENT_RESOURCE         = 53000;
+  DISK_FULL                     = 53100;
+  OUT_OF_MEMORY                 = 53200;
+
+  // 54 - SQL or Product Limit Exceeded
+  PROGRAM_LIMIT_EXCEEDED        = 54000;
+  STATEMENT_TOO_COMPLEX         = 54001;
+  STRING_CONSTANT_TOOL_LONG     = 54002;
+
+  TOO_MANY_TABLES               = 54004;
+  TOO_MANY_COLUMNS              = 54011;
+  TOO_MANY_ARGUMENTS            = 54023;
+
+  // 55 - Object Not in Prerequisite State
+  // 56 - Miscellaneous SQL or Product Error
+  // 57 - Resource Not Available or Operator Intervention
+
+  // 58 - System Error
+  IO_ERROR                      = 58030;
+
+
+  // underlying system errors based on errno.h.
+  EPERM                         = 10001;  // Operation not permitted
+  ENOENT                        = 10002;  // No such file or directory
+  ESRCH                         = 10003;  // No such process
+  EINTR                         = 10004;  // Interrupted system call
+  EIO                           = 10005;  // I/O error
+  ENXIO                         = 10006;  // No such device or address
+  E2BIG                         = 10007;  // Argument list too long
+  ENOEXEC                       = 10008;  // Exec format error
+  EBADF                         = 10009;  // Bad file number
+  ECHILD                        = 10010;  // No child processes
+  EAGAIN                        = 10011;  // Try again
+  ENOMEM                        = 10012;  // Out of memory
+  EACCES                        = 10013;  // Permission denied
+  EFAULT                        = 10014;  // Bad address
+  ENOTBLK                       = 10015;  // Block device required
+  EBUSY                         = 10016;  // Device or resource busy
+  EEXIST                        = 10017;  // File exists
+  EXDEV                         = 10018;  // Cross-device link
+  ENODEV                        = 10019;  // No such device
+  ENOTDIR                       = 10020;  // Not a directory
+  EISDIR                        = 10021;  // Is a directory
+  EINVAL                        = 10022;  // Invalid argument
+  ENFILE                        = 10023;  // File table overflow
+  EMFILE                        = 10024;  // Too many open files
+  ENOTTY                        = 10025;  // Not a typewriter
+  ETXTBSY                       = 10026;  // Text file busy
+  EFBIG                         = 10027;  // File too large
+  ENOSPC                        = 10028;  // No space left on device
+  ESPIPE                        = 10029;  // Illegal seek
+  EROFS                         = 10030;  // Read-only file system
+  EMLINK                        = 10031;  // Too many links
+  EPIPE                         = 10032;  // Broken pipe
+  EDOM                          = 10033;  // Math argument out of domain of func
+  ERANGE                        = 10034;  // Math result not representable
+;
+  EDEADLK                       = 10035;  // Resource deadlock would occur
+  ENAMETOOLONG                  = 10036;  // File name too long
+  ENOLCK                        = 10037;  // No record locks available
+  ENOSYS                        = 10038;  // Function not implemented
+  ENOTEMPTY                     = 10039;  // Directory not empty
+  ELOOP                         = 10040;  // Too many symbolic links encountered
+  // EWOULDBLOCK                = EAGAIN  // Operation would block
+  ENOMSG                        = 10042;  // No message of desired type
+  EIDRM                         = 10043;  // Identifier removed
+  ECHRNG                        = 10044;  // Channel number out of range
+  EL2NSYNC                      = 10045;  // Level 2 not synchronized
+  EL3HLT                        = 10046;  // Level 3 halted
+  EL3RST                        = 10047;  // Level 3 reset
+  ELNRNG                        = 10048;  // Link number out of range
+  EUNATCH                       = 10049;  // Protocol driver not attached
+  ENOCSI                        = 10050;  // No CSI structure available
+  EL2HLT                        = 10051;  // Level 2 halted
+  EBADE                         = 10052;  // Invalid exchange
+  EBADR                         = 10053;  // Invalid request descriptor
+  EXFULL                        = 10054;  // Exchange full
+  ENOANO                        = 10055;  // No anode
+  EBADRQC                       = 10056;  // Invalid request code
+  EBADSLT                       = 10057;  // Invalid slot
+  // EDEADLOCK                  = EDEADLK
+  EBFONT                        = 10059;  // Bad font file format
+  ENOSTR                        = 10060;  // Device not a stream
+  ENODATA                       = 10061;  // No data available
+  ETIME                         = 10062;  // Timer expired
+  ENOSR                         = 10063;  // Out of streams resources
+  ENONET                        = 10064;  // Machine is not on the network
+  ENOPKG                        = 10065;  // Package not installed
+  EREMOTE                       = 10066;  // Object is remote
+  ENOLINK                       = 10067;  // Link has been severed
+  EADV                          = 10068;  // Advertise error
+  ESRMNT                        = 10069;  // Srmount error
+  ECOMM                         = 10070;  // Communication error on send
+  EPROTO                        = 10071;  // Protocol error
+  EMULTIHOP                     = 10072;  // Multihop attempted
+  EDOTDOT                       = 10073;  // RFS specific error
+  EBADMSG                       = 10074;  // Not a data message
+  EOVERFLOW                     = 10075;  // Value too large for defined data type
+  ENOTUNIQ                      = 10076;  // Name not unique on network
+  EBADFD                        = 10077;  // File descriptor in bad state
+  EREMCHG                       = 10078;  // Remote address changed
+  ELIBACC                       = 10079;  // Can not access a needed shared library
+  ELIBBAD                       = 10080;  // Accessing a corrupted shared library
+  ELIBSCN                       = 10081;  // .lib section in a.out corrupted
+  ELIBMAX                       = 10082;  // Attempting to link in too many shared libraries
+  ELIBEXEC                      = 10083;  // Cannot exec a shared library directly
+  EILSEQ                        = 10084;  // Illegal byte sequence
+  ERESTART                      = 10085;  // Interrupted system call should be restarted
+  ESTRPIPE                      = 10086;  // Streams pipe error
+  EUSERS                        = 10087;  // Too many users
+  ENOTSOCK                      = 10088;  // Socket operation on non-socket
+  EDESTADDRREQ                  = 10089;  // Destination address required
+  EMSGSIZE                      = 10090;  // Message too long
+  EPROTOTYPE                    = 10091;  // Protocol wrong type for socket
+  ENOPROTOOPT                   = 10092;  // Protocol not available
+  EPROTONOSUPPORT               = 10093;  // Protocol not supported
+  ESOCKTNOSUPPORT               = 10094;  // Socket type not supported
+  EOPNOTSUPP                    = 10095;  // Operation not supported on transport endpoint
+  EPFNOSUPPORT                  = 10096;  // Protocol family not supported
+  EAFNOSUPPORT                  = 10097;  // Address family not supported by protocol
+  EADDRINUSE                    = 10098;  // Address already in use
+  EADDRNOTAVAIL                 = 10099;  // Cannot assign requested address
+  ENETDOWN                      = 10100; // Network is down
+  ENETUNREACH                   = 10101; // Network is unreachable
+  ENETRESET                     = 10102; // Network dropped connection because of reset
+  ECONNABORTED                  = 10103; // Software caused connection abort
+  ECONNRESET                    = 10104; // Connection reset by peer
+  ENOBUFS                       = 10105; // No buffer space available
+  EISCONN                       = 10106; // Transport endpoint is already connected
+  ENOTCONN                      = 10107; // Transport endpoint is not connected
+  ESHUTDOWN                     = 10108; // Cannot send after transport endpoint shutdown
+  ETOOMANYREFS                  = 10109; // Too many references: cannot splice
+  ETIMEDOUT                     = 10110; // Connection timed out
+  ECONNREFUSED                  = 10111; // Connection refused
+  EHOSTDOWN                     = 10112; // Host is down
+  EHOSTUNREACH                  = 10113; // No route to host
+  EALREADY                      = 10114; // Operation already in progress
+  EINPROGRESS                   = 10115; // Operation now in progress
+  ESTALE                        = 10116; // Stale NFS file handle
+  EUCLEAN                       = 10117; // Structure needs cleaning
+  ENOTNAM                       = 10118; // Not a XENIX named type file
+  ENAVAIL                       = 10119; // No XENIX semaphores available
+  EISNAM                        = 10120; // Is a named type file
+  EREMOTEIO                     = 10121; // Remote I/O error
+  EDQUOT                        = 10122; // Quota exceeded
+  ENOMEDIUM                     = 10123; // No medium found
+  EMEDIUMTYPE                   = 10124; // Wrong medium type
+  ECANCELED                     = 10125; // Operation Canceled
+  ENOKEY                        = 10126; // Required key not available
+  EKEYEXPIRED                   = 10127; // Key has expired
+  EKEYREVOKED                   = 10128; // Key has been revoked
+  EKEYREJECTED                  = 10129; // Key was rejected by service
+
+  // for robust mutexes
+  EOWNERDEAD                    = 10130; // Owner died
+  ENOTRECOVERABLE               = 10131; // State not recoverable
+}
+
+message SerializedException {
+  required int64 timestamp         = 1;  // Microseconds since Epoch.
+  required ResultCode return_code  = 2;
+  required string message          = 3;
+
+  optional StackTrace stack_trace  = 4;
+}

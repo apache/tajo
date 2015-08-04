@@ -401,96 +401,6 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   }
 
   @Test
-  public void testSetStatement() throws Exception {
-    assertTrue(TajoStatement.isSetVariableQuery("Set JOIN_TASK_INPUT_SIZE 123"));
-    assertTrue(TajoStatement.isSetVariableQuery("SET JOIN_TASK_INPUT_SIZE 123"));
-    assertFalse(TajoStatement.isSetVariableQuery("--SET JOIN_TASK_INPUT_SIZE 123"));
-
-    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-      DEFAULT_DATABASE_NAME);
-
-    Connection conn = DriverManager.getConnection(connUri);
-
-    Statement stmt = null;
-    ResultSet res = null;
-    try {
-      stmt = conn.createStatement();
-      res = stmt.executeQuery("Set JOIN_TASK_INPUT_SIZE 123");
-      assertFalse(res.next());
-      ResultSetMetaData rsmd = res.getMetaData();
-      assertNotNull(rsmd);
-      assertEquals(0, rsmd.getColumnCount());
-
-      QueryClient connTajoClient = ((JdbcConnection) stmt.getConnection()).getQueryClient();
-      Map<String, String> variables = connTajoClient.getAllSessionVariables();
-      String value = variables.get("JOIN_TASK_INPUT_SIZE");
-      assertNotNull(value);
-      assertEquals("123", value);
-
-      res.close();
-
-      res = stmt.executeQuery("unset JOIN_TASK_INPUT_SIZE");
-      variables = connTajoClient.getAllSessionVariables();
-      value = variables.get("JOIN_TASK_INPUT_SIZE");
-      assertNull(value);
-    } finally {
-      if (res != null) {
-        res.close();
-      }
-      if (stmt != null) {
-        stmt.close();
-      }
-      if (conn != null) {
-        conn.close();
-      }
-    }
-  }
-
-  @Test
-  public void testSetPreparedStatement() throws Exception {
-    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-      DEFAULT_DATABASE_NAME);
-
-    Connection conn = DriverManager.getConnection(connUri);
-
-    PreparedStatement stmt = null;
-    ResultSet res = null;
-    try {
-      stmt = conn.prepareStatement("Set JOIN_TASK_INPUT_SIZE 123");
-      res = stmt.executeQuery();
-      assertFalse(res.next());
-      ResultSetMetaData rsmd = res.getMetaData();
-      assertNotNull(rsmd);
-      assertEquals(0, rsmd.getColumnCount());
-
-      QueryClient connTajoClient = ((JdbcConnection) stmt.getConnection()).getQueryClient();
-      Map<String, String> variables = connTajoClient.getAllSessionVariables();
-      String value = variables.get("JOIN_TASK_INPUT_SIZE");
-      assertNotNull(value);
-      assertEquals("123", value);
-
-      res.close();
-      stmt.close();
-
-      stmt = conn.prepareStatement("unset JOIN_TASK_INPUT_SIZE");
-      res = stmt.executeQuery();
-      variables = connTajoClient.getAllSessionVariables();
-      value = variables.get("JOIN_TASK_INPUT_SIZE");
-      assertNull(value);
-    } finally {
-      if (res != null) {
-        res.close();
-      }
-      if (stmt != null) {
-        stmt.close();
-      }
-      if (conn != null) {
-        conn.close();
-      }
-    }
-  }
-
-  @Test
   public void testCreateTableWithDateAndTimestamp() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
 
@@ -604,8 +514,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     // It is because HiveCatalogStore does not support Time data type.
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
-        String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-          DEFAULT_DATABASE_NAME);
+        String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
+          tajoMasterAddress.getPort(), "TestTajoJdbc");
+
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
 
@@ -615,12 +526,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         resultSet.close();
 
         stmt = conn.createStatement();
-        resultSet = stmt.executeQuery("alter table " + tableName + " add partition (key = 0.1)");
-      }
-    } catch (SQLException e) {
-      errorMessage = e.getMessage();
-    } finally {
-      assertEquals(errorMessage, "ADD_PARTITION is not supported yet\n");
+        result  = stmt.executeUpdate("alter table " + tableName + " add partition (key = 0.1)");
+        assertEquals(result, 1);
+     }
+    } finally {      
       cleanupQuery(resultSet);
       if (stmt != null) {
         stmt.close();

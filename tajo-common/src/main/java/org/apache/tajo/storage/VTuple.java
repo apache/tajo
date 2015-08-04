@@ -73,6 +73,7 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public void clear() {
+    clearOffset();
     for (int i=0; i < values.length; i++) {
       values[i] = null;
     }
@@ -100,7 +101,9 @@ public class VTuple implements Tuple, Cloneable {
     return values[fieldId].size();
   }
 
+  @Override
   public void put(Datum [] values) {
+    clearOffset();
     System.arraycopy(values, 0, this.values, 0, values.length);
   }
 
@@ -109,6 +112,10 @@ public class VTuple implements Tuple, Cloneable {
   //////////////////////////////////////////////////////
   public Datum get(int fieldId) {
     return this.values[fieldId];
+  }
+
+  public void clearOffset() {
+    this.offset = -1;
   }
 
   public void setOffset(long offset) {
@@ -214,8 +221,8 @@ public class VTuple implements Tuple, Cloneable {
   public VTuple clone() throws CloneNotSupportedException {
     VTuple tuple = (VTuple) super.clone();
 
-    tuple.values = new Datum[size()];
-    System.arraycopy(values, 0, tuple.values, 0, size()); //shallow copy
+    tuple.values = new Datum[values.length];
+    System.arraycopy(values, 0, tuple.values, 0, values.length); //shallow copy
     return tuple;
   }
 

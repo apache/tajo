@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 
-//TajoClient -> TajoMaster Protocol
+// TajoClient -> TajoMaster Protocol
+package tajo.client;
+
 option java_package = "org.apache.tajo.ipc";
 option java_outer_classname = "TajoMasterClientProtocol";
 option java_generic_services = true;
@@ -32,11 +34,11 @@ service TajoMasterClientProtocolService {
 
   // Session APIs
   rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
-  rpc removeSession(SessionIdProto) returns (BoolProto);
+  rpc removeSession(SessionIdProto) returns (ReturnState);
   rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
-  rpc existSessionVariable(SessionedStringProto) returns (BoolProto);
-  rpc getSessionVariable(SessionedStringProto) returns (StringProto);
-  rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetProto);
+  rpc existSessionVariable(SessionedStringProto) returns (ReturnState);
+  rpc getSessionVariable(SessionedStringProto) returns (StringResponse);
+  rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetResponse);
 
   // Query Submission and Result APIs
   rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
@@ -48,24 +50,33 @@ service TajoMasterClientProtocolService {
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
   rpc getRunningQueryList(SessionIdProto) returns (GetQueryListResponse);
   rpc getFinishedQueryList(SessionIdProto) returns (GetQueryListResponse);
-  rpc killQuery(QueryIdRequest) returns (BoolProto);
+  rpc killQuery(QueryIdRequest) returns (ReturnState);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
-  rpc closeNonForwardQuery(QueryIdRequest) returns (BoolProto);
+  rpc closeNonForwardQuery(QueryIdRequest) returns (ReturnState);
   rpc getQueryInfo(QueryIdRequest) returns (GetQueryInfoResponse);
 
   // Database Management APIs
-  rpc createDatabase(SessionedStringProto) returns (BoolProto);
-  rpc existDatabase(SessionedStringProto) returns (BoolProto);
-  rpc dropDatabase(SessionedStringProto) returns (BoolProto);
-  rpc getAllDatabases(SessionIdProto) returns (StringListProto);
-  rpc getCurrentDatabase(SessionIdProto) returns (StringProto);
-  rpc selectDatabase(SessionedStringProto) returns (BoolProto);
+  rpc createDatabase(SessionedStringProto) returns (ReturnState);
+  rpc existDatabase(SessionedStringProto) returns (ReturnState);
+  rpc dropDatabase(SessionedStringProto) returns (ReturnState);
+  rpc getAllDatabases(SessionIdProto) returns (StringListResponse);
+  rpc getCurrentDatabase(SessionIdProto) returns (StringResponse);
+  rpc selectDatabase(SessionedStringProto) returns (ReturnState);
 
   // Table Management APIs
   rpc createExternalTable(CreateTableRequest) returns (TableResponse);
-  rpc existTable(SessionedStringProto) returns (BoolProto);
-  rpc dropTable(DropTableRequest) returns (BoolProto);
-  rpc getTableList(SessionedStringProto) returns (StringListProto);
+  rpc existTable(SessionedStringProto) returns (ReturnState);
+  rpc dropTable(DropTableRequest) returns (ReturnState);
+  rpc getTableList(SessionedStringProto) returns (StringListResponse);
   rpc getTableDesc(SessionedStringProto) returns (TableResponse);
-  rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
+  rpc getFunctionList(SessionedStringProto) returns (FunctionListResponse);
+
+  // Index Management APIs
+  rpc getIndexWithName(SessionedStringProto) returns (IndexResponse);
+  rpc existIndexWithName(SessionedStringProto) returns (ReturnState);
+  rpc getIndexesForTable(SessionedStringProto) returns (IndexListResponse);
+  rpc existIndexesForTable(SessionedStringProto) returns (ReturnState);
+  rpc getIndexWithColumns(GetIndexWithColumnsRequest) returns (IndexResponse);
+  rpc existIndexWithColumns(GetIndexWithColumnsRequest) returns (ReturnState);
+  rpc dropIndex(SessionedStringProto) returns (ReturnState);
 }

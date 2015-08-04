@@ -18,15 +18,16 @@
 
 package org.apache.tajo.storage.hbase;
 
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
@@ -45,9 +46,9 @@ public class SortedInsertRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    boolean hbaseMode = "false".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"));
-    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    boolean hbaseMode = "false".equalsIgnoreCase(context.getQueryContext().get(HBaseStorageConstants.INSERT_PUT_MODE, "false"));
+    LogicalRootNode rootNode = context.getPlan().getRootBlock().getRoot();
     LogicalNode node = rootNode.getChild();
     return hbaseMode && node.getType() == NodeType.CREATE_TABLE || node.getType() == NodeType.INSERT;
   }
@@ -68,7 +69,8 @@ public class SortedInsertRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
+    LogicalPlan plan = context.getPlan();
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     StoreTableNode storeTable = rootNode.getChild();
@@ -78,7 +80,7 @@ public class SortedInsertRewriter implements LogicalPlanRewriteRule {
     try {
       sortColumns = getIndexColumns(tableSchema, storeTable.getOptions());
     } catch (IOException e) {
-      throw new PlanningException(e);
+      throw new TajoInternalError(e);
     }
 
     int[] sortColumnIndexes = new int[sortColumns.length];
@@ -101,7 +103,7 @@ public class SortedInsertRewriter implements LogicalPlanRewriteRule {
     for (int i = 0; i < sortColumnIndexes.length; i++) {
       Column sortColumn = sortSchema.getColumn(sortColumnIndexes[i]);
       if (sortColumn == null) {
-        throw new PlanningException("Can't fine proper sort column:" + sortColumns[i]);
+        throw new TajoInternalError("Can't fine proper sort column:" + sortColumns[i]);
       }
       sortSpecs[index++] = new SortSpec(sortColumn, true, true);
     }

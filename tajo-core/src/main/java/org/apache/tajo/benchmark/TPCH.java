@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.StorageConstants;
 
 import java.io.File;
@@ -192,7 +193,7 @@ public class TPCH extends BenchmarkSet {
     loadQueries(BENCHMARK_DIR);
   }
 
-  public void loadTables() throws ServiceException {
+  public void loadTables() throws TajoException {
     loadTable(LINEITEM);
     loadTable(CUSTOMER);
     loadTable(CUSTOMER_PARTS);
@@ -206,8 +207,8 @@ public class TPCH extends BenchmarkSet {
 
   }
 
-  public void loadTable(String tableName) throws ServiceException {
-    TableMeta meta = CatalogUtil.newTableMeta("CSV");
+  public void loadTable(String tableName) throws TajoException {
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     meta.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
     PartitionMethodDesc partitionMethodDesc = null;
@@ -221,12 +222,9 @@ public class TPCH extends BenchmarkSet {
           "c_nationkey",
           expressionSchema);
     }
-    try {
-      tajo.createExternalTable(tableName, getSchema(tableName),
-          new Path(dataDir, tableName).toUri(), meta, partitionMethodDesc);
-    } catch (SQLException s) {
-      throw new ServiceException(s);
-    }
+
+    tajo.createExternalTable(tableName, getSchema(tableName),
+        new Path(dataDir, tableName).toUri(), meta, partitionMethodDesc);
   }
 
   public static List<String> getDataFilePaths(String... tables) {

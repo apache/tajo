@@ -18,11 +18,9 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.QueryVars;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -30,9 +28,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -109,8 +107,7 @@ public abstract class Tablespace {
    * @return Root URI
    */
   public URI getRootUri() {
-    throw new UnsupportedException(
-        String.format("Tablespace '%s' does not allow the use of artibrary paths", uri.toString()));
+    throw new UnsupportedException(String.format("artibrary path '%s'", uri.toString()));
   }
 
   /**
@@ -270,6 +267,21 @@ public abstract class Tablespace {
   }
 
   /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target The output schema
+   * @return Scanner instance
+   * @throws IOException
+   */
+  public synchronized SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, FragmentProto fragment,
+                                                         Schema target) throws IOException {
+    return (SeekableScanner)this.getScanner(meta, schema, fragment, target);
+  }
+
+  /**
    * Returns Appender instance.
    * @param queryContext Query property.
    * @param taskAttemptId Task id.
@@ -338,7 +350,7 @@ public abstract class Tablespace {
   /**
    * Rewrite the logical plan. It is assumed that the final plan will be given in this method.
    */
-  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws TajoException {
     // nothing to do by default
   }
 

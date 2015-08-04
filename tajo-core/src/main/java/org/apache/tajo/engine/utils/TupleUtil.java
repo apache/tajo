@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.utils;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
@@ -30,17 +29,13 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -176,21 +171,5 @@ public class TupleUtil {
       i++;
     }
     return new TupleRange(sortSpecs, startTuple, endTuple);
-  }
-
-  /**
-   * It creates a tuple of a given size filled with NULL values in all fields
-   * It is usually used in outer join algorithms.
-   *
-   * @param size The number of columns of a creating tuple
-   * @return The created tuple filled with NULL values
-   */
-  public static Tuple createNullPaddedTuple(int size){
-    VTuple aTuple = new VTuple(size);
-    int i;
-    for(i = 0; i < size; i++){
-      aTuple.put(i, DatumFactory.createNullDatum());
-    }
-    return aTuple;
   }
 }

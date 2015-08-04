@@ -52,11 +52,6 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
   }
 
   @Override
-  public TaskRunnerManager getTaskRunnerManager() {
-    return null;
-  }
-
-  @Override
   public CatalogService getCatalog() {
     return null;
   }
@@ -77,15 +72,10 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
   }
 
   @Override
-  public QueryCoordinatorProtocol.ClusterResourceSummary getClusterResource() {
-    return null;
-  }
-
-  @Override
-  public TajoSystemMetrics getWorkerSystemMetrics() {
+  public TajoSystemMetrics getMetrics() {
 
     if (tajoSystemMetrics == null) {
-      tajoSystemMetrics = new TajoSystemMetrics(getConf(), "test-file-group", "localhost");
+      tajoSystemMetrics = new TajoSystemMetrics(getConf(), org.apache.tajo.metrics.Node.class, "localhost");
       tajoSystemMetrics.start();
     }
     return tajoSystemMetrics;
@@ -113,16 +103,6 @@ public abstract class MockWorkerContext implements TajoWorker.WorkerContext {
 
   @Override
   public void cleanupTemporalDirectories() {
-
-  }
-
-  @Override
-  public void setClusterResource(QueryCoordinatorProtocol.ClusterResourceSummary clusterResource) {
-
-  }
-
-  @Override
-  public void setNumClusterNodes(int numClusterNodes) {
 
   }
 }

@@ -5,7 +5,7 @@ from (
             join orders on l_orderkey = o_orderkey and o_custkey > 0
             group by l_returnflag) b
     where col1 = 'N'
-    union all
+    union
     select cast(n_regionkey as TEXT) as col1, count(*) as cnt from nation
     where n_regionkey > 2
     group by col1

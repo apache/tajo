@@ -51,6 +51,14 @@ public class AlterTable extends Expr {
   @Expose @SerializedName("location")
   private String location;
 
+  @Expose @SerializedName("IsPurge")
+  private boolean purge;
+
+  @Expose @SerializedName("IfNotExists")
+  private boolean ifNotExists;
+  @Expose @SerializedName("IfExists")
+  private boolean ifExists;
+
   public AlterTable(final String tableName) {
     super(OpType.AlterTable);
     this.tableName = tableName;
@@ -129,18 +137,34 @@ public class AlterTable extends Expr {
     this.params = params;
   }
 
+  public boolean isPurge() {
+    return purge;
+  }
+
+  public void setPurge(boolean purge) {
+    this.purge = purge;
+  }
+
+  public boolean isIfNotExists() {
+    return ifNotExists;
+  }
+
+  public void setIfNotExists(boolean ifNotExists) {
+    this.ifNotExists = ifNotExists;
+  }
+
+  public boolean isIfExists() {
+    return ifExists;
+  }
+
+  public void setIfExists(boolean ifExists) {
+    this.ifExists = ifExists;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName,
-        null != newTableName ? Objects.hashCode(newTableName) : newTableName,
-        null != columnName ? Objects.hashCode(columnName) : columnName,
-        null != newColumnName ? Objects.hashCode(newColumnName) : newColumnName,
-        null != addNewColumn ? Objects.hashCode(addNewColumn) : addNewColumn,
-        null != alterTableOpType ? Objects.hashCode(alterTableOpType) : alterTableOpType,
-        null != columns ? Objects.hashCode(columns) : columns,
-        null != values ? Objects.hashCode(values) : values,
-        null != location ? Objects.hashCode(location) : location,
-        null != params ? Objects.hashCode(params) : params
+    return Objects.hashCode(tableName, newTableName, columnName, newColumnName, addNewColumn, alterTableOpType,
+      columns, values, location, params, purge, ifNotExists, ifExists
     );
 
   }
@@ -157,7 +181,10 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(columns, another.columns) &&
         TUtil.checkEquals(values, another.values) &&
         TUtil.checkEquals(location, another.location) &&
-        TUtil.checkEquals(params, another.params)
+        TUtil.checkEquals(params, another.params) &&
+        TUtil.checkEquals(purge, another.purge) &&
+        TUtil.checkEquals(ifNotExists, another.ifNotExists) &&
+        TUtil.checkEquals(ifExists, another.ifExists)
     ;
   }
 
@@ -178,6 +205,9 @@ public class AlterTable extends Expr {
     if (params != null) {
       alter.params = new HashMap<String, String>(params);
     }
+    alter.purge = purge;
+    alter.ifNotExists = ifNotExists;
+    alter.ifExists = ifExists;
     return alter;
   }
 }

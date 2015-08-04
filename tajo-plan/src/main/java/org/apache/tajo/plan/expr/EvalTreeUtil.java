@@ -347,7 +347,7 @@ public class EvalTreeUtil {
   }
 
   private static boolean isJoinQualWithOnlyColumns(@Nullable LogicalPlan.QueryBlock block,
-                                            Column left, Column right) {
+                                                   Column left, Column right) {
     String leftQualifier = CatalogUtil.extractQualifier(left.getQualifiedName());
     String rightQualifier = CatalogUtil.extractQualifier(right.getQualifiedName());
 
@@ -385,7 +385,7 @@ public class EvalTreeUtil {
     return !leftQualifier.equals(rightQualifier);
   }
 
-  static boolean isSingleColumn(EvalNode evalNode) {
+  public static boolean isSingleColumn(EvalNode evalNode) {
     return EvalTreeUtil.findUniqueColumns(evalNode).size() == 1;
   }
   
@@ -541,6 +541,10 @@ public class EvalTreeUtil {
       }
 
       return evalNode;
+    }
+
+    public List<EvalNode> getEvalNodes() {
+      return evalNodes;
     }
   }
 

@@ -33,13 +33,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -80,7 +74,8 @@ public class TestTupleSorter {
     long[] time1 = new long[ITERATION];
     long[] time2 = new long[ITERATION];
     for(int iteration = 0; iteration < ITERATION; iteration++) {
-      List<Tuple> target = Arrays.asList(Arrays.copyOf(tuples, tuples.length));
+      TupleList target = new TupleList(tuples.length);
+      target.addAll(Arrays.asList(Arrays.copyOf(tuples, tuples.length)));
       Set<Integer> keys = new TreeSet<Integer>();
       for (int i = 0; i < MAX_SORT_KEY; i++) {
         keys.add(rnd.nextInt(schema.size()));

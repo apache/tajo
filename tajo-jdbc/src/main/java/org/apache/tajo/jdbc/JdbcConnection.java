@@ -28,6 +28,8 @@ import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
@@ -217,11 +219,7 @@ public class JdbcConnection implements Connection {
 
   @Override
   public String getCatalog() throws SQLException {
-    try {
-      return tajoClient.getCurrentDatabase();
-    } catch (ServiceException e) {
-      throw new SQLException(e);
-    }
+    return tajoClient.getCurrentDatabase();
   }
 
   @Override
@@ -281,12 +279,8 @@ public class JdbcConnection implements Connection {
       } else {
         return false;
       }
-    } catch (ServiceException e) {
-      LOG.error("TajoMaster is not available.", e);
-      return false;
-    } catch (IOException e) {
-      LOG.error("JDBC connection is not valid.", e);
-      return false;
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
     }
   }
 
@@ -371,20 +365,18 @@ public class JdbcConnection implements Connection {
   public void setCatalog(String catalog) throws SQLException {
     try {
       tajoClient.selectDatabase(catalog);
-    } catch (ServiceException e) {
-      throw new SQLException(e);
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
     }
   }
 
   @Override
-  public void setClientInfo(Properties properties)
-      throws SQLClientInfoException {
+  public void setClientInfo(Properties properties) throws SQLClientInfoException {
     throw new UnsupportedOperationException("setClientInfo");
   }
 
   @Override
-  public void setClientInfo(String name, String value)
-      throws SQLClientInfoException {
+  public void setClientInfo(String name, String value) throws SQLClientInfoException {
     throw new UnsupportedOperationException("setClientInfo");
   }
 

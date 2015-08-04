@@ -18,17 +18,18 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.apache.tajo.client.TajoClientUtil.NULL_RESULT_SET;
 
 public class TajoStatement implements Statement {
   protected JdbcConnection conn;
@@ -146,46 +147,30 @@ public class TajoStatement implements Statement {
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     checkConnection("Can't execute");
-
-    try {
-      return executeSQL(sql);
-    } catch (Exception e) {
-      throw new SQLException(e.getMessage(), e);
-    }
+    return executeSQL(sql);
   }
 
-  protected ResultSet executeSQL(String sql) throws SQLException, ServiceException, IOException {
-    if (isSetVariableQuery(sql)) {
-      return setSessionVariable(tajoClient, sql);
-    }
-    if (isUnSetVariableQuery(sql)) {
-      return unSetSessionVariable(tajoClient, sql);
-    }
-
+  protected ResultSet executeSQL(String sql) throws SQLException {
     ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
-    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-      if (response.hasErrorMessage()) {
-        throw new ServiceException(response.getErrorMessage());
-      }
-      if (response.hasErrorTrace()) {
-        throw new ServiceException(response.getErrorTrace());
-      }
-      throw new ServiceException("Failed to submit query by unknown reason");
-    }
+    SQLExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
-    if (response.getIsForwarded() && !queryId.isNull()) {
+
+    switch (response.getResultType()) {
+
+    case ENCLOSED:
+      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+
+    case FETCH:
       WaitingResultSet result = new WaitingResultSet(tajoClient, queryId, fetchSize);
       if (blockWait) {
         result.getSchema();
       }
       return result;
-    }
 
-    if (response.hasResultSet() || response.hasTableDesc()) {
-      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+    default:
+      return TajoClientUtil.createNullResultSet(queryId);
     }
-    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   protected void checkConnection(String errorMsg) throws SQLException {
@@ -194,72 +179,11 @@ public class TajoStatement implements Statement {
     }
   }
 
-  public static boolean isSetVariableQuery(String sql) {
-    if (sql == null || sql.trim().isEmpty()) {
-      return false;
-    }
-
-    return sql.trim().toLowerCase().startsWith("set");
-  }
-
-  public static boolean isUnSetVariableQuery(String sql) {
-    if (sql == null || sql.trim().isEmpty()) {
-      return false;
-    }
-
-    return sql.trim().toLowerCase().startsWith("unset");
-  }
-
-  private ResultSet setSessionVariable(TajoClient client, String sql) throws SQLException {
-    int index = sql.toLowerCase().indexOf("set");
-    if (index < 0) {
-      throw new SQLException("SET statement should be started 'SET' keyword: " + sql);
-    }
-
-    String[] tokens = sql.substring(index + 3).trim().split(" ");
-    if (tokens.length != 2) {
-      throw new SQLException("SET statement should be <KEY> <VALUE>: " + sql);
-    }
-    Map<String, String> variable = new HashMap<String, String>();
-    variable.put(tokens[0].trim(), tokens[1].trim());
-    try {
-      client.updateSessionVariables(variable);
-    } catch (ServiceException e) {
-      throw new SQLException(e.getMessage(), e);
-    }
-
-    return TajoClientUtil.createNullResultSet();
-  }
-
-  private ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
-    int index = sql.toLowerCase().indexOf("unset");
-    if (index < 0) {
-      throw new SQLException("UNSET statement should be started 'UNSET' keyword: " + sql);
-    }
-
-    String key = sql.substring(index + 5).trim();
-    if (key.isEmpty()) {
-      throw new SQLException("UNSET statement should be <KEY>: " + sql);
-    }
-    try {
-      client.unsetSessionVariables(Lists.newArrayList(key));
-    } catch (ServiceException e) {
-      throw new SQLException(e.getMessage(), e);
-    }
-
-    return TajoClientUtil.createNullResultSet();
-  }
-
   @Override
   public int executeUpdate(String sql) throws SQLException {
     checkConnection("Can't execute update");
-    try {
-      tajoClient.executeQuery(sql);
-
-      return 1;
-    } catch (Exception ex) {
-      throw new SQLException(ex.toString());
-    }
+    tajoClient.executeQuery(sql);
+    return 1;
   }
 
   @Override

@@ -23,6 +23,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -93,18 +94,23 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
+  public void clearOffset() {
+    throw new UnsupportedException();
+  }
+
+  @Override
   public Datum asDatum(int fieldId) {
     return values.get(fieldId);
   }
 
   @Override
   public void setOffset(long offset) {
-    throw new UnsupportedException("setOffset");
+    throw new UnsupportedException();
   }
 
   @Override
   public long getOffset() {
-    throw new UnsupportedException("getOffset");
+    throw new UnsupportedException();
   }
 
   @Override
@@ -124,7 +130,7 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public byte [] getBytes(int fieldId) {
-    throw new UnsupportedException("BlobDatum");
+    throw new UnsupportedException();
   }
 
   @Override
@@ -169,12 +175,12 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
-    throw new UnsupportedException("getProtobufDatum");
+    throw new UnsupportedException();
   }
 
   @Override
   public IntervalDatum getInterval(int fieldId) {
-    throw new UnsupportedException("getInterval");
+    throw new UnsupportedException();
   }
 
   @Override
@@ -184,11 +190,11 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    throw new UnsupportedException("clone");
+    throw new UnsupportedException();
   }
 
   @Override
   public Datum[] getValues(){
-    throw new UnsupportedException("getValues");
+    throw new UnsupportedException();
   }
 }

@@ -23,14 +23,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
+import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -39,7 +40,7 @@ import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteEngine;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvider;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
@@ -118,7 +119,7 @@ public class GlobalPlanner {
   /**
    * Builds a master plan from the given logical plan.
    */
-  public void build(QueryContext queryContext, MasterPlan masterPlan) throws IOException, PlanningException {
+  public void build(QueryContext queryContext, MasterPlan masterPlan) throws IOException, TajoException {
 
     DistributedPlannerVisitor planner = new DistributedPlannerVisitor();
     GlobalPlanContext globalPlanContext = new GlobalPlanContext();
@@ -162,7 +163,7 @@ public class GlobalPlanner {
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType("CSV");
+    outputChannel.setStoreType("TEXT");
     outputChannel.setSchema(outputSchema);
   }
 
@@ -198,8 +199,7 @@ public class GlobalPlanner {
   }
 
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
-                                        ExecutionBlock leftBlock, ExecutionBlock rightBlock)
-      throws PlanningException {
+                                        ExecutionBlock leftBlock, ExecutionBlock rightBlock) {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
@@ -346,31 +346,32 @@ public class GlobalPlanner {
     }
   }
 
-  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws InternalException {
-    FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
+  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws CatalogException {
+    FunctionDesc functionDesc = null;
+    functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws InternalException {
+  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[]{});
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
@@ -428,57 +429,53 @@ public class GlobalPlanner {
    */
   private RewrittenFunctions rewriteAggFunctionsForDistinctAggregation(GlobalPlanContext context,
                                                                        AggregationFunctionCallEval function)
-      throws PlanningException {
+      throws TajoException {
 
     LogicalPlan plan = context.plan.getLogicalPlan();
     RewrittenFunctions rewritten = null;
 
-    try {
-      if (function.getName().equalsIgnoreCase("count")) {
-        rewritten = new RewrittenFunctions(1);
+    if (function.getName().equalsIgnoreCase("count")) {
+      rewritten = new RewrittenFunctions(1);
 
-        if (function.getArgs().length == 0) {
-          rewritten.firstStageEvals[0] = createCountRowFunction(function.getArgs());
-        } else {
-          rewritten.firstStageEvals[0] = createCountFunction(function.getArgs());
-        }
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createSumFunction(new EvalNode[] {fieldEval});
-      } else if (function.getName().equalsIgnoreCase("sum")) {
-        rewritten = new RewrittenFunctions(1);
-
-        rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createSumFunction(new EvalNode[] {fieldEval});
-
-      } else if (function.getName().equals("max")) {
-        rewritten = new RewrittenFunctions(1);
-
-        rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
-
-      } else if (function.getName().equals("min")) {
-
-        rewritten = new RewrittenFunctions(1);
-
-        rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
-
+      if (function.getArgs().length == 0) {
+        rewritten.firstStageEvals[0] = createCountRowFunction(function.getArgs());
       } else {
-        throw new PlanningException("Cannot support a mix of other functions");
+        rewritten.firstStageEvals[0] = createCountFunction(function.getArgs());
       }
-    } catch (InternalException e) {
-      LOG.error(e, e);
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
+    } else if (function.getName().equalsIgnoreCase("sum")) {
+      rewritten = new RewrittenFunctions(1);
+
+      rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
+
+    } else if (function.getName().equals("max")) {
+      rewritten = new RewrittenFunctions(1);
+
+      rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
+
+    } else if (function.getName().equals("min")) {
+
+      rewritten = new RewrittenFunctions(1);
+
+      rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
+
+    } else {
+      throw new UnsupportedException("Cannot support a mix of other functions");
     }
 
     return rewritten;
@@ -523,7 +520,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildGroupByIncludingDistinctFunctionsMultiStage(GlobalPlanContext context,
                                                                 ExecutionBlock latestExecBlock,
-                                                                GroupbyNode groupbyNode) throws PlanningException {
+                                                                GroupbyNode groupbyNode) throws TajoException {
 
     Column [] originalGroupingColumns = groupbyNode.getGroupingColumns();
     LinkedHashSet<Column> firstStageGroupingColumns =
@@ -604,7 +601,7 @@ public class GlobalPlanner {
   }
 
   private ExecutionBlock buildGroupBy(GlobalPlanContext context, ExecutionBlock lastBlock,
-                                      GroupbyNode groupbyNode) throws PlanningException {
+                                      GroupbyNode groupbyNode) {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
@@ -842,7 +839,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildStorePlan(GlobalPlanContext context,
                                         ExecutionBlock lastBlock,
-                                        StoreTableNode currentNode) throws PlanningException {
+                                        StoreTableNode currentNode) throws TajoException {
 
 
     if(currentNode.hasPartition()) { // if a target table is a partitioned table
@@ -850,8 +847,7 @@ public class GlobalPlanner {
       // Verify supported partition types
       PartitionMethodDesc partitionMethod = currentNode.getPartitionMethod();
       if (partitionMethod.getPartitionType() != CatalogProtos.PartitionType.COLUMN) {
-        throw new PlanningException(String.format("Not supported partitionsType :%s",
-            partitionMethod.getPartitionType()));
+        throw new UnimplementedException("partition type '" + partitionMethod.getPartitionType().name() + "'");
       }
 
       if (hasUnionChild(currentNode)) { // if it has union children
@@ -884,8 +880,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildShuffleAndStorePlanToPartitionedTableWithUnion(GlobalPlanContext context,
                                                                              StoreTableNode currentNode,
-                                                                             ExecutionBlock lastBlock)
-      throws PlanningException {
+                                                                             ExecutionBlock lastBlock) {
 
     MasterPlan masterPlan = context.plan;
     DataChannel lastChannel = null;
@@ -909,8 +904,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildShuffleAndStorePlanToPartitionedTable(GlobalPlanContext context,
                                                                     StoreTableNode currentNode,
-                                                                    ExecutionBlock lastBlock)
-      throws PlanningException {
+                                                                    ExecutionBlock lastBlock) {
     MasterPlan masterPlan = context.plan;
 
     ExecutionBlock nextBlock = masterPlan.newExecutionBlock();
@@ -980,13 +974,13 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitRoot(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 LogicalRootNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 LogicalRootNode node, Stack<LogicalNode> stack) throws TajoException {
       return super.visitRoot(context, plan, block, node, stack);
     }
 
     @Override
     public LogicalNode visitProjection(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                       ProjectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                       ProjectionNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitProjection(context, plan, block, node, stack);
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
@@ -997,7 +991,7 @@ public class GlobalPlanner {
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
           // This data channel will be stored in staging directory, but RawFile, default file type, does not support
           // distributed file system. It needs to change the file format for distributed file system.
-          dataChannel.setStoreType("CSV");
+          dataChannel.setStoreType("TEXT");
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);
@@ -1017,7 +1011,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitLimit(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                  LimitNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                  LimitNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitLimit(context, plan, block, node, stack);
 
       ExecutionBlock execBlock;
@@ -1058,7 +1052,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitSort(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 SortNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 SortNode node, Stack<LogicalNode> stack) throws TajoException {
 
       LogicalNode child = super.visitSort(context, plan, block, node, stack);
 
@@ -1071,7 +1065,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitHaving(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    HavingNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    HavingNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitHaving(context, plan, block, node, stack);
 
       // Don't separate execution block. Having is pushed to the second grouping execution block.
@@ -1085,7 +1079,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitWindowAgg(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    WindowAggNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    WindowAggNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitWindowAgg(context, plan, block, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
@@ -1096,7 +1090,7 @@ public class GlobalPlanner {
     }
 
     private ExecutionBlock buildWindowAgg(GlobalPlanContext context, ExecutionBlock lastBlock,
-                                        WindowAggNode windowAgg) throws PlanningException {
+                                        WindowAggNode windowAgg) throws TajoException {
       MasterPlan masterPlan = context.plan;
 
       ExecutionBlock childBlock = lastBlock;
@@ -1138,7 +1132,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitGroupBy(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                    GroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitGroupBy(context, plan, block, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
@@ -1150,7 +1144,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitFilter(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitFilter(context, plan, block, node, stack);
 
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
@@ -1164,7 +1158,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitJoin(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 JoinNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode leftChild = visit(context, plan, block, node.getLeftChild(), stack);
       ExecutionBlock leftChildBlock = context.execBlockMap.get(leftChild.getPID());
 
@@ -1192,7 +1186,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitUnion(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-                                  UnionNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                  UnionNode node, Stack<LogicalNode> stack) throws TajoException {
       stack.push(node);
       LogicalPlan.QueryBlock leftQueryBlock = plan.getBlock(node.getLeftChild());
       LogicalNode leftChild = visit(context, plan, leftQueryBlock, leftQueryBlock.getRoot(), stack);
@@ -1262,14 +1256,14 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitExcept(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-                                   ExceptNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                   ExceptNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitExcept(context, plan, queryBlock, node, stack);
       return handleUnaryNode(context, child, node);
     }
 
     @Override
     public LogicalNode visitIntersect(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-                                      IntersectNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                      IntersectNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitIntersect(context, plan, queryBlock, node, stack);
       return handleUnaryNode(context, child, node);
     }
@@ -1277,7 +1271,7 @@ public class GlobalPlanner {
     @Override
     public LogicalNode visitTableSubQuery(GlobalPlanContext context, LogicalPlan plan,
                                           LogicalPlan.QueryBlock queryBlock,
-                                          TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                          TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitTableSubQuery(context, plan, queryBlock, node, stack);
       node.setSubQuery(child);
 
@@ -1309,7 +1303,7 @@ public class GlobalPlanner {
           int[] targetMappings = new int[targets.length];
           for (int i = 0; i < targets.length; i++) {
             if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
-              throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
+              throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
             }
             int index = leftMostSubQueryNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
             if (index < 0) {
@@ -1319,7 +1313,7 @@ public class GlobalPlanner {
               index = leftMostSubQueryNode.getInSchema().getColumnId(column.getQualifiedName());
             }
             if (index < 0) {
-              throw new PlanningException("Can't find matched Target in UnionNode's input schema: " + targets[i]
+              throw new TajoInternalError("Can't find matched Target in UnionNode's input schema: " + targets[i]
                   + "->" + leftMostSubQueryNode.getInSchema());
             }
             targetMappings[i] = index;
@@ -1331,14 +1325,14 @@ public class GlobalPlanner {
             }
             Target[] eachNodeTargets = eachNode.getTargets();
             if (eachNodeTargets.length != targetMappings.length) {
-              throw new PlanningException("Union query can't have different number of target columns.");
+              throw new TajoInternalError("Union query can't have different number of target columns.");
             }
             for (int i = 0; i < eachNodeTargets.length; i++) {
               Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
               eachNodeTargets[i].setAlias(eachNodeTargets[i].getNamedColumn().getQualifiedName());
               EvalNode evalNode = eachNodeTargets[i].getEvalTree();
               if (evalNode.getType() != EvalType.FIELD) {
-                throw new PlanningException("Target of a UnionNode's subquery should be FieldEval.");
+                throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
               }
               FieldEval fieldEval = (FieldEval) evalNode;
               EvalTreeUtil.changeColumnRef(fieldEval,
@@ -1357,7 +1351,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitScan(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-                                 ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                 ScanNode node, Stack<LogicalNode> stack) throws TajoException {
       ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
       newExecBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), newExecBlock);
@@ -1365,9 +1359,18 @@ public class GlobalPlanner {
     }
 
     @Override
+    public LogicalNode visitIndexScan(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
+      ExecutionBlock newBlock = context.plan.newExecutionBlock();
+      newBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), newBlock);
+      return node;
+    }
+
+    @Override
     public LogicalNode visitPartitionedTableScan(GlobalPlanContext context, LogicalPlan plan,
                                                  LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
-                                                 Stack<LogicalNode> stack)throws PlanningException {
+                                                 Stack<LogicalNode> stack)throws TajoException {
       ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
       newExecBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), newExecBlock);
@@ -1376,7 +1379,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitStoreTable(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-                                       StoreTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                       StoreTableNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitStoreTable(context, plan, queryBlock, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
@@ -1388,7 +1391,7 @@ public class GlobalPlanner {
 
     @Override
     public LogicalNode visitCreateTable(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
-                                       CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+                                       CreateTableNode node, Stack<LogicalNode> stack) throws TajoException {
       LogicalNode child = super.visitStoreTable(context, plan, queryBlock, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
@@ -1401,12 +1404,26 @@ public class GlobalPlanner {
     @Override
     public LogicalNode visitInsert(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
                                    InsertNode node, Stack<LogicalNode> stack)
-        throws PlanningException {
+        throws TajoException {
       LogicalNode child = super.visitInsert(context, plan, queryBlock, node, stack);
 
       ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
       ExecutionBlock newExecBlock = buildStorePlan(context, childBlock, node);
       context.execBlockMap.put(node.getPID(), newExecBlock);
+
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitCreateIndex(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
+                                        CreateIndexNode node, Stack<LogicalNode> stack) throws TajoException {
+      LogicalNode child = super.visitCreateIndex(context, plan, queryBlock, node, stack);
+
+      // Don't separate execution block. CreateIndex is pushed to the first execution block.
+      ExecutionBlock childBlock = context.execBlockMap.remove(child.getPID());
+      node.setChild(childBlock.getPlan());
+      childBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), childBlock);
 
       return node;
     }

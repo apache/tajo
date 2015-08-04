@@ -31,10 +31,8 @@ class ClusterTableDescriptor extends AbstractTableDescriptor {
       new ColumnDescriptor("total_cpu", Type.INT4, 0),
       new ColumnDescriptor("used_mem", Type.INT8, 0),
       new ColumnDescriptor("total_mem", Type.INT8, 0),
-      new ColumnDescriptor("free_heap", Type.INT8, 0),
-      new ColumnDescriptor("max_heap", Type.INT8, 0),
-      new ColumnDescriptor("used_diskslots", Type.FLOAT4, 0),
-      new ColumnDescriptor("total_diskslots", Type.FLOAT4, 0),
+      new ColumnDescriptor("used_disk", Type.INT4, 0),
+      new ColumnDescriptor("total_disk", Type.INT4, 0),
       new ColumnDescriptor("running_tasks", Type.INT4, 0),
       new ColumnDescriptor("last_heartbeat_ts", Type.TIMESTAMP, 0)
   };

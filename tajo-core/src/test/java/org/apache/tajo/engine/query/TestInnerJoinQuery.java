@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.junit.AfterClass;
@@ -29,6 +28,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
@@ -45,12 +45,12 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @AfterClass
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     TestJoinQuery.classTearDown();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(queries = {
       @QuerySpec("select n_name, r_name, n_regionkey, r_regionkey from nation, region order by n_name, r_name"),
       // testCrossJoinWithAsterisk
@@ -64,7 +64,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
     runSimpleTests();

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master;
 
+import com.codahale.metrics.Gauge;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -28,7 +29,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
@@ -38,14 +38,14 @@ import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.master.rm.TajoWorkerResourceManager;
-import org.apache.tajo.master.rm.WorkerResourceManager;
-import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
-import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
+import org.apache.tajo.master.rm.TajoResourceManager;
+import org.apache.tajo.metrics.ClusterResourceMetricSet;
+import org.apache.tajo.metrics.Master;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
@@ -64,27 +64,23 @@ import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
 import org.apache.tajo.ws.rs.TajoRestService;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
 public class TajoMaster extends CompositeService {
-  private static final String METRICS_GROUP_NAME = "tajomaster";
 
   /** Class Logger */
   private static final Log LOG = LogFactory.getLog(TajoMaster.class);
-
-  public static final int SHUTDOWN_HOOK_PRIORITY = 30;
 
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
@@ -121,7 +117,7 @@ public class TajoMaster extends CompositeService {
   private QueryCoordinatorService tajoMasterService;
   private SessionManager sessionManager;
 
-  private WorkerResourceManager resourceManager;
+  private TajoResourceManager resourceManager;
   //Web Server
   private StaticHttpServer webServer;
   private TajoRestService restServer;
@@ -140,6 +136,8 @@ public class TajoMaster extends CompositeService {
 
   private HistoryReader historyReader;
 
+  private static final long CLUSTER_STARTUP_TIME = System.currentTimeMillis();
+
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
   }
@@ -157,66 +155,59 @@ public class TajoMaster extends CompositeService {
   }
 
   @Override
-  public void serviceInit(Configuration _conf) throws Exception {
-    if (!(_conf instanceof TajoConf)) {
-      throw new IllegalArgumentException("_conf should be a TajoConf type.");
-    }
-    this.systemConf = (TajoConf) _conf;
+  public void serviceInit(Configuration conf) throws Exception {
+
+    this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 
     context = new MasterContext(systemConf);
     clock = new SystemClock();
 
-    try {
-      RackResolver.init(systemConf);
+    RackResolver.init(systemConf);
 
-      RpcClientManager rpcManager = RpcClientManager.getInstance();
-      rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
-      rpcManager.setTimeoutSeconds(
-          systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
+    RpcClientManager rpcManager = RpcClientManager.getInstance();
+    rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
+    rpcManager.setTimeoutSeconds(
+        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
-      initResourceManager();
+    initResourceManager();
 
-      this.dispatcher = new AsyncDispatcher();
-      addIfService(dispatcher);
+    this.dispatcher = new AsyncDispatcher();
+    addIfService(dispatcher);
 
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
       diagnoseTajoMaster();
 
-      catalogServer = new CatalogServer(loadFunctions());
-      addIfService(catalogServer);
-      catalog = new LocalCatalogWrapper(catalogServer, systemConf);
+    catalogServer = new CatalogServer(loadFunctions());
+    addIfService(catalogServer);
+    catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
-      sessionManager = new SessionManager(dispatcher);
-      addIfService(sessionManager);
+    sessionManager = new SessionManager(dispatcher);
+    addIfService(sessionManager);
 
-      globalEngine = new GlobalEngine(context);
-      addIfService(globalEngine);
+    globalEngine = new GlobalEngine(context);
+    addIfService(globalEngine);
 
-      queryManager = new QueryManager(context);
-      addIfService(queryManager);
+    queryManager = new QueryManager(context);
+    addIfService(queryManager);
 
-      tajoMasterClientService = new TajoMasterClientService(context);
-      addIfService(tajoMasterClientService);
+    tajoMasterClientService = new TajoMasterClientService(context);
+    addIfService(tajoMasterClientService);
 
-      tajoMasterService = new QueryCoordinatorService(context);
-      addIfService(tajoMasterService);
-      
-      restServer = new TajoRestService(context);
-      addIfService(restServer);
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
-      throw e;
-    }
+    tajoMasterService = new QueryCoordinatorService(context);
+    addIfService(tajoMasterService);
 
+    restServer = new TajoRestService(context);
+    addIfService(restServer);
+    
     // Try to start up all services in TajoMaster.
     // If anyone is failed, the master prints out the errors and immediately should shutdowns
     try {
       super.serviceInit(systemConf);
     } catch (Throwable t) {
       t.printStackTrace();
-      System.exit(1);
+      Runtime.getRuntime().halt(-1);
     }
     LOG.info("Tajo Master is initialized.");
   }
@@ -227,18 +218,21 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initSystemMetrics() {
-    systemMetrics = new TajoSystemMetrics(systemConf, METRICS_GROUP_NAME, getMasterName());
+    systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
 
-    systemMetrics.register("resource", new WorkerResourceMetricsGaugeSet(context));
-    systemMetrics.register("catalog", new CatalogMetricsGaugeSet(context));
+    systemMetrics.register(Master.Cluster.UPTIME, new Gauge<Long>() {
+      @Override
+      public Long getValue() {
+        return context.getClusterUptime();
+      }
+    });
+
+    systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
   }
 
   private void initResourceManager() throws Exception {
-    Class<WorkerResourceManager>  resourceManagerClass = (Class<WorkerResourceManager>)
-        systemConf.getClass(ConfVars.RESOURCE_MANAGER_CLASS.varname, TajoWorkerResourceManager.class);
-    Constructor<WorkerResourceManager> constructor = resourceManagerClass.getConstructor(MasterContext.class);
-    resourceManager = constructor.newInstance(context);
+    resourceManager = new TajoResourceManager(context);
     addIfService(resourceManager);
   }
 
@@ -376,7 +370,7 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  private void checkBaseTBSpaceAndDatabase() throws IOException {
+  private void checkBaseTBSpaceAndDatabase() throws IOException, DuplicateDatabaseException {
     if (!catalog.existTablespace(DEFAULT_TABLESPACE_NAME)) {
       catalog.createTablespace(DEFAULT_TABLESPACE_NAME, context.getConf().getVar(ConfVars.WAREHOUSE_DIR));
     } else {
@@ -391,39 +385,19 @@ public class TajoMaster extends CompositeService {
   }
 
   @Override
-  public void stop() {
-    if (haService != null) {
-      try {
-        haService.delete();
-      } catch (Exception e) {
-        LOG.error(e, e);
-      }
-    }
-    
-    if (restServer != null) {
-      try {
-        restServer.stop();
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-      }
-    }
+  public void serviceStop() throws Exception {
+    if (haService != null) haService.delete();
 
-    if (webServer != null) {
-      try {
-        webServer.stop();
-      } catch (Exception e) {
-        LOG.error(e, e);
-      }
-    }
+    if (restServer != null) restServer.stop();
+
+    if (webServer != null) webServer.stop();
 
     IOUtils.cleanup(LOG, catalogServer);
 
-    if(systemMetrics != null) {
-      systemMetrics.stop();
-    }
+    if (systemMetrics != null) systemMetrics.stop();
 
-    if(pauseMonitor != null) pauseMonitor.stop();
-    super.stop();
+    if (pauseMonitor != null) pauseMonitor.stop();
+    super.serviceStop();
 
     LOG.info("Tajo Master main thread exiting");
   }
@@ -459,11 +433,15 @@ public class TajoMaster extends CompositeService {
       return clock;
     }
 
+    public long getClusterUptime() {
+      return getClock().getTime() - CLUSTER_STARTUP_TIME;
+    }
+
     public QueryManager getQueryJobManager() {
       return queryManager;
     }
 
-    public WorkerResourceManager getResourceManager() {
+    public TajoResourceManager getResourceManager() {
       return resourceManager;
     }
 
@@ -487,7 +465,7 @@ public class TajoMaster extends CompositeService {
       return tajoMasterService;
     }
 
-    public TajoSystemMetrics getSystemMetrics() {
+    public TajoSystemMetrics getMetrics() {
       return systemMetrics;
     }
 
@@ -549,40 +527,6 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  public static List<File> getMountPath() throws Exception {
-    BufferedReader mountOutput = null;
-    Process mountProcess = null;
-    try {
-      mountProcess = Runtime.getRuntime ().exec("mount");
-      mountOutput = new BufferedReader(new InputStreamReader(mountProcess.getInputStream()));
-      List<File> mountPaths = new ArrayList<File>();
-      while (true) {
-        String line = mountOutput.readLine();
-        if (line == null) {
-          break;
-        }
-
-        int indexStart = line.indexOf(" on /");
-        int indexEnd = line.indexOf(" ", indexStart + 4);
-
-        mountPaths.add(new File(line.substring (indexStart + 4, indexEnd)));
-      }
-      return mountPaths;
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
-    } finally {
-      if(mountOutput != null) {
-        mountOutput.close();
-      }
-      if (mountProcess != null) {
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getInputStream());
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getOutputStream());
-        org.apache.commons.io.IOUtils.closeQuietly(mountProcess.getErrorStream());
-      }
-    }
-  }
-
   private class ShutdownHook implements Runnable {
     @Override
     public void run() {
@@ -601,7 +545,7 @@ public class TajoMaster extends CompositeService {
 
     try {
       TajoMaster master = new TajoMaster();
-      TajoConf conf = new TajoConf(new YarnConfiguration());
+      TajoConf conf = new TajoConf();
       master.init(conf);
       master.start();
     } catch (Throwable t) {

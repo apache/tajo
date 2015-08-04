@@ -23,9 +23,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class TestEvalCodeGenerator extends ExprTestBase {
   private static Schema schema;
@@ -44,7 +43,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testArithmetic() throws IOException {
+  public void testArithmetic() throws TajoException {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1+1;", new String [] {"2"});
     testEval(schema, "table1", "0,1,2,3,4.5,5.5", "select col1 + col2 from table1;", new String [] {"3"});
     testEval(schema, "table1", "0,1,2,3,4.5,5.5", "select col1 + col3 from table1;", new String [] {"4"});
@@ -53,7 +52,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testGetField() throws IOException {
+  public void testGetField() throws TajoException {
     testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col1 from table1;", new String [] {"1"});
     testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col2 from table1;", new String [] {"2"});
     testEval(schema, "table1", "0,1,2,3,4.5,5.5,F6", "select col3 from table1;", new String [] {"3"});
@@ -64,7 +63,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testNullHandling() throws IOException {
+  public void testNullHandling() throws TajoException {
     schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -104,7 +103,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testComparison() throws IOException {
+  public void testComparison() throws TajoException {
     Schema inetSchema = new Schema();
     inetSchema.addColumn("addr1", TajoDataTypes.Type.INET4);
     inetSchema.addColumn("addr2", TajoDataTypes.Type.INET4);
@@ -160,7 +159,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testBetweenAsymmetric() throws IOException {
+  public void testBetweenAsymmetric() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -194,7 +193,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testBetweenSymmetric() throws IOException {
+  public void testBetweenSymmetric() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -229,7 +228,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testUnary() throws IOException {
+  public void testUnary() throws TajoException {
     schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -266,7 +265,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testAndOr() throws IOException {
+  public void testAndOr() throws TajoException {
     testSimpleEval("select true or (false or false) or false;", new String[] {"t"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select true and true;", new String [] {"t"});
@@ -289,7 +288,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testFunction() throws IOException {
+  public void testFunction() throws TajoException {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('abc');", new String [] {"ABC"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('bbc');", new String [] {"BBC"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select upper('chs');", new String [] {"CHS"});
@@ -298,7 +297,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   }
 
   @Test
-  public void testStringConcat() throws IOException {
+  public void testStringConcat() throws TajoException {
     testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 'abc' || 'bbc'", new String [] {"abcbbc"});

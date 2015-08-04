@@ -21,7 +21,6 @@ package org.apache.tajo.tuple.offheap;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
@@ -30,7 +29,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.UnsafeUtil;
-
 import org.apache.tajo.util.datetime.TimeMeta;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -100,7 +98,7 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(bb.address() + relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
+    return UNSAFE.getInt(bb.address() + (long)(relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));
   }
 
   public long getFieldAddr(int fieldId) {
@@ -183,6 +181,10 @@ public abstract class UnSafeTuple implements Tuple {
     default:
       throw new UnsupportedException("Unknown type: " + types[fieldId]);
     }
+  }
+
+  @Override
+  public void clearOffset() {
   }
 
   @Override
@@ -274,7 +276,7 @@ public abstract class UnSafeTuple implements Tuple {
   public Datum getProtobufDatum(int fieldId) {
     byte [] bytes = getBytes(fieldId);
 
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId].getCode());
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId]);
     Message.Builder builder = factory.newBuilder();
     try {
       builder.mergeFrom(bytes);

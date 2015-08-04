@@ -22,18 +22,17 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 
 import java.util.Collections;
-import java.util.List;
 
 public interface TupleSorter {
 
   Iterable<Tuple> sort();
 
-  public static class DefaultSorter implements TupleSorter {
+  class DefaultSorter implements TupleSorter {
 
-    private final List<Tuple> target;
+    private final TupleList target;
     private final TupleComparator comparator;
 
-    public DefaultSorter(List<Tuple> target, TupleComparator comparator) {
+    public DefaultSorter(TupleList target, TupleComparator comparator) {
       this.target = target;
       this.comparator = comparator;
     }

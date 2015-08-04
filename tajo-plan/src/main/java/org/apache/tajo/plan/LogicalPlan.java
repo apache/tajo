@@ -25,8 +25,9 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.util.graph.DirectedGraphCursor;
-import org.apache.tajo.util.graph.SimpleDirectedGraph;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.plan.expr.AlgebraicUtil.IdentifiableNameBuilder;
 import org.apache.tajo.plan.expr.ConstEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -35,8 +36,11 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
+import org.apache.tajo.plan.rewrite.rules.AccessPathInfo;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.graph.DirectedGraphCursor;
+import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -53,10 +57,12 @@ public class LogicalPlan {
   /** it indicates the root block */
   public static final String ROOT_BLOCK = VIRTUAL_TABLE_PREFIX + "ROOT";
   public static final String NONAME_BLOCK_PREFIX = VIRTUAL_TABLE_PREFIX + "QB_";
+  public static final String NONAME_SUBQUERY_PREFIX = "?SubQuery_";
   private static final int NO_SEQUENCE_PID = -1;
   private int nextPid = 0;
   private Integer noNameBlockId = 0;
   private Integer noNameColumnId = 0;
+  private Integer noNameSubqueryId = 0;
 
   /** a map from between a block name to a block plan */
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
@@ -155,8 +161,17 @@ public class LogicalPlan {
   }
 
   /**
+   * It generates a unique table subquery name
+   */
+  public String generateUniqueSubQueryName() {
+    return NONAME_SUBQUERY_PREFIX + noNameSubqueryId++;
+  }
+
+  /**
    * It generates an unique column name from Expr. It is usually used for an expression or predicate without
    * a specified name (i.e., alias).
+   * Here, some expressions require to be identified with their names in the future.
+   * For example, expressions must be identifiable with their names when getting targets in {@link LogicalPlanner#visitCreateIndex}.
    */
   public String generateUniqueColumnName(Expr expr) {
     String generatedName;
@@ -166,6 +181,11 @@ public class LogicalPlan {
       generatedName = attachSeqIdToGeneratedColumnName(getGeneratedPrefixFromExpr(expr));
     }
     return generatedName;
+  }
+
+  private String generateUniqueIdentifiableColumnName(Expr expr) {
+    IdentifiableNameBuilder nameBuilder = new IdentifiableNameBuilder(expr);
+    return nameBuilder.build();
   }
 
   /**
@@ -306,7 +326,7 @@ public class LogicalPlan {
     return queryBlockGraph;
   }
 
-  public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws PlanningException {
+  public Column resolveColumn(QueryBlock block, ColumnReferenceExpr columnRef) throws TajoException {
     return NameResolver.resolve(this, block, columnRef, NameResolvingMode.LEGACY);
   }
 
@@ -354,8 +374,8 @@ public class LogicalPlan {
         explains.append(
             ExplainLogicalPlanVisitor.printDepthString(explainContext.getMaxDepth(), explainContext.explains.pop()));
       }
-    } catch (PlanningException e) {
-      throw new RuntimeException(e);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
 
     return explains.toString();
@@ -423,6 +443,7 @@ public class LogicalPlan {
     private final Map<String, String> columnAliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     private final List<RelationNode> relationList = TUtil.newList();
+    private final Map<Integer, List<AccessPathInfo>> relNodePidAccessPathMap = TUtil.newHashMap();
     private boolean hasWindowFunction = false;
     private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();
     private final Map<Expr, String> constantPool = Maps.newHashMap();
@@ -511,10 +532,28 @@ public class LogicalPlan {
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
       relationList.add(relation);
+      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<AccessPathInfo>());
+    }
+
+    public void addRelation(RelationNode relation, List<AccessPathInfo> accessPathInfos) {
+      if (relation.hasAlias()) {
+        TUtil.putToNestedList(relationAliasMap, relation.getTableName(), relation.getCanonicalName());
+      }
+      canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
+      relationList.add(relation);
+      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<AccessPathInfo>());
+    }
+
+    public void addAccessPath(RelationNode relation, AccessPathInfo accessPathInfo) {
+      relNodePidAccessPathMap.get(relation.getPID()).add(accessPathInfo);
     }
 
     public Collection<RelationNode> getRelations() {
       return Collections.unmodifiableList(relationList);
+    }
+
+    public List<AccessPathInfo> getAccessInfos(RelationNode relation) {
+      return Collections.unmodifiableList(relNodePidAccessPathMap.get(relation.getPID()));
     }
 
     public boolean hasTableExpression() {
@@ -566,12 +605,12 @@ public class LogicalPlan {
       return namedExprsMgr;
     }
 
-    public void updateCurrentNode(Expr expr) throws PlanningException {
+    public void updateCurrentNode(Expr expr) {
 
       if (expr.getType() != OpType.RelationList) { // skip relation list because it is a virtual expr.
         this.currentNode = exprToNodeMap.get(ObjectUtils.identityToString(expr));
         if (currentNode == null) {
-          throw new PlanningException("Unregistered Algebra Expression: " + expr.getType());
+          throw new TajoInternalError("Unregistered Algebra Expression: " + expr.getType());
         }
       }
     }

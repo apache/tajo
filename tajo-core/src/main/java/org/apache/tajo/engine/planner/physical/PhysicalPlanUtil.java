@@ -209,7 +209,7 @@ public class PhysicalPlanUtil {
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     String storeType = meta.getStoreType();
-    if (storeType.equalsIgnoreCase("CSV")) {
+    if (storeType.equalsIgnoreCase("TEXT")) {
       meta.putOption(StorageConstants.TEXT_NULL, nullChar);
     } else if (storeType.equalsIgnoreCase("TEXT")) {
       meta.putOption(StorageConstants.TEXT_NULL, nullChar);
@@ -228,7 +228,7 @@ public class PhysicalPlanUtil {
    */
   public static boolean containsNullChar(TableMeta meta) {
     String storeType = meta.getStoreType();
-    if (storeType.equalsIgnoreCase("CSV")) {
+    if (storeType.equalsIgnoreCase("TEXT")) {
       return meta.containsOption(StorageConstants.TEXT_NULL);
     } else if (storeType.equalsIgnoreCase("TEXT")) {
       return meta.containsOption(StorageConstants.TEXT_NULL);

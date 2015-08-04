@@ -21,7 +21,6 @@ package org.apache.tajo.client;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.protobuf.ServiceException;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,6 +34,10 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
@@ -83,7 +86,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndDropDatabases() throws ServiceException {
+  public final void testCreateAndDropDatabases() throws TajoException {
     int currentNum = client.getAllDatabaseNames().size();
 
     String prefix = CatalogUtil.normalizeIdentifier("testCreateDatabase_");
@@ -114,7 +117,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCurrentDatabase() throws IOException, ServiceException, InterruptedException {
+  public final void testCurrentDatabase() throws IOException, TajoException, InterruptedException {
     int currentNum = client.getAllDatabaseNames().size();
     assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
 
@@ -131,7 +134,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testSelectDatabaseToInvalidOne() throws IOException, ServiceException, InterruptedException {
+  public final void testSelectDatabaseToInvalidOne() throws IOException, TajoException, InterruptedException {
     int currentNum = client.getAllDatabaseNames().size();
     assertFalse(client.existDatabase("invaliddatabase"));
 
@@ -146,7 +149,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testDropCurrentDatabase() throws IOException, ServiceException, InterruptedException {
+  public final void testDropCurrentDatabase() throws IOException, TajoException, InterruptedException {
     int currentNum = client.getAllDatabaseNames().size();
     String databaseName = CatalogUtil.normalizeIdentifier("testdropcurrentdatabase");
     assertTrue(client.createDatabase(databaseName));
@@ -166,7 +169,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testSessionVariables() throws IOException, ServiceException, InterruptedException {
+  public final void testSessionVariables() throws IOException, TajoException, InterruptedException {
     String prefixName = "key_";
     String prefixValue = "val_";
 
@@ -212,7 +215,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testKillQuery() throws IOException, ServiceException, InterruptedException {
+  public final void testKillQuery() throws IOException, TajoException, InterruptedException {
     ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
     Thread.sleep(1000);
     QueryId queryId = new QueryId(res.getQueryId());
@@ -221,14 +224,14 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testUpdateQuery() throws IOException, ServiceException {
+  public final void testUpdateQuery() throws IOException, TajoException {
     final String tableName = CatalogUtil.normalizeIdentifier("testUpdateQuery");
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
     String sql =
-        "create external table " + tableName + " (deptname text, score integer) "
-            + "using csv location '" + tablePath + "'";
+      "create external table " + tableName + " (deptname text, score integer) "
+        + "using csv location '" + tablePath + "'";
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
     client.dropTable(tableName);
@@ -236,8 +239,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndDropExternalTable()
-      throws IOException, ServiceException, SQLException {
+  public final void testCreateAndDropExternalTable() throws IOException, TajoException {
     final String tableName = "testCreateAndDropExternalTable";
     Path tablePath = writeTmpTable(tableName);
     LOG.error("Full path:" + tablePath.toUri().getRawPath());
@@ -255,7 +257,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndPurgeExternalTable() throws IOException, ServiceException, SQLException {
+  public final void testCreateAndPurgeExternalTable() throws IOException, TajoException {
     final String tableName = "testCreateAndPurgeExternalTable";
     Path tablePath = writeTmpTable(tableName);
     LOG.error("Full path:" + tablePath.toUri().getRawPath());
@@ -273,7 +275,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndDropExternalTableByExecuteQuery() throws IOException, ServiceException {
+  public final void testCreateAndDropExternalTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropExternalTableByExecuteQuery");
 
@@ -293,7 +295,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndPurgeExternalTableByExecuteQuery() throws IOException, ServiceException {
+  public final void testCreateAndPurgeExternalTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndPurgeExternalTableByExecuteQuery");
 
@@ -301,7 +303,7 @@ public class TestTajoClient {
     assertFalse(client.existTable(tableName));
 
     String sql = "create external table " + tableName + " (deptname text, score int4) " + "using csv location '"
-        + tablePath + "'";
+      + tablePath + "'";
 
     client.executeQueryAndGetResult(sql);
     assertTrue(client.existTable(tableName));
@@ -313,7 +315,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndDropTableByExecuteQuery() throws IOException, ServiceException, SQLException {
+  public final void testCreateAndDropTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropTableByExecuteQuery");
 
@@ -334,7 +336,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testCreateAndPurgeTableByExecuteQuery() throws IOException, ServiceException, SQLException {
+  public final void testCreateAndPurgeTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndPurgeTableByExecuteQuery");
 
@@ -355,7 +357,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testDDLByExecuteQuery() throws IOException, ServiceException {
+  public final void testDDLByExecuteQuery() throws IOException, TajoException {
     final String tableName = CatalogUtil.normalizeIdentifier("testDDLByExecuteQuery");
     Path tablePath = writeTmpTable(tableName);
 
@@ -368,7 +370,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testGetTableList() throws IOException, ServiceException {
+  public final void testGetTableList() throws IOException, TajoException {
     String tableName1 = "GetTableList1".toLowerCase();
     String tableName2 = "GetTableList2".toLowerCase();
 
@@ -388,7 +390,7 @@ public class TestTajoClient {
   Log LOG = LogFactory.getLog(TestTajoClient.class);
 
   @Test
-  public final void testGetTableDesc() throws IOException, ServiceException, SQLException {
+  public final void testGetTableDesc() throws IOException, TajoException {
     final String tableName1 = CatalogUtil.normalizeIdentifier("table3");
     Path tablePath = writeTmpTable(tableName1);
     LOG.error("Full path:" + tablePath.toUri().getRawPath());
@@ -408,8 +410,7 @@ public class TestTajoClient {
   }
 
   //@Test
-  public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException,
-      ServiceException, SQLException {
+  public final void testCreateAndDropTablePartitionedHash1ByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropTablePartitionedHash1ByExecuteQuery";
 
@@ -432,8 +433,7 @@ public class TestTajoClient {
   }
 
   //@Test
-  public final void testCreateAndPurgeTablePartitionedHash1ByExecuteQuery() throws IOException,
-      ServiceException, SQLException {
+  public final void testCreateAndPurgeTablePartitionedHash1ByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndPurgeTablePartitionedHash1ByExecuteQuery";
 
@@ -456,8 +456,7 @@ public class TestTajoClient {
   }
 
   //@Test
-  public final void testCreateAndDropTablePartitionedHash2ByExecuteQuery() throws IOException,
-      ServiceException, SQLException {
+  public final void testCreateAndDropTablePartitionedHash2ByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropTablePartitionedHash2ByExecuteQuery";
 
@@ -480,8 +479,7 @@ public class TestTajoClient {
   }
 
   //@Test
-  public final void testCreateAndDropTablePartitionedListByExecuteQuery() throws IOException,
-      ServiceException, SQLException {
+  public final void testCreateAndDropTablePartitionedListByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropTablePartitionedListByExecuteQuery";
 
@@ -505,8 +503,7 @@ public class TestTajoClient {
   }
 
   //@Test
-  public final void testCreateAndDropTablePartitionedRangeByExecuteQuery() throws IOException,
-      ServiceException, SQLException {
+  public final void testCreateAndDropTablePartitionedRangeByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testCreateAndDropTablePartitionedRangeByExecuteQuery";
 
@@ -525,14 +522,13 @@ public class TestTajoClient {
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
-    client.updateQuery("drop table " + tableName +" purge");
+    client.updateQuery("drop table " + tableName + " purge");
     assertFalse(client.existTable(tableName));
     assertFalse(hdfs.exists(tablePath));
   }
 
   @Test
-  public final void testFailCreateTablePartitionedOtherExceptColumn() throws IOException,
-      ServiceException, SQLException {
+  public final void testFailCreateTablePartitionedOtherExceptColumn() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = "testFailCreateTablePartitionedOtherExceptColumn";
 
@@ -544,25 +540,36 @@ public class TestTajoClient {
     rangeSql += "PARTITION sub_part2 VALUES LESS THAN (5),";
     rangeSql += "PARTITION sub_part2 VALUES LESS THAN (MAXVALUE) )";
 
-    assertFalse(client.updateQuery(rangeSql));
+    try {
+      client.updateQuery(rangeSql);
+      fail();
+    } catch (UnsupportedException se) {
+    }
  
     String listSql = "create table " + tableName + " (deptname text, score int4)";
     listSql += "PARTITION BY LIST (deptname)";
     listSql += "( PARTITION sub_part1 VALUES('r&d', 'design'),";
     listSql += "PARTITION sub_part2 VALUES('sales', 'hr') )";
 
-    assertFalse(client.updateQuery(listSql));
+    try {
+      assertFalse(client.updateQuery(listSql));
+      fail();
+    } catch (UnsupportedException se) {
+    }
 
     String hashSql = "create table " + tableName + " (deptname text, score int4)";
     hashSql += "PARTITION BY HASH (deptname)";
     hashSql += "PARTITIONS 2";
 
-    assertFalse(client.updateQuery(hashSql));
+    try {
+      assertFalse(client.updateQuery(hashSql));
+      fail();
+    } catch (UnsupportedException se) {
+    }
   }
 
   @Test
-  public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException,
-      ServiceException, SQLException {
+  public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
     final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropTablePartitionedColumnByExecuteQuery");
 
@@ -584,8 +591,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testGetFunctions() throws IOException,
-      ServiceException, SQLException {
+  public final void testGetFunctions() throws IOException, TajoException {
     Collection<FunctionDesc> catalogFunctions = cluster.getMaster().getCatalog().getFunctions();
     String functionName = "sum";
     int numFunctions = 0;
@@ -606,8 +612,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public final void testGetFinishedQueryList() throws IOException,
-      ServiceException, SQLException {
+  public final void testGetFinishedQueryList() throws SQLException, TajoException {
     final String tableName = CatalogUtil.normalizeIdentifier("testGetFinishedQueryList");
     String sql = "create table " + tableName + " (deptname text, score int4)";
 
@@ -679,14 +684,14 @@ public class TestTajoClient {
   public void testNullCharSessionInCTAS() throws Exception {
     String sql =
         "create table nullcharsession as select\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey,\n" +
-            "  orders.o_orderstatus \n" +
-            "from\n" +
-            "  orders full outer join customer on c_custkey = o_orderkey\n" +
-            "order by\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey;\n";
+          "  c_custkey,\n" +
+          "  orders.o_orderkey,\n" +
+          "  orders.o_orderstatus \n" +
+          "from\n" +
+          "  orders full outer join customer on c_custkey = o_orderkey\n" +
+          "order by\n" +
+          "  c_custkey,\n" +
+          "  orders.o_orderkey;\n";
 
     Map<String, String> variables = new HashMap<String, String>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");

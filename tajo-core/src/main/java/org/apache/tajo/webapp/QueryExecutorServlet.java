@@ -1,6 +1,5 @@
 package org.apache.tajo.webapp;
 
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
@@ -9,10 +8,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
-import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
@@ -42,6 +38,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
+import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -94,7 +93,7 @@ public class QueryExecutorServlet extends HttpServlet {
       tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
 
       new QueryRunnerCleaner().start();
-    } catch (IOException e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
     }
   }
@@ -309,46 +308,47 @@ public class QueryExecutorServlet extends HttpServlet {
     }
 
     public void run() {
+
       startTime = System.currentTimeMillis();
+
       try {
-        if (!tajoClient.getCurrentDatabase().equals(database))
+        if (!tajoClient.getCurrentDatabase().equals(database)) {
           tajoClient.selectDatabase(database);
+        }
 
         response = tajoClient.executeQuery(query);
 
-        if (response == null) {
-          LOG.error("Internal Error: SubmissionResponse is NULL");
-          error = new Exception("Internal Error: SubmissionResponse is NULL");
+        if (isError(response.getState())) {
+          StringBuffer errorMessage = new StringBuffer(response.getState().getMessage());
+          String modifiedMessage;
 
-        } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
-          if (response.getIsForwarded()) {
+          if (errorMessage.length() > 200) {
+            modifiedMessage = errorMessage.substring(0, 200);
+          } else {
+            modifiedMessage = errorMessage.toString();
+          }
+
+          String lineSeparator = System.getProperty("line.separator");
+          modifiedMessage = modifiedMessage.replaceAll(lineSeparator, "<br/>");
+
+          error = new Exception(modifiedMessage);
+
+        } else {
+
+          switch (response.getResultType()) {
+          case ENCLOSED:
+            getSimpleQueryResult(response);
+            break;
+          case FETCH:
             queryId = new QueryId(response.getQueryId());
             getQueryResult(queryId);
-          } else {
-            if (!response.hasTableDesc() && !response.hasResultSet()) {
-            } else {
-              getSimpleQueryResult(response);
-            }
-
-            progress.set(100);
+            break;
+          default:;
           }
-        } else if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-          if (response.hasErrorMessage()) {
-            StringBuffer errorMessage = new StringBuffer(response.getErrorMessage());
-            String modifiedMessage;
 
-            if (errorMessage.length() > 200) {
-              modifiedMessage = errorMessage.substring(0, 200);
-            } else {
-              modifiedMessage = errorMessage.toString();
-            }
-            
-            String lineSeparator = System.getProperty("line.separator");
-            modifiedMessage = modifiedMessage.replaceAll(lineSeparator, "<br/>");
-
-            error = new Exception(modifiedMessage);
-          }
+          progress.set(100);
         }
+
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         error = e;
@@ -358,7 +358,11 @@ public class QueryExecutorServlet extends HttpServlet {
         finishTime = System.currentTimeMillis();
 
         if (queryId != null) {
-          tajoClient.closeQuery(queryId);
+          try {
+            tajoClient.closeQuery(queryId);
+          } catch (Throwable e) {
+            LOG.warn(e);
+          }
         }
       }
     }
@@ -390,7 +394,7 @@ public class QueryExecutorServlet extends HttpServlet {
       }
     }
 
-    private QueryStatus waitForComplete(QueryId queryid) throws ServiceException {
+    private QueryStatus waitForComplete(QueryId queryid) throws SQLException {
       QueryStatus status = null;
 
       while (!stop.get()) {

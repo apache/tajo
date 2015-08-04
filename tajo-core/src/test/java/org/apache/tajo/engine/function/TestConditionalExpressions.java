@@ -20,18 +20,17 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import static org.junit.Assert.fail;
 
 public class TestConditionalExpressions extends ExprTestBase {
   @Test
-  public void testCaseWhens1() throws IOException {
+  public void testCaseWhens1() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT1);
     schema.addColumn("col2", TajoDataTypes.Type.INT2);
@@ -58,7 +57,7 @@ public class TestConditionalExpressions extends ExprTestBase {
   }
 
   @Test
-  public void testCaseWhensWithNullReturn() throws IOException {
+  public void testCaseWhensWithNullReturn() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.TEXT);
     schema.addColumn("col2", TajoDataTypes.Type.TEXT);
@@ -72,7 +71,7 @@ public class TestConditionalExpressions extends ExprTestBase {
   }
 
   @Test
-  public void testCaseWhensWithCommonExpression() throws IOException {
+  public void testCaseWhensWithCommonExpression() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -110,7 +109,7 @@ public class TestConditionalExpressions extends ExprTestBase {
   }
 
   @Test
-  public void testCaseWhensWithCommonExpressionAndNull() throws IOException {
+  public void testCaseWhensWithCommonExpressionAndNull() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -151,7 +150,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     try {
       testSimpleEval("select coalesce(null, 2, 'value3');", new String[]{"2"});
       fail("coalesce(NULL, INT, TEXT) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       //success
     }
   }
@@ -170,7 +169,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     try {
       testSimpleEval("select coalesce(null, 'value2', 3);", new String[]{"2"});
       fail("coalesce(NULL, TEXT, INT) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       //success
     }
   }
@@ -189,14 +188,14 @@ public class TestConditionalExpressions extends ExprTestBase {
     try {
       testSimpleEval("select coalesce('value1', null, 3.0);", new String[]{"1.0"});
       fail("coalesce(TEXT, NULL, FLOAT8) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       // success
     }
 
     try {
       testSimpleEval("select coalesce(null, 'value2', 3.0);", new String[]{"2.0"});
       fail("coalesce(NULL, TEXT, FLOAT8) not defined. So should throw exception.");
-    } catch (NoSuchFunctionException e) {
+    } catch (UndefinedFunctionException e) {
       //success
     }
   }

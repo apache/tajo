@@ -24,6 +24,7 @@ option java_generate_equals_and_hash = true;
 import "PrimitiveProtos.proto";
 import "CatalogProtos.proto";
 import "DataTypes.proto";
+import "TajoIdProtos.proto";
 
 enum NodeType {
   SET_SESSION = 0;
@@ -45,7 +46,7 @@ enum NodeType {
   TABLE_SUBQUERY = 15;
   SCAN = 16;
   PARTITIONS_SCAN = 17;
-  BST_INDEX_SCAN = 18;
+  INDEX_SCAN = 18;
   STORE = 19;
   INSERT = 20;
 
@@ -56,6 +57,8 @@ enum NodeType {
   ALTER_TABLESPACE = 25;
   ALTER_TABLE = 26;
   TRUNCATE_TABLE = 27;
+  CREATE_INDEX = 28;
+  DROP_INDEX = 29;
 }
 
 message LogicalNodeTree {
@@ -71,31 +74,35 @@ message LogicalNode {
 
   optional ScanNode scan = 6;
   optional PartitionScanSpec partitionScan = 7;
-  optional JoinNode join = 8;
-  optional FilterNode filter = 9;
-  optional GroupbyNode groupby = 10;
-  optional DistinctGroupbyNode distinctGroupby = 11;
-  optional SortNode sort = 12;
-  optional LimitNode limit = 13;
-  optional WindowAggNode windowAgg = 14;
-  optional ProjectionNode projection = 15;
-  optional EvalExprNode exprEval = 16;
-  optional UnionNode union = 17;
-  optional TableSubQueryNode tableSubQuery = 18;
-  optional PersistentStoreNode persistentStore = 19;
-  optional StoreTableNodeSpec storeTable = 20;
-  optional InsertNodeSpec insert = 21;
-  optional CreateTableNodeSpec createTable = 22;
-  optional RootNode root = 23;
-  optional SetSessionNode setSession = 24;
+  optional IndexScanSpec indexScan = 8;
+  optional JoinNode join = 9;
+  optional FilterNode filter = 10;
+  optional GroupbyNode groupby = 11;
+  optional DistinctGroupbyNode distinctGroupby = 12;
+  optional SortNode sort = 13;
+  optional LimitNode limit = 14;
+  optional WindowAggNode windowAgg = 15;
+  optional ProjectionNode projection = 16;
+  optional EvalExprNode exprEval = 17;
+  optional UnionNode union = 18;
+  optional TableSubQueryNode tableSubQuery = 19;
+  optional PersistentStoreNode persistentStore = 20;
+  optional StoreTableNodeSpec storeTable = 21;
+  optional InsertNodeSpec insert = 22;
+  optional CreateTableNodeSpec createTable = 23;
+  optional RootNode root = 24;
+  optional SetSessionNode setSession = 25;
 
-  optional CreateDatabaseNode createDatabase = 25;
-  optional DropDatabaseNode dropDatabase = 26;
-  optional DropTableNode dropTable = 27;
+  optional CreateDatabaseNode createDatabase = 26;
+  optional DropDatabaseNode dropDatabase = 27;
+  optional DropTableNode dropTable = 28;
 
-  optional AlterTablespaceNode alterTablespace = 28;
-  optional AlterTableNode alterTable = 29;
-  optional TruncateTableNode truncateTableNode = 30;
+  optional AlterTablespaceNode alterTablespace = 29;
+  optional AlterTableNode alterTable = 30;
+  optional TruncateTableNode truncateTableNode = 31;
+
+  optional CreateIndexNode createIndex = 32;
+  optional DropIndexNode dropIndex = 33;
 }
 
 message ScanNode {
@@ -109,6 +116,17 @@ message ScanNode {
 
 message PartitionScanSpec {
   repeated string paths = 1;
+}
+
+message IndexScanSpec {
+  required SchemaProto keySchema = 1;
+  required string indexPath = 2;
+  repeated SimplePredicateProto predicates = 3;
+}
+
+message SimplePredicateProto {
+  required SortSpecProto keySortSpec = 1;
+  required Datum value = 2;
 }
 
 message FilterNode {
@@ -280,6 +298,8 @@ message AlterTableNode {
     RENAME_COLUMN = 1;
     ADD_COLUMN = 2;
     SET_PROPERTY = 3;
+    ADD_PARTITION = 4;
+    DROP_PARTITION = 5;
   }
 
   message RenameTable {
@@ -295,12 +315,39 @@ message AlterTableNode {
     required ColumnProto addColumn = 1;
   }
 
+  message AlterPartition {
+    repeated string columnNames = 1;
+    repeated string partitionValues = 21;
+    optional string location = 3;
+    optional bool purge = 4;
+    optional bool ifNotExists = 5;
+    optional bool ifExists = 6;
+  }
+
   required string tableName = 1;
   required Type setType = 2;
   optional RenameTable renameTable = 3;
   optional RenameColumn renameColumn = 4;
   optional AddColumn addColumn = 5;
   optional KeyValueSetProto properties = 6;
+  optional AlterPartition alterPartition = 7;
+}
+
+message CreateIndexNode {
+  required int32 childSeq = 1;
+  required string indexName = 2;
+  required IndexMethod indexMethod = 3;
+  required string indexPath = 4;
+  repeated SortSpecProto keySortSpecs = 5;
+  required SchemaProto targetRelationSchema = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
+  optional KeyValueSetProto indexProperties = 9;
+  optional bool isExternal = 10;
+}
+
+message DropIndexNode {
+  required string indexName = 1;
 }
 
 enum EvalType {
@@ -495,4 +542,128 @@ enum TransmitType {
   PUSH_TRANSMIT = 0;
   PULL_TRANSMIT = 1;
   FILE_WRITE = 2;
+}
+
+message DataChannelProto {
+  required ExecutionBlockIdProto srcId = 1;
+  required ExecutionBlockIdProto targetId = 2;
+
+  required TransmitType transmitType = 3 [default = PULL_TRANSMIT];
+  required ShuffleType shuffleType = 4;
+
+  optional SchemaProto schema = 5;
+
+  repeated ColumnProto shuffleKeys = 7;
+  optional int32 numOutputs = 9 [default = 1];
+
+  optional string storeType = 10;
+}
+
+message EnforcerProto {
+  repeated EnforceProperty properties = 1;
+}
+
+message EnforceProperty {
+  enum EnforceType {
+    SORTED_INPUT = 0;
+    OUTPUT_DISTINCT = 1;
+    GROUP_BY = 2;
+    JOIN = 3;
+    SORT = 4;
+    BROADCAST = 5;
+    COLUMN_PARTITION = 6;
+    DISTINCT_GROUP_BY = 7;
+  }
+
+  // Identifies which field is filled in.
+  required EnforceType type = 1;
+
+  // One of the following will be filled in.
+  optional SortedInputEnforce sortedInput = 2;
+  optional OutputDistinctEnforce outputDistinct = 3;
+  optional GroupbyEnforce groupby = 4;
+  optional JoinEnforce join = 5;
+  optional SortEnforce sort = 6;
+  optional BroadcastEnforce broadcast = 7;
+  optional ColumnPartitionEnforcer columnPartition = 8;
+  optional DistinctGroupbyEnforcer distinct = 9;
+}
+
+message SortedInputEnforce {
+  required string tableName = 1;
+  repeated SortSpecProto sortSpecs = 2;
+}
+
+message OutputDistinctEnforce {
+}
+
+message JoinEnforce {
+  enum JoinAlgorithm {
+    NESTED_LOOP_JOIN = 0;
+    BLOCK_NESTED_LOOP_JOIN = 1;
+    IN_MEMORY_HASH_JOIN = 2;
+    HYBRID_HASH_JOIN = 3;
+    MERGE_JOIN = 4;
+  }
+
+  required int32 nodeId = 1;
+  required JoinAlgorithm algorithm = 2;
+}
+
+message GroupbyEnforce {
+  enum GroupbyAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  required int32 nodeId = 1;
+  required GroupbyAlgorithm algorithm = 2;
+  repeated SortSpecProto sortSpecs = 3;
+}
+
+message SortEnforce {
+  enum SortAlgorithm {
+    IN_MEMORY_SORT = 0;
+    MERGE_SORT = 1;
+  }
+
+  required int32 nodeId = 1;
+  required SortAlgorithm algorithm = 2;
+}
+
+message BroadcastEnforce {
+  required string tableName = 1;
+}
+
+message ColumnPartitionEnforcer {
+  enum ColumnPartitionAlgorithm {
+    HASH_PARTITION = 0;
+    SORT_PARTITION = 1;
+  }
+
+  required int32 nodeId = 1;
+  required ColumnPartitionAlgorithm algorithm = 2;
+}
+
+message DistinctGroupbyEnforcer {
+  enum DistinctAggregationAlgorithm {
+    HASH_AGGREGATION = 0;
+    SORT_AGGREGATION = 1;
+  }
+
+  enum MultipleAggregationStage {
+    FIRST_STAGE = 0;
+    SECOND_STAGE = 1;
+    THRID_STAGE = 3;
+  }
+
+  message SortSpecArray {
+    required int32 nodeId = 1;
+    repeated SortSpecProto sortSpecs = 2;
+  }
+  required int32 nodeId = 1;
+  required DistinctAggregationAlgorithm algorithm = 2;
+  repeated SortSpecArray sortSpecArrays = 3;
+  required bool isMultipleAggregation = 4 [default = false];
+  optional MultipleAggregationStage multipleAggregationStage = 5;
 }

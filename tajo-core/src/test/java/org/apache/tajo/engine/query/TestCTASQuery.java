@@ -248,7 +248,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
     TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
-    assertTrue("CSV".equalsIgnoreCase(desc.getMeta().getStoreType()));
+    assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getStoreType()));
 
 
     KeyValueSet options = desc.getMeta().getOptions();

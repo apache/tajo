@@ -126,15 +126,21 @@ public class BSTIndex implements IndexMethod {
     }
 
     @Override
-    public void write(Tuple key, long offset) throws IOException {
-      if (firstKey == null || compartor.compare(key, firstKey) < 0) {
-        firstKey = key;
+    public void write(final Tuple key, final long offset) throws IOException {
+      Tuple keyTuple;
+      try {
+        keyTuple = key.clone();
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e);
       }
-      if (lastKey == null || compartor.compare(lastKey, key) < 0) {
-        lastKey = key;
+      if (firstKey == null || compartor.compare(keyTuple, firstKey) < 0) {
+        firstKey = keyTuple;
+      }
+      if (lastKey == null || compartor.compare(lastKey, keyTuple) < 0) {
+        lastKey = keyTuple;
       }
 
-      collector.put(key, offset);
+      collector.put(keyTuple, offset);
     }
 
     public TupleComparator getComparator() {
@@ -253,7 +259,7 @@ public class BSTIndex implements IndexMethod {
         map = new TreeMap<Tuple, LinkedList<Long>>(comparator);
       }
 
-      public void put(Tuple key, long offset) {
+      public void put(final Tuple key, final long offset) {
         if (map.containsKey(key)) {
           map.get(key).add(offset);
         } else {

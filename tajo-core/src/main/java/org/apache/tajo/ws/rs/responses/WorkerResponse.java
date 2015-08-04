@@ -18,10 +18,10 @@
 
 package org.apache.tajo.ws.rs.responses;
 
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
+import org.apache.tajo.master.rm.NodeStatus;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.resource.NodeResource;
 
 public class WorkerResponse {
   
@@ -35,34 +35,29 @@ public class WorkerResponse {
   @Expose private int usedMemoryMB;
   @Expose private int usedCpuCoreSlots;
 
-  @Expose private long maxHeap;
-  @Expose private long freeHeap;
-  @Expose private long totalHeap;
-
   @Expose private int numRunningTasks;
   @Expose private int numQueryMasterTasks;
   
   @Expose private long lastHeartbeatTime;
   
-  public WorkerResponse(Worker worker) {
-    this(worker.getResource());
+  public WorkerResponse(NodeStatus nodeStatus) {
+    this(nodeStatus.getTotalResourceCapability(), nodeStatus.getAvailableResource(),
+        nodeStatus.getNumRunningTasks(), nodeStatus.getNumRunningQueryMaster());
+
+    this.connectionInfo = new WorkerConnectionInfoResponse(nodeStatus.getConnectionInfo());
     
-    this.connectionInfo = new WorkerConnectionInfoResponse(worker.getConnectionInfo());
-    
-    this.lastHeartbeatTime = worker.getLastHeartbeatTime();
+    this.lastHeartbeatTime = nodeStatus.getLastHeartbeatTime();
   }
-  
-  private WorkerResponse(WorkerResource resource) {
-    this.cpuCoreSlots = resource.getCpuCoreSlots();
-    this.memoryMB = resource.getMemoryMB();
-    this.usedDiskSlots = resource.getUsedDiskSlots();
-    this.usedMemoryMB = resource.getUsedMemoryMB();
-    this.usedCpuCoreSlots = resource.getUsedCpuCoreSlots();
-    this.maxHeap = resource.getMaxHeap();
-    this.freeHeap = resource.getFreeHeap();
-    this.totalHeap = resource.getTotalHeap();
-    this.numRunningTasks = resource.getNumRunningTasks();
-    this.numQueryMasterTasks = resource.getNumQueryMasterTasks();
+
+  private WorkerResponse(NodeResource total, NodeResource available, int numRunningTasks, int numQueryMasterTasks) {
+    this.cpuCoreSlots = total.getVirtualCores();
+    this.memoryMB = total.getMemory();
+    this.diskSlots = total.getDisks();
+    this.usedDiskSlots = available.getDisks();
+    this.usedMemoryMB = available.getMemory();
+    this.usedCpuCoreSlots = available.getVirtualCores();
+    this.numRunningTasks = numRunningTasks;
+    this.numQueryMasterTasks = numQueryMasterTasks;
   }
 
   public WorkerConnectionInfoResponse getConnectionInfo() {
@@ -87,18 +82,6 @@ public class WorkerResponse {
 
   public int getUsedCpuCoreSlots() {
     return usedCpuCoreSlots;
-  }
-
-  public long getMaxHeap() {
-    return maxHeap;
-  }
-
-  public long getFreeHeap() {
-    return freeHeap;
-  }
-
-  public long getTotalHeap() {
-    return totalHeap;
   }
 
   public int getNumRunningTasks() {

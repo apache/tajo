@@ -1182,6 +1182,8 @@ public class RCFile {
     private byte[] nullChars;
     private SerializerDeserializer serde;
 
+    private Tuple outTuple;
+
     public RCFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                          final Fragment fragment) throws IOException {
       super(conf, schema, meta, fragment);
@@ -1213,6 +1215,8 @@ public class RCFile {
       if (targets == null) {
         targets = schema.toArray();
       }
+
+      outTuple = new VTuple(targets.length);
 
       targetColumnIndexes = new int[targets.length];
       for (int i = 0; i < targets.length; i++) {
@@ -1641,13 +1645,14 @@ public class RCFile {
         return null;
       }
 
-      Tuple tuple = new VTuple(targets.length);
-      getCurrentRow(tuple);
-      return tuple;
+      getCurrentRow(outTuple);
+      return outTuple;
     }
 
     @Override
     public float getProgress() {
+      if(!inited) return super.getProgress();
+
       try {
         if(!more) {
           return 1.0f;

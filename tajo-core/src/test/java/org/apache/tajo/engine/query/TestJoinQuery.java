@@ -31,11 +31,13 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -43,6 +45,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -109,7 +112,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
   }
 
-  public static void classTearDown() throws ServiceException {
+  public static void classTearDown() throws SQLException {
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
         ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
@@ -193,7 +196,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     addEmptyDataFile("nation_multifile", false);
   }
 
-  protected static void dropCommonTables() throws ServiceException {
+  protected static void dropCommonTables() throws SQLException {
     LOG.info("Clear common tables for join tests");
 
     client.executeQuery("DROP TABLE IF EXISTS jointable11 PURGE;");
@@ -210,7 +213,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     Tuple createTuple(String[] columnDatas);
   }
 
-  private static String buildSchemaString(String tableName) throws ServiceException {
+  private static String buildSchemaString(String tableName) throws TajoException {
     TableDesc desc = client.getTableDesc(tableName);
     StringBuffer sb = new StringBuffer();
     for (Column column : desc.getSchema().getRootColumns()) {
@@ -225,7 +228,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     return sb.toString();
   }
 
-  private static String buildMultifileDDlString(String tableName) throws ServiceException {
+  private static String buildMultifileDDlString(String tableName) throws TajoException {
     String multiTableName = tableName + "_multifile";
     StringBuilder sb = new StringBuilder("create table ").append(multiTableName).append(" (");
     sb.append(buildSchemaString(tableName)).append(" )");

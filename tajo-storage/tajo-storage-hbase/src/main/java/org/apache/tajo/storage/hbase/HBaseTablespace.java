@@ -42,13 +42,14 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.*;
@@ -691,7 +692,6 @@ public class HBaseTablespace extends Tablespace {
         HConstants.ZOOKEEPER_RECOVERABLE_WAITTIME,
         HConstants.HBASE_CLIENT_PAUSE, HConstants.HBASE_CLIENT_RETRIES_NUMBER,
         HConstants.HBASE_RPC_TIMEOUT_KEY,
-        HConstants.HBASE_CLIENT_PREFETCH_LIMIT,
         HConstants.HBASE_META_SCANNER_CACHING,
         HConstants.HBASE_CLIENT_INSTANCE_ID,
         HConstants.RPC_CODEC_CONF_KEY };
@@ -1090,9 +1090,9 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws PlanningException {
-    if (REWRITE_RULE.isEligible(context, plan)) {
-      REWRITE_RULE.rewrite(context, plan);
+  public void rewritePlan(OverridableConf context, LogicalPlan plan) throws TajoException {
+    if (REWRITE_RULE.isEligible(new LogicalPlanRewriteRuleContext(context, plan))) {
+      REWRITE_RULE.rewrite(new LogicalPlanRewriteRuleContext(context, plan));
     }
   }
 
