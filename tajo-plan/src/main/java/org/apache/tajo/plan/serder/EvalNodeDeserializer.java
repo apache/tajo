@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.WindowSpec;
@@ -237,10 +238,10 @@ public class EvalNodeDeserializer {
             parameterTypes = funcSignatureProto.getParameterTypesList().toArray(
                 new DataType[funcSignatureProto.getParameterTypesCount()]);
           }
-          throw new UndefinedFunctionException(functionName, parameterTypes);
+          throw new TajoInternalError(new UndefinedFunctionException(functionName, parameterTypes));
         }
       } else {
-        throw new RuntimeException("Unknown EvalType: " + type.name());
+        throw new TajoInternalError("Unknown EvalType: " + type.name());
       }
 
       evalNodeMap.put(protoNode.getId(), current);

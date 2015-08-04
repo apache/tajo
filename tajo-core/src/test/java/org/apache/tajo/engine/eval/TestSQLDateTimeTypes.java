@@ -18,14 +18,13 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class TestSQLDateTimeTypes extends ExprTestBase {
 
   @Test
-  public void testTimestamp() throws IOException {
+  public void testTimestamp() throws TajoException {
     testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37';", new String[]{"1970-01-17 10:09:37"});
     testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';", new String[]{"1970-01-17 10:09:37.5"});
     testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';", new String[]{"1970-01-17 10:09:37.01"});
@@ -33,18 +32,18 @@ public class TestSQLDateTimeTypes extends ExprTestBase {
   }
 
   @Test
-  public void testToTimestamp() throws IOException {
+  public void testToTimestamp() throws TajoException {
     testSimpleEval("select to_char(TIMESTAMP '1970-01-17 10:09:37', 'YYYY-MM-DD HH24:MI:SS');",
         new String[]{"1970-01-17 10:09:37"});
   }
 
   @Test
-  public void testTimeLiteral() throws IOException {
+  public void testTimeLiteral() throws TajoException {
     testSimpleEval("select TIME '10:09:37';", new String[]{"10:09:37"});
   }
 
   @Test
-  public void testDateLiteral() throws IOException {
+  public void testDateLiteral() throws TajoException {
     testSimpleEval("select DATE '1970-01-17';", new String[]{"1970-01-17"});
   }
 

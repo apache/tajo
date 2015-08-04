@@ -529,7 +529,8 @@ public class QueryExecutor {
   }
 
   private void checkIndexExistence(final QueryContext queryContext, final CreateIndexNode createIndexNode)
-      throws IOException {
+      throws DuplicateIndexException {
+
     String databaseName, simpleIndexName, qualifiedIndexName;
     if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
       String[] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());

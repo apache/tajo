@@ -20,15 +20,14 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestMathFunctions extends ExprTestBase {
   @Test
-  public void testRound() throws IOException {
+  public void testRound() throws TajoException {
     testSimpleEval("select round(5.1) as col1 ", new String[]{"5"});
     testSimpleEval("select round(5.5) as col1 ", new String[]{"6"});
     testSimpleEval("select round(5.6) as col1 ", new String[]{"6"});
@@ -57,7 +56,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testFloor() throws IOException {
+  public void testFloor() throws TajoException {
     testSimpleEval("select floor(5.1) as col1 ", new String[]{"5"});
     testSimpleEval("select floor(5.5) as col1 ", new String[]{"5"});
     testSimpleEval("select floor(5.6) as col1 ", new String[]{"5"});
@@ -75,7 +74,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testCeil() throws IOException {
+  public void testCeil() throws TajoException {
     testSimpleEval("select ceil(5.0) as col1 ", new String[]{"5"});
     testSimpleEval("select ceil(5.1) as col1 ", new String[]{"6"});
     testSimpleEval("select ceil(5.5) as col1 ", new String[]{"6"});
@@ -94,7 +93,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testCeiling() throws IOException {
+  public void testCeiling() throws TajoException {
     testSimpleEval("select ceiling(5.0) as col1 ", new String[]{"5"});
     testSimpleEval("select ceiling(5.1) as col1 ", new String[]{"6"});
     testSimpleEval("select ceiling(5.5) as col1 ", new String[]{"6"});
@@ -113,7 +112,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testSin() throws IOException {
+  public void testSin() throws TajoException {
     testSimpleEval("select sin(0.0) as col1 ", new String[]{"0.0"});
     testSimpleEval("select sin(0.7) as col1 ", new String[]{"0.644217687237691"});
     testSimpleEval("select sin(1.2) as col1 ", new String[]{"0.9320390859672263"});
@@ -130,7 +129,7 @@ public class TestMathFunctions extends ExprTestBase {
 
 
   @Test
-  public void testCos() throws IOException {
+  public void testCos() throws TajoException {
     testSimpleEval("select cos(0.0) as col1 ", new String[]{"1.0"});
     testSimpleEval("select cos(0.7) as col1 ", new String[]{"0.7648421872844885"});
     testSimpleEval("select cos(1.2) as col1 ", new String[]{"0.3623577544766736"});
@@ -146,7 +145,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testTan() throws IOException {
+  public void testTan() throws TajoException {
     testSimpleEval("select tan(0.0) as col1 ", new String[]{"0.0"});
     testSimpleEval("select tan(0.3) as col1 ", new String[]{"0.30933624960962325"});
     testSimpleEval("select tan(0.8) as col1 ", new String[]{"1.0296385570503641"});
@@ -162,7 +161,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testAsin() throws IOException {
+  public void testAsin() throws TajoException {
     testSimpleEval("select asin(0.0) as col1 ", new String[]{"0.0"});
     testSimpleEval("select asin(0.3) as col1 ", new String[]{"0.3046926540153975"});
     testSimpleEval("select asin(0.8) as col1 ", new String[]{"0.9272952180016123"});
@@ -178,7 +177,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testAcos() throws IOException {
+  public void testAcos() throws TajoException {
     testSimpleEval("select acos(0.0) as col1 ", new String[]{"1.5707963267948966"});
     testSimpleEval("select acos(0.3) as col1 ", new String[]{"1.2661036727794992"});
     testSimpleEval("select acos(0.8) as col1 ", new String[]{"0.6435011087932843"});
@@ -194,7 +193,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testAtan() throws IOException {
+  public void testAtan() throws TajoException {
     testSimpleEval("select atan(0.0) as col1 ", new String[]{"0.0"});
     testSimpleEval("select atan(0.8) as col1 ", new String[]{"0.6747409422235527"});
     testSimpleEval("select atan(1.2) as col1 ", new String[]{"0.8760580505981934"});
@@ -210,7 +209,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testAtan2() throws IOException {
+  public void testAtan2() throws TajoException {
     testSimpleEval("select atan2(0.8, 0.0) as col1 ", new String[]{"1.5707963267948966"});
     testSimpleEval("select atan2(0.8, 1.1) as col1 ", new String[]{"0.628796286415433"});
     testSimpleEval("select atan2(2.7, 0.3) as col1 ", new String[]{"1.460139105621001"});
@@ -227,7 +226,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testMod() throws IOException {
+  public void testMod() throws TajoException {
     testSimpleEval("select mod(9,4) as col1 ", new String[]{"1"});
     testSimpleEval("select mod(200000000001,200000000000) as col1 ", new String[]{"1"});
     testSimpleEval("select mod(200000000000,2) as col1 ", new String[]{"0"});
@@ -243,7 +242,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testDiv() throws IOException {
+  public void testDiv() throws TajoException {
     testSimpleEval("select div(9,4) as col1 ", new String[]{"2"});
     testSimpleEval("select div(200000000001,200000000000) as col1 ", new String[]{"1"});
     testSimpleEval("select div(200000000000,2) as col1 ", new String[]{"100000000000"});
@@ -259,7 +258,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testSign() throws IOException {
+  public void testSign() throws TajoException {
     testSimpleEval("select sign(2) as col1 ", new String[]{"1.0"});
     testSimpleEval("select sign(2.345) as col1 ", new String[]{"1.0"});
     testSimpleEval("select sign(0.3) as col1 ", new String[]{"1.0"});
@@ -284,7 +283,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testSqrt() throws IOException {
+  public void testSqrt() throws TajoException {
     testSimpleEval("select sqrt(27.0) as col1 ", new String[]{"5.196152422706632"});
     testSimpleEval("select sqrt(64.0) as col1 ", new String[]{"8.0"});
     testSimpleEval("select sqrt(8.0) as col1 ", new String[]{"2.8284271247461903"});
@@ -309,7 +308,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testExp() throws IOException {
+  public void testExp() throws TajoException {
     testSimpleEval("select exp(1.0) as col1 ", new String[]{String.valueOf(Math.exp(1.0d))});
     testSimpleEval("select exp(1.1) as col1 ", new String[]{String.valueOf(Math.exp(1.1d))});
     testSimpleEval("select exp(1.2) as col1 ", new String[]{String.valueOf(Math.exp(1.2d))});
@@ -330,7 +329,7 @@ public class TestMathFunctions extends ExprTestBase {
 
 
   @Test
-  public void testAbs() throws IOException {
+  public void testAbs() throws TajoException {
     testSimpleEval("select abs(9) as col1 ", new String[]{"9"});
     testSimpleEval("select abs(-9) as col1 ", new String[]{"9"});
     testSimpleEval("select abs(200000000000) as col1 ", new String[]{"200000000000"});
@@ -351,7 +350,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testCbrt() throws IOException {
+  public void testCbrt() throws TajoException {
     testSimpleEval("select cbrt(27.0) as col1 ", new String[]{"3.0"});
     testSimpleEval("select cbrt(64.0) as col1 ", new String[]{"4.0"});
     testSimpleEval("select cbrt(8.0) as col1 ", new String[]{"2.0"});
@@ -373,7 +372,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testDegrees() throws IOException {
+  public void testDegrees() throws TajoException {
     testSimpleEval("select degrees(0.0) as col1 ", new String[]{String.valueOf(Math.toDegrees(0.0))});
     testSimpleEval("select degrees(0.8) as col1 ", new String[]{String.valueOf(Math.toDegrees(0.8))});
     testSimpleEval("select degrees(2.7) as col1 ", new String[]{String.valueOf(Math.toDegrees(2.7))});
@@ -393,7 +392,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testPow() throws IOException {
+  public void testPow() throws TajoException {
     testSimpleEval("select pow(9,3) as col1 ", new String[]{String.valueOf(Math.pow(9, 3))});
     testSimpleEval("select pow(1.0,3) as col1 ", new String[]{String.valueOf(Math.pow(1.0, 3))});
     testSimpleEval("select pow(20.1,3.1) as col1 ", new String[]{String.valueOf(Math.pow(20.1, 3.1))});
@@ -414,7 +413,7 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRadians() throws IOException {
+  public void testRadians() throws TajoException {
     testSimpleEval("select radians(0.0) as col1 ", new String[]{String.valueOf(Math.toRadians(0.0))});
     testSimpleEval("select radians(0.8) as col1 ", new String[]{String.valueOf(Math.toRadians(0.8))});
     testSimpleEval("select radians(2.7) as col1 ", new String[]{String.valueOf(Math.toRadians(2.7))});
@@ -434,12 +433,12 @@ public class TestMathFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testPi() throws IOException {
+  public void testPi() throws TajoException {
     testSimpleEval("select pi() as col1 ", new String[]{String.valueOf(Math.PI)});
   }
 
   @Test
-  public void testRoundWithSpecifiedPrecision() throws IOException {
+  public void testRoundWithSpecifiedPrecision() throws TajoException {
     // TODO - in order to make this test possible, testSimpleEval should take session variables. Now, we disable it.
     // divide zero
 //    try {
