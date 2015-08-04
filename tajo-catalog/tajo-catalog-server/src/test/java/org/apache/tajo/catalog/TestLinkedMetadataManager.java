@@ -99,7 +99,7 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public TableDesc getTableDescriptor(String catalogName, String tableName) {
+    public TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table1")) {
         return TABLE1;
       } else if (tableName.equals("table2")) {
@@ -138,7 +138,7 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public TableDesc getTableDescriptor(String catalogName, String tableName) {
+    public TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table3")) {
         return TABLE3;
       } else if (tableName.equals("table4")) {
@@ -196,7 +196,8 @@ public class TestLinkedMetadataManager {
 
   @Test
   public void testGetTablespaces() throws Exception {
-    Collection<String> names = Collections2.transform(catalog.getAllTablespaces(), new Function<CatalogProtos.TablespaceProto, String>() {
+    Collection<String> names = Collections2.transform(catalog.getAllTablespaces(),
+        new Function<CatalogProtos.TablespaceProto, String>() {
       @Override
       public String apply(@Nullable CatalogProtos.TablespaceProto input) {
         return input.getSpaceName();

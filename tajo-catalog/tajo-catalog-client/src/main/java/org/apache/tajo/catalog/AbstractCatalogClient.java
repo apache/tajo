@@ -737,13 +737,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final FunctionDesc getFunction(final String signature, DataType... paramTypes)
-      throws UndefinedFunctionException {
+      throws AmbiguousFunctionException , UndefinedFunctionException {
     return getFunction(signature, null, paramTypes);
   }
 
   @Override
   public final FunctionDesc getFunction(final String signature, FunctionType funcType, DataType... paramTypes)
-      throws UndefinedFunctionException {
+      throws AmbiguousFunctionException, UndefinedFunctionException {
 
     final GetFunctionMetaRequest.Builder builder = GetFunctionMetaRequest.newBuilder();
     builder.setSignature(signature);

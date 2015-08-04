@@ -18,6 +18,8 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Collection;
@@ -33,5 +35,5 @@ public interface MetadataProvider {
 
   Collection<String> getTables(@Nullable String catalog);
 
-  TableDesc getTableDescriptor(String catalogName, String tableName);
+  TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException;
 }

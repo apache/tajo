@@ -18,13 +18,13 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 
@@ -211,9 +211,9 @@ public interface CatalogService {
 
   boolean dropFunction(String signature);
 
-  FunctionDesc getFunction(String signature, DataType... paramTypes) throws UndefinedFunctionException;
+  FunctionDesc getFunction(String signature, DataType... paramTypes) throws AmbiguousFunctionException, UndefinedFunctionException;
 
-  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes) throws UndefinedFunctionException;
+  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes) throws AmbiguousFunctionException, UndefinedFunctionException;
 
   boolean containFunction(String signature, DataType... paramTypes);
 

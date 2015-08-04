@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.tajo.catalog.exception.InsufficientPrivilegeException;
 import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 import org.apache.tajo.util.Pair;
 
 import javax.annotation.Nullable;
@@ -164,7 +165,7 @@ public class LinkedMetadataManager {
    */
   public Collection<String> getTableNames(String dbName,
                                           @Nullable final String schemaPattern,
-                                          final String tablePattern) {
+                                          final String tablePattern) throws UndefinedDatabaseException {
     ensureIfDBExists(dbName);
 
     if (tablePattern == null) { // all tables in this database
@@ -230,7 +231,9 @@ public class LinkedMetadataManager {
    * @param tbName Table name
    * @return Table description
    */
-  public TableDesc getTable(String dbName, String schemaName, String tbName) {
+  public TableDesc getTable(String dbName, String schemaName, String tbName)
+      throws UndefinedDatabaseException, UndefinedTablespaceException {
+
     ensureIfDBExists(dbName);
 
     return providerMap.get(dbName).getTableDescriptor(schemaName, tbName);

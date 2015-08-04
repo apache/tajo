@@ -37,6 +37,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.exec.QueryExecutor;
 import org.apache.tajo.plan.*;
@@ -44,6 +45,7 @@ import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
@@ -57,7 +59,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.apache.tajo.plan.serder.PlanProto;
 
 import java.io.IOException;
 import java.util.List;
@@ -176,46 +177,46 @@ public class ExprTestBase {
     return targets;
   }
 
-  public void testSimpleEval(String query, String [] expected) throws IOException {
+  public void testSimpleEval(String query, String [] expected) throws TajoException {
     testEval(null, null, null, query, expected);
   }
 
-  public void testSimpleEval(OverridableConf context, String query, String [] expected) throws IOException {
+  public void testSimpleEval(OverridableConf context, String query, String [] expected) throws TajoException {
     testEval(context, null, null, null, query, expected);
   }
 
   public void testSimpleEval(String query, String [] expected, boolean successOrFail)
-      throws IOException {
+      throws TajoException, IOException {
 
     testEval(null, null, null, null, query, expected, ',', successOrFail);
   }
 
   public void testSimpleEval(OverridableConf context, String query, String [] expected, boolean successOrFail)
-      throws IOException {
+      throws TajoException, IOException {
     testEval(context, null, null, null, query, expected, ',', successOrFail);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
-      throws IOException {
+      throws TajoException {
     testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
         expected, ',', true);
   }
 
   public void testEval(OverridableConf context, Schema schema, String tableName, String csvTuple, String query,
                        String [] expected)
-      throws IOException {
+      throws TajoException {
     testEval(context, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, ',', true);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query,
-                       String [] expected, char delimiter, boolean condition) throws IOException {
+                       String [] expected, char delimiter, boolean condition) throws TajoException {
     testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, delimiter, condition);
   }
 
   public void testEval(OverridableConf context, Schema schema, String tableName, String csvTuple, String query,
-                       String [] expected, char delimiter, boolean condition) throws IOException {
+                       String [] expected, char delimiter, boolean condition) throws TajoException {
     QueryContext queryContext;
     if (context == null) {
       queryContext = LocalTajoTestingUtility.createDummyContext(conf);
@@ -262,8 +263,12 @@ public class ExprTestBase {
           vtuple.put(i, lazyTuple.get(i));
         }
       }
-      cat.createTable(new TableDesc(qualifiedTableName, inputSchema,"TEXT",
-          new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
+      try {
+        cat.createTable(new TableDesc(qualifiedTableName, inputSchema,"TEXT",
+            new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
+      } catch (IOException e) {
+        throw new TajoInternalError(e);
+      }
     }
 
     Target [] targets;
@@ -309,6 +314,8 @@ public class ExprTestBase {
         }
         assertEquals(query, expected[i], outTupleAsChars);
       }
+    } catch (IOException e) {
+      throw new TajoInternalError(e);
     } catch (InvalidStatementException e) {
       assertFalse(e.getMessage(), true);
     } catch (TajoException e) {
@@ -317,7 +324,7 @@ public class ExprTestBase {
       if (!condition) {
         assertEquals(expected[0], e.getMessage());
       } else {
-        assertFalse(e.getMessage(), true);
+        throw e;
       }
     } finally {
       if (schema != null) {

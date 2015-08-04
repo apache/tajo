@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -606,12 +607,12 @@ public class CatalogServer extends AbstractService {
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
-        if (metaDictionary.existTable(tbName)) {
+        try {
           return TableResponse.newBuilder()
               .setState(OK)
               .setTable(metaDictionary.getTableDesc(tbName))
               .build();
-        } else {
+        } catch (UndefinedTableException e) {
           return TableResponse.newBuilder()
               .setState(errUndefinedTable(tbName))
               .build();
