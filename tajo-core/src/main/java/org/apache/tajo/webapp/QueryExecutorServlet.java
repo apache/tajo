@@ -360,7 +360,7 @@ public class QueryExecutorServlet extends HttpServlet {
         if (queryId != null) {
           try {
             tajoClient.closeQuery(queryId);
-          } catch (SQLException e) {
+          } catch (Throwable e) {
             LOG.warn(e);
           }
         }

@@ -30,6 +30,9 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
+import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -38,10 +41,7 @@ import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteEngine;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvider;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
@@ -347,31 +347,32 @@ public class GlobalPlanner {
     }
   }
 
-  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws InternalException {
-    FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
+  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws CatalogException {
+    FunctionDesc functionDesc = null;
+    functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws InternalException {
+  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[]{});
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws CatalogException {
     FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
@@ -429,57 +430,53 @@ public class GlobalPlanner {
    */
   private RewrittenFunctions rewriteAggFunctionsForDistinctAggregation(GlobalPlanContext context,
                                                                        AggregationFunctionCallEval function)
-      throws PlanningException {
+      throws TajoException {
 
     LogicalPlan plan = context.plan.getLogicalPlan();
     RewrittenFunctions rewritten = null;
 
-    try {
-      if (function.getName().equalsIgnoreCase("count")) {
-        rewritten = new RewrittenFunctions(1);
+    if (function.getName().equalsIgnoreCase("count")) {
+      rewritten = new RewrittenFunctions(1);
 
-        if (function.getArgs().length == 0) {
-          rewritten.firstStageEvals[0] = createCountRowFunction(function.getArgs());
-        } else {
-          rewritten.firstStageEvals[0] = createCountFunction(function.getArgs());
-        }
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createSumFunction(new EvalNode[] {fieldEval});
-      } else if (function.getName().equalsIgnoreCase("sum")) {
-        rewritten = new RewrittenFunctions(1);
-
-        rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createSumFunction(new EvalNode[] {fieldEval});
-
-      } else if (function.getName().equals("max")) {
-        rewritten = new RewrittenFunctions(1);
-
-        rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
-
-      } else if (function.getName().equals("min")) {
-
-        rewritten = new RewrittenFunctions(1);
-
-        rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
-        String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
-        FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-        rewritten.firstStageTargets[0] = new Target(fieldEval);
-        rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
-
+      if (function.getArgs().length == 0) {
+        rewritten.firstStageEvals[0] = createCountRowFunction(function.getArgs());
       } else {
-        throw new PlanningException("Cannot support a mix of other functions");
+        rewritten.firstStageEvals[0] = createCountFunction(function.getArgs());
       }
-    } catch (InternalException e) {
-      LOG.error(e, e);
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
+    } else if (function.getName().equalsIgnoreCase("sum")) {
+      rewritten = new RewrittenFunctions(1);
+
+      rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
+
+    } else if (function.getName().equals("max")) {
+      rewritten = new RewrittenFunctions(1);
+
+      rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
+
+    } else if (function.getName().equals("min")) {
+
+      rewritten = new RewrittenFunctions(1);
+
+      rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
+      String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
+      FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
+      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
+
+    } else {
+      throw new UnsupportedException("Cannot support a mix of other functions");
     }
 
     return rewritten;
@@ -524,7 +521,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildGroupByIncludingDistinctFunctionsMultiStage(GlobalPlanContext context,
                                                                 ExecutionBlock latestExecBlock,
-                                                                GroupbyNode groupbyNode) throws PlanningException {
+                                                                GroupbyNode groupbyNode) throws TajoException {
 
     Column [] originalGroupingColumns = groupbyNode.getGroupingColumns();
     LinkedHashSet<Column> firstStageGroupingColumns =

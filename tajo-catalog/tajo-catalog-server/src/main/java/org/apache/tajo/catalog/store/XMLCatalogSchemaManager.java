@@ -64,15 +64,15 @@ public class XMLCatalogSchemaManager {
   private final Unmarshaller unmarshaller;
   private StoreObject catalogStore;
   
-  public XMLCatalogSchemaManager(String schemaPath) throws CatalogException {
+  public XMLCatalogSchemaManager(String schemaPath) {
     this.schemaPath = schemaPath;
     try {
       JAXBContext context = JAXBContext.newInstance(StoreObject.class);
       unmarshaller = context.createUnmarshaller();
       
       loadFromXmlFiles();
-    } catch (Exception e) {
-      throw new TajoInternalError(e);
+    } catch (Throwable t) {
+      throw new TajoInternalError(t);
     }
   }
   
@@ -489,7 +489,7 @@ public class XMLCatalogSchemaManager {
     return files;
   }
   
-  protected void mergeXmlSchemas(final List<StoreObject> storeObjects) throws CatalogException {
+  protected void mergeXmlSchemas(final List<StoreObject> storeObjects) {
     if (storeObjects.size() <= 0) {
       throw new TajoInternalError("Unable to find a schema file.");
     }

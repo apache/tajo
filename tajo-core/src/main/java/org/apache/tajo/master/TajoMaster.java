@@ -38,6 +38,7 @@ import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
+import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
@@ -369,7 +370,7 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  private void checkBaseTBSpaceAndDatabase() throws IOException {
+  private void checkBaseTBSpaceAndDatabase() throws IOException, DuplicateDatabaseException {
     if (!catalog.existTablespace(DEFAULT_TABLESPACE_NAME)) {
       catalog.createTablespace(DEFAULT_TABLESPACE_NAME, context.getConf().getVar(ConfVars.WAREHOUSE_DIR));
     } else {

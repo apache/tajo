@@ -33,6 +33,10 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1699: Tajo Java Client version 2. (hyunsik)
+
+    TAJO-1721: Separate routine for CREATE TABLE from DDLExecutor. (hyunsik)
+
     TAJO-1736: Remove unnecessary getMountPath(). 
     (Contributed by YeonSu Han, Committed by jinho)
 
@@ -205,6 +209,8 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1733: Finished query occasionally does not appear in Web-UI. (jinho)
 
     TAJO-1731: With a task failure, query processing is hanged after first retry. 
     (jihoon)

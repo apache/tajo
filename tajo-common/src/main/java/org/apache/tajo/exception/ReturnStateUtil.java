@@ -45,10 +45,11 @@ public class ReturnStateUtil {
     OK = builder.build();
   }
 
-  public static void ensureOk(ReturnState state) {
+  public static boolean ensureOk(ReturnState state) {
     if (isError(state)) {
       throw new TajoRuntimeException(state);
     }
+    return true;
   }
 
   public static StringListResponse returnStringList(Collection<String> values) {

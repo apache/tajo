@@ -107,8 +107,7 @@ public abstract class Tablespace {
    * @return Root URI
    */
   public URI getRootUri() {
-    throw new UnsupportedException(
-        String.format("Tablespace '%s' does not allow the use of artibrary paths", uri.toString()));
+    throw new UnsupportedException(String.format("artibrary path '%s'", uri.toString()));
   }
 
   /**

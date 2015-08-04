@@ -18,10 +18,11 @@
 
 package org.apache.tajo.client;
 
-import com.google.protobuf.ServiceException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoRuntimeException;
 
-public class InvalidClientSessionException extends ServiceException {
-  public InvalidClientSessionException(String message) {
-    super(message);
+public class InvalidClientSessionException extends TajoRuntimeException {
+  public InvalidClientSessionException(String sessionId) {
+    super(Errors.ResultCode.INVALID_SESSION, sessionId);
   }
 }

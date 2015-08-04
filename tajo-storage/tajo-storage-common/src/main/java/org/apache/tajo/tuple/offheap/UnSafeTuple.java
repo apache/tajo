@@ -21,7 +21,6 @@ package org.apache.tajo.tuple.offheap;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
@@ -30,7 +29,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.UnsafeUtil;
-
 import org.apache.tajo.util.datetime.TimeMeta;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;

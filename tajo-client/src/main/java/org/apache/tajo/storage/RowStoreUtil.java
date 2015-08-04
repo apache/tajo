@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
@@ -91,74 +90,76 @@ public class RowStoreUtil {
         col = schema.getColumn(i);
         type = col.getDataType();
         switch (type.getType()) {
-          case BOOLEAN: tuple.put(i, DatumFactory.createBool(bb.get())); break;
-          case BIT:
-            byte b = bb.get();
-            tuple.put(i, DatumFactory.createBit(b));
-            break;
+        case BOOLEAN:
+          tuple.put(i, DatumFactory.createBool(bb.get()));
+          break;
+        case BIT:
+          byte b = bb.get();
+          tuple.put(i, DatumFactory.createBit(b));
+          break;
 
-          case CHAR:
-            byte [] _str = new byte[type.getLength()];
-            bb.get(_str);
-            tuple.put(i, DatumFactory.createChar(_str));
-            break;
+        case CHAR:
+          byte[] _str = new byte[type.getLength()];
+          bb.get(_str);
+          tuple.put(i, DatumFactory.createChar(_str));
+          break;
 
-          case INT2:
-            short s = bb.getShort();
-            tuple.put(i, DatumFactory.createInt2(s));
-            break;
+        case INT2:
+          short s = bb.getShort();
+          tuple.put(i, DatumFactory.createInt2(s));
+          break;
 
-          case INT4:
-          case DATE:
-            int i_ = bb.getInt();
-            tuple.put(i, DatumFactory.createFromInt4(type, i_));
-            break;
+        case INT4:
+        case DATE:
+          int i_ = bb.getInt();
+          tuple.put(i, DatumFactory.createFromInt4(type, i_));
+          break;
 
-          case INT8:
-          case TIME:
-          case TIMESTAMP:
-            long l = bb.getLong();
-            tuple.put(i, DatumFactory.createFromInt8(type, l));
-            break;
+        case INT8:
+        case TIME:
+        case TIMESTAMP:
+          long l = bb.getLong();
+          tuple.put(i, DatumFactory.createFromInt8(type, l));
+          break;
 
-          case INTERVAL:
-            int month  = bb.getInt();
-            long milliseconds  = bb.getLong();
-            tuple.put(i, new IntervalDatum(month, milliseconds));
-            break;
+        case INTERVAL:
+          int month = bb.getInt();
+          long milliseconds = bb.getLong();
+          tuple.put(i, new IntervalDatum(month, milliseconds));
+          break;
 
-          case FLOAT4:
-            float f = bb.getFloat();
-            tuple.put(i, DatumFactory.createFloat4(f));
-            break;
+        case FLOAT4:
+          float f = bb.getFloat();
+          tuple.put(i, DatumFactory.createFloat4(f));
+          break;
 
-          case FLOAT8:
-            double d = bb.getDouble();
-            tuple.put(i, DatumFactory.createFloat8(d));
-            break;
+        case FLOAT8:
+          double d = bb.getDouble();
+          tuple.put(i, DatumFactory.createFloat8(d));
+          break;
 
-          case TEXT:
-            byte [] _string = new byte[bb.getInt()];
-            bb.get(_string);
-            tuple.put(i, DatumFactory.createText(_string));
-            break;
+        case TEXT:
+          byte[] _string = new byte[bb.getInt()];
+          bb.get(_string);
+          tuple.put(i, DatumFactory.createText(_string));
+          break;
 
-          case BLOB:
-            byte [] _bytes = new byte[bb.getInt()];
-            bb.get(_bytes);
-            tuple.put(i, DatumFactory.createBlob(_bytes));
-            break;
+        case BLOB:
+          byte[] _bytes = new byte[bb.getInt()];
+          bb.get(_bytes);
+          tuple.put(i, DatumFactory.createBlob(_bytes));
+          break;
 
-          case INET4:
-            byte [] _ipv4 = new byte[4];
-            bb.get(_ipv4);
-            tuple.put(i, DatumFactory.createInet4(_ipv4));
-            break;
-          case INET6:
-            // TODO - to be implemented
-            throw new UnsupportedException(type.getType().name());
-          default:
-            throw new RuntimeException(new UnknownDataTypeException(type.getType().name()));
+        case INET4:
+          byte[] _ipv4 = new byte[4];
+          bb.get(_ipv4);
+          tuple.put(i, DatumFactory.createInet4(_ipv4));
+          break;
+        case INET6:
+          // TODO - to be implemented
+          throw new UnsupportedException(type.getType().name());
+        default:
+          throw new RuntimeException(new UnknownDataTypeException(type.getType().name()));
         }
       }
       return tuple;

@@ -22,16 +22,15 @@ package org.apache.tajo.engine.function;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
-  public void testConcatenateOnLiteral() throws IOException {
+  public void testConcatenateOnLiteral() throws TajoException {
     testSimpleEval("select ('abc' || 'def') col1 ", new String[]{"abcdef"});
     testSimpleEval("select 'abc' || 'def' as col1 ", new String[]{"abcdef"});
     testSimpleEval("select 1 || 'def' as col1 ", new String[]{"1def"});
@@ -39,7 +38,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testConcatenateOnExpressions() throws IOException {
+  public void testConcatenateOnExpressions() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", INT4);
@@ -52,7 +51,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testFunctionCallIngoreCases() throws IOException {
+  public void testFunctionCallIngoreCases() throws TajoException {
     testSimpleEval("select ltrim(' trim') ", new String[]{"trim"});
     testSimpleEval("select LTRIM(' trim') ", new String[]{"trim"});
     testSimpleEval("select lTRim(' trim') ", new String[]{"trim"});
@@ -60,7 +59,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLTrim() throws IOException {
+  public void testLTrim() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
@@ -81,7 +80,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRTrim() throws IOException {
+  public void testRTrim() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
@@ -102,7 +101,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testTrim() throws IOException {
+  public void testTrim() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
@@ -123,7 +122,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRegexReplace() throws IOException {
+  public void testRegexReplace() throws TajoException {
     testSimpleEval("select regexp_replace('abcdef','bc','--') as col1 ", new String[]{"a--def"});
 
     // null test
@@ -148,7 +147,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLeft() throws IOException {
+  public void testLeft() throws TajoException {
     testSimpleEval("select left('abcdef',1) as col1 ", new String[]{"a"});
     testSimpleEval("select left('abcdef',2) as col1 ", new String[]{"ab"});
     testSimpleEval("select left('abcdef',3) as col1 ", new String[]{"abc"});
@@ -177,7 +176,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRight() throws IOException {
+  public void testRight() throws TajoException {
     testSimpleEval("select right('abcdef',1) as col1 ", new String[]{"f"});
     testSimpleEval("select right('abcdef',2) as col1 ", new String[]{"ef"});
     testSimpleEval("select right('abcdef',3) as col1 ", new String[]{"def"});
@@ -206,7 +205,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testReverse() throws IOException {
+  public void testReverse() throws TajoException {
     testSimpleEval("select reverse('abcdef') as col1 ", new String[]{"fedcba"});
     testSimpleEval("select reverse('가') as col1 ", new String[]{"가"});
 
@@ -219,7 +218,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRepeat() throws IOException {
+  public void testRepeat() throws TajoException {
     testSimpleEval("select repeat('ab',4) as col1 ", new String[]{"abababab"});
     testSimpleEval("select repeat('가',3) as col1 ", new String[]{"가가가"});
     testSimpleEval("select repeat('a',2) as col1 ", new String[]{"aa"});
@@ -233,7 +232,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
 
   @Test
-  public void testUpper() throws IOException {
+  public void testUpper() throws TajoException {
     testSimpleEval("select upper('abcdef') as col1 ", new String[]{"ABCDEF"});
 
     Schema schema = new Schema();
@@ -246,7 +245,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLower() throws IOException {
+  public void testLower() throws TajoException {
     testSimpleEval("select lower('ABCdEF') as col1 ", new String[]{"abcdef"});
 
     Schema schema = new Schema();
@@ -259,7 +258,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testCharLength() throws IOException {
+  public void testCharLength() throws TajoException {
     testSimpleEval("select char_length('123456') as col1 ", new String[]{"6"});
 
     Schema schema = new Schema();
@@ -271,7 +270,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLength() throws IOException {
+  public void testLength() throws TajoException {
     testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
 
     Schema schema = new Schema();
@@ -283,7 +282,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testMd5() throws IOException {
+  public void testMd5() throws TajoException {
     testSimpleEval("select md5('1') as col1 ", new String[]{"c4ca4238a0b923820dcc509a6f75849b"});
     testSimpleEval("select md5('tajo') as col1 ", new String[]{"742721b3a79f71a9491681b8e8a7ce85"});
 
@@ -296,7 +295,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testDigest() throws IOException {
+  public void testDigest() throws TajoException {
     testSimpleEval("select digest('tajo', 'md2') as col1 ", new String[]{"bf523bce8241982f6bea9af0f7fd37ff"});
     testSimpleEval("select digest('tajo', 'md5') as col1 ", new String[]{"742721b3a79f71a9491681b8e8a7ce85"});
     testSimpleEval("select digest('tajo', 'sha1') as col1 ", new String[]{"02b0e20540b89f0b735092bbac8093eb2e3804cf"});
@@ -310,7 +309,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testHex() throws IOException {
+  public void testHex() throws TajoException {
     testSimpleEval("select to_hex(1) as col1 ", new String[]{"1"});
     testSimpleEval("select to_hex(10) as col1 ", new String[]{"a"});
     testSimpleEval("select to_hex(1234) as col1 ", new String[]{"4d2"});
@@ -325,7 +324,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testBin() throws IOException {
+  public void testBin() throws TajoException {
     testSimpleEval("select to_bin(1) as col1 ", new String[]{"1"});
     testSimpleEval("select to_bin(10) as col1 ", new String[]{"1010"});
     testSimpleEval("select to_bin(1234) as col1 ", new String[]{"10011010010"});
@@ -339,7 +338,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testOctetLength() throws IOException {
+  public void testOctetLength() throws TajoException {
     testSimpleEval("select octet_length('123456') as col1 ", new String[]{"6"});
     testSimpleEval("select octet_length('1') as col1 ", new String[]{"1"});
     testSimpleEval("select octet_length('가') as col1 ", new String[]{"3"});
@@ -353,7 +352,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testSplitPart() throws IOException {
+  public void testSplitPart() throws TajoException {
     testSimpleEval("select split_part('1386577650.123', '.', 1) as col1 ", new String[]{"1386577650"});
     testSimpleEval("select split_part('1386577650.123', '.', 2) as col1 ", new String[]{"123"});
     // If part is larger than the number of string portions, it will returns NULL.
@@ -372,7 +371,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testSubstr() throws IOException {
+  public void testSubstr() throws TajoException {
     testSimpleEval("select substr('abcdef', 3, 2) as col1 ", new String[]{"cd"});
     testSimpleEval("select substr('abcdef', 3) as col1 ", new String[]{"cdef"});
     testSimpleEval("select substr('abcdef', 1, 1) as col1 ", new String[]{"a"});
@@ -398,7 +397,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
   
   @Test
-  public void testLocate() throws IOException {
+  public void testLocate() throws TajoException {
     // normal case
     testSimpleEval("select locate('abcdef', 'a') as col1 ", new String[]{"1"});
     testSimpleEval("select locate('abcdef', 'a', 0) as col1 ", new String[]{"1"});
@@ -447,7 +446,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testBitLength() throws IOException {
+  public void testBitLength() throws TajoException {
     testSimpleEval("select bit_length('123456') as col1 ", new String[]{"48"});
 
     Schema schema = new Schema();
@@ -459,7 +458,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testStrpos() throws IOException {
+  public void testStrpos() throws TajoException {
     testSimpleEval("select strpos('tajo','jo') as col1 ", new String[]{"3"});
     testSimpleEval("select strpos('tajo','') as col1 ", new String[]{"1"});
     testSimpleEval("select strpos('tajo','abcdef') as col1 ", new String[]{"0"});
@@ -475,7 +474,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testStrposb() throws IOException {
+  public void testStrposb() throws TajoException {
     testSimpleEval("select strposb('tajo','jo') as col1 ", new String[]{"3"});
     testSimpleEval("select strposb('tajo','') as col1 ", new String[]{"1"});
     testSimpleEval("select strposb('tajo','abcdef') as col1 ", new String[]{"0"});
@@ -491,13 +490,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testInitcap() throws IOException {
+  public void testInitcap() throws TajoException {
     testSimpleEval("select initcap('hi bro') ", new String[]{"Hi Bro"});
     testSimpleEval("select initcap('HI BRO') ", new String[]{"Hi Bro"});
   }
 
   @Test
-  public void testAscii() throws IOException {
+  public void testAscii() throws TajoException {
     testSimpleEval("select ascii('abc') as col1 ", new String[]{"97"});
 
     Schema schema = new Schema();
@@ -510,7 +509,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testChr() throws IOException {
+  public void testChr() throws TajoException {
     testSimpleEval("select chr(48) as col1 ", new String[]{"0"});
     testSimpleEval("select chr(49) as col1 ", new String[]{"1"});
     testSimpleEval("select chr(50) as col1 ", new String[]{"2"});
@@ -524,7 +523,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testLpad() throws IOException {
+  public void testLpad() throws TajoException {
     testSimpleEval("select lpad('hi', 5, 'xy') ", new String[]{"xyxhi"});
     testSimpleEval("select LPAD('hello', 7, 'xy') ", new String[]{"xyhello"});
     testSimpleEval("select LPAD('hello', 3, 'xy') ", new String[]{"hel"});
@@ -534,7 +533,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testRpad() throws IOException {
+  public void testRpad() throws TajoException {
     testSimpleEval("select rpad('hi', 5, 'xy') ", new String[]{"hixyx"});
     testSimpleEval("select RPAD('hello', 7, 'xy') ", new String[]{"helloxy"});
     testSimpleEval("select RPAD('hello', 3, 'xy') ", new String[]{"hel"});
@@ -544,13 +543,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testQuote_ident() throws IOException {
+  public void testQuote_ident() throws TajoException {
     testSimpleEval("select quote_ident('Foo bar') ", new String[]{"\"Foo bar\""});
     testSimpleEval("select QUOTE_IDENT('Tajo Function') ", new String[]{"\"Tajo Function\""});
   }
 
   @Test
-  public void testEncode() throws IOException {
+  public void testEncode() throws TajoException {
     testSimpleEval("select encode('Hello\nworld', 'base64') ", new String[]{"SGVsbG8Kd29ybGQ="});
     testSimpleEval("select encode('Hello\nworld', 'hex') ",
         new String[]{"0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64"});
@@ -562,7 +561,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
 
   @Test
-  public void testDecode() throws IOException {
+  public void testDecode() throws TajoException {
     testSimpleEval("select decode('SGVsbG8Kd29ybGQ=', 'base64') ",
         new String[]{StringEscapeUtils.escapeJava("Hello\nworld")});
     testSimpleEval("select decode('0x480x650x6c0x6c0x6f0x0a0x770x6f0x720x6c0x64', 'hex') ",
@@ -574,7 +573,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testFindInSet() throws IOException {
+  public void testFindInSet() throws TajoException {
     // abnormal cases
     testSimpleEval("select find_in_set('cr','crt') as col1 ", new String[]{"0"}); // there is no matched string
     testSimpleEval("select find_in_set('c,r','crt,c,cr,c,def') as col1 ", new String[]{"0"}); // abnormal parameter
@@ -597,7 +596,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testConcat() throws IOException {
+  public void testConcat() throws TajoException {
     testSimpleEval("select concat('333', '22') ", new String[]{"33322"});
     testSimpleEval("select concat('한글', '22') ", new String[]{"한글22"});
     testSimpleEval("select concat(null, '22') ", new String[]{"22"});
@@ -606,7 +605,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testConcat_ws() throws IOException {
+  public void testConcat_ws() throws TajoException {
     testSimpleEval("select concat_ws(',', '333', '22') ", new String[]{"333,22"});
     testSimpleEval("select concat_ws(',', '한글', '22') ", new String[]{"한글,22"});
     testSimpleEval("select concat_ws(',', '22', null) ", new String[]{"22"});

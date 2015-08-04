@@ -45,6 +45,7 @@ import static org.junit.Assert.*;
 public class TestHistoryWriterReader extends QueryTestCaseBase {
   public static final String HISTORY_DIR = "/tmp/tajo-test-history";
   TajoConf tajoConf;
+
   @Before
   public void setUp() throws Exception {
     tajoConf = new TajoConf(testingCluster.getConfiguration());
@@ -113,6 +114,69 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       assertEquals(queryInfo1.getQueryId(), foundQueryInfo.getQueryId());
       assertEquals(queryInfo1.getQueryState(), foundQueryInfo.getQueryState());
       assertEquals(queryInfo1.getProgress(), foundQueryInfo.getProgress(), 0);
+    } finally {
+      writer.stop();
+    }
+  }
+
+  @Test
+  public void testQueryInfoPagination() throws Exception {
+    HistoryWriter writer = new HistoryWriter("127.0.0.1:28090", true);
+    try {
+      writer.init(tajoConf);
+      writer.start();
+
+      long startTime = System.currentTimeMillis();
+      int testSize = 10;
+      QueryInfo queryInfo;
+
+      for (int i = 1; i < testSize + 1; i++) {
+        queryInfo = new QueryInfo(QueryIdFactory.newQueryId(startTime, i));
+        queryInfo.setStartTime(startTime);
+        queryInfo.setProgress(1.0f);
+        queryInfo.setQueryState(QueryState.QUERY_SUCCEEDED);
+
+        if (testSize == i) {
+          writer.appendAndSync(queryInfo);
+        } else {
+          writer.appendHistory(queryInfo);
+        }
+      }
+
+      SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+      Path path = new Path(tajoConf.getVar(ConfVars.HISTORY_QUERY_DIR));
+
+      FileSystem fs = path.getFileSystem(tajoConf);
+      Path parentPath = new Path(path, df.format(startTime) + "/query-list");
+      FileStatus[] histFiles = fs.listStatus(parentPath);
+      assertNotNull(histFiles);
+      assertEquals(1, histFiles.length);
+      assertTrue(histFiles[0].isFile());
+      assertTrue(histFiles[0].getPath().getName().endsWith(".hist"));
+
+      HistoryReader reader = new HistoryReader("127.0.0.1:28090", tajoConf);
+      List<QueryInfo> queryInfos = reader.getQueriesInHistory(1, testSize);
+      assertNotNull(queryInfos);
+      assertEquals(testSize, queryInfos.size());
+
+      // the pagination api returns a descending ordered list
+      for (int i = 0; i < testSize; i++) {
+        assertEquals(testSize - i, queryInfos.get(i).getQueryId().getSeq());
+      }
+
+      int pages = 5;
+      int pageSize = testSize / pages;
+      int expectIdSequence = testSize;
+      //min startIndex of page is 1
+      for (int i = 1; i < pages + 1; i++) {
+        queryInfos = reader.getQueriesInHistory(i, pageSize);
+        assertNotNull(queryInfos);
+        assertEquals(pageSize, queryInfos.size());
+
+        for (QueryInfo qInfo : queryInfos) {
+          assertEquals(expectIdSequence--, qInfo.getQueryId().getSeq());
+        }
+      }
     } finally {
       writer.stop();
     }
