@@ -457,6 +457,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1723: INSERT INTO statement should allow nested fields as 
+    target columns. (hyunsik)
+
     TAJO-1302: Support index metadata backup and restore. (jihoon)
 
     TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
