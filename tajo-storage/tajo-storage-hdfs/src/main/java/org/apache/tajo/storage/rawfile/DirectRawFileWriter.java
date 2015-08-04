@@ -32,15 +32,17 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.FileAppender;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.BaseTupleBuilder;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlockUtils;
 import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -162,7 +164,7 @@ public class DirectRawFileWriter extends FileAppender {
     UnSafeTuple unSafeTuple;
 
     if (!(t instanceof UnSafeTuple)) {
-      RowStoreUtil.convert(t, builder);
+      OffHeapRowBlockUtils.convert(t, builder);
       unSafeTuple = builder.buildToZeroCopyTuple();
     } else {
       unSafeTuple = (UnSafeTuple) t;
