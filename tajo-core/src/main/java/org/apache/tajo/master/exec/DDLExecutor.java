@@ -29,9 +29,11 @@ import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoInternalError;
@@ -43,6 +45,8 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -524,15 +528,10 @@ public class DDLExecutor {
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
             alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
 
-        // When dropping partition on an managed table, the data will be delete from file system.
-        if (!desc.isExternal()) {
+        // When dropping partition on a table, the data in the table will NOT be deleted from the file system.
+        // But if PURGE is specified, the partition data will be deleted.
+        if (alterTable.isPurge()) {
           deletePartitionPath(partitionDescProto);
-        } else {
-          // When dropping partition on an external table, the data in the table will NOT be deleted from the file
-          // system. But if PURGE is specified, the partition data will be deleted.
-          if (alterTable.isPurge()) {
-            deletePartitionPath(partitionDescProto);
-          }
         }
       }
 
@@ -603,17 +602,43 @@ public class DDLExecutor {
       filteredPaths = PartitionedTableRewriter.toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
 
-    int partitionCount = 0;
+    List<PartitionDescProto> partitions = TUtil.newList();
     for(Path filteredPath : filteredPaths) {
-      String partitionPath = filteredPath.toString();
-      int startIndex = partitionPath.indexOf(simpleTableName);
-      String partitionName = partitionPath.substring(startIndex + simpleTableName.length() + 1, partitionPath.length());
-      // TODO: check partition --> add partition
-      partitionCount++;
+      partitions.add(getPartitionDesc(simpleTableName, filteredPath));
+    }
+    catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+
+    LOG.info("Added partition directories: " + partitions.size());
+  }
+
+  private PartitionDescProto getPartitionDesc(String tableName, Path path) throws IOException {
+    String partitionPath = path.toString();
+
+    String partitionName = StringUtils.unescapePathName(partitionPath);
+    int startIndex = partitionPath.indexOf(tableName);
+    partitionName = partitionName.substring(startIndex + tableName.length() + 1, partitionPath.length());
+
+    CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+    builder.setPartitionName(partitionName);
+
+    String[] partitionKeyPairs = partitionName.split("/");
+
+    for(int i = 0; i < partitionKeyPairs.length; i++) {
+      String partitionKeyPair = partitionKeyPairs[i];
+      String[] split = partitionKeyPair.split("=");
+
+      PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
+      keyBuilder.setColumnName(split[0]);
+      keyBuilder.setPartitionValue(split[1]);
+
+      builder.addPartitionKeys(keyBuilder.build());
     }
 
-    LOG.info("Added partition directories: " + partitionCount);
+    builder.setPath(partitionPath);
+
+    return builder.build();
   }
+
 
   private void deletePartitionPath(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException {
     Path partitionPath = new Path(partitionDescProto.getPath());
