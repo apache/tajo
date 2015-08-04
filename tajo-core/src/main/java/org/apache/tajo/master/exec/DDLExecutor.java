@@ -404,7 +404,8 @@ public class DDLExecutor {
   public void alterTable(TajoMaster.MasterContext context, final QueryContext queryContext,
                          final AlterTableNode alterTable)
       throws IOException, UndefinedTableException, DuplicateTableException, DuplicateColumnException,
-      DuplicatePartitionException, UndefinedPartitionException, UndefinedPartitionKeyException, AmbiguousPartitionDirectoryExistException {
+      DuplicatePartitionException, UndefinedPartitionException, UndefinedPartitionKeyException,
+      AmbiguousPartitionDirectoryExistException, UndefinedPartitionMethodException {
 
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
@@ -569,7 +570,8 @@ public class DDLExecutor {
    * @throws IOException
    */
   public void repairPartition(TajoMaster.MasterContext context, final QueryContext queryContext,
-                         final AlterTableNode alterTable) throws IOException {
+                         final AlterTableNode alterTable) throws IOException, UndefinedTableException,
+    UndefinedPartitionMethodException {
 
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
@@ -584,7 +586,6 @@ public class DDLExecutor {
       databaseName = queryContext.getCurrentDatabase();
       simpleTableName = tableName;
     }
-    final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
 
     if (!catalog.existsTable(databaseName, simpleTableName)) {
       throw new UndefinedTableException(alterTable.getTableName());
