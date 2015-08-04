@@ -19,9 +19,14 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateColumnException extends CatalogException {
 	private static final long serialVersionUID = 6766228091940775275L;
+
+  public DuplicateColumnException(ReturnState state) {
+    super(state);
+  }
 
 	public DuplicateColumnException(String columnName) {
 		super(Errors.ResultCode.DUPLICATE_COLUMN, columnName);

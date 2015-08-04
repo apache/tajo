@@ -91,7 +91,7 @@ public class InfoSchemaMetadataDictionary {
     return systemTableNames;
   }
   
-  private TableDescriptor getTableDescriptor(String tableName) {
+  private TableDescriptor getTableDescriptor(String tableName) throws UndefinedTableException {
     TableDescriptor tableDescriptor = null;
     
     if (tableName == null || tableName.isEmpty()) {
@@ -106,11 +106,15 @@ public class InfoSchemaMetadataDictionary {
         break;
       }
     }
-    
+
+    if (tableDescriptor == null) {
+      throw new UndefinedTableException(tableName);
+    }
+
     return tableDescriptor;
   }
   
-  public CatalogProtos.TableDescProto getTableDesc(String tableName) {
+  public CatalogProtos.TableDescProto getTableDesc(String tableName) throws UndefinedTableException {
     TableDescriptor tableDescriptor;
     
     tableDescriptor = getTableDescriptor(tableName);
@@ -121,7 +125,7 @@ public class InfoSchemaMetadataDictionary {
     return tableDescriptor.getTableDescription();
   }
   
-  public boolean existTable(String tableName) {
+  public boolean existTable(String tableName) throws UndefinedTableException {
     return getTableDescriptor(tableName) != null;
   }
   

@@ -19,10 +19,15 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UndefinedPartitionException extends CatalogException {
 
   private static final long serialVersionUID = 277182608283894938L;
+
+  public UndefinedPartitionException(ReturnState state) {
+    super(state);
+  }
 
   public UndefinedPartitionException(String partitionName) {
     super(ResultCode.UNDEFINED_PARTITION, partitionName);

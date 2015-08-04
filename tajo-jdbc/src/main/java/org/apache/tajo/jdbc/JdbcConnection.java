@@ -28,6 +28,8 @@ import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
@@ -267,14 +269,18 @@ public class JdbcConnection implements Connection {
 
   @Override
   public boolean isValid(int timeout) throws SQLException {
-    if (tajoClient.isConnected()) {
-      ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
-      boolean next = resultSet.next();
-      boolean valid = next && resultSet.getLong(1) == 1;
-      resultSet.close();
-      return valid;
-    } else {
-      return false;
+    try {
+      if (tajoClient.isConnected()) {
+        ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
+        boolean next = resultSet.next();
+        boolean valid = next && resultSet.getLong(1) == 1;
+        resultSet.close();
+        return valid;
+      } else {
+        return false;
+      }
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
     }
   }
 
@@ -357,7 +363,11 @@ public class JdbcConnection implements Connection {
 
   @Override
   public void setCatalog(String catalog) throws SQLException {
-    tajoClient.selectDatabase(catalog);
+    try {
+      tajoClient.selectDatabase(catalog);
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
+    }
   }
 
   @Override

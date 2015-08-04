@@ -99,7 +99,8 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                     ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
+                                                     ColumnReferenceExpr columnRef)
+      throws AmbiguousColumnException, UndefinedColumnException {
 
     Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     if (found != null) {

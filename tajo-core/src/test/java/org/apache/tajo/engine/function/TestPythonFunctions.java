@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.engine.eval.ExprTestBase;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import java.io.IOException;
 public class TestPythonFunctions extends ExprTestBase {
 
   @Test
-  public void testFunctions() throws IOException {
+  public void testFunctions() throws TajoException {
     testSimpleEval("select return_one()", new String[]{"1"});
     testSimpleEval("select helloworld()", new String[]{"Hello, World"});
     testSimpleEval("select concat_py('1')", new String[]{"11"});
@@ -37,7 +38,7 @@ public class TestPythonFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testNestedFunctions() throws IOException {
+  public void testNestedFunctions() throws TajoException {
     testSimpleEval("select add_py(3, return_one())", new String[]{"4"});
     testSimpleEval("select concat_py(helloworld())", new String[]{"Hello, WorldHello, World"});
   }

@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
@@ -69,8 +70,10 @@ public class DDLExecutor {
   public CreateTableExecutor getCreateTableExecutor() {
     return createTableExecutor;
   }
+  
+  public boolean execute(QueryContext queryContext, LogicalPlan plan)
+      throws IOException, TajoException {
 
-  public boolean execute(QueryContext queryContext, LogicalPlan plan) throws IOException {
     LogicalNode root = ((LogicalRootNode) plan.getRootBlock().getRoot()).getChild();
 
     switch (root.getType()) {
@@ -124,7 +127,9 @@ public class DDLExecutor {
     }
   }
 
-  public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode) {
+  public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode)
+      throws DuplicateIndexException {
+
     String databaseName, simpleIndexName, qualifiedIndexName;
     if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
       String[] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
@@ -159,7 +164,9 @@ public class DDLExecutor {
     }
   }
 
-  public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode) {
+  public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode)
+      throws UndefinedIndexException {
+
     String databaseName, simpleIndexName;
     if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
       String[] splits = CatalogUtil.splitFQTableName(dropIndexNode.getIndexName());
@@ -223,7 +230,7 @@ public class DDLExecutor {
   //--------------------------------------------------------------------------
   public boolean createDatabase(@Nullable QueryContext queryContext, String databaseName,
                                 @Nullable String tablespace,
-                                boolean ifNotExists) throws IOException {
+                                boolean ifNotExists) throws IOException, DuplicateDatabaseException {
 
     String tablespaceName;
     if (tablespace == null) {
@@ -253,7 +260,9 @@ public class DDLExecutor {
     return true;
   }
 
-  public boolean dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists) {
+  public boolean dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)
+      throws UndefinedDatabaseException {
+
     boolean exists = catalog.existDatabase(databaseName);
     if (!exists) {
       if (ifExists) { // DROP DATABASE IF EXISTS
@@ -284,7 +293,8 @@ public class DDLExecutor {
    * @param tableName to be dropped
    * @param purge     Remove all data if purge is true.
    */
-  public boolean dropTable(QueryContext queryContext, String tableName, boolean ifExists, boolean purge) {
+  public boolean dropTable(QueryContext queryContext, String tableName, boolean ifExists, boolean purge)
+      throws UndefinedTableException {
 
     String databaseName;
     String simpleTableName;
@@ -327,7 +337,8 @@ public class DDLExecutor {
    * Truncate table a given table
    */
   public void truncateTable(final QueryContext queryContext, final TruncateTableNode truncateTableNode)
-      throws IOException {
+      throws IOException, UndefinedTableException {
+
     List<String> tableNames = truncateTableNode.getTableNames();
     final CatalogService catalog = context.getCatalog();
 
@@ -385,7 +396,10 @@ public class DDLExecutor {
    * @throws IOException
    */
   public void alterTable(TajoMaster.MasterContext context, final QueryContext queryContext,
-                         final AlterTableNode alterTable) throws IOException {
+                         final AlterTableNode alterTable)
+      throws IOException, UndefinedTableException, DuplicateTableException, DuplicateColumnException,
+      DuplicatePartitionException, UndefinedPartitionException, UndefinedPartitionKeyException, AmbiguousPartitionDirectoryExistException {
+
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
 
@@ -548,8 +562,10 @@ public class DDLExecutor {
     }
   }
 
-  private boolean ensureColumnPartitionKeys(String tableName, String[] columnNames) {
-    for (String columnName : columnNames) {
+  private boolean ensureColumnPartitionKeys(String tableName, String[] columnNames)
+      throws UndefinedPartitionKeyException {
+
+    for(String columnName : columnNames) {
       if (!ensureColumnPartitionKeys(tableName, columnName)) {
         throw new UndefinedPartitionKeyException(columnName);
       }
