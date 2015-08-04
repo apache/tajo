@@ -21,6 +21,7 @@ package org.apache.tajo.exception;
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Map;
 
@@ -100,6 +101,9 @@ public class ErrorMessages {
     ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory" +
       " : '%s'", 1);
 
+
+    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
+    ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {
@@ -139,7 +143,7 @@ public class ErrorMessages {
         }
 
       } else {
-        throw new TajoRuntimeException(code, args);
+        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + StringUtils.join(args));
       }
     }
   }

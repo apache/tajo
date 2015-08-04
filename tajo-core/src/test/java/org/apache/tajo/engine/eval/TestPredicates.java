@@ -21,6 +21,7 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,7 +37,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testAnd() throws IOException {
+  public void testAnd() throws TajoException {
     testSimpleEval("select true;", new String[] {"t"});
 
     testSimpleEval("select true and true;", new String[] {"t"});
@@ -46,7 +47,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testOr() throws IOException {
+  public void testOr() throws TajoException {
     testSimpleEval("select true or true;", new String[] {"t"});
     testSimpleEval("select true or false;", new String[] {"t"});
     testSimpleEval("select false or true;", new String[] {"t"});
@@ -54,7 +55,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testLogicalOperatorPrecedence() throws IOException {
+  public void testLogicalOperatorPrecedence() throws TajoException {
     testSimpleEval("select true or (false or false) or false;", new String[] {"t"});
     testSimpleEval("select false or (true or false) or false;", new String[] {"t"});
     testSimpleEval("select false or (false or true) or false;", new String[] {"t"});
@@ -77,7 +78,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testNot() throws IOException {
+  public void testNot() throws TajoException {
 
     testSimpleEval("select true;", new String[] {"t"});
     testSimpleEval("select not true;", new String[] {"f"});
@@ -99,7 +100,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testParenthesizedValues() throws IOException {
+  public void testParenthesizedValues() throws TajoException {
     testSimpleEval("select ((true));", new String[] {"t"});
     testSimpleEval("select ((((true))));", new String[] {"t"});
     testSimpleEval("select not(not(not(false)));", new String[] {"t"});
@@ -110,7 +111,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testComparisonEqual() throws IOException {
+  public void testComparisonEqual() throws TajoException {
 
 
     Schema schema = new Schema();
@@ -142,7 +143,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testComparisonNotEqual() throws IOException {
+  public void testComparisonNotEqual() throws TajoException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -159,7 +160,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testComparisonLessThan() throws IOException {
+  public void testComparisonLessThan() throws TajoException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -176,7 +177,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testComparisonLessThanEqual() throws IOException {
+  public void testComparisonLessThanEqual() throws TajoException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -193,7 +194,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testComparisonGreaterThan() throws IOException {
+  public void testComparisonGreaterThan() throws TajoException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -210,7 +211,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testComparisonGreaterThanEqual() throws IOException {
+  public void testComparisonGreaterThanEqual() throws TajoException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -231,7 +232,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testBetween() throws IOException {
+  public void testBetween() throws TajoException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
@@ -255,7 +256,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testBetween2() throws IOException { // for TAJO-249
+  public void testBetween2() throws TajoException { // for TAJO-249
     Schema schema3 = new Schema();
     schema3.addColumn("date_a", INT4);
     schema3.addColumn("date_b", INT4);
@@ -294,7 +295,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testInPredicateWithConstant() throws IOException {
+  public void testInPredicateWithConstant() throws TajoException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
@@ -319,7 +320,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testInPredicateWithSimpleExprs() throws IOException {
+  public void testInPredicateWithSimpleExprs() throws TajoException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", INT4);
@@ -343,7 +344,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testIsNullPredicate() throws IOException {
+  public void testIsNullPredicate() throws TajoException {
     Schema schema1 = new Schema();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
@@ -354,7 +355,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testIsNullPredicateWithFunction() throws IOException {
+  public void testIsNullPredicateWithFunction() throws TajoException {
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
@@ -370,7 +371,7 @@ public class TestPredicates extends ExprTestBase {
   //////////////////////////////////////////////////////////////////
 
   @Test
-  public void testBooleanTest() throws IOException {
+  public void testBooleanTest() throws TajoException {
     testSimpleEval("select 1 < 3 is true", new String [] {"t"});
     testSimpleEval("select 1 < 3 is not true", new String [] {"f"});
     testSimpleEval("select 1 < 3 is false", new String [] {"f"});
@@ -393,7 +394,7 @@ public class TestPredicates extends ExprTestBase {
   }
 
   @Test
-  public void testBooleanTestOnTable() throws IOException {
+  public void testBooleanTestOnTable() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col1", BOOLEAN);
     schema.addColumn("col2", BOOLEAN);

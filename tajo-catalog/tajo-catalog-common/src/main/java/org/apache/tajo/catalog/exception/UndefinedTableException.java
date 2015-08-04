@@ -21,9 +21,14 @@ package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UndefinedTableException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
+
+  public UndefinedTableException(ReturnState state) {
+    super(state);
+  }
 
   public UndefinedTableException(String dbName, String tbName) {
 		super(ResultCode.UNDEFINED_TABLE, CatalogUtil.buildFQName(dbName, tbName));

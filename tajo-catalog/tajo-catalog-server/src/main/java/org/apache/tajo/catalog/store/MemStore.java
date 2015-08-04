@@ -22,27 +22,21 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Maps;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
+//import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+//import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -51,7 +45,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.*;
 
 /**
  * CatalogServer guarantees that all operations are thread-safe.
@@ -199,7 +193,7 @@ public class MemStore implements CatalogStore {
    * Get a database namespace from a Map instance.
    */
   private <T> Map<String, T> checkAndGetDatabaseNS(final Map<String, Map<String, T>> databaseMap,
-                                                   String databaseName) {
+                                                   String databaseName) throws UndefinedDatabaseException {
     if (databaseMap.containsKey(databaseName)) {
       return databaseMap.get(databaseName);
     } else {
@@ -373,7 +367,8 @@ public class MemStore implements CatalogStore {
     partitions.put(tableName, protoMap);
   }
 
-  private void dropPartition(String databaseName, String tableName, String partitionName) {
+  private void dropPartition(String databaseName, String tableName, String partitionName)
+      throws UndefinedPartitionException {
     if(!partitions.containsKey(tableName)) {
       throw new UndefinedPartitionException(partitionName);
     } else {

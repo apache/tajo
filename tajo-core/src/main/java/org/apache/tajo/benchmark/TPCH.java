@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.StorageConstants;
 
 import java.io.File;
@@ -192,7 +193,7 @@ public class TPCH extends BenchmarkSet {
     loadQueries(BENCHMARK_DIR);
   }
 
-  public void loadTables() throws SQLException {
+  public void loadTables() throws TajoException {
     loadTable(LINEITEM);
     loadTable(CUSTOMER);
     loadTable(CUSTOMER_PARTS);
@@ -206,7 +207,7 @@ public class TPCH extends BenchmarkSet {
 
   }
 
-  public void loadTable(String tableName) throws SQLException {
+  public void loadTable(String tableName) throws TajoException {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     meta.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
