@@ -2122,8 +2122,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
 
     try {
-      String sql = "SELECT " + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", PARTITION_NAME, " +
-        " PATH FROM " + TB_PARTTIONS;
+      String sql = "SELECT A." + COL_PARTITIONS_PK + ", A." + COL_TABLES_PK + ", A.PARTITION_NAME, " +
+        " A.PATH FROM " + TB_PARTTIONS + " A JOIN " + TB_TABLES + " B "
+        + " ON A." + COL_TABLES_PK + " = B." + COL_TABLES_PK
+        + " WHERE A." + COL_PARTITIONS_PK + " > 0 ";
 
       conn = getConnection();
       stmt = conn.createStatement();
@@ -2268,7 +2270,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     List<TablePartitionKeysProto> partitions = new ArrayList<TablePartitionKeysProto>();
 
     try {
-      String sql = "SELECT " + COL_PARTITIONS_PK + ", COLUMN_NAME, PARTITION_VALUE FROM " + TB_PARTTION_KEYS;
+      String sql = " SELECT C." + COL_PARTITIONS_PK + ", C.COLUMN_NAME, C.PARTITION_VALUE " +
+        " FROM " + TB_TABLES + " A " +
+        " JOIN " + TB_PARTTIONS + " B ON A." + COL_TABLES_PK + " = B." + COL_TABLES_PK
+        + " AND B." + COL_PARTITIONS_PK  + " > 0 " +
+        " JOIN " + TB_PARTTION_KEYS + " C ON B." + COL_PARTITIONS_PK + " = C." + COL_PARTITIONS_PK;
 
       conn = getConnection();
       stmt = conn.createStatement();
