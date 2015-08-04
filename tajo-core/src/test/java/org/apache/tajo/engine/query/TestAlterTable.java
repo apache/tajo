@@ -77,7 +77,8 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
-    String tableName = CatalogUtil.buildFQName("TestAlterTable", "partitioned_table");
+    String simpleTableName = "partitioned_table";
+    String tableName = CatalogUtil.buildFQName(getCurrentDatabase(), simpleTableName);
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc retrieved = catalog.getTableDesc(tableName);
@@ -90,7 +91,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(getCurrentDatabase()
+      , simpleTableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -108,7 +110,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     List<CatalogProtos.DatabaseProto> allDatabases = catalog.getAllDatabases();
     int dbId = -1;
     for (CatalogProtos.DatabaseProto database : allDatabases) {
-      if (database.getName().equals("TestAlterTable")) {
+      if (database.getName().equals(getCurrentDatabase())) {
         dbId = database.getId();
       }
     }
@@ -117,7 +119,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     int tableId = -1;
     List<CatalogProtos.TableDescriptorProto>  allTables = catalog.getAllTables();
     for(CatalogProtos.TableDescriptorProto table : allTables) {
-      if (table.getDbId() == dbId && table.getName().equals("partitioned_table")) {
+      if (table.getDbId() == dbId && table.getName().equals(simpleTableName)) {
         tableId = table.getTid();
       }
     }
@@ -126,40 +128,71 @@ public class TestAlterTable extends QueryTestCaseBase {
     List<CatalogProtos.TablePartitionProto> allPartitions = catalog.getAllPartitions();
     List<CatalogProtos.TablePartitionProto> resultPartitions = TUtil.newList();
 
+    System.out.println("### tablePath:" + retrieved.getUri().toString());
+    System.out.println("### tableId:" + tableId);
+
+    int partitionId = 0;
     for (CatalogProtos.TablePartitionProto partition : allPartitions) {
-      if (partition.getTid() == tableId) {
+      System.out.println("### partition - partitionId:" + partition.getPartitionId()
+        + ", tid:" + partition.getTid()
+          + ", name:" + partition.getPartitionName()
+        + ", path:" + partition.getPath()
+      );
+
+      if (partition.getTid() == tableId
+        && partition.getPartitionName().equals("col3=1/col4=2")
+        && partition.getPath().equals(retrieved.getUri().toString() + "/col3=1/col4=2")
+        ){
         resultPartitions.add(partition);
+        partitionId = partition.getPartitionId();
       }
     }
     assertEquals(resultPartitions.size(), 1);
     assertEquals(resultPartitions.get(0).getPartitionName(), "col3=1/col4=2");
 
     List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
-    assertEquals(tablePartitionKeys.size(), 2);
-    assertEquals(tablePartitionKeys.get(0).getColumnName(), "col3");
-    assertEquals(tablePartitionKeys.get(0).getPartitionValue(), "1");
-    assertEquals(tablePartitionKeys.get(1).getColumnName(), "col4");
-    assertEquals(tablePartitionKeys.get(1).getPartitionValue(), "2");
+    List<CatalogProtos.TablePartitionKeysProto> resultPartitionKeys = TUtil.newList();
 
-    ResultSet resultSet = executeString("SELECT partition_name FROM INFORMATION_SCHEMA.PARTITIONS");
+    for (CatalogProtos.TablePartitionKeysProto partitionKey: tablePartitionKeys) {
+      System.out.println("### partitionKeys - partitionId:" + partitionKey.getPartitionId()
+          + ", column:" + partitionKey.getColumnName()
+          + ", value:" + partitionKey.getPartitionValue()
+      );
+      if (partitionKey.getPartitionId() == partitionId
+        && (partitionKey.getColumnName().equals("col3") && partitionKey.getPartitionValue().equals("1")
+      || partitionKey.getColumnName().equals("col4") && partitionKey.getPartitionValue().equals("2"))) {
+        resultPartitionKeys.add(partitionKey);
+      }
+    }
+    assertEquals(resultPartitionKeys.size(), 2);
+    assertEquals(resultPartitionKeys.get(0).getColumnName(), "col3");
+    assertEquals(resultPartitionKeys.get(0).getPartitionValue(), "1");
+    assertEquals(resultPartitionKeys.get(1).getColumnName(), "col4");
+    assertEquals(resultPartitionKeys.get(1).getPartitionValue(), "2");
+
+    ResultSet resultSet = executeString("SELECT partition_name FROM INFORMATION_SCHEMA.PARTITIONS "
+    + " WHERE partition_id = " + partitionId);
+
     String actualResult = resultSetToString(resultSet);
     String expectedResult = "partition_name\n" +
       "-------------------------------\n" +
       "col3=1/col4=2\n";
     assertEquals(expectedResult, actualResult);
 
-    resultSet = executeString("SELECT * FROM INFORMATION_SCHEMA.PARTITION_KEYS");
+    resultSet = executeString("SELECT column_name,partition_value FROM INFORMATION_SCHEMA.PARTITION_KEYS" +
+      " WHERE partition_id = " + partitionId);
+
     actualResult = resultSetToString(resultSet);
-    expectedResult = "partition_id,column_name,partition_value\n" +
+    expectedResult = "column_name,partition_value\n" +
       "-------------------------------\n" +
-      "0,col3,1\n" +
-      "0,col4,2\n";
+      "col3,1\n" +
+      "col4,2\n";
     assertEquals(expectedResult, actualResult);
 
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));

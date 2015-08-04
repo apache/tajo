@@ -354,7 +354,6 @@ public class MemStore implements CatalogStore {
     CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
     builder.setPartitionName(partitionName);
     builder.setPath(partitionDesc.getPath());
-
     if (partitionDesc.getPartitionKeysCount() > 0) {
       for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
         CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
@@ -593,7 +592,7 @@ public class MemStore implements CatalogStore {
   }
 
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
-    int tableId = 0, i = 0;
+    int tableId = 0, partitionId = 0;
     List<TableDescriptorProto> tables = getAllTables();
     List<TablePartitionProto> protos = new ArrayList<TablePartitionProto>();
 
@@ -613,11 +612,11 @@ public class MemStore implements CatalogStore {
 
         builder.setPartitionName(partitionDescProto.getPartitionName());
         builder.setPath(partitionDescProto.getPath());
-        builder.setPartitionId(i);
+        builder.setPartitionId(partitionId);
         builder.setTid(tableId);
 
         protos.add(builder.build());
-        i++;
+        partitionId++;
       }
     }
     return protos;
@@ -625,10 +624,11 @@ public class MemStore implements CatalogStore {
 
   public List<TablePartitionKeysProto> getAllPartitionKeys() throws CatalogException {
     List<TablePartitionKeysProto> protos = new ArrayList<TablePartitionKeysProto>();
-    Set<String> tables = partitions.keySet();
     int partitionId = 0;
-    for (String table : tables) {
-      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(table);
+
+    Set<String> partitionTables = partitions.keySet();
+    for (String partitionTable : partitionTables) {
+      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(partitionTable);
       for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
         CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
 
@@ -639,9 +639,11 @@ public class MemStore implements CatalogStore {
           builder.setPartitionId(partitionId);
           protos.add(builder.build());
         }
+
         partitionId++;
       }
     }
+
     return protos;
   }
 
