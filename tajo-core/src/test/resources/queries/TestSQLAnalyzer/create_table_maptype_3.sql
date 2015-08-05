@@ -1,1 +1,0 @@
-CREATE TABLE T1 (A TEXT, B INT4, C MAP<TEXT, RECORD (name RECORD (first_name TEXT, last_name TEXT), age INT4)>, F FLOAT8);

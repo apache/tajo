@@ -282,7 +282,6 @@ nonreserved_keywords
   | LESS
   | LIST
   | LOCATION
-  | MAP
   | MAX
   | MAXVALUE
   | MICROSECONDS
@@ -442,7 +441,6 @@ predefined_type
   | binary_type
   | network_type
   | record_type
-  | map_type
   ;
 
 character_string_type
@@ -540,10 +538,6 @@ network_type
 
 record_type
   : RECORD table_elements
-  ;
-
-map_type
-  : MAP LTH key_type=data_type COMMA value_type=data_type GTH
   ;
 
 /*
