@@ -514,7 +514,9 @@ public class RawFile {
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
-        this.shuffleType = PlannerUtil.getShuffleType(meta.getOption(StorageConstants.SHUFFLE_TYPE));
+        this.shuffleType = PlannerUtil.getShuffleType(
+            meta.getOption(StorageConstants.SHUFFLE_TYPE,
+                PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
       }
 
       super.init();
