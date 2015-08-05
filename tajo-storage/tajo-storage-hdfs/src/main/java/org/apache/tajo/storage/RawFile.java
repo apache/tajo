@@ -35,6 +35,8 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
@@ -472,6 +474,7 @@ public class RawFile {
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
     private long pos;
+    private ShuffleType shuffleType;
 
     private TableStatistics stats;
 
@@ -511,6 +514,7 @@ public class RawFile {
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
+        this.shuffleType = PlannerUtil.getShuffleType(meta.getOption(StorageConstants.SHUFFLE_TYPE));
       }
 
       super.init();
@@ -640,7 +644,8 @@ public class RawFile {
       // reset the null flags
       nullFlags.clear();
       for (int i = 0; i < schema.size(); i++) {
-        if (enabledStats) {
+        if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
+          // it is to calculate min/max values, and it is only used for the intermediate file.
           stats.analyzeField(i, t);
         }
 
