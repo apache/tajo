@@ -184,7 +184,7 @@ public class QueryClientImpl implements QueryClient {
   public ResultSet executeQueryAndGetResult(String sql) throws TajoException {
 
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
-    ensureOk(response.getState());
+    ClientExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -202,7 +202,7 @@ public class QueryClientImpl implements QueryClient {
   public ResultSet executeJsonQueryAndGetResult(final String json) throws TajoException {
 
     ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
-    ensureOk(response.getState());
+    ClientExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
