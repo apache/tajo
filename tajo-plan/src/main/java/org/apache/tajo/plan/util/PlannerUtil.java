@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -912,7 +913,7 @@ public class PlannerUtil {
     }
   }
 
-  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws UndefinedTableException {
     if (node.getType() == NodeType.ROOT) {
       node = ((LogicalRootNode)node).getChild();
     }

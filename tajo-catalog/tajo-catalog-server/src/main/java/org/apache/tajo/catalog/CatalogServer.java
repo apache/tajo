@@ -34,10 +34,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -45,9 +42,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
@@ -235,7 +229,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (tablespaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
-          throw new CatalogException(ResultCode.INSUFFICIENT_PRIVILEGE, "drop to default tablespace");
+          throw new InsufficientPrivilegeException("drop to default tablespace");
         }
 
         if (!store.existTablespace(tablespaceName)) {
@@ -698,6 +692,7 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
       Iterator<List<FunctionDescProto>> iterator = functions.values().iterator();
       GetFunctionsResponse.Builder builder = GetFunctionsResponse.newBuilder();
+      builder.setState(OK);
       while (iterator.hasNext()) {
         builder.addAllFunctionDesc(iterator.next());
       }

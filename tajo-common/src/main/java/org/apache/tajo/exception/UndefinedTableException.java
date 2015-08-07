@@ -16,20 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
 
-import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class DuplicateTableException extends CatalogException {
-	private static final long serialVersionUID = -641623770742392865L;
+public class UndefinedTableException extends TajoException {
+	private static final long serialVersionUID = 277182608283894937L;
 
-  public DuplicateTableException(ReturnState state) {
+  public UndefinedTableException(ReturnState state) {
     super(state);
   }
 
-  public DuplicateTableException(String relName) {
-    super(Errors.ResultCode.DUPLICATE_TABLE, relName);
+  public UndefinedTableException(String dbName, String tbName) {
+		super(ResultCode.UNDEFINED_TABLE, dbName + "." + tbName);
   }
+
+	public UndefinedTableException(String relName) {
+		super(ResultCode.UNDEFINED_TABLE, relName);
+	}
 }

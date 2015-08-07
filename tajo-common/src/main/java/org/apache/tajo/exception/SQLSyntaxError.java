@@ -16,15 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors.ResultCode;
 
-public class UndefinedPartitionMethodException extends CatalogException {
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-  private static final long serialVersionUID = 277182608283894949L;
+public class SQLSyntaxError extends TajoRuntimeException {
+  private static final long serialVersionUID = 5388279335175632067L;
 
-  public UndefinedPartitionMethodException(String partitionName) {
-    super(ResultCode.UNDEFINED_PARTITION_METHOD, partitionName);
+  public SQLSyntaxError(ReturnState state) {
+    super(state);
+  }
+
+  public SQLSyntaxError(String errorMessage) {
+    super(Errors.ResultCode.SYNTAX_ERROR, errorMessage);
   }
 }

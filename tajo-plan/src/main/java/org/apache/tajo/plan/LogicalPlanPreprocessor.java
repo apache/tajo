@@ -21,7 +21,7 @@ package org.apache.tajo.plan;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;

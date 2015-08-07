@@ -16,16 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-import java.util.Collection;
-
-public class UndefinedFunctionException extends CatalogException {
+public class UndefinedFunctionException extends TajoException {
 	private static final long serialVersionUID = 5062193018697228028L;
 
   public UndefinedFunctionException(ReturnState state) {
@@ -35,12 +32,4 @@ public class UndefinedFunctionException extends CatalogException {
   public UndefinedFunctionException(String signature) {
     super(ResultCode.UNDEFINED_FUNCTION, signature);
   }
-
-  public UndefinedFunctionException(String funcName, TajoDataTypes.DataType[] parameters) {
-    super(ResultCode.UNDEFINED_FUNCTION, FunctionUtil.buildSimpleFunctionSignature(funcName, parameters));
-  }
-
-	public UndefinedFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
-		super(ResultCode.UNDEFINED_FUNCTION, FunctionUtil.buildSimpleFunctionSignature(funcName, parameters));
-	}
 }

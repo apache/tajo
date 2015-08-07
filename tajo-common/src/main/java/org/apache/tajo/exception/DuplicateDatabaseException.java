@@ -16,13 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class DuplicateTablespaceException extends CatalogException {
-	public DuplicateTablespaceException(String spaceName) {
-		super(Errors.ResultCode.DUPLICATE_TABLESPACE, spaceName);
+public class DuplicateDatabaseException extends TajoException {
+
+  public DuplicateDatabaseException(ReturnState state) {
+    super(state);
+  }
+	public DuplicateDatabaseException(String dbName) {
+		super(Errors.ResultCode.DUPLICATE_DATABASE, dbName);
 	}
 }

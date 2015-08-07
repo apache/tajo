@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,36 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.parser;
-
+package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class SQLSyntaxError extends TajoRuntimeException {
-  private static final long serialVersionUID = 5388279335175632067L;
+public class DataTypeMismatchException extends TajoException {
 
-  private transient String detailedMessage;
-
-  public SQLSyntaxError(String errorMessage) {
-    super(Errors.ResultCode.SYNTAX_ERROR, errorMessage);
+  public DataTypeMismatchException(ReturnState e) {
+    super(e);
   }
 
-  public SQLSyntaxError(SQLParseError e) {
-    super(Errors.ResultCode.SYNTAX_ERROR, e.getMessageHeader());
-  }
-
-  @Override
-  public String getMessage() {
-    if (detailedMessage == null) {
-      if (getCause() != null) {
-        detailedMessage = getCause().getMessage();
-      } else {
-        detailedMessage = String.format("ERROR: %s\n", super.getMessage());
-      }
-    }
-    return detailedMessage;
+  public DataTypeMismatchException(String columnName, String columnType,
+                                   String expression, String expressionDataType) {
+    super(Errors.ResultCode.DATATYPE_MISMATCH, columnName, columnType, expression, expressionDataType);
   }
 }

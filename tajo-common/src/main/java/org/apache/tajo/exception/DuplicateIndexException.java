@@ -16,21 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
+public class DuplicateIndexException extends TajoException {
+  private static final long serialVersionUID = 3705839985189534673L;
 
-public class AmbiguousFunctionException extends CatalogException {
-
-  public AmbiguousFunctionException(PrimitiveProtos.ReturnState state) {
+  public DuplicateIndexException(ReturnState state) {
     super(state);
   }
 
-  public AmbiguousFunctionException(String funcName, DataType[] parameters) {
-    super(Errors.ResultCode.AMBIGUOUS_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
+  public DuplicateIndexException(String indexName) {
+    super(Errors.ResultCode.DUPLICATE_INDEX, indexName);
   }
 }

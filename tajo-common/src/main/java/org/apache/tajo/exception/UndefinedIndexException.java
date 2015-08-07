@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.TajoException;
 
-public class InsufficientPrivilegeException extends TajoException {
+public class UndefinedIndexException extends TajoException {
+  private static final long serialVersionUID = 3705839985189534673L;
 
-  public InsufficientPrivilegeException(String towhat) {
-    super(ResultCode.INSUFFICIENT_PRIVILEGE, towhat);
+  public UndefinedIndexException(String tableName, String columnName) {
+    super(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, tableName, columnName);
+  }
+
+  public UndefinedIndexException(String indexName) {
+    super(ResultCode.UNDEFINED_INDEX_NAME, indexName);
   }
 }

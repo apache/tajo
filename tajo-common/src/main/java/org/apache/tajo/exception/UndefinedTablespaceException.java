@@ -16,17 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
+public class UndefinedTablespaceException extends TajoException {
+	private static final long serialVersionUID = 277182608283894937L;
 
-public class DuplicateFunctionException extends CatalogException {
-	private static final long serialVersionUID = 3224521585413794703L;
+  public UndefinedTablespaceException(ReturnState state) {
+    super(state);
+  }
 
-	public DuplicateFunctionException(String funcName, DataType[] parameters) {
-		super(Errors.ResultCode.DUPLICATE_FUNCTION, buildSimpleFunctionSignature(funcName, parameters));
+	public UndefinedTablespaceException(String spaceName) {
+		super(Errors.ResultCode.UNDEFINED_TABLESPACE, spaceName);
 	}
 }

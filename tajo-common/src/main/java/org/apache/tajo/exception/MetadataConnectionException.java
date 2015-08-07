@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoError;
 
-public class UndefinedPartitionKeyException extends CatalogException {
+/**
+ * Tajo Metadata Connector's connection error
+ */
+public class MetadataConnectionException extends TajoError {
 
-  private static final long serialVersionUID = 277182608283894939L;
-
-  public UndefinedPartitionKeyException(String partitionKey) {
-    super(ResultCode.UNDEFINED_PARTITION_KEY, partitionKey);
+  public MetadataConnectionException(String uri, Throwable t) {
+    super(ResultCode.CAT_CANNOT_CONNECT, t, uri, t.getMessage());
   }
 }

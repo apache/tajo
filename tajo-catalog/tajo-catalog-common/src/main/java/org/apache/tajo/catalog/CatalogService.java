@@ -18,12 +18,10 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
-import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.*;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,28 +29,21 @@ import java.util.List;
 public interface CatalogService {
 
   /**
-   *
    * @param tableSpaceName Tablespace name to be created
-   * @return True if tablespace is created successfully. Otherwise, it will return FALSE.
    */
-  Boolean createTablespace(String tableSpaceName, String uri);
+  void createTablespace(String tableSpaceName, String uri) throws DuplicateTablespaceException;
 
   /**
-   *
    * @param tableSpaceName Tablespace name to be created
-   * @return True if tablespace is created successfully. Otherwise, it will return FALSE.
    */
-  Boolean existTablespace(String tableSpaceName);
+  boolean existTablespace(String tableSpaceName);
 
   /**
-   *
    * @param tableSpaceName Tablespace name to be created
-   * @return True if tablespace is created successfully. Otherwise, it will return FALSE.
    */
-  Boolean dropTablespace(String tableSpaceName);
+  void dropTablespace(String tableSpaceName) throws UndefinedTablespaceException, InsufficientPrivilegeException;
 
   /**
-   *
    * @return All tablespace names
    */
   Collection<String> getAllTablespaceNames();
@@ -67,35 +58,30 @@ public interface CatalogService {
    * @param tablespaceName Tablespace name to get
    * @return Tablespace description
    */
-  TablespaceProto getTablespace(String tablespaceName);
+  TablespaceProto getTablespace(String tablespaceName) throws UndefinedTableException;
 
   /**
-   *
    * @param alterTablespace AlterTablespace
-   * @return True if update is successfully.
    */
-  Boolean alterTablespace(AlterTablespaceProto alterTablespace);
+  void alterTablespace(AlterTablespaceProto alterTablespace)
+      throws UndefinedTablespaceException, InsufficientPrivilegeException;
 
   /**
-   *
    * @param databaseName Database name to be created
-   * @return True if database is created successfully. Otherwise, it will return FALSE.
    */
-  Boolean createDatabase(String databaseName, String tablespaceName);
+  void createDatabase(String databaseName, String tablespaceName) throws DuplicateDatabaseException;
 
   /**
-   *
    * @param databaseName Database name to be dropped
-   * @return True if database is dropped successfully. Otherwise, it will return FALSE.
    */
-  Boolean dropDatabase(String databaseName);
+  void dropDatabase(String databaseName) throws UndefinedDatabaseException, InsufficientPrivilegeException;
 
   /**
    *
    * @param databaseName Database name to be checked
    * @return True if database exists. Otherwise, it will return FALSE.
    */
-  Boolean existDatabase(String databaseName);
+  boolean existDatabase(String databaseName);
 
   /**
    *
@@ -113,17 +99,17 @@ public interface CatalogService {
    * @param tableName table name
    * @return a table description
    * @see TableDesc
-   * @throws Throwable
+   * @throws UndefinedTableException
    */
-  TableDesc getTableDesc(String databaseName, String tableName);
+  TableDesc getTableDesc(String databaseName, String tableName) throws UndefinedTableException;
 
   /**
    * Get a table description by name
    * @return a table description
    * @see TableDesc
-   * @throws Throwable
+   * @throws UndefinedTableException
    */
-  TableDesc getTableDesc(String qualifiedName);
+  TableDesc getTableDesc(String qualifiedName) throws UndefinedTableException;
 
   /**
    *
@@ -131,24 +117,17 @@ public interface CatalogService {
    */
   Collection<String> getAllTableNames(String databaseName);
   
-  /**
-   * 
-   */
   List<TableDescriptorProto> getAllTables();
   
   List<TableOptionProto> getAllTableOptions();
   
   List<TableStatsProto> getAllTableStats();
   
-  /**
-   * 
-   */
   List<ColumnProto> getAllColumns();
 
   List<IndexDescProto> getAllIndexes();
 
   /**
-   *
    * @return All FunctionDescs
    */
   Collection<FunctionDesc> getFunctions();
@@ -156,36 +135,37 @@ public interface CatalogService {
   /**
    * Add a table via table description
    * @see TableDesc
-   * @throws Throwable
+   * @throws DuplicateTableException
    */
-  boolean createTable(TableDesc desc);
+  void createTable(TableDesc desc) throws DuplicateTableException;
 
 
   /**
    * Drop a table by name
    *
    * @param tableName table name
-   * @throws Throwable
+   * @throws UndefinedTableException
+   * @throws InsufficientPrivilegeException
    */
-  boolean dropTable(String tableName);
+  void dropTable(String tableName) throws UndefinedTableException, InsufficientPrivilegeException;
 
   boolean existsTable(String databaseName, String tableName);
 
   boolean existsTable(String tableName);
 
-  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName);
+  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName) throws UndefinedPartitionMethodException, UndefinedTableException;
 
-  boolean existPartitionMethod(String databaseName, String tableName);
+  boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException;
 
   PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
-      throws UndefinedPartitionException;
+      throws UndefinedPartitionException, UndefinedPartitionMethodException;
 
   List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
   List<TablePartitionProto> getAllPartitions();
 
-  boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
-    , boolean ifNotExists);
+  void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
+    , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException;
 
   boolean createIndex(IndexDesc index);
 
@@ -207,27 +187,34 @@ public interface CatalogService {
 
   boolean dropIndex(String databaseName, String indexName);
 
-  boolean createFunction(FunctionDesc funcDesc);
+  void createFunction(FunctionDesc funcDesc) throws DuplicateFunctionException;
 
-  boolean dropFunction(String signature);
+  void dropFunction(String signature) throws UndefinedFunctionException, InsufficientPrivilegeException;
 
-  FunctionDesc getFunction(String signature, DataType... paramTypes) throws AmbiguousFunctionException, UndefinedFunctionException;
+  FunctionDesc getFunction(String signature, DataType... paramTypes)
+      throws AmbiguousFunctionException, UndefinedFunctionException;
 
-  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes) throws AmbiguousFunctionException, UndefinedFunctionException;
+  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes)
+      throws AmbiguousFunctionException, UndefinedFunctionException;
 
   boolean containFunction(String signature, DataType... paramTypes);
 
   boolean containFunction(String signature, FunctionType funcType, DataType... paramTypes);
 
   /**
-  * Add a table via table description
-  * @see AlterTableDesc
-  * @throws Throwable
-  */
-  boolean alterTable(AlterTableDesc desc);
+   * Add a table via table description
+   *
+   * @throws DuplicateColumnException
+   * @throws DuplicateTableException
+   * @throws InsufficientPrivilegeException
+   * @throws UndefinedColumnException
+   * @throws UndefinedTableException
+   *
+   * @see AlterTableDesc
+   */
+  void alterTable(AlterTableDesc desc)
+      throws DuplicateColumnException, DuplicateTableException, InsufficientPrivilegeException,
+      UndefinedColumnException, UndefinedTableException;
 
-  boolean updateTableStats(UpdateTableStatsProto stats);
-
-
-
+  void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
 }

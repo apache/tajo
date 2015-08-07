@@ -33,7 +33,7 @@ public class TajoException extends Exception implements TajoExceptionInterface {
     this.code = e.getReturnCode();
   }
 
-  public TajoException(TajoRuntimeException e) {
+  public TajoException(TajoExceptionInterface e) {
     super(e.getMessage());
     this.code = e.getErrorCode();
   }

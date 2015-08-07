@@ -22,29 +22,31 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.CatalogConstants;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
-import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeCatalogUpgrade;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
@@ -85,19 +87,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   protected abstract Connection createConnection(final Configuration conf) throws SQLException;
   
-  protected void createDatabaseDependants() throws CatalogException {
-    
+  protected void createDatabaseDependants() throws TajoException {
   }
   
-  protected boolean isInitialized() throws CatalogException {
+  protected boolean isInitialized() throws TajoException {
     return catalogSchemaManager.isInitialized(getConnection());
   }
 
-  protected boolean catalogAlreadyExists() throws CatalogException {
+  protected boolean catalogAlreadyExists() throws TajoException {
     return catalogSchemaManager.catalogAlreadyExists(getConnection());
   }
 
-  protected void createBaseTable() throws CatalogException {
+  protected void createBaseTable() throws TajoException {
     createDatabaseDependants();
     
     catalogSchemaManager.createBaseSchema(getConnection());
@@ -105,7 +106,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     insertSchemaVersion();
   }
 
-  protected void dropBaseTable() throws CatalogException {
+  protected void dropBaseTable() throws TajoException {
     catalogSchemaManager.dropBaseSchema(getConnection());
   }
 
@@ -169,7 +170,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           try {
             createBaseTable();
             LOG.info("The base tables of CatalogServer are created.");
-          } catch (CatalogException ce) {
+          } catch (TajoException ce) {
             dropBaseTable();
             throw ce;
           }
@@ -184,7 +185,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return catalogSchemaManager.getCatalogStore().getSchema().getVersion();
   }
 
-  public String readSchemaFile(String path) throws CatalogException {
+  public String readSchemaFile(String path) throws TajoException {
     try {
       return FileUtil.readTextFileFromResource("schemas/" + path);
     } catch (IOException e) {
@@ -248,7 +249,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return schemaVersion;
   }
 
-  private void verifySchemaVersion() throws CatalogException {
+  private void verifySchemaVersion() throws TajoException {
     int schemaVersion = -1;
 
     schemaVersion = getSchemaVersion();
@@ -264,7 +265,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.error("| In order to learn how to migration Apache Tajo instance, |");
       LOG.error("| please refer http://tajo.apache.org/docs/current/backup_and_restore/catalog.html |");
       LOG.error("=========================================================================");
-      throw makeCatalogUpgrade();
+      throw new CatalogUpgradeRequiredException();
     }
 
     LOG.info(String.format("The compatibility of the catalog schema (version: %d) has been verified.",
@@ -274,7 +275,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   /**
    * Insert the version of the current catalog schema
    */
-  protected void insertSchemaVersion() throws CatalogException {
+  protected void insertSchemaVersion() throws TajoException {
     Connection conn;
     PreparedStatement pstmt = null;
     try {
@@ -290,7 +291,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void createTablespace(String spaceName, String spaceUri) throws CatalogException {
+  public void createTablespace(String spaceName, String spaceUri) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -325,7 +326,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existTablespace(String tableSpaceName) throws CatalogException {
+  public boolean existTablespace(String tableSpaceName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -353,7 +354,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropTablespace(String tableSpaceName) throws CatalogException {
+  public void dropTablespace(String tableSpaceName) throws TajoException {
 
 
     Connection conn = null;
@@ -389,11 +390,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public Collection<String> getAllTablespaceNames() throws CatalogException {
+  public Collection<String> getAllTablespaceNames() throws TajoException {
     return getAllTablespaceNamesInternal(null);
   }
 
-  private Collection<String> getAllTablespaceNamesInternal(@Nullable String whereCondition) throws CatalogException {
+  private Collection<String> getAllTablespaceNamesInternal(@Nullable String whereCondition) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
@@ -423,7 +424,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<TablespaceProto> getTablespaces() throws CatalogException {
+  public List<TablespaceProto> getTablespaces() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -454,7 +455,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public TablespaceProto getTablespace(String spaceName) throws CatalogException {
+  public TablespaceProto getTablespace(String spaceName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
@@ -486,7 +487,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void alterTablespace(AlterTablespaceProto alterProto) throws CatalogException {
+  public void alterTablespace(AlterTablespaceProto alterProto) throws TajoException {
     Connection conn;
     PreparedStatement pstmt = null;
 
@@ -512,7 +513,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void createDatabase(String databaseName, String tablespaceName) throws CatalogException {
+  public void createDatabase(String databaseName, String tablespaceName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -549,7 +550,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existDatabase(String databaseName) throws CatalogException {
+  public boolean existDatabase(String databaseName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -577,7 +578,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropDatabase(String databaseName) throws CatalogException {
+  public void dropDatabase(String databaseName) throws TajoException {
     Collection<String> tableNames = getAllTableNames(databaseName);
 
     Connection conn = null;
@@ -610,11 +611,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public Collection<String> getAllDatabaseNames() throws CatalogException {
+  public Collection<String> getAllDatabaseNames() throws TajoException {
     return getAllDatabaseNamesInternal(null);
   }
 
-  private Collection<String> getAllDatabaseNamesInternal(@Nullable String whereCondition) throws CatalogException {
+  private Collection<String> getAllDatabaseNamesInternal(@Nullable String whereCondition) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
@@ -644,7 +645,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<DatabaseProto> getAllDatabases() throws CatalogException {
+  public List<DatabaseProto> getAllDatabases() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -750,7 +751,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void createTable(final CatalogProtos.TableDescProto table) throws CatalogException {
+  public void createTable(final CatalogProtos.TableDescProto table) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -901,7 +902,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public void updateTableStats(final CatalogProtos.UpdateTableStatsProto statsProto) throws
-    CatalogException {
+    TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -968,7 +969,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException {
+  public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws TajoException {
 
     String[] splitted = CatalogUtil.splitTableName(alterTableDescProto.getTableName());
     if (splitted.length == 1) {
@@ -1099,7 +1100,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void renameTable(final int tableId, final String tableName) throws CatalogException {
+  private void renameTable(final int tableId, final String tableName) throws TajoException {
 
     final String updtaeRenameTableSql = "UPDATE " + TB_TABLES + " SET " + COL_TABLES_NAME + " = ? " + " WHERE TID = ?";
 
@@ -1126,7 +1127,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private void renameColumn(final int tableId, final CatalogProtos.AlterColumnProto alterColumnProto)
-      throws CatalogException {
+      throws TajoException {
 
     final String selectColumnSql =
         "SELECT COLUMN_NAME, DATA_TYPE, TYPE_LENGTH, ORDINAL_POSITION, NESTED_FIELD_NUM from " + TB_COLUMNS +
@@ -1203,7 +1204,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void addNewColumn(int tableId, CatalogProtos.ColumnProto columnProto) throws CatalogException {
+  private void addNewColumn(int tableId, CatalogProtos.ColumnProto columnProto) throws TajoException {
 
     final String insertNewColumnSql =
         "INSERT INTO " + TB_COLUMNS +
@@ -1251,7 +1252,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition) throws CatalogException {
+  public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt1 = null, pstmt2 = null;
 
@@ -1297,7 +1298,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void dropPartition(int partitionId) throws CatalogException {
+  private void dropPartition(int partitionId) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt1 = null, pstmt2 = null;
 
@@ -1358,7 +1359,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existTable(String databaseName, final String tableName) throws CatalogException {
+  public boolean existTable(String databaseName, final String tableName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -1485,7 +1486,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropTable(String databaseName, final String tableName) throws CatalogException {
+  public void dropTable(String databaseName, final String tableName) throws TajoException {
     Connection conn = null;
     try {
       conn = getConnection();
@@ -1534,7 +1535,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public CatalogProtos.TableDescProto getTable(String databaseName, String tableName)
-      throws CatalogException {
+      throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -1685,7 +1686,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<String> getAllTableNames(String databaseName) throws CatalogException {
+  public List<String> getAllTableNames(String databaseName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -1718,7 +1719,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<TableDescriptorProto> getAllTables() throws CatalogException {
+  public List<TableDescriptorProto> getAllTables() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -1767,7 +1768,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<TableOptionProto> getAllTableProperties() throws CatalogException {
+  public List<TableOptionProto> getAllTableProperties() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -1802,7 +1803,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<TableStatsProto> getAllTableStats() throws CatalogException {
+  public List<TableStatsProto> getAllTableStats() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -1834,7 +1835,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
   
   @Override
-  public List<ColumnProto> getAllColumns() throws CatalogException {
+  public List<ColumnProto> getAllColumns() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -1880,7 +1881,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void addPartitionMethod(CatalogProtos.PartitionMethodProto proto) throws CatalogException {
+  public void addPartitionMethod(CatalogProtos.PartitionMethodProto proto) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
 
@@ -1913,7 +1914,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropPartitionMethod(String databaseName, String tableName) throws CatalogException {
+  public void dropPartitionMethod(String databaseName, String tableName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
 
@@ -1940,7 +1941,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
-      throws CatalogException {
+      throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -1973,7 +1974,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException {
+  public boolean existPartitionMethod(String databaseName, String tableName) throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2006,7 +2007,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                       String partitionName) throws CatalogException {
+                                                       String partitionName) throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2047,7 +2048,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private void setPartitionKeys(int pid, PartitionDescProto.Builder partitionDesc) throws
-    CatalogException {
+    TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2075,7 +2076,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException {
+  public List<PartitionDescProto> getPartitions(String databaseName, String tableName) throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2114,7 +2115,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getAllPartitions() throws CatalogException {
+  public List<TablePartitionProto> getAllPartitions() throws TajoException {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -2149,7 +2150,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
-    , boolean ifNotExists) throws CatalogException {
+    , boolean ifNotExists) throws TajoException {
     Connection conn = null;
 
     // To delete existing partition keys
@@ -2261,7 +2262,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void createIndex(final IndexDescProto proto) throws CatalogException {
+  public void createIndex(final IndexDescProto proto) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
 
@@ -2324,7 +2325,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropIndex(String databaseName, final String indexName) throws CatalogException {
+  public void dropIndex(String databaseName, final String indexName) throws TajoException {
     Connection conn = null;
     PreparedStatement pstmt = null;
 
@@ -2371,7 +2372,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
-      throws CatalogException {
+      throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2411,7 +2412,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws CatalogException {
+      throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2459,7 +2460,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existIndexByName(String databaseName, final String indexName) throws CatalogException {
+  public boolean existIndexByName(String databaseName, final String indexName) throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2493,7 +2494,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws CatalogException {
+      throws TajoException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2535,7 +2536,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public List<String> getAllIndexNamesByTable(final String databaseName, final String tableName)
-      throws CatalogException {
+      throws TajoException {
     ResultSet res = null;
     PreparedStatement pstmt = null;
     final List<String> indexNames = new ArrayList<String>();
@@ -2569,7 +2570,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+  public boolean existIndexesByTable(String databaseName, String tableName) throws TajoException {
     ResultSet res = null;
     PreparedStatement pstmt = null;
     final List<String> indexNames = new ArrayList<String>();
@@ -2599,7 +2600,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<IndexDescProto> getAllIndexes() throws CatalogException {
+  public List<IndexDescProto> getAllIndexes() throws TajoException {
     List<IndexDescProto> indexDescProtos = TUtil.newList();
     for (String databaseName : getAllDatabaseNames()) {
       for (String tableName : getAllTableNames(databaseName)) {
@@ -2708,27 +2709,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public final void addFunction(final FunctionDesc func) throws CatalogException {
+  public final void addFunction(final FunctionDesc func) throws TajoException {
     // TODO - not implemented yet
   }
 
   @Override
-  public final void deleteFunction(final FunctionDesc func) throws CatalogException {
+  public final void deleteFunction(final FunctionDesc func) throws TajoException {
     // TODO - not implemented yet
   }
 
   @Override
-  public final void existFunction(final FunctionDesc func) throws CatalogException {
+  public final void existFunction(final FunctionDesc func) throws TajoException {
     // TODO - not implemented yet
   }
 
   @Override
-  public final List<String> getAllFunctionNames() throws CatalogException {
+  public final List<String> getAllFunctionNames() throws TajoException {
     // TODO - not implemented yet
     return null;
   }
 
-  private boolean existColumn(final int tableId, final String columnName) throws CatalogException {
+  private boolean existColumn(final int tableId, final String columnName) throws TajoException {
     Connection conn ;
     PreparedStatement pstmt = null;
     ResultSet res = null;

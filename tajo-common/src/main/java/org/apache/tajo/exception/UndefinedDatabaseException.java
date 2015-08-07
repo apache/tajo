@@ -16,19 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
+
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class UndefinedTablespaceException extends CatalogException {
+public class UndefinedDatabaseException extends TajoException {
 	private static final long serialVersionUID = 277182608283894937L;
 
-  public UndefinedTablespaceException(ReturnState state) {
+  public UndefinedDatabaseException(ReturnState state) {
     super(state);
   }
 
-	public UndefinedTablespaceException(String spaceName) {
-		super(Errors.ResultCode.UNDEFINED_TABLESPACE, spaceName);
+	public UndefinedDatabaseException(String dbName) {
+		super(Errors.ResultCode.UNDEFINED_DATABASE, dbName);
 	}
 }

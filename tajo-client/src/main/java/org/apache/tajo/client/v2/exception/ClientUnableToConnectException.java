@@ -22,7 +22,7 @@ import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
 
 public class ClientUnableToConnectException extends TajoException {
-  public ClientUnableToConnectException() {
+  public ClientUnableToConnectException(String address) {
     super(Errors.ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION);
   }
 }

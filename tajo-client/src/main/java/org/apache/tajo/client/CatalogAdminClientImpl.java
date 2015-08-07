@@ -24,11 +24,14 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.DuplicateDatabaseException;
+import org.apache.tajo.exception.DuplicateTableException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.DropTableRequest;
 import org.apache.tajo.ipc.ClientProtos.GetIndexWithColumnsRequest;
@@ -38,11 +41,9 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 
 import java.io.IOException;
 import java.net.URI;
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.apache.tajo.exception.ReturnStateUtil.*;
-import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 
 public class CatalogAdminClientImpl implements CatalogAdminClient {
@@ -257,7 +258,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public IndexDescProto getIndex(final String indexName) throws SQLException {
+  public IndexDescProto getIndex(final String indexName) {
     final BlockingInterface stub = conn.getTMStub();
 
     IndexResponse res;
@@ -267,12 +268,12 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
     return res.getIndexDesc();
   }
 
   @Override
-  public boolean existIndex(final String indexName) throws SQLException {
+  public boolean existIndex(final String indexName){
     final BlockingInterface stub = conn.getTMStub();
 
     try {
@@ -283,7 +284,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public List<IndexDescProto> getIndexes(final String tableName) throws SQLException {
+  public List<IndexDescProto> getIndexes(final String tableName) {
     final BlockingInterface stub = conn.getTMStub();
 
     IndexListResponse response;
@@ -294,12 +295,12 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return response.getIndexDescList();
   }
 
   @Override
-  public boolean hasIndexes(final String tableName) throws SQLException {
+  public boolean hasIndexes(final String tableName) {
     final BlockingInterface stub = conn.getTMStub();
 
     try {
@@ -310,7 +311,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws SQLException {
+  public IndexDescProto getIndex(final String tableName, final String[] columnNames) {
     final BlockingInterface stub = conn.getTMStub();
 
     GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
@@ -327,12 +328,12 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return response.getIndexDesc();
   }
 
   @Override
-  public boolean existIndex(final String tableName, final String[] columnName) throws SQLException {
+  public boolean existIndex(final String tableName, final String[] columnName) {
     final BlockingInterface stub = conn.getTMStub();
 
     GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
@@ -350,7 +351,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public boolean dropIndex(final String indexName) throws SQLException {
+  public boolean dropIndex(final String indexName) {
     final BlockingInterface stub = conn.getTMStub();
 
     try {

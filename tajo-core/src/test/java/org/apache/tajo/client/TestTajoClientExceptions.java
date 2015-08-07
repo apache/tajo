@@ -21,23 +21,21 @@ package org.apache.tajo.client;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.DuplicateDatabaseException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.sql.SQLException;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 @NotThreadSafe
-public class TestTajoClientFailures {
+public class TestTajoClientExceptions {
   private static TajoTestingCluster cluster;
   private static TajoClient client;
 
@@ -63,17 +61,23 @@ public class TestTajoClientFailures {
   }
 
   @Test(expected = UndefinedTableException.class)
-  public final void testDropTable() throws UndefinedTableException {
+  public final void testDropTable() throws TajoException {
     assertFalse(client.dropTable("unknown-table")); // unknown table
   }
 
   @Test
-  public void testExecuteSQL() throws SQLException {
+  public void testExecuteSQL() {
     // This is just an error propagation unit test. Specified SQL errors will be addressed in other unit tests.
     ReturnState state = client.executeQuery("select * from unknown_table").getState();
     assertEquals(Errors.ResultCode.UNDEFINED_TABLE, state.getReturnCode());
 
     state = client.executeQuery("create table default.lineitem (name int);").getState();
     assertEquals(Errors.ResultCode.DUPLICATE_TABLE, state.getReturnCode());
+  }
+
+  @Test(expected = UndefinedTableException.class)
+  public void testExecuteQueryAndGetResult() throws TajoException {
+    // This is just an error propagation unit test. Specified SQL errors will be addressed in other unit tests.
+    client.executeQueryAndGetResult("select * from unknown_table");
   }
 }

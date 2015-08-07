@@ -20,14 +20,7 @@ package org.apache.tajo.exception;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ErrorMessages;
-import org.apache.tajo.exception.ErrorUtil;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.TajoExceptionInterface;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.StringUtils;
@@ -45,6 +38,12 @@ public class ReturnStateUtil {
     OK = builder.build();
   }
 
+  /**
+   * Throw a TajoRuntimeException. It is usually used for unexpected exceptions.
+   *
+   * @param state ReturnState
+   * @return True if no error.
+   */
   public static boolean ensureOk(ReturnState state) {
     if (isError(state)) {
       throw new TajoRuntimeException(state);
@@ -63,13 +62,6 @@ public class ReturnStateUtil {
     return StringListResponse.newBuilder()
         .setState(returnError(t))
         .build();
-  }
-
-  public static ReturnState returnError(ResultCode code) {
-    ReturnState.Builder builder = ReturnState.newBuilder();
-    builder.setReturnCode(code);
-    builder.setMessage(ErrorMessages.getMessage(code));
-    return builder.build();
   }
 
   public static ReturnState returnError(ResultCode code, String...args) {
@@ -130,7 +122,7 @@ public class ReturnStateUtil {
   }
 
   public static ReturnState errNoSuchQueryId(QueryId queryId) {
-    return returnError(ResultCode.NO_SUCH_QUERYID, queryId.toString());
+    return returnError(ResultCode.QUERY_NOT_FOUND, queryId.toString());
   }
 
   public static ReturnState errNoData(QueryId queryId) {
@@ -146,7 +138,7 @@ public class ReturnStateUtil {
   }
 
   public static ReturnState errNoSessionVar(String varName) {
-    return returnError(ResultCode.NO_SUCH_QUERYID, varName);
+    return returnError(ResultCode.QUERY_NOT_FOUND, varName);
   }
 
   public static ReturnState errInsufficientPrivilege(String message) {

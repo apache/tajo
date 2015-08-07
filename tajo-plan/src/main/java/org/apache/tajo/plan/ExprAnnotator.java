@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.TajoException;
@@ -53,6 +53,7 @@ import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 import static org.apache.tajo.plan.logical.WindowSpec.*;
 import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
 
@@ -573,7 +574,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new UndefinedFunctionException(expr.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(buildSimpleFunctionSignature(expr.getSignature(), paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
@@ -623,7 +624,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     FunctionDesc countRows = catalog.getFunction("count", FunctionType.AGGREGATION,
         new DataType[] {});
     if (countRows == null) {
-      throw new UndefinedFunctionException(expr.getSignature(), new DataType[]{});
+      throw new UndefinedFunctionException(buildSimpleFunctionSignature(expr.getSignature(), new DataType[]{}));
     }
 
     ctx.currentBlock.setAggregationRequire();
@@ -648,7 +649,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new UndefinedFunctionException(setFunction.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(buildSimpleFunctionSignature(setFunction.getSignature(), paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
@@ -737,7 +738,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
-      throw new UndefinedFunctionException(funcName, paramTypes);
+      throw new UndefinedFunctionException(buildSimpleFunctionSignature(funcName, paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);

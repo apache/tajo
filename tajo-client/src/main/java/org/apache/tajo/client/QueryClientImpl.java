@@ -21,16 +21,17 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.exception.NoSuchSessionVariableException;
-import org.apache.tajo.exception.SQLExceptionUtil;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
@@ -38,20 +39,20 @@ import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.tajo.exception.ExceptionUtil.throwIfError;
+import static org.apache.tajo.exception.ExceptionUtil.throwsIfThisError;
 import static org.apache.tajo.exception.ReturnStateUtil.ensureOk;
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
-import static org.apache.tajo.exception.ReturnStateUtil.returnError;
-import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 
@@ -184,7 +185,7 @@ public class QueryClientImpl implements QueryClient {
   public ResultSet executeQueryAndGetResult(String sql) throws TajoException {
 
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
-    ensureOk(response.getState());
+    throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -202,7 +203,7 @@ public class QueryClientImpl implements QueryClient {
   public ResultSet executeJsonQueryAndGetResult(final String json) throws TajoException {
 
     ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
-    ensureOk(response.getState());
+    throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -216,7 +217,7 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  public ResultSet getQueryResultAndWait(QueryId queryId) {
+  public ResultSet getQueryResultAndWait(QueryId queryId) throws QueryNotFoundException {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
@@ -254,12 +255,11 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
-    ensureOk(res.getState());
     return res;
   }
 
   @Override
-  public QueryStatus getQueryStatus(QueryId queryId) {
+  public QueryStatus getQueryStatus(QueryId queryId) throws QueryNotFoundException {
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryStatusRequest request = GetQueryStatusRequest.newBuilder()
@@ -274,19 +274,20 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
+    throwsIfThisError(res.getState(), QueryNotFoundException.class);
     ensureOk(res.getState());
     return new QueryStatus(res);
   }
 
   @Override
-  public ResultSet getQueryResult(QueryId queryId) {
+  public ResultSet getQueryResult(QueryId queryId) throws QueryNotFoundException {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
 
     GetQueryResultResponse response = getResultResponse(queryId);
-    ensureOk(response.getState());
+
     TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
     return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
@@ -297,7 +298,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public GetQueryResultResponse getResultResponse(QueryId queryId) {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) throws QueryNotFoundException {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return null;
     }
@@ -315,12 +316,13 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
+    throwsIfThisError(response.getState(), QueryNotFoundException.class);
     ensureOk(response.getState());
     return response;
   }
 
   @Override
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException {
+  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException {
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryResultDataRequest request = GetQueryResultDataRequest.newBuilder()
@@ -359,7 +361,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    ClientExceptionUtil.throwIfError(response.getState());
+    throwIfError(response.getState());
     conn.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
 
     return true;
@@ -378,12 +380,12 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    ClientExceptionUtil.throwIfError(response.getState());
+    throwIfError(response.getState());
     return true;
   }
 
   @Override
-  public List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws SQLException {
+  public List<ClientProtos.BriefQueryInfo> getRunningQueryList() {
 
     final BlockingInterface stmb = conn.getTMStub();
 
@@ -394,7 +396,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
     return res.getQueryListList();
   }
 
@@ -415,7 +417,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws SQLException {
+  public List<ClientProtos.WorkerResourceInfo> getClusterInfo() {
 
     final BlockingInterface stub = conn.getTMStub();
     final GetClusterInfoRequest request = GetClusterInfoRequest.newBuilder()
@@ -429,12 +431,12 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
     return res.getWorkerListList();
   }
 
   @Override
-  public QueryStatus killQuery(final QueryId queryId) {
+  public QueryStatus killQuery(final QueryId queryId) throws QueryNotFoundException {
 
     final BlockingInterface stub = conn.getTMStub();
     QueryStatus status = getQueryStatus(queryId);
@@ -475,7 +477,7 @@ public class QueryClientImpl implements QueryClient {
   	return this.maxRows;
   }
 
-  public QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException {
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws QueryNotFoundException {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryIdRequest request = buildQueryIdRequest(queryId);
@@ -487,11 +489,12 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    throwsIfThisError(res.getState(), QueryNotFoundException.class);
+    ensureOk(res.getState());
     return res.getQueryInfo();
   }
 
-  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws SQLException {
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws QueryNotFoundException {
     final QueryInfoProto queryInfo = getQueryInfo(queryId);
 
     if (queryInfo.getHostNameOfQM() == null || queryInfo.getQueryMasterClientPort() == 0) {
@@ -504,6 +507,7 @@ public class QueryClientImpl implements QueryClient {
     RpcClientManager manager = RpcClientManager.getInstance();
     NettyClientBase qmClient = null;
 
+
     try {
 
       qmClient = manager.newClient(
@@ -515,6 +519,7 @@ public class QueryClientImpl implements QueryClient {
           TimeUnit.SECONDS,
           false
       );
+
 
       conn.checkSessionAndGet(conn.getTajoMasterConnection());
 
@@ -531,19 +536,18 @@ public class QueryClientImpl implements QueryClient {
         throw new RuntimeException(e);
       }
 
-      throwIfError(res.getState());
+      ensureOk(res.getState());
       return res.getQueryHistory();
 
+    } catch (NoSuchMethodException | ClassNotFoundException e) {
+      throw new TajoInternalError(e);
     } catch (ConnectException e) {
-      throw SQLExceptionUtil.makeUnableToEstablishConnection(e);
-    } catch (ClassNotFoundException e) {
-      throw SQLExceptionUtil.makeUnableToEstablishConnection(e);
-    } catch (NoSuchMethodException e) {
-      throw SQLExceptionUtil.makeUnableToEstablishConnection(e);
-    } catch (SQLException e) {
-      throw e;
+      throw new TajoRuntimeException(
+          new ClientUnableToConnectException(NetUtils.normalizeInetSocketAddress(qmAddress)));
     } finally {
-      qmClient.close();
+      if (qmClient != null) {
+        qmClient.close();
+      }
     }
   }
 

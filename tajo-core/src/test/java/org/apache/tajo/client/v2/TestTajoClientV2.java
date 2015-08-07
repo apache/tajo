@@ -20,9 +20,9 @@ package org.apache.tajo.client.v2;
 
 import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.DuplicateDatabaseException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;

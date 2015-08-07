@@ -18,27 +18,14 @@
 
 package org.apache.tajo.catalog.store;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.CatalogConstants;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.store.object.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.util.TUtil;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -48,15 +35,16 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.store.object.*;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.util.TUtil;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.sql.*;
+import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 public class XMLCatalogSchemaManager {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -77,7 +65,7 @@ public class XMLCatalogSchemaManager {
   }
   
   protected String getDropSQL(DatabaseObjectType type, String name) 
-      throws CatalogException {
+      throws TajoException {
     SQLObject foundDropQuery = null;
     String sqlStatement = "DROP " + type.toString() + " " + name;
     
@@ -101,7 +89,7 @@ public class XMLCatalogSchemaManager {
     return sqlStatement;
   }
 
-  public void dropBaseSchema(Connection conn) throws CatalogException {
+  public void dropBaseSchema(Connection conn) throws TajoException {
     if (!isLoaded()) {
       throw new TajoInternalError("Schema files are not loaded yet.");
     }
@@ -271,7 +259,7 @@ public class XMLCatalogSchemaManager {
     return result;
   }
 
-  public void createBaseSchema(Connection conn) throws CatalogException {
+  public void createBaseSchema(Connection conn) throws TajoException {
     Statement stmt;
     
     if (!isLoaded()) {
@@ -347,7 +335,7 @@ public class XMLCatalogSchemaManager {
     CatalogUtil.closeQuietly(stmt);
   }
 
-  public boolean catalogAlreadyExists(Connection conn) throws CatalogException {
+  public boolean catalogAlreadyExists(Connection conn) throws TajoException {
     boolean result = false;
     try {
       List<String> constants = TUtil.newList();
@@ -375,7 +363,7 @@ public class XMLCatalogSchemaManager {
     return result;
   }
 
-  public boolean isInitialized(Connection conn) throws CatalogException {
+  public boolean isInitialized(Connection conn) throws TajoException {
     if (!isLoaded()) {
       throw new TajoInternalError("Database schema files are not loaded.");
     }

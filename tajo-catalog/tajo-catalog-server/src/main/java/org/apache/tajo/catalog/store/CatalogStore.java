@@ -21,75 +21,71 @@ package org.apache.tajo.catalog.store;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.exception.TajoException;
 
 import java.io.Closeable;
-
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
-
 import java.util.Collection;
 import java.util.List;
 
 public interface CatalogStore extends Closeable {
   /*************************** Tablespace ******************************/
-  void createTablespace(String spaceName, String spaceUri) throws CatalogException;
+  void createTablespace(String spaceName, String spaceUri) throws TajoException;
 
-  boolean existTablespace(String spaceName) throws CatalogException;
+  boolean existTablespace(String spaceName) throws TajoException;
 
-  void dropTablespace(String spaceName) throws CatalogException;
+  void dropTablespace(String spaceName) throws TajoException;
 
-  Collection<String> getAllTablespaceNames() throws CatalogException;
+  Collection<String> getAllTablespaceNames() throws TajoException;
   
-  List<TablespaceProto> getTablespaces() throws CatalogException;
+  List<TablespaceProto> getTablespaces() throws TajoException;
 
-  TablespaceProto getTablespace(String spaceName) throws CatalogException;
+  TablespaceProto getTablespace(String spaceName) throws TajoException;
 
-  void alterTablespace(AlterTablespaceProto alterProto) throws CatalogException;
+  void alterTablespace(AlterTablespaceProto alterProto) throws TajoException;
 
   /*************************** Database ******************************/
-  void createDatabase(String databaseName, String tablespaceName) throws CatalogException;
+  void createDatabase(String databaseName, String tablespaceName) throws TajoException;
 
-  boolean existDatabase(String databaseName) throws CatalogException;
+  boolean existDatabase(String databaseName) throws TajoException;
 
-  void dropDatabase(String databaseName) throws CatalogException;
+  void dropDatabase(String databaseName) throws TajoException;
 
-  Collection<String> getAllDatabaseNames() throws CatalogException;
+  Collection<String> getAllDatabaseNames() throws TajoException;
   
-  List<DatabaseProto> getAllDatabases() throws CatalogException;
+  List<DatabaseProto> getAllDatabases() throws TajoException;
 
   /*************************** TABLE ******************************/
-  void createTable(CatalogProtos.TableDescProto desc) throws CatalogException;
+  void createTable(CatalogProtos.TableDescProto desc) throws TajoException;
   
-  boolean existTable(String databaseName, String tableName) throws CatalogException;
+  boolean existTable(String databaseName, String tableName) throws TajoException;
   
-  void dropTable(String databaseName, String tableName) throws CatalogException;
+  void dropTable(String databaseName, String tableName) throws TajoException;
   
-  CatalogProtos.TableDescProto getTable(String databaseName, String tableName) throws CatalogException;
+  CatalogProtos.TableDescProto getTable(String databaseName, String tableName) throws TajoException;
   
-  List<String> getAllTableNames(String databaseName) throws CatalogException;
+  List<String> getAllTableNames(String databaseName) throws TajoException;
 
-  void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException;
+  void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws TajoException;
   
-  List<TableDescriptorProto> getAllTables() throws CatalogException;
+  List<TableDescriptorProto> getAllTables() throws TajoException;
 
-  List<TableOptionProto> getAllTableProperties() throws CatalogException;
+  List<TableOptionProto> getAllTableProperties() throws TajoException;
   
-  List<TableStatsProto> getAllTableStats() throws CatalogException;
+  List<TableStatsProto> getAllTableStats() throws TajoException;
   
-  List<ColumnProto> getAllColumns() throws CatalogException;
+  List<ColumnProto> getAllColumns() throws TajoException;
 
-  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws CatalogException;
+  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws TajoException;
 
   /************************ PARTITION METHOD **************************/
-  void addPartitionMethod(PartitionMethodProto partitionMethodProto) throws CatalogException;
+  void addPartitionMethod(PartitionMethodProto partitionMethodProto) throws TajoException;
 
   PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
-      throws CatalogException;
+      throws TajoException;
 
-  boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException;
+  boolean existPartitionMethod(String databaseName, String tableName) throws TajoException;
 
-  void dropPartitionMethod(String dbName, String tableName) throws CatalogException;
+  void dropPartitionMethod(String dbName, String tableName) throws TajoException;
 
 
   /************************** PARTITIONS *****************************/
@@ -97,47 +93,47 @@ public interface CatalogStore extends Closeable {
    * Get all partitions of a table
    * @param tableName the table name
    * @return
-   * @throws CatalogException
+   * @throws TajoException
    */
-  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException;
+  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws TajoException;
 
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                String partitionName) throws CatalogException;
+                                                String partitionName) throws TajoException;
 
-  List<TablePartitionProto> getAllPartitions() throws CatalogException;
+  List<TablePartitionProto> getAllPartitions() throws TajoException;
 
   void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
-    , boolean ifNotExists) throws CatalogException;
+    , boolean ifNotExists) throws TajoException;
 
   /**************************** INDEX *******************************/
-  void createIndex(IndexDescProto proto) throws CatalogException;
+  void createIndex(IndexDescProto proto) throws TajoException;
   
-  void dropIndex(String databaseName, String indexName) throws CatalogException;
+  void dropIndex(String databaseName, String indexName) throws TajoException;
   
-  IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException;
+  IndexDescProto getIndexByName(String databaseName, String indexName) throws TajoException;
 
   IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws CatalogException;
+      throws TajoException;
   
-  boolean existIndexByName(String databaseName, String indexName) throws CatalogException;
+  boolean existIndexByName(String databaseName, String indexName) throws TajoException;
 
   boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws CatalogException;
+      throws TajoException;
 
-  List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException;
+  List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws TajoException;
 
-  boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException;
+  boolean existIndexesByTable(String databaseName, String tableName) throws TajoException;
 
-  List<IndexDescProto> getAllIndexes() throws CatalogException;
+  List<IndexDescProto> getAllIndexes() throws TajoException;
 
   /************************** FUNCTION *****************************/
 
   
-  void addFunction(FunctionDesc func) throws CatalogException;
+  void addFunction(FunctionDesc func) throws TajoException;
   
-  void deleteFunction(FunctionDesc func) throws CatalogException;
+  void deleteFunction(FunctionDesc func) throws TajoException;
   
-  void existFunction(FunctionDesc func) throws CatalogException;
+  void existFunction(FunctionDesc func) throws TajoException;
   
-  List<String> getAllFunctionNames() throws CatalogException;
+  List<String> getAllFunctionNames() throws TajoException;
 }

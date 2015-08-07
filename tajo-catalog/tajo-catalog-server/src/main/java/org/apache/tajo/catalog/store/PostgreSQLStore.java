@@ -18,13 +18,13 @@
 
 package org.apache.tajo.catalog.store;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoException;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-
-import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.exception.InternalException;
 
 public class PostgreSQLStore extends AbstractDBStore {
 
@@ -50,7 +50,7 @@ public class PostgreSQLStore extends AbstractDBStore {
   }
 
   @Override
-  protected void createDatabaseDependants() throws CatalogException {
+  protected void createDatabaseDependants() throws TajoException {
     
   }
 

@@ -16,19 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors;
+
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class DuplicateIndexException extends CatalogException {
-  private static final long serialVersionUID = 3705839985189534673L;
+public class UndefinedColumnException extends TajoException {
+	private static final long serialVersionUID = 277182608283894937L;
 
-  public DuplicateIndexException(ReturnState state) {
+  public UndefinedColumnException(ReturnState state) {
     super(state);
   }
 
-  public DuplicateIndexException(String indexName) {
-    super(Errors.ResultCode.DUPLICATE_INDEX, indexName);
-  }
+	public UndefinedColumnException(String columnName) {
+		super(ResultCode.UNDEFINED_COLUMN, columnName);
+	}
 }

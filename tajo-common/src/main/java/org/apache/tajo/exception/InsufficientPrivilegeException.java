@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client.v2;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.TajoException;
 
-import java.io.Closeable;
-import java.sql.ResultSet;
+public class InsufficientPrivilegeException extends TajoException {
 
-/**
- * ClientDelegate is a delegate for various wired protocols like protocol buffer, rest API, and proxy.
- */
-public interface ClientDelegate extends Closeable {
-
-  int executeUpdate(String sql) throws TajoException;
-
-  ResultSet executeSQL(String sql) throws TajoException;
-
-  QueryFuture executeSQLAsync(String sql) throws TajoException;
-
-  String currentDB();
-
-  void selectDB(String db) throws UndefinedDatabaseException;
+  public InsufficientPrivilegeException(String towhat) {
+    super(ResultCode.INSUFFICIENT_PRIVILEGE, towhat);
+  }
 }

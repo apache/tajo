@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
@@ -1015,7 +1016,7 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
-    private static void schedule(Stage stage) throws IOException {
+    private static void schedule(Stage stage) throws IOException, TajoException {
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock execBlock = stage.getBlock();
       if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
@@ -1076,7 +1077,7 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
-    private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException {
+    private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException, TajoException {
       ExecutionBlock execBlock = stage.getBlock();
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");

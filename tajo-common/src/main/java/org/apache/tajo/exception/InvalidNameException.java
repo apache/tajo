@@ -1,5 +1,5 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
+/*
+ * Lisensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -16,19 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
 
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class DuplicateDatabaseException extends CatalogException {
+public class InvalidNameException extends TajoException {
 
-  public DuplicateDatabaseException(ReturnState state) {
-    super(state);
-  }
-	public DuplicateDatabaseException(String dbName) {
-		super(Errors.ResultCode.DUPLICATE_DATABASE, dbName);
+	public InvalidNameException(String databaseName) {
+		super(Errors.ResultCode.INVALID_NAME, databaseName);
 	}
 }

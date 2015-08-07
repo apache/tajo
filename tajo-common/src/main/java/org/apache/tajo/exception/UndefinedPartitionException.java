@@ -16,15 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
-
+package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class AmbiguousPartitionDirectoryExistException extends CatalogException {
-	private static final long serialVersionUID = 277182608283894931L;
+public class UndefinedPartitionException extends TajoException {
 
-	public AmbiguousPartitionDirectoryExistException(String columnName) {
-		super(ResultCode.AMBIGUOUS_PARTITION_DIRECTORY, columnName);
-	}
+  private static final long serialVersionUID = 277182608283894938L;
+
+  public UndefinedPartitionException(ReturnState state) {
+    super(state);
+  }
+
+  public UndefinedPartitionException(String partitionName) {
+    super(ResultCode.UNDEFINED_PARTITION, partitionName);
+  }
 }

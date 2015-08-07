@@ -16,26 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client.v2;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.exception.UndefinedDatabaseException;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.error.Errors.ResultCode;
 
-import java.io.Closeable;
-import java.sql.ResultSet;
+public class UndefinedPartitionMethodException extends TajoException {
 
-/**
- * ClientDelegate is a delegate for various wired protocols like protocol buffer, rest API, and proxy.
- */
-public interface ClientDelegate extends Closeable {
+  private static final long serialVersionUID = 277182608283894949L;
 
-  int executeUpdate(String sql) throws TajoException;
-
-  ResultSet executeSQL(String sql) throws TajoException;
-
-  QueryFuture executeSQLAsync(String sql) throws TajoException;
-
-  String currentDB();
-
-  void selectDB(String db) throws UndefinedDatabaseException;
+  public UndefinedPartitionMethodException(String partitionName) {
+    super(ResultCode.UNDEFINED_PARTITION_METHOD, partitionName);
+  }
 }

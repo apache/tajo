@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-import java.util.Collection;
+public class AmbiguousTableException extends TajoException {
 
-public class CatalogExceptionUtil {
-
-  public static CatalogException makeUndefinedTable(String tbName) {
-    return new CatalogException(ResultCode.UNDEFINED_TABLE, tbName);
+  public AmbiguousTableException(ReturnState state) {
+    super(state);
   }
 
-  public static CatalogException makeDuplicateTable(String tbName) {
-    return new CatalogException(ResultCode.DUPLICATE_TABLE, tbName);
-  }
-
-  public static CatalogException makeCatalogUpgrade() {
-    return new CatalogException(ResultCode.CAT_UPGRADE_REQUIRED);
-  }
-
-  public static CatalogException makeMDCNoMatchedDataType(String dataType) {
-    return new CatalogException(ResultCode.MDC_NO_MATCHED_DATATYPE, dataType);
+  public AmbiguousTableException(String tableName) {
+    super(Errors.ResultCode.AMBIGUOUS_TABLE, tableName);
   }
 }

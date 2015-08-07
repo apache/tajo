@@ -40,6 +40,8 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
@@ -77,7 +79,7 @@ public class Repartitioner {
   private final static String UNKNOWN_HOST = "unknown";
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, Stage stage)
-      throws IOException {
+      throws IOException, TajoException {
     ExecutionBlock execBlock = stage.getBlock();
     QueryMasterTask.QueryMasterTaskContext masterContext = stage.getContext();
 
@@ -282,7 +284,7 @@ public class Repartitioner {
                                                        Fragment[] fragments,
                                                        ScanNode[] broadcastScans,
                                                        long[] broadcastStats,
-                                                       Fragment[] broadcastFragments) throws IOException {
+                                                       Fragment[] broadcastFragments) throws IOException, TajoException {
     MasterPlan masterPlan = stage.getMasterPlan();
     ExecutionBlock execBlock = stage.getBlock();
     // The hash map is modeling as follows:
@@ -639,8 +641,10 @@ public class Repartitioner {
       String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
       CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();
-      TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
-      if (tableDesc == null) {
+      TableDesc tableDesc = null;
+      try {
+        tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
+      } catch (UndefinedTableException e) {
         throw new IOException("Can't get table meta data from catalog: " +
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }

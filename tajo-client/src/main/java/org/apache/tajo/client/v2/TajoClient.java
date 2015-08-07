@@ -18,7 +18,7 @@
 
 package org.apache.tajo.client.v2;
 
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 import org.apache.tajo.exception.TajoException;
 

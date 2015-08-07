@@ -24,15 +24,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
-import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
-import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
@@ -45,6 +41,8 @@ import java.util.Collection;
 import java.util.List;
 
 import static org.apache.tajo.catalog.CatalogUtil.buildTableIdentifier;
+import static org.apache.tajo.error.Errors.ResultCode.*;
+import static org.apache.tajo.exception.ExceptionUtil.throwsIfThisError;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
 
 /**
@@ -62,7 +60,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   abstract BlockingInterface getStub() throws ServiceException;
 
   @Override
-  public final Boolean createTablespace(final String tablespaceName, final String tablespaceUri) {
+  public final void createTablespace(final String tablespaceName, final String tablespaceUri)
+      throws DuplicateTablespaceException {
 
     try {
       final BlockingInterface stub = getStub();
@@ -70,20 +69,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .setTablespaceName(tablespaceName)
           .setTablespaceUri(tablespaceUri)
           .build();
+      final ReturnState state = stub.createTablespace(null, request);
 
-      return isSuccess(stub.createTablespace(null, request));
-
-    } catch (ServiceException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public final Boolean dropTablespace(final String tablespaceName) {
-
-    try {
-      final BlockingInterface stub = getStub();
-      return isSuccess(stub.dropTablespace(null, ProtoUtil.convertString(tablespaceName)));
+      throwsIfThisError(state, DuplicateTablespaceException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -91,19 +80,33 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final Boolean existTablespace(final String tablespaceName) {
+  public final void dropTablespace(final String tablespaceName) throws UndefinedTablespaceException {
 
     try {
       final BlockingInterface stub = getStub();
+      final ReturnState state = stub.dropTablespace(null, ProtoUtil.convertString(tablespaceName));
 
-      ReturnState state = stub.existTablespace(null, ProtoUtil.convertString(tablespaceName));
+      throwsIfThisError(state, UndefinedTablespaceException.class);
+      ensureOk(state);
 
-      if (isThisError(state, ResultCode.UNDEFINED_TABLESPACE)) {
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public final boolean existTablespace(final String tablespaceName) {
+
+    try {
+      final BlockingInterface stub = getStub();
+      final ReturnState state = stub.existTablespace(null, ProtoUtil.convertString(tablespaceName));
+
+      if (isThisError(state, UNDEFINED_TABLESPACE)) {
         return false;
       }
-
       ensureOk(state);
       return true;
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -115,8 +118,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final StringListResponse response = stub.getAllTablespaceNames(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getValuesList();
 
     } catch (ServiceException e) {
@@ -130,8 +133,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetTablespaceListResponse response = stub.getAllTablespaces(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getTablespaceList();
 
     } catch (ServiceException e) {
@@ -140,13 +143,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public TablespaceProto getTablespace(final String tablespaceName) {
+  public TablespaceProto getTablespace(final String tablespaceName) throws UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
       final GetTablespaceResponse response = stub.getTablespace(null, ProtoUtil.convertString(tablespaceName));
-      ensureOk(response.getState());
 
+      throwsIfThisError(response.getState(), UndefinedTableException.class);
+      ensureOk(response.getState());
       return response.getTablespace();
 
     } catch (ServiceException e) {
@@ -155,11 +159,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public Boolean alterTablespace(final AlterTablespaceProto alterTablespace) {
+  public void alterTablespace(final AlterTablespaceProto alterTablespace) throws UndefinedTablespaceException {
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.alterTablespace(null, alterTablespace));
+      final ReturnState state = stub.alterTablespace(null, alterTablespace);
+
+      throwsIfThisError(state, UndefinedTablespaceException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -167,7 +174,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final Boolean createDatabase(final String databaseName, @Nullable final String tablespaceName) {
+  public final void createDatabase(final String databaseName, @Nullable final String tablespaceName)
+      throws DuplicateDatabaseException {
 
     try {
 
@@ -177,8 +185,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       if (tablespaceName != null) {
         builder.setTablespaceName(tablespaceName);
       }
+      final ReturnState state = stub.createDatabase(null, builder.build());
 
-      return isSuccess(stub.createDatabase(null, builder.build()));
+      throwsIfThisError(state, DuplicateDatabaseException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -186,32 +196,33 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final Boolean dropDatabase(final String databaseName) {
+  public final void dropDatabase(final String databaseName) throws UndefinedDatabaseException {
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.dropDatabase(null, ProtoUtil.convertString(databaseName)));
+      final ReturnState state = stub.dropDatabase(null, ProtoUtil.convertString(databaseName));
+
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return Boolean.FALSE;
+      throw new RuntimeException(e);
     }
   }
 
   @Override
-  public final Boolean existDatabase(final String databaseName) {
+  public final boolean existDatabase(final String databaseName) {
 
     try {
       final BlockingInterface stub = getStub();
+      final ReturnState state = stub.existDatabase(null, ProtoUtil.convertString(databaseName));
 
-      ReturnState state = stub.existDatabase(null, ProtoUtil.convertString(databaseName));
-
-      if (isThisError(state, ResultCode.UNDEFINED_DATABASE)) {
+      if (isThisError(state, UNDEFINED_DATABASE)) {
         return false;
       }
-
       ensureOk(state);
       return true;
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -223,8 +234,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final StringListResponse response = stub.getAllDatabaseNames(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getValuesList();
 
     } catch (ServiceException e) {
@@ -238,8 +249,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetDatabasesResponse response = stub.getAllDatabases(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getDatabaseList();
 
     } catch (ServiceException e) {
@@ -248,15 +259,16 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final TableDesc getTableDesc(final String databaseName, final String tableName) {
+  public final TableDesc getTableDesc(final String databaseName, final String tableName)
+      throws UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
+      final TableResponse response = stub.getTableDesc(null, request);
 
-      TableResponse response = stub.getTableDesc(null, request);
+      throwsIfThisError(response.getState(), UndefinedTableException.class);
       ensureOk(response.getState());
-
       return CatalogUtil.newTableDesc(response.getTable());
 
     } catch (ServiceException e) {
@@ -265,7 +277,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public TableDesc getTableDesc(String qualifiedName) {
+  public TableDesc getTableDesc(String qualifiedName) throws UndefinedTableException {
     String[] splitted = CatalogUtil.splitFQTableName(qualifiedName);
     return getTableDesc(splitted[0], splitted[1]);
   }
@@ -276,8 +288,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetTablesResponse response = stub.getAllTables(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getTableList();
 
     } catch (ServiceException e) {
@@ -291,8 +303,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetTablePropertiesResponse response = stub.getAllTableProperties(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getPropertiesList();
 
     } catch (ServiceException e) {
@@ -306,8 +318,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetTableStatsResponse response = stub.getAllTableStats(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getStatsList();
 
     } catch (ServiceException e) {
@@ -321,8 +333,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetColumnsResponse response = stub.getAllColumns(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getColumnList();
 
     } catch (ServiceException e) {
@@ -333,9 +345,12 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public List<IndexDescProto> getAllIndexes() {
     try {
-      CatalogProtocolService.BlockingInterface stub = getStub();
-      IndexListResponse response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+      final BlockingInterface stub = getStub();
+      final IndexListResponse response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+
+      ensureOk(response.getState());
       return response.getIndexDescList();
+
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
@@ -343,14 +358,18 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final PartitionMethodDesc getPartitionMethod(final String databaseName, final String tableName) {
+  public final PartitionMethodDesc getPartitionMethod(final String databaseName, final String tableName)
+      throws UndefinedPartitionMethodException, UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
       final GetPartitionMethodResponse response = stub.getPartitionMethodByTableName(null, request);
-      ensureOk(response.getState());
 
+
+      throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+      throwsIfThisError(response.getState(), UndefinedTableException.class);
+      ensureOk(response.getState());
       return CatalogUtil.newPartitionMethodDesc(response.getPartition());
 
     } catch (ServiceException e) {
@@ -359,11 +378,20 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final boolean existPartitionMethod(final String databaseName, final String tableName) {
+  public final boolean existPartitionMethod(final String databaseName, final String tableName)
+      throws UndefinedTableException {
+
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
-      return isSuccess(stub.existPartitionMethod(null, request));
+      final ReturnState state = stub.existPartitionMethod(null, request);
+
+      if (isThisError(state, UNDEFINED_PARTITION_METHOD)) {
+        return false;
+      }
+      throwsIfThisError(state, UndefinedTableException.class);
+      ensureOk(state);
+      return true;
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -372,7 +400,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final PartitionDescProto getPartition(final String databaseName, final String tableName,
-                                               final String partitionName) throws UndefinedPartitionException {
+                                               final String partitionName)
+      throws UndefinedPartitionException, UndefinedPartitionMethodException {
     try {
       final BlockingInterface stub = getStub();
       final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
@@ -380,15 +409,11 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .setTableName(tableName)
           .setPartitionName(partitionName)
           .build();
-
       final GetPartitionDescResponse response = stub.getPartitionByPartitionName(null, request);
 
-      if (ReturnStateUtil.isThisError(response.getState(), ResultCode.UNDEFINED_PARTITION)) {
-        throw new UndefinedPartitionException(partitionName);
-      }
-
+      throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+      throwsIfThisError(response.getState(), UndefinedPartitionException.class);
       ensureOk(response.getState());
-
       return response.getPartition();
 
     } catch (ServiceException e) {
@@ -404,10 +429,9 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .setDatabaseName(databaseName)
           .setTableName(tableName)
           .build();
-
       final GetPartitionsResponse response = stub.getPartitionsByTableName(null, request);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getPartitionList();
 
     } catch (ServiceException e) {
@@ -420,8 +444,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final GetTablePartitionsResponse response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getPartList();
 
     } catch (ServiceException e) {
@@ -430,27 +454,32 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
-    , boolean ifNotExists) {
+  public void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions,
+                               boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException,
+      UndefinedPartitionMethodException {
+
     try {
       final BlockingInterface stub = getStub();
-      final AddPartitionsProto.Builder builder = AddPartitionsProto.newBuilder();
 
-      TableIdentifierProto.Builder identifier = TableIdentifierProto.newBuilder();
-      identifier.setDatabaseName(databaseName);
-      identifier.setTableName(tableName);
+      final AddPartitionsProto.Builder builder = AddPartitionsProto.newBuilder();
+      final TableIdentifierProto.Builder identifier = TableIdentifierProto.newBuilder()
+          .setDatabaseName(databaseName)
+          .setTableName(tableName);
       builder.setTableIdentifier(identifier.build());
 
       for (PartitionDescProto partition: partitions) {
         builder.addPartitionDesc(partition);
       }
-
       builder.setIfNotExists(ifNotExists);
 
-      return isSuccess(stub.addPartitions(null, builder.build()));
+      ReturnState state = stub.addPartitions(null, builder.build());
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, UndefinedPartitionMethodException.class);
+      throwsIfThisError(state, DuplicatePartitionException.class);
+      ensureOk(state);
+
     } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return false;
+      throw new RuntimeException(e);
     }
   }
 
@@ -459,8 +488,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final StringListResponse response = stub.getAllTableNames(null, ProtoUtil.convertString(databaseName));
-      ensureOk(response.getState());
 
+      ensureOk(response.getState());
       return response.getValuesList();
 
     } catch (ServiceException e) {
@@ -471,31 +500,34 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public final Collection<FunctionDesc> getFunctions() {
     List<FunctionDesc> list = new ArrayList<FunctionDesc>();
+
     try {
-      GetFunctionsResponse response;
-      BlockingInterface stub = getStub();
-      response = stub.getFunctions(null, NullProto.newBuilder().build());
-      int size = response.getFunctionDescCount();
-      for (int i = 0; i < size; i++) {
+      final BlockingInterface stub = getStub();
+      final GetFunctionsResponse response = stub.getFunctions(null, NullProto.newBuilder().build());
+
+      ensureOk(response.getState());
+      for (int i = 0; i < response.getFunctionDescCount(); i++) {
         try {
           list.add(new FunctionDesc(response.getFunctionDesc(i)));
         } catch (ClassNotFoundException e) {
-          LOG.error(e, e);
-          return list;
+          throw new RuntimeException(e);
         }
       }
       return list;
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public final boolean createTable(final TableDesc desc) {
+  public final void createTable(final TableDesc desc) throws DuplicateTableException {
     try {
       final BlockingInterface stub = getStub();
+      final ReturnState state = stub.createTable(null, desc.getProto());
 
-      return isSuccess(stub.createTable(null, desc.getProto()));
+      throwsIfThisError(state, DuplicateTableException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -503,7 +535,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean dropTable(String tableName) {
+  public void dropTable(String tableName) throws UndefinedTableException, InsufficientPrivilegeException {
     String[] splitted = CatalogUtil.splitFQTableName(tableName);
     final String databaseName = splitted[0];
     final String simpleName = splitted[1];
@@ -511,8 +543,11 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, simpleName);
+      final ReturnState state = stub.dropTable(null, request);
 
-      return isSuccess(stub.dropTable(null, request));
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -529,8 +564,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
+      final ReturnState state = stub.existsTable(null, request);
 
-      return isSuccess(stub.existsTable(null, request));
+      if (isThisError(state, UNDEFINED_TABLE)) {
+        return false;
+      }
+      ensureOk(state);
+      return true;
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -708,11 +748,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final boolean createFunction(final FunctionDesc funcDesc) {
+  public final void createFunction(final FunctionDesc funcDesc) throws DuplicateFunctionException {
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.createFunction(null, funcDesc.getProto()));
+      final ReturnState state = stub.createFunction(null, funcDesc.getProto());
+
+      throwsIfThisError(state, DuplicateFunctionException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -720,15 +763,18 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final boolean dropFunction(final String signature) {
+  public final void dropFunction(final String signature) throws UndefinedFunctionException, InsufficientPrivilegeException {
 
     try {
       final UnregisterFunctionRequest request = UnregisterFunctionRequest.newBuilder()
           .setSignature(signature)
           .build();
-
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.dropFunction(null, request));
+      final ReturnState state = stub.dropFunction(null, request);
+
+      throwsIfThisError(state, UndefinedFunctionException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -737,7 +783,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final FunctionDesc getFunction(final String signature, DataType... paramTypes)
-      throws AmbiguousFunctionException , UndefinedFunctionException {
+      throws AmbiguousFunctionException, UndefinedFunctionException {
     return getFunction(signature, null, paramTypes);
   }
 
@@ -754,26 +800,19 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       builder.addParameterTypes(type);
     }
 
-    FunctionResponse response = null;
     try {
       final BlockingInterface stub = getStub();
-      response = stub.getFunctionMeta(null, builder.build());
+      final FunctionResponse response = stub.getFunctionMeta(null, builder.build());
+
+      throwsIfThisError(response.getState(), UndefinedFunctionException.class);
+      throwsIfThisError(response.getState(), AmbiguousFunctionException.class);
+      ensureOk(response.getState());
+      return new FunctionDesc(response.getFunction());
+
     } catch (ServiceException se) {
       throw new RuntimeException(se);
-    }
-
-    if (isThisError(response.getState(), ResultCode.UNDEFINED_FUNCTION)) {
-      throw new UndefinedFunctionException(signature, paramTypes);
-    } else if (isThisError(response.getState(), ResultCode.AMBIGUOUS_FUNCTION)) {
-      throw new AmbiguousFunctionException(signature, paramTypes);
-    }
-
-    ensureOk(response.getState());
-
-    try {
-      return new FunctionDesc(response.getFunction());
     } catch (ClassNotFoundException e) {
-      throw new RuntimeException(e);
+      throw new TajoInternalError(e);
     }
   }
 
@@ -797,7 +836,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.containFunction(null, builder.build()));
+      final ReturnState state  = stub.containFunction(null, builder.build());
+
+      if (isThisError(state, UNDEFINED_FUNCTION)) {
+        return false;
+      }
+      ensureOk(state);
+      return true;
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -805,11 +850,19 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final boolean alterTable(final AlterTableDesc desc) {
+  public final void alterTable(final AlterTableDesc desc) throws UndefinedTableException, DuplicateColumnException,
+      InsufficientPrivilegeException, DuplicateTableException {
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.alterTable(null, desc.getProto()));
+      final ReturnState state = stub.alterTable(null, desc.getProto());
+
+      throwsIfThisError(state, DuplicateColumnException.class);
+      throwsIfThisError(state, DuplicateTableException.class);
+      throwsIfThisError(state, DuplicateColumnException.class);
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -817,11 +870,16 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean updateTableStats(final UpdateTableStatsProto updateTableStatsProto) {
+  public void updateTableStats(final UpdateTableStatsProto updateTableStatsProto)
+      throws InsufficientPrivilegeException, UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.updateTableStats(null, updateTableStatsProto));
+      final ReturnState state = stub.updateTableStats(null, updateTableStatsProto);
+
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);

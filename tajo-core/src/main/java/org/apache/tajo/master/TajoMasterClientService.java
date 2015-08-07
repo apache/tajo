@@ -33,7 +33,6 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -41,6 +40,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -697,14 +697,11 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public ReturnState createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
-        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-        QueryContext queryContext = new QueryContext(conf, session);
+        final Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        final QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false)) {
-          return OK;
-        } else {
-          return errDuplicateDatabase(request.getValue());
-        }
+        context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false);
+        return OK;
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -731,14 +728,11 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public ReturnState dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
-        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-        QueryContext queryContext = new QueryContext(conf, session);
+        final Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        final QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false)) {
-          return OK;
-        } else {
-          return errUndefinedDatabase(request.getValue());
-        }
+        context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false);
+        return OK;
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);

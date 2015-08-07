@@ -24,7 +24,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.DuplicateDatabaseException;
+import org.apache.tajo.exception.DuplicateTablespaceException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -153,7 +155,7 @@ public class TestLinkedMetadataManager {
   static CatalogService catalog;
 
   @BeforeClass
-  public static void setUp() throws IOException {
+  public static void setUp() throws IOException, DuplicateTablespaceException, DuplicateDatabaseException {
     TajoConf conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 

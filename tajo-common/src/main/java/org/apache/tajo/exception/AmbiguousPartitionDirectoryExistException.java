@@ -16,20 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class DuplicatePartitionException extends CatalogException {
-  private static final long serialVersionUID = 277182608283894930L;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
 
-  public DuplicatePartitionException(ReturnState state) {
-    super(state);
-  }
+public class AmbiguousPartitionDirectoryExistException extends TajoException {
+	private static final long serialVersionUID = 277182608283894931L;
 
-  public DuplicatePartitionException(String partitionName) {
-    super(Errors.ResultCode.DUPLICATE_PARTITION, partitionName);
-  }
-
+	public AmbiguousPartitionDirectoryExistException(String columnName) {
+		super(ResultCode.AMBIGUOUS_PARTITION_DIRECTORY, columnName);
+	}
 }
