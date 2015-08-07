@@ -54,7 +54,7 @@ public class ErrorMessages {
 
     // Syntax Error or Access Rule Violation
     ADD_MESSAGE(SYNTAX_ERROR, "%s", 1);
-    ADD_MESSAGE(INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s");
+    ADD_MESSAGE(INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s", 1);
     ADD_MESSAGE(INVALID_NAME, "Invalid name '%s'");
 
     ADD_MESSAGE(UNDEFINED_TABLESPACE, "tablespace '%s' does not exist", 1);
@@ -97,7 +97,9 @@ public class ErrorMessages {
     ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     // Storage and Data Format
+    ADD_MESSAGE(UNAVAILABLE_TABLE_LOCATION, "unavailable table location '%s': %s", 2);
     ADD_MESSAGE(UNKNOWN_DATAFORMAT, "unknown data format: '%s'", 1);
+    ADD_MESSAGE(UNSUPPORTED_DATATYPE, "unsupported data type: '%s'", 1);
     ADD_MESSAGE(INVALID_TABLE_PROPERTY, "invalid table property '%s': '%s'", 2);
     ADD_MESSAGE(MISSING_TABLE_PROPERTY, "table property '%s' required for '%s'", 2);
 

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,16 +18,16 @@
 
 package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InsufficientPrivilegeException extends TajoException {
+public class UnavailableTableLocationException extends TajoException {
 
-  public InsufficientPrivilegeException(ReturnState state) {
-    super(state);
+  public UnavailableTableLocationException(ReturnState e) {
+    super(e);
   }
 
-  public InsufficientPrivilegeException(String towhat) {
-    super(ResultCode.INSUFFICIENT_PRIVILEGE, towhat);
+  public UnavailableTableLocationException(String uri, String reason) {
+    super(Errors.ResultCode.UNAVAILABLE_TABLE_LOCATION, uri, reason);
   }
 }

@@ -39,7 +39,9 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.QueryNotFoundException;
 import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.UnavailableTableLocationException;
 import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
@@ -185,7 +187,6 @@ public class TajoMasterClientService extends AbstractService {
         for (String unsetVariable : request.getUnsetVariablesList()) {
           context.getSessionManager().removeVariable(sessionId, unsetVariable);
         }
-
 
         builder.setState(OK);
         builder.setSessionVars(new KeyValueSet(context.getSessionManager().getAllVariables(sessionId)).getProto());
@@ -540,9 +541,13 @@ public class TajoMasterClientService extends AbstractService {
 
         QueryId queryId = new QueryId(request.getQueryId());
         NonForwardQueryResultScanner queryResultScanner = session.getNonForwardQueryResultScanner(queryId);
+
         if (queryResultScanner == null) {
+
           QueryInfo queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
-          Preconditions.checkNotNull(queryInfo, "QueryInfo cannot be NULL.");
+          if (queryInfo == null) {
+            throw new QueryNotFoundException(queryId.toString());
+          }
 
           TableDesc resultTableDesc = queryInfo.getResultDesc();
           Preconditions.checkNotNull(resultTableDesc, "QueryInfo::getResultDesc results in NULL.");
@@ -603,7 +608,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryInfoResponse getQueryInfo(RpcController controller, QueryIdRequest request) throws ServiceException {
+    public GetQueryInfoResponse getQueryInfo(RpcController controller, QueryIdRequest request) {
       GetQueryInfoResponse.Builder builder = GetQueryInfoResponse.newBuilder();
 
       try {
@@ -620,9 +625,11 @@ public class TajoMasterClientService extends AbstractService {
           queryInfo = queryInProgress.getQueryInfo();
         }
 
-        if (queryInfo != null) {
-          builder.setQueryInfo(queryInfo.getProto());
+        if (queryInfo == null) {
+          throw new QueryNotFoundException(queryId.toString());
         }
+
+        builder.setQueryInfo(queryInfo.getProto());
         builder.setState(OK);
 
       } catch (Throwable t) {
@@ -867,7 +874,7 @@ public class TajoMasterClientService extends AbstractService {
         FileSystem fs = path.getFileSystem(conf);
 
         if (!fs.exists(path)) {
-          throw new IOException("No such a directory: " + path);
+          throw new UnavailableTableLocationException(path.toString(), "no such a directory");
         }
 
         Schema schema = new Schema(request.getSchema());

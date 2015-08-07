@@ -158,9 +158,11 @@ enum ResultCode {
   LMD_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
 
   // Storage and Data Format
-  UNKNOWN_DATAFORMAT                    = 1001; // SQLState: ? - Unknown Data Format
-  INVALID_TABLE_PROPERTY                = 1002; // SQLState: ? - Invalid Table Property
-  MISSING_TABLE_PROPERTY                = 1003; // SQLState: ? - Missing table property
+  UNAVAILABLE_TABLE_LOCATION            = 1001; // SQLState: ? - Unavailable table location
+  UNKNOWN_DATAFORMAT                    = 1002; // SQLState: ? - Unknown Data Format
+  UNSUPPORTED_DATATYPE                  = 1003; // SQLState: ? - Unsupported data type
+  INVALID_TABLE_PROPERTY                = 1004; // SQLState: ? - Invalid Table Property
+  MISSING_TABLE_PROPERTY                = 1005; // SQLState: ? - Missing table property
 
 
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error

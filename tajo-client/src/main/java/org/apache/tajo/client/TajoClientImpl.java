@@ -163,7 +163,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.getQueryInfo(queryId);
   }
 
-  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws TajoException {
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws QueryNotFoundException {
     return queryClient.getQueryHistory(queryId);
   }
 
@@ -179,18 +179,18 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   // CatalogClient wrappers
   /*------------------------------------------------------------------------*/
 
-  public boolean createDatabase(final String databaseName) throws DuplicateDatabaseException {
-    return catalogClient.createDatabase(databaseName);
+  public void createDatabase(final String databaseName) throws DuplicateDatabaseException {
+    catalogClient.createDatabase(databaseName);
   }
 
   public boolean existDatabase(final String databaseName) {
     return catalogClient.existDatabase(databaseName);
   }
 
-  public boolean dropDatabase(final String databaseName) throws UndefinedDatabaseException,
+  public void dropDatabase(final String databaseName) throws UndefinedDatabaseException,
       InsufficientPrivilegeException {
 
-    return catalogClient.dropDatabase(databaseName);
+    catalogClient.dropDatabase(databaseName);
   }
 
   public List<String> getAllDatabaseNames() {
@@ -201,24 +201,28 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.existTable(tableName);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws DuplicateTableException {
+  public TableDesc createExternalTable(final String tableName,
+                                       final Schema schema,
+                                       final URI path,
+                                       final TableMeta meta)
+      throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException {
+
     return catalogClient.createExternalTable(tableName, schema, path, meta);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws DuplicateTableException {
+      throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException {
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);
   }
 
-  public boolean dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException {
-    return dropTable(tableName, false);
+  public void dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException {
+    dropTable(tableName, false);
   }
 
-  public boolean dropTable(final String tableName, final boolean purge) throws UndefinedTableException,
+  public void dropTable(final String tableName, final boolean purge) throws UndefinedTableException,
       InsufficientPrivilegeException {
-    return catalogClient.dropTable(tableName, purge);
+    catalogClient.dropTable(tableName, purge);
   }
 
   public List<String> getTableList(@Nullable final String databaseName) {

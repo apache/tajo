@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,15 +18,21 @@
 
 package org.apache.tajo.exception;
 
-public class UnknownDataTypeException extends Exception {
+import com.sun.org.apache.bcel.internal.classfile.Unknown;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+
+public class UnknownDataFormatException extends TajoException {
 
   private static final long serialVersionUID = -2630390595968966164L;
 
-  public UnknownDataTypeException() {
+  public UnknownDataFormatException(ReturnState state) {
+    super(state);
 
   }
 
-  public UnknownDataTypeException(String message) {
-    super(message);
+  public UnknownDataFormatException(String dataFormat) {
+    super(Errors.ResultCode.UNKNOWN_DATAFORMAT, dataFormat);
   }
 }

@@ -119,17 +119,17 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public Boolean selectDatabase(String databaseName) throws UndefinedDatabaseException {
-    return conn.selectDatabase(databaseName);
+  public void selectDatabase(String databaseName) throws UndefinedDatabaseException {
+    conn.selectDatabase(databaseName);
   }
 
   @Override
-  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws NoSuchSessionVariableException {
+  public Map<String, String> updateSessionVariables(Map<String, String> variables) {
     return conn.updateSessionVariables(variables);
   }
 
   @Override
-  public Map<String, String> unsetSessionVariables(List<String> variables) throws NoSuchSessionVariableException {
+  public Map<String, String> unsetSessionVariables(List<String> variables) {
     return conn.unsetSessionVariables(variables);
   }
 
@@ -139,7 +139,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public Boolean existSessionVariable(String varname) {
+  public boolean existSessionVariable(String varname) {
     return conn.existSessionVariable(varname);
   }
 
@@ -442,7 +442,7 @@ public class QueryClientImpl implements QueryClient {
     QueryStatus status = getQueryStatus(queryId);
 
     /* send a kill to the TM */
-    QueryIdRequest request = buildQueryIdRequest(queryId);
+    final QueryIdRequest request = buildQueryIdRequest(queryId);
     try {
       stub.killQuery(null, request);
     } catch (ServiceException e) {

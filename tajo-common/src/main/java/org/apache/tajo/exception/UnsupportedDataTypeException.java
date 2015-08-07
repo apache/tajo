@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,16 +18,18 @@
 
 package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InsufficientPrivilegeException extends TajoException {
+public class UnsupportedDataTypeException extends TajoException {
 
-  public InsufficientPrivilegeException(ReturnState state) {
+  private static final long serialVersionUID = -2630390595968966164L;
+
+  public UnsupportedDataTypeException(ReturnState state) {
     super(state);
   }
 
-  public InsufficientPrivilegeException(String towhat) {
-    super(ResultCode.INSUFFICIENT_PRIVILEGE, towhat);
+  public UnsupportedDataTypeException(String dataType) {
+    super(Errors.ResultCode.UNKNOWN_DATAFORMAT, dataType);
   }
 }

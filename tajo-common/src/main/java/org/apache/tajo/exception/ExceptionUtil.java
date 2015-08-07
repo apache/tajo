@@ -19,6 +19,7 @@
 package org.apache.tajo.exception;
 
 import com.google.common.collect.Maps;
+import com.sun.org.apache.bcel.internal.classfile.Unknown;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -50,6 +51,7 @@ public class ExceptionUtil {
     // Syntax Error or Access Rule Violation
     ADD_EXCEPTION(SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION, SQLSyntaxError.class);
     ADD_EXCEPTION(SYNTAX_ERROR, SQLSyntaxError.class);
+    ADD_EXCEPTION(INSUFFICIENT_PRIVILEGE, InsufficientPrivilegeException.class);
 
     ADD_EXCEPTION(UNDEFINED_TABLESPACE, UndefinedTablespaceException.class);
     ADD_EXCEPTION(UNDEFINED_DATABASE, UndefinedDatabaseException.class);
@@ -74,6 +76,10 @@ public class ExceptionUtil {
     ADD_EXCEPTION(AMBIGUOUS_FUNCTION, AmbiguousFunctionException.class);
 
     ADD_EXCEPTION(DATATYPE_MISMATCH, DataTypeMismatchException.class);
+
+    ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
+    ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);
+    ADD_EXCEPTION(UNSUPPORTED_DATATYPE, UnsupportedDataTypeException.class);
     ADD_EXCEPTION(INVALID_TABLE_PROPERTY, InvalidTablePropertyException.class);
     ADD_EXCEPTION(MISSING_TABLE_PROPERTY, MissingTablePropertyException.class);
   }

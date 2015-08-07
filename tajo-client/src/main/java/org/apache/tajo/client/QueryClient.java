@@ -65,15 +65,15 @@ public interface QueryClient extends Closeable {
 
   String getCurrentDatabase();
 
-  Boolean selectDatabase(final String databaseName) throws UndefinedDatabaseException;
+  void selectDatabase(final String databaseName) throws UndefinedDatabaseException;
 
-  Map<String, String> updateSessionVariables(final Map<String, String> variables) throws NoSuchSessionVariableException;
+  Map<String, String> updateSessionVariables(final Map<String, String> variables);
 
-  Map<String, String> unsetSessionVariables(final List<String> variables) throws NoSuchSessionVariableException;
+  Map<String, String> unsetSessionVariables(final List<String> variables);
 
   String getSessionVariable(final String varname) throws NoSuchSessionVariableException;
 
-  Boolean existSessionVariable(final String varname);
+  boolean existSessionVariable(final String varname);
 
   Map<String, String> getAllSessionVariables();
 
@@ -102,7 +102,7 @@ public interface QueryClient extends Closeable {
 
   ResultSet getQueryResult(QueryId queryId) throws TajoException;
 
-  ResultSet createNullResultSet(QueryId queryId) throws TajoException;
+  ResultSet createNullResultSet(QueryId queryId);
 
   GetQueryResultResponse getResultResponse(QueryId queryId) throws TajoException;
 
@@ -122,5 +122,5 @@ public interface QueryClient extends Closeable {
 
   QueryInfoProto getQueryInfo(final QueryId queryId) throws QueryNotFoundException;
 
-  QueryHistoryProto getQueryHistory(final QueryId queryId) throws TajoException;
+  QueryHistoryProto getQueryHistory(final QueryId queryId) throws QueryNotFoundException;
 }

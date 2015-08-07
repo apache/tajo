@@ -18,24 +18,26 @@
 
 package org.apache.tajo.client;
 
+import com.facebook.presto.hive.shaded.com.google.common.collect.Maps;
 import net.jcip.annotations.NotThreadSafe;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.DuplicateDatabaseException;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.UndefinedDatabaseException;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 @NotThreadSafe
-public class TestTajoClientExceptions {
+public class TestQueryClientExceptions {
   private static TajoTestingCluster cluster;
   private static TajoClient client;
 
@@ -50,23 +52,8 @@ public class TestTajoClientExceptions {
     client.close();
   }
 
-  @Test(expected = DuplicateDatabaseException.class)
-  public final void testCreateDatabase() throws TajoException {
-    assertFalse(client.createDatabase("default")); // duplicate database
-  }
-
-  @Test(expected = UndefinedDatabaseException.class)
-  public final void testDropDatabase() throws TajoException {
-    assertFalse(client.dropDatabase("unknown-database")); // unknown database
-  }
-
-  @Test(expected = UndefinedTableException.class)
-  public final void testDropTable() throws TajoException {
-    assertFalse(client.dropTable("unknown-table")); // unknown table
-  }
-
   @Test
-  public void testExecuteSQL() {
+  public void testExecuteQuery() {
     // This is just an error propagation unit test. Specified SQL errors will be addressed in other unit tests.
     ReturnState state = client.executeQuery("select * from unknown_table").getState();
     assertEquals(Errors.ResultCode.UNDEFINED_TABLE, state.getReturnCode());
@@ -75,9 +62,65 @@ public class TestTajoClientExceptions {
     assertEquals(Errors.ResultCode.DUPLICATE_TABLE, state.getReturnCode());
   }
 
+  @Test(expected = DuplicateTableException.class)
+  public void testUpdateQuery() throws TajoException {
+    client.updateQuery("create table default.lineitem (name int);");
+  }
+
   @Test(expected = UndefinedTableException.class)
   public void testExecuteQueryAndGetResult() throws TajoException {
     // This is just an error propagation unit test. Specified SQL errors will be addressed in other unit tests.
     client.executeQueryAndGetResult("select * from unknown_table");
+  }
+
+  @Test
+  public void testCloseQuery() {
+    // absent query id
+    client.closeQuery(LocalTajoTestingUtility.newQueryId());
+    client.closeNonForwardQuery(LocalTajoTestingUtility.newQueryId());
+  }
+
+  @Test(expected = UndefinedDatabaseException .class)
+  public void testSelectDatabase() throws UndefinedDatabaseException {
+    // absent database name
+    client.selectDatabase("unknown_db");
+  }
+
+  @Test(expected = NoSuchSessionVariableException.class)
+  public void testGetSessionVar() throws NoSuchSessionVariableException {
+    // absent session variable
+    client.getSessionVariable("unknown-var");
+  }
+
+  @Test(expected = QueryNotFoundException.class)
+  public void testGetQueryResult() throws TajoException {
+    // absent query id
+    client.getQueryResult(LocalTajoTestingUtility.newQueryId());
+  }
+
+  @Test(expected = QueryNotFoundException.class)
+  public void testGetResultResponse() throws TajoException {
+    // absent query id
+    client.getResultResponse(LocalTajoTestingUtility.newQueryId());
+  }
+
+  @Test(expected = QueryNotFoundException.class)
+  public void testFetchNextQueryResult() throws TajoException {
+    client.fetchNextQueryResult(LocalTajoTestingUtility.newQueryId(), 100);
+  }
+
+  @Test(expected = QueryNotFoundException.class)
+  public void testKillQuery() throws QueryNotFoundException {
+    client.killQuery(LocalTajoTestingUtility.newQueryId());
+  }
+
+  @Test(expected = QueryNotFoundException.class)
+  public void testGetQueryInfo() throws QueryNotFoundException {
+    client.getQueryInfo(LocalTajoTestingUtility.newQueryId());
+  }
+
+  @Test(expected = QueryNotFoundException.class)
+  public void testGetQueryHistory() throws QueryNotFoundException {
+    client.getQueryHistory(LocalTajoTestingUtility.newQueryId());
   }
 }

@@ -39,7 +39,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if created successfully.
    * @throws DuplicateDatabaseException
    */
-  boolean createDatabase(final String databaseName) throws DuplicateDatabaseException;
+  void createDatabase(final String databaseName) throws DuplicateDatabaseException;
   /**
    * Does the database exist?
    *
@@ -54,7 +54,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the database is dropped successfully.
    * @throws UndefinedDatabaseException
    */
-  boolean dropDatabase(final String databaseName) throws UndefinedDatabaseException, InsufficientPrivilegeException;
+  void dropDatabase(final String databaseName) throws UndefinedDatabaseException, InsufficientPrivilegeException;
 
   List<String> getAllDatabaseNames();
 
@@ -78,7 +78,8 @@ public interface CatalogAdminClient extends Closeable {
    * @throws DuplicateTableException
    */
   TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws DuplicateTableException;
+                                       final TableMeta meta)
+      throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException;
 
   /**
    * Create an external table.
@@ -94,16 +95,16 @@ public interface CatalogAdminClient extends Closeable {
    */
   TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws DuplicateTableException;
+      throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException;
 
   /**
    * Drop a table
    *
    * @param tableName The table name to be dropped. This name is case sensitive.
    * @return True if the table is dropped successfully.
-   * @throws UndefinedTableException
+   * @throws InsufficientPrivilegeException
    */
-  boolean dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException;
+  void dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException;
 
   /**
    * Drop a table.
@@ -112,8 +113,10 @@ public interface CatalogAdminClient extends Closeable {
    * @param purge If purge is true, this call will remove the entry in catalog as well as the table contents.
    * @return True if the table is dropped successfully.
    * @throws UndefinedTableException
+   * @throws InsufficientPrivilegeException
    */
-  boolean dropTable(final String tableName, final boolean purge) throws UndefinedTableException, InsufficientPrivilegeException;
+  void dropTable(final String tableName, final boolean purge) throws UndefinedTableException,
+      InsufficientPrivilegeException;
 
   /**
    * Get a list of table names.
