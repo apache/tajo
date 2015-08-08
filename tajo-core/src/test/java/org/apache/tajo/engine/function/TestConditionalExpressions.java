@@ -176,13 +176,13 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCoalesceDouble() throws Exception {
-//    testSimpleEval("select coalesce(1.0, 2.0);", new String[]{"1.0"});
-//    testSimpleEval("select coalesce(null, 2.0);", new String[]{"2.0"});
-//    testSimpleEval("select coalesce(null, null, 3.0);", new String[]{"3.0"});
-//    testSimpleEval("select coalesce(1.0, null, 3.0);", new String[]{"1.0"});
-//    testSimpleEval("select coalesce(null, 2.0, 3.0);", new String[]{"2.0"});
-//    testSimpleEval("select coalesce(1.0);", new String[]{"1.0"});
-//    testSimpleEval("select coalesce(null);", new String[]{""});
+    testSimpleEval("select coalesce(1.0, 2.0);", new String[]{"1.0"});
+    testSimpleEval("select coalesce(null, 2.0);", new String[]{"2.0"});
+    testSimpleEval("select coalesce(null, null, 3.0);", new String[]{"3.0"});
+    testSimpleEval("select coalesce(1.0, null, 3.0);", new String[]{"1.0"});
+    testSimpleEval("select coalesce(null, 2.0, 3.0);", new String[]{"2.0"});
+    testSimpleEval("select coalesce(1.0);", new String[]{"1.0"});
+    testSimpleEval("select coalesce(null);", new String[]{""});
 
     //no matched function
     try {
