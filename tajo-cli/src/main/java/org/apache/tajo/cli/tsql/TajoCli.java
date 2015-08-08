@@ -528,13 +528,16 @@ public class TajoCli {
     if (ReturnStateUtil.isSuccess(response.getState())) {
 
       switch (response.getResultType()) {
+
       case FETCH:
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
         break;
+
       case ENCLOSED:
         localQueryCompleted(response, startTime);
         break;
+
       default:
         displayFormatter.printMessage(sout, "OK");
       }

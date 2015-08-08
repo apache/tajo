@@ -19,7 +19,9 @@
 package org.apache.tajo.cli.tsql;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.ConfigKey;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.util.FileUtil;
 import org.junit.*;
@@ -104,6 +106,21 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
     assertScriptFailure("select * from unknown-table");
   }
 
+  private static void setVar(TajoCli cli, ConfigKey key, String val) throws Exception {
+    cli.executeMetaCommand("\\set " + key.keyname() + " " + val);
+  }
+
+  public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {
+    @Override
+    protected String getResponseTimeReadable(float responseTime) {
+      return "";
+    }
+    @Override
+    public void printProgress(PrintWriter sout, QueryStatus status) {
+      //nothing to do
+    }
+  }
+
   @Test
   public void testQueryNotImplementedFeature() throws Exception {
 
@@ -118,5 +135,12 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
       client.updateQuery("DROP TABLE IF EXISTS TestTajoCliNegatives.table12u79");
       client.updateQuery("DROP DATABASE IF EXISTS TestTajoCliNegatives");
     }
+  }
+
+  @Test
+  public void testQueryFailure() throws Exception {
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem" ,
+        "ERROR: No error message\n");
   }
 }
