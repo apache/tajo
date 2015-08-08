@@ -137,7 +137,7 @@ public interface CatalogService {
    * @see TableDesc
    * @throws DuplicateTableException
    */
-  void createTable(TableDesc desc) throws DuplicateTableException;
+  void createTable(TableDesc desc) throws DuplicateTableException, InsufficientPrivilegeException;
 
 
   /**

@@ -521,12 +521,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void createTable(final TableDesc desc) throws DuplicateTableException {
+  public final void createTable(final TableDesc desc) throws DuplicateTableException, InsufficientPrivilegeException {
     try {
       final BlockingInterface stub = getStub();
       final ReturnState state = stub.createTable(null, desc.getProto());
 
       throwsIfThisError(state, DuplicateTableException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
