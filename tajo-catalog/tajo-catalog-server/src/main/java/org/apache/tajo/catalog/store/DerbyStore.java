@@ -23,7 +23,6 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 
@@ -40,7 +39,7 @@ public class DerbyStore extends AbstractDBStore {
     return CATALOG_DRIVER;
   }
 
-  public DerbyStore(final Configuration conf) throws InternalException {
+  public DerbyStore(final Configuration conf) {
     super(conf);
   }
 

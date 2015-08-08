@@ -20,8 +20,14 @@ package org.apache.tajo.exception;
 
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateTablespaceException extends TajoException {
+
+  public DuplicateTablespaceException(ReturnState state) {
+    super(state);
+  }
+
 	public DuplicateTablespaceException(String spaceName) {
 		super(Errors.ResultCode.DUPLICATE_TABLESPACE, spaceName);
 	}

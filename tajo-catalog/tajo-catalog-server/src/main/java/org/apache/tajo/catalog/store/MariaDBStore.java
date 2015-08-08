@@ -22,7 +22,6 @@
 package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoException;
 
 import java.sql.Connection;
@@ -32,7 +31,7 @@ import java.sql.SQLException;
 public class MariaDBStore extends AbstractDBStore {
   private static final String CATALOG_DRIVER = "org.mariadb.jdbc.Driver";
 
-  public MariaDBStore(Configuration conf) throws InternalException {
+  public MariaDBStore(Configuration conf) {
     super(conf);
   }
 

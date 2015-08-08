@@ -110,7 +110,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     catalogSchemaManager.dropBaseSchema(getConnection());
   }
 
-  public AbstractDBStore(Configuration conf) throws InternalException {
+  public AbstractDBStore(Configuration conf) {
     this.conf = conf;
 
     if (conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {

@@ -27,6 +27,7 @@ import org.apache.tajo.error.Errors.ResultCode;
  * TajoRuntimeException in a common way.
  */
 public interface DefaultTajoException {
+
   ResultCode getErrorCode();
 
   String getMessage();

@@ -19,7 +19,6 @@
 package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoException;
 
 import java.sql.Connection;
@@ -30,7 +29,7 @@ public class PostgreSQLStore extends AbstractDBStore {
 
   private static final String CATALOG_DRIVER = "org.postgresql.Driver";
   
-  public PostgreSQLStore(Configuration conf) throws InternalException {
+  public PostgreSQLStore(Configuration conf) {
     super(conf);
   }
 

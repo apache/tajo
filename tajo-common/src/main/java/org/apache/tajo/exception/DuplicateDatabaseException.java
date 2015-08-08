@@ -20,7 +20,6 @@ package org.apache.tajo.exception;
 
 
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateDatabaseException extends TajoException {

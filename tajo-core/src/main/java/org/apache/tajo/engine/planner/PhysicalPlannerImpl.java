@@ -38,14 +38,14 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
+import org.apache.tajo.plan.serder.PlanProto.*;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
@@ -66,12 +66,10 @@ import java.util.Stack;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
-import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import static org.apache.tajo.plan.serder.PlanProto.*;
 import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
 import static org.apache.tajo.plan.serder.PlanProto.GroupbyEnforce.GroupbyAlgorithm;
 import static org.apache.tajo.plan.serder.PlanProto.JoinEnforce.JoinAlgorithm;
-import static org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
-import static org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
@@ -83,8 +81,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     this.conf = conf;
   }
 
-  public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan)
-      throws InternalException {
+  public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan) {
 
     PhysicalExec execPlan;
 
@@ -101,7 +98,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         return execPlan;
       }
     } catch (IOException ioe) {
-      throw new InternalException(ioe);
+      throw new TajoInternalError(ioe);
     }
   }
 

@@ -20,10 +20,14 @@ package org.apache.tajo.exception;
 
 
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class AmbiguousPartitionDirectoryExistException extends TajoException {
 	private static final long serialVersionUID = 277182608283894931L;
+
+  public AmbiguousPartitionDirectoryExistException(ReturnState state) {
+    super(state);
+  }
 
 	public AmbiguousPartitionDirectoryExistException(String columnName) {
 		super(ResultCode.AMBIGUOUS_PARTITION_DIRECTORY, columnName);

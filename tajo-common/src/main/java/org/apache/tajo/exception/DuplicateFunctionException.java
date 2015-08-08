@@ -19,10 +19,14 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateFunctionException extends TajoException {
 	private static final long serialVersionUID = 3224521585413794703L;
+
+  public DuplicateFunctionException(ReturnState state) {
+    super(state);
+  }
 
 	public DuplicateFunctionException(String signature) {
 		super(Errors.ResultCode.DUPLICATE_FUNCTION, signature);

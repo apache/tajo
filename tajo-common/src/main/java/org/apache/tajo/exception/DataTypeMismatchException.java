@@ -18,8 +18,7 @@
 
 package org.apache.tajo.exception;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DataTypeMismatchException extends TajoException {
@@ -30,6 +29,6 @@ public class DataTypeMismatchException extends TajoException {
 
   public DataTypeMismatchException(String columnName, String columnType,
                                    String expression, String expressionDataType) {
-    super(Errors.ResultCode.DATATYPE_MISMATCH, columnName, columnType, expression, expressionDataType);
+    super(ResultCode.DATATYPE_MISMATCH, columnName, columnType, expression, expressionDataType);
   }
 }

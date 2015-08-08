@@ -50,8 +50,6 @@ import org.apache.thrift.TException;
 import java.io.IOException;
 import java.util.*;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.*;
-
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
 
@@ -62,7 +60,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   private final HiveCatalogStoreClientPool clientPool;
   private final String defaultTableSpaceUri;
 
-  public HiveCatalogStore(final Configuration conf) throws InternalException {
+  public HiveCatalogStore(final Configuration conf) {
     if (!(conf instanceof TajoConf)) {
       throw new TajoInternalError("Invalid Configuration Type:" + conf.getClass().getSimpleName());
     }

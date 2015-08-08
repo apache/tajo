@@ -29,10 +29,10 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -144,8 +144,7 @@ public class EvalTreeUtil {
     return finder.getColumnRefs();
   }
   
-  public static Schema getSchemaByTargets(Schema inputSchema, Target[] targets)
-      throws InternalException {
+  public static Schema getSchemaByTargets(Schema inputSchema, Target[] targets) {
     Schema schema = new Schema();
     for (Target target : targets) {
       schema.addColumn(
@@ -167,8 +166,7 @@ public class EvalTreeUtil {
     return sb.toString();
   }
   
-  public static DataType getDomainByExpr(Schema inputSchema, EvalNode expr)
-      throws InternalException {
+  public static DataType getDomainByExpr(Schema inputSchema, EvalNode expr) {
     switch (expr.getType()) {
     case AND:      
     case OR:
@@ -192,8 +190,7 @@ public class EvalTreeUtil {
 
       
     default:
-      throw new InternalException("Unknown expr type: " 
-          + expr.getType().toString());
+      throw new TajoInternalError("Unknown expr type: " + expr.getType().toString());
     }
   }
 
