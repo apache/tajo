@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.NamedTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
 
@@ -33,9 +31,6 @@ import static org.junit.Assert.fail;
 
 
 public class TestTruncateTable extends QueryTestCaseBase {
-//  public TestTruncateTable() {
-//    super(TajoConstants.DEFAULT_DATABASE_NAME);
-//  }
 
   @Test
   public final void testTruncateTable() throws Exception {
