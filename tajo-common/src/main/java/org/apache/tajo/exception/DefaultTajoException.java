@@ -26,7 +26,7 @@ import org.apache.tajo.error.Errors.ResultCode;
  * This interface helps routines access both TajoException and
  * TajoRuntimeException in a common way.
  */
-public interface TajoExceptionInterface {
+public interface DefaultTajoException {
   ResultCode getErrorCode();
 
   String getMessage();

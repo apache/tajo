@@ -77,7 +77,7 @@ public class ReturnStateUtil {
     ReturnState.Builder builder = ReturnState.newBuilder();
 
     if (ExceptionUtil.isExceptionWithResultCode(t)) {
-      TajoExceptionInterface tajoException = (TajoExceptionInterface) t;
+      DefaultTajoException tajoException = (DefaultTajoException) t;
       builder.setReturnCode(tajoException.getErrorCode());
       builder.setMessage(tajoException.getMessage());
     } else {

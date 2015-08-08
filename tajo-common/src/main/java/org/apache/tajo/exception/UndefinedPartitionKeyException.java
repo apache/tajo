@@ -19,10 +19,14 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UndefinedPartitionKeyException extends TajoException {
 
-  private static final long serialVersionUID = 277182608283894939L;
+  @SuppressWarnings("unused")
+  public UndefinedPartitionKeyException(ReturnState state) {
+    super(state);
+  }
 
   public UndefinedPartitionKeyException(String partitionKey) {
     super(ResultCode.UNDEFINED_PARTITION_KEY, partitionKey);

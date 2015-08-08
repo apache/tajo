@@ -46,7 +46,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -553,7 +553,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       throws TajoException {
     for (Target t : projectable.getTargets()) {
       if (t.getEvalTree().getValueType().getType() == TajoDataTypes.Type.RECORD) {
-        throw new UnimplementedException("record field projection");
+        throw new NotImplementedException("record field projection");
       }
     }
   }
@@ -2003,7 +2003,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       partitionMethodDesc = new PartitionMethodDesc(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName,
           CatalogProtos.PartitionType.COLUMN, partitionExpression, convertColumnsToSchema(partition.getColumns()));
     } else {
-      throw new UnimplementedException("partition type '" + expr.getPartitionType() + "'");
+      throw new NotImplementedException("partition type '" + expr.getPartitionType() + "'");
     }
     return partitionMethodDesc;
   }

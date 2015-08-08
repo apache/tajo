@@ -25,7 +25,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
  * TajoException contains all exceptions with any exact reason.
  * It always have an exact error code and an error message.
  */
-public class TajoException extends Exception implements TajoExceptionInterface {
+public class TajoException extends Exception implements DefaultTajoException {
   private ResultCode code;
 
   public TajoException(ReturnState e) {
@@ -33,7 +33,7 @@ public class TajoException extends Exception implements TajoExceptionInterface {
     this.code = e.getReturnCode();
   }
 
-  public TajoException(TajoExceptionInterface e) {
+  public TajoException(DefaultTajoException e) {
     super(e.getMessage());
     this.code = e.getErrorCode();
   }

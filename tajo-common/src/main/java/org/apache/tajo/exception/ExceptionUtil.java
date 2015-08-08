@@ -19,31 +19,28 @@
 package org.apache.tajo.exception;
 
 import com.google.common.collect.Maps;
-import com.sun.org.apache.bcel.internal.classfile.Unknown;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;
 
 import static org.apache.tajo.error.Errors.ResultCode.*;
-import static org.apache.tajo.error.Errors.ResultCode.AMBIGUOUS_COLUMN;
-import static org.apache.tajo.error.Errors.ResultCode.AMBIGUOUS_TABLE;
 import static org.apache.tajo.exception.ReturnStateUtil.isError;
 
 public class ExceptionUtil {
 
-  static Map<Errors.ResultCode, Class<? extends TajoExceptionInterface>> EXCEPTIONS = Maps.newHashMap();
+  static Map<Errors.ResultCode, Class<? extends DefaultTajoException>> EXCEPTIONS = Maps.newHashMap();
 
   static {
 
     // General Errors
     ADD_EXCEPTION(INTERNAL_ERROR, TajoInternalError.class);
     ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, UnsupportedException.class);
+    ADD_EXCEPTION(NOT_IMPLEMENTED, NotImplementedException.class);
 
     // Query Management and Scheduler
     ADD_EXCEPTION(QUERY_NOT_FOUND, QueryNotFoundException.class);
@@ -60,6 +57,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_COLUMN, UndefinedColumnException.class);
     ADD_EXCEPTION(UNDEFINED_FUNCTION, UndefinedFunctionException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);
+    ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
 
     ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTableException.class);
@@ -84,7 +82,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(MISSING_TABLE_PROPERTY, MissingTablePropertyException.class);
   }
 
-  private static void ADD_EXCEPTION(Errors.ResultCode code, Class<? extends TajoExceptionInterface> cls) {
+  private static void ADD_EXCEPTION(Errors.ResultCode code, Class<? extends DefaultTajoException> cls) {
     EXCEPTIONS.put(code, cls);
   }
 
@@ -118,10 +116,9 @@ public class ExceptionUtil {
     }
   }
 
-  public static TajoException toTajoException(ReturnState state) {
-
+  public static DefaultTajoException toTajoExceptionCommon(ReturnState state) {
     if (state.getReturnCode() == Errors.ResultCode.INTERNAL_ERROR) {
-      throw new TajoInternalError(state);
+      return new TajoInternalError(state);
 
     } else if (EXCEPTIONS.containsKey(state.getReturnCode())) {
       Object exception;
@@ -136,14 +133,25 @@ public class ExceptionUtil {
       if (exception instanceof TajoException) {
         return (TajoException) exception;
       } else if (exception instanceof TajoRuntimeException) {
-        throw ((TajoRuntimeException) exception);
+        return ((TajoRuntimeException) exception);
       } else {
-        throw ((TajoError) exception);
+        return ((TajoError) exception);
       }
 
     } else {
-      throw new TajoInternalError("Unregistred Exception (" + state.getReturnCode().name() +"): "
-          + state.getMessage());
+      throw new TajoInternalError("Unknown exception: [" + state.getReturnCode().name() +"] " + state.getMessage());
+    }
+  }
+
+  public static TajoException toTajoException(ReturnState state) throws TajoRuntimeException, TajoError {
+    DefaultTajoException e = toTajoExceptionCommon(state);
+
+    if (e instanceof TajoException) {
+      return (TajoException) e;
+    } else if (e instanceof TajoRuntimeException) {
+      throw ((TajoRuntimeException) e);
+    } else {
+      throw ((TajoError) e);
     }
   }
 
@@ -154,7 +162,7 @@ public class ExceptionUtil {
    * @return true if a Throwable has Tajo's ReturnCode and error message.
    */
   public static boolean isExceptionWithResultCode(Throwable t) {
-    return t instanceof TajoExceptionInterface;
+    return t instanceof DefaultTajoException;
   }
 
   /**

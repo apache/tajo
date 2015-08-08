@@ -631,7 +631,6 @@ public class QueryTestCaseBase {
    * @param result Query result to be compared.
    */
   public final void assertResultSet(String message, ResultSet result, String resultFileName) throws IOException {
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     Path resultFile = getResultFile(resultFileName);
     try {
       verifyResultText(message, result, resultFile);
@@ -789,7 +788,12 @@ public class QueryTestCaseBase {
     return queryFilePath;
   }
 
-  private Path getResultFile(String fileName) throws IOException {
+  protected String getResultContents(String fileName) throws IOException {
+    Path resultFile = getResultFile(getMethodName() + ".result");
+    return FileUtil.readTextFile(new File(resultFile.toUri()));
+  }
+
+  protected Path getResultFile(String fileName) throws IOException {
     Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
     FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     assertTrue(resultPath.toString() + " existence check", fs.exists(resultPath));

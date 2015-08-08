@@ -19,16 +19,21 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class UnimplementedException extends TajoRuntimeException {
+public class NotImplementedException extends TajoRuntimeException {
   private static final long serialVersionUID = -5467580471721530536L;
 
-  public UnimplementedException() {
+  public NotImplementedException() {
     super(Errors.ResultCode.NOT_IMPLEMENTED,
         Thread.currentThread().getStackTrace()[1].getClassName());
   }
 
-  public UnimplementedException(String featureName) {
+  public NotImplementedException(ReturnState state) {
+    super(state);
+  }
+
+  public NotImplementedException(String featureName) {
     super(Errors.ResultCode.NOT_IMPLEMENTED, featureName);
   }
 }

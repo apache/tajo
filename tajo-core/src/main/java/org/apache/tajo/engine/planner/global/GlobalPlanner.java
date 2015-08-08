@@ -39,7 +39,7 @@ import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvi
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
@@ -846,7 +846,7 @@ public class GlobalPlanner {
       // Verify supported partition types
       PartitionMethodDesc partitionMethod = currentNode.getPartitionMethod();
       if (partitionMethod.getPartitionType() != CatalogProtos.PartitionType.COLUMN) {
-        throw new UnimplementedException("partition type '" + partitionMethod.getPartitionType().name() + "'");
+        throw new NotImplementedException("partition type '" + partitionMethod.getPartitionType().name() + "'");
       }
 
       if (hasUnionChild(currentNode)) { // if it has union children
