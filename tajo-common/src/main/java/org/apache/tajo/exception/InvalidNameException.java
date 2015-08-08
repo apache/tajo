@@ -20,8 +20,13 @@ package org.apache.tajo.exception;
 
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class InvalidNameException extends TajoException {
+
+  public InvalidNameException(ReturnState state) {
+    super(state);
+  }
 
 	public InvalidNameException(String databaseName) {
 		super(Errors.ResultCode.INVALID_NAME, databaseName);

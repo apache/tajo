@@ -18,9 +18,7 @@
 
 package org.apache.tajo.exception;
 
-import com.sun.org.apache.bcel.internal.classfile.Unknown;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UnknownDataFormatException extends TajoException {

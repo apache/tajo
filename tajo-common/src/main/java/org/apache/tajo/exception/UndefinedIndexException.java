@@ -19,9 +19,14 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UndefinedIndexException extends TajoException {
   private static final long serialVersionUID = 3705839985189534673L;
+
+  public UndefinedIndexException(ReturnState state) {
+    super(state);
+  }
 
   public UndefinedIndexException(String tableName, String columnName) {
     super(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, tableName, columnName);

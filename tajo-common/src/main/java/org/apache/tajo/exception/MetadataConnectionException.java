@@ -19,7 +19,6 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.TajoError;
 
 /**
  * Tajo Metadata Connector's connection error
