@@ -35,7 +35,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
