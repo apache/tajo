@@ -42,6 +42,8 @@ public class ErrorMessages {
     ADD_MESSAGE(INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
 
     // Query Management and Scheduler
+    ADD_MESSAGE(QUERY_FAILED, "query has been failed due to %s", 1);
+    ADD_MESSAGE(QUERY_KILLED, "query has been killed");
     ADD_MESSAGE(QUERY_NOT_FOUND, "query %s does not exist", 1);
     ADD_MESSAGE(NO_DATA, "no data for %s due to query failure or error", 1);
     ADD_MESSAGE(INCOMPLETE_QUERY, "query %s is stilling running", 1);

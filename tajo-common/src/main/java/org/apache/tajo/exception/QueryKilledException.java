@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,27 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client.v2;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.exception.QueryFailedException;
-import org.apache.tajo.exception.UndefinedDatabaseException;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-import java.io.Closeable;
-import java.sql.ResultSet;
+public class QueryKilledException extends TajoException {
 
-/**
- * ClientDelegate is a delegate for various wired protocols like protocol buffer, rest API, and proxy.
- */
-public interface ClientDelegate extends Closeable {
+  @SuppressWarnings("unused")
+  public QueryKilledException(ReturnState e) {
+    super(e);
+  }
 
-  int executeUpdate(String sql) throws TajoException;
-
-  ResultSet executeSQL(String sql) throws TajoException, QueryFailedException;
-
-  QueryFuture executeSQLAsync(String sql) throws TajoException;
-
-  String currentDB();
-
-  void selectDB(String db) throws UndefinedDatabaseException;
+  public QueryKilledException() {
+    super(Errors.ResultCode.QUERY_KILLED);
+  }
 }

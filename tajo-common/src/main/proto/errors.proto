@@ -79,9 +79,12 @@ enum ResultCode {
   INVALID_RPC_CALL              = 204; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
 
   // Query Management and Scheduler
-  QUERY_NOT_FOUND               = 301; // No such query in TajoMaster
-  NO_DATA                       = 302; // No data due to query fail or error
-  INCOMPLETE_QUERY              = 303; // It occurs when a client requests something of a completed query.
+  QUERY_FAILED                  = 301; // SQLState: ? - Query failed
+  QUERY_KILLED                  = 302; // SQLState: ? - Query killed
+  QUERY_TIMEOUT                 = 303; // SQLState: ? - Timeout for the query
+  QUERY_NOT_FOUND               = 304; // No such query in TajoMaster
+  NO_DATA                       = 305; // No data due to query fail or error
+  INCOMPLETE_QUERY              = 306; // It occurs when a client requests something of a completed query.
 
   // Session
   INVALID_SESSION               = 401; // Session already was invalid

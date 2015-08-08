@@ -72,10 +72,20 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   }
 
   @Override
-  public ResultSet executeSQL(String sql) throws TajoException {
+  public ResultSet executeSQL(String sql) throws TajoException, QueryFailedException, QueryKilledException {
     try {
       return executeSQLAsync(sql).get();
-    } catch (InterruptedException | ExecutionException e) {
+
+    } catch (ExecutionException e) {
+
+      if (e.getCause() instanceof TajoException) {
+        throw (TajoException) e.getCause();
+      } else if (e.getCause() instanceof TajoRuntimeException) {
+        throw new TajoException((TajoRuntimeException)e.getCause());
+      } else {
+        throw new TajoInternalError(e);
+      }
+    } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
@@ -385,9 +395,17 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
         } else { // when update
           set(TajoClientUtil.NULL_RESULT_SET);
         }
+
+      } else if (finalResponse.getQueryState() == TajoProtos.QueryState.QUERY_KILLED) {
+        setException(new QueryKilledException());
+
       } else {
-        cancel(false); // failed
-        set(TajoClientUtil.NULL_RESULT_SET);
+        if (finalResponse.hasErrorMessage()) {
+          setException(new QueryFailedException(finalResponse.getErrorMessage()));
+        } else {
+          setException(new QueryFailedException(
+              "internal error. See master and worker logs in ${tajo-install-dir}/logs for the cause of this error"));
+        }
       }
     }
   }
