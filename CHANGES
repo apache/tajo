@@ -33,6 +33,13 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1699: Tajo Java Client version 2. (hyunsik)
+
+    TAJO-1721: Separate routine for CREATE TABLE from DDLExecutor. (hyunsik)
+
+    TAJO-1736: Remove unnecessary getMountPath(). 
+    (Contributed by YeonSu Han, Committed by jinho)
+
     TAJO-1645: Bump up hbase to 1.1.1. (hyunsik)
 
     TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
@@ -202,6 +209,13 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1742: Remove hadoop dependency in DatumFactory. (jinho)
+
+    TAJO-1733: Finished query occasionally does not appear in Web-UI. (jinho)
+
+    TAJO-1731: With a task failure, query processing is hanged after first retry. 
+    (jihoon)
 
     TAJO-1608: Fix test failure in index_support branch. (jihoon)
 
@@ -444,6 +458,11 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1735: Implement MetadataProvider and LinkedMetadataManager. (hyunsik)
+
+    TAJO-1723: INSERT INTO statement should allow nested fields as 
+    target columns. (hyunsik)
 
     TAJO-1302: Support index metadata backup and restore. (jihoon)
 

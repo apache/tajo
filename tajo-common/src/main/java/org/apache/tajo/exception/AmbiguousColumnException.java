@@ -18,14 +18,17 @@
 
 package org.apache.tajo.exception;
 
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+
 import static org.apache.tajo.error.Errors.ResultCode.AMBIGUOUS_COLUMN;
 
 public class AmbiguousColumnException extends TajoException {
   private static final long serialVersionUID = 3102675985226352347L;
 
-  /**
-   * @param fieldName
-   */
+  public AmbiguousColumnException(ReturnState state) {
+    super(state);
+  }
+
   public AmbiguousColumnException(String fieldName) {
     super(AMBIGUOUS_COLUMN, fieldName);
   }

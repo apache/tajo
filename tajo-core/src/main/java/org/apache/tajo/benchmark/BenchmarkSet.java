@@ -28,6 +28,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
@@ -91,7 +92,7 @@ public abstract class BenchmarkSet {
 
   public abstract void loadQueries() throws IOException;
 
-  public abstract void loadTables() throws SQLException;
+  public abstract void loadTables() throws TajoException;
 
   public String [] getTableNames() {
     return schemas.keySet().toArray(new String[schemas.size()]);

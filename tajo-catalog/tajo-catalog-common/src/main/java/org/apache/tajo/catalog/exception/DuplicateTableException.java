@@ -20,9 +20,14 @@ package org.apache.tajo.catalog.exception;
 
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicateTableException extends CatalogException {
 	private static final long serialVersionUID = -641623770742392865L;
+
+  public DuplicateTableException(ReturnState state) {
+    super(state);
+  }
 
   public DuplicateTableException(String relName) {
     super(Errors.ResultCode.DUPLICATE_TABLE, relName);

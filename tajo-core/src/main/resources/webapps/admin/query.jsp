@@ -59,10 +59,8 @@
     }
   }
 
-  List<QueryInfo> finishedQueries = new ArrayList<QueryInfo>(
-          master.getContext().getQueryJobManager().getFinishedQueries(currentPage, pageSize));
-  Collections.sort(finishedQueries, java.util.Collections.reverseOrder());
-
+  List<QueryInfo> finishedQueries =
+          master.getContext().getQueryJobManager().getFinishedQueries(currentPage, pageSize);
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
   Map<Integer, NodeStatus> workers = master.getContext().getResourceManager().getNodes();

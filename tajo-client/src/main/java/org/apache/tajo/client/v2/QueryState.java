@@ -16,13 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.client.v2;
 
-public class AlreadyExistsAssumedPartitionDirectoryException extends RuntimeException {
-
-  private static final long serialVersionUID = 277182608283894931L;
-
-  public AlreadyExistsAssumedPartitionDirectoryException(String message) {
-    super(String.format("ERROR: There is a directory which is assumed to be a partitioned directory : %s", message));
-  }
+public enum QueryState {
+  /** successfully submitted */
+  SCHEDULED,
+  /** Running */
+  RUNNING,
+  /** Error before a query execution */
+  ERROR,
+  /** Failure after a query launches */
+  FAILED,
+  /** Killed */
+  KILLED,
+  /** Wait for completely kill */
+  KILLING,
+  /** Successfully completed */
+  COMPLETED
 }

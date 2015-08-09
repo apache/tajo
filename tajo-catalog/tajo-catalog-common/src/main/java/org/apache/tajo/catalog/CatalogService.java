@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.exception.UndefinedPartitionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -183,6 +184,9 @@ public interface CatalogService {
 
   List<TablePartitionProto> getAllPartitions();
 
+  boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
+    , boolean ifNotExists);
+
   boolean createIndex(IndexDesc index);
 
   boolean existIndexByName(String databaseName, String indexName);
@@ -207,9 +211,9 @@ public interface CatalogService {
 
   boolean dropFunction(String signature);
 
-  FunctionDesc getFunction(String signature, DataType... paramTypes) throws UndefinedFunctionException;
+  FunctionDesc getFunction(String signature, DataType... paramTypes) throws AmbiguousFunctionException, UndefinedFunctionException;
 
-  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes) throws UndefinedFunctionException;
+  FunctionDesc getFunction(String signature, FunctionType funcType, DataType... paramTypes) throws AmbiguousFunctionException, UndefinedFunctionException;
 
   boolean containFunction(String signature, DataType... paramTypes);
 

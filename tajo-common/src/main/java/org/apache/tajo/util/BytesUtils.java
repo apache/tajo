@@ -18,8 +18,6 @@
 
 package org.apache.tajo.util;
 
-import org.apache.hadoop.io.WritableUtils;
-
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +27,21 @@ import java.util.List;
  * Extra utilities for bytes
  */
 public class BytesUtils {
+
+  /**
+   * Parse the first byte of a vint/vlong to determine the number of bytes
+   * @param value the first byte of the vint/vlong
+   * @return the total number of bytes (1 to 9)
+   */
+  public static int decodeVIntSize(byte value) {
+    if (value >= -112) {
+      return 1;
+    } else if (value < -120) {
+      return -119 - value;
+    }
+    return -111 - value;
+  }
+
   /**
    * @param n Long to make a VLong of.
    * @return VLong as bytes array.
@@ -54,7 +67,7 @@ public class BytesUtils {
       len--;
     }
 
-    int size = WritableUtils.decodeVIntSize((byte) len);
+    int size = decodeVIntSize((byte) len);
 
     result = new byte[size];
     result[offset++] = (byte) len;

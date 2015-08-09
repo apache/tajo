@@ -19,9 +19,14 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class DuplicatePartitionException extends CatalogException {
   private static final long serialVersionUID = 277182608283894930L;
+
+  public DuplicatePartitionException(ReturnState state) {
+    super(state);
+  }
 
   public DuplicatePartitionException(String partitionName) {
     super(Errors.ResultCode.DUPLICATE_PARTITION, partitionName);

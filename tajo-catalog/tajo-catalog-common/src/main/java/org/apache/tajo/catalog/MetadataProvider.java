@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.catalog;
 
-public class NoSuchPartitionKeyException extends RuntimeException {
+import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 
-  private static final long serialVersionUID = 277182608283894939L;
+import javax.annotation.Nullable;
+import java.net.URI;
+import java.util.Collection;
 
-  public NoSuchPartitionKeyException(String tableName, String partitionKey) {
-    super(String.format("ERROR: \"%s\" column is not the partition key of \"%s\".",
-      partitionKey, tableName));
-  }
+public interface MetadataProvider {
+  String getTablespaceName();
+
+  URI getTablespaceUri();
+
+  String getDatabaseName();
+
+  Collection<String> getCatalogs();
+
+  Collection<String> getTables(@Nullable String catalog);
+
+  TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException;
 }

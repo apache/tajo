@@ -26,8 +26,10 @@ import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
@@ -90,7 +92,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   // QueryClient wrappers
   /*------------------------------------------------------------------------*/
 
-  public void closeQuery(final QueryId queryId) throws SQLException {
+  public void closeQuery(final QueryId queryId) {
     queryClient.closeQuery(queryId);
   }
 
@@ -98,23 +100,23 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     queryClient.closeNonForwardQuery(queryId);
   }
 
-  public SubmitQueryResponse executeQuery(final String sql) throws SQLException {
+  public SubmitQueryResponse executeQuery(final String sql) {
     return queryClient.executeQuery(sql);
   }
 
-  public SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException {
+  public SubmitQueryResponse executeQueryWithJson(final String json) {
     return queryClient.executeQueryWithJson(json);
   }
 
-  public ResultSet executeQueryAndGetResult(final String sql) throws SQLException {
+  public ResultSet executeQueryAndGetResult(final String sql) throws TajoException {
     return queryClient.executeQueryAndGetResult(sql);
   }
 
-  public ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException {
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws TajoException {
     return queryClient.executeJsonQueryAndGetResult(json);
   }
 
-  public QueryStatus getQueryStatus(QueryId queryId) throws SQLException {
+  public QueryStatus getQueryStatus(QueryId queryId) {
     return queryClient.getQueryStatus(queryId);
   }
 
@@ -134,15 +136,15 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.fetchNextQueryResult(queryId, fetchRowNum);
   }
 
-  public boolean updateQuery(final String sql) throws SQLException {
+  public boolean updateQuery(final String sql) throws TajoException {
     return queryClient.updateQuery(sql);
   }
 
-  public boolean updateQueryWithJson(final String json) throws SQLException {
+  public boolean updateQueryWithJson(final String json) throws TajoException {
     return queryClient.updateQueryWithJson(json);
   }
 
-  public QueryStatus killQuery(final QueryId queryId) throws SQLException {
+  public QueryStatus killQuery(final QueryId queryId) {
     return queryClient.killQuery(queryId);
   }
 
@@ -150,7 +152,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.getRunningQueryList();
   }
 
-  public List<BriefQueryInfo> getFinishedQueryList() throws SQLException {
+  public List<BriefQueryInfo> getFinishedQueryList() {
     return queryClient.getFinishedQueryList();
   }
 
@@ -178,54 +180,54 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   // CatalogClient wrappers
   /*------------------------------------------------------------------------*/
 
-  public boolean createDatabase(final String databaseName) throws SQLException {
+  public boolean createDatabase(final String databaseName) throws DuplicateDatabaseException {
     return catalogClient.createDatabase(databaseName);
   }
 
-  public boolean existDatabase(final String databaseName) throws SQLException {
+  public boolean existDatabase(final String databaseName) {
     return catalogClient.existDatabase(databaseName);
   }
 
-  public boolean dropDatabase(final String databaseName) throws SQLException {
+  public boolean dropDatabase(final String databaseName) throws UndefinedDatabaseException {
     return catalogClient.dropDatabase(databaseName);
   }
 
-  public List<String> getAllDatabaseNames() throws SQLException {
+  public List<String> getAllDatabaseNames() {
     return catalogClient.getAllDatabaseNames();
   }
 
-  public boolean existTable(final String tableName) throws SQLException {
+  public boolean existTable(final String tableName) {
     return catalogClient.existTable(tableName);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws SQLException {
+                                       final TableMeta meta) throws DuplicateTableException {
     return catalogClient.createExternalTable(tableName, schema, path, meta);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException {
+      throws DuplicateTableException {
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);
   }
 
-  public boolean dropTable(final String tableName) throws SQLException {
+  public boolean dropTable(final String tableName) throws UndefinedTableException {
     return dropTable(tableName, false);
   }
 
-  public boolean dropTable(final String tableName, final boolean purge) throws SQLException {
+  public boolean dropTable(final String tableName, final boolean purge) throws UndefinedTableException {
     return catalogClient.dropTable(tableName, purge);
   }
 
-  public List<String> getTableList(@Nullable final String databaseName) throws SQLException {
+  public List<String> getTableList(@Nullable final String databaseName) {
     return catalogClient.getTableList(databaseName);
   }
 
-  public TableDesc getTableDesc(final String tableName) throws SQLException {
+  public TableDesc getTableDesc(final String tableName) throws UndefinedTableException {
     return catalogClient.getTableDesc(tableName);
   }
 
-  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws SQLException {
+  public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) {
     return catalogClient.getFunctions(functionName);
   }
 

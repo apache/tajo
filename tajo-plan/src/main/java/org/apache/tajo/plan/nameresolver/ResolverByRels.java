@@ -20,7 +20,9 @@ package org.apache.tajo.plan.nameresolver;
 
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.exception.AmbiguousTableException;
 import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.exception.AmbiguousColumnException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -28,7 +30,7 @@ import org.apache.tajo.plan.PlanningException;
 public class ResolverByRels extends NameResolver {
   @Override
   public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws AmbiguousColumnException {
+      throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException, UndefinedTableException {
 
     Column column = resolveFromRelsWithinBlock(plan, block, columnRef);
     if (column == null) {

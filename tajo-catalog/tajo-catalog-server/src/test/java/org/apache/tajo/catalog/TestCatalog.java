@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -65,8 +64,7 @@ public class TestCatalog {
 	static CatalogServer server;
 	static CatalogService catalog;
 
-	@BeforeClass
-	public static void setUp() throws Exception {
+  public static TajoConf newTajoConfForCatalogTest() throws IOException {
     final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
 
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
@@ -99,10 +97,17 @@ public class TestCatalog {
       }
     }
 
+    return conf;
+  }
+
+	@BeforeClass
+	public static void setUp() throws Exception {
+
+
     Path defaultTableSpace = CommonTestingUtil.getTestDir();
 
 	  server = new CatalogServer();
-    server.init(conf);
+    server.init(newTajoConfForCatalogTest());
     server.start();
     catalog = new LocalCatalogWrapper(server);
     if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
@@ -952,11 +957,11 @@ public class TestCatalog {
     List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
     for(int i = 0; i < partitionNames.length; i++) {
       String columnName = partitionNames[i].split("=")[0];
+      String partitionValue = partitionNames[i].split("=")[1];
 
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(partitionNames[i]);
+      builder.setColumnName(partitionValue);
       builder.setPartitionValue(columnName);
-
       partitionKeyList.add(builder.build());
     }
 
