@@ -148,7 +148,7 @@ public class LinkedMetadataManager {
   public Collection<String> getSchemas(@Nullable String dbName) throws UndefinedDatabaseException {
     ensureIfDBExists(dbName);
 
-    return providerMap.get(dbName).getCatalogs();
+    return providerMap.get(dbName).getSchemas();
   }
 
   /**

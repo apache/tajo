@@ -95,7 +95,7 @@ public class FileTablespace extends Tablespace {
         }
       };
 
-  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
+  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true, false);
   private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true);
 
   protected FileSystem fs;

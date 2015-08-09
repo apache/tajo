@@ -21,10 +21,8 @@ package org.apache.tajo.storage.jdbc;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -46,6 +44,8 @@ import java.util.Map;
  * </ul>
  */
 public class JdbcTablespace extends Tablespace {
+
+  static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
 
   public JdbcTablespace(String name, URI uri) {
     super(name, uri);
@@ -86,8 +86,6 @@ public class JdbcTablespace extends Tablespace {
     return null;
   }
 
-  static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false);
-
   @Override
   public StorageProperty getProperty() {
     return STORAGE_PROPERTY;
@@ -104,7 +102,11 @@ public class JdbcTablespace extends Tablespace {
   }
 
   @Override
-  public TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc, Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange) throws IOException {
+  public TupleRange[] getInsertSortRanges(OverridableConf queryContext,
+                                          TableDesc tableDesc,
+                                          Schema inputSchema,
+                                          SortSpec[] sortSpecs,
+                                          TupleRange dataRange) throws IOException {
     return new TupleRange[0];
   }
 
@@ -115,7 +117,6 @@ public class JdbcTablespace extends Tablespace {
 
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
-
   }
 
   @Override
@@ -142,5 +143,9 @@ public class JdbcTablespace extends Tablespace {
   @Override
   public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
     return null;
+  }
+
+  public MetadataProvider getMetadataProvider() {
+    throw new UnsupportedException("Linked Metadata Provider for " + name);
   }
 }

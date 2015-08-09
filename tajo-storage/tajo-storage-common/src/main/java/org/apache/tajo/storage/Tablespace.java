@@ -22,10 +22,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
@@ -423,5 +420,9 @@ public abstract class Tablespace {
   public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context,
                                  TableMeta meta) throws IOException {
     throw new IOException("Staging the output result is not supported in this storage");
+  }
+
+  public MetadataProvider getMetadataProvider() {
+    throw new UnsupportedException("Linked Metadata Provider for " + name);
   }
 }

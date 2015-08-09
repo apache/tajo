@@ -16,31 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.hbase;
+package org.apache.tajo.storage.jdbc;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes.Type;
+import com.google.common.collect.ImmutableSet;
+import io.airlift.testing.mysql.TestingMySqlServer;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.storage.jdbc.JdbcTablespace;
-import org.apache.tajo.util.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
-import java.util.Set;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-public class TestJdbcTableSpace {
+public class TestMysqlJdbcTableSpace {
   @BeforeClass
   public static void setUp() throws IOException {
     String mysqlUri = "jdbc:mysql://host1:2171/db1";
@@ -68,5 +62,34 @@ public class TestJdbcTableSpace {
 
     assertEquals(URI.create("jdbc:postgres://host1:2615/db2"),
         TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2")).get().getUri());
+  }
+
+  @Test
+  public void test() throws Exception {
+    try (TestingMySqlServer server = new TestingMySqlServer("testuser", "testpass", "db1", "db2")) {
+      assertTrue(server.isRunning());
+      assertTrue(server.isReadyForConnections());
+      assertEquals(server.getMySqlVersion(), "5.5.9");
+      assertEquals(server.getDatabases(), ImmutableSet.of("db1", "db2"));
+      assertEquals(server.getUser(), "testuser");
+      assertEquals(server.getPassword(), "testpass");
+      assertEquals(server.getJdbcUrl().substring(0, 5), "jdbc:");
+      assertEquals(server.getPort(), URI.create(server.getJdbcUrl().substring(5)).getPort());
+
+      for (String database : server.getDatabases()) {
+        try (Connection connection = DriverManager.getConnection(server.getJdbcUrl())) {
+          connection.setCatalog(database);
+          try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE test_table (c1 bigint PRIMARY KEY)");
+            statement.execute("INSERT INTO test_table (c1) VALUES (1)");
+            try (ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM test_table")) {
+              assertTrue(resultSet.next());
+              assertEquals(resultSet.getLong(1), 1L);
+              assertFalse(resultSet.next());
+            }
+          }
+        }
+      }
+    }
   }
 }

@@ -31,9 +31,9 @@ public interface MetadataProvider {
 
   String getDatabaseName();
 
-  Collection<String> getCatalogs();
+  Collection<String> getSchemas();
 
-  Collection<String> getTables(@Nullable String catalog);
+  Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern);
 
-  TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException;
+  TableDesc getTableDescriptor(String schemaName, String tableName) throws UndefinedTablespaceException;
 }
