@@ -33,6 +33,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1743: Improve calculation of intermediate table statistics. (jinho)
+
     TAJO-1699: Tajo Java Client version 2. (hyunsik)
 
     TAJO-1721: Separate routine for CREATE TABLE from DDLExecutor. (hyunsik)
