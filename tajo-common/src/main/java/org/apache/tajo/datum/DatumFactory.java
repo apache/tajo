@@ -23,7 +23,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -114,45 +114,45 @@ public class DatumFactory {
   public static Datum createFromBytes(DataType dataType, byte[] bytes) {
     switch (dataType.getType()) {
 
-      case BOOLEAN:
-        return createBool(bytes[0]);
-      case INT2:
-        return createInt2(Bytes.toShort(bytes));
-      case INT4:
-        return createInt4(Bytes.toInt(bytes));
-      case INT8:
-        return createInt8(Bytes.toLong(bytes));
-      case FLOAT4:
-        return createFloat4(Bytes.toFloat(bytes));
-      case FLOAT8:
-        return createFloat8(Bytes.toDouble(bytes));
-      case CHAR:
-        return createChar(bytes);
-      case TEXT:
-        return createText(bytes);
-      case DATE:
-        return new DateDatum(Bytes.toInt(bytes));
-      case TIME:
-        return new TimeDatum(Bytes.toLong(bytes));
-      case TIMESTAMP:
-        return new TimestampDatum(Bytes.toLong(bytes));
-      case BIT:
-        return createBit(bytes[0]);
-      case BLOB:
-        return createBlob(bytes);
-      case INET4:
-        return createInet4(bytes);
-      case PROTOBUF:
-        ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
-        Message.Builder builder = factory.newBuilder();
-        try {
-          builder.mergeFrom(bytes);
-          return factory.createDatum(builder.build());
-        } catch (IOException e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        }
-      default:
+    case BOOLEAN:
+      return createBool(bytes[0]);
+    case INT2:
+      return createInt2(NumberUtil.toShort(bytes));
+    case INT4:
+      return createInt4(NumberUtil.toInt(bytes));
+    case INT8:
+      return createInt8(NumberUtil.toLong(bytes));
+    case FLOAT4:
+      return createFloat4(NumberUtil.toFloat(bytes));
+    case FLOAT8:
+      return createFloat8(NumberUtil.toDouble(bytes));
+    case CHAR:
+      return createChar(bytes);
+    case TEXT:
+      return createText(bytes);
+    case DATE:
+      return new DateDatum(NumberUtil.toInt(bytes));
+    case TIME:
+      return new TimeDatum(NumberUtil.toLong(bytes));
+    case TIMESTAMP:
+      return new TimestampDatum(NumberUtil.toLong(bytes));
+    case BIT:
+      return createBit(bytes[0]);
+    case BLOB:
+      return createBlob(bytes);
+    case INET4:
+      return createInet4(bytes);
+    case PROTOBUF:
+      ProtobufDatumFactory factory = ProtobufDatumFactory.get(dataType);
+      Message.Builder builder = factory.newBuilder();
+      try {
+        builder.mergeFrom(bytes);
+        return factory.createDatum(builder.build());
+      } catch (IOException e) {
+        e.printStackTrace();
+        throw new RuntimeException(e);
+      }
+    default:
         throw new UnsupportedOperationException(dataType.toString());
     }
   }

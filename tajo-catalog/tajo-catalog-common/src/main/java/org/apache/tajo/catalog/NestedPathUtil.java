@@ -19,11 +19,11 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.tajo.common.TajoDataTypes.Type;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Utility methods for nested field
@@ -65,24 +65,6 @@ public class NestedPathUtil {
     return sb.toString();
   }
 
-  /**
-   * Lookup the actual column corresponding to a given path.
-   * We assume that a path starts with the slash '/' and it
-   * does not include the root field.
-   *
-   * @param nestedField Nested column
-   * @param path Path which starts with '/';
-   * @return Column corresponding to the path
-   */
-  public static Column lookupPath(Column nestedField, String path) {
-    Preconditions.checkArgument(path.charAt(0) == PATH_DELIMITER.charAt(0),
-        "A nested field path must start with slash '/'.");
-
-    // We assume that path starts with '/', causing an empty string "" at 0 in the path splits.
-    // So, we should start the index from 1 instead of 0.
-    return lookupPath(nestedField, path.split(PATH_DELIMITER));
-  }
-
   public static Column lookupPath(Column nestedField, String [] paths) {
     // We assume that path starts with '/', causing an empty string "" at 0 in the path splits.
     // So, we should start the index from 1 instead of 0.
@@ -106,4 +88,5 @@ public class NestedPathUtil {
       throw new NoSuchFieldError(makePath(paths));
     }
   }
+
 }
