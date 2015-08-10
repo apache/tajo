@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.json;
 
 
+import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -35,55 +36,27 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
   private JSONParser parser;
+
   // Full Path -> Type
-  private Map<String, Type> types;
-  private String [] projectedPaths;
+  private final Map<String, Type> types;
+  private final String [] projectedPaths;
 
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
 
-    projectedPaths = new String[projected.length];
-    for (int i = 0; i < projected.length; i++) {
-      this.projectedPaths[i] = projected[i].getSimpleName();
-    }
+    projectedPaths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
+    types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
   }
 
   @Override
   public void init() {
-    types = TUtil.newHashMap();
-    for (Column column : schema.getAllColumns()) {
-
-      // Keep types which only belong to projected paths
-      // For example, assume that a projected path is 'name/first_name', where name is RECORD and first_name is TEXT.
-      // In this case, we should keep two types:
-      // * name - RECORD
-      // * name/first_name TEXT
-      for (String p :projectedPaths) {
-        if (p.startsWith(column.getSimpleName())) {
-          types.put(column.getSimpleName(), column.getDataType().getType());
-        }
-      }
-    }
     parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
-  }
-
-  private static String makePath(String [] path, int depth) {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i <= depth; i++) {
-      sb.append(path[i]);
-      if (i < depth) {
-        sb.append(NestedPathUtil.PATH_DELIMITER);
-      }
-    }
-
-    return sb.toString();
   }
 
   /**

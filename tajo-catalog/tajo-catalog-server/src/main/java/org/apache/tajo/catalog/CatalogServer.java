@@ -18,8 +18,11 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
@@ -33,6 +36,7 @@ import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -50,6 +54,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -84,6 +89,8 @@ public class CatalogServer extends AbstractService {
   private CatalogStore store;
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
+
+  private final LinkedMetadataManager linkedMetadataManager;
   private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
@@ -97,17 +104,15 @@ public class CatalogServer extends AbstractService {
   public CatalogServer() throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
+    this.linkedMetadataManager = new LinkedMetadataManager(Collections.EMPTY_LIST);
     this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
-  public CatalogServer(Collection<FunctionDesc> sqlFuncs) throws IOException {
-    this();
+  public CatalogServer(Set<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs) throws IOException {
+    super(CatalogServer.class.getName());
+    this.handler = new CatalogProtocolHandler();
+    this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
     this.builtingFuncs = sqlFuncs;
-  }
-
-  public void reloadBuiltinFunctions(List<FunctionDesc> builtingFuncs) throws ServiceException {
-    this.builtingFuncs = builtingFuncs;
-    initBuiltinFunctions(builtingFuncs);
   }
 
   @Override
@@ -144,20 +149,6 @@ public class CatalogServer extends AbstractService {
 
   public String getStoreClassName() {
     return store.getClass().getCanonicalName();
-  }
-
-  public String getCatalogServerName() {
-    String catalogUri = null;
-    if(conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {
-      LOG.warn("Configuration parameter " + CatalogConstants.DEPRECATED_CATALOG_URI + " " +
-          "is deprecated. Use " + CatalogConstants.CATALOG_URI + " instead.");
-      catalogUri = conf.get(CatalogConstants.DEPRECATED_CATALOG_URI);
-    } else {
-      catalogUri = conf.get(CatalogConstants.CATALOG_URI);
-    }
-
-    return bindAddressStr + ", store=" + this.store.getClass().getSimpleName() + ", catalogUri="
-        + catalogUri;
   }
 
   private void initBuiltinFunctions(Collection<FunctionDesc> functions)
@@ -288,6 +279,7 @@ public class CatalogServer extends AbstractService {
       try {
         return StringListResponse.newBuilder()
             .setState(OK)
+            .addAllValues(linkedMetadataManager.getTablespaceNames())
             .addAllValues(store.getAllDatabaseNames())
             .build();
 
@@ -304,9 +296,25 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
       rlock.lock();
       try {
+
+        // retrieves tablespaces from catalog store
+        final List<TablespaceProto> tableSpaces = Lists.newArrayList(store.getTablespaces());
+
+        // retrieves tablespaces from linked meta data
+        tableSpaces.addAll(Collections2.transform(linkedMetadataManager.getTablespaces(),
+            new Function<Pair<String, URI>, TablespaceProto>() {
+              @Override
+              public TablespaceProto apply(Pair<String, URI> input) {
+                return TablespaceProto.newBuilder()
+                    .setSpaceName(input.getFirst())
+                    .setUri(input.getSecond().toString())
+                    .build();
+              }
+            }));
+
         return GetTablespaceListResponse.newBuilder()
             .setState(OK)
-            .addAllTablespace(store.getTablespaces())
+            .addAllTablespace(tableSpaces)
             .build();
 
       } catch (Throwable t) {
@@ -322,6 +330,19 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
 
       try {
+
+        // if there exists the tablespace in linked meta data
+        Optional<Pair<String, URI>> optional = linkedMetadataManager.getTablespace(request.getValue());
+
+        if (optional.isPresent()) {
+          Pair<String, URI> spaceInfo = optional.get();
+          return GetTablespaceResponse.newBuilder()
+              .setState(OK)
+              .setTablespace(TablespaceProto.newBuilder()
+                  .setSpaceName(spaceInfo.getFirst())
+                  .setUri(spaceInfo.getSecond().toString())
+              ).build();
+        }
 
         return GetTablespaceResponse.newBuilder()
             .setState(OK)
@@ -344,8 +365,13 @@ public class CatalogServer extends AbstractService {
     public ReturnState alterTablespace(RpcController controller, AlterTablespaceProto request) {
       wlock.lock();
       try {
+
+        if (linkedMetadataManager.getTablespace(request.getSpaceName()).isPresent()) {
+          return errInsufficientPrivilege("alter tablespace '"+request.getSpaceName()+"'");
+        }
+
         if (!store.existTablespace(request.getSpaceName())) {
-          throw new UndefinedTablespaceException(request.getSpaceName());
+          return errUndefinedTablespace(request.getSpaceName());
         }
 
         if (request.getCommandList().size() > 0) {
@@ -379,6 +405,10 @@ public class CatalogServer extends AbstractService {
     public ReturnState createDatabase(RpcController controller, CreateDatabaseRequest request) {
       String databaseName = request.getDatabaseName();
       String tablespaceName = request.getTablespaceName();
+
+      if (linkedMetadataManager.existsDatabase(request.getDatabaseName())) {
+        return errDuplicateDatabase(request.getDatabaseName());
+      }
 
       // check virtual database manually because catalog actually does not contain them.
       if (metaDictionary.isSystemDatabase(databaseName)) {
@@ -431,7 +461,11 @@ public class CatalogServer extends AbstractService {
     @Override
     public ReturnState alterTable(RpcController controller, AlterTableDescProto proto) {
       String [] split = CatalogUtil.splitTableName(proto.getTableName());
-      
+
+      if (linkedMetadataManager.existsDatabase(split[0])) {
+        return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
+      }
+
       if (metaDictionary.isSystemDatabase(split[0])) {
         return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
       }
@@ -458,7 +492,11 @@ public class CatalogServer extends AbstractService {
     @Override
     public ReturnState dropDatabase(RpcController controller, StringProto request) {
       String databaseName = request.getValue();
-      
+
+      if (linkedMetadataManager.existsDatabase(databaseName)) {
+        return errInsufficientPrivilege("alter a table in database '" + databaseName + "'");
+      }
+
       if (metaDictionary.isSystemDatabase(databaseName)) {
         return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
       }
@@ -484,6 +522,10 @@ public class CatalogServer extends AbstractService {
     @Override
     public ReturnState existDatabase(RpcController controller, StringProto request) {
       String dbName = request.getValue();
+
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return OK;
+      }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
         return OK;
@@ -511,8 +553,9 @@ public class CatalogServer extends AbstractService {
       try {
         return StringListResponse.newBuilder()
             .setState(OK)
-            .addAllValues(store.getAllDatabaseNames())
+            .addAllValues(linkedMetadataManager.getDatabases())
             .addValues(metaDictionary.getSystemDatabaseName())
+            .addAllValues(store.getAllDatabaseNames())
             .build();
 
       } catch (Throwable t) {
@@ -547,41 +590,57 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public TableResponse getTableDesc(RpcController controller,
-                                      TableIdentifierProto request) {
+                                      TableIdentifierProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      rlock.lock();
       try {
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return TableResponse.newBuilder()
+              .setState(OK)
+              .setTable(linkedMetadataManager.getTable(dbName, "", tbName).getProto())
+              .build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return TableResponse.newBuilder().setState(returnError(t)).build();
+      }
 
-        if (metaDictionary.isSystemDatabase(dbName)) {
-
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        try {
           return TableResponse.newBuilder()
               .setState(OK)
               .setTable(metaDictionary.getTableDesc(tbName))
               .build();
+        } catch (UndefinedTableException e) {
+          return TableResponse.newBuilder()
+              .setState(errUndefinedTable(tbName))
+              .build();
+        }
+      }
 
-        } else {
-          boolean contain;
-          contain = store.existDatabase(dbName);
+      rlock.lock();
+      try {
+        boolean contain;
 
+        contain = store.existDatabase(dbName);
+
+        if (contain) {
+          contain = store.existTable(dbName, tbName);
           if (contain) {
-            contain = store.existTable(dbName, tbName);
-            if (contain) {
-              return TableResponse.newBuilder()
-                  .setState(OK)
-                  .setTable(store.getTable(dbName, tbName))
-                  .build();
-            } else {
-              return TableResponse.newBuilder()
-                  .setState(errUndefinedTable(tbName))
-                  .build();
-            }
+            return TableResponse.newBuilder()
+                .setState(OK)
+                .setTable(store.getTable(dbName, tbName))
+                .build();
           } else {
             return TableResponse.newBuilder()
-                .setState(errUndefinedDatabase(dbName))
+                .setState(errUndefinedTable(tbName))
                 .build();
           }
+        } else {
+          return TableResponse.newBuilder()
+              .setState(errUndefinedDatabase(dbName))
+              .build();
         }
 
       } catch (Throwable t) {
@@ -601,28 +660,35 @@ public class CatalogServer extends AbstractService {
 
       String dbName = request.getValue();
 
-      if (metaDictionary.isSystemDatabase(dbName)) {
-
-        return returnStringList(metaDictionary.getAllSystemTables());
-
-      } else {
-        rlock.lock();
-        try {
-          if (store.existDatabase(dbName)) {
-            return returnStringList(store.getAllTableNames(dbName));
-          } else {
-            return StringListResponse.newBuilder()
-                .setState(errUndefinedDatabase(dbName))
-                .build();
-          }
-
-        } catch (Throwable t) {
-          printStackTraceIfError(LOG, t);
-          return returnFailedStringList(t);
-
-        } finally {
-          rlock.unlock();
+      try {
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return returnStringList(linkedMetadataManager.getTableNames(dbName, null, null));
         }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnFailedStringList(t);
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return returnStringList(metaDictionary.getAllSystemTables());
+      }
+
+      rlock.lock();
+      try {
+        if (store.existDatabase(dbName)) {
+          return returnStringList(store.getAllTableNames(dbName));
+        } else {
+          return StringListResponse.newBuilder()
+              .setState(errUndefinedDatabase(dbName))
+              .build();
+        }
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnFailedStringList(t);
+
+      } finally {
+        rlock.unlock();
       }
     }
 
@@ -645,6 +711,10 @@ public class CatalogServer extends AbstractService {
 
       String dbName = splitted[0];
       String tbName = splitted[1];
+
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return errInsufficientPrivilege("drop a table in database '" + dbName + "'");
+      }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
         return errInsufficientPrivilege("create a table in database '" + dbName + "'");
@@ -683,7 +753,11 @@ public class CatalogServer extends AbstractService {
 
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
-      
+
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return errInsufficientPrivilege("drop a table in database '" + dbName + "'");
+      }
+
       if (metaDictionary.isSystemDatabase(dbName)) {
         return errInsufficientPrivilege("drop a table in database '" + dbName + "'");
       }
@@ -720,15 +794,19 @@ public class CatalogServer extends AbstractService {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      rlock.lock();
-      try {
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return linkedMetadataManager.existsTable(dbName, "", tbName) ? OK : errUndefinedTable(tbName);
+      }
 
-        if (metaDictionary.isSystemDatabase(dbName)) {
-          return metaDictionary.existTable(tbName) ? OK : errUndefinedTable(tbName);
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return metaDictionary.existTable(tbName) ? OK : errUndefinedTable(tbName);
 
-        } else {
+      } else {
+        rlock.lock();
+        try {
 
           boolean contain = store.existDatabase(dbName);
+
           if (contain) {
             if (store.existTable(dbName, tbName)) {
               return OK;
@@ -738,14 +816,14 @@ public class CatalogServer extends AbstractService {
           } else {
             return errUndefinedDatabase(dbName);
           }
+
+        } catch (Throwable t) {
+          printStackTraceIfError(LOG, t);
+          return returnError(t);
+
+        } finally {
+          rlock.unlock();
         }
-
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return returnError(t);
-
-      } finally {
-        rlock.unlock();
       }
     }
     
@@ -836,43 +914,55 @@ public class CatalogServer extends AbstractService {
     public GetPartitionMethodResponse getPartitionMethodByTableName(RpcController controller,
                                                               TableIdentifierProto request)
         throws ServiceException {
-      String databaseName = request.getDatabaseName();
-      String tableName = request.getTableName();
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
 
-      if (metaDictionary.isSystemDatabase(databaseName)) {
-        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return GetPartitionMethodResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName))
+              .build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetPartitionMethodResponse.newBuilder().setState(returnError(t)).build();
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
       }
       
       rlock.lock();
       try {
         boolean contain;
 
-        contain = store.existDatabase(databaseName);
+        contain = store.existDatabase(dbName);
 
         if (contain) {
-          contain = store.existTable(databaseName, tableName);
+          contain = store.existTable(dbName, tbName);
           if (contain) {
 
-            if (store.existPartitionMethod(databaseName, tableName)) {
+            if (store.existPartitionMethod(dbName, tbName)) {
 
               return GetPartitionMethodResponse.newBuilder()
                   .setState(OK)
-                  .setPartition(store.getPartitionMethod(databaseName, tableName))
+                  .setPartition(store.getPartitionMethod(dbName, tbName))
                   .build();
 
             } else {
               return GetPartitionMethodResponse.newBuilder()
-                  .setState(errUndefinedPartitionMethod(tableName))
+                  .setState(errUndefinedPartitionMethod(tbName))
                   .build();
             }
           } else {
             return GetPartitionMethodResponse.newBuilder()
-                .setState(errUndefinedTable(tableName))
+                .setState(errUndefinedTable(tbName))
                 .build();
           }
         } else {
           return GetPartitionMethodResponse.newBuilder()
-              .setState(errUndefinedDatabase(tableName))
+              .setState(errUndefinedDatabase(tbName))
               .build();
         }
 
@@ -889,10 +979,21 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public ReturnState existPartitionMethod(RpcController controller, TableIdentifierProto request) {
-      String databaseName = request.getDatabaseName();
+      String dbName = request.getDatabaseName();
       String tableName = request.getTableName();
-      
-      if (metaDictionary.isSystemDatabase(databaseName)) {
+
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return errUndefinedPartitionMethod(tableName);
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
         ReturnStateUtil.errFeatureNotSupported("partition feature in virtual tables");
       }
 
@@ -900,12 +1001,12 @@ public class CatalogServer extends AbstractService {
       try {
         boolean contain;
 
-        contain = store.existDatabase(databaseName);
+        contain = store.existDatabase(dbName);
 
         if (contain) {
-          contain = store.existTable(databaseName, tableName);
+          contain = store.existTable(dbName, tableName);
           if (contain) {
-            if (store.existPartitionMethod(databaseName, tableName)) {
+            if (store.existPartitionMethod(dbName, tableName)) {
               return OK;
             } else {
               return errUndefinedPartitionMethod(tableName);
@@ -914,7 +1015,7 @@ public class CatalogServer extends AbstractService {
             return errUndefinedTable(tableName);
           }
         } else {
-          return errUndefinedDatabase(databaseName);
+          return errUndefinedDatabase(dbName);
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -937,8 +1038,19 @@ public class CatalogServer extends AbstractService {
       String tbName = request.getTableName();
       String partitionName = request.getPartitionName();
 
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return GetPartitionDescResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetPartitionDescResponse.newBuilder().setState(returnError(t)).build();
+      }
+
       if (metaDictionary.isSystemDatabase(dbName)) {
-        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
+        return GetPartitionDescResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
 
       rlock.lock();
@@ -995,8 +1107,21 @@ public class CatalogServer extends AbstractService {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetPartitionsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+      }
+
       if (metaDictionary.isSystemDatabase(dbName)) {
-        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
 
       rlock.lock();
@@ -1130,7 +1255,17 @@ public class CatalogServer extends AbstractService {
     @Override
     public ReturnState createIndex(RpcController controller, IndexDescProto indexDesc) {
       String dbName = indexDesc.getTableIdentifier().getDatabaseName();
-      
+
+      try {
+        // linked meta data do not support index. The request will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return errInsufficientPrivilege("to create index in database '" + dbName + "'");
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+      }
+
       rlock.lock();
       try {
         if (store.existIndexByName(
@@ -1156,6 +1291,16 @@ public class CatalogServer extends AbstractService {
 
       String dbName = request.getDatabaseName();
       String indexName = request.getIndexName();
+
+      try {
+        // linked meta data do not support index. The request will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return errUndefinedIndexName(indexName);
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+      }
 
       rlock.lock();
       try {
@@ -1184,6 +1329,16 @@ public class CatalogServer extends AbstractService {
       String tableName = identifier.getTableName();
       List<String> columnNames = request.getColumnNamesList();
 
+      try {
+        // linked meta data do not support index. The request will be failed.
+        if (linkedMetadataManager.existsDatabase(databaseName)) {
+          return errUndefinedIndex(tableName);
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+      }
+
       rlock.lock();
       try {
 
@@ -1211,6 +1366,16 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+
+      try {
+        // linked meta data do not support index. The request will be failed.
+        if (linkedMetadataManager.existsDatabase(databaseName)) {
+          return errUndefinedIndex(tableName);
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+      }
 
       rlock.lock();
       try {
@@ -1278,6 +1443,7 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
+
         if (!store.existIndexByColumns(databaseName, tableName, columnNames)) {
           return IndexResponse.newBuilder()
               .setState(errUndefinedIndex(tableName, columnNamesList))
@@ -1301,11 +1467,23 @@ public class CatalogServer extends AbstractService {
     @Override
     public IndexListResponse getAllIndexesByTable(RpcController controller, TableIdentifierProto request)
         throws ServiceException {
-      String databaseName = request.getDatabaseName();
-      String tableName = request.getTableName();
+      final String databaseName = request.getDatabaseName();
+      final String tableName = request.getTableName();
+
+      try {
+        // linked meta data do not support index.
+        // So, the request that wants to check the index in this db will get empty list.
+        if (linkedMetadataManager.existsDatabase(databaseName)) {
+          return IndexListResponse.newBuilder().setState(OK).build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return IndexListResponse.newBuilder().setState(returnError(t)).build();
+      }
 
       rlock.lock();
       try {
+
         if (!store.existIndexesByTable(databaseName, tableName)) {
           return IndexListResponse.newBuilder()
               .setState(errUndefinedIndex(tableName))
@@ -1653,12 +1831,5 @@ public class CatalogServer extends AbstractService {
       return Objects.hashCode(signature, type, Objects.hashCode(arguments));
     }
 
-  }
-
-  public static void main(String[] args) throws Exception {
-    TajoConf conf = new TajoConf();
-    CatalogServer catalog = new CatalogServer(new ArrayList<FunctionDesc>());
-    catalog.init(conf);
-    catalog.start();
   }
 }

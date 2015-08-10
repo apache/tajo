@@ -95,8 +95,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.existTablespace(null, ProtoUtil.convertString(tablespaceName)));
 
+      ReturnState state = stub.existTablespace(null, ProtoUtil.convertString(tablespaceName));
+
+      if (isThisError(state, ResultCode.UNDEFINED_TABLESPACE)) {
+        return false;
+      }
+
+      ensureOk(state);
+      return true;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -196,8 +203,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.existDatabase(null, ProtoUtil.convertString(databaseName)));
 
+      ReturnState state = stub.existDatabase(null, ProtoUtil.convertString(databaseName));
+
+      if (isThisError(state, ResultCode.UNDEFINED_DATABASE)) {
+        return false;
+      }
+
+      ensureOk(state);
+      return true;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
