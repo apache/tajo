@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.hbase;
 
 import com.google.common.collect.Sets;
+import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -77,8 +78,8 @@ public class HBaseTablespace extends Tablespace {
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
-  public HBaseTablespace(String spaceName, URI uri) {
-    super(spaceName, uri);
+  public HBaseTablespace(String spaceName, URI uri, JSONObject config) {
+    super(spaceName, uri, config);
   }
 
   @Override
@@ -88,14 +89,6 @@ public class HBaseTablespace extends Tablespace {
     String [] splits = zkQuorum.split(":");
     hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, splits[0]);
     hbaseConf.set(HConstants.ZOOKEEPER_CLIENT_PORT, splits[1]);
-  }
-
-  @Override
-  public void setConfig(String name, String value) {
-  }
-
-  @Override
-  public void setConfigs(Map<String, String> configs) {
   }
 
   public Configuration getHbaseConf() {

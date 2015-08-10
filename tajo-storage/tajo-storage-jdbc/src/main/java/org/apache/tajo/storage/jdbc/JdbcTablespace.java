@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.jdbc;
 
+import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
@@ -43,26 +44,17 @@ import java.util.Map;
  *   <li>jdbc:mysql//primaryhost,secondaryhost1,secondaryhost2/test?profileSQL=true</li>
  * </ul>
  */
-public class JdbcTablespace extends Tablespace {
+public abstract class JdbcTablespace extends Tablespace {
 
   static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
 
-  public JdbcTablespace(String name, URI uri) {
-    super(name, uri);
+
+  public JdbcTablespace(String name, URI uri, JSONObject config) {
+    super(name, uri, config);
   }
 
   @Override
   protected void storageInit() throws IOException {
-
-  }
-
-  @Override
-  public void setConfig(String name, String value) {
-
-  }
-
-  @Override
-  public void setConfigs(Map<String, String> configs) {
 
   }
 
@@ -73,7 +65,7 @@ public class JdbcTablespace extends Tablespace {
 
   @Override
   public URI getTableUri(String databaseName, String tableName) {
-    return null;
+    return URI.create(getUri() + "&table=" + tableName);
   }
 
   @Override
@@ -145,7 +137,5 @@ public class JdbcTablespace extends Tablespace {
     return null;
   }
 
-  public MetadataProvider getMetadataProvider() {
-    throw new UnsupportedException("Linked Metadata Provider for " + name);
-  }
+  public abstract MetadataProvider getMetadataProvider();
 }

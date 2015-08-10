@@ -94,7 +94,7 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public Collection<String> getTables(@Nullable String schemaPattern) {
+    public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
       return Lists.newArrayList("table1", "table2");
     }
 
@@ -133,7 +133,7 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public Collection<String> getTables(@Nullable String schemaPattern) {
+    public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
       return Lists.newArrayList("table3", "table4");
     }
 

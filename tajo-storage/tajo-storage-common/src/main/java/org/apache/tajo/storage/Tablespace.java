@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
@@ -35,10 +36,7 @@ import org.apache.tajo.storage.fragment.FragmentConvertor;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Tablespace manages the functions of storing and reading data.
@@ -50,14 +48,16 @@ public abstract class Tablespace {
 
   protected final String name;
   protected final URI uri;
+  protected final JSONObject spec;
   /** this space is visible or not. */
   protected boolean visible = true;
 
   protected TajoConf conf;
 
-  public Tablespace(String name, URI uri) {
+  public Tablespace(String name, URI uri, JSONObject spec) {
     this.name = name;
     this.uri = uri;
+    this.spec = spec;
   }
 
   public void setVisible(boolean visible) {
@@ -85,10 +85,6 @@ public abstract class Tablespace {
   public boolean isVisible() {
     return visible;
   }
-
-  public abstract void setConfig(String name, String value);
-
-  public abstract void setConfigs(Map<String, String> configs);
 
   public String toString() {
     return name + "=" + uri.toString();

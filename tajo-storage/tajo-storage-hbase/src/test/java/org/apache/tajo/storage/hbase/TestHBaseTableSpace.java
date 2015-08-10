@@ -43,7 +43,7 @@ public class TestHBaseTableSpace {
   @BeforeClass
   public static void setUp() throws IOException {
     String tableSpaceUri = "hbase:zk://host1:2171";
-    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
+    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri), null);
     hBaseTablespace.init(new TajoConf());
     TablespaceManager.addTableSpaceForTest(hBaseTablespace);
   }

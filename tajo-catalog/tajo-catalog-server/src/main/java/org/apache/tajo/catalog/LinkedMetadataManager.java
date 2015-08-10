@@ -165,21 +165,21 @@ public class LinkedMetadataManager {
    */
   public Collection<String> getTableNames(String dbName,
                                           @Nullable final String schemaPattern,
-                                          final String tablePattern) throws UndefinedDatabaseException {
+                                          @Nullable final String tablePattern) throws UndefinedDatabaseException {
     ensureIfDBExists(dbName);
 
-    if (tablePattern == null) { // all tables in this database
-      return providerMap.get(dbName).getTables("null");
-
-    } else {
-      final Pattern pattern = Pattern.compile(tablePattern);
-      return filter(providerMap.get(dbName).getTables(schemaPattern), new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String input) {
-          return pattern.matcher(tablePattern).matches();
-        }
-      });
-    }
+//    if (tablePattern == null) { // all tables in this database
+      return providerMap.get(dbName).getTables(schemaPattern, tablePattern);
+//
+//    } else {
+//      final Pattern pattern = Pattern.compile(tablePattern);
+//      return filter(providerMap.get(dbName).getTables(schemaPattern, tablePattern), new Predicate<String>() {
+//        @Override
+//        public boolean apply(@Nullable String input) {
+//          return pattern.matcher(tablePattern).matches();
+//        }
+//      });
+//    }
   }
 
   /**
@@ -217,7 +217,7 @@ public class LinkedMetadataManager {
    */
   public boolean existsTable(String dbName, String schemaName, String tableName) {
     if (providerMap.containsKey(dbName)) {
-      return providerMap.get(dbName).getTables(schemaName).contains(tableName);
+      return providerMap.get(dbName).getTables(schemaName, tableName).contains(tableName);
     }
 
     return false;

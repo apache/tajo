@@ -56,6 +56,7 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -176,11 +177,11 @@ public class TajoMaster extends CompositeService {
     this.dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
 
-      // check the system directory and create if they are not created.
-      checkAndInitializeSystemDirectories();
-      diagnoseTajoMaster();
+    // check the system directory and create if they are not created.
+    checkAndInitializeSystemDirectories();
+    diagnoseTajoMaster();
 
-    catalogServer = new CatalogServer(Collections.EMPTY_SET, loadFunctions());
+    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), loadFunctions());
     addIfService(catalogServer);
     catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 

@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -104,8 +105,8 @@ public class FileTablespace extends Tablespace {
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileTablespace(String spaceName, URI uri) {
-    super(spaceName, uri);
+  public FileTablespace(String spaceName, URI uri, JSONObject config) {
+    super(spaceName, uri, config);
   }
 
   @Override
@@ -120,18 +121,6 @@ public class FileTablespace extends Tablespace {
 
     if (!this.blocksMetadataEnabled) {
       LOG.warn("does not support block metadata. ('dfs.datanode.hdfs-blocks-metadata.enabled')");
-    }
-  }
-
-  @Override
-  public void setConfig(String name, String value) {
-    conf.set(name, value);
-  }
-
-  @Override
-  public void setConfigs(Map<String, String> configs) {
-    for (Map.Entry<String, String> c : configs.entrySet()) {
-      conf.set(c.getKey(), c.getValue());
     }
   }
 

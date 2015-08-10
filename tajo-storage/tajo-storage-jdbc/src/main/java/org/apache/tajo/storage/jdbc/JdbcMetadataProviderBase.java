@@ -21,13 +21,10 @@ package org.apache.tajo.storage.jdbc;
 import com.facebook.presto.hive.shaded.com.google.common.base.Function;
 import com.facebook.presto.hive.shaded.com.google.common.collect.Collections2;
 import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
-import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
@@ -60,14 +57,15 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     this.space = space;
     this.databaseName = dbName;
 
-    this.jdbcUri  = "";
-    this.username = "";
-    this.password = "";
+    JdbcConnectionInfo connInfo = JdbcConnectionInfo.fromURI(space.getUri());
+    this.jdbcUri  = space.getUri().toASCIIString();
+    this.username = connInfo.user;
+    this.password = connInfo.password;
 
-    String jdbcDriver = getJdbcDriverName();
+//    String jdbcDriver = getJdbcDriverName();
     try {
-      Class.forName(jdbcDriver).newInstance();
-      LOG.info("Loaded JDBC driver (" + jdbcDriver + ")");
+      Class.forName(getJdbcDriverName()).newInstance();
+      LOG.info("Loaded JDBC driver (" + "com.mysql.jdbc.Driver" + ")");
     } catch (Exception e) {
       throw new TajoInternalError(e);
     }
@@ -161,12 +159,12 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     case Types.NCLOB:
     case Types.LONGVARCHAR:
     case Types.LONGNVARCHAR:
-      new TypeDesc(newSimpleDataType(Type.TEXT));
+      return new TypeDesc(newSimpleDataType(Type.TEXT));
 
     case Types.BINARY:
     case Types.VARBINARY:
     case Types.BLOB:
-      new TypeDesc(newSimpleDataType(Type.BLOB));
+      return new TypeDesc(newSimpleDataType(Type.BLOB));
 
     default:
       throw new UnsupportedException("DATA_TYPE(" + typeId + ")");
@@ -181,8 +179,11 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
 
       // get table name
       resultForTable = connection.getMetaData().getTables(databaseName, schemaName, tableName, new String[]{});
+
+      if (!resultForTable.next()) {
+        throw new UndefinedTablespaceException(tableName);
+      }
       final String name = resultForTable.getString("TABLE_NAME");
-      Preconditions.checkState(tableName.equals(name));
 
       // get columns
       resultForColumns = connection.getMetaData().getColumns(databaseName, schemaName, tableName, null);

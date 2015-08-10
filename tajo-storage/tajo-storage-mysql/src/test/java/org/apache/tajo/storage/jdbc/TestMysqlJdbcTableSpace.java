@@ -19,9 +19,14 @@
 package org.apache.tajo.storage.jdbc;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.airlift.testing.mysql.TestingMySqlServer;
+import org.apache.tajo.catalog.MetadataProvider;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.mysql.MySQLTablespace;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,36 +34,37 @@ import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestMysqlJdbcTableSpace {
   @BeforeClass
   public static void setUp() throws IOException {
     String mysqlUri = "jdbc:mysql://host1:2171/db1";
-    JdbcTablespace mysqlTablespace = new JdbcTablespace("cluster2", URI.create(mysqlUri));
+    MySQLTablespace mysqlTablespace = new MySQLTablespace("cluster2", URI.create(mysqlUri), null);
     mysqlTablespace.init(new TajoConf());
     TablespaceManager.addTableSpaceForTest(mysqlTablespace);
-
-    String pgsqlUri = "jdbc:postgres://host1:2615/db2";
-    JdbcTablespace pgSQLTablespace = new JdbcTablespace("cluster3", URI.create(pgsqlUri));
-    pgSQLTablespace.init(new TajoConf());
-    TablespaceManager.addTableSpaceForTest(pgSQLTablespace);
   }
 
   @Test
   public void testTablespaceHandler() throws Exception {
-    assertTrue((TablespaceManager.getByName("cluster2").get()) instanceof JdbcTablespace);
+    assertTrue((TablespaceManager.getByName("cluster2").get()) instanceof MySQLTablespace);
     assertEquals("cluster2", (TablespaceManager.getByName("cluster2").get().getName()));
-    assertTrue((TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1")).get()) instanceof JdbcTablespace);
+    assertTrue((TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1")).get()) instanceof MySQLTablespace);
+    assertTrue((TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1?table=xyz")).get())
+        instanceof MySQLTablespace);
+
     assertEquals(URI.create("jdbc:mysql://host1:2171/db1"),
         TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1")).get().getUri());
 
-    assertTrue((TablespaceManager.getByName("cluster3").get()) instanceof JdbcTablespace);
+    assertTrue((TablespaceManager.getByName("cluster3").get()) instanceof MySQLTablespace);
     assertEquals("cluster3", (TablespaceManager.getByName("cluster3").get().getName()));
-    assertTrue((TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2")).get()) instanceof JdbcTablespace);
+    assertTrue((TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2")).get()) instanceof MySQLTablespace);
+    assertTrue((TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2?table=xyz")).get())
+        instanceof MySQLTablespace);
 
     assertEquals(URI.create("jdbc:postgres://host1:2615/db2"),
         TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2")).get().getUri());
@@ -76,20 +82,31 @@ public class TestMysqlJdbcTableSpace {
       assertEquals(server.getJdbcUrl().substring(0, 5), "jdbc:");
       assertEquals(server.getPort(), URI.create(server.getJdbcUrl().substring(5)).getPort());
 
-      for (String database : server.getDatabases()) {
-        try (Connection connection = DriverManager.getConnection(server.getJdbcUrl())) {
-          connection.setCatalog(database);
-          try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE TABLE test_table (c1 bigint PRIMARY KEY)");
-            statement.execute("INSERT INTO test_table (c1) VALUES (1)");
-            try (ResultSet resultSet = statement.executeQuery("SELECT count(*) FROM test_table")) {
-              assertTrue(resultSet.next());
-              assertEquals(resultSet.getLong(1), 1L);
-              assertFalse(resultSet.next());
-            }
-          }
+      try (Connection connection = DriverManager.getConnection(server.getJdbcUrl())) {
+        connection.setCatalog("db1");
+
+        try (Statement statement = connection.createStatement()) {
+          statement.execute("CREATE TABLE t1 (c1 bigint PRIMARY KEY)");
+          statement.execute("CREATE TABLE t2 (c1 int PRIMARY KEY, c2 VARCHAR(20), c3 TIME)");
         }
       }
+
+      System.out.println(server.getJdbcUrl());
+      MySQLTablespace tablespace = new MySQLTablespace("mysql", URI.create(server.getJdbcUrl()), null);
+
+      URI uri = tablespace.getTableUri("abc", "table1");
+      JdbcConnectionInfo c1 = JdbcConnectionInfo.fromURI(uri);
+      assertEquals("table1", c1.tableName);
+
+      MetadataProvider provider = tablespace.getMetadataProvider();
+      Set<String> tables = Sets.newHashSet(provider.getTables(null, null));
+      assertEquals(Sets.newHashSet("t1", "t2"), tables);
+
+      TableDesc desc = provider.getTableDescriptor("", "t2");
+      assertEquals(tablespace.getUri() + "&table=t2", desc.getUri().toASCIIString());
+
+      Schema schema = desc.getSchema();
+      System.out.println(">>> " + schema);
     }
   }
 }

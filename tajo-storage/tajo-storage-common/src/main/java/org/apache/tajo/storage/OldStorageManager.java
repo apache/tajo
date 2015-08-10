@@ -161,7 +161,7 @@ public class OldStorageManager {
             constructor.setAccessible(true);
             CONSTRUCTOR_CACHE.put(storageManagerClass, constructor);
           }
-          manager = constructor.newInstance(new Object[]{"noname", uri});
+          manager = constructor.newInstance(new Object[]{"noname", uri, null});
         } catch (Exception e) {
           throw new RuntimeException(e);
         }

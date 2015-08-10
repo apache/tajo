@@ -108,7 +108,7 @@ public class CatalogServer extends AbstractService {
     this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
-  public CatalogServer(Set<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs) throws IOException {
+  public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs) throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
     this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
