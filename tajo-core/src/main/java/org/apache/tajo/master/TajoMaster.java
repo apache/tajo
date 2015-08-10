@@ -72,6 +72,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -179,7 +180,7 @@ public class TajoMaster extends CompositeService {
       checkAndInitializeSystemDirectories();
       diagnoseTajoMaster();
 
-    catalogServer = new CatalogServer(loadFunctions());
+    catalogServer = new CatalogServer(Collections.EMPTY_SET, loadFunctions());
     addIfService(catalogServer);
     catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 

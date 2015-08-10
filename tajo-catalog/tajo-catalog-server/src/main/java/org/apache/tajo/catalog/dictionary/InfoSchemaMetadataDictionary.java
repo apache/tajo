@@ -125,8 +125,12 @@ public class InfoSchemaMetadataDictionary {
     return tableDescriptor.getTableDescription();
   }
   
-  public boolean existTable(String tableName) throws UndefinedTableException {
-    return getTableDescriptor(tableName) != null;
+  public boolean existTable(String tableName) {
+    try {
+      return getTableDescriptor(tableName) != null;
+    } catch (UndefinedTableException e) {
+      return false;
+    }
   }
   
   protected String getTablePath() {
