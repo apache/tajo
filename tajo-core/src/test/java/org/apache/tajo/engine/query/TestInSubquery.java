@@ -20,6 +20,8 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -152,8 +154,8 @@ public class TestInSubquery extends TestJoinQuery {
     try {
       executeString("select * from nation where n_regionkey in (select r_regionkey from region where n_name > r_name)");
       fail("Correlated subquery must raise the UnimplementedException.");
-    } catch (SQLException e) {
-      assertEquals("not implemented feature: Correlated subquery", e.getMessage());
+    } catch (TajoRuntimeException e) {
+      assertEquals(ResultCode.NOT_IMPLEMENTED, e.getErrorCode());
     }
   }
 
