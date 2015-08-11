@@ -95,8 +95,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.existTablespace(null, ProtoUtil.convertString(tablespaceName)));
 
+      ReturnState state = stub.existTablespace(null, ProtoUtil.convertString(tablespaceName));
+
+      if (isThisError(state, ResultCode.UNDEFINED_TABLESPACE)) {
+        return false;
+      }
+
+      ensureOk(state);
+      return true;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -196,8 +203,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     try {
       final BlockingInterface stub = getStub();
-      return isSuccess(stub.existDatabase(null, ProtoUtil.convertString(databaseName)));
 
+      ReturnState state = stub.existDatabase(null, ProtoUtil.convertString(databaseName));
+
+      if (isThisError(state, ResultCode.UNDEFINED_DATABASE)) {
+        return false;
+      }
+
+      ensureOk(state);
+      return true;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
@@ -412,6 +426,31 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public boolean addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
+    , boolean ifNotExists) {
+    try {
+      final BlockingInterface stub = getStub();
+      final AddPartitionsProto.Builder builder = AddPartitionsProto.newBuilder();
+
+      TableIdentifierProto.Builder identifier = TableIdentifierProto.newBuilder();
+      identifier.setDatabaseName(databaseName);
+      identifier.setTableName(tableName);
+      builder.setTableIdentifier(identifier.build());
+
+      for (PartitionDescProto partition: partitions) {
+        builder.addPartitionDesc(partition);
+      }
+
+      builder.setIfNotExists(ifNotExists);
+
+      return isSuccess(stub.addPartitions(null, builder.build()));
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
     }
   }
 
@@ -698,13 +737,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final FunctionDesc getFunction(final String signature, DataType... paramTypes)
-      throws UndefinedFunctionException {
+      throws AmbiguousFunctionException , UndefinedFunctionException {
     return getFunction(signature, null, paramTypes);
   }
 
   @Override
   public final FunctionDesc getFunction(final String signature, FunctionType funcType, DataType... paramTypes)
-      throws UndefinedFunctionException {
+      throws AmbiguousFunctionException, UndefinedFunctionException {
 
     final GetFunctionMetaRequest.Builder builder = GetFunctionMetaRequest.newBuilder();
     builder.setSignature(signature);

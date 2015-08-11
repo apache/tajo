@@ -22,9 +22,11 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.exception.TajoException;
 
 import java.io.Closeable;
 import java.net.URI;
@@ -39,7 +41,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if created successfully.
    * @throws java.sql.SQLException
    */
-  boolean createDatabase(final String databaseName) throws SQLException;
+  boolean createDatabase(final String databaseName) throws DuplicateDatabaseException;
   /**
    * Does the database exist?
    *
@@ -47,7 +49,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if so.
    * @throws java.sql.SQLException
    */
-  boolean existDatabase(final String databaseName) throws SQLException;
+  boolean existDatabase(final String databaseName);
   /**
    * Drop the database
    *
@@ -55,9 +57,9 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the database is dropped successfully.
    * @throws java.sql.SQLException
    */
-  boolean dropDatabase(final String databaseName) throws SQLException;
+  boolean dropDatabase(final String databaseName) throws UndefinedDatabaseException;
 
-  List<String> getAllDatabaseNames() throws SQLException;
+  List<String> getAllDatabaseNames();
 
   /**
    * Does the table exist?
@@ -65,7 +67,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @return True if so.
    */
-  boolean existTable(final String tableName) throws SQLException;
+  boolean existTable(final String tableName);
 
   /**
    * Create an external table.
@@ -79,7 +81,7 @@ public interface CatalogAdminClient extends Closeable {
    * @throws java.sql.SQLException
    */
   TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws SQLException;
+                                       final TableMeta meta) throws DuplicateTableException;
 
   /**
    * Create an external table.
@@ -95,7 +97,7 @@ public interface CatalogAdminClient extends Closeable {
    */
   TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException;
+      throws DuplicateTableException;
 
   /**
    * Drop a table
@@ -104,7 +106,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the table is dropped successfully.
    * @throws java.sql.SQLException
    */
-  boolean dropTable(final String tableName) throws SQLException;
+  boolean dropTable(final String tableName) throws UndefinedTableException;
 
   /**
    * Drop a table.
@@ -114,7 +116,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the table is dropped successfully.
    * @throws java.sql.SQLException
    */
-  boolean dropTable(final String tableName, final boolean purge) throws SQLException;
+  boolean dropTable(final String tableName, final boolean purge) throws UndefinedTableException;
 
   /**
    * Get a list of table names.
@@ -124,7 +126,7 @@ public interface CatalogAdminClient extends Closeable {
    *                     in the current database of this session.
    * @throws java.sql.SQLException
    */
-  List<String> getTableList(@Nullable final String databaseName) throws SQLException;
+  List<String> getTableList(@Nullable final String databaseName);
 
   /**
    * Get a table description
@@ -133,9 +135,9 @@ public interface CatalogAdminClient extends Closeable {
    * @return Table description
    * @throws java.sql.SQLException
    */
-  TableDesc getTableDesc(final String tableName) throws SQLException;
+  TableDesc getTableDesc(final String tableName) throws UndefinedTableException;
 
-  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws SQLException;
+  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);
 
   IndexDescProto getIndex(final String indexName) throws SQLException;
 

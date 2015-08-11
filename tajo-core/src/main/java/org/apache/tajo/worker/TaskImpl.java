@@ -329,6 +329,10 @@ public class TaskImpl implements Task {
       builder.setResultStats(new TableStats().getProto());
     }
 
+    if (!context.getPartitions().isEmpty()) {
+      builder.addAllPartitions(context.getPartitions());
+    }
+
     Iterator<Entry<Integer, String>> it = context.getShuffleFileOutputs();
     if (it.hasNext()) {
       do {

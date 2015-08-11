@@ -1621,10 +1621,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (ctx.table_name() != null) {
       insertExpr.setTableName(ctx.table_name().getText());
 
-      if (ctx.column_name_list() != null) {
-        String[] targetColumns = new String[ctx.column_name_list().identifier().size()];
+      if (ctx.column_reference_list() != null) {
+        ColumnReferenceExpr [] targetColumns =
+            new ColumnReferenceExpr[ctx.column_reference_list().column_reference().size()];
+
         for (int i = 0; i < targetColumns.length; i++) {
-          targetColumns[i] = ctx.column_name_list().identifier().get(i).getText();
+          targetColumns[i] = visitColumn_reference(ctx.column_reference_list().column_reference(i));
         }
 
         insertExpr.setTargetColumns(targetColumns);
@@ -1886,6 +1888,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         alterTable.setLocation(path);
       }
       alterTable.setPurge(checkIfExist(ctx.PURGE()));
+      alterTable.setIfNotExists(checkIfExist(ctx.if_not_exists()));
+      alterTable.setIfExists(checkIfExist(ctx.if_exists()));
     }
 
     if (checkIfExist(ctx.property_list())) {

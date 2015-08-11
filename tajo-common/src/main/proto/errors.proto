@@ -109,6 +109,7 @@ enum ResultCode {
   UNDEFINED_PARTITION                   = 520; // ?
   UNDEFINED_PARTITION_METHOD            = 521; // ?
   UNDEFINED_OPERATOR                    = 522; // SQLState: 42883 (=UNDEFINED_FUNCTION)
+  UNDEFINED_PARTITION_KEY               = 523; // ?
 
   DUPLICATE_TABLESPACE                  = 531;
   DUPLICATE_DATABASE                    = 532; // SQLState: 42P04
@@ -123,6 +124,7 @@ enum ResultCode {
   AMBIGUOUS_TABLE                       = 541; // ?
   AMBIGUOUS_COLUMN                      = 542; // SQLState: 42702;
   AMBIGUOUS_FUNCTION                    = 543; // SQLState: 42725;
+  AMBIGUOUS_PARTITION_DIRECTORY         = 544; // ?
 
   CANNOT_CAST                           = 601; // SQLState: 42846 - Cast from source type to target type is not supported.
   GROUPING_ERROR                        = 602; // SQLState: 42803

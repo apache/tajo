@@ -16,11 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.exception;
+package org.apache.tajo.client.v2;
 
-public class NoPartitionedTableException extends Exception {
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 
-  public NoPartitionedTableException(String databaseName, String relName) {
-    super(String.format("ERROR: table \"%s.%s\" is not a partitioned table", databaseName, relName));
+import java.util.Map;
+
+public class ClientDelegateFactory {
+
+  public static ClientDelegate newDefaultDelegate(String host,
+                                                  int port,
+                                                  @Nullable Map<String, String> props)
+      throws ClientUnableToConnectException {
+
+    return new LegacyClientDelegate(host, port, props);
+  }
+
+  public static ClientDelegate newDefaultDelegate(ServiceDiscovery discovery,
+                                                  @Nullable Map<String, String> props)
+      throws ClientUnableToConnectException {
+
+    return new LegacyClientDelegate(discovery, props);
   }
 }

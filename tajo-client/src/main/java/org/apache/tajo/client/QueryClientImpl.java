@@ -27,7 +27,10 @@ import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.NoSuchSessionVariableException;
 import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
@@ -45,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.tajo.exception.ReturnStateUtil.ensureOk;
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 import static org.apache.tajo.exception.ReturnStateUtil.returnError;
 import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
@@ -95,56 +99,56 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public void closeQuery(QueryId queryId) throws SQLException {
+  public void closeQuery(QueryId queryId) {
     closeNonForwardQuery(queryId);
   }
 
   @Override
-  public void closeNonForwardQuery(QueryId queryId) throws SQLException {
+  public void closeNonForwardQuery(QueryId queryId) {
     try {
-      throwIfError(conn.getTMStub().closeNonForwardQuery(null, buildQueryIdRequest(queryId)));
+      ensureOk(conn.getTMStub().closeNonForwardQuery(null, buildQueryIdRequest(queryId)));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public String getCurrentDatabase() throws SQLException {
+  public String getCurrentDatabase() {
     return conn.getCurrentDatabase();
   }
 
   @Override
-  public Boolean selectDatabase(String databaseName) throws SQLException {
+  public Boolean selectDatabase(String databaseName) throws UndefinedDatabaseException {
     return conn.selectDatabase(databaseName);
   }
 
   @Override
-  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws SQLException {
+  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws NoSuchSessionVariableException {
     return conn.updateSessionVariables(variables);
   }
 
   @Override
-  public Map<String, String> unsetSessionVariables(List<String> variables) throws SQLException {
+  public Map<String, String> unsetSessionVariables(List<String> variables) throws NoSuchSessionVariableException {
     return conn.unsetSessionVariables(variables);
   }
 
   @Override
-  public String getSessionVariable(String varname) throws SQLException {
+  public String getSessionVariable(String varname) throws NoSuchSessionVariableException {
     return conn.getSessionVariable(varname);
   }
 
   @Override
-  public Boolean existSessionVariable(String varname) throws SQLException {
+  public Boolean existSessionVariable(String varname) {
     return conn.existSessionVariable(varname);
   }
 
   @Override
-  public Map<String, String> getAllSessionVariables() throws SQLException {
+  public Map<String, String> getAllSessionVariables() {
     return conn.getAllSessionVariables();
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) throws SQLException {
+  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(sql, false);
@@ -165,7 +169,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) throws SQLException {
+  public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) {
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(json, true);
 
@@ -177,10 +181,10 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ResultSet executeQueryAndGetResult(String sql) throws SQLException {
+  public ResultSet executeQueryAndGetResult(String sql) throws TajoException {
 
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
-    throwIfError(response.getState());
+    ensureOk(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -195,10 +199,10 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ResultSet executeJsonQueryAndGetResult(final String json) throws SQLException {
+  public ResultSet executeJsonQueryAndGetResult(final String json) throws TajoException {
 
     ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
-    throwIfError(response.getState());
+    ensureOk(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -212,7 +216,7 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  private ResultSet getQueryResultAndWait(QueryId queryId) throws SQLException {
+  public ResultSet getQueryResultAndWait(QueryId queryId) {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
@@ -235,8 +239,7 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  @Override
-  public QueryStatus getQueryStatus(QueryId queryId) throws SQLException {
+  public GetQueryStatusResponse getRawQueryStatus(QueryId queryId) {
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryStatusRequest request = GetQueryStatusRequest.newBuilder()
@@ -251,19 +254,39 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
+    return res;
+  }
+
+  @Override
+  public QueryStatus getQueryStatus(QueryId queryId) {
+
+    final BlockingInterface stub = conn.getTMStub();
+    final GetQueryStatusRequest request = GetQueryStatusRequest.newBuilder()
+        .setSessionId(conn.sessionId)
+        .setQueryId(queryId.getProto())
+        .build();
+
+    GetQueryStatusResponse res;
+    try {
+      res = stub.getQueryStatus(null, request);
+    } catch (ServiceException t) {
+      throw new RuntimeException(t);
+    }
+
+    ensureOk(res.getState());
     return new QueryStatus(res);
   }
 
   @Override
-  public ResultSet getQueryResult(QueryId queryId) throws SQLException {
+  public ResultSet getQueryResult(QueryId queryId) {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
     }
 
     GetQueryResultResponse response = getResultResponse(queryId);
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
     return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
@@ -274,7 +297,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public GetQueryResultResponse getResultResponse(QueryId queryId) throws SQLException {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) {
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return null;
     }
@@ -292,7 +315,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(t);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return response;
   }
 
@@ -324,7 +347,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public boolean updateQuery(final String sql) throws SQLException {
+  public boolean updateQuery(final String sql) throws TajoException {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(sql, false);
@@ -336,14 +359,14 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ClientExceptionUtil.throwIfError(response.getState());
     conn.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
 
     return true;
   }
 
   @Override
-  public boolean updateQueryWithJson(final String json) throws SQLException {
+  public boolean updateQueryWithJson(final String json) throws TajoException {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(json, true);
@@ -355,7 +378,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ClientExceptionUtil.throwIfError(response.getState());
     return true;
   }
 
@@ -376,7 +399,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws SQLException {
+  public List<ClientProtos.BriefQueryInfo> getFinishedQueryList() {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -387,7 +410,7 @@ public class QueryClientImpl implements QueryClient {
       throw new RuntimeException(e);
     }
 
-    throwIfError(res.getState());
+    ensureOk(res.getState());
     return res.getQueryListList();
   }
 
@@ -411,7 +434,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public QueryStatus killQuery(final QueryId queryId) throws SQLException {
+  public QueryStatus killQuery(final QueryId queryId) {
 
     final BlockingInterface stub = conn.getTMStub();
     QueryStatus status = getQueryStatus(queryId);
