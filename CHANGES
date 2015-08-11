@@ -402,6 +402,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1590: Moving to JDK 7. (jinho)
+
     TAJO-1300: Merge the index branch into the master branch. (jihoon)
 
     TAJO-1713: Change the type of edge cache in JoinGraphContext from 
