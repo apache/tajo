@@ -1,1 +1,1 @@
-select countpy(), count(*) from lineitem group by l_linenumber
+select countpy() as c1, count(*) as c2 from lineitem group by l_linenumber order by c1, c2;
