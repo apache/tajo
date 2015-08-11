@@ -32,6 +32,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1746: Improve resource usage at first request of DefaultTaskScheduler.
+    (jinho)
+
     TAJO-1743: Improve calculation of intermediate table statistics. (jinho)
 
     TAJO-1699: Tajo Java Client version 2. (hyunsik)
@@ -401,6 +404,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1590: Moving to JDK 7. (jinho)
 
     TAJO-1300: Merge the index branch into the master branch. (jihoon)
 
