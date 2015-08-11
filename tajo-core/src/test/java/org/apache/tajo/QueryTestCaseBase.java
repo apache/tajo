@@ -29,6 +29,8 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.catalog.exception.UndefinedTableException;
 import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
@@ -199,7 +201,7 @@ public class QueryTestCaseBase {
   }
 
   @AfterClass
-  public static void tearDownClass() throws SQLException {
+  public static void tearDownClass() throws Exception {
     for (String tableName : createdTableGlobalSet) {
       client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
     }
@@ -704,17 +706,17 @@ public class QueryTestCaseBase {
     assertTrue(!client.existTable(tableName));
   }
 
-  public void assertColumnExists(String tableName,String columnName) throws ServiceException, SQLException {
+  public void assertColumnExists(String tableName,String columnName) throws UndefinedTableException {
     TableDesc tableDesc = getTableDesc(tableName);
     assertTrue(tableDesc.getSchema().containsByName(columnName));
   }
 
-  private TableDesc getTableDesc(String tableName) throws ServiceException, SQLException {
+  private TableDesc getTableDesc(String tableName) throws UndefinedTableException {
     return client.getTableDesc(tableName);
   }
 
   public void assertTablePropertyEquals(String tableName, String key, String expectedValue)
-      throws ServiceException, SQLException {
+      throws UndefinedTableException {
 
     TableDesc tableDesc = getTableDesc(tableName);
     assertEquals(expectedValue, tableDesc.getMeta().getOption(key));

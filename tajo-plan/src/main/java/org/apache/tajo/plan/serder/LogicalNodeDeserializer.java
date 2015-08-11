@@ -635,6 +635,7 @@ public class LogicalNodeDeserializer {
       if (alterPartition.getLocation() != null) {
         alterTable.setLocation(alterPartition.getLocation());
       }
+      alterTable.setIfNotExists(alterPartition.getIfNotExists());
       break;
     case DROP_PARTITION:
       alterPartition = alterTableProto.getAlterPartition();
@@ -642,6 +643,8 @@ public class LogicalNodeDeserializer {
         .getColumnNamesCount()]));
       alterTable.setPartitionValues(alterPartition.getPartitionValuesList().toArray(new String[alterPartition
         .getPartitionValuesCount()]));
+      alterTable.setPurge(alterPartition.getPurge());
+      alterTable.setIfExists(alterPartition.getIfExists());
       break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());

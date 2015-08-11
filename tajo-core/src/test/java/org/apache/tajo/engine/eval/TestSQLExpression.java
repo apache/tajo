@@ -26,10 +26,10 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
@@ -38,7 +38,7 @@ import static org.junit.Assert.fail;
 public class TestSQLExpression extends ExprTestBase {
 
   @Test
-  public void testQuotedIdentifiers() throws IOException {
+  public void testQuotedIdentifiers() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("컬럼1", TEXT);
     schema.addColumn("컬럼2", TEXT);
@@ -50,7 +50,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testNoSuchFunction() throws IOException {
+  public void testNoSuchFunction() {
     try {
       testSimpleEval("select test123('abc') col1 ", new String[]{"abc"});
       fail("This test should throw UndefinedFunctionException");
@@ -62,7 +62,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testSQLStandardCast() throws IOException {
+  public void testSQLStandardCast() throws TajoException {
     testSimpleEval("select cast (1 as char)", new String[] {"1"});
     testSimpleEval("select cast (119 as char)", new String[] {"1"});
 
@@ -92,7 +92,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testExplicitCast() throws IOException {
+  public void testExplicitCast() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", INT1);
     schema.addColumn("col1", INT2);
@@ -172,7 +172,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testImplicitCastForInt1() throws IOException {
+  public void testImplicitCastForInt1() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -274,7 +274,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testImplicitCastForInt2() throws IOException {
+  public void testImplicitCastForInt2() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -376,7 +376,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testImplicitCastForInt4() throws IOException {
+  public void testImplicitCastForInt4() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -479,7 +479,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testImplicitCastForInt8() throws IOException {
+  public void testImplicitCastForInt8() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -586,7 +586,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testImplicitCastForFloat4() throws IOException {
+  public void testImplicitCastForFloat4() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -705,7 +705,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testImplicitCastForFloat8() throws IOException {
+  public void testImplicitCastForFloat8() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -825,7 +825,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testSigned() throws IOException {
+  public void testSigned() throws TajoException {
     Schema schema = new Schema();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
@@ -853,7 +853,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testCastWithNestedFunction() throws IOException {
+  public void testCastWithNestedFunction() throws TajoException {
     QueryContext context = new QueryContext(getConf());
     context.put(SessionVars.TIMEZONE, "GMT-6");
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
@@ -865,7 +865,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testCastFromTable() throws IOException {
+  public void testCastFromTable() throws TajoException {
     QueryContext queryContext = new QueryContext(getConf());
     queryContext.put(SessionVars.TIMEZONE, "GMT-6");
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
@@ -898,7 +898,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testBooleanLiteral() throws IOException {
+  public void testBooleanLiteral() throws TajoException {
     testSimpleEval("select true", new String[] {"t"});
     testSimpleEval("select false", new String[]{"f"});
 
@@ -909,7 +909,7 @@ public class TestSQLExpression extends ExprTestBase {
   }
 
   @Test
-  public void testNullComparisons() throws IOException {
+  public void testNullComparisons() throws TajoException {
     testSimpleEval("select (1 > null) is null", new String[] {"t"});
 
     testSimpleEval("select null is null", new String[] {"t"});

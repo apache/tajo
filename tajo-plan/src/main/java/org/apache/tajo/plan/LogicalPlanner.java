@@ -56,7 +56,6 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -1687,10 +1686,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
-      String [] targets = expr.getTargetColumns();
+      ColumnReferenceExpr [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
+        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i].getCanonicalName().replace(".", "/"));
 
         if (targetColumn == null) {
           throw makeSyntaxError("column '" + targets[i] + "' of relation '" + desc.getName() + "' does not exist");
@@ -1733,15 +1732,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (child instanceof Projectable) {
-      Projectable projectionNode = (Projectable)insertNode.getChild();
+      Projectable projectionNode = insertNode.getChild();
 
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
       List<Target> targets = TUtil.newList();
-      for (int i = 0; i < tableSchema.size(); i++) {
-        Column column = tableSchema.getColumn(i);
 
+      for (Column column : tableSchema.getAllColumns()) {
         int idxInProjectionNode = targetColumns.getIndex(column);
+
+        // record type itself cannot be projected yet.
+        if (column.getDataType().getType() == TajoDataTypes.Type.RECORD) {
+          continue;
+        }
+
         if (idxInProjectionNode >= 0 && idxInProjectionNode < projectionNode.getTargets().length) {
           targets.add(projectionNode.getTargets()[idxInProjectionNode]);
         } else {
@@ -2180,6 +2184,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     alterTableNode.setPurge(alterTable.isPurge());
+    alterTableNode.setIfNotExists(alterTable.isIfNotExists());
+    alterTableNode.setIfExists(alterTable.isIfExists());
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
   }

@@ -29,14 +29,15 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -862,6 +863,16 @@ public class PlannerUtil {
     }
 
     return explains.toString();
+  }
+
+  public static String getShuffleType(ShuffleType shuffleType) {
+    if (shuffleType == null) return ShuffleType.NONE_SHUFFLE.toString();
+    return shuffleType.toString();
+  }
+
+  public static ShuffleType getShuffleType(String shuffleType) {
+    if (StringUtils.isEmpty(shuffleType)) return ShuffleType.NONE_SHUFFLE;
+    return ShuffleType.valueOf(shuffleType);
   }
 
   public static boolean isFileStorageType(String storageType) {

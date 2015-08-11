@@ -21,7 +21,6 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -197,7 +196,7 @@ public class ProjectionPushDownRule extends
      * Add an expression with a specified name, which is usually an alias.
      * Later, you can refer this expression by the specified name.
      */
-    private String add(String specifiedName, EvalNode evalNode) {
+    private String add(String specifiedName, EvalNode evalNode) throws DuplicateColumnException {
 
       // if a name already exists, it only just keeps an actual
       // expression instead of a column reference.
@@ -255,7 +254,7 @@ public class ProjectionPushDownRule extends
      * Adds an expression without any name. It returns an automatically
      * generated name. It can be also used for referring this expression.
      */
-    public String add(EvalNode evalNode) {
+    public String add(EvalNode evalNode) throws DuplicateColumnException {
       String name;
 
       if (evalNode.getType() == EvalType.FIELD) {
@@ -285,7 +284,7 @@ public class ProjectionPushDownRule extends
       return nameToIdBiMap.keySet();
     }
 
-    public String add(Target target) {
+    public String add(Target target) throws DuplicateColumnException {
       return add(target.getCanonicalName(), target.getEvalTree());
     }
 
@@ -421,13 +420,13 @@ public class ProjectionPushDownRule extends
       targetListMgr = upperContext.targetListMgr;
     }
 
-    public String addExpr(Target target) {
+    public String addExpr(Target target) throws DuplicateColumnException {
       String reference = targetListMgr.add(target);
       addNecessaryReferences(target.getEvalTree());
       return reference;
     }
 
-    public String addExpr(EvalNode evalNode) {
+    public String addExpr(EvalNode evalNode) throws DuplicateColumnException {
       String reference = targetListMgr.add(evalNode);
       addNecessaryReferences(evalNode);
       return reference;

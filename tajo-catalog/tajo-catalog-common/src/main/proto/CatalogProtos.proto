@@ -236,15 +236,23 @@ message PartitionMethodProto {
   required SchemaProto expressionSchema = 4;
 }
 
+message AddPartitionsProto {
+  required TableIdentifierProto tableIdentifier = 1;
+  repeated PartitionDescProto partitionDesc = 2;
+  required bool ifNotExists = 3;
+}
+
 message PartitionDescProto {
   required string partitionName = 1;
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
+  optional int32 id = 4;
 }
 
 message PartitionKeyProto {
   required string columnName = 1;
-  required string partitionValue = 2;
+  optional string parentColumnName = 2;
+  required string partitionValue = 3;
 }
 
 message PartitionIdentifierProto {

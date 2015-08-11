@@ -19,15 +19,14 @@
 package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-
-import java.io.IOException;
 
 import static org.junit.Assert.fail;
 
 public class TestIntervalType extends ExprTestBase {
   @Test
-  public void testIntervalPostgresqlCase() throws IOException {
+  public void testIntervalPostgresqlCase() throws TajoException {
 
     // http://www.postgresql.org/docs/8.2/static/functions-datetime.html
     testSimpleEval("select date '2001-09-28' + 7", new String[]{"2001-10-05"});

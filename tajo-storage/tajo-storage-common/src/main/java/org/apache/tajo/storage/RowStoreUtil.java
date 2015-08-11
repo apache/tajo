@@ -381,7 +381,7 @@ public class RowStoreUtil {
         writer.skipField();
         break;
       default:
-        throw new UnsupportedException("Unknown data type: " + writer.dataTypes()[i]);
+        throw new UnsupportedException("data type " + writer.dataTypes()[i]);
       }
     }
     writer.endRow();

@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -34,12 +31,13 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
@@ -123,6 +121,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
     assertEquals(1, channel.getShuffleKeys().length);
 
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -169,6 +171,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
     assertEquals(1, channel.getShuffleKeys().length);
 
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -194,6 +200,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
         + " partition by column(key float8) AS select l_orderkey, l_partkey, null, l_quantity from lineitem");
     }
     res.close();
+
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -234,6 +244,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(resultRows1.get(res.getDouble(4))[0], res.getInt(1));
       assertEquals(resultRows1.get(res.getDouble(4))[1], res.getInt(2));
     }
+
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName,
+      new String[]{"key"}, desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -338,6 +352,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertResultSet(res, "case13.result");
     res.close();
 
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -411,6 +428,13 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(resultRows2.get(res.getDouble(4))[1], res.getInt(3));
     }
 
+    res = executeString("SELECT col1, col2, col3 FROM " + tableName);
+    String result = resultSetToString(res);
+    res.close();
+
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
+      desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -438,6 +462,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
+      desc.getStats().getNumRows());
+
     Path path = new Path(desc.getUri());
 
     FileSystem fs = FileSystem.get(conf);
@@ -479,6 +507,11 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
+    // TODO: When inserting into already exists partitioned table, table status need to change correctly.
+//    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
+//      desc.getStats().getNumRows());
+
     path = new Path(desc.getUri());
 
     verifyDirectoriesForThreeColumns(fs, path, 2);
@@ -632,6 +665,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
       }
     }
 
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1"},
+      desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -687,6 +723,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
         }
       }
     }
+
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2"},
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -783,6 +822,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
     assertEquals(3, i);
 
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
+      desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -851,6 +893,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertFalse(res.next());
     res.close();
 
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
+      desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -873,6 +918,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeFile("case14.sql");
     assertResultSet(res, "case14.result");
     res.close();
+
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -899,6 +948,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeFile("case15.sql");
       assertResultSet(res, "case15.result");
       res.close();
+
+      TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+      verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+        desc.getStats().getNumRows());
 
       executeString("DROP TABLE " + tableName + " PURGE").close();
     }
@@ -982,6 +1035,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertResultSet(res);
     res.close();
 
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col2"},
+      desc.getStats().getNumRows());
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -1008,6 +1065,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeString("select * from " + tableName);
     assertResultSet(res);
     res.close();
+
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col2"},
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1084,6 +1145,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
         numRows++;
       }
       assertEquals(data.size(), numRows);
+
+      TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "test_partition");
+      verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, "test_partition", new String[]{"col1"},
+        desc.getStats().getNumRows());
 
     } finally {
       testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.varname,
@@ -1178,4 +1243,59 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
   }
 
+  /**
+   * Verify added partitions to a table. This would check each partition's directory using record of table.
+   *
+   *
+   * @param databaseName
+   * @param tableName
+   * @param partitionColumns
+   * @param numRows
+   * @throws Exception
+   */
+  private void verifyPartitionDirectoryFromCatalog(String databaseName, String tableName,
+                                                   String[] partitionColumns, Long numRows) throws Exception {
+    int rowCount = 0;
+
+    // Get all partition column values
+    StringBuilder query = new StringBuilder();
+    query.append("SELECT");
+    for (int i = 0; i < partitionColumns.length; i++) {
+      String partitionColumn = partitionColumns[i];
+      if (i > 0) {
+        query.append(",");
+      }
+      query.append(" ").append(partitionColumn);
+    }
+    query.append(" FROM ").append(tableName);
+    ResultSet res = executeString(query.toString());
+
+    StringBuilder partitionName = new StringBuilder();
+    PartitionDescProto partitionDescProto = null;
+
+    // Check whether that partition's directory exist or doesn't exist.
+    while(res.next()) {
+      partitionName.delete(0, partitionName.length());
+
+      for (int i = 0; i < partitionColumns.length; i++) {
+        String partitionColumn = partitionColumns[i];
+        if (i > 0) {
+          partitionName.append("/");
+        }
+        partitionName.append(partitionColumn).append("=").append(res.getString(partitionColumn));
+      }
+      partitionDescProto = catalog.getPartition(databaseName, tableName, partitionName.toString());
+      assertNotNull(partitionDescProto);
+      assertTrue(partitionDescProto.getPath().indexOf(tableName + "/" + partitionName.toString()) > 0);
+
+      rowCount++;
+    }
+
+    res.close();
+
+    // Check row count.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
+      assertEquals(numRows, new Long(rowCount));
+    }
+  }
 }

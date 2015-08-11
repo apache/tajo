@@ -25,21 +25,20 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestDateTimeFunctions extends ExprTestBase {
   @Test
-  public void testToTimestamp() throws IOException {
+  public void testToTimestamp() throws TajoException {
     long expectedTimestamp = System.currentTimeMillis();
     TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime((int)(expectedTimestamp/ 1000));
 
@@ -100,7 +99,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testToChar() throws IOException {
+  public void testToChar() throws TajoException {
     long expectedTimestamp = System.currentTimeMillis();
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(DateTimeUtil.javaTimeToJulianTime(expectedTimestamp), tm);
@@ -116,7 +115,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testExtract() throws IOException {
+  public void testExtract() throws TajoException {
     TimeZone GMT = TimeZone.getTimeZone("GMT");
     TimeZone PST = TimeZone.getTimeZone("PST");
 
@@ -232,7 +231,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testDatePart() throws IOException {
+  public void testDatePart() throws TajoException {
     TimeZone GMT = TimeZone.getTimeZone("GMT");
     TimeZone PST = TimeZone.getTimeZone("PST");
 
@@ -345,7 +344,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testUtcUsecTo() throws IOException {
+  public void testUtcUsecTo() throws TajoException {
      testSimpleEval("select utc_usec_to('day' ,1274259481071200);", new String[]{1274227200000000L+""});
      testSimpleEval("select utc_usec_to('hour' ,1274259481071200);", new String[]{1274256000000000L+""});
      testSimpleEval("select utc_usec_to('month' ,1274259481071200);", new String[]{1272672000000000L+""});
@@ -354,7 +353,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testToDate() throws IOException {
+  public void testToDate() throws TajoException {
     testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD')", new String[]{"2014-01-04"});
     testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD') + interval '1 day'",
         new String[]{"2014-01-05 00:00:00"});
@@ -394,7 +393,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testAddDays() throws IOException {
+  public void testAddDays() throws TajoException {
     testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT2);",
         new String[]{"2014-01-04 00:00:00"});
     testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT4);",
@@ -425,7 +424,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testDateTimeNow() throws IOException {
+  public void testDateTimeNow() throws TajoException {
     TimeZone originalTimezone = TimeZone.getDefault();
     TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
 
@@ -454,7 +453,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   }
 
   @Test
-  public void testTimeValueKeyword() throws IOException {
+  public void testTimeValueKeyword() throws TajoException {
     TimeZone originTimeZone = TimeZone.getDefault();
     TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
 

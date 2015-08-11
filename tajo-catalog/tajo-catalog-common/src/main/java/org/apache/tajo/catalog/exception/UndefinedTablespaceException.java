@@ -19,9 +19,14 @@
 package org.apache.tajo.catalog.exception;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class UndefinedTablespaceException extends CatalogException {
 	private static final long serialVersionUID = 277182608283894937L;
+
+  public UndefinedTablespaceException(ReturnState state) {
+    super(state);
+  }
 
 	public UndefinedTablespaceException(String spaceName) {
 		super(Errors.ResultCode.UNDEFINED_TABLESPACE, spaceName);
