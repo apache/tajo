@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
