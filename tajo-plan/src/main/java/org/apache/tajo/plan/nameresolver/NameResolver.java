@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.AmbiguousTableException;
 import org.apache.tajo.catalog.exception.UndefinedColumnException;
@@ -346,8 +347,9 @@ public abstract class NameResolver {
     }
 
     // column.nested_fieldX...
-    if (guessedRelations.size() == 0 && qualifierParts.length == 1) {
-      Collection<RelationNode> rels = lookupTableByColumns(block, qualifierParts[0]);
+    if (guessedRelations.size() == 0 && qualifierParts.length > 0) {
+      Collection<RelationNode> rels = lookupTableByColumns(block, StringUtils.join(qualifierParts,
+          NestedPathUtil.PATH_DELIMITER, 0));
 
       if (rels.size() > 1) {
         throw new AmbiguousColumnException(columnRef.getCanonicalName());
@@ -376,8 +378,8 @@ public abstract class NameResolver {
       columnName = qualifierParts[columnNamePosition];
 
       // if qualifierParts include nested field names
-      if (qualifierParts.length > columnNamePosition) {
-        columnName += StringUtils.join(qualifierParts, "/", columnNamePosition + 1, qualifierParts.length);
+      if (qualifierParts.length > columnNamePosition+1) {
+        columnName += "/" + StringUtils.join(qualifierParts, "/", columnNamePosition + 1, qualifierParts.length);
       }
 
       // columnRef always has a leaf field name.
