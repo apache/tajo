@@ -378,12 +378,13 @@ public abstract class NameResolver {
       columnName = qualifierParts[columnNamePosition];
 
       // if qualifierParts include nested field names
-      if (qualifierParts.length > columnNamePosition+1) {
-        columnName += "/" + StringUtils.join(qualifierParts, "/", columnNamePosition + 1, qualifierParts.length);
+      if (qualifierParts.length > columnNamePosition + 1) {
+        columnName += NestedPathUtil.PATH_DELIMITER + StringUtils.join(qualifierParts, NestedPathUtil.PATH_DELIMITER,
+            columnNamePosition + 1, qualifierParts.length);
       }
 
       // columnRef always has a leaf field name.
-      columnName += "/" + columnRef.getName();
+      columnName += NestedPathUtil.PATH_DELIMITER + columnRef.getName();
     }
 
     return new Pair<String, String>(qualifier, columnName);
