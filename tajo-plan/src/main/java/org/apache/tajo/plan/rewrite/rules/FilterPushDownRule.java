@@ -177,6 +177,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     if (joinNode.hasJoinQual()) {
       onPredicates.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
+    // clear join qual
+    joinNode.clearJoinQual();
+
     // we assume all the quals in pushingDownFilters as where predicates
     Set<EvalNode> nonPushableQuals = extractNonPushableJoinQuals(plan, block, joinNode, onPredicates,
         context.pushingDownFilters);
