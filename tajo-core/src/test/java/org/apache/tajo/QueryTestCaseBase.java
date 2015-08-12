@@ -18,9 +18,9 @@
 
 package org.apache.tajo;
 
-import com.facebook.presto.hive.shaded.com.google.common.base.Function;
-import com.facebook.presto.hive.shaded.com.google.common.collect.Collections2;
-import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -836,7 +836,7 @@ public class QueryTestCaseBase {
       throw new IOException("Cannot find " + positiveQueryDir);
     }
 
-    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)),new Function<FileStatus, Path>(){
+    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)), new Function<FileStatus, Path>(){
       @Override
       public Path apply(@Nullable FileStatus fileStatus) {
         return fileStatus.getPath();
