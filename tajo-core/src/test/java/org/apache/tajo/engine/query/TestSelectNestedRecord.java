@@ -64,7 +64,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
     List<String> tables = executeDDL("sample2_ddl.sql", "sample2", "sample5");
     assertEquals(TUtil.newList("sample5"), tables);
 
-    ResultSet res = executeString("select glossary.title, glossary.\"GlossDiv\".\"title\" from sample5");
+    ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }

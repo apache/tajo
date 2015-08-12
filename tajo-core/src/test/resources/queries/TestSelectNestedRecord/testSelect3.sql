@@ -1,0 +1,1 @@
+select glossary.title, glossary."GlossDiv"."title" from sample5;
