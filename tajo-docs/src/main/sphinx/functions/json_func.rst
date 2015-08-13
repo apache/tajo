@@ -2,7 +2,7 @@
 JSON Functions
 *******************************
 
-.. function:: json_extract_path_text (string json, string xpath)
+.. function:: json_extract_path_text (json text, xpath text)
 
   Extracts JSON string from a JSON string based on json path specified and returns JSON string pointed to by xPath
 
