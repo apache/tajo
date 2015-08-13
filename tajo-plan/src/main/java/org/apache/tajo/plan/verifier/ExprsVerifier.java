@@ -23,7 +23,6 @@ import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UndefinedOperatorException;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.LogicalNode;
 
@@ -48,7 +47,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   }
 
   public static VerificationState verify(VerificationState state, LogicalNode currentNode, EvalNode expression) {
-    instance.visitChild(state, expression, new Stack<EvalNode>());
+    instance.visit(state, expression, new Stack<EvalNode>());
     Set<Column> referredColumns = EvalTreeUtil.findUniqueColumns(expression);
     for (Column referredColumn : referredColumns) {
       if (!currentNode.getInSchema().contains(referredColumn)) {
@@ -247,7 +246,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     super.visitFuncCall(context, evalNode, stack);
     if (evalNode.getArgs() != null) {
       for (EvalNode param : evalNode.getArgs()) {
-        visitChild(context, param, stack);
+        visit(context, param, stack);
       }
     }
     return evalNode;

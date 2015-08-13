@@ -21,7 +21,7 @@ package org.apache.tajo.plan.expr;
 import java.util.Stack;
 
 public interface EvalNodeVisitor2<CONTEXT, RESULT> {
-  RESULT visitChild(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack);
+  RESULT visit(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack);
 
   // Column and Value reference expressions
   RESULT visitConst(CONTEXT context, ConstEval evalNode, Stack<EvalNode> stack);
