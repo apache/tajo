@@ -216,7 +216,7 @@ public interface CatalogService {
    */
   void alterTable(AlterTableDesc desc)
       throws DuplicateColumnException, DuplicateTableException, InsufficientPrivilegeException,
-      UndefinedColumnException, UndefinedTableException, DuplicateDatabaseException, DuplicatePartitionException, UndefinedDatabaseException, UndefinedPartitionMethodException;
+      UndefinedColumnException, UndefinedTableException, DuplicateDatabaseException, DuplicatePartitionException, UndefinedDatabaseException, UndefinedPartitionMethodException, UndefinedPartitionException;
 
   void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
 }

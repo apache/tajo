@@ -867,19 +867,19 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   public final void alterTable(final AlterTableDesc desc) throws DuplicateDatabaseException,
       DuplicateTableException, DuplicateColumnException, DuplicatePartitionException,
       UndefinedDatabaseException, UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException,
-      InsufficientPrivilegeException {
+      InsufficientPrivilegeException, UndefinedPartitionException {
 
     try {
       final BlockingInterface stub = getStub();
       final ReturnState state = stub.alterTable(null, desc.getProto());
 
-      throwsIfThisError(state, DuplicateDatabaseException.class);
       throwsIfThisError(state, DuplicateTableException.class);
       throwsIfThisError(state, DuplicateColumnException.class);
       throwsIfThisError(state, DuplicatePartitionException.class);
       throwsIfThisError(state, UndefinedDatabaseException.class);
       throwsIfThisError(state, UndefinedTableException.class);
       throwsIfThisError(state, UndefinedColumnException.class);
+      throwsIfThisError(state, UndefinedPartitionException.class);
       throwsIfThisError(state, UndefinedPartitionMethodException.class);
       throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
