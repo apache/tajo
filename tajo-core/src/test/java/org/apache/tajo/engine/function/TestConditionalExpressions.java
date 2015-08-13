@@ -20,7 +20,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;

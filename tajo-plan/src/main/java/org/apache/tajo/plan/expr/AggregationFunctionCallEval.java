@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.function.AggFunctionInvoke;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.FunctionInvokeContext;
@@ -45,11 +44,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, EvalNode[] givenArgs) {
     super(type, desc, givenArgs);
     this.invokeContext = new FunctionInvokeContext(null, getParamType());
-    try {
-      this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
-    } catch (InternalException e) {
-      throw new RuntimeException(e);
-    }
+    this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
   }
 
   public AggregationFunctionCallEval(FunctionDesc desc, EvalNode[] givenArgs) {

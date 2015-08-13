@@ -21,7 +21,6 @@ package org.apache.tajo.plan.function;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -35,13 +34,13 @@ public class ClassBasedScalarFunctionInvoke extends FunctionInvoke implements Cl
 
   }
 
-  public ClassBasedScalarFunctionInvoke(FunctionDesc funcDesc) throws InternalException {
+  public ClassBasedScalarFunctionInvoke(FunctionDesc funcDesc) {
     super(funcDesc);
     function = (GeneralFunction) funcDesc.newInstance();
   }
 
   @Override
-  public void setFunctionDesc(FunctionDesc desc) throws InternalException {
+  public void setFunctionDesc(FunctionDesc desc) {
     super.setFunctionDesc(desc);
     function = (GeneralFunction) functionDesc.newInstance();
   }

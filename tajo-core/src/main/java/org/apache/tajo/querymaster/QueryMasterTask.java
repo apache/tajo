@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
@@ -370,7 +371,7 @@ public class QueryMasterTask extends CompositeService {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
           space.rollbackTable(rootNode.getChild());
-        } catch (IOException e) {
+        } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
       }

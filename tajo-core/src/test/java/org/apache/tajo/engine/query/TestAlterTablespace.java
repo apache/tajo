@@ -37,7 +37,7 @@ public class TestAlterTablespace extends QueryTestCaseBase {
       //////////////////////////////////////////////////////////////////////////////
 
       assertFalse(catalog.existTablespace("space1"));
-      assertTrue(catalog.createTablespace("space1", "hdfs://xxx.com/warehouse"));
+      catalog.createTablespace("space1", "hdfs://xxx.com/warehouse");
       assertTrue(catalog.existTablespace("space1"));
 
       // pre verification
@@ -52,7 +52,7 @@ public class TestAlterTablespace extends QueryTestCaseBase {
       assertEquals("space1", space1.getSpaceName());
       assertEquals("hdfs://yyy.com/warehouse", space1.getUri());
 
-      assertTrue(catalog.dropTablespace("space1"));
+      catalog.dropTablespace("space1");
       assertFalse(catalog.existTablespace("space1"));
     }
   }

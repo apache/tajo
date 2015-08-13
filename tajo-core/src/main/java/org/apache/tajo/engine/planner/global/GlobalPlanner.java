@@ -29,9 +29,6 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.AmbiguousFunctionException;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -40,9 +37,11 @@ import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteEngine;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvider;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -346,32 +345,32 @@ public class GlobalPlanner {
     }
   }
 
-  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws CatalogException {
+  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws TajoException {
     FunctionDesc functionDesc = null;
     functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws CatalogException {
+  private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws CatalogException {
+  private AggregationFunctionCallEval createCountRowFunction(EvalNode[] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
         new TajoDataTypes.DataType[]{});
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws CatalogException {
+  private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
-  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws CatalogException {
+  private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, args);
@@ -847,7 +846,7 @@ public class GlobalPlanner {
       // Verify supported partition types
       PartitionMethodDesc partitionMethod = currentNode.getPartitionMethod();
       if (partitionMethod.getPartitionType() != CatalogProtos.PartitionType.COLUMN) {
-        throw new UnimplementedException("partition type '" + partitionMethod.getPartitionType().name() + "'");
+        throw new NotImplementedException("partition type '" + partitionMethod.getPartitionType().name() + "'");
       }
 
       if (hasUnionChild(currentNode)) { // if it has union children
