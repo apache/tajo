@@ -432,7 +432,8 @@ public class StringUtils {
   public static String join(Object[] objects, String delimiter, int startIndex, int length) {
     boolean first = true;
     StringBuilder sb = new StringBuilder();
-    for(int i = startIndex; i + startIndex < length; i++) {
+    int endIndex = startIndex + length;
+    for(int i = startIndex; i + startIndex < endIndex; i++) {
       if (first) {
         first = false;
       } else {
