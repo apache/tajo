@@ -114,6 +114,11 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-hdfs</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-storage-jdbc</artifactId>
       <scope>provided</scope>
     </dependency>
@@ -236,14 +241,6 @@
       <version>0.1</version>
       <scope>test</scope>
     </dependency>
-    <!--
-    <dependency>
-      <groupId>io.airlift</groupId>
-      <artifactId>testing-postgresql-server</artifactId>
-      <version>0.3</version>
-      <scope>test</scope>
-    </dependency>
-    -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>

@@ -23,10 +23,10 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class TestJdbcConnectionInfo {
+public class TestConnectionInfo {
   @Test
   public final void testGetConnectionInfoType1() {
-    JdbcConnectionInfo c1 = JdbcConnectionInfo.fromURI("jdbc:mysql://localhost:55840?user=testuser&password=testpass");
+    ConnectionInfo c1 = ConnectionInfo.fromURI("jdbc:mysql://localhost:55840?user=testuser&password=testpass");
     assertEquals("jdbc:mysql", c1.scheme);
     assertEquals("testuser", c1.user);
     assertEquals("testpass", c1.password);
@@ -37,7 +37,7 @@ public class TestJdbcConnectionInfo {
 
   @Test
   public final void testGetConnectionInfoType2() {
-    JdbcConnectionInfo c1 = JdbcConnectionInfo.fromURI(
+    ConnectionInfo c1 = ConnectionInfo.fromURI(
         "jdbc:mysql://localhost:55840/db1?table=tb1&user=testuser&password=testpass&TZ=GMT+9");
     assertEquals("jdbc:mysql", c1.scheme);
     assertEquals("testuser", c1.user);

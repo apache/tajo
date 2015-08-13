@@ -21,7 +21,6 @@ package org.apache.tajo.storage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
@@ -37,6 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.UriUtil;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -98,7 +98,7 @@ public class TablespaceManager implements StorageService {
   }
 
   private void addLocalFsTablespace() {
-    if (TABLE_SPACES.headMap(LOCAL_FS_URI, true).firstEntry() == null) {
+    if (TABLE_SPACES.headMap(LOCAL_FS_URI, true).firstEntry() == null && TABLE_SPACE_HANDLERS.containsKey("file")) {
       String tmpName = UUID.randomUUID().toString();
       registerTableSpace(tmpName, LOCAL_FS_URI, null, false, false);
     }
@@ -273,8 +273,7 @@ public class TablespaceManager implements StorageService {
   public static final String KEY_SPACES = "spaces";
 
   private static Tablespace initializeTableSpace(String spaceName, URI uri, JSONObject spaceDesc) {
-    Preconditions.checkNotNull(uri.getScheme(), "URI must include scheme, but it was " + uri);
-    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
+    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(UriUtil.getScheme(uri));
 
     if (clazz == null) {
       throw new RuntimeException("There is no tablespace for " + uri.toString());
@@ -300,6 +299,12 @@ public class TablespaceManager implements StorageService {
   public static Optional<Tablespace> addTableSpaceForTest(Tablespace space) {
     Tablespace existing;
     synchronized (SPACES_URIS_MAP) {
+
+      String scheme = UriUtil.getScheme(space.getUri());
+      if (!TABLE_SPACE_HANDLERS.containsKey(scheme)) {
+        TABLE_SPACE_HANDLERS.put(scheme, space.getClass());
+      }
+
       // Remove existing one
       SPACES_URIS_MAP.remove(space.getName());
       existing = TABLE_SPACES.remove(space.getUri());

@@ -12,13 +12,17 @@
       "handler": "org.apache.tajo.storage.FileTablespace",
       "default-format": "text"
     },
-    "hbase": {
+    "hbase:zk": {
       "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
       "default-format": "hbase"
     },
-    "jdbc": {
-      "handler": "org.apache.tajo.storage.jdbc.JdbcTablespace",
-      "default-format": "hbase"
+    "jdbc:mysql": {
+      "handler": "org.apache.tajo.storage.mysql.MySQLTablespace",
+      "default-format": "rowstore"
+    },
+    "jdbc:postgresql": {
+      "handler": "org.apache.tajo.storage.pgsql.PgSQLTablespace",
+      "default-format": "rowstore"
     }
   }
 }

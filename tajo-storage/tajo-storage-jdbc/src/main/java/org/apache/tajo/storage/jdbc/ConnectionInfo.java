@@ -24,7 +24,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JdbcConnectionInfo {
+public class ConnectionInfo {
   String scheme;
   String dbName;
   String tableName;
@@ -32,15 +32,35 @@ public class JdbcConnectionInfo {
   String password;
   Map<String, String> params;
 
-  public static JdbcConnectionInfo fromURI(String originalUri) {
+  public String scheme() {
+    return scheme;
+  }
+
+  public String database() {
+    return dbName;
+  }
+
+  public String table() {
+    return tableName;
+  }
+
+  public String user() {
+    return user;
+  }
+
+  public String password() {
+    return password;
+  }
+
+  public static ConnectionInfo fromURI(String originalUri) {
     return fromURI(URI.create(originalUri));
   }
 
-  public static JdbcConnectionInfo fromURI(URI originalUri) {
+  public static ConnectionInfo fromURI(URI originalUri) {
     final String uriStr = originalUri.toASCIIString();
     URI uri = originalUri;
 
-    final JdbcConnectionInfo connInfo = new JdbcConnectionInfo();
+    final ConnectionInfo connInfo = new ConnectionInfo();
     connInfo.scheme = uriStr.substring(0, uriStr.indexOf("://"));
 
     if (connInfo.scheme.split(":").length > 1) {

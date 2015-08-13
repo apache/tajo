@@ -30,7 +30,6 @@ import org.apache.tajo.storage.mysql.MySQLTablespace;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -41,37 +40,37 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestMysqlJdbcTableSpace {
+
+  static TestingMySqlServer server;
+
   @BeforeClass
-  public static void setUp() throws IOException {
-    String mysqlUri = "jdbc:mysql://host1:2171/db1";
-    MySQLTablespace mysqlTablespace = new MySQLTablespace("cluster2", URI.create(mysqlUri), null);
+  public static void setUp() throws Exception {
+    server = new TestingMySqlServer("testuser", "testpass",
+        "meta_test",
+        "create_table",
+        "drop_table"
+    );
+
+    MySQLTablespace mysqlTablespace = new MySQLTablespace("mysql_cluster", URI.create(server.getJdbcUrl()), null);
     mysqlTablespace.init(new TajoConf());
     TablespaceManager.addTableSpaceForTest(mysqlTablespace);
   }
 
   @Test
   public void testTablespaceHandler() throws Exception {
-    assertTrue((TablespaceManager.getByName("cluster2").get()) instanceof MySQLTablespace);
-    assertEquals("cluster2", (TablespaceManager.getByName("cluster2").get().getName()));
-    assertTrue((TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1")).get()) instanceof MySQLTablespace);
-    assertTrue((TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1?table=xyz")).get())
-        instanceof MySQLTablespace);
+    assertTrue((TablespaceManager.getByName("mysql_cluster").get()) instanceof MySQLTablespace);
+    assertEquals("mysql_cluster", (TablespaceManager.getByName("mysql_cluster").get().getName()));
 
-    assertEquals(URI.create("jdbc:mysql://host1:2171/db1"),
-        TablespaceManager.get(URI.create("jdbc:mysql://host1:2171/db1")).get().getUri());
+    assertTrue((TablespaceManager.get(server.getJdbcUrl()).get()) instanceof MySQLTablespace);
+    assertTrue((TablespaceManager.get(server.getJdbcUrl() + "&table=tb1").get()) instanceof MySQLTablespace);
 
-    assertTrue((TablespaceManager.getByName("cluster3").get()) instanceof MySQLTablespace);
-    assertEquals("cluster3", (TablespaceManager.getByName("cluster3").get().getName()));
-    assertTrue((TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2")).get()) instanceof MySQLTablespace);
-    assertTrue((TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2?table=xyz")).get())
-        instanceof MySQLTablespace);
-
-    assertEquals(URI.create("jdbc:postgres://host1:2615/db2"),
-        TablespaceManager.get(URI.create("jdbc:postgres://host1:2615/db2")).get().getUri());
+    assertEquals(server.getJdbcUrl(), TablespaceManager.get(server.getJdbcUrl()).get().getUri().toASCIIString());
   }
 
   @Test
-  public void test() throws Exception {
+  public void testMetadataProvider() throws Exception {
+
+
     try (TestingMySqlServer server = new TestingMySqlServer("testuser", "testpass", "db1", "db2")) {
       assertTrue(server.isRunning());
       assertTrue(server.isReadyForConnections());
@@ -95,8 +94,8 @@ public class TestMysqlJdbcTableSpace {
       MySQLTablespace tablespace = new MySQLTablespace("mysql", URI.create(server.getJdbcUrl()), null);
 
       URI uri = tablespace.getTableUri("abc", "table1");
-      JdbcConnectionInfo c1 = JdbcConnectionInfo.fromURI(uri);
-      assertEquals("table1", c1.tableName);
+      ConnectionInfo c1 = ConnectionInfo.fromURI(uri);
+      assertEquals("table1", c1.table());
 
       MetadataProvider provider = tablespace.getMetadataProvider();
       Set<String> tables = Sets.newHashSet(provider.getTables(null, null));

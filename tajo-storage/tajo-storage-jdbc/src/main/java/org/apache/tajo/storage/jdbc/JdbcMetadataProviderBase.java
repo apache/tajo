@@ -57,15 +57,14 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     this.space = space;
     this.databaseName = dbName;
 
-    JdbcConnectionInfo connInfo = JdbcConnectionInfo.fromURI(space.getUri());
+    ConnectionInfo connInfo = ConnectionInfo.fromURI(space.getUri());
     this.jdbcUri  = space.getUri().toASCIIString();
-    this.username = connInfo.user;
-    this.password = connInfo.password;
+    this.username = connInfo.user();
+    this.password = connInfo.password();
 
-//    String jdbcDriver = getJdbcDriverName();
     try {
       Class.forName(getJdbcDriverName()).newInstance();
-      LOG.info("Loaded JDBC driver (" + "com.mysql.jdbc.Driver" + ")");
+      LOG.info(getJdbcDriverName() + " is loaded...");
     } catch (Exception e) {
       throw new TajoInternalError(e);
     }
