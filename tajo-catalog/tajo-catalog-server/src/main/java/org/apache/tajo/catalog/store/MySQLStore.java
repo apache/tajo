@@ -22,8 +22,6 @@
 package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.exception.InternalException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,7 +30,7 @@ import java.sql.SQLException;
 public class MySQLStore extends AbstractDBStore {
   private static final String CATALOG_DRIVER = "com.mysql.jdbc.Driver";
 
-  public MySQLStore(Configuration conf) throws InternalException {
+  public MySQLStore(Configuration conf) {
     super(conf);
   }
 
@@ -52,6 +50,6 @@ public class MySQLStore extends AbstractDBStore {
   }
 
   @Override
-  protected void createDatabaseDependants() throws CatalogException {
+  protected void createDatabaseDependants() {
   }
 }

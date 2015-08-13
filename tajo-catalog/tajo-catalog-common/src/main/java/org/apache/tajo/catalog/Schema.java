@@ -24,7 +24,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
-import org.apache.tajo.catalog.exception.DuplicateColumnException;
+import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;

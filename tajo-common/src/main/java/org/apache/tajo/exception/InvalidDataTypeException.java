@@ -18,11 +18,16 @@
 
 package org.apache.tajo.exception;
 
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class InvalidDataTypeException extends TajoRuntimeException {
+
+  public InvalidDataTypeException(ReturnState state) {
+    super(state);
+  }
 
   public InvalidDataTypeException(DataType dataType) {
     super(Errors.ResultCode.INVALID_DATATYPE, dataType.getType().name());

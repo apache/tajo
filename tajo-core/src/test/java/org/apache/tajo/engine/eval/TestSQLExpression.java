@@ -21,7 +21,7 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;

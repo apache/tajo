@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
 
@@ -45,7 +46,7 @@ public class DescTableCommand extends TajoShellCommand {
   }
 
   @Override
-  public void invoke(String[] cmd) throws Exception {
+  public void invoke(String[] cmd) throws TajoException {
     if (cmd.length == 2) {
       String tableName = cmd[1];
       tableName = tableName.replace("\"", "");

@@ -23,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.ws.rs.*;
 
@@ -182,9 +183,14 @@ public class TablesResource {
           !catalogService.existsTable(databaseName, tableName)) {
         return Response.status(Status.NOT_FOUND).build();
       }
-      
-      TableDesc tableDesc = catalogService.getTableDesc(databaseName, tableName);
-      return Response.ok(tableDesc).build();
+
+      TableDesc tableDesc = null;
+      try {
+        tableDesc = catalogService.getTableDesc(databaseName, tableName);
+        return Response.ok(tableDesc).build();
+      } catch (TajoException e) {
+        return ResourcesUtil.createExceptionResponse(LOG, e.getMessage());
+      }
     }
   }
   
@@ -213,7 +219,6 @@ public class TablesResource {
           LOG);
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
-      
       response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
@@ -245,14 +250,13 @@ public class TablesResource {
       }
       
       String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
-      boolean tableDropped = 
-          catalogService.dropTable(canonicalTableName);
-      if (tableDropped) {
+
+      try {
+        catalogService.dropTable(canonicalTableName);
         return Response.ok().build();
-      } else {
-        return ResourcesUtil.createExceptionResponse(LOG, "Unable to drop a " + canonicalTableName + " table.");
+      } catch (TajoException e) {
+        return ResourcesUtil.createExceptionResponse(LOG, e.getMessage());
       }
     }
-    
   }
 }

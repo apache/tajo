@@ -45,6 +45,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
@@ -473,7 +474,7 @@ public class Query implements EventHandler<QueryEvent> {
         try {
           LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
           space.rollbackTable(rootNode.getChild());
-        } catch (IOException e) {
+        } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
       }
@@ -522,16 +523,10 @@ public class Query implements EventHandler<QueryEvent> {
           }
 
           // Store partitions to CatalogStore using alter table statement.
-          boolean result = catalog.addPartitions(databaseName, simpleTableName, partitions, true);
-          if (result) {
-            LOG.info(String.format("Complete adding for partition %s", partitions.size()));
-          } else {
-            LOG.info(String.format("Incomplete adding for partition %s", partitions.size()));
-          }
+          catalog.addPartitions(databaseName, simpleTableName, partitions, true);
         } else {
           LOG.info("Can't find partitions for adding.");
         }
-
 
       } catch (Exception e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));

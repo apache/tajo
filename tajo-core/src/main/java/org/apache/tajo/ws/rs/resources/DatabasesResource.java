@@ -18,40 +18,26 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.NewDatabaseRequest;
 import org.apache.tajo.ws.rs.responses.DatabaseInfoResponse;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import java.net.URI;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Deals with Database Management
@@ -175,19 +161,18 @@ public class DatabasesResource {
       if (request.getDatabaseName() == null || request.getDatabaseName().isEmpty()) {
         return ResourcesUtil.createBadRequestResponse(LOG, "databaseName is null or empty.");
       }
-      
-      boolean databaseCreated =
-          masterContext.getCatalog().createDatabase(request.getDatabaseName(), 
-              TajoConstants.DEFAULT_TABLESPACE_NAME);
-      
-      if (databaseCreated) {
+
+
+      try {
+        masterContext.getCatalog().createDatabase(request.getDatabaseName(),
+                TajoConstants.DEFAULT_TABLESPACE_NAME);
         URI newDatabaseURI = uriInfo.getBaseUriBuilder()
             .path(DatabasesResource.class)
             .path(DatabasesResource.class, "getDatabase")
             .build(request.getDatabaseName());
         return Response.created(newDatabaseURI).build();
-      } else {
-        return ResourcesUtil.createExceptionResponse(LOG, "Failed to create a new database.");
+      } catch (TajoException e) {
+        return ResourcesUtil.createExceptionResponse(LOG, e.getMessage());
       }
     }
   }
@@ -330,12 +315,11 @@ public class DatabasesResource {
       if (!catalogService.existDatabase(databaseName)) {
         return Response.status(Status.NOT_FOUND).build();
       }
-      
-      boolean databaseDropped = catalogService.dropDatabase(databaseName);
-      
-      if (databaseDropped) {
+
+      try {
+        catalogService.dropDatabase(databaseName);
         return Response.ok().build();
-      } else {
+      } catch (TajoException e) {
         return ResourcesUtil.createExceptionResponse(LOG, "Unable to drop a database " + databaseName);
       }
     }

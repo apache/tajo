@@ -474,6 +474,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1748: Refine client APIs to throw specific exceptions. (hyunsik)
+
     TAJO-1735: Implement MetadataProvider and LinkedMetadataManager. (hyunsik)
 
     TAJO-1723: INSERT INTO statement should allow nested fields as 
