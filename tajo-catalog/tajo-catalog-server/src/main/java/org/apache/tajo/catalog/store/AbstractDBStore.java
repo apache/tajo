@@ -2639,6 +2639,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           }
         } catch (UndefinedTableException e) {
           LOG.warn(e);
+        } catch (UndefinedIndexException e) {
+          throw new TajoInternalError(e);
         }
       }
     }
