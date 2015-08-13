@@ -33,7 +33,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -212,7 +211,7 @@ public class TestEvalTreeUtil {
   };
   
   @Test
-  public final void testGetSchemaFromTargets() throws InternalException {
+  public final void testGetSchemaFromTargets() {
     Target [] targets = getRawTargets(QUERIES[0]);
     Schema schema = EvalTreeUtil.getSchemaByTargets(null, targets);
     Column col1 = schema.getColumn(0);

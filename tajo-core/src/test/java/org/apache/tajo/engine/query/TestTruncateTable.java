@@ -18,23 +18,20 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-@Category(IntegrationTest.class)
+
 public class TestTruncateTable extends QueryTestCaseBase {
-  public TestTruncateTable() {
-    super(TajoConstants.DEFAULT_DATABASE_NAME);
-  }
+
   @Test
   public final void testTruncateTable() throws Exception {
     try {
@@ -66,7 +63,7 @@ public class TestTruncateTable extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testTruncateExternalTable() throws Exception {
+  public final void testTruncateExternalTable() throws TajoException, SQLException {
     try {
       List<String> createdNames = executeDDL("table2_ddl.sql", "truncate_table2", "truncate_table2");
       assertTableExists(createdNames.get(0));
@@ -80,7 +77,6 @@ public class TestTruncateTable extends QueryTestCaseBase {
       res.close();
 
       executeString("truncate table truncate_table2");
-
       fail("Can't truncate external table");
     } catch (Exception e) {
       // succeeded

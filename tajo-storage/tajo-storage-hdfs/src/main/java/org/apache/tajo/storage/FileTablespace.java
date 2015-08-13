@@ -925,7 +925,7 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException {
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) {
   }
 
   @Override

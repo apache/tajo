@@ -18,7 +18,7 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
 
 import javax.annotation.Nullable;
 import java.net.URI;

@@ -26,7 +26,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
  *
  * @see @{link TajoException}
  */
-public class TajoRuntimeException extends RuntimeException implements TajoExceptionInterface {
+public class TajoRuntimeException extends RuntimeException implements DefaultTajoException {
   private ResultCode code;
 
   public TajoRuntimeException(ReturnState state) {

@@ -27,20 +27,20 @@ import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
-import java.io.IOException;
 import java.util.*;
+
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
 /**
  * It deserializes a serialized eval tree consisting of a number of EvalNodes.
@@ -238,7 +238,9 @@ public class EvalNodeDeserializer {
             parameterTypes = funcSignatureProto.getParameterTypesList().toArray(
                 new DataType[funcSignatureProto.getParameterTypesCount()]);
           }
-          throw new TajoInternalError(new UndefinedFunctionException(functionName, parameterTypes));
+          throw new TajoInternalError(
+              new UndefinedFunctionException(buildSimpleFunctionSignature(functionName, parameterTypes))
+          );
         }
       } else {
         throw new TajoInternalError("Unknown EvalType: " + type.name());

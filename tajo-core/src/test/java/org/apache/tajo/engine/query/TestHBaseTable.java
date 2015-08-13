@@ -38,6 +38,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
@@ -103,10 +106,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
   public void testVerifyCreateHBaseTableRequiredMeta() throws Exception {
     try {
       executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) TABLESPACE cluster1 USING hbase").close();
-
       fail("hbase table must have 'table' meta");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().indexOf("HBase mapped table") >= 0);
+    } catch (TajoException e) {
+      assertEquals(e.getErrorCode(), ResultCode.MISSING_TABLE_PROPERTY);
     }
 
     try {
@@ -115,8 +117,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           "WITH ('table'='hbase_table')").close();
 
       fail("hbase table must have 'columns' meta");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().indexOf("'columns' property is required") >= 0);
+    } catch (TajoException e) {
+      assertEquals(e.getErrorCode(), ResultCode.MISSING_TABLE_PROPERTY);
     }
   }
 
@@ -157,7 +159,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     try {
       executeString(sql).close();
       fail("External table should be a existed table.");
-    } catch (Exception e) {
+    } catch (Throwable e) {
       assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
     }
   }
@@ -1131,8 +1133,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
       executeString("insert into hbase_mapped_table " +
           "select id, name from base_table ").close();
       fail("If inserting data type different with target table data type, should throw exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().indexOf("is different column type with") >= 0);
+    } catch (TajoException e) {
+      assertEquals(ResultCode.DATATYPE_MISMATCH, e.getErrorCode());
     } finally {
       executeString("DROP TABLE base_table PURGE").close();
       executeString("DROP TABLE hbase_mapped_table PURGE").close();

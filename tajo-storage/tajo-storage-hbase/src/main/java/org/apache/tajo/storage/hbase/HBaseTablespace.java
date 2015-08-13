@@ -43,6 +43,9 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.DataTypeMismatchException;
+import org.apache.tajo.exception.InvalidTablePropertyException;
+import org.apache.tajo.exception.MissingTablePropertyException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
@@ -51,6 +54,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
+import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.*;
@@ -114,7 +118,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
+  public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
     createTable(tableDesc.getUri(), tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.isExternal(), ifNotExists);
     TableStats stats = new TableStats();
     stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
@@ -122,17 +126,17 @@ public class HBaseTablespace extends Tablespace {
   }
 
   private void createTable(URI uri, TableMeta tableMeta, Schema schema,
-                           boolean isExternal, boolean ifNotExists) throws IOException {
+                           boolean isExternal, boolean ifNotExists) throws TajoException, IOException {
     String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" +
-          HBaseStorageConstants.META_TABLE_KEY + "' attribute.");
+      throw new MissingTablePropertyException(HBaseStorageConstants.META_TABLE_KEY, "hbase");
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
     String mappedColumns = tableMeta.getOption(HBaseStorageConstants.META_COLUMNS_KEY, "");
     if (mappedColumns != null && mappedColumns.split(",").length > schema.size()) {
-      throw new IOException("Columns property has more entry than Tajo table columns");
+      throw new InvalidTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY,
+          "mapping column pairs must be more than number of columns in the schema");
     }
 
     ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
@@ -146,17 +150,17 @@ public class HBaseTablespace extends Tablespace {
     if (numRowKeys > 1) {
       for (int i = 0; i < isRowKeyMappings.length; i++) {
         if (isRowKeyMappings[i] && schema.getColumn(i).getDataType().getType() != Type.TEXT) {
-          throw new IOException("Key field type should be TEXT type.");
+          throw SyntaxErrorUtil.makeSyntaxError("Key field type should be TEXT type.");
         }
       }
     }
 
     for (int i = 0; i < isRowKeyMappings.length; i++) {
       if (columnMapping.getIsColumnKeys()[i] && schema.getColumn(i).getDataType().getType() != Type.TEXT) {
-        throw new IOException("Column key field('<cfname>:key:') type should be TEXT type.");
+        throw SyntaxErrorUtil.makeSyntaxError("Column key field('<cfname>:key:') type should be TEXT type.");
       }
       if (columnMapping.getIsColumnValues()[i] && schema.getColumn(i).getDataType().getType() != Type.TEXT) {
-        throw new IOException("Column value field(('<cfname>:value:') type should be TEXT type.");
+        throw SyntaxErrorUtil.makeSyntaxError("Column value field(('<cfname>:value:') type should be TEXT type.");
       }
     }
 
@@ -166,8 +170,7 @@ public class HBaseTablespace extends Tablespace {
       if (isExternal) {
         // If tajo table is external table, only check validation.
         if (mappedColumns == null || mappedColumns.isEmpty()) {
-          throw new IOException("HBase mapped table is required a '" +
-              HBaseStorageConstants.META_COLUMNS_KEY + "' attribute.");
+          throw new MissingTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY, hbaseTableName);
         }
         if (!hAdmin.tableExists(hTableName)) {
           throw new IOException("HBase table [" + hbaseTableName + "] not exists. " +
@@ -181,8 +184,7 @@ public class HBaseTablespace extends Tablespace {
 
         Collection<String> mappingColumnFamilies =columnMapping.getColumnFamilyNames();
         if (mappingColumnFamilies.isEmpty()) {
-          throw new IOException("HBase mapped table is required a '" +
-              HBaseStorageConstants.META_COLUMNS_KEY + "' attribute.");
+          throw new MissingTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY, hbaseTableName);
         }
 
         for (String eachMappingColumnFamily : mappingColumnFamilies) {
@@ -201,7 +203,7 @@ public class HBaseTablespace extends Tablespace {
         // Creating hbase table
         HTableDescriptor hTableDescriptor = parseHTableDescriptor(tableMeta, schema);
 
-        byte[][] splitKeys = getSplitKeys(conf, schema, tableMeta);
+        byte[][] splitKeys = getSplitKeys(conf, hbaseTableName, schema, tableMeta);
         if (splitKeys == null) {
           hAdmin.createTable(hTableDescriptor);
         } else {
@@ -222,7 +224,9 @@ public class HBaseTablespace extends Tablespace {
    * @return
    * @throws java.io.IOException
    */
-  private byte[][] getSplitKeys(TajoConf conf, Schema schema, TableMeta meta) throws IOException {
+  private byte[][] getSplitKeys(TajoConf conf, String hbaseTableName, Schema schema, TableMeta meta)
+      throws MissingTablePropertyException, InvalidTablePropertyException, IOException {
+
     String splitRowKeys = meta.getOption(HBaseStorageConstants.META_SPLIT_ROW_KEYS_KEY, "");
     String splitRowKeysFile = meta.getOption(HBaseStorageConstants.META_SPLIT_ROW_KEYS_FILE_KEY, "");
 
@@ -249,8 +253,8 @@ public class HBaseTablespace extends Tablespace {
     }
 
     if (rowkeyBinary && numRowKeys > 1) {
-      throw new IOException("If rowkey is mapped to multi column and a rowkey is binary, " +
-          "Multiple region for creation is not support.");
+      throw new InvalidTablePropertyException("If rowkey is mapped to multi column and a rowkey is binary, " +
+          "Multiple region for creation is not support.", hbaseTableName);
     }
 
     if (splitRowKeys != null && !splitRowKeys.isEmpty()) {
@@ -271,7 +275,8 @@ public class HBaseTablespace extends Tablespace {
       Path path = new Path(splitRowKeysFile);
       FileSystem fs = path.getFileSystem(conf);
       if (!fs.exists(path)) {
-        throw new IOException("hbase.split.rowkeys.file=" + path.toString() + " not exists.");
+        throw new MissingTablePropertyException("hbase.split.rowkeys.file=" + path.toString() + " not exists.",
+            hbaseTableName);
       }
 
       SortedSet<String> splitKeySet = new TreeSet<String>();
@@ -339,11 +344,12 @@ public class HBaseTablespace extends Tablespace {
    * @return
    * @throws java.io.IOException
    */
-  public static HTableDescriptor parseHTableDescriptor(TableMeta tableMeta, Schema schema) throws IOException {
+  public static HTableDescriptor parseHTableDescriptor(TableMeta tableMeta, Schema schema)
+      throws MissingTablePropertyException, InvalidTablePropertyException {
+
     String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" +
-          HBaseStorageConstants.META_TABLE_KEY + "' attribute.");
+      throw new MissingTablePropertyException(HBaseStorageConstants.META_TABLE_KEY, hbaseTableName);
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
@@ -367,7 +373,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void purgeTable(TableDesc tableDesc) throws IOException {
+  public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
     HBaseAdmin hAdmin =  new HBaseAdmin(hbaseConf);
 
     try {
@@ -392,7 +398,9 @@ public class HBaseTablespace extends Tablespace {
    * @return
    * @throws java.io.IOException
    */
-  private Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
+  private Column[] getIndexableColumns(TableDesc tableDesc) throws
+      MissingTablePropertyException, InvalidTablePropertyException {
+
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     int[] rowKeyIndexes = columnMapping.getRowKeyFieldIndexes();
@@ -410,7 +418,9 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode) throws IOException {
+  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode)
+      throws IOException, TajoException {
+
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
 
     List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, scanNode);
@@ -780,7 +790,9 @@ public class HBaseTablespace extends Tablespace {
   }
 
   public List<IndexPredication> getIndexPredications(ColumnMapping columnMapping,
-                                                     TableDesc tableDesc, ScanNode scanNode) throws IOException {
+                                                     TableDesc tableDesc, ScanNode scanNode)
+      throws IOException, MissingTablePropertyException, InvalidTablePropertyException {
+
     List<IndexPredication> indexPredications = new ArrayList<IndexPredication>();
     Column[] indexableColumns = getIndexableColumns(tableDesc);
     if (indexableColumns != null && indexableColumns.length == 1) {
@@ -1106,7 +1118,7 @@ public class HBaseTablespace extends Tablespace {
     }
   }
 
-  public void prepareTable(LogicalNode node) throws IOException {
+  public void prepareTable(LogicalNode node) throws TajoException, IOException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (!cNode.isExternal()) {
@@ -1119,7 +1131,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void rollbackTable(LogicalNode node) throws IOException {
+  public void rollbackTable(LogicalNode node) throws IOException, TajoException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (cNode.isExternal()) {
@@ -1158,19 +1170,22 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException  {
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws TajoException {
     if (tableDesc != null) {
       Schema tableSchema = tableDesc.getSchema();
       if (tableSchema.size() != outSchema.size()) {
-        throw new IOException("The number of table columns is different from SELECT columns");
+        throw SyntaxErrorUtil.makeSyntaxError("Target columns and projected columns are mismatched to each other");
       }
 
       for (int i = 0; i < tableSchema.size(); i++) {
         if (!tableSchema.getColumn(i).getDataType().equals(outSchema.getColumn(i).getDataType())) {
-          throw new IOException(outSchema.getColumn(i).getQualifiedName() +
-              "(" + outSchema.getColumn(i).getDataType().getType() + ")" +
-              " is different column type with " + tableSchema.getColumn(i).getSimpleName() +
-              "(" + tableSchema.getColumn(i).getDataType().getType() + ")");
+          final Column tableColumn = tableSchema.getColumn(i);
+          final Column outColumn = outSchema.getColumn(i);
+          throw new DataTypeMismatchException(
+              tableColumn.getQualifiedName(),
+              tableColumn.getDataType().getType().name(),
+              outColumn.getQualifiedName(),
+              outColumn.getDataType().getType().name());
         }
       }
     }

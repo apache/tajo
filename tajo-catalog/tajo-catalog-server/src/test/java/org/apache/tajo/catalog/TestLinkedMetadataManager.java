@@ -24,12 +24,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -153,7 +152,7 @@ public class TestLinkedMetadataManager {
   static CatalogService catalog;
 
   @BeforeClass
-  public static void setUp() throws IOException {
+  public static void setUp() throws IOException, DuplicateTablespaceException, DuplicateDatabaseException {
     TajoConf conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
@@ -227,7 +226,7 @@ public class TestLinkedMetadataManager {
     assertEquals(Sets.newHashSet("table1", "table2"), Sets.newHashSet(catalog.getAllTableNames("space1")));
   }
 
-  @Test
+  @Test(expected = InsufficientPrivilegeException.class)
   public void testCreateTable() throws Exception {
     TableDesc tb = new TableDesc(
         "space1.errortable",
@@ -235,22 +234,12 @@ public class TestLinkedMetadataManager {
         new TableMeta("x", new KeyValueSet()),
         URI.create("file:///"));
 
-    try {
-      catalog.createTable(tb);
-      fail();
-    } catch (TajoInternalError e) {
-      assertEquals(Errors.ResultCode.INTERNAL_ERROR, e.getErrorCode());
-    }
+    catalog.createTable(tb);
   }
 
-  @Test
+  @Test(expected = InsufficientPrivilegeException.class)
   public void testDropTable() throws Exception {
-    try {
-      catalog.dropTable("space1.table1");
-      fail();
-    } catch (TajoInternalError e) {
-      assertEquals(Errors.ResultCode.INTERNAL_ERROR, e.getErrorCode());
-    }
+    catalog.dropTable("space1.table1");
   }
 
   @Test
