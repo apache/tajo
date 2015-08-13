@@ -36,7 +36,7 @@ import org.apache.tajo.storage.Tuple;
         "This function returns an element indexed from the end of an array with a negative index,\n " +
         "and null if the element at the specified index doesn’t exist.",
     example = "> SELECT json_array_get('[100, 200, 300]', 1);\n" +
-        "100",
+        "200",
     returnType = TajoDataTypes.Type.TEXT,
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.INT4})}
 )
