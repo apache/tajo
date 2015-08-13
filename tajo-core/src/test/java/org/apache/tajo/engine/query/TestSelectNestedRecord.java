@@ -30,9 +30,19 @@ import static org.junit.Assert.assertEquals;
 public class TestSelectNestedRecord extends QueryTestCaseBase {
 
   @Test
-  public final void testSelect1() throws Exception {
+  public final void testSelect0() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample1");
     assertEquals(TUtil.newList("sample1"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelect1() throws Exception {
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample2");
+    assertEquals(TUtil.newList("sample2"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -43,6 +53,16 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testSelect2() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
     assertEquals(TUtil.newList("tweets"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelect3() throws Exception {
+    List<String> tables = executeDDL("sample2_ddl.sql", "sample2", "sample5");
+    assertEquals(TUtil.newList("sample5"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -67,5 +87,33 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testInsertType1() throws Exception {
+    // all columns
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample3");
+    assertEquals(TUtil.newList("sample3"), tables);
+
+    executeString("CREATE TABLE clone (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
+
+    executeString("INSERT INTO clone (title, name.first_name, name.last_name) SELECT title, name.first_name, name.last_name from sample3").close();
+    ResultSet res = executeString("select title, name.first_name, name.last_name from clone");
+    assertResultSet(res);
+    res.close();
+  }
+
+  @Test
+  public final void testInsertType2() throws Exception {
+    // some columns
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample4");
+    assertEquals(TUtil.newList("sample4"), tables);
+
+    executeString("CREATE TABLE clone2 (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
+
+    executeString("INSERT INTO clone2 (title, name.last_name) SELECT title, name.last_name from sample4").close();
+    ResultSet res = executeString("select title, name.first_name, name.last_name from clone2");
+    assertResultSet(res);
+    res.close();
   }
 }
