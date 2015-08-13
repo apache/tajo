@@ -49,7 +49,7 @@ public class OracleStore extends AbstractDBStore {
   }
 
   @Override
-  protected void createDatabaseDependants() throws TajoException {
+  protected void createDatabaseDependants() {
     
   }
 

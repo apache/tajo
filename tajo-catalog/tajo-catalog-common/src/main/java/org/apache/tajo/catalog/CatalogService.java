@@ -58,7 +58,7 @@ public interface CatalogService {
    * @param tablespaceName Tablespace name to get
    * @return Tablespace description
    */
-  TablespaceProto getTablespace(String tablespaceName) throws UndefinedTableException;
+  TablespaceProto getTablespace(String tablespaceName) throws UndefinedTablespaceException;
 
   /**
    * @param alterTablespace AlterTablespace
@@ -137,7 +137,7 @@ public interface CatalogService {
    * @see TableDesc
    * @throws DuplicateTableException
    */
-  void createTable(TableDesc desc) throws DuplicateTableException, InsufficientPrivilegeException;
+  void createTable(TableDesc desc) throws DuplicateTableException, InsufficientPrivilegeException, DuplicateDatabaseException, UndefinedDatabaseException;
 
 
   /**
@@ -147,25 +147,27 @@ public interface CatalogService {
    * @throws UndefinedTableException
    * @throws InsufficientPrivilegeException
    */
-  void dropTable(String tableName) throws UndefinedTableException, InsufficientPrivilegeException;
+  void dropTable(String tableName) throws UndefinedTableException, InsufficientPrivilegeException, UndefinedDatabaseException;
 
   boolean existsTable(String databaseName, String tableName);
 
   boolean existsTable(String tableName);
 
-  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName) throws UndefinedPartitionMethodException, UndefinedTableException;
+  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName) throws UndefinedPartitionMethodException, UndefinedTableException, UndefinedDatabaseException;
 
-  boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException;
+  boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException,
+      UndefinedDatabaseException;
 
   PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
-      throws UndefinedPartitionException, UndefinedPartitionMethodException;
+      throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
+      UndefinedTableException;
 
   List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
   List<TablePartitionProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
-    , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException;
+    , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException;
 
   boolean createIndex(IndexDesc index);
 
@@ -214,7 +216,7 @@ public interface CatalogService {
    */
   void alterTable(AlterTableDesc desc)
       throws DuplicateColumnException, DuplicateTableException, InsufficientPrivilegeException,
-      UndefinedColumnException, UndefinedTableException;
+      UndefinedColumnException, UndefinedTableException, DuplicateDatabaseException, DuplicatePartitionException, UndefinedDatabaseException, UndefinedPartitionMethodException;
 
   void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
 }

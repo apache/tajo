@@ -64,8 +64,7 @@ public class XMLCatalogSchemaManager {
     }
   }
   
-  protected String getDropSQL(DatabaseObjectType type, String name) 
-      throws TajoException {
+  protected String getDropSQL(DatabaseObjectType type, String name) {
     SQLObject foundDropQuery = null;
     String sqlStatement = "DROP " + type.toString() + " " + name;
     
@@ -89,7 +88,7 @@ public class XMLCatalogSchemaManager {
     return sqlStatement;
   }
 
-  public void dropBaseSchema(Connection conn) throws TajoException {
+  public void dropBaseSchema(Connection conn) {
     if (!isLoaded()) {
       throw new TajoInternalError("Schema files are not loaded yet.");
     }
@@ -259,7 +258,7 @@ public class XMLCatalogSchemaManager {
     return result;
   }
 
-  public void createBaseSchema(Connection conn) throws TajoException {
+  public void createBaseSchema(Connection conn) {
     Statement stmt;
     
     if (!isLoaded()) {
@@ -335,7 +334,7 @@ public class XMLCatalogSchemaManager {
     CatalogUtil.closeQuietly(stmt);
   }
 
-  public boolean catalogAlreadyExists(Connection conn) throws TajoException {
+  public boolean catalogAlreadyExists(Connection conn) {
     boolean result = false;
     try {
       List<String> constants = TUtil.newList();
@@ -363,7 +362,7 @@ public class XMLCatalogSchemaManager {
     return result;
   }
 
-  public boolean isInitialized(Connection conn) throws TajoException {
+  public boolean isInitialized(Connection conn) {
     if (!isLoaded()) {
       throw new TajoInternalError("Database schema files are not loaded.");
     }

@@ -61,7 +61,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void createTablespace(String spaceName, String spaceUri) throws TajoException {
+  public void createTablespace(String spaceName, String spaceUri) throws DuplicateTablespaceException {
     if (tablespaces.containsKey(spaceName)) {
       throw new DuplicateTablespaceException(spaceName);
     }
@@ -70,12 +70,12 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public boolean existTablespace(String spaceName) throws TajoException {
+  public boolean existTablespace(String spaceName) {
     return tablespaces.containsKey(spaceName);
   }
 
   @Override
-  public void dropTablespace(String spaceName) throws TajoException {
+  public void dropTablespace(String spaceName) throws UndefinedTablespaceException {
     if (!tablespaces.containsKey(spaceName)) {
       throw new UndefinedTablespaceException(spaceName);
     }
@@ -83,12 +83,12 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public Collection<String> getAllTablespaceNames() throws TajoException {
+  public Collection<String> getAllTablespaceNames() {
     return tablespaces.keySet();
   }
   
   @Override
-  public List<TablespaceProto> getTablespaces() throws TajoException {
+  public List<TablespaceProto> getTablespaces() {
     List<TablespaceProto> tablespaceList = TUtil.newList();
     int tablespaceId = 0;
     
@@ -104,7 +104,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public TablespaceProto getTablespace(String spaceName) throws TajoException {
+  public TablespaceProto getTablespace(String spaceName) throws UndefinedTablespaceException {
     if (!tablespaces.containsKey(spaceName)) {
       throw new UndefinedTablespaceException(spaceName);
     }
@@ -116,7 +116,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws TajoException {
+  public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws UndefinedTablespaceException {
     if (!tablespaces.containsKey(alterProto.getSpaceName())) {
       throw new UndefinedTablespaceException(alterProto.getSpaceName());
     }
@@ -132,7 +132,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void createDatabase(String databaseName, String tablespaceName) throws TajoException {
+  public void createDatabase(String databaseName, String tablespaceName) throws DuplicateDatabaseException {
     if (databases.containsKey(databaseName)) {
       throw new DuplicateDatabaseException(databaseName);
     }
@@ -143,12 +143,12 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public boolean existDatabase(String databaseName) throws TajoException {
+  public boolean existDatabase(String databaseName) {
     return databases.containsKey(databaseName);
   }
 
   @Override
-  public void dropDatabase(String databaseName) throws TajoException {
+  public void dropDatabase(String databaseName) throws UndefinedDatabaseException {
     if (!databases.containsKey(databaseName)) {
       throw new UndefinedDatabaseException(databaseName);
     }
@@ -158,12 +158,12 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public Collection<String> getAllDatabaseNames() throws TajoException {
+  public Collection<String> getAllDatabaseNames() {
     return databases.keySet();
   }
   
   @Override
-  public List<DatabaseProto> getAllDatabases() throws TajoException {
+  public List<DatabaseProto> getAllDatabases() {
     List<DatabaseProto> databaseList = new ArrayList<DatabaseProto>();
     int dbId = 0;
     
@@ -193,7 +193,9 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void createTable(CatalogProtos.TableDescProto request) throws TajoException {
+  public void createTable(CatalogProtos.TableDescProto request)
+      throws UndefinedDatabaseException, DuplicateTableException {
+
     String [] splitted = CatalogUtil.splitTableName(request.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
@@ -212,7 +214,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void updateTableStats(CatalogProtos.UpdateTableStatsProto request) throws TajoException {
+  public void updateTableStats(CatalogProtos.UpdateTableStatsProto request) throws UndefinedDatabaseException {
     String [] splitted = CatalogUtil.splitTableName(request.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
@@ -229,14 +231,14 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public boolean existTable(String dbName, String tbName) throws TajoException {
+  public boolean existTable(String dbName, String tbName) throws UndefinedDatabaseException {
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, dbName);
 
     return database.containsKey(tbName);
   }
 
   @Override
-  public void dropTable(String dbName, String tbName) throws TajoException {
+  public void dropTable(String dbName, String tbName) throws UndefinedDatabaseException, UndefinedTableException {
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, dbName);
 
     if (database.containsKey(tbName)) {
@@ -250,7 +252,8 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#alterTable(AlterTableDesc)
    */
   @Override
-  public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws TajoException {
+  public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto)
+      throws UndefinedDatabaseException, DuplicateTableException, DuplicatePartitionException, UndefinedPartitionException {
 
     String[] split = CatalogUtil.splitTableName(alterTableDescProto.getTableName());
     if (split.length == 1) {
@@ -382,7 +385,8 @@ public class MemStore implements CatalogStore {
    */
   @Override
   public CatalogProtos.TableDescProto getTable(String databaseName, String tableName)
-      throws TajoException {
+      throws UndefinedDatabaseException, UndefinedTableException {
+
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
 
     if (database.containsKey(tableName)) {
@@ -402,13 +406,13 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getAllTableNames()
    */
   @Override
-  public List<String> getAllTableNames(String databaseName) throws TajoException {
+  public List<String> getAllTableNames(String databaseName) throws UndefinedDatabaseException {
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
     return new ArrayList<String>(database.keySet());
   }
   
   @Override
-  public List<TableDescriptorProto> getAllTables() throws TajoException {
+  public List<TableDescriptorProto> getAllTables() {
     List<TableDescriptorProto> tableList = new ArrayList<CatalogProtos.TableDescriptorProto>();
     int dbId = 0, tableId = 0;
     
@@ -438,7 +442,7 @@ public class MemStore implements CatalogStore {
   }
   
   @Override
-  public List<TableOptionProto> getAllTableProperties() throws TajoException {
+  public List<TableOptionProto> getAllTableProperties() {
     List<TableOptionProto> optionList = new ArrayList<CatalogProtos.TableOptionProto>();
     int tid = 0;
     
@@ -467,7 +471,7 @@ public class MemStore implements CatalogStore {
   }
   
   @Override
-  public List<TableStatsProto> getAllTableStats() throws TajoException {
+  public List<TableStatsProto> getAllTableStats() {
     List<TableStatsProto> statList = new ArrayList<CatalogProtos.TableStatsProto>();
     int tid = 0;
     
@@ -493,7 +497,7 @@ public class MemStore implements CatalogStore {
   }
   
   @Override
-  public List<ColumnProto> getAllColumns() throws TajoException {
+  public List<ColumnProto> getAllColumns() {
     List<ColumnProto> columnList = new ArrayList<CatalogProtos.ColumnProto>();
     int tid = 0;
     
@@ -520,13 +524,9 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws TajoException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
-      throws TajoException {
+      throws UndefinedDatabaseException, UndefinedTableException {
+
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
 
     if (database.containsKey(tableName)) {
@@ -539,7 +539,8 @@ public class MemStore implements CatalogStore {
 
   @Override
   public boolean existPartitionMethod(String databaseName, String tableName)
-      throws TajoException {
+      throws UndefinedDatabaseException, UndefinedTableException {
+
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
 
     if (database.containsKey(tableName)) {
@@ -551,12 +552,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void dropPartitionMethod(String databaseName, String tableName) throws TajoException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws TajoException {
+  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) {
     List<CatalogProtos.PartitionDescProto> protos = new ArrayList<CatalogProtos.PartitionDescProto>();
 
     if (partitions.containsKey(tableName)) {
@@ -569,7 +565,7 @@ public class MemStore implements CatalogStore {
 
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                       String partitionName) throws TajoException {
+                                                       String partitionName) throws UndefinedPartitionException {
     if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
       return partitions.get(tableName).get(partitionName);
     } else {
@@ -577,7 +573,7 @@ public class MemStore implements CatalogStore {
     }
   }
 
-  public List<TablePartitionProto> getAllPartitions() throws TajoException {
+  public List<TablePartitionProto> getAllPartitions() {
     List<TablePartitionProto> protos = new ArrayList<TablePartitionProto>();
     Set<String> tables = partitions.keySet();
     for (String table : tables) {
@@ -603,14 +599,19 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
-    , boolean ifNotExists) throws TajoException {
+  public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions,
+    boolean ifNotExists) throws DuplicatePartitionException {
+
     for(CatalogProtos.PartitionDescProto partition: partitions) {
       String partitionName = partition.getPartitionName();
 
       if (this.partitions.containsKey(tableName) && this.partitions.get(tableName).containsKey(partitionName)) {
         if (ifNotExists) {
-          dropPartition(databaseName, tableName, partitionName);
+          try {
+            dropPartition(databaseName, tableName, partitionName);
+          } catch (UndefinedPartitionException e) {
+            // ignore
+          }
         } else {
           throw new DuplicatePartitionException(partitionName);
         }
@@ -623,13 +624,14 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#createIndex(nta.catalog.proto.CatalogProtos.IndexDescProto)
    */
   @Override
-  public void createIndex(IndexDescProto proto) throws TajoException {
+  public void createIndex(IndexDescProto proto) throws UndefinedDatabaseException, UndefinedTableException,
+      DuplicateIndexException {
+
     final String databaseName = proto.getTableIdentifier().getDatabaseName();
     final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
-
+    getTable(databaseName, tableName);
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    TableDescProto tableDescProto = getTable(databaseName, tableName);
 
     if (index.containsKey(proto.getIndexName())) {
       throw new DuplicateIndexException(proto.getIndexName());
@@ -648,7 +650,9 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#dropIndex(java.lang.String)
    */
   @Override
-  public void dropIndex(String databaseName, String indexName) throws TajoException {
+  public void dropIndex(String databaseName, String indexName) throws UndefinedDatabaseException,
+      UndefinedIndexException, UndefinedTableException {
+
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     if (!index.containsKey(indexName)) {
@@ -656,7 +660,7 @@ public class MemStore implements CatalogStore {
     }
     IndexDescProto proto = index.get(indexName);
     final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
-    TableDescProto tableDescProto = getTable(databaseName, tableName);
+    getTable(databaseName, tableName);
     index.remove(indexName);
     String originalTableName = proto.getTableIdentifier().getTableName();
     String simpleTableName = CatalogUtil.extractSimpleName(originalTableName);
@@ -669,7 +673,9 @@ public class MemStore implements CatalogStore {
    * @see CatalogStore#getIndexByName(java.lang.String)
    */
   @Override
-  public IndexDescProto getIndexByName(String databaseName, String indexName) throws TajoException {
+  public IndexDescProto getIndexByName(String databaseName, String indexName)
+      throws UndefinedDatabaseException, UndefinedIndexException {
+
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     if (!index.containsKey(indexName)) {
       throw new UndefinedIndexException(indexName);
@@ -679,7 +685,9 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws TajoException {
+  public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedIndexException {
+
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     String simpleTableName = CatalogUtil.extractSimpleName(tableName);
     TableDescProto tableDescProto = getTable(databaseName, simpleTableName);
@@ -693,13 +701,15 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public boolean existIndexByName(String databaseName, String indexName) throws TajoException {
+  public boolean existIndexByName(String databaseName, String indexName) throws UndefinedDatabaseException {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     return index.containsKey(indexName);
   }
 
   @Override
-  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) throws TajoException {
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws UndefinedDatabaseException, UndefinedTableException {
+
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     TableDescProto tableDescProto = getTable(databaseName, tableName);
     return indexByColumn.containsKey(
@@ -708,7 +718,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws TajoException {
+  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws UndefinedDatabaseException {
     List<String> indexNames = new ArrayList<String>();
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     String simpleTableName = CatalogUtil.extractSimpleName(tableName);
@@ -722,7 +732,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public boolean existIndexesByTable(String databaseName, String tableName) throws TajoException {
+  public boolean existIndexesByTable(String databaseName, String tableName) throws UndefinedDatabaseException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     String simpleTableName = CatalogUtil.extractSimpleName(tableName);
     for (IndexDescProto proto : indexByColumn.values()) {
@@ -734,7 +744,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public List<IndexDescProto> getAllIndexes() throws TajoException {
+  public List<IndexDescProto> getAllIndexes() {
     List<IndexDescProto> indexDescProtos = TUtil.newList();
     for (Map<String,IndexDescProto> indexMap : indexes.values()) {
       indexDescProtos.addAll(indexMap.values());
@@ -743,22 +753,22 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void addFunction(FunctionDesc func) throws TajoException {
+  public void addFunction(FunctionDesc func) {
     // to be implemented
   }
 
   @Override
-  public void deleteFunction(FunctionDesc func) throws TajoException {
+  public void deleteFunction(FunctionDesc func) {
     // to be implemented
   }
 
   @Override
-  public void existFunction(FunctionDesc func) throws TajoException {
+  public void existFunction(FunctionDesc func) {
     // to be implemented
   }
 
   @Override
-  public List<String> getAllFunctionNames() throws TajoException {
+  public List<String> getAllFunctionNames() {
     // to be implemented
     return null;
   }

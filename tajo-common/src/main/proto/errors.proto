@@ -157,7 +157,7 @@ enum ResultCode {
   CAT_UPGRADE_REQUIRED                  = 901;  // Migration
   CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server
 
-  // Linked Metadata (MDC)
+  // Linked Metadata (LMD)
   LMD_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
 
   // Storage and Data Format

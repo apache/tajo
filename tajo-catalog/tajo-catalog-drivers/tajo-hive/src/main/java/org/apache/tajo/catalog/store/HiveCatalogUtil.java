@@ -31,13 +31,14 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.LMDNoMatchedDatatypeException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
 import static org.apache.tajo.exception.ExceptionUtil.makeNotSupported;
 
 public class HiveCatalogUtil {
-  public static void validateSchema(Table tblSchema) throws TajoException {
+  public static void validateSchema(Table tblSchema) {
     for (FieldSchema fieldSchema : tblSchema.getCols()) {
       String fieldType = fieldSchema.getType();
       if (fieldType.equalsIgnoreCase("ARRAY") || fieldType.equalsIgnoreCase("STRUCT")
@@ -47,7 +48,7 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static TajoDataTypes.Type getTajoFieldType(String dataType) throws TajoException {
+  public static TajoDataTypes.Type getTajoFieldType(String dataType) {
     Preconditions.checkNotNull(dataType);
 
     if(dataType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
@@ -73,7 +74,7 @@ public class HiveCatalogUtil {
     } else if(dataType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
       return TajoDataTypes.Type.DATE;
     } else {
-      throw new LMDNoMatchedDatatypeException(dataType);
+      throw new TajoRuntimeException(new LMDNoMatchedDatatypeException(dataType));
     }
   }
 

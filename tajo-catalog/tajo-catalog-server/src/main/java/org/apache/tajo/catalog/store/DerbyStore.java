@@ -23,7 +23,6 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 
 import java.sql.Connection;
@@ -48,7 +47,7 @@ public class DerbyStore extends AbstractDBStore {
   }
 
   @Override
-  public String readSchemaFile(String filename) throws TajoException {
+  public String readSchemaFile(String filename) {
     return super.readSchemaFile("derby/" + filename);
   }
 
@@ -74,7 +73,7 @@ public class DerbyStore extends AbstractDBStore {
   }
 
   @Override
-  protected void createDatabaseDependants() throws TajoException {
+  protected void createDatabaseDependants() {
     String schemaName = catalogSchemaManager.getCatalogStore().getSchema().getSchemaName();
     Statement stmt = null;
     

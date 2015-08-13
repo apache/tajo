@@ -143,13 +143,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public TablespaceProto getTablespace(final String tablespaceName) throws UndefinedTableException {
+  public TablespaceProto getTablespace(final String tablespaceName) throws UndefinedTablespaceException {
 
     try {
       final BlockingInterface stub = getStub();
       final GetTablespaceResponse response = stub.getTablespace(null, ProtoUtil.convertString(tablespaceName));
 
-      throwsIfThisError(response.getState(), UndefinedTableException.class);
+      throwsIfThisError(response.getState(), UndefinedTablespaceException.class);
       ensureOk(response.getState());
       return response.getTablespace();
 
@@ -359,7 +359,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final PartitionMethodDesc getPartitionMethod(final String databaseName, final String tableName)
-      throws UndefinedPartitionMethodException, UndefinedTableException {
+      throws UndefinedPartitionMethodException, UndefinedDatabaseException, UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
@@ -368,6 +368,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
 
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+      throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       ensureOk(response.getState());
       return CatalogUtil.newPartitionMethodDesc(response.getPartition());
@@ -379,7 +380,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final boolean existPartitionMethod(final String databaseName, final String tableName)
-      throws UndefinedTableException {
+      throws UndefinedDatabaseException, UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
@@ -389,6 +390,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       if (isThisError(state, UNDEFINED_PARTITION_METHOD)) {
         return false;
       }
+      throwsIfThisError(state, UndefinedDatabaseException.class);
       throwsIfThisError(state, UndefinedTableException.class);
       ensureOk(state);
       return true;
@@ -401,7 +403,9 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public final PartitionDescProto getPartition(final String databaseName, final String tableName,
                                                final String partitionName)
-      throws UndefinedPartitionException, UndefinedPartitionMethodException {
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
+      UndefinedPartitionMethodException {
+
     try {
       final BlockingInterface stub = getStub();
       final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
@@ -411,6 +415,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
       final GetPartitionDescResponse response = stub.getPartitionByPartitionName(null, request);
 
+      throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
+      throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionException.class);
       ensureOk(response.getState());
@@ -455,7 +461,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions,
-                               boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException,
+                               boolean ifNotExists)
+      throws UndefinedDatabaseException, UndefinedTableException, DuplicatePartitionException,
       UndefinedPartitionMethodException {
 
     try {
@@ -521,11 +528,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void createTable(final TableDesc desc) throws DuplicateTableException, InsufficientPrivilegeException {
+  public final void createTable(final TableDesc desc)
+      throws UndefinedDatabaseException, DuplicateTableException, InsufficientPrivilegeException {
+
     try {
       final BlockingInterface stub = getStub();
       final ReturnState state = stub.createTable(null, desc.getProto());
 
+      throwsIfThisError(state, UndefinedDatabaseException.class);
       throwsIfThisError(state, DuplicateTableException.class);
       throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
@@ -536,7 +546,9 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public void dropTable(String tableName) throws UndefinedTableException, InsufficientPrivilegeException {
+  public void dropTable(String tableName)
+      throws UndefinedDatabaseException, UndefinedTableException, InsufficientPrivilegeException {
+
     String[] splitted = CatalogUtil.splitFQTableName(tableName);
     final String databaseName = splitted[0];
     final String simpleName = splitted[1];
@@ -546,6 +558,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final TableIdentifierProto request = buildTableIdentifier(databaseName, simpleName);
       final ReturnState state = stub.dropTable(null, request);
 
+      throwsIfThisError(state, UndefinedDatabaseException.class);
       throwsIfThisError(state, UndefinedTableException.class);
       throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
@@ -764,7 +777,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void dropFunction(final String signature) throws UndefinedFunctionException, InsufficientPrivilegeException {
+  public final void dropFunction(final String signature) throws UndefinedFunctionException,
+      InsufficientPrivilegeException {
 
     try {
       final UnregisterFunctionRequest request = UnregisterFunctionRequest.newBuilder()
@@ -806,7 +820,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final FunctionResponse response = stub.getFunctionMeta(null, builder.build());
 
       throwsIfThisError(response.getState(), UndefinedFunctionException.class);
-      throwsIfThisError(response.getState(), AmbiguousFunctionException.class);
       ensureOk(response.getState());
       return new FunctionDesc(response.getFunction());
 
@@ -851,17 +864,23 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void alterTable(final AlterTableDesc desc) throws UndefinedTableException, DuplicateColumnException,
-      InsufficientPrivilegeException, DuplicateTableException {
+  public final void alterTable(final AlterTableDesc desc) throws DuplicateDatabaseException,
+      DuplicateTableException, DuplicateColumnException, DuplicatePartitionException,
+      UndefinedDatabaseException, UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException,
+      InsufficientPrivilegeException {
 
     try {
       final BlockingInterface stub = getStub();
       final ReturnState state = stub.alterTable(null, desc.getProto());
 
-      throwsIfThisError(state, DuplicateColumnException.class);
+      throwsIfThisError(state, DuplicateDatabaseException.class);
       throwsIfThisError(state, DuplicateTableException.class);
       throwsIfThisError(state, DuplicateColumnException.class);
+      throwsIfThisError(state, DuplicatePartitionException.class);
+      throwsIfThisError(state, UndefinedDatabaseException.class);
       throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, UndefinedColumnException.class);
+      throwsIfThisError(state, UndefinedPartitionMethodException.class);
       throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 

@@ -70,7 +70,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public boolean existTable(final String databaseName, final String tableName) throws TajoException {
+  public boolean existTable(final String databaseName, final String tableName) {
     boolean exist = false;
     org.apache.hadoop.hive.ql.metadata.Table table;
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
@@ -96,7 +96,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final CatalogProtos.TableDescProto getTable(String databaseName, final String tableName) throws TajoException {
+  public final CatalogProtos.TableDescProto getTable(String databaseName, final String tableName)
+      throws UndefinedTableException {
+
     org.apache.hadoop.hive.ql.metadata.Table table = null;
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     Path path = null;
@@ -270,7 +272,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final List<String> getAllTableNames(String databaseName) throws TajoException {
+  public final List<String> getAllTableNames(String databaseName) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
@@ -284,28 +286,28 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void createTablespace(String spaceName, String spaceUri) throws TajoException {
+  public void createTablespace(String spaceName, String spaceUri) {
     // SKIP
   }
 
   @Override
-  public boolean existTablespace(String spaceName) throws TajoException {
+  public boolean existTablespace(String spaceName) {
     // SKIP
     return spaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME);
   }
 
   @Override
-  public void dropTablespace(String spaceName) throws TajoException {
+  public void dropTablespace(String spaceName) {
     // SKIP
   }
 
   @Override
-  public Collection<String> getAllTablespaceNames() throws TajoException {
+  public Collection<String> getAllTablespaceNames() {
     return Lists.newArrayList(TajoConstants.DEFAULT_TABLESPACE_NAME);
   }
 
   @Override
-  public TablespaceProto getTablespace(String spaceName) throws TajoException {
+  public TablespaceProto getTablespace(String spaceName) {
     if (spaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
       TablespaceProto.Builder builder = TablespaceProto.newBuilder();
       builder.setSpaceName(TajoConstants.DEFAULT_TABLESPACE_NAME);
@@ -317,18 +319,17 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws
-    TajoException {
+  public void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) {
     // TODO - not implemented yet
   }
 
   @Override
-  public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws TajoException {
+  public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) {
     throw new UnsupportedException("Tablespace in HiveMeta");
   }
 
   @Override
-  public void createDatabase(String databaseName, String tablespaceName) throws TajoException {
+  public void createDatabase(String databaseName, String tablespaceName) throws DuplicateDatabaseException {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
@@ -351,7 +352,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public boolean existDatabase(String databaseName) throws TajoException {
+  public boolean existDatabase(String databaseName) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
@@ -368,7 +369,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void dropDatabase(String databaseName) throws TajoException {
+  public void dropDatabase(String databaseName) throws UndefinedDatabaseException {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
@@ -386,7 +387,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public Collection<String> getAllDatabaseNames() throws TajoException {
+  public Collection<String> getAllDatabaseNames() {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
@@ -402,7 +403,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final void createTable(final CatalogProtos.TableDescProto tableDescProto) throws TajoException {
+  public final void createTable(final CatalogProtos.TableDescProto tableDescProto) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     TableDesc tableDesc = new TableDesc(tableDescProto);
@@ -553,7 +554,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final void dropTable(String databaseName, final String tableName) throws TajoException {
+  public final void dropTable(String databaseName, final String tableName) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
@@ -571,7 +572,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
 
   @Override
-  public void alterTable(final CatalogProtos.AlterTableDescProto alterTableDescProto) throws TajoException {
+  public void alterTable(final CatalogProtos.AlterTableDescProto alterTableDescProto)
+      throws DuplicateTableException, DuplicateColumnException, DuplicatePartitionException,
+      UndefinedPartitionException {
+
     final String[] split = CatalogUtil.splitFQTableName(alterTableDescProto.getTableName());
 
     if (split.length == 1) {
@@ -748,14 +752,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws TajoException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
-      throws TajoException {
+      throws UndefinedTableException, UndefinedPartitionMethodException {
+
     org.apache.hadoop.hive.ql.metadata.Table table;
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
@@ -806,7 +805,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public boolean existPartitionMethod(String databaseName, String tableName) throws TajoException {
+  public boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException {
     boolean exist = false;
     org.apache.hadoop.hive.ql.metadata.Table table;
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
@@ -835,21 +834,15 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void dropPartitionMethod(String databaseName, String tableName) throws TajoException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName,
-                                                         String tableName) throws TajoException {
+                                                         String tableName) {
     throw new UnsupportedOperationException();
   }
 
 
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                       String partitionName) throws TajoException {
+                                                       String partitionName) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     CatalogProtos.PartitionDescProto.Builder builder = null;
 
@@ -885,75 +878,75 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public final void addFunction(final FunctionDesc func) throws TajoException {
+  public final void addFunction(final FunctionDesc func) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public final void deleteFunction(final FunctionDesc func) throws TajoException {
+  public final void deleteFunction(final FunctionDesc func) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public final void existFunction(final FunctionDesc func) throws TajoException {
+  public final void existFunction(final FunctionDesc func) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public final List<String> getAllFunctionNames() throws TajoException {
+  public final List<String> getAllFunctionNames() {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void createIndex(CatalogProtos.IndexDescProto proto) throws TajoException {
+  public void createIndex(CatalogProtos.IndexDescProto proto) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void dropIndex(String databaseName, String indexName) throws TajoException {
+  public void dropIndex(String databaseName, String indexName) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) throws TajoException {
+  public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws TajoException {
+      {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean existIndexByName(String databaseName, String indexName) throws TajoException {
+  public boolean existIndexByName(String databaseName, String indexName) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
   public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws TajoException {
+      {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws TajoException {
+  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean existIndexesByTable(String databaseName, String tableName) throws TajoException {
+  public boolean existIndexesByTable(String databaseName, String tableName) {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
@@ -963,7 +956,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     clientPool.close();
   }
 
-  private boolean existColumn(final String databaseName ,final String tableName , final String columnName) throws TajoException {
+  private boolean existColumn(final String databaseName ,final String tableName , final String columnName) {
     boolean exist = false;
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
@@ -993,28 +986,28 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<ColumnProto> getAllColumns() throws TajoException {
+  public List<ColumnProto> getAllColumns() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<DatabaseProto> getAllDatabases() throws TajoException {
+  public List<DatabaseProto> getAllDatabases() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<IndexDescProto> getAllIndexes() throws TajoException {
+  public List<IndexDescProto> getAllIndexes() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<TablePartitionProto> getAllPartitions() throws TajoException {
+  public List<TablePartitionProto> getAllPartitions() {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
-    , boolean ifNotExists) throws TajoException {
+    , boolean ifNotExists) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<Partition> addPartitions = TUtil.newList();
     CatalogProtos.PartitionDescProto existingPartition = null;
@@ -1061,22 +1054,22 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<TableOptionProto> getAllTableProperties() throws TajoException {
+  public List<TableOptionProto> getAllTableProperties() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<TableStatsProto> getAllTableStats() throws TajoException {
+  public List<TableStatsProto> getAllTableStats() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<TableDescriptorProto> getAllTables() throws TajoException {
+  public List<TableDescriptorProto> getAllTables() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<TablespaceProto> getTablespaces() throws TajoException {
+  public List<TablespaceProto> getTablespaces() {
     throw new UnsupportedOperationException();
   }
 }
