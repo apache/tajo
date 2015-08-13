@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.store;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;

@@ -1511,8 +1511,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public Pair<Integer, String> getDatabaseIdAndUri(String databaseName)
-      throws SQLException, UndefinedDatabaseException {
+  public Pair<Integer, String> getDatabaseIdAndUri(String databaseName) throws UndefinedDatabaseException {
 
     String sql =
         "SELECT DB_ID, SPACE_URI from " + TB_DATABASES + " natural join " + TB_SPACES + " WHERE db_name = ?";
@@ -1534,7 +1533,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         throw new UndefinedDatabaseException(databaseName);
       }
 
-      return new Pair<Integer, String>(res.getInt(1), res.getString(2) + "/" + databaseName);
+      return new Pair<>(res.getInt(1), res.getString(2) + "/" + databaseName);
+    } catch (SQLException e) {
+      throw new TajoInternalError(e);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -1542,18 +1543,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public CatalogProtos.TableDescProto getTable(String databaseName, String tableName)
-      {
-    Connection conn = null;
+      throws UndefinedDatabaseException, UndefinedTableException {
+
+    Connection conn;
     ResultSet res = null;
     PreparedStatement pstmt = null;
-
     CatalogProtos.TableDescProto.Builder tableBuilder = null;
     String storeType;
 
+    Pair<Integer, String> databaseIdAndUri = getDatabaseIdAndUri(databaseName);
+
     try {
       tableBuilder = CatalogProtos.TableDescProto.newBuilder();
-
-      Pair<Integer, String> databaseIdAndUri = getDatabaseIdAndUri(databaseName);
 
       //////////////////////////////////////////
       // Geting Table Description
@@ -1561,7 +1562,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       String sql =
           "SELECT TID, " + COL_TABLES_NAME + ", TABLE_TYPE, PATH, STORE_TYPE FROM TABLES " +
               "WHERE DB_ID = ? AND " + COL_TABLES_NAME + "=?";
-
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -1574,7 +1574,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       if (!res.next()) { // there is no table of the given name.
-        return null;
+         throw new UndefinedTableException(tableName);
       }
 
       int tableId = res.getInt(1);
@@ -1674,7 +1674,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (res.next()) {
         tableBuilder.setPartition(resultToPartitionMethodProto(databaseName, tableName, res));
       }
-    } catch (Throwable se) {
+    } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
@@ -2401,7 +2401,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultToIndexDescProtoBuilder(builder, res);
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-      builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
+
+      try {
+        builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
+      } catch (UndefinedTableException e) {
+        throw new TajoInternalError(
+            "Inconsistent table and index information: table " + tableName + " does not exists.");
+      }
+
       proto = builder.build();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
@@ -2690,12 +2697,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private CatalogProtos.PartitionMethodProto resultToPartitionMethodProto(final String databaseName,
                                                                           final String tableName,
                                                                           final ResultSet res)
-      throws SQLException, InvalidProtocolBufferException {
-    CatalogProtos.PartitionMethodProto.Builder partBuilder = CatalogProtos.PartitionMethodProto.newBuilder();
-    partBuilder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-    partBuilder.setPartitionType(CatalogProtos.PartitionType.valueOf(res.getString("partition_type")));
-    partBuilder.setExpression(res.getString("expression"));
-    partBuilder.setExpressionSchema(SchemaProto.parseFrom(res.getBytes("expression_schema")));
+      throws SQLException {
+
+    CatalogProtos.PartitionMethodProto.Builder partBuilder;
+    try {
+      partBuilder = CatalogProtos.PartitionMethodProto.newBuilder();
+      partBuilder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      partBuilder.setPartitionType(CatalogProtos.PartitionType.valueOf(res.getString("partition_type")));
+      partBuilder.setExpression(res.getString("expression"));
+      partBuilder.setExpressionSchema(SchemaProto.parseFrom(res.getBytes("expression_schema")));
+    } catch (InvalidProtocolBufferException e) {
+      throw new TajoInternalError(e);
+    }
     return partBuilder.build();
   }
 
