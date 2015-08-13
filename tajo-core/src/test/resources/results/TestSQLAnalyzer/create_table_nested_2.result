@@ -15,35 +15,39 @@
     {
       "ColumnDefName": "c",
       "DataTypeName": "RECORD",
-      "Record": [
-        {
-          "ColumnDefName": "d",
-          "DataTypeName": "TEXT",
-          "OpType": "DataType"
-        },
-        {
-          "ColumnDefName": "e",
-          "DataTypeName": "INT8",
-          "OpType": "DataType"
-        },
-        {
-          "ColumnDefName": "f",
-          "DataTypeName": "RECORD",
-          "Record": [
-            {
-              "ColumnDefName": "g",
-              "DataTypeName": "INT1",
-              "OpType": "DataType"
+      "Record": {
+        "Schema": [
+          {
+            "ColumnDefName": "d",
+            "DataTypeName": "TEXT",
+            "OpType": "DataType"
+          },
+          {
+            "ColumnDefName": "e",
+            "DataTypeName": "INT8",
+            "OpType": "DataType"
+          },
+          {
+            "ColumnDefName": "f",
+            "DataTypeName": "RECORD",
+            "Record": {
+              "Schema": [
+                {
+                  "ColumnDefName": "g",
+                  "DataTypeName": "INT1",
+                  "OpType": "DataType"
+                },
+                {
+                  "ColumnDefName": "h",
+                  "DataTypeName": "FLOAT4",
+                  "OpType": "DataType"
+                }
+              ]
             },
-            {
-              "ColumnDefName": "h",
-              "DataTypeName": "FLOAT4",
-              "OpType": "DataType"
-            }
-          ],
-          "OpType": "DataType"
-        }
-      ],
+            "OpType": "DataType"
+          }
+        ]
+      },
       "OpType": "DataType"
     },
     {
