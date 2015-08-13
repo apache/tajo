@@ -79,7 +79,7 @@ public class NestedPathUtil {
     }
 
     if (found != null) {
-      if (found.getDataType().getType() == Type.RECORD) {
+      if (found.getDataType().getType() == Type.RECORD && paths.length > depth + 1) {
         return lookupColumnInternal(found, paths, depth + 1);
       } else {
         return found;

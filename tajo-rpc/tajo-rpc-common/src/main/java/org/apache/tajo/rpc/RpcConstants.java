@@ -26,7 +26,7 @@ public class RpcConstants {
 
   public static final int DEFAULT_RPC_RETRIES = 3;
   public static final int DEFAULT_RPC_TIMEOUT_SECONDS = 180;
-  public static final int DEFAULT_CONNECT_TIMEOUT = 60000;  // 60 sec
+  public static final int DEFAULT_CONNECT_TIMEOUT = 20000;  // 20 sec
   public static final int DEFAULT_PAUSE = 1000; // 1 sec
   public static final int DEFAULT_FUTURE_TIMEOUT_SECONDS = 10;
 }
