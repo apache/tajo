@@ -32,9 +32,7 @@ import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.storage.*;
@@ -85,15 +83,6 @@ public class SequenceFileAppender extends FileAppender {
     os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
 
     this.fs = path.getFileSystem(conf);
-
-    //determine the intermediate file type
-    String store = conf.get(TajoConf.ConfVars.SHUFFLE_FILE_FORMAT.varname,
-        TajoConf.ConfVars.SHUFFLE_FILE_FORMAT.defaultVal);
-    if (enabledStats && CatalogProtos.StoreType.SEQUENCEFILE == CatalogProtos.StoreType.valueOf(store.toUpperCase())) {
-      isShuffle = true;
-    } else {
-      isShuffle = false;
-    }
 
     this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_DELIMITER,
         StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
@@ -194,11 +183,6 @@ public class SequenceFileAppender extends FileAppender {
             }
 
             serde.serialize(j, tuple, os, nullChars);
-
-            if (isShuffle) {
-              // it is to calculate min/max values, and it is only used for the intermediate file.
-              stats.analyzeField(j, tuple);
-            }
           }
           lasti = i + 1;
           nullByte = 0;
@@ -216,12 +200,6 @@ public class SequenceFileAppender extends FileAppender {
         if (columnNum -1 > i) {
           os.write((byte) delimiter);
         }
-
-        if (isShuffle) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, tuple);
-        }
-
       }
       writer.append(EMPTY_KEY, new Text(os.toByteArray()));
     }

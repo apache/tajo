@@ -32,7 +32,6 @@ import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -731,15 +730,6 @@ public class RCFile {
         throw new FileNotFoundException(path.toString());
       }
 
-      //determine the intermediate file type
-      String store = conf.get(TajoConf.ConfVars.SHUFFLE_FILE_FORMAT.varname,
-          TajoConf.ConfVars.SHUFFLE_FILE_FORMAT.defaultVal);
-      if (enabledStats && CatalogProtos.StoreType.RCFILE == CatalogProtos.StoreType.valueOf(store.toUpperCase())) {
-        isShuffle = true;
-      } else {
-        isShuffle = false;
-      }
-
       if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
         String codecClassname = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
         try {
@@ -900,10 +890,6 @@ public class RCFile {
       for (int i = 0; i < size; i++) {
         int length = columnBuffers[i].append(tuple, i);
         columnBufferSize += length;
-        if (isShuffle) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, tuple);
-        }
       }
 
       if (size < columnNumber) {

@@ -766,6 +766,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
    */
   public PhysicalExec createShuffleFileWritePlan(TaskAttemptContext ctx,
                                                  ShuffleFileWriteNode plan, PhysicalExec subOp) throws IOException {
+    plan.getOptions().set(StorageConstants.SHUFFLE_TYPE,
+        PlannerUtil.getShuffleType(ctx.getDataChannel().getShuffleType()));
+
     switch (plan.getShuffleType()) {
     case HASH_SHUFFLE:
     case SCATTERED_HASH_SHUFFLE:
@@ -784,7 +787,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           specs[i] = new SortSpec(columns[i]);
         }
       }
-      return new RangeShuffleFileWriteExec(ctx, subOp, plan.getInSchema(), plan.getInSchema(), sortSpecs);
+      return new RangeShuffleFileWriteExec(ctx, plan, subOp, sortSpecs);
 
     case NONE_SHUFFLE:
       // if there is no given NULL CHAR property in the table property and the query is neither CTAS or INSERT,

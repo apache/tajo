@@ -61,6 +61,10 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     this.joinSpec.setSingletonPredicate(joinQual);
   }
 
+  public void clearJoinQual() {
+    this.joinSpec.setPredicates(null);
+  }
+
   public boolean hasJoinQual() {
     return this.joinSpec.hasPredicates();
   }

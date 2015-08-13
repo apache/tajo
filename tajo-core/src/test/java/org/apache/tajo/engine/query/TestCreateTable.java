@@ -448,7 +448,7 @@ public class TestCreateTable extends QueryTestCaseBase {
       res = executeString(
           "INSERT INTO LOCATION '/testCreateExternalTable1FromOnlyPath' SELECT * FROM default.lineitem");
       res = executeString(
-          "CREATE EXTERNAL TABLE table1 (col1 INTEGER) USING CSV LOCATION '/testCreateExternalTable1FromOnlyPath';");
+          "CREATE EXTERNAL TABLE table1 (col1 INTEGER) USING TEXT LOCATION '/testCreateExternalTable1FromOnlyPath';");
     } catch (Throwable t) {
       if (res != null) {
         res.close();

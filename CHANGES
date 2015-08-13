@@ -1,6 +1,5 @@
 Tajo Change Log 
 
-
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -32,6 +31,13 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1751: Reduce the client connection timeout. (jinho)
+
+    TAJO-1746: Improve resource usage at first request of DefaultTaskScheduler.
+    (jinho)
+
+    TAJO-1743: Improve calculation of intermediate table statistics. (jinho)
 
     TAJO-1699: Tajo Java Client version 2. (hyunsik)
 
@@ -209,6 +215,11 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1752: NameResolver cannot find nested records properly. (jihoon)
+
+    TAJO-1732: During filter push down phase, join conditions are not set properly. 
+    (jihoon)
 
     TAJO-1742: Remove hadoop dependency in DatumFactory. (jinho)
 
@@ -397,6 +408,10 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1750: Upgrade hadoop dependency to 2.7.1. (jinho)
+
+    TAJO-1590: Moving to JDK 7. (jinho)
 
     TAJO-1300: Merge the index branch into the master branch. (jihoon)
 
