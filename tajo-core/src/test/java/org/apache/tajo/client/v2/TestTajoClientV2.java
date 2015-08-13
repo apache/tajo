@@ -219,7 +219,7 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
     } catch (ExecutionException e) {
       throw e.getCause();
     } finally {
-      future.release();
+      future.close();
     }
   }
 
@@ -268,7 +268,7 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
     } catch (ExecutionException e) {
       throw e.getCause();
     } finally {
-      future.release();
+      future.close();
     }
   }
 }
