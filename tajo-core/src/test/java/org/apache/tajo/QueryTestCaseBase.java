@@ -29,8 +29,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
@@ -350,7 +349,7 @@ public class QueryTestCaseBase {
     fail("Cannot catch any planning error from: " + query);
   }
 
-  protected ResultSet executeString(String sql) throws Exception {
+  protected ResultSet executeString(String sql) throws TajoException {
     return client.executeQueryAndGetResult(sql);
   }
 
@@ -632,7 +631,6 @@ public class QueryTestCaseBase {
    * @param result Query result to be compared.
    */
   public final void assertResultSet(String message, ResultSet result, String resultFileName) throws IOException {
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     Path resultFile = getResultFile(resultFileName);
     try {
       verifyResultText(message, result, resultFile);
@@ -683,7 +681,7 @@ public class QueryTestCaseBase {
    * Assert that the database does not exists.
    * @param databaseName The database name to be checked. This name is case sensitive.
    */
-  public void assertDatabaseNotExists(String databaseName) throws SQLException {
+  public void assertDatabaseNotExists(String databaseName) {
     assertTrue(!client.existDatabase(databaseName));
   }
 
@@ -693,7 +691,7 @@ public class QueryTestCaseBase {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @throws ServiceException
    */
-  public void assertTableExists(String tableName) throws SQLException {
+  public void assertTableExists(String tableName) {
     assertTrue(client.existTable(tableName));
   }
 
@@ -702,7 +700,7 @@ public class QueryTestCaseBase {
    *
    * @param tableName The table name to be checked. This name is case sensitive.
    */
-  public void assertTableNotExists(String tableName) throws SQLException {
+  public void assertTableNotExists(String tableName) {
     assertTrue(!client.existTable(tableName));
   }
 
@@ -790,7 +788,12 @@ public class QueryTestCaseBase {
     return queryFilePath;
   }
 
-  private Path getResultFile(String fileName) throws IOException {
+  protected String getResultContents(String fileName) throws IOException {
+    Path resultFile = getResultFile(getMethodName() + ".result");
+    return FileUtil.readTextFile(new File(resultFile.toUri()));
+  }
+
+  protected Path getResultFile(String fileName) throws IOException {
     Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
     FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     assertTrue(resultPath.toString() + " existence check", fs.exists(resultPath));

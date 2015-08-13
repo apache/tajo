@@ -27,6 +27,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.SQLException;
@@ -66,6 +68,8 @@ public class WaitingResultSet extends FetchResultSet {
       return tableDesc.getLogicalSchema();
     } catch (ServiceException e) {
       throw new SQLException(e);
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
     }
   }
 }

@@ -32,7 +32,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
@@ -208,7 +208,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
       break;
 
     default:
-      throw new UnimplementedException(types.get(fullPath).name() + " is not supported.");
+      throw new NotImplementedException(types.get(fullPath).name() + " is not supported.");
     }
   }
 

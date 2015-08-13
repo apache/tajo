@@ -20,10 +20,7 @@ package org.apache.tajo.client.v2;
 
 import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.junit.AfterClass;
@@ -196,8 +193,8 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
     resultContainer.get(0).close();
   }
 
-  @Test(timeout = 10 * 1000)
-  public void testQueryFutureKill() throws TajoException, ExecutionException, InterruptedException, SQLException {
+  @Test(expected = QueryKilledException.class, timeout = 10 * 1000)
+  public void testQueryFutureKill() throws Throwable {
     QueryFuture future = clientv2.executeQueryAsync("select sleep(1) from lineitem where l_orderkey > 4");
 
     assertTrue(future.isOk());
@@ -216,6 +213,14 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
     assertFalse(future.isSuccessful());
     assertFalse(future.isFailed());
     assertTrue(future.isKilled());
+
+    try {
+      future.get();
+    } catch (ExecutionException e) {
+      throw e.getCause();
+    } finally {
+      future.release();
+    }
   }
 
 
@@ -232,5 +237,38 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
   @Test(expected = UndefinedTableException.class)
   public void testErrorOnExecuteQueryAsync() throws TajoException {
     clientv2.executeQueryAsync("select * from unknown_table");
+  }
+
+  @Test(expected = SQLSyntaxError.class)
+  public void testSyntaxErrorOnUpdateQuery() throws TajoException {
+    clientv2.executeUpdate("drap table unknown-table");
+  }
+
+  @Test(expected = SQLSyntaxError.class)
+  public void testSyntaxErrorOnExecuteQuery() throws TajoException {
+    clientv2.executeQuery("select fail(3, ");
+  }
+
+  @Test(expected = SQLSyntaxError.class)
+  public void testSyntaxErrorOnExecuteQueryAsync() throws TajoException {
+    clientv2.executeQueryAsync("select fail(3, ");
+  }
+
+  @Test(expected = QueryFailedException.class)
+  public void testFailedExecuteQuery() throws TajoException {
+    clientv2.executeQuery("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem");
+  }
+
+  @Test(expected = QueryFailedException.class)
+  public void testFailedExecuteQueryAsync() throws Throwable {
+    QueryFuture future = clientv2.executeQueryAsync(
+            "select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem");
+    try {
+      future.get();
+    } catch (ExecutionException e) {
+      throw e.getCause();
+    } finally {
+      future.release();
+    }
   }
 }

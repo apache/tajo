@@ -32,6 +32,7 @@ import org.apache.tajo.algebra.DataTypeExpr.MapType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.engine.parser.SQLParser.*;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -63,7 +64,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      throw new SQLSyntaxError(e);
+      throw new SQLSyntaxError(e.getMessage());
     }
     return visitSql(context);
   }

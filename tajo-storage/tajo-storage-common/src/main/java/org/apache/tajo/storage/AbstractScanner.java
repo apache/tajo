@@ -21,7 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 
@@ -34,22 +34,22 @@ public abstract class AbstractScanner implements Scanner {
 
   @Override
   public void init() throws IOException {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
   public void reset() throws IOException {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
   public void close() throws IOException {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
   public boolean isProjectable() {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
@@ -59,7 +59,7 @@ public abstract class AbstractScanner implements Scanner {
 
   @Override
   public boolean isSelectable() {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
@@ -69,21 +69,21 @@ public abstract class AbstractScanner implements Scanner {
 
   @Override
   public boolean isSplittable() {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
   public float getProgress() {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
   public TableStats getInputStats() {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 
   @Override
   public Schema getSchema() {
-    throw new UnimplementedException();
+    throw new NotImplementedException();
   }
 }

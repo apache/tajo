@@ -19,9 +19,7 @@
 package org.apache.tajo.exception;
 
 import com.google.common.collect.Maps;
-import org.apache.log4j.spi.ErrorCode;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.sql.SQLException;

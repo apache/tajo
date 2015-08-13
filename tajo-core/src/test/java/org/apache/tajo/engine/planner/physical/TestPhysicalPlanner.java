@@ -41,7 +41,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -173,7 +173,8 @@ public class TestPhysicalPlanner {
     createLargeScoreTable();
   }
 
-  public static void createLargeScoreTable() throws IOException {
+  public static void createLargeScoreTable() throws IOException, TajoException {
+
     // Preparing a large table
     Path scoreLargePath = new Path(testDir, "score_large");
     CommonTestingUtil.cleanupTestDir(scoreLargePath.toString());

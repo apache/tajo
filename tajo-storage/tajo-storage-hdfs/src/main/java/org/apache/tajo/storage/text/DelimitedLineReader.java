@@ -31,7 +31,7 @@ import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.io.compress.SplittableCompressionCodec;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
@@ -72,7 +72,7 @@ public class DelimitedLineReader implements Closeable {
     this.bufferSize = bufferSize;
     if (this.codec instanceof SplittableCompressionCodec) {
       // bzip2 does not support multi-thread model
-      throw new UnimplementedException(this.getClass() + " does not support " + this.codec.getDefaultExtension());
+      throw new NotImplementedException(this.getClass() + " does not support " + this.codec.getDefaultExtension());
     }
   }
 
