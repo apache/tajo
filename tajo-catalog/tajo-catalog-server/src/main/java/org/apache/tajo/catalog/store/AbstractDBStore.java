@@ -354,7 +354,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropTablespace(String tableSpaceName) throws UndefinedTablespaceException, UndefinedTableException {
+  public void dropTablespace(String tableSpaceName) throws UndefinedTablespaceException {
 
     Connection conn = null;
     PreparedStatement pstmt = null;
@@ -517,10 +517,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void createDatabase(String databaseName, String tablespaceName) throws UndefinedTablespaceException {
+  public void createDatabase(String databaseName, String tablespaceName)
+      throws UndefinedTablespaceException, DuplicateDatabaseException {
+
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
+
+    if (existDatabase(databaseName)) {
+      throw new DuplicateDatabaseException(databaseName);
+    }
 
     try {
       TableSpaceInternal spaceInfo = getTableSpaceInfo(tablespaceName);
@@ -582,7 +588,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void dropDatabase(String databaseName) throws UndefinedDatabaseException, UndefinedTableException {
+  public void dropDatabase(String databaseName) throws UndefinedDatabaseException {
     Collection<String> tableNames = getAllTableNames(databaseName);
 
     Connection conn = null;
@@ -592,7 +598,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn.setAutoCommit(false);
 
       for (String tableName : tableNames) {
-        dropTableInternal(conn, databaseName, tableName);
+        try {
+          dropTableInternal(conn, databaseName, tableName);
+        } catch (UndefinedTableException e) {
+          LOG.warn(e);
+        }
       }
 
       String sql = "DELETE FROM " + TB_DATABASES + " WHERE DB_NAME = ?";
@@ -716,11 +726,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(1, spaceName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new TajoInternalError("There is no SPACE_ID matched to the space name '" + spaceName + "'");
+        throw new UndefinedTablespaceException(spaceName);
       }
       return new TableSpaceInternal(res.getInt(1), res.getString(2), res.getString(3));
     } catch (SQLException se) {
-      throw new UndefinedTablespaceException(spaceName);
+      throw new TajoInternalError(se);
     } finally {
       CatalogUtil.closeQuietly(pstmt, res);
     }
@@ -755,24 +765,29 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void createTable(final CatalogProtos.TableDescProto table) throws UndefinedDatabaseException {
+  public void createTable(final CatalogProtos.TableDescProto table)
+      throws UndefinedDatabaseException, DuplicateTableException {
+
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
+    String[] splitted = CatalogUtil.splitTableName(table.getTableName());
+    if (splitted.length == 1) {
+      throw new TajoInternalError(
+          "createTable() requires a qualified table name, but it is '" + table.getTableName() + "'");
+    }
+    final String databaseName = splitted[0];
+    final String tableName = splitted[1];
+
+    if (existTable(databaseName, tableName)) {
+      throw new DuplicateTableException(tableName);
+    }
+    final int dbid = getDatabaseId(databaseName);
+
     try {
       conn = getConnection();
       conn.setAutoCommit(false);
-
-      String[] splitted = CatalogUtil.splitTableName(table.getTableName());
-      if (splitted.length == 1) {
-        throw new TajoInternalError(
-            "createTable() requires a qualified table name, but it is '" + table.getTableName() + "'");
-      }
-      String databaseName = splitted[0];
-      String tableName = splitted[1];
-
-      int dbid = getDatabaseId(databaseName);
 
       String sql = "INSERT INTO TABLES (DB_ID, " + COL_TABLES_NAME +
           ", TABLE_TYPE, PATH, STORE_TYPE) VALUES(?, ?, ?, ?, ?) ";
@@ -905,24 +920,25 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public void updateTableStats(final CatalogProtos.UpdateTableStatsProto statsProto) throws UndefinedDatabaseException {
+  public void updateTableStats(final CatalogProtos.UpdateTableStatsProto statsProto)
+      throws UndefinedDatabaseException, UndefinedTableException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
+    String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
+    if (splitted.length == 1) {
+      throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
+          + statsProto.getTableName() + "\".");
+    }
+    final String databaseName = splitted[0];
+    final String tableName = splitted[1];
+
+    final int dbid = getDatabaseId(databaseName);
+
     try {
       conn = getConnection();
       conn.setAutoCommit(false);
-
-      String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
-      if (splitted.length == 1) {
-        throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
-          + statsProto.getTableName() + "\".");
-      }
-      String databaseName = splitted[0];
-      String tableName = splitted[1];
-
-      int dbid = getDatabaseId(databaseName);
 
       String tidSql =
         "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
@@ -932,7 +948,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       if (!res.next()) {
-        throw new TajoInternalError("There is no TID matched to '" + statsProto.getTableName() + "'");
+        throw new UndefinedTableException(statsProto.getTableName());
       }
 
       int tableId = res.getInt("TID");
@@ -982,8 +998,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
           + alterTableDescProto.getTableName() + "\".");
     }
-    String databaseName = splitted[0];
-    String tableName = splitted[1];
+    final String databaseName = splitted[0];
+    final String tableName = splitted[1];
     String partitionName = null;
     CatalogProtos.PartitionDescProto partitionDesc = null;
 
@@ -2360,7 +2376,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new TajoInternalError("Cannot get any table name from TID");
+        throw new TajoInternalError("Inconsistent data: no table corresponding to TID " + tableId);
       }
       return res.getString(1);
     } finally {
@@ -2373,7 +2389,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
-      throws UndefinedDatabaseException {
+      throws UndefinedDatabaseException, UndefinedIndexException {
 
     Connection conn = null;
     ResultSet res = null;
@@ -2395,7 +2411,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, indexName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new TajoInternalError("There is no index matched to " + indexName);
+        throw new UndefinedIndexException(indexName);
       }
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
@@ -2421,7 +2437,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws UndefinedDatabaseException, UndefinedTableException {
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedIndexException {
 
     Connection conn = null;
     ResultSet res = null;
@@ -2452,7 +2468,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new TajoInternalError("ERROR: there is no index matched to " + unifiedName);
+        throw new UndefinedIndexException(unifiedName);
       }
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();

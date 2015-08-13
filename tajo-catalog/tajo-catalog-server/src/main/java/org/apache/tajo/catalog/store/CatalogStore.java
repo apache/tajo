@@ -81,7 +81,7 @@ public interface CatalogStore extends Closeable {
 
   List<ColumnProto> getAllColumns();
 
-  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws UndefinedDatabaseException;
+  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws UndefinedDatabaseException, UndefinedTableException;
 
   /************************ PARTITION METHOD **************************/
   PartitionMethodProto getPartitionMethod(String databaseName, String tableName) throws UndefinedDatabaseException,
