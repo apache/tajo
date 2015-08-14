@@ -94,6 +94,7 @@
     <module>tajo-thirdparty/asm</module>
     <module>tajo-cli</module>
     <module>tajo-metrics</module>
+    <module>tajo-core-tests</module>
     <module>tajo-cluster-tests</module>
   </modules>
 
