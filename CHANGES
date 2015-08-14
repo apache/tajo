@@ -32,6 +32,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1761: Separate an integration unit test kit into an independent 
+    module. (hyunsik)
+
+    TAJO-680: Improve the IN operator to support sub queries. (jihoon)
+
     TAJO-1751: Reduce the client connection timeout. (jinho)
 
     TAJO-1746: Improve resource usage at first request of DefaultTaskScheduler.
