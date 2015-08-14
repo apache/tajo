@@ -23,10 +23,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
@@ -569,7 +568,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       break;
 
     default:
-      throw new UnimplementedException("Unknown SET type in ALTER TABLESPACE: " + node.getSetType().name());
+      throw new NotImplementedException("Unknown SET type in ALTER TABLESPACE: " + node.getSetType().name());
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
@@ -634,7 +633,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       alterTableBuilder.setAlterPartition(partitionBuilder);
       break;
     default:
-      throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name());
+      throw new NotImplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name());
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);

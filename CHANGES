@@ -216,6 +216,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1561: Query which contains join condition in "OR" clause does not finish. 
+    (jihoon)
+
     TAJO-1752: NameResolver cannot find nested records properly. (jihoon)
 
     TAJO-1732: During filter push down phase, join conditions are not set properly. 
@@ -473,6 +476,10 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1754: Implement several functions to handle json array. (jihoon)
+
+    TAJO-1748: Refine client APIs to throw specific exceptions. (hyunsik)
 
     TAJO-1735: Implement MetadataProvider and LinkedMetadataManager. (hyunsik)
 

@@ -26,12 +26,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.AmbiguousTableException;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
-import org.apache.tajo.exception.AmbiguousColumnException;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.RelationNode;
@@ -168,7 +163,7 @@ public abstract class NameResolver {
           LogicalPlan.QueryBlock parentBlock = plan.getParentBlock(current);
           for (RelationNode relationNode : parentBlock.getRelations()) {
             if (relationNode.getLogicalSchema().containsByQualifiedName(columnRef.getCanonicalName())) {
-              throw new UnimplementedException("Correlated subquery");
+              throw new NotImplementedException("Correlated subquery");
             }
           }
           current = parentBlock;

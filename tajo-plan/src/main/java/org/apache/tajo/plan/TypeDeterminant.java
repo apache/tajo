@@ -25,11 +25,12 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.function.FunctionUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
 import java.util.Stack;
@@ -37,6 +38,7 @@ import java.util.Stack;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
 import static org.apache.tajo.common.TajoDataTypes.Type.NULL_TYPE;
+import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
 public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanContext, DataType> {
   private DataType BOOL_TYPE = CatalogUtil.newSimpleDataType(BOOLEAN);
@@ -171,7 +173,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     stack.pop(); // <--- Pop
 
     if (!catalog.containFunction(expr.getSignature(), paramTypes)) {
-      throw new UndefinedFunctionException(expr.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(FunctionUtil.buildSimpleFunctionSignature(expr.getSignature(), paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
@@ -207,7 +209,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     stack.pop(); // <-- pop
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
-      throw new UndefinedFunctionException(setFunction.getSignature(), paramTypes);
+      throw new UndefinedFunctionException(buildSimpleFunctionSignature(setFunction.getSignature(), paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(setFunction.getSignature(), functionType, paramTypes);
@@ -257,7 +259,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     }
 
     if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
-      throw new UndefinedFunctionException(funcName, paramTypes);
+      throw new UndefinedFunctionException(FunctionUtil.buildSimpleFunctionSignature(funcName, paramTypes));
     }
 
     FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);

@@ -1,0 +1,3 @@
+ERROR: mismatched input '-' expecting {<EOF>, EXCEPT, GROUP, HAVING, INTERSECT, LIMIT, ORDER, UNION, WHERE, WINDOW, ';', ','}
+LINE 1:21 select * from unknown-table
+                               ^

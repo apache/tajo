@@ -119,7 +119,6 @@ service CatalogProtocolService {
 
   rpc getPartitionMethodByTableName(TableIdentifierProto) returns (GetPartitionMethodResponse);
   rpc existPartitionMethod(TableIdentifierProto) returns (ReturnState);
-  rpc dropPartitionMethod(TableIdentifierProto) returns (ReturnState);
 
   rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
   rpc getPartitionsByTableName(PartitionIdentifierProto) returns (GetPartitionsResponse);

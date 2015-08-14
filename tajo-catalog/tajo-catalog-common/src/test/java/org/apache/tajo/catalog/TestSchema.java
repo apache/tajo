@@ -18,7 +18,6 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.exception.DuplicateColumnException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.TajoDataTypes.Type;

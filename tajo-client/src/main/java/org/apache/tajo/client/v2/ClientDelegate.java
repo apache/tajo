@@ -18,7 +18,8 @@
 
 package org.apache.tajo.client.v2;
 
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.QueryFailedException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.exception.TajoException;
 
 import java.io.Closeable;
@@ -31,7 +32,7 @@ public interface ClientDelegate extends Closeable {
 
   int executeUpdate(String sql) throws TajoException;
 
-  ResultSet executeSQL(String sql) throws TajoException;
+  ResultSet executeSQL(String sql) throws TajoException, QueryFailedException;
 
   QueryFuture executeSQLAsync(String sql) throws TajoException;
 

@@ -36,10 +36,12 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.parser.SQLSyntaxError;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
@@ -305,6 +307,10 @@ public class GlobalEngine extends AbstractService {
 
           TablespaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
 
+        } catch (TajoException t) {
+          state.addVerification(t);
+        } catch (TajoRuntimeException t) {
+          state.addVerification(t);
         } catch (Throwable t) {
           state.addVerification(SyntaxErrorUtil.makeSyntaxError(t.getMessage()));
         }
