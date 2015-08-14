@@ -99,8 +99,10 @@ public class JoinOrderingUtil {
       JoinedRelationsVertex tempLeftChild = new JoinedRelationsVertex(leftEdge);
       JoinEdge tempEdge = context.getCachedOrNewJoinEdge(rightEdge.getJoinSpec(), tempLeftChild,
           rightEdge.getRightVertex());
-      if ((rightEdge.getJoinType() != JoinType.INNER && rightEdge.getJoinType() != JoinType.CROSS)
-          || (leftEdge.getJoinType() != JoinType.INNER && leftEdge.getJoinType() != JoinType.CROSS)) {
+      if ((rightEdge.getJoinType() != JoinType.INNER && rightEdge.getJoinType() != JoinType.CROSS
+          && rightEdge.getJoinType() != JoinType.LEFT_SEMI && rightEdge.getJoinType() != JoinType.LEFT_ANTI)
+          || (leftEdge.getJoinType() != JoinType.INNER && leftEdge.getJoinType() != JoinType.CROSS
+          && leftEdge.getJoinType() != JoinType.LEFT_SEMI && leftEdge.getJoinType() != JoinType.LEFT_ANTI)) {
         if (!findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), tempEdge, true).isEmpty()) {
           return false;
         }
@@ -139,6 +141,11 @@ public class JoinOrderingUtil {
    * (A full B) full C    | A full (B full C)     | Equivalent
    * ==============================================================
    *
+<<<<<<< HEAD
+   * Cross, Semi and Anti joins follow the rule of the Inner join.
+   *
+=======
+>>>>>>> c50a5dadff90fa90709abbce59856e834baa4867
    * @param leftType
    * @param rightType
    * @return true if two join types are associative.
@@ -148,8 +155,12 @@ public class JoinOrderingUtil {
       return true;
     }
 
-    if (leftType == JoinType.INNER && rightType == JoinType.CROSS ||
-        leftType == JoinType.CROSS && rightType == JoinType.INNER) {
+    boolean isLeftInner = leftType == JoinType.INNER || leftType == JoinType.CROSS
+        || leftType == JoinType.LEFT_SEMI || leftType == JoinType.LEFT_ANTI;
+    boolean isRightInner = rightType == JoinType.INNER || rightType == JoinType.CROSS
+        || rightType == JoinType.LEFT_SEMI || rightType == JoinType.LEFT_ANTI;
+
+    if (isLeftInner && isRightInner) {
       return true;
     }
 
@@ -164,7 +175,7 @@ public class JoinOrderingUtil {
       return false;
     }
 
-    if ((leftType == JoinType.INNER) || leftType == JoinType.CROSS) {
+    if (isLeftInner) {
       if (rightType == JoinType.LEFT_OUTER) {
         return true;
       } else {
