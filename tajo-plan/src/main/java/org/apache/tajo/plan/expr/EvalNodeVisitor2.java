@@ -69,4 +69,6 @@ public interface EvalNodeVisitor2<CONTEXT, RESULT> {
   RESULT visitSigned(CONTEXT context, SignedEval signedEval, Stack<EvalNode> stack);
 
   RESULT visitCast(CONTEXT context, CastEval signedEval, Stack<EvalNode> stack);
+
+  RESULT visitSubquery(CONTEXT context, SubqueryEval signedEval, Stack<EvalNode> stack);
 }

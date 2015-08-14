@@ -136,6 +136,10 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         result = visitCast(context, (CastEval) evalNode, stack);
         break;
 
+      case SUBQUERY:
+        result = visitSubquery(context, (SubqueryEval) evalNode, stack);
+        break;
+
       default:
         throw new UnsupportedException("Unknown EvalType: " + evalNode);
     }
@@ -341,5 +345,10 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   @Override
   public RESULT visitCast(CONTEXT context, CastEval castEval, Stack<EvalNode> stack) {
     return visitDefaultUnaryEval(context, castEval, stack);
+  }
+
+  @Override
+  public RESULT visitSubquery(CONTEXT context, SubqueryEval signedEval, Stack<EvalNode> stack) {
+    return null;
   }
 }

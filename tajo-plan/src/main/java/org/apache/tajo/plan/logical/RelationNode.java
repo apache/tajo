@@ -32,6 +32,8 @@ import org.apache.tajo.catalog.Schema;
  */
 public abstract class RelationNode extends LogicalNode {
 
+  protected boolean nameResolveBase = true;
+
   protected RelationNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
     assert(nodeType == NodeType.SCAN || nodeType == NodeType.PARTITIONS_SCAN || nodeType == NodeType.TABLE_SUBQUERY);
@@ -58,4 +60,12 @@ public abstract class RelationNode extends LogicalNode {
    * @return A logical schema
    */
   public abstract Schema getLogicalSchema();
+
+  public boolean isNameResolveBase() {
+    return nameResolveBase;
+  }
+
+  public void setNameResolveBase(boolean isCandidate) {
+    this.nameResolveBase = isCandidate;
+  }
 }

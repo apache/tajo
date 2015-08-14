@@ -18,19 +18,11 @@
 
 package org.apache.tajo.algebra;
 
-public class SimpleTableSubQuery extends UnaryOperator {
+public class SimpleTableSubquery extends CommonSubquery {
 
-  public SimpleTableSubQuery(Expr subquery) {
-    super(OpType.SimpleTableSubQuery);
-    setChild(subquery);
-  }
+  public final static String TEMP_RELATION_NAME = "TempSubqueryName";
 
-  public Expr getSubQuery() {
-    return getChild();
-  }
-
-  @Override
-  boolean equalsTo(Expr expr) {
-    return true;
+  public SimpleTableSubquery(Expr subquery) {
+    super(OpType.SimpleTableSubquery, TEMP_RELATION_NAME, subquery);
   }
 }
