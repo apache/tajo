@@ -18,9 +18,9 @@
 
 package org.apache.tajo.storage.jdbc;
 
-import com.facebook.presto.hive.shaded.com.google.common.base.Function;
-import com.facebook.presto.hive.shaded.com.google.common.collect.Collections2;
-import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
@@ -208,7 +208,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       });
 
       // transform the pair list into collection for columns
-      Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer, Column>, Column>() {
+      Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
         @Override
         public Column apply(@Nullable Pair<Integer, Column> columnPair) {
           return columnPair.getSecond();
