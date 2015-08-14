@@ -23,7 +23,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -36,7 +35,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 
 /**
  * <h3>URI Examples:</h3>
@@ -103,7 +101,7 @@ public abstract class JdbcTablespace extends Tablespace {
   }
 
   @Override
-  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException {
+  public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) {
 
   }
 

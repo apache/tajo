@@ -24,9 +24,9 @@ import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -194,9 +194,9 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
         final String qualifier = resultForColumns.getString("TABLE_NAME");
         final String columnName = resultForColumns.getString("COLUMN_NAME");
         final TypeDesc type = convertDataType(resultForColumns);
-        Column c = new Column(CatalogUtil.buildFQName(qualifier, columnName), type);
+        final Column c = new Column(CatalogUtil.buildFQName(qualifier, columnName), type);
 
-        columns.add(new Pair<Integer, Column>(ordinalPos, c));
+        columns.add(new Pair<>(ordinalPos, c));
       }
 
       // sort columns in an order of ordinal position
