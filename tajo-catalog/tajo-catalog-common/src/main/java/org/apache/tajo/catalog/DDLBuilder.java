@@ -21,7 +21,9 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.util.KeyValueSet;
 
-import java.util.Map;
+import java.util.Comparator;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 public class DDLBuilder {
 
@@ -112,19 +114,28 @@ public class DDLBuilder {
     sb.append(" USING " +  CatalogUtil.getBackwardCompitablityStoreType(meta.getStoreType()));
   }
 
-  private static void buildWithClause(StringBuilder sb, TableMeta meta) {
+  private static void buildWithClause(final StringBuilder sb, TableMeta meta) {
     KeyValueSet options = meta.getOptions();
     if (options != null && options.size() > 0) {
-      boolean first = true;
+
       sb.append(" WITH (");
-      for (Map.Entry<String, String> entry : meta.getOptions().getAllKeyValus().entrySet()) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(", ");
-        }
-        sb.append("'").append(entry.getKey()).append("'='").append(entry.getValue()).append("'");
-      }
+
+      meta.getOptions().getAllKeyValus().entrySet().stream()
+          .sorted(Comparator.comparing(e -> e.getKey())) // sort them for a determined table property string.
+          .forEach(new Consumer<Entry<String, String>>() {
+            boolean first = true;
+
+            @Override
+            public void accept(Entry<String, String> e) {
+              if (first) {
+                first = false;
+              } else {
+                sb.append(", ");
+              }
+              sb.append("'").append(e.getKey()).append("'='").append(e.getValue()).append("'");
+            }
+          });
+
       sb.append(")");
     }
   }
