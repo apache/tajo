@@ -245,12 +245,12 @@ public class TestJoinQuery extends QueryTestCaseBase {
     TableMeta tableMeta = table.getMeta();
     Schema schema = table.getLogicalSchema();
 
-    File file = new File("src/test/tpch/" + tableName + ".tbl");
-
-    if (!file.exists()) {
-      file = new File(System.getProperty("user.dir") + "/tajo-core/src/test/tpch/" + tableName + ".tbl");
-    }
-    String[] rows = FileUtil.readTextFile(file).split("\n");
+//    File file = new File("src/test/tpch/" + tableName + ".tbl");
+//
+//    if (!file.exists()) {
+//      file = new File(System.getProperty("user.dir") + "/tajo-core/src/test/tpch/" + tableName + ".tbl");
+//    }
+    String[] rows = FileUtil.readTextFileFromResource("tpch/" + tableName + ".tbl").split("\n");
 
     assertTrue(rows.length > 0);
 
