@@ -64,6 +64,11 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
+  public final void testCrossJoin2() throws Exception {
+    executeString("select * from nation n1, nation n2");
+  }
+
+  @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {

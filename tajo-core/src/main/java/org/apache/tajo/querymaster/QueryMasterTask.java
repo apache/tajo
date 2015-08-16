@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.global.verifier.GlobalPlanVerifier;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -357,6 +358,10 @@ public class QueryMasterTask extends CompositeService {
       }
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
       queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
+
+      // Checking is required to guarantee that cross join is always executed with broadcast join.
+      GlobalPlanVerifier verifier = new GlobalPlanVerifier();
+      verifier.verify(masterPlan);
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);
