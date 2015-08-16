@@ -54,6 +54,7 @@
           <excludes>
             <exclude>src/main/resources/*.json</exclude>
             <exclude>src/test/resources/*.json</exclude>
+            <exclude>src/test/resources/tpch/*.sql</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -120,6 +121,19 @@
     <dependency>
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-storage-jdbc</artifactId>
+      <type>jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-jdbc</artifactId>
+      <type>test-jar</type>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-cluster-tests</artifactId>
+      <type>test-jar</type>
       <scope>provided</scope>
     </dependency>
     <dependency>

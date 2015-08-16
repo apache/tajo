@@ -27,33 +27,48 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.mysql.MySQLTablespace;
+import org.apache.tajo.util.FileUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.URI;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestMysqlJdbcTableSpace {
+public class TestMysqlJdbcTableSpace extends JdbcTablespaceTestBase {
 
   static TestingMySqlServer server;
 
-  @BeforeClass
-  public static void setUp() throws Exception {
+  public TestMysqlJdbcTableSpace() throws Exception {
     server = new TestingMySqlServer("testuser", "testpass",
-        "meta_test",
-        "create_table",
-        "drop_table"
+        "tpch"
     );
 
     MySQLTablespace mysqlTablespace = new MySQLTablespace("mysql_cluster", URI.create(server.getJdbcUrl()), null);
     mysqlTablespace.init(new TajoConf());
     TablespaceManager.addTableSpaceForTest(mysqlTablespace);
+  }
+
+  @BeforeClass
+  public static void setUp() throws IOException, SQLException {
+    prepareTables();
+  }
+
+  @Test
+  public void testGeneral() {
+    assertTrue(server.isRunning());
+    assertTrue(server.isReadyForConnections());
+    assertEquals(server.getMySqlVersion(), "5.5.9");
+    assertEquals(server.getDatabases(), ImmutableSet.of("basic"));
+    assertEquals(server.getUser(), "testuser");
+    assertEquals(server.getPassword(), "testpass");
+    assertEquals(server.getJdbcUrl().substring(0, 5), "jdbc:");
+    assertEquals(server.getPort(), URI.create(server.getJdbcUrl().substring(5)).getPort());
   }
 
   @Test
@@ -67,45 +82,31 @@ public class TestMysqlJdbcTableSpace {
     assertEquals(server.getJdbcUrl(), TablespaceManager.get(server.getJdbcUrl()).get().getUri().toASCIIString());
   }
 
+  static final String [] TPCH_TABLES = {
+      "customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"
+  };
+
+  private static void prepareTables() throws SQLException, IOException {
+    try (Connection connection = DriverManager.getConnection(server.getJdbcUrl())) {
+      connection.setCatalog("tpch");
+      try (Statement statement = connection.createStatement()) {
+        statement.executeUpdate(FileUtil.readTextFileFromResource("tpch/" + TPCH_TABLES + ".sql"));
+      }
+    }
+  }
+
   @Test
   public void testMetadataProvider() throws Exception {
+    MySQLTablespace tablespace = (MySQLTablespace) TablespaceManager.get(server.getJdbcUrl()).get();
+    MetadataProvider provider = tablespace.getMetadataProvider();
 
+    Set<String> tables = Sets.newHashSet(provider.getTables(null, null));
+    assertEquals(Sets.newHashSet(TPCH_TABLES), tables);
 
-    try (TestingMySqlServer server = new TestingMySqlServer("testuser", "testpass", "db1", "db2")) {
-      assertTrue(server.isRunning());
-      assertTrue(server.isReadyForConnections());
-      assertEquals(server.getMySqlVersion(), "5.5.9");
-      assertEquals(server.getDatabases(), ImmutableSet.of("db1", "db2"));
-      assertEquals(server.getUser(), "testuser");
-      assertEquals(server.getPassword(), "testpass");
-      assertEquals(server.getJdbcUrl().substring(0, 5), "jdbc:");
-      assertEquals(server.getPort(), URI.create(server.getJdbcUrl().substring(5)).getPort());
-
-      try (Connection connection = DriverManager.getConnection(server.getJdbcUrl())) {
-        connection.setCatalog("db1");
-
-        try (Statement statement = connection.createStatement()) {
-          statement.execute("CREATE TABLE t1 (c1 bigint PRIMARY KEY)");
-          statement.execute("CREATE TABLE t2 (c1 int PRIMARY KEY, c2 VARCHAR(20), c3 TIME)");
-        }
-      }
-
-      System.out.println(server.getJdbcUrl());
-      MySQLTablespace tablespace = new MySQLTablespace("mysql", URI.create(server.getJdbcUrl()), null);
-
-      URI uri = tablespace.getTableUri("abc", "table1");
-      ConnectionInfo c1 = ConnectionInfo.fromURI(uri);
-      assertEquals("table1", c1.table());
-
-      MetadataProvider provider = tablespace.getMetadataProvider();
-      Set<String> tables = Sets.newHashSet(provider.getTables(null, null));
-      assertEquals(Sets.newHashSet("t1", "t2"), tables);
-
-      TableDesc desc = provider.getTableDescriptor("", "t2");
-      assertEquals(tablespace.getUri() + "&table=t2", desc.getUri().toASCIIString());
-
-      Schema schema = desc.getSchema();
-      System.out.println(">>> " + schema);
-    }
+//    TableDesc desc = provider.getTableDescriptor("", "t2");
+//    assertEquals(tablespace.getUri() + "&table=t2", desc.getUri().toASCIIString());
+//
+//    Schema schema = desc.getSchema();
+//    System.out.println(">>> " + schema);
   }
 }

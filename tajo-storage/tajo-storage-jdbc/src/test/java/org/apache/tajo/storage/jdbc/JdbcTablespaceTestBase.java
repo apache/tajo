@@ -18,5 +18,28 @@
 
 package org.apache.tajo.storage.jdbc;
 
-public class JdbcTablespaceTestBase {
+import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.util.FileUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public abstract class JdbcTablespaceTestBase extends QueryTestCaseBase {
+
+  @BeforeClass
+  public static void setUp() throws Exception {
+  }
+
+  @AfterClass
+  public static void tearDown() {
+  }
+
+  protected void prepareDefaultTables(Statement statement) throws IOException, SQLException {
+    statement.addBatch(FileUtil.readTextFileFromResource("table_ddl/all_types"));
+    statement.executeBatch();
+  }
 }

@@ -63,8 +63,7 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
-            <exclude>src/main/resources/*.json</exclude>
-            <exclude>src/test/resources/*.json</exclude>
+            <exclude>src/test/resources/*.sql</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -187,6 +186,12 @@
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-storage-common</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-cluster-tests</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
