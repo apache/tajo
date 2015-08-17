@@ -22,6 +22,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -29,6 +30,7 @@ import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
@@ -262,6 +264,79 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           child.addBroadcastRelation(scanNode);
         }
       }
+    }
+
+    private long estimateOutputVolume(ExecutionBlock block) {
+      // output volume = output row number * output row width
+      return SchemaUtil.estimateRowByteSizeWithSchema(block.getStoreTableNode().getTableSchema())
+          * estimateOutputRowNum(PlannerUtil.<JoinNode>findTopNode(block.getPlan(), NodeType.JOIN));
+    }
+
+    private long estimateOutputRowNum(LogicalNode node) throws TajoInternalError {
+
+      if (node instanceof RelationNode) {
+        switch (node.getType()) {
+          case SCAN:
+            ScanNode scanNode = (ScanNode) node;
+            if (scanNode.getTableDesc().getStats() == null) {
+              // TODO - this case means that data is not located in HDFS. So, we need additional
+              // broadcast method.
+              return Long.MAX_VALUE;
+            } else {
+              return scanNode.getTableDesc().getStats().getNumBytes();
+            }
+          case PARTITIONS_SCAN:
+            PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
+            if (pScanNode.getTableDesc().getStats() == null) {
+              // TODO - this case means that data is not located in HDFS. So, we need additional
+              // broadcast method.
+              return Long.MAX_VALUE;
+            } else {
+              // if there is no selected partition
+              if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+                return 0;
+              } else {
+                return pScanNode.getTableDesc().getStats().getNumBytes();
+              }
+            }
+          case TABLE_SUBQUERY:
+            return estimateOutputRowNum(((TableSubQueryNode) node).getSubQuery());
+          default:
+            throw new IllegalArgumentException("Not RelationNode");
+        }
+      } else if (node instanceof UnaryNode) {
+        return estimateOutputRowNum(((UnaryNode) node).getChild());
+      } else if (node instanceof UnionNode) {
+        UnionNode binaryNode = (UnionNode) node;
+        return estimateOutputRowNum(binaryNode.getLeftChild()) + estimateOutputRowNum(binaryNode.getRightChild());
+      } else if (node instanceof JoinNode) {
+        JoinNode joinNode = (JoinNode) node;
+        JoinSpec joinSpec = joinNode.getJoinSpec();
+        long leftChildRowNum = estimateOutputRowNum(joinNode.getLeftChild());
+        long rightChildRownum = estimateOutputRowNum(joinNode.getRightChild());
+        switch (joinNode.getJoinType()) {
+          case CROSS:
+            return leftChildRowNum * rightChildRownum;
+          case INNER:
+            return (long) (leftChildRowNum * rightChildRownum *
+                Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size()));
+          case LEFT_OUTER:
+            return leftChildRowNum;
+          case RIGHT_OUTER:
+            return rightChildRownum;
+          case FULL_OUTER:
+            return leftChildRowNum < rightChildRownum ? leftChildRowNum : rightChildRownum;
+          case LEFT_ANTI:
+          case LEFT_SEMI:
+            return leftChildRowNum *
+                Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size());
+          case RIGHT_ANTI:
+          case RIGHT_SEMI:
+            return rightChildRownum;
+        }
+      }
+
+      throw new TajoInternalError("Invalid State at node " + node.getPID());
     }
 
     /**

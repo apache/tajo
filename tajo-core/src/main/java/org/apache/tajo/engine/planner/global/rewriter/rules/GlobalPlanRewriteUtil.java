@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -213,15 +214,5 @@ public class GlobalPlanRewriteUtil {
         }
       }
     }
-  }
-
-  public static long estimateOutputVolume(ExecutionBlock block) {
-    // output volume = selectivity * left input row number * right input row number * output row width
-    // input row number = input size / input row width
-    return 0;
-  }
-
-  public static long estimateOutputRowNum(JoinType joinType, ScanNode leftScan, ScanNode rightScan) {
-    return 0;
   }
 }
