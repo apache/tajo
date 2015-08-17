@@ -221,6 +221,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1779: Remove "DFSInputStream has been closed already" messages 
+    in DelimitedLineReader. (jinho)
+
     TAJO-1763: tpch/*.tbl files cannot be founded in maven modules except for 
     core-tests. (hyunsik)
 
