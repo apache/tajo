@@ -1,5 +1,7 @@
 Tajo Change Log 
 
+Release 0.12.0 - unreleased
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -221,31 +223,37 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
-    TAJO-1561: Query which contains join condition in "OR" clause does not finish. 
-    (jihoon)
+    TAJO-1779: Remove "DFSInputStream has been closed already" messages 
+    in DelimitedLineReader. (jinho)
+
+    TAJO-1763: tpch/*.tbl files cannot be founded in maven modules except for 
+    core-tests. (hyunsik)
+
+    TAJO-1561: Query which contains join condition in "OR" clause does not 
+    finish. (jihoon)
 
     TAJO-1752: NameResolver cannot find nested records properly. (jihoon)
 
-    TAJO-1732: During filter push down phase, join conditions are not set properly. 
-    (jihoon)
+    TAJO-1732: During filter push down phase, join conditions are not set 
+    properly. (jihoon)
 
     TAJO-1742: Remove hadoop dependency in DatumFactory. (jinho)
 
     TAJO-1733: Finished query occasionally does not appear in Web-UI. (jinho)
 
-    TAJO-1731: With a task failure, query processing is hanged after first retry. 
-    (jihoon)
+    TAJO-1731: With a task failure, query processing is hanged after first 
+    retry. (jihoon)
 
     TAJO-1608: Fix test failure in index_support branch. (jihoon)
 
     TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
 
-    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return table 
-    names only without invalid external table info. 
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
+    table names only without invalid external table info. 
     (Contributed by DaeMyung Kang, Committed by jihoon)
 
-    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() returns 
-    infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() 
+    returns infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
 
     TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
     (jinho)
