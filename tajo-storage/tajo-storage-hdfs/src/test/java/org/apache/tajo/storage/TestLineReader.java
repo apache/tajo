@@ -96,7 +96,8 @@ public class TestLineReader {
       if(buf == null) break;
       i++;
     }
-    IOUtils.cleanup(null, reader, channel, fs);
+    IOUtils.cleanup(null, reader, fs);
+    assertFalse(channel.isOpen());
     assertEquals(tupleNum, i);
     assertEquals(status.getLen(), totalRead);
     assertEquals(status.getLen(), reader.readBytes());
@@ -229,6 +230,7 @@ public class TestLineReader {
       i++;
     }
     IOUtils.cleanup(null, reader);
+    assertFalse(channel.isOpen());
     assertEquals(file.length(), totalRead);
     assertEquals(file.length(), reader.readBytes());
     assertEquals(data.split("\n").length, i);
@@ -261,6 +263,7 @@ public class TestLineReader {
       i++;
     }
     IOUtils.cleanup(null, reader);
+    assertFalse(channel.isOpen());
     assertEquals(status.getLen(), totalRead);
     assertEquals(status.getLen(), reader.readBytes());
   }
@@ -319,7 +322,8 @@ public class TestLineReader {
       i++;
     }
 
-    IOUtils.cleanup(null, reader, channel, fs);
+    IOUtils.cleanup(null, reader, fs);
+    assertFalse(channel.isOpen());
 
     assertEquals(tupleNum, i);
     assertEquals(status.getLen(), totalRead);
