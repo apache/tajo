@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.joinorder;
 
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;
@@ -29,11 +30,14 @@ import java.util.List;
  */
 public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
 
-  private boolean isSymmetricJoinOnly = true;
+  private boolean allowArbitraryCrossJoin = true;
 
   public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
     JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
-    isSymmetricJoinOnly &= PlannerUtil.isCommutativeJoinType(edge.getJoinType());
+    // TODO: the below will be improved after TAJO-1683
+    allowArbitraryCrossJoin &= PlannerUtil.isCommutativeJoinType(edge.getJoinType())
+        || edge.getJoinType() == JoinType.LEFT_SEMI || edge.getJoinType() == JoinType.LEFT_ANTI;
+
     this.addEdge(left, right, edge);
     List<JoinEdge> incomeToLeft = getIncomingEdges(left);
     if (incomeToLeft == null || incomeToLeft.isEmpty()) {
@@ -46,7 +50,7 @@ public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
     return edge;
   }
 
-  public boolean isSymmetricJoinOnly() {
-    return isSymmetricJoinOnly;
+  public boolean allowArbitraryCrossJoin() {
+    return allowArbitraryCrossJoin;
   }
 }

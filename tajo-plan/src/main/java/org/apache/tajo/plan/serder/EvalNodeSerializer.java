@@ -307,6 +307,21 @@ public class EvalNodeSerializer
     return function;
   }
 
+  @Override
+  public EvalNode visitSubquery(EvalTreeProtoBuilderContext context, SubqueryEval subquery, Stack<EvalNode> stack) {
+    super.visitSubquery(context, subquery, stack);
+
+    PlanProto.SubqueryEval.Builder subqueryBuilder = PlanProto.SubqueryEval.newBuilder();
+    subqueryBuilder.setSubquery(LogicalNodeSerializer.serialize(subquery.getSubQueryNode()));
+
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, subquery);
+    builder.setSubquery(subqueryBuilder);
+
+    context.treeBuilder.addNodes(builder);
+
+    return subquery;
+  }
+
   private WindowFrame buildWindowFrame(WindowSpec.WindowFrame frame) {
     WindowFrame.Builder windowFrameBuilder = WindowFrame.newBuilder();
 

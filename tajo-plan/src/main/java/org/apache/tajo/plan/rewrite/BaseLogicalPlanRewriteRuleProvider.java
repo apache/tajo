@@ -40,6 +40,8 @@ public class BaseLogicalPlanRewriteRuleProvider extends LogicalPlanRewriteRulePr
     List<Class<? extends LogicalPlanRewriteRule>> rules = TUtil.newList();
 
     rules.add(CommonConditionReduceRule.class);
+    // In-subquery rewrite phase must be executed before the filter push down phase.
+    rules.add(InSubqueryRewriteRule.class);
 
     if (systemConf.getBoolVar(TajoConf.ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
       rules.add(FilterPushDownRule.class);
