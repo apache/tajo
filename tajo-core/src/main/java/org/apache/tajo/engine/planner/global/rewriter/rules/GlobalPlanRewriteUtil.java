@@ -18,10 +18,11 @@
 
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.*;
 
 import java.util.List;
@@ -71,10 +72,10 @@ public class GlobalPlanRewriteUtil {
    * @param newChild
    * @param originalChild
    * @param parent
-   * @throws PlanningException
+   * @throws TajoInternalError
    */
   public static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent)
-      throws PlanningException {
+      throws TajoInternalError {
     if (parent instanceof UnaryNode) {
       ((UnaryNode) parent).setChild(newChild);
     } else if (parent instanceof BinaryNode) {
@@ -84,10 +85,10 @@ public class GlobalPlanRewriteUtil {
       } else if (binary.getRightChild().equals(originalChild)) {
         binary.setRightChild(newChild);
       } else {
-        throw new PlanningException(originalChild.getPID() + " is not a child of " + parent.getPID());
+        throw new TajoInternalError(originalChild.getPID() + " is not a child of " + parent.getPID());
       }
     } else {
-      throw new PlanningException(parent.getPID() + " seems to not have any children");
+      throw new TajoInternalError(parent.getPID() + " seems to not have any children");
     }
   }
 
@@ -97,9 +98,9 @@ public class GlobalPlanRewriteUtil {
    * @param child
    * @param parent
    * @return
-   * @throws PlanningException
+   * @throws TajoInternalError
    */
-  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
+  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) throws TajoInternalError {
     ScanNode scanForChild = null;
     for (ScanNode scanNode : parent.getScanNodes()) {
       if (scanNode.getTableName().equals(child.getId().toString())) {
@@ -108,7 +109,7 @@ public class GlobalPlanRewriteUtil {
       }
     }
     if (scanForChild == null) {
-      throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
+      throw new TajoInternalError("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
     return scanForChild;
   }
@@ -137,7 +138,7 @@ public class GlobalPlanRewriteUtil {
   /**
    * It calculates the total volume of all descendent relation nodes.
    */
-  public static long computeDescendentVolume(LogicalNode node) throws PlanningException {
+  public static long computeDescendentVolume(LogicalNode node) throws TajoInternalError {
 
     if (node instanceof RelationNode) {
       switch (node.getType()) {
@@ -176,7 +177,7 @@ public class GlobalPlanRewriteUtil {
       return computeDescendentVolume(binaryNode.getLeftChild()) + computeDescendentVolume(binaryNode.getRightChild());
     }
 
-    throw new PlanningException("Invalid State");
+    throw new TajoInternalError("Invalid State at node " + node.getPID());
   }
 
   public static class ParentFinder implements LogicalNodeVisitor {
@@ -192,9 +193,9 @@ public class GlobalPlanRewriteUtil {
       this.visit(root);
     }
 
-    public LogicalNode getFound() throws PlanningException {
+    public LogicalNode getFound() throws TajoInternalError {
       if (found == null) {
-        throw new PlanningException("Cannot find the parent of " + target.getPID());
+        throw new TajoInternalError("Cannot find the parent of " + target.getPID());
       }
       return this.found;
     }
@@ -212,5 +213,15 @@ public class GlobalPlanRewriteUtil {
         }
       }
     }
+  }
+
+  public static long estimateOutputVolume(ExecutionBlock block) {
+    // output volume = selectivity * left input row number * right input row number * output row width
+    // input row number = input size / input row width
+    return 0;
+  }
+
+  public static long estimateOutputRowNum(JoinType joinType, ScanNode leftScan, ScanNode rightScan) {
+    return 0;
   }
 }

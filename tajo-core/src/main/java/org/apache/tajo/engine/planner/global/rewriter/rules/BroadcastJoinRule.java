@@ -19,13 +19,16 @@
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
@@ -34,7 +37,7 @@ import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import java.util.*;
 
 /**
- * {@link AbstractBroadcastJoinRule} converts repartition join plan into broadcast join plan.
+ * {@link BroadcastJoinRule} converts repartition join plan into broadcast join plan.
  * Broadcast join rules can be defined as follows.
  *
  * <h3>Broadcastable relation</h3>
@@ -58,23 +61,38 @@ import java.util.*;
  * </ul>
  *
  */
-public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule {
-
-  protected enum RewriteScope {
-    CROSS,
-    NON_CROSS
-  }
+public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   private BroadcastJoinPlanBuilder planBuilder;
   private BroadcastJoinPlanFinalizer planFinalizer;
-  private RewriteScope scope;
 
-  protected void init(RewriteScope scope, MasterPlan plan, long broadcastThreshold) {
+  protected void init(MasterPlan plan, long thresholdForNonCrossJoin, long thresholdForCrossJoin) {
     GlobalPlanRewriteUtil.ParentFinder parentFinder = new GlobalPlanRewriteUtil.ParentFinder();
     RelationSizeComparator relSizeComparator = new RelationSizeComparator();
-    planBuilder = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder, broadcastThreshold);
+    planBuilder = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder, thresholdForNonCrossJoin,
+        thresholdForCrossJoin);
     planFinalizer = new BroadcastJoinPlanFinalizer(plan, relSizeComparator);
-    this.scope = scope;
+  }
+
+  @Override
+  public String getName() {
+    return "Broadcast join rule";
+  }
+
+  @Override
+  public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
+    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD);
+    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD);
+    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED) && thresholdForNonCrossJoin > 0
+        || thresholdForCrossJoin > 0) {
+      for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
+        if (block.hasNode(NodeType.JOIN)) {
+          init(plan, thresholdForNonCrossJoin, thresholdForCrossJoin);
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   @Override
@@ -132,14 +150,18 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
   private class BroadcastJoinPlanBuilder implements DirectedGraphVisitor<ExecutionBlockId> {
     private final MasterPlan plan;
     private final RelationSizeComparator relSizeComparator;
-    private final long broadcastSizeThreshold;
+    private final long thresholdForNonCrossJoin;
+    private final long thresholdForCrossJoin;
     private final GlobalPlanRewriteUtil.ParentFinder parentFinder;
+    private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = TUtil.newHashMap();
 
     public BroadcastJoinPlanBuilder(MasterPlan plan, RelationSizeComparator relationSizeComparator,
-                                    GlobalPlanRewriteUtil.ParentFinder parentFinder, long broadcastSizeThreshold) {
+                                    GlobalPlanRewriteUtil.ParentFinder parentFinder,
+                                    long thresholdForNonCrossJoin, long thresholdForCrossJoin) {
       this.plan = plan;
       this.relSizeComparator = relationSizeComparator;
-      this.broadcastSizeThreshold = broadcastSizeThreshold;
+      this.thresholdForNonCrossJoin = thresholdForNonCrossJoin;
+      this.thresholdForCrossJoin = thresholdForCrossJoin;
       this.parentFinder = parentFinder;
     }
 
@@ -154,58 +176,61 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
       }
     }
 
+    /**
+     * Estimate the result size of leaf blocks.
+     *
+     * @param current
+     */
     private void visitLeafNode(ExecutionBlock current) {
-      // At leaf execution blocks, find input relations who's size is smaller than the predefined threshold.
+      // Preserved-row relations must not be broadcasted to avoid data duplication.
       if (!current.isPreservedRow()) {
-        // Preserved-row relations must not be broadcasted to avoid data duplication.
-        boolean fullyBroadcastable = true;
+        // Assume that the output size is equal to the input size.
+        long totalVolume = 0;
         for (ScanNode scanNode : current.getScanNodes()) {
-          if (GlobalPlanRewriteUtil.getTableVolume(scanNode) <= broadcastSizeThreshold) {
-            current.addBroadcastRelation(scanNode);
-          } else {
-            fullyBroadcastable = false;
-          }
+          totalVolume += GlobalPlanRewriteUtil.getTableVolume(scanNode);
         }
-        if (fullyBroadcastable && current.getScanNodes().length == 1) {
-          try {
-            updateScanOfParentAsBroadcastable(plan, current);
-          } catch (PlanningException e) {
-            // This case is when the current has two or more inputs via union, and simply ignored.
-          }
-        }
+        estimatedEbOutputSize.put(current.getId(), totalVolume);
       }
     }
 
+    /**
+     * 1. Based on the join type, find broadcastable relations of the child execution blocks.
+     * 2. Update the current block's inputs based on the broadcastability of the child blocks.
+     * 3. Merge child blocks and the current block if the scan to the corresponding child block is broadcastable.
+     * 4. Estimate the result size of the current block.
+     *
+     * @param current
+     */
     private void visitNonLeafNode(ExecutionBlock current) {
       // At non-leaf execution blocks, merge broadcastable children's plan with the current plan.
 
       if (!plan.isTerminal(current)) {
-        if (needRewrite(current)) {
+        if (current.hasJoin()) {
           List<ExecutionBlock> childs = plan.getChilds(current);
           Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = current.getUnionScanMap();
+          LogicalNode found = PlannerUtil.findTopNode(current.getPlan(), NodeType.JOIN);
+          if (found == null) {
+            throw new TajoInternalError("ExecutionBlock " + current.getId() + " doesn't have any join operator, " +
+                "but the master plan indicates that it has.");
+          }
+          JoinType joinType = ((JoinNode)found).getJoinType();
+
+          for (ExecutionBlock child : childs) {
+            updateBroadcastableRelForChildEb(child, joinType);
+            updateInputBasedOnChildEb(child, current);
+          }
 
           if (current.hasBroadcastRelation()) {
             // The current execution block and its every child are able to be merged.
             for (ExecutionBlock child : childs) {
-              try {
-                addUnionNodeIfNecessary(unionScanMap, plan, child, current);
-                mergeTwoPhaseJoin(plan, child, current);
-              } catch (PlanningException e) {
-                throw new RuntimeException(e);
-              }
+              addUnionNodeIfNecessary(unionScanMap, plan, child, current);
+              mergeTwoPhaseJoin(plan, child, current);
             }
 
             checkTotalSizeOfBroadcastableRelations(current);
 
-            // We assume that if every input of an execution block is broadcastable,
-            // the output of the execution block is also broadcastable.
-            if (!current.isPreservedRow() && isFullyBroadcastable(current)) {
-              try {
-                updateScanOfParentAsBroadcastable(plan, current);
-              } catch (PlanningException e) {
-                throw new RuntimeException(e);
-              }
-            }
+            long outputVolume = 0;
+            estimatedEbOutputSize.put(current.getId(), outputVolume);
           }
         } else {
           List<ScanNode> relations = TUtil.newList(current.getBroadcastRelations());
@@ -216,21 +241,27 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
       }
     }
 
-    private boolean needRewrite(ExecutionBlock block) {
-      if (block.hasJoin()) {
-        if (scope == RewriteScope.CROSS) {
-          JoinNode join = PlannerUtil.findTopNode(block.getPlan(), NodeType.JOIN);
-          if (join.getJoinType() == JoinType.CROSS) {
-            return true;
+    private void updateInputBasedOnChildEb(ExecutionBlock child, ExecutionBlock parent) {
+      if (!child.isPreservedRow() && isFullyBroadcastable(child)) {
+        if (plan.isLeaf(child) && child.getScanNodes().length == 1) {
+          try {
+            updateScanOfParentAsBroadcastable(plan, child, parent);
+          } catch (TajoInternalError e) {
+            // This case is when the current has two or more inputs via union, and simply ignored.
           }
-        } else if (scope == RewriteScope.NON_CROSS) {
-          JoinNode join = PlannerUtil.findTopNode(block.getPlan(), NodeType.JOIN);
-          if (join.getJoinType() != JoinType.CROSS) {
-            return true;
-          }
+        } else {
+          updateScanOfParentAsBroadcastable(plan, child, parent);
         }
       }
-      return false;
+    }
+
+    private void updateBroadcastableRelForChildEb(ExecutionBlock child, JoinType joinType) {
+      long threshold = joinType == JoinType.CROSS ? thresholdForCrossJoin : thresholdForNonCrossJoin;
+      for (ScanNode scanNode : child.getScanNodes()) {
+        if (GlobalPlanRewriteUtil.getTableVolume(scanNode) <= threshold) {
+          child.addBroadcastRelation(scanNode);
+        }
+      }
     }
 
     /**
@@ -245,10 +276,12 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
 
       // Enforce broadcast for candidates in ascending order of relation size
       long totalBroadcastVolume = 0;
+      long largeThreshold = thresholdForCrossJoin > thresholdForNonCrossJoin ?
+          thresholdForNonCrossJoin : thresholdForCrossJoin;
       int i, candidateNum = broadcastCandidates.size();
       for (i = 0; i < candidateNum; i++) {
         long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
-        if (totalBroadcastVolume + volumeOfCandidate > broadcastSizeThreshold) {
+        if (totalBroadcastVolume + volumeOfCandidate > largeThreshold) {
           break;
         }
         totalBroadcastVolume += volumeOfCandidate;
@@ -260,8 +293,8 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
       }
     }
 
-    private void updateScanOfParentAsBroadcastable(MasterPlan plan, ExecutionBlock current) throws PlanningException {
-      ExecutionBlock parent = plan.getParent(current);
+    private void updateScanOfParentAsBroadcastable(MasterPlan plan, ExecutionBlock current, ExecutionBlock parent)
+        throws TajoInternalError {
       if (parent != null && !plan.isTerminal(parent)) {
         ScanNode scanForCurrent = GlobalPlanRewriteUtil.findScanForChildEb(current, parent);
         parent.addBroadcastRelation(scanForCurrent);
@@ -277,7 +310,7 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
      * @return
      */
     private ExecutionBlock mergeTwoPhaseJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent)
-        throws PlanningException {
+        throws TajoInternalError {
       ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(child, parent);
 
       parentFinder.set(scanForChild);
@@ -300,8 +333,7 @@ public abstract class AbstractBroadcastJoinRule implements GlobalPlanRewriteRule
     }
 
     private void addUnionNodeIfNecessary(Map<ExecutionBlockId, ExecutionBlockId> unionScanMap, MasterPlan plan,
-                                         ExecutionBlock child, ExecutionBlock current)
-        throws PlanningException {
+                                         ExecutionBlock child, ExecutionBlock current) {
       if (unionScanMap != null) {
         List<ExecutionBlockId> unionScans = TUtil.newList();
         ExecutionBlockId representativeId = null;
