@@ -604,8 +604,8 @@ public class MemStore implements CatalogStore {
     return protos;
   }
 
-  public List<TablePartitionKeysProto> getAllPartitionKeys() {
-    List<TablePartitionKeysProto> protos = new ArrayList<TablePartitionKeysProto>();
+  public List<TablePartitionKeyProto> getAllPartitionKeys() {
+    List<TablePartitionKeyProto> protos = new ArrayList<TablePartitionKeyProto>();
     int partitionId = 0;
 
     Set<String> partitionTables = partitions.keySet();
@@ -615,7 +615,7 @@ public class MemStore implements CatalogStore {
         CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
 
         for (PartitionKeyProto partitionKey : partitionDescProto.getPartitionKeysList()) {
-          TablePartitionKeysProto.Builder builder = TablePartitionKeysProto.newBuilder();
+          TablePartitionKeyProto.Builder builder = TablePartitionKeyProto.newBuilder();
           builder.setColumnName(partitionKey.getColumnName());
           builder.setPartitionValue(partitionKey.getPartitionValue());
           builder.setPartitionId(partitionId);

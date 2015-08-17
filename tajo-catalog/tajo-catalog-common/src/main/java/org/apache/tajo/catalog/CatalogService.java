@@ -169,7 +169,7 @@ public interface CatalogService {
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
     , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException;
 
-  List<TablePartitionKeysProto> getAllPartitionKeys();
+  List<TablePartitionKeyProto> getAllPartitionKeys();
 
   boolean createIndex(IndexDesc index);
 

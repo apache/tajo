@@ -91,7 +91,7 @@ message GetTablePartitionsResponse {
 
 message GetTablePartitionKeysResponse {
   required ReturnState state = 1;
-  repeated TablePartitionKeysProto partKey = 2;
+  repeated TablePartitionKeyProto partKey = 2;
 }
 
 service CatalogProtocolService {

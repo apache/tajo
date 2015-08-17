@@ -420,12 +420,12 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   }
 
   private List<Tuple> getAllPartitionKeys(Schema outSchema) {
-    List<TablePartitionKeysProto> partitionKeyList = masterContext.getCatalog().getAllPartitionKeys();
+    List<TablePartitionKeyProto> partitionKeyList = masterContext.getCatalog().getAllPartitionKeys();
     List<Tuple> tuples = new ArrayList<Tuple>(partitionKeyList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
-    for (TablePartitionKeysProto partitionKey: partitionKeyList) {
+    for (TablePartitionKeyProto partitionKey: partitionKeyList) {
       aTuple = new VTuple(outSchema.size());
 
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {

@@ -141,10 +141,10 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(resultPartitions.size(), 1);
     assertEquals(resultPartitions.get(0).getPartitionName(), "col3=1/col4=2");
 
-    List<CatalogProtos.TablePartitionKeysProto> tablePartitionKeys = catalog.getAllPartitionKeys();
-    List<CatalogProtos.TablePartitionKeysProto> resultPartitionKeys = TUtil.newList();
+    List<CatalogProtos.TablePartitionKeyProto> tablePartitionKeys = catalog.getAllPartitionKeys();
+    List<CatalogProtos.TablePartitionKeyProto> resultPartitionKeys = TUtil.newList();
 
-    for (CatalogProtos.TablePartitionKeysProto partitionKey: tablePartitionKeys) {
+    for (CatalogProtos.TablePartitionKeyProto partitionKey: tablePartitionKeys) {
       if (partitionKey.getPartitionId() == partitionId
         && (partitionKey.getColumnName().equals("col3") && partitionKey.getPartitionValue().equals("1")
       || partitionKey.getColumnName().equals("col4") && partitionKey.getPartitionValue().equals("2"))) {
