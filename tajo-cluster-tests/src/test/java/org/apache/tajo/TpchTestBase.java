@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.io.File;
@@ -37,7 +36,6 @@ public class TpchTestBase {
 
   String [] names;
   String [] paths;
-  String [][] tables;
   Schema[] schemas;
   Map<String, Integer> nameMap = Maps.newHashMap();
   protected TPCH tpch;
@@ -70,11 +68,9 @@ public class TpchTestBase {
       schemas[i] = tpch.getSchema(names[i]);
     }
 
-    tables = new String[names.length][];
     File file;
     for (int i = 0; i < names.length; i++) {
       file = TPCH.getDataFile(names[i]);
-      tables[i] = FileUtil.readTextFile(file).split("\n");
       paths[i] = file.getAbsolutePath();
     }
     try {
