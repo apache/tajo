@@ -231,7 +231,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
             checkTotalSizeOfBroadcastableRelations(current);
 
-            long outputVolume = 0;
+            long outputVolume = estimateOutputVolume(current);
             estimatedEbOutputSize.put(current.getId(), outputVolume);
           }
         } else {
@@ -268,7 +268,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
     private long estimateOutputVolume(ExecutionBlock block) {
       // output volume = output row number * output row width
-      return SchemaUtil.estimateRowByteSizeWithSchema(block.getStoreTableNode().getTableSchema())
+      return SchemaUtil.estimateRowByteSizeWithSchema(block.getPlan().getOutSchema())
           * estimateOutputRowNum(PlannerUtil.<JoinNode>findTopNode(block.getPlan(), NodeType.JOIN));
     }
 
@@ -328,11 +328,12 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             return leftChildRowNum < rightChildRownum ? leftChildRowNum : rightChildRownum;
           case LEFT_ANTI:
           case LEFT_SEMI:
-            return leftChildRowNum *
-                Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size());
+            return (long) (leftChildRowNum *
+                Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size()));
           case RIGHT_ANTI:
           case RIGHT_SEMI:
-            return rightChildRownum;
+            return (long) (rightChildRownum *
+                Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size()));
         }
       }
 
@@ -352,9 +353,9 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       // Enforce broadcast for candidates in ascending order of relation size
       long totalBroadcastVolume = 0;
       long largeThreshold = thresholdForCrossJoin > thresholdForNonCrossJoin ?
-          thresholdForNonCrossJoin : thresholdForCrossJoin;
-      int i, candidateNum = broadcastCandidates.size();
-      for (i = 0; i < candidateNum; i++) {
+          thresholdForCrossJoin : thresholdForNonCrossJoin;
+      int i;
+      for (i = 0; i < broadcastCandidates.size(); i++) {
         long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
         if (totalBroadcastVolume + volumeOfCandidate > largeThreshold) {
           break;
@@ -362,7 +363,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         totalBroadcastVolume += volumeOfCandidate;
       }
 
-      for (; i < candidateNum; ) {
+      for (; i < broadcastCandidates.size(); ) {
         ScanNode nonBroadcast = broadcastCandidates.remove(i);
         block.removeBroadcastRelation(nonBroadcast);
       }
