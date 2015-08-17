@@ -79,10 +79,6 @@ public class FileUtil {
     }
   }
 
-  public static File getFile(String path) {
-    return new File(path);
-  }
-
   public static URL getResourcePath(String resource) throws IOException {
     return ClassLoader.getSystemResource(resource);
   }
