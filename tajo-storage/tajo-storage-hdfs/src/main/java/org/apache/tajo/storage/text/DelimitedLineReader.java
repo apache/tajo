@@ -179,7 +179,7 @@ public class DelimitedLineReader implements Closeable {
   @Override
   public void close() throws IOException {
     try {
-      IOUtils.cleanup(LOG, lineReader, is, fis);
+      IOUtils.cleanup(LOG, lineReader);
       fs = null;
       is = null;
       fis = null;
