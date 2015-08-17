@@ -215,7 +215,7 @@ public abstract class Tablespace {
    * @throws java.io.IOException
    */
   public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
-    return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
+    return getScanner(meta, schema, (Fragment)FragmentConvertor.convert(conf, fragment), target);
   }
 
   /**

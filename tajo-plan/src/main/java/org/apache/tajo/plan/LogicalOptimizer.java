@@ -438,11 +438,11 @@ public class LogicalOptimizer {
       }
 
       if (joinNode.getLeftChild() instanceof RelationNode) {
-        joinGraphContext.accumulatedCost = getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild())
-            * filterFactor;
+        joinGraphContext.accumulatedCost = getCost((RelationNode)joinNode.getLeftChild()) *
+            getCost((LogicalNode)joinNode.getRightChild())* filterFactor;
       } else {
         joinGraphContext.accumulatedCost = joinGraphContext.accumulatedCost +
-            (joinGraphContext.accumulatedCost * getCost(joinNode.getRightChild()) * filterFactor);
+            (joinGraphContext.accumulatedCost * getCost((RelationNode)joinNode.getRightChild()) * filterFactor);
       }
 
       return joinNode;

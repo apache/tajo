@@ -315,7 +315,7 @@ public class TablespaceManager implements StorageService {
   public static <T extends Tablespace> Optional<T> get(@Nullable String uri) {
 
     if (uri == null || uri.isEmpty()) {
-      return (Optional<T>) Optional.of(getDefault());
+      return Optional.of(getDefault());
     }
 
     Tablespace lastOne = null;
@@ -327,7 +327,7 @@ public class TablespaceManager implements StorageService {
         lastOne = entry.getValue();
       }
     }
-    return (Optional<T>) Optional.fromNullable(lastOne);
+    return Optional.fromNullable((T) lastOne);
   }
 
   /**
@@ -339,9 +339,9 @@ public class TablespaceManager implements StorageService {
    */
   public static <T extends Tablespace> Optional<T> get(@Nullable URI uri) {
     if (uri == null) {
-      return (Optional<T>) Optional.of(getDefault());
+      return Optional.of(getDefault());
     } else {
-      return (Optional<T>) get(uri.toString());
+      return get(uri.toString());
     }
   }
 

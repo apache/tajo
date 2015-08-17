@@ -99,7 +99,7 @@ public class HeapTuple implements Tuple {
   }
 
   @Override
-  public void put(int fieldId, Tuple tuple) {
+  public void insertTuple(int fieldId, Tuple tuple) {
     throw new UnsupportedException("UnSafeTuple does not support put(int, Tuple).");
   }
 

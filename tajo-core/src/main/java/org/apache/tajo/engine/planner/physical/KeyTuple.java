@@ -46,8 +46,8 @@ public class KeyTuple extends VTuple implements Cloneable {
   }
 
   @Override
-  public void put(int fieldId, Tuple tuple) {
-    super.put(fieldId, tuple);
+  public void insertTuple(int fieldId, Tuple tuple) {
+    super.insertTuple(fieldId, tuple);
     updateHashCode();
   }
 
