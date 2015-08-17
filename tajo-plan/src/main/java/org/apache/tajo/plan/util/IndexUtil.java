@@ -38,7 +38,7 @@ public class IndexUtil {
 
   public static List<EvalNode> getAllEqualEvals(EvalNode qual) {
     EvalTreeUtil.EvalFinder finder = new EvalTreeUtil.EvalFinder(EvalType.EQUAL);
-    finder.visitChild(null, qual, new Stack<EvalNode>());
+    finder.visit(null, qual, new Stack<EvalNode>());
     return finder.getEvalNodes();
   }
   

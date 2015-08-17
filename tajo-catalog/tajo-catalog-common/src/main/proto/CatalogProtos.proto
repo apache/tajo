@@ -159,7 +159,8 @@ message TablePartitionKeysProto {
 }
 
 message GetFunctionsResponse {
-  repeated FunctionDescProto functionDesc = 1;
+  required ReturnState state = 1;
+  repeated FunctionDescProto functionDesc = 2;
 }
 
 message UnregisterFunctionRequest {

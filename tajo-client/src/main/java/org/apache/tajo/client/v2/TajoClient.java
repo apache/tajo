@@ -18,7 +18,8 @@
 
 package org.apache.tajo.client.v2;
 
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.QueryFailedException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 import org.apache.tajo.exception.TajoException;
 
@@ -114,7 +115,7 @@ public class TajoClient implements Closeable {
    * @return QueryHandler
    * @throws TajoException
    */
-  public ResultSet executeQuery(String sql) throws TajoException {
+  public ResultSet executeQuery(String sql) throws TajoException, QueryFailedException {
     return delegate.executeSQL(sql);
   }
 

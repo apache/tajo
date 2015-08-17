@@ -34,10 +34,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
 import org.apache.tajo.catalog.store.DerbyStore;
@@ -45,9 +42,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
@@ -212,9 +206,6 @@ public class CatalogServer extends AbstractService {
 
       wlock.lock();
       try {
-        if (store.existTablespace(tablespaceName)) {
-          throw new DuplicateDatabaseException(tablespaceName);
-        }
 
         store.createTablespace(tablespaceName, uri);
         LOG.info(String.format("tablespace \"%s\" (%s) is created", tablespaceName, uri));
@@ -235,15 +226,10 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
       try {
         if (tablespaceName.equals(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
-          throw new CatalogException(ResultCode.INSUFFICIENT_PRIVILEGE, "drop to default tablespace");
-        }
-
-        if (!store.existTablespace(tablespaceName)) {
-          throw new UndefinedTablespaceException(tablespaceName);
+          throw new InsufficientPrivilegeException("drop to default tablespace");
         }
 
         store.dropTablespace(tablespaceName);
-
         return OK;
 
       } catch (Throwable t) {
@@ -350,7 +336,6 @@ public class CatalogServer extends AbstractService {
             .build();
 
       } catch (Throwable t) {
-
         printStackTraceIfError(LOG, t);
         return GetTablespaceResponse.newBuilder()
             .setState(returnError(t))
@@ -368,10 +353,6 @@ public class CatalogServer extends AbstractService {
 
         if (linkedMetadataManager.getTablespace(request.getSpaceName()).isPresent()) {
           return errInsufficientPrivilege("alter tablespace '"+request.getSpaceName()+"'");
-        }
-
-        if (!store.existTablespace(request.getSpaceName())) {
-          return errUndefinedTablespace(request.getSpaceName());
         }
 
         if (request.getCommandList().size() > 0) {
@@ -417,10 +398,6 @@ public class CatalogServer extends AbstractService {
       
       wlock.lock();
       try {
-        if (store.existDatabase(databaseName)) {
-          return errDuplicateDatabase(databaseName);
-        }
-
         store.createDatabase(databaseName, tablespaceName);
         LOG.info(String.format("database \"%s\" is created", databaseName));
 
@@ -441,12 +418,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
 
       try {
-        String [] split = CatalogUtil.splitTableName(proto.getTableName());
-        if (!store.existTable(split[0], split[1])) {
-          return errDuplicateTable(proto.getTableName());
-        }
         store.updateTableStats(proto);
-
         return OK;
 
       } catch (Throwable t) {
@@ -473,11 +445,7 @@ public class CatalogServer extends AbstractService {
       wlock.lock();
 
       try {
-        if (!store.existTable(split[0], split[1])) {
-          return errUndefinedTable(proto.getTableName());
-        }
         store.alterTable(proto);
-
         return OK;
 
       } catch (Throwable t) {
@@ -503,12 +471,7 @@ public class CatalogServer extends AbstractService {
 
       wlock.lock();
       try {
-        if (!store.existDatabase(databaseName)) {
-          return errUndefinedDatabase(databaseName);
-        }
-
         store.dropDatabase(databaseName);
-
         return OK;
 
       } catch (Throwable t) {
@@ -621,27 +584,10 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
-
-        contain = store.existDatabase(dbName);
-
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-            return TableResponse.newBuilder()
-                .setState(OK)
-                .setTable(store.getTable(dbName, tbName))
-                .build();
-          } else {
-            return TableResponse.newBuilder()
-                .setState(errUndefinedTable(tbName))
-                .build();
-          }
-        } else {
-          return TableResponse.newBuilder()
-              .setState(errUndefinedDatabase(dbName))
-              .build();
-        }
+        return TableResponse.newBuilder()
+            .setState(OK)
+            .setTable(store.getTable(dbName, tbName))
+            .build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -675,13 +621,7 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        if (store.existDatabase(dbName)) {
-          return returnStringList(store.getAllTableNames(dbName));
-        } else {
-          return StringListResponse.newBuilder()
-              .setState(errUndefinedDatabase(dbName))
-              .build();
-        }
+        return returnStringList(store.getAllTableNames(dbName));
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -698,6 +638,7 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
       Iterator<List<FunctionDescProto>> iterator = functions.values().iterator();
       GetFunctionsResponse.Builder builder = GetFunctionsResponse.newBuilder();
+      builder.setState(OK);
       while (iterator.hasNext()) {
         builder.addAllFunctionDesc(iterator.next());
       }
@@ -719,24 +660,12 @@ public class CatalogServer extends AbstractService {
       if (metaDictionary.isSystemDatabase(dbName)) {
         return errInsufficientPrivilege("create a table in database '" + dbName + "'");
       }
-      
+
       wlock.lock();
       try {
-
-        boolean contain = store.existDatabase(dbName);
-
-        if (contain) {
-          if (store.existTable(dbName, tbName)) {
-            return errDuplicateTable(tbName);
-          }
-
-          store.createTable(request);
-          LOG.info(String.format("relation \"%s\" is added to the catalog (%s)",
-              CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddressStr));
-        } else {
-          return errUndefinedDatabase(dbName);
-        }
-
+        store.createTable(request);
+        LOG.info(String.format("relation \"%s\" is added to the catalog (%s)",
+            CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddressStr));
         return OK;
 
       } catch (Throwable t) {
@@ -764,19 +693,9 @@ public class CatalogServer extends AbstractService {
 
       wlock.lock();
       try {
-        boolean contain = store.existDatabase(dbName);
-
-        if (contain) {
-          if (!store.existTable(dbName, tbName)) {
-            return errUndefinedTable(tbName);
-          }
-
-          store.dropTable(dbName, tbName);
-          LOG.info(String.format("relation \"%s\" is deleted from the catalog (%s)",
-              CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddressStr));
-        } else {
-          return errUndefinedDatabase(dbName);
-        }
+        store.dropTable(dbName, tbName);
+        LOG.info(String.format("relation \"%s\" is deleted from the catalog (%s)",
+            CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddressStr));
 
         return OK;
 
@@ -805,16 +724,10 @@ public class CatalogServer extends AbstractService {
         rlock.lock();
         try {
 
-          boolean contain = store.existDatabase(dbName);
-
-          if (contain) {
-            if (store.existTable(dbName, tbName)) {
-              return OK;
-            } else {
-              return errUndefinedTable(tbName);
-            }
+          if (store.existTable(dbName, tbName)) {
+            return OK;
           } else {
-            return errUndefinedDatabase(dbName);
+            return errUndefinedTable(tbName);
           }
 
         } catch (Throwable t) {
@@ -930,41 +843,16 @@ public class CatalogServer extends AbstractService {
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
-        throw new ServiceException(dbName + " is a system databsae. It does not contain any partitioned tables.");
+        return GetPartitionMethodResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
       
       rlock.lock();
       try {
-        boolean contain;
 
-        contain = store.existDatabase(dbName);
-
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-
-            if (store.existPartitionMethod(dbName, tbName)) {
-
-              return GetPartitionMethodResponse.newBuilder()
-                  .setState(OK)
-                  .setPartition(store.getPartitionMethod(dbName, tbName))
-                  .build();
-
-            } else {
-              return GetPartitionMethodResponse.newBuilder()
-                  .setState(errUndefinedPartitionMethod(tbName))
-                  .build();
-            }
-          } else {
-            return GetPartitionMethodResponse.newBuilder()
-                .setState(errUndefinedTable(tbName))
-                .build();
-          }
-        } else {
-          return GetPartitionMethodResponse.newBuilder()
-              .setState(errUndefinedDatabase(tbName))
-              .build();
-        }
+        return GetPartitionMethodResponse.newBuilder()
+            .setState(OK)
+            .setPartition(store.getPartitionMethod(dbName, tbName))
+            .build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -999,24 +887,12 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
-
-        contain = store.existDatabase(dbName);
-
-        if (contain) {
-          contain = store.existTable(dbName, tableName);
-          if (contain) {
-            if (store.existPartitionMethod(dbName, tableName)) {
-              return OK;
-            } else {
-              return errUndefinedPartitionMethod(tableName);
-            }
-          } else {
-            return errUndefinedTable(tableName);
-          }
+        if (store.existPartitionMethod(dbName, tableName)) {
+          return OK;
         } else {
-          return errUndefinedDatabase(dbName);
+          return errUndefinedPartitionMethod(tableName);
         }
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         return returnError(t);
@@ -1027,12 +903,8 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public ReturnState dropPartitionMethod(RpcController controller, TableIdentifierProto request) {
-      return errFeatureNotSupported("dropPartitionMethod");
-    }
-
-    @Override
-    public GetPartitionDescResponse getPartitionByPartitionName(RpcController controller, PartitionIdentifierProto request)
+    public GetPartitionDescResponse getPartitionByPartitionName(RpcController controller,
+                                                                PartitionIdentifierProto request)
         throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
@@ -1055,40 +927,19 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
 
-        contain = store.existDatabase(dbName);
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-
-            if (store.existPartitionMethod(dbName, tbName)) {
-              PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
-              if (partitionDesc != null) {
-                return GetPartitionDescResponse.newBuilder()
-                  .setState(OK)
-                  .setPartition(partitionDesc)
-                  .build();
-              } else {
-                return GetPartitionDescResponse.newBuilder()
-                  .setState(errUndefinedPartition(partitionName))
-                  .build();
-              }
-            } else {
-              return GetPartitionDescResponse.newBuilder()
-                  .setState(errUndefinedPartitionMethod(tbName))
-                  .build();
-            }
-          } else {
-            return GetPartitionDescResponse.newBuilder()
-                .setState(errUndefinedTable(tbName))
-                .build();
-          }
+        PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
+        if (partitionDesc != null) {
+          return GetPartitionDescResponse.newBuilder()
+              .setState(OK)
+              .setPartition(partitionDesc)
+              .build();
         } else {
           return GetPartitionDescResponse.newBuilder()
-              .setState(errUndefinedDatabase(dbName))
+              .setState(errUndefinedPartition(partitionName))
               .build();
         }
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
@@ -1115,9 +966,7 @@ public class CatalogServer extends AbstractService {
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
-        return GetPartitionsResponse.newBuilder()
-            .setState(returnError(t))
-            .build();
+        return GetPartitionsResponse.newBuilder().setState(returnError(t)).build();
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
@@ -1126,40 +975,17 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
 
-        contain = store.existDatabase(dbName);
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-            if (store.existPartitionMethod(dbName, tbName)) {
-              List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
+        List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
 
-              GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-              for(PartitionDescProto partition : partitions) {
-                builder.addPartition(partition);
-              }
-
-              builder.setState(OK);
-              return builder.build();
-
-            } else {
-              return GetPartitionsResponse.newBuilder()
-                  .setState(errUndefinedPartitionMethod(tbName))
-                  .build();
-            }
-
-          } else {
-            return GetPartitionsResponse.newBuilder()
-                .setState(errUndefinedTable(tbName))
-                .build();
-          }
-        } else {
-          return GetPartitionsResponse.newBuilder()
-              .setState(errUndefinedDatabase(dbName))
-              .build();
-
+        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+        for (PartitionDescProto partition : partitions) {
+          builder.addPartition(partition);
         }
+
+        builder.setState(OK);
+        return builder.build();
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
@@ -1173,7 +999,9 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request) throws ServiceException {
+    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request)
+        throws ServiceException {
+
       rlock.lock();
 
       try {
@@ -1203,24 +1031,10 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
 
-        contain = store.existDatabase(databaseName);
-        if (contain) {
-          contain = store.existTable(databaseName, tableName);
-          if (contain) {
-            if (store.existPartitionMethod(databaseName, tableName)) {
-              store.addPartitions(databaseName, tableName, request.getPartitionDescList(), request.getIfNotExists());
-              return OK;
-            } else {
-              return errUndefinedPartitionMethod(tableName);
-            }
-          } else {
-            return errUndefinedTable(tableName);
-          }
-        } else {
-          return errUndefinedDatabase(databaseName);
-        }
+        store.addPartitions(databaseName, tableName, request.getPartitionDescList(), request.getIfNotExists());
+        return OK;
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         return returnError(t);
@@ -1268,13 +1082,7 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        if (store.existIndexByName(
-            dbName,
-            indexDesc.getIndexName())) {
-          return errDuplicateTable(indexDesc.getIndexName());
-        }
         store.createIndex(indexDesc);
-
         return OK;
 
       } catch (Throwable t) {
@@ -1304,12 +1112,7 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-
-        if (store.existDatabase(dbName)) {
-          return store.existIndexByName(dbName, indexName) ? OK : errUndefinedIndexName(indexName);
-        } else {
-          return errUndefinedDatabase(dbName);
-        }
+        return store.existIndexByName(dbName, indexName) ? OK : errUndefinedIndexName(indexName);
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -1341,17 +1144,8 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-
-        if (store.existDatabase(databaseName)) {
-          if (store.existTable(databaseName, tableName)) {
-            return store.existIndexByColumns(databaseName, tableName,
-                columnNames.toArray(new String[columnNames.size()])) ? OK : errUndefinedIndex(tableName, columnNames);
-          } else {
-            return errUndefinedTable(tableName);
-          }
-        } else {
-          return errUndefinedDatabase(databaseName);
-        }
+        return store.existIndexByColumns(databaseName, tableName,
+            columnNames.toArray(new String[columnNames.size()])) ? OK : errUndefinedIndex(tableName, columnNames);
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -1379,16 +1173,7 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-
-        if (store.existDatabase(databaseName)) {
-          if (store.existTable(databaseName, tableName)) {
-            return store.existIndexesByTable(databaseName, tableName) ? OK : errUndefinedIndex(tableName);
-          } else {
-            return errUndefinedTable(tableName);
-          }
-        } else {
-          return errUndefinedDatabase(databaseName);
-        }
+        return store.existIndexesByTable(databaseName, tableName) ? OK : errUndefinedIndex(tableName);
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -1531,11 +1316,7 @@ public class CatalogServer extends AbstractService {
 
       wlock.lock();
       try {
-        if (!store.existIndexByName(dbName, indexName)) {
-          return errUndefinedIndexName(indexName);
-        }
         store.dropIndex(dbName, indexName);
-
         return OK;
 
       } catch (Throwable t) {
@@ -1718,7 +1499,8 @@ public class CatalogServer extends AbstractService {
       try {
         if (request.hasFunctionType()) {
           if (containFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList())) {
-            function = findFunction(request.getSignature(), request.getFunctionType(), request.getParameterTypesList(), true);
+            function = findFunction(request.getSignature(), request.getFunctionType(),
+                request.getParameterTypesList(), true);
           }
         } else {
           function = findFunction(request.getSignature(), request.getParameterTypesList());

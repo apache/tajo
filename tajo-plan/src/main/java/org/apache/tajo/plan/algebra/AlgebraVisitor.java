@@ -38,7 +38,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitUnion(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws TajoException;
   RESULT visitExcept(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws TajoException;
   RESULT visitIntersect(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws TajoException;
-  RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr) throws TajoException;
+  RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr) throws TajoException;
   RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr) throws TajoException;
   RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws TajoException;
   RESULT visitRelation(CONTEXT ctx, Stack<Expr> stack, Relation expr) throws TajoException;

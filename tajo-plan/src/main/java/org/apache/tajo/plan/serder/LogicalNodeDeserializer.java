@@ -30,7 +30,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -437,6 +437,7 @@ public class LogicalNodeDeserializer {
     }
     scan.setInSchema(convertSchema(protoNode.getInSchema()));
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    scan.setNameResolveBase(scanProto.getNameResolveBase());
   }
 
   private static IndexScanNode convertIndexScan(OverridableConf context, EvalContext evalContext,
@@ -481,6 +482,7 @@ public class LogicalNodeDeserializer {
     if (proto.getTargetsCount() > 0) {
       tableSubQuery.setTargets(convertTargets(context, evalContext, proto.getTargetsList()));
     }
+    tableSubQuery.setNameResolveBase(proto.getNameResolveBase());
 
     return tableSubQuery;
   }
@@ -596,7 +598,7 @@ public class LogicalNodeDeserializer {
       alterTablespace.setLocation(alterTablespaceProto.getSetLocation().getLocation());
       break;
     default:
-      throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTablespaceProto.getSetType().name());
+      throw new NotImplementedException("Unknown SET type in ALTER TABLE: " + alterTablespaceProto.getSetType().name());
     }
 
     return alterTablespace;
@@ -645,7 +647,7 @@ public class LogicalNodeDeserializer {
       alterTable.setIfExists(alterPartition.getIfExists());
       break;
     default:
-      throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());
+      throw new NotImplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());
     }
 
     return alterTable;

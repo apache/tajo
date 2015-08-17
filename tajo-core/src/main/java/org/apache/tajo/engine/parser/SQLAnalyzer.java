@@ -31,6 +31,7 @@ import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.engine.parser.SQLParser.*;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -44,9 +45,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
-
-  public SQLAnalyzer() {
-  }
 
   public Expr parse(String sql) {
     ANTLRInputStream input = new ANTLRInputStream(sql);
@@ -62,7 +60,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      throw new SQLSyntaxError(e);
+      throw new SQLSyntaxError(e.getMessage());
     }
     return visitSql(context);
   }
@@ -986,7 +984,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
       return new ValueListExpr(exprs);
     } else {
-      return new SimpleTableSubQuery(visitChildren(ctx.table_subquery()));
+      return new SimpleTableSubquery(visitChildren(ctx.table_subquery()));
     }
   }
 
@@ -1046,7 +1044,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public ExistsPredicate visitExists_predicate(SQLParser.Exists_predicateContext ctx) {
-    return new ExistsPredicate(new SimpleTableSubQuery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
+    return new ExistsPredicate(new SimpleTableSubquery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
   }
 
   @Override

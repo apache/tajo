@@ -24,12 +24,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.DuplicateTableException;
-import org.apache.tajo.catalog.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -110,17 +107,13 @@ public class CreateTableExecutor {
     }
 
     tableSpace.createTable(desc, ifNotExists);
-
-    if (catalog.createTable(desc)) {
-      LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
-      return desc;
-    } else {
-      LOG.info("Table creation " + tableName + " is failed.");
-      throw new TajoInternalError("Cannot create table \"" + tableName + "\"");
-    }
+    catalog.createTable(desc);
+    return desc;
   }
 
-  private TableDesc handlExistence(boolean ifNotExists, String qualifiedName) throws DuplicateTableException {
+  private TableDesc handlExistence(boolean ifNotExists, String qualifiedName)
+      throws DuplicateTableException, UndefinedTableException {
+
     if (ifNotExists) {
       LOG.info("relation \"" + qualifiedName + "\" is already exists.");
       return catalog.getTableDesc(qualifiedName);

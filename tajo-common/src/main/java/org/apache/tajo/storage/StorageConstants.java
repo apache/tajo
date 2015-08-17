@@ -96,6 +96,9 @@ public class StorageConstants {
   public static final String AVRO_SCHEMA_LITERAL = "avro.schema.literal";
   public static final String AVRO_SCHEMA_URL = "avro.schema.url";
 
+  // Internal storage properties -------------------------------------------------
+  public static final String SHUFFLE_TYPE = "shuffle.type";
+
   static {
     PARQUET_DEFAULT_BLOCK_SIZE = Integer.toString(DEFAULT_BLOCK_SIZE);
     PARQUET_DEFAULT_PAGE_SIZE = Integer.toString(DEFAULT_PAGE_SIZE);

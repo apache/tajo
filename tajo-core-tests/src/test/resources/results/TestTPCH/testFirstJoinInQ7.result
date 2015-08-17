@@ -1,0 +1,4 @@
+supp_nation,cust_nation,s_nationkey,c_nationkey
+-------------------------------
+FRANCE,GERMANY,6,7
+GERMANY,FRANCE,7,6

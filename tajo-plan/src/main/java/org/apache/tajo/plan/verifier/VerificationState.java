@@ -23,7 +23,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.exception.TajoError;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoExceptionInterface;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.TUtil;
 

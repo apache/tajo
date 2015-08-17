@@ -500,9 +500,13 @@ public class CatalogUtil {
           basisTypeOfVarLengthType = givenTypes.get(j).getType();
         } else if (basisTypeOfVarLengthType != null) {
           // If there are more than one type, we choose the most widen type as the basis type.
-          basisTypeOfVarLengthType =
-              getWidestType(CatalogUtil.newSimpleDataTypeArray(basisTypeOfVarLengthType, givenTypes.get(j).getType()))
-              .getType();
+          try {
+            basisTypeOfVarLengthType =
+                getWidestType(CatalogUtil.newSimpleDataTypeArray(basisTypeOfVarLengthType, givenTypes.get(j).getType()))
+                .getType();
+          } catch (UndefinedOperatorException e) {
+            continue;
+          }
         }
       }
 
@@ -676,7 +680,7 @@ public class CatalogUtil {
    * @param types A list of DataTypes
    * @return The widest DataType
    */
-  public static DataType getWidestType(DataType...types) {
+  public static DataType getWidestType(DataType...types) throws UndefinedOperatorException {
     DataType widest = types[0];
     for (int i = 1; i < types.length; i++) {
 
@@ -688,7 +692,7 @@ public class CatalogUtil {
       if (types[i].getType() != Type.NULL_TYPE) {
         Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
         if (candidate == null) {
-          throw new TajoRuntimeException(new UndefinedOperatorException(StringUtils.join(types)));
+          throw new UndefinedOperatorException(StringUtils.join(types));
         }
         widest = newSimpleDataType(candidate);
       }
