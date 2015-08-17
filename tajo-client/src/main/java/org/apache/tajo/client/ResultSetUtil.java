@@ -18,7 +18,7 @@
 
 package org.apache.tajo.client;
 
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.sql.SQLException;
@@ -26,7 +26,7 @@ import java.sql.Types;
 
 public class ResultSetUtil {
 
-  public static String toSqlType(TajoDataTypes.DataType type) {
+  public static String toSqlType(DataType type) {
     switch (type.getType()) {
     case BIT:
       return "bit";
@@ -69,7 +69,7 @@ public class ResultSetUtil {
     }
   }
 
-  public static int tajoTypeToSqlType(TajoDataTypes.DataType type) throws SQLException {
+  public static int tajoTypeToSqlType(DataType type) throws SQLException {
     switch (type.getType()) {
     case BIT:
       return Types.BIT;
