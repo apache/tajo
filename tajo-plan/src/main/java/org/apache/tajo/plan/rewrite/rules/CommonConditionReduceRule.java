@@ -163,8 +163,7 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
       // Example qual: ( a | b ) ^ ( a | c )
       EvalType outerType = evalNode.getType(); // type of the outer operation. ex) ^
 
-      EvalNode finalQual;
-      boolean isConditionReduced = false;
+      EvalNode finalQual = evalNode;
       if ((evalNode.getLeftExpr().getType() == EvalType.AND || evalNode.getLeftExpr().getType() == EvalType.OR) &&
           evalNode.getLeftExpr().getType() == evalNode.getRightExpr().getType()) {
         EvalNode leftChild = evalNode.getLeftExpr();
@@ -193,19 +192,13 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
           // Current binary eval has the same left and right children, so it is useless.
           // Connect the parent of the current eval and one of the children directly.
           finalQual = leftChild;
-          isConditionReduced = true;
         } else if (commonQuals.size() == leftChildSplits.size()) {
           // Ex) ( a | b ) ^ ( a | b | c )
           finalQual = rightChild;
-          isConditionReduced = true;
         } else if (commonQuals.size() == rightChildSplits.size()) {
           // Ex) ( a | b | c ) ^ ( a | b )
           finalQual = leftChild;
-          isConditionReduced = true;
-        } else if (commonQuals.size() == 0) {
-          // There is no common qual.
-          finalQual = evalNode;
-        } else {
+        } else if (commonQuals.size() > 0) {
           // Common quals are found.
           // ( a | b ) ^ ( a | c ) -> a | (b ^ c)
 
@@ -226,15 +219,13 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
           }
 
           finalQual = new BinaryEval(innerType, commonQual, new BinaryEval(outerType, leftChild, rightChild));
-          isConditionReduced = true;
         }
       } else if (evalNode.getLeftExpr().equals(evalNode.getRightExpr())) {
         finalQual = evalNode.getLeftExpr();
-      } else {
-        finalQual = evalNode;
       }
 
-      if (isConditionReduced) {
+      // Just compare that finalQual and evalNode is the same instance.
+      if (finalQual != evalNode) {
         plan.addHistory("Common condition is reduced.");
       }
       return finalQual;
