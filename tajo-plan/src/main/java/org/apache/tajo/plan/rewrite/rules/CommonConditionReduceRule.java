@@ -162,58 +162,79 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
     private EvalNode rewrite(BinaryEval evalNode) {
       // Example qual: ( a | b ) ^ ( a | c )
       EvalType outerType = evalNode.getType(); // type of the outer operation. ex) ^
-      EvalType innerType = outerType == EvalType.AND ? EvalType.OR : EvalType.AND; // type of the inner operation. ex) |
 
       EvalNode finalQual;
+      boolean isConditionReduced = false;
+      if ((evalNode.getLeftExpr().getType() == EvalType.AND || evalNode.getLeftExpr().getType() == EvalType.OR) &&
+          evalNode.getLeftExpr().getType() == evalNode.getRightExpr().getType()) {
+        EvalNode leftChild = evalNode.getLeftExpr();
+        EvalNode rightChild = evalNode.getRightExpr();
 
-      if (evalNode.getLeftExpr().getType() == innerType &&
-          evalNode.getRightExpr().getType() == innerType) {
-        BinaryEval leftChild = evalNode.getLeftExpr();
-        BinaryEval rightChild = evalNode.getRightExpr();
+        EvalType innerType = leftChild.getType();
 
         // Find common quals from the left and right children.
         Set<EvalNode> commonQuals = TUtil.newHashSet();
-        Set<EvalNode> childrenOfLeft = TUtil.newHashSet(leftChild.getLeftExpr(), leftChild.getRightExpr());
-        for (int i = 0; i < 2; i++) {
-          if (childrenOfLeft.contains(rightChild.getChild(i))) {
-            commonQuals.add(rightChild.getChild(i));
+        Set<EvalNode> leftChildSplits = innerType == EvalType.AND ?
+            TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(leftChild)) :
+            TUtil.newHashSet(AlgebraicUtil.toDisjunctiveNormalFormArray(leftChild));
+        Set<EvalNode> rightChildSplits = innerType == EvalType.AND ?
+            TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(rightChild)) :
+            TUtil.newHashSet(AlgebraicUtil.toDisjunctiveNormalFormArray(rightChild));
+
+        for (EvalNode eachLeftChildSplit : leftChildSplits) {
+          if (rightChildSplits.contains(eachLeftChildSplit)) {
+            commonQuals.add(eachLeftChildSplit);
           }
         }
 
-        if (commonQuals.size() == 2) {
+        if (leftChildSplits.size() == rightChildSplits.size() &&
+            commonQuals.size() == leftChildSplits.size()) {
           // Ex) ( a | b ) ^ ( a | b )
           // Current binary eval has the same left and right children, so it is useless.
           // Connect the parent of the current eval and one of the children directly.
           finalQual = leftChild;
-          plan.addHistory("Common condition is reduced.");
-
-        } else if (commonQuals.size() == 1) {
-          // A single common qual is found.
-          // ( a | b ) ^ ( a | c ) -> a | (b ^ c)
-          EvalNode commonQual = commonQuals.iterator().next();
-          EvalNode nonCommonQual;
-
-          if (leftChild.getLeftExpr().equals(commonQual)) {
-            nonCommonQual = leftChild.getRightExpr();
-          } else {
-            nonCommonQual = leftChild.getLeftExpr();
-          }
-
-          if (rightChild.getLeftExpr().equals(commonQual)) {
-            nonCommonQual = new BinaryEval(outerType, nonCommonQual, rightChild.getRightExpr());
-          } else {
-            nonCommonQual = new BinaryEval(outerType, nonCommonQual, rightChild.getLeftExpr());
-          }
-
-          finalQual = new BinaryEval(innerType, commonQual, nonCommonQual);
-          plan.addHistory("Common condition is reduced.");
-        } else {
+          isConditionReduced = true;
+        } else if (commonQuals.size() == leftChildSplits.size()) {
+          // Ex) ( a | b ) ^ ( a | b | c )
+          finalQual = rightChild;
+          isConditionReduced = true;
+        } else if (commonQuals.size() == rightChildSplits.size()) {
+          // Ex) ( a | b | c ) ^ ( a | b )
+          finalQual = leftChild;
+          isConditionReduced = true;
+        } else if (commonQuals.size() == 0) {
+          // There is no common qual.
           finalQual = evalNode;
+        } else {
+          // Common quals are found.
+          // ( a | b ) ^ ( a | c ) -> a | (b ^ c)
+
+          // Find non-common quals.
+          leftChildSplits.removeAll(commonQuals);
+          rightChildSplits.removeAll(commonQuals);
+
+          // Recreate both children using non-common quals.
+          EvalNode commonQual;
+          if (innerType == EvalType.AND) {
+            leftChild = AlgebraicUtil.createSingletonExprFromCNF(leftChildSplits);
+            rightChild = AlgebraicUtil.createSingletonExprFromCNF(rightChildSplits);
+            commonQual = AlgebraicUtil.createSingletonExprFromCNF(commonQuals);
+          } else {
+            leftChild = AlgebraicUtil.createSingletonExprFromDNF(leftChildSplits);
+            rightChild = AlgebraicUtil.createSingletonExprFromDNF(rightChildSplits);
+            commonQual = AlgebraicUtil.createSingletonExprFromDNF(commonQuals);
+          }
+
+          finalQual = new BinaryEval(innerType, commonQual, new BinaryEval(outerType, leftChild, rightChild));
+          isConditionReduced = true;
         }
       } else {
         finalQual = evalNode;
       }
 
+      if (isConditionReduced) {
+        plan.addHistory("Common condition is reduced.");
+      }
       return finalQual;
     }
 
