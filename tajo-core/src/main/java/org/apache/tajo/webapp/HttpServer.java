@@ -117,6 +117,7 @@ public class HttpServer {
     ret.setAcceptQueueSize(128);
     ret.setResolveNames(false);
     ret.setUseDirectBuffers(false);
+    ret.setHeaderBufferSize(1024 * 64);
     return ret;
   }
 

@@ -228,6 +228,8 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
           finalQual = new BinaryEval(innerType, commonQual, new BinaryEval(outerType, leftChild, rightChild));
           isConditionReduced = true;
         }
+      } else if (evalNode.getLeftExpr().equals(evalNode.getRightExpr())) {
+        finalQual = evalNode.getLeftExpr();
       } else {
         finalQual = evalNode;
       }
