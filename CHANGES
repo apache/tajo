@@ -426,6 +426,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1755: Add documentation for missing built-in functions. (jihoon)
+
     TAJO-1750: Upgrade hadoop dependency to 2.7.1. (jinho)
 
     TAJO-1590: Moving to JDK 7. (jinho)
