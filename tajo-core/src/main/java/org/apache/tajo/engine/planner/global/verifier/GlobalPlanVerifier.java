@@ -56,8 +56,10 @@ public class GlobalPlanVerifier implements DirectedGraphVisitor<ExecutionBlockId
       }
       if (containCrossJoin) {
         // In the case of cross join, this execution block must be executed with broadcast join.
-        assert block.getBroadcastRelations().size() > 0;
-        assert block.getNonBroadcastRelNum() < 2;
+        // 
+        if (block.getBroadcastRelations().size() == 0 || block.getNonBroadcastRelNum() > 1) {
+
+        }
       }
     }
   }
