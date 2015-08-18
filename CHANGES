@@ -223,6 +223,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1777: JsonLineDeserializer returns invalid unicode text, 
+    if contains control character. (jinho)
+
     TAJO-1779: Remove "DFSInputStream has been closed already" messages 
     in DelimitedLineReader. (jinho)
 
