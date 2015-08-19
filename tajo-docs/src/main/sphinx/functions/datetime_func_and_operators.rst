@@ -37,7 +37,7 @@ DateTime Functions and Operators
 
 .. function:: current_date ()
 
-  Returns current date
+  Returns current date.
 
   :rtype: date
           
@@ -48,7 +48,7 @@ DateTime Functions and Operators
 
 .. function:: current_time ()
 
-  Returns current time
+  Returns current time.
 
   :rtype: time
           
@@ -57,9 +57,13 @@ DateTime Functions and Operators
     select current_time();
     > 05:18:27.651999
 
-.. function:: extract(field FROM source)
+.. function:: extract(field FROM source date|timestamp|time)
 
   The extract function retrieves subfields such as year or hour from date/time values. *source* must be a value expression of type *timestamp*, or *time*. (Expressions of type *date* are cast to *timestamp* and can therefore be used as well.) *field* is an identifier that selects what field to extract from the source value. The extract function returns values of type double precision. The following are valid field names:
+
+  :param field: extract field
+  :param source: source value
+  :rtype: float8
 
   **century**
 
@@ -230,9 +234,13 @@ DateTime Functions and Operators
 
   The date_part function is also supported. It is equivalent to the SQL-standard function extract:
 
-.. function:: date_part('field', source)
+.. function:: date_part(field text, source date|timestamp|time)
 
   Note that here the field parameter needs to be a string value, not a name. The valid field names for date_part are the same as for extract.
+
+  :param field: extract field
+  :param source: source value
+  :rtype: float8
 
   .. code-block:: sql
 
@@ -302,7 +310,7 @@ DateTime Functions and Operators
     select to_timestamp('97/2/16 8:14:30', 'FMYYYY/FMMM/FMDD FMHH:FMMI:FMSS');
     > 0097-02-15 23:14:30
 
-.. function:: utc_usec_to (string text , long timestamp , int dayOfWeek)
+.. function:: utc_usec_to (string text , timestamp long , dayOfWeek int)
 
   * If the **first parameter** is 'day'.
 

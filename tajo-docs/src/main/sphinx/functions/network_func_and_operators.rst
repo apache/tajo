@@ -23,7 +23,7 @@ as follows. ::
 Supported Functions
 ===================
 
-.. function:: geoip_country_code (string addr)
+.. function:: geoip_country_code (addr text)
 
   Convert an ipv4 address string to a geoip country code.
 
@@ -36,7 +36,7 @@ Supported Functions
     select geoip_country_code('163.152.71.31')
     > 'KR'
 
-.. function:: geoip_country_code (inet4 addr)
+.. function:: geoip_country_code (addr inet4)
 
   Convert an ipv4 address to a geoip country code.
 
@@ -49,7 +49,7 @@ Supported Functions
     select geoip_country_code(163.152.71.31)
     > 'KR'
 
-.. function:: geoip_in_country (string addr, string code)
+.. function:: geoip_in_country (addr text, code text)
 
   If the given country code is same with the country code of the given address, it returns true. Otherwise, returns false.
 
@@ -63,7 +63,7 @@ Supported Functions
     select geoip_in_country('163.152.71.31', 'KR')
     > true
 
-.. function:: geoip_in_country (inet4 addr, string code)
+.. function:: geoip_in_country (addr inet4, code text)
 
   If the given country code is same with the country code of the given address, it returns true. Otherwise, returns false.
 
