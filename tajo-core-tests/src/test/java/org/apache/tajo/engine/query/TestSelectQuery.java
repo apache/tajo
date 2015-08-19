@@ -658,6 +658,24 @@ public class TestSelectQuery extends QueryTestCaseBase {
       testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT"));
     }
   }
+
+  @Test
+  public void testTimeZonedORCTable() throws Exception {
+    try {
+
+      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned");
+      executeDDL("datetime_table_timezoned_orc_ddl.sql", "timezoned_orc", "timezoned_orc");
+
+      executeString("INSERT OVERWRITE INTO timezoned_orc SELECT * FROM timezoned");
+
+      ResultSet res = executeQuery();
+      assertResultSet(res, "testTimezonedTable3.result");
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS timezoned");
+      executeString("DROP TABLE IF EXISTS timezoned_orc");
+    }
+  }
   
   @Test
   public void testMultiBytesDelimiter1() throws Exception {
