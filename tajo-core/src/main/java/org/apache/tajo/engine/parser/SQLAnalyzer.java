@@ -47,7 +47,7 @@ import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
-  public Expr parse(String sql) {
+  public Expr parse(String sql) throws SQLSyntaxError {
     ANTLRInputStream input = new ANTLRInputStream(sql);
     SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -61,7 +61,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      throw new TajoRuntimeException(new SQLSyntaxError(e.getMessage()));
+      throw new SQLSyntaxError(e.getMessage());
     }
     return visitSql(context);
   }

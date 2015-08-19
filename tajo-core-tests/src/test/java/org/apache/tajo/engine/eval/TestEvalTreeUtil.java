@@ -136,9 +136,9 @@ public class TestEvalTreeUtil {
   }
 
   public static Target [] getRawTargets(String query) {
-    Expr expr = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
+      Expr expr = analyzer.parse(query);
       plan = planner.createPlan(defaultContext, expr);
     } catch (TajoException e) {
       throw new RuntimeException(e);

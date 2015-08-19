@@ -60,6 +60,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
@@ -213,13 +214,22 @@ public class GlobalEngine extends AbstractService {
 
   public Expr buildExpressionFromSql(String sql, Session session) throws TajoException {
     try {
+
       if (session.getQueryCache() == null) {
         return analyzer.parse(sql);
+
       } else {
-        return (Expr) session.getQueryCache().get(sql.trim()).clone();
+        try {
+          return (Expr) session.getQueryCache().get(sql.trim()).clone();
+        } catch (ExecutionException e) {
+          throw e.getCause();
+        }
       }
+
     } catch (Throwable t) {
-      if (t instanceof TajoRuntimeException) {
+      if (t instanceof TajoException) {
+        throw (TajoException)t;
+      } else if (t instanceof TajoRuntimeException) {
         throw (TajoException)t.getCause();
       } else {
         throw new TajoInternalError(t);

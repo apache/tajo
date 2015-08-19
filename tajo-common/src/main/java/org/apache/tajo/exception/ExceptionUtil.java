@@ -139,7 +139,8 @@ public class ExceptionUtil {
       }
 
     } else {
-      throw new TajoInternalError("Unknown exception: [" + state.getReturnCode().name() +"] " + state.getMessage());
+      throw new TajoInternalError(
+          "Cannot restore the exception for [" + state.getReturnCode().name() +"] '" + state.getMessage() +"'");
     }
   }
 
