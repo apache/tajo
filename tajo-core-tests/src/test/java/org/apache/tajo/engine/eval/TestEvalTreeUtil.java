@@ -136,9 +136,9 @@ public class TestEvalTreeUtil {
   }
 
   public static Target [] getRawTargets(String query) {
-    Expr expr = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
+      Expr expr = analyzer.parse(query);
       plan = planner.createPlan(defaultContext, expr);
     } catch (TajoException e) {
       throw new RuntimeException(e);
@@ -288,8 +288,8 @@ public class TestEvalTreeUtil {
     EvalNode [] cnf = AlgebraicUtil.toDisjunctiveNormalFormArray(node);
     assertEquals(2, cnf.length);
 
-    assertEquals("default.people.score (INT4) > 1 AND default.people.score (INT4) < 3", cnf[0].toString());
-    assertEquals("7 < default.people.score (INT4) AND default.people.score (INT4) < 10", cnf[1].toString());
+    assertEquals("(default.people.score (INT4) > 1 AND default.people.score (INT4) < 3)", cnf[0].toString());
+    assertEquals("(7 < default.people.score (INT4) AND default.people.score (INT4) < 10)", cnf[1].toString());
   }
   
   @Test

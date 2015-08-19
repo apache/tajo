@@ -24,6 +24,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -222,7 +223,7 @@ public class LazyTuple implements Tuple, Cloneable {
 
   @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override

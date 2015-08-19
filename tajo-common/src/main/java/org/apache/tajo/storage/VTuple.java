@@ -25,6 +25,7 @@ import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.net.InetAddress;
@@ -185,11 +186,11 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   public InetAddress getIPv6(int fieldId) {
-    throw new NotImplementedException("IPv6 is unsupported yet");
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   public byte[] getIPv6Bytes(int fieldId) {
-    throw new NotImplementedException("IPv6 is unsupported yet");
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override

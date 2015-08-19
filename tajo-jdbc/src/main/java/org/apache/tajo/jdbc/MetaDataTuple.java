@@ -95,7 +95,7 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public void clearOffset() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -105,12 +105,12 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public void setOffset(long offset) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public long getOffset() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -130,7 +130,7 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public byte [] getBytes(int fieldId) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -175,12 +175,12 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public IntervalDatum getInterval(int fieldId) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -190,11 +190,11 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public Datum[] getValues(){
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 }

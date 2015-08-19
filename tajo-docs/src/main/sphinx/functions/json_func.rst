@@ -2,7 +2,7 @@
 JSON Functions
 *******************************
 
-.. function:: json_extract_path_text (string json, string json_path)
+.. function:: json_extract_path_text (json text, json_path text)
 
   Extracts JSON string from a JSON string based on json path specified and returns JSON string pointed to by JSONPath.
   Returns null if either argument is null.
@@ -17,7 +17,7 @@ JSON Functions
     select json_extract_path_text('{"test" : {"key" : "tajo"}}','$.test.key');
     > tajo
 
-.. function:: json_array_get (string json_array, int index)
+.. function:: json_array_get (json_array text, index int4)
 
   Returns the element at the specified index into the JSON array. This function returns an element indexed from the end of an array with a negative index, and null if the element at the specified index doesn’t exist.
 
@@ -34,7 +34,7 @@ JSON Functions
     select json_array_get('[100, 200, 300]', -2);
     > 200
 
-.. function:: json_array_contains (string json_array, any value)
+.. function:: json_array_contains (json_array text, value any)
 
   Determine if the given value exists in the JSON array.
 
@@ -48,7 +48,7 @@ JSON Functions
     select json_array_contains('[100, 200, 300]', 100);
     > t
 
-.. function:: json_array_length(string json_array)
+.. function:: json_array_length(json_array text)
 
   Returns the length of json array.
 

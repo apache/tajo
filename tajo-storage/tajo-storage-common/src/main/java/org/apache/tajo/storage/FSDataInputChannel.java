@@ -74,6 +74,10 @@ public final class FSDataInputChannel extends SeekableInputChannel {
 
   @Override
   protected void implCloseChannel() throws IOException {
-    IOUtils.cleanup(null, channel, inputStream);
+    if (isDirectRead) {
+      IOUtils.cleanup(null, inputStream);
+    } else {
+      IOUtils.cleanup(null, channel);
+    }
   }
 }

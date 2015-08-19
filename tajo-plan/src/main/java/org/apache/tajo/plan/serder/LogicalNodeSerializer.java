@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
@@ -633,7 +634,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       alterTableBuilder.setAlterPartition(partitionBuilder);
       break;
     default:
-      throw new NotImplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name());
+      throw new TajoRuntimeException(
+          new NotImplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name()));
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);

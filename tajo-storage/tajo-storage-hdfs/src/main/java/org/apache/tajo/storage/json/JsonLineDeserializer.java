@@ -21,23 +21,23 @@ package org.apache.tajo.storage.json;
 
 import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
-import org.apache.tajo.catalog.*;
 import org.apache.commons.net.util.Base64;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
 
 import java.io.IOException;
+import java.nio.charset.CharsetDecoder;
 import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
@@ -46,6 +46,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
   // Full Path -> Type
   private final Map<String, Type> types;
   private final String [] projectedPaths;
+  private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
 
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
@@ -208,23 +209,23 @@ public class JsonLineDeserializer extends TextLineDeserializer {
       break;
 
     default:
-      throw new NotImplementedException(types.get(fullPath).name() + " is not supported.");
+      throw new TajoRuntimeException(
+          new NotImplementedException("" + types.get(fullPath).name() + " for json"));
     }
   }
 
   @Override
   public void deserialize(ByteBuf buf, Tuple output) throws IOException, TextLineParsingError {
-    byte[] line = new byte[buf.readableBytes()];
-    buf.readBytes(line);
+    String line = decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString();
 
     JSONObject object;
     try {
       object = (JSONObject) parser.parse(line);
     } catch (ParseException pe) {
-      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), pe);
+      throw new TextLineParsingError(line, pe);
     } catch (ArrayIndexOutOfBoundsException ae) {
       // truncated value
-      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), ae);
+      throw new TextLineParsingError(line, ae);
     }
 
     for (int i = 0; i < projectedPaths.length; i++) {
