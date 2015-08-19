@@ -163,7 +163,7 @@ public abstract class NameResolver {
           LogicalPlan.QueryBlock parentBlock = plan.getParentBlock(current);
           for (RelationNode relationNode : parentBlock.getRelations()) {
             if (relationNode.getLogicalSchema().containsByQualifiedName(columnRef.getCanonicalName())) {
-              throw new NotImplementedException("Correlated subquery");
+              throw new TajoRuntimeException(new NotImplementedException("Correlated subquery"));
             }
           }
           current = parentBlock;

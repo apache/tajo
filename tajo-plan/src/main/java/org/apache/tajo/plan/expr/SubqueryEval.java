@@ -22,6 +22,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.storage.Tuple;
@@ -54,12 +55,12 @@ public class SubqueryEval extends ValueSetEval {
 
   @Override
   public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
-    throw new UnsupportedException("Cannot call bind()");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public Datum eval(Tuple tuple) {
-    throw new UnsupportedException("Cannot call eval()");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   public TableSubQueryNode getSubQueryNode() {
@@ -94,6 +95,6 @@ public class SubqueryEval extends ValueSetEval {
 
   @Override
   public Datum[] getValues() {
-    throw new UnsupportedException("Cannot call getValues()");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 }

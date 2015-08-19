@@ -22,7 +22,7 @@ import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 /**
- * It is used in unexpected cases or error that we know the cause.
+ * This is an runtime exception container to enclose a TajoException, an actual cause.
  *
  * @see @{link TajoException}
  */
@@ -30,22 +30,24 @@ public class TajoRuntimeException extends RuntimeException implements DefaultTaj
   private ResultCode code;
 
   public TajoRuntimeException(ReturnState state) {
-    super(state.getMessage());
+    super(ExceptionUtil.toTajoException(state));
     this.code = state.getReturnCode();
   }
 
-  public TajoRuntimeException(ResultCode code) {
-    super(ErrorMessages.getMessage(code));
-    this.code = code;
-  }
-
   public TajoRuntimeException(ResultCode code, String ... args) {
-    super(ErrorMessages.getMessage(code, args));
+    super(
+        ExceptionUtil.toTajoException(
+            ReturnState.newBuilder()
+                .setReturnCode(code)
+                .setMessage(ErrorMessages.getMessage(code, args))
+                .build()
+        )
+    );
     this.code = code;
   }
 
   public TajoRuntimeException(TajoException e) {
-    super(e.getMessage());
+    super(e);
     this.code = e.getErrorCode();
   }
 

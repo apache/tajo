@@ -21,7 +21,6 @@ package org.apache.tajo.exception;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
@@ -78,6 +77,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
     ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);
     ADD_EXCEPTION(UNSUPPORTED_DATATYPE, UnsupportedDataTypeException.class);
+    ADD_EXCEPTION(INVALID_DATATYPE, InvalidDataTypeException.class);
     ADD_EXCEPTION(INVALID_TABLE_PROPERTY, InvalidTablePropertyException.class);
     ADD_EXCEPTION(MISSING_TABLE_PROPERTY, MissingTablePropertyException.class);
   }
@@ -139,7 +139,8 @@ public class ExceptionUtil {
       }
 
     } else {
-      throw new TajoInternalError("Unknown exception: [" + state.getReturnCode().name() +"] " + state.getMessage());
+      throw new TajoInternalError(
+          "Cannot restore the exception for [" + state.getReturnCode().name() +"] '" + state.getMessage() +"'");
     }
   }
 
@@ -187,9 +188,5 @@ public class ExceptionUtil {
 
   public static UnsupportedException makeNotSupported(String feature) {
     return new UnsupportedException(feature);
-  }
-
-  public static InvalidDataTypeException makeInvalidDataType(DataType dataType) {
-    return new InvalidDataTypeException(dataType);
   }
 }
