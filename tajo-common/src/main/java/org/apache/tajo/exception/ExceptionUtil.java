@@ -23,6 +23,8 @@ import org.apache.commons.logging.Log;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.client.*;
+import org.apache.tajo.exception.client.InvalidDataTypeException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.lang.reflect.Constructor;
@@ -39,15 +41,15 @@ public class ExceptionUtil {
 
     // General Errors
     ADD_EXCEPTION(INTERNAL_ERROR, TajoInternalError.class);
-    ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, UnsupportedException.class);
-    ADD_EXCEPTION(NOT_IMPLEMENTED, NotImplementedException.class);
+    ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, org.apache.tajo.exception.client.UnsupportedException.class);
+    ADD_EXCEPTION(NOT_IMPLEMENTED, org.apache.tajo.exception.client.NotImplementedException.class);
 
     // Query Management and Scheduler
     ADD_EXCEPTION(QUERY_NOT_FOUND, QueryNotFoundException.class);
 
     // Syntax Error or Access Rule Violation
     ADD_EXCEPTION(SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION, SQLSyntaxError.class);
-    ADD_EXCEPTION(SYNTAX_ERROR, SQLSyntaxError.class);
+    ADD_EXCEPTION(SYNTAX_ERROR, org.apache.tajo.exception.client.SQLSyntaxError.class);
     ADD_EXCEPTION(INSUFFICIENT_PRIVILEGE, InsufficientPrivilegeException.class);
 
     ADD_EXCEPTION(UNDEFINED_TABLESPACE, UndefinedTablespaceException.class);
@@ -78,6 +80,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
     ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);
     ADD_EXCEPTION(UNSUPPORTED_DATATYPE, UnsupportedDataTypeException.class);
+    ADD_EXCEPTION(INVALID_DATATYPE, InvalidDataTypeException.class);
     ADD_EXCEPTION(INVALID_TABLE_PROPERTY, InvalidTablePropertyException.class);
     ADD_EXCEPTION(MISSING_TABLE_PROPERTY, MissingTablePropertyException.class);
   }
@@ -187,9 +190,5 @@ public class ExceptionUtil {
 
   public static UnsupportedException makeNotSupported(String feature) {
     return new UnsupportedException(feature);
-  }
-
-  public static InvalidDataTypeException makeInvalidDataType(DataType dataType) {
-    return new InvalidDataTypeException(dataType);
   }
 }

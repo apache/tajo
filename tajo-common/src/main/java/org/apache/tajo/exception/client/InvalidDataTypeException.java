@@ -16,14 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception.client;
 
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidSessionException extends TajoException {
-  public InvalidSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+public class InvalidDataTypeException extends TajoException {
+
+  public InvalidDataTypeException(ReturnState state) {
+    super(state);
+  }
+
+  public InvalidDataTypeException(DataType dataType) {
+    super(Errors.ResultCode.INVALID_DATATYPE, dataType.getType().name());
   }
 }

@@ -16,14 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception.client;
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidSessionException extends TajoException {
-  public InvalidSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+public class UnsupportedException extends TajoException {
+  private static final long serialVersionUID = 6702291354858193578L;
+
+  public UnsupportedException(ReturnState state) {
+    super(state);
+  }
+
+  public UnsupportedException(String featureName) {
+    super(Errors.ResultCode.FEATURE_NOT_SUPPORTED, featureName);
+  }
+
+  public UnsupportedException() {
+    super(Errors.ResultCode.FEATURE_NOT_SUPPORTED, Thread.currentThread().getStackTrace()[1].getClassName());
   }
 }

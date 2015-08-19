@@ -48,7 +48,7 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static TajoDataTypes.Type getTajoFieldType(String dataType) {
+  public static TajoDataTypes.Type getTajoFieldType(String dataType) throws LMDNoMatchedDatatypeException {
     Preconditions.checkNotNull(dataType);
 
     if(dataType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
@@ -74,11 +74,11 @@ public class HiveCatalogUtil {
     } else if(dataType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
       return TajoDataTypes.Type.DATE;
     } else {
-      throw new TajoRuntimeException(new LMDNoMatchedDatatypeException(dataType));
+      throw new LMDNoMatchedDatatypeException(dataType);
     }
   }
 
-  public static String getHiveFieldType(TajoDataTypes.DataType dataType) {
+  public static String getHiveFieldType(TajoDataTypes.DataType dataType) throws LMDNoMatchedDatatypeException {
     Preconditions.checkNotNull(dataType);
 
     switch (dataType.getType()) {
@@ -100,7 +100,7 @@ public class HiveCatalogUtil {
     case DATE: return serdeConstants.DATE_TYPE_NAME;
     case TIMESTAMP: return serdeConstants.TIMESTAMP_TYPE_NAME;
     default:
-      throw ExceptionUtil.makeInvalidDataType(dataType);
+      throw new LMDNoMatchedDatatypeException(dataType.getType().name());
     }
   }
 

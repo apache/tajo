@@ -16,14 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception.client;
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidSessionException extends TajoException {
-  public InvalidSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+public class NotImplementedException extends TajoException {
+  private static final long serialVersionUID = -5467580471721530536L;
+
+  public NotImplementedException() {
+    super(Errors.ResultCode.NOT_IMPLEMENTED,
+        Thread.currentThread().getStackTrace()[1].getClassName());
+  }
+
+  public NotImplementedException(ReturnState state) {
+    super(state);
+  }
+
+  public NotImplementedException(String featureName) {
+    super(Errors.ResultCode.NOT_IMPLEMENTED, featureName);
   }
 }

@@ -16,14 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception.client;
+
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidSessionException extends TajoException {
-  public InvalidSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+public class SQLSyntaxError extends TajoException {
+  private static final long serialVersionUID = 5388279335175632067L;
+
+  public SQLSyntaxError(ReturnState state) {
+    super(state);
+  }
+
+  public SQLSyntaxError(String errorMessage) {
+    super(Errors.ResultCode.SYNTAX_ERROR, errorMessage);
   }
 }
