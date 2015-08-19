@@ -47,7 +47,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT;
@@ -177,21 +176,6 @@ public class FileTablespace extends Tablespace {
   public URI getTableUri(String databaseName, String tableName) {
     return StorageUtil.concatPath(spacePath, databaseName, tableName).toUri();
   }
-
-  private String partitionPath = "";
-  private int currentDepth = 0;
-
-  /**
-   * Set a specific partition path for partition-column only queries
-   * @param path The partition prefix path
-   */
-  public void setPartitionPath(String path) { partitionPath = path; }
-
-  /**
-   * Set a depth of partition path for partition-column only queries
-   * @param depth Depth of partitions
-   */
-  public void setCurrentDepth(int depth) { currentDepth = depth; }
 
   @VisibleForTesting
   public Appender getAppender(TableMeta meta, Schema schema, Path filePath)
@@ -703,135 +687,6 @@ public class FileTablespace extends Tablespace {
       fs.delete(path, true);
     } catch (IOException e) {
       throw new InternalError(e.getMessage());
-    }
-  }
-
-  @Override
-  public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numResultFragments) throws IOException {
-    // Listing table data file which is not empty.
-    // If the table is a partitioned table, return file list which has same partition key.
-    Path tablePath = new Path(tableDesc.getUri());
-    FileSystem fs = tablePath.getFileSystem(conf);
-
-    //In the case of partitioned table, we should return same partition key data files.
-    int partitionDepth = 0;
-    if (tableDesc.hasPartition()) {
-      partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns().size();
-    }
-
-    List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
-    if (fs.exists(tablePath)) {
-      if (!partitionPath.isEmpty()) {
-        Path partPath = new Path(tableDesc.getUri() + partitionPath);
-        if (fs.exists(partPath)) {
-          getNonZeroLengthDataFiles(fs, partPath, nonZeroLengthFiles, currentPage, numResultFragments,
-                  new AtomicInteger(0), tableDesc.hasPartition(), this.currentDepth, partitionDepth);
-        }
-      } else {
-        getNonZeroLengthDataFiles(fs, tablePath, nonZeroLengthFiles, currentPage, numResultFragments,
-                new AtomicInteger(0), tableDesc.hasPartition(), 0, partitionDepth);
-      }
-    }
-
-    List<Fragment> fragments = new ArrayList<Fragment>();
-
-    String[] previousPartitionPathNames = null;
-    for (FileStatus eachFile: nonZeroLengthFiles) {
-      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
-
-      if (partitionDepth > 0) {
-        // finding partition key;
-        Path filePath = fileFragment.getPath();
-        Path parentPath = filePath;
-        String[] parentPathNames = new String[partitionDepth];
-        for (int i = 0; i < partitionDepth; i++) {
-          parentPath = parentPath.getParent();
-          parentPathNames[partitionDepth - i - 1] = parentPath.getName();
-        }
-
-        // If current partitionKey == previousPartitionKey, add to result.
-        if (previousPartitionPathNames == null) {
-          fragments.add(fileFragment);
-        } else if (previousPartitionPathNames != null && Arrays.equals(previousPartitionPathNames, parentPathNames)) {
-          fragments.add(fileFragment);
-        } else {
-          break;
-        }
-        previousPartitionPathNames = parentPathNames;
-      } else {
-        fragments.add(fileFragment);
-      }
-    }
-
-    return fragments;
-  }
-
-  /**
-   *
-   * @param fs
-   * @param path The table path
-   * @param result The final result files to be used
-   * @param startFileIndex
-   * @param numResultFiles
-   * @param currentFileIndex
-   * @param partitioned A flag to indicate if this table is partitioned
-   * @param currentDepth Current visiting depth of partition directories
-   * @param maxDepth The partition depth of this table
-   * @throws IOException
-   */
-  private void getNonZeroLengthDataFiles(FileSystem fs, Path path, List<FileStatus> result,
-                                                int startFileIndex, int numResultFiles,
-                                                AtomicInteger currentFileIndex, boolean partitioned,
-                                                int currentDepth, int maxDepth) throws IOException {
-    // Intermediate directory
-    if (fs.isDirectory(path)) {
-
-      FileStatus[] files = fs.listStatus(path, hiddenFileFilter);
-
-      if (files != null && files.length > 0) {
-
-        for (FileStatus eachFile : files) {
-
-          // checking if the enough number of files are found
-          if (result.size() >= numResultFiles) {
-            return;
-          }
-          if (eachFile.isDirectory()) {
-
-            getNonZeroLengthDataFiles(
-                fs,
-                eachFile.getPath(),
-                result,
-                startFileIndex,
-                numResultFiles,
-                currentFileIndex,
-                partitioned,
-                currentDepth + 1, // increment a visiting depth
-                maxDepth);
-
-            // if partitioned table, we should ignore files located in the intermediate directory.
-            // we can ensure that this file is in leaf directory if currentDepth == maxDepth.
-          } else if (eachFile.isFile() && eachFile.getLen() > 0 && (!partitioned || currentDepth == maxDepth)) {
-            if (currentFileIndex.get() >= startFileIndex) {
-              result.add(eachFile);
-            }
-            currentFileIndex.incrementAndGet();
-          }
-        }
-      }
-
-      // Files located in leaf directory
-    } else {
-      FileStatus fileStatus = fs.getFileStatus(path);
-      if (fileStatus != null && fileStatus.getLen() > 0) {
-        if (currentFileIndex.get() >= startFileIndex) {
-          result.add(fileStatus);
-        }
-        currentFileIndex.incrementAndGet();
-        if (result.size() >= numResultFiles) {
-          return;
-        }
-      }
     }
   }
 
