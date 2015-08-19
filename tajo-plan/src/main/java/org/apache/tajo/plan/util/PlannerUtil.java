@@ -28,7 +28,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UndefinedTableException;
-import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
@@ -41,7 +40,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.io.IOException;
 import java.util.*;
 
 public class PlannerUtil {
@@ -306,10 +304,10 @@ public class PlannerUtil {
       } else if (binaryParent.getRightChild().deepEquals(child)) {
         binaryParent.setRightChild(grandChild);
       } else {
-        throw new IllegalStateException("ERROR: both logical node must be parent and child nodes");
+        throw new TajoInternalError("both logical node must be parent and child nodes");
       }
     } else {
-      throw new InvalidQueryException("Unexpected logical plan: " + parent);
+      throw new TajoInternalError("unexpected logical plan: " + parent);
     }
     return child;
   }
