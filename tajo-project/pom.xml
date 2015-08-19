@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.11.0-SNAPSHOT</version>
+    <version>0.12.0-SNAPSHOT</version>
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-project</artifactId>
@@ -35,7 +35,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.7.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.11.0-SNAPSHOT</tajo.version>
+    <tajo.version>0.12.0-SNAPSHOT</tajo.version>
     <hbase.version>1.1.1</hbase.version>
     <hive.version>1.1.0</hive.version>
     <netty.version>4.0.29.Final</netty.version>
@@ -749,15 +749,14 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-plan</artifactId>
+        <artifactId>tajo-core-tests</artifactId>
         <version>${tajo.version}</version>
+        <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-core</artifactId>
+        <artifactId>tajo-plan</artifactId>
         <version>${tajo.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
@@ -788,6 +787,11 @@
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-client</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-client-example</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>
@@ -842,6 +846,18 @@
         <artifactId>tajo-metrics</artifactId>
         <version>${tajo.version}</version>
         <type>jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-cluster-tests</artifactId>
+        <version>${tajo.version}</version>
+        <type>jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-cluster-tests</artifactId>
+        <version>${tajo.version}</version>
+        <type>test-jar</type>
       </dependency>
 
       <dependency>

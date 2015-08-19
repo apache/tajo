@@ -114,7 +114,7 @@ Basically, joining multiple relations is left-associative. However, query perfor
 To find the best join order, Tajo's cost-based optimizer considers join conditions, join types, and the size of input relations.
 In addition, it considers the computation cost of consecutive joins so that the shape of query plan forms a bushy tree.
 
-For example, suppose that there are 4 relations ``a`` (10), ``b`` (20), ``c`` (30), and ``d``(40) where the numbers within brackets represent the relation size.
+For example, suppose that there are 4 relations ``a`` (10), ``b`` (20), ``c`` (30), and ``d`` (40) where the numbers within brackets represent the relation size.
 The following query
 
 .. code-block:: sql

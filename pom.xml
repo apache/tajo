@@ -26,7 +26,7 @@
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-main</artifactId>
-  <version>0.11.0-SNAPSHOT</version>
+  <version>0.12.0-SNAPSHOT</version>
   <description>Tajo Main</description>
   <name>Tajo Main</name>
   <packaging>pom</packaging>
@@ -87,6 +87,7 @@
     <module>tajo-rpc</module>
     <module>tajo-catalog</module>
     <module>tajo-client</module>
+    <module>tajo-client-example</module>
     <module>tajo-jdbc</module>
     <module>tajo-storage</module>
     <module>tajo-pullserver</module>
@@ -94,6 +95,8 @@
     <module>tajo-thirdparty/asm</module>
     <module>tajo-cli</module>
     <module>tajo-metrics</module>
+    <module>tajo-core-tests</module>
+    <module>tajo-cluster-tests</module>
   </modules>
 
   <build>
