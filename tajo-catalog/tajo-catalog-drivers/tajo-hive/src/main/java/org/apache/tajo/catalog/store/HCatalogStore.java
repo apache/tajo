@@ -16,35 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.catalog.store;
 
-import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-
+@Deprecated
 /**
- * ByteBufInputChannel is a NIO channel wrapper from input stream
+ * <code>HCatalogStore</code> is no longer used since Tajo 0.11.0. This is a dummy HCatalogStore class, which is used
+ * to be compatible with Tajo 0.10.x applications.
  */
-public class ByteBufInputChannel extends InputChannel {
-  private ReadableByteChannel channel;
-  private InputStream inputStream;
-
-  public ByteBufInputChannel(InputStream inputStream) {
-    this.channel = Channels.newChannel(inputStream);
-    this.inputStream = inputStream;
-  }
-
-  @Override
-  public int read(ByteBuffer dst) throws IOException {
-    return channel.read(dst);
-  }
-
-  @Override
-  protected void implCloseChannel() throws IOException {
-    IOUtils.cleanup(null, channel);
+public class HCatalogStore extends HiveCatalogStore {
+  public HCatalogStore(final Configuration conf) {
+    super(conf);
   }
 }

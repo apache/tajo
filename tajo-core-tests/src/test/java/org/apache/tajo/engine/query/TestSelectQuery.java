@@ -55,6 +55,16 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testPositives() throws Exception {
+    runPositiveTests();
+  }
+
+  @Test
+  public final void testNegatives() throws Exception {
+    runNegativeTests();
+  }
+
+  @Test
   public final void testNonQualifiedNames() throws Exception {
     // select l_orderkey, l_partkey from lineitem;
     ResultSet res = executeQuery();

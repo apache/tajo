@@ -18,9 +18,7 @@
 
 package org.apache.tajo.benchmark;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -29,7 +27,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
@@ -38,9 +35,6 @@ import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 
 public class TPCH extends BenchmarkSet {

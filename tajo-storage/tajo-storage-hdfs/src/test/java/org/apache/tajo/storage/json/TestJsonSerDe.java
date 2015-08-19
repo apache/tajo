@@ -93,4 +93,36 @@ public class TestJsonSerDe {
 
     assertEquals(baseTuple, tuple);
   }
+
+  @Test
+  public void testUnicodeWithControlChar() throws IOException {
+    TajoConf conf = new TajoConf();
+
+    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    Path tablePath = new Path(getResourcePath("dataset", "TestJsonSerDe"), "testUnicodeWithControlChar.json");
+    FileSystem fs = FileSystem.getLocal(conf);
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+
+    Schema  schema = new Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col3", TajoDataTypes.Type.TEXT);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    scanner.init();
+
+    Tuple tuple = scanner.next();
+    assertNotNull(tuple);
+    assertNull(scanner.next());
+    scanner.close();
+
+
+    Tuple baseTuple = new VTuple(new Datum[] {
+        DatumFactory.createText("tajo"),
+        DatumFactory.createText("타조"),
+        DatumFactory.createText("타\n조")
+    });
+
+    assertEquals(baseTuple, tuple);
+  }
 }
