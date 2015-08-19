@@ -1477,6 +1477,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     private final IntegerWriter nanos;
     private final boolean isDirectV2;
     private final long base_timestamp;
+    private TimeZone timeZone;
 
     TimestampTreeWriter(int columnId,
                      ObjectInspector inspector,
@@ -1492,6 +1493,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       // for unit tests to set different time zones
       this.base_timestamp = Timestamp.valueOf(BASE_TIMESTAMP_STRING).getTime() / MILLIS_PER_SECOND;
       writer.useWriterTimeZone(true);
+      timeZone = writer.getTimeZone();
     }
 
     @Override
@@ -1508,7 +1510,12 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     void write(Datum datum) throws IOException {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
-        Timestamp val = new Timestamp(DateTimeUtil.julianTimeToJavaTime(datum.asInt8()));
+        long javaTimestamp = DateTimeUtil.julianTimeToJavaTime(datum.asInt8());
+
+        // revise timestamp value depends on timezone
+        javaTimestamp += timeZone.getRawOffset();
+
+        Timestamp val = new Timestamp(javaTimestamp);
         indexStatistics.updateTimestamp(val);
         seconds.write((val.getTime() / MILLIS_PER_SECOND) - base_timestamp);
         nanos.write(formatNanos(val.getNanos()));
