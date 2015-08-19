@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.sql.ResultSet;
@@ -84,7 +85,7 @@ public class ResultSetUtil {
     case TEXT:
       return "varchar";
     default:
-      throw new UnsupportedException("Unrecognized column type:" + type);
+      throw new TajoRuntimeException(new UnsupportedException("unknown data type '" + type.getType().name() + "'"));
     }
   }
 

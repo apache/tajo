@@ -30,6 +30,6 @@ public class UnsupportedDataTypeException extends TajoException {
   }
 
   public UnsupportedDataTypeException(String dataType) {
-    super(Errors.ResultCode.UNKNOWN_DATAFORMAT, dataType);
+    super(Errors.ResultCode.UNSUPPORTED_DATATYPE, dataType);
   }
 }

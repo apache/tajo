@@ -190,7 +190,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           } else if (ColumnarSerDe.class.getName().equals(serde)) {
             options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
           }
-        } else if (storeType.equals("SEQUENCEFILE") ) {
+        } else if (storeType.equals("SEQUENCEFILE")) {
           options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
           options.set(StorageConstants.SEQUENCEFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
@@ -244,6 +244,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               expressionSchema);
         }
       }
+    } catch (Throwable t) {
+      throw new TajoInternalError(t);
     } finally {
       if(client != null) client.release();
     }
@@ -314,7 +316,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       builder.setUri(defaultTableSpaceUri);
       return builder.build();
     } else {
-      throw new UnsupportedException("Tablespace in HiveMeta");
+      throw new TajoRuntimeException(new UnsupportedException("Tablespace in HiveMeta"));
     }
   }
 
@@ -325,7 +327,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) {
-    throw new UnsupportedException("Tablespace in HiveMeta");
+    throw new TajoRuntimeException(new UnsupportedException("Tablespace in HiveMeta"));
   }
 
   @Override
@@ -780,7 +782,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
             String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-              CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
+                CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.addColumn(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
@@ -788,15 +790,17 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
             sb.append(fieldSchema.getName());
           }
           partitionMethodDesc = new PartitionMethodDesc(
-            databaseName,
-            tableName,
-            PartitionType.COLUMN,
-            sb.toString(),
-            expressionSchema);
+              databaseName,
+              tableName,
+              PartitionType.COLUMN,
+              sb.toString(),
+              expressionSchema);
         }
       } else {
         throw new UndefinedPartitionMethodException(tableName);
       }
+    } catch (Throwable t) {
+      throw new TajoInternalError(t);
     } finally {
       if(client != null) client.release();
     }
