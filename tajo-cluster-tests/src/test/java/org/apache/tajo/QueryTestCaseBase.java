@@ -487,6 +487,11 @@ public class QueryTestCaseBase {
     return queries;
   }
 
+  /**
+   * Run all positive tests
+   *
+   * @throws Exception
+   */
   protected void runPositiveTests() throws Exception {
     Collection<String> queries = getBatchQueries(getPositiveQueryFiles());
 
@@ -504,6 +509,11 @@ public class QueryTestCaseBase {
     }
   }
 
+  /**
+   * Run all negative tests
+   *
+   * @throws Exception
+   */
   protected void runNegativeTests() throws Exception {
     Collection<String> queries = getBatchQueries(getNegativeQueryFiles());
 
