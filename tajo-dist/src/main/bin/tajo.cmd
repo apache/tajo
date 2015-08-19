@@ -275,7 +275,7 @@ set TAJO_OPTS=%TAJO_OPTS% -Dtajo.policy.file=%TAJO_POLICYFILE%
 
 @rem run it
 
-echo Running Tajo %tajo-command%.
+echo starting %tajo-command%, logging to %TAJO_LOG_DIR%\%TAJO_LOGFILE%
 call "%JAVA%" -Dproc_%tajo-command% %TAJO_OPTS% -Dtajo.id.str=%TAJO_IDENT_STRING% %CLASS%
 
 :print_usage
