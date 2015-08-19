@@ -22,7 +22,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidDataTypeException extends TajoRuntimeException {
+public class InvalidDataTypeException extends TajoException {
 
   public InvalidDataTypeException(ReturnState state) {
     super(state);

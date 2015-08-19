@@ -316,7 +316,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       builder.setUri(defaultTableSpaceUri);
       return builder.build();
     } else {
-      throw new UnsupportedException("Tablespace in HiveMeta");
+      throw new TajoRuntimeException(new UnsupportedException("Tablespace in HiveMeta"));
     }
   }
 
@@ -327,7 +327,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) {
-    throw new UnsupportedException("Tablespace in HiveMeta");
+    throw new TajoRuntimeException(new UnsupportedException("Tablespace in HiveMeta"));
   }
 
   @Override

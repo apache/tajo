@@ -28,10 +28,7 @@ import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.LMDNoMatchedDatatypeException;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.*;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
@@ -43,7 +40,7 @@ public class HiveCatalogUtil {
       String fieldType = fieldSchema.getType();
       if (fieldType.equalsIgnoreCase("ARRAY") || fieldType.equalsIgnoreCase("STRUCT")
         || fieldType.equalsIgnoreCase("MAP")) {
-        throw makeNotSupported(fieldType.toUpperCase());
+        throw new TajoRuntimeException(new UnsupportedException("data type '" + fieldType.toUpperCase() + "'"));
       }
     }
   }
@@ -109,7 +106,7 @@ public class HiveCatalogUtil {
 
     String[] fileFormatArrary = fileFormat.split("\\.");
     if(fileFormatArrary.length < 1) {
-      throw makeNotSupported(fileFormat);
+      throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
     }
 
     String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
@@ -122,7 +119,7 @@ public class HiveCatalogUtil {
     } else if(outputFormatClass.equals(DeprecatedParquetOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.PARQUET.name();
     } else {
-      throw makeNotSupported(fileFormat);
+      throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
     }
   }
 
