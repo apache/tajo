@@ -50,6 +50,7 @@ import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -359,9 +360,15 @@ public class QueryMasterTask extends CompositeService {
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
       queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
 
-      // Checking is required to guarantee that cross join is always executed with broadcast join.
-      GlobalPlanVerifier verifier = new GlobalPlanVerifier();
-      verifier.verify(masterPlan);
+//      // Checking is required to guarantee that cross join is always executed with broadcast join.
+//      GlobalPlanVerifier verifier = new GlobalPlanVerifier();
+//      VerificationState state = verifier.verify(masterPlan);
+//
+//      if (!state.verified()) {
+//        for (Throwable error : state.getErrors()) {
+//          throw error;
+//        }
+//      }
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);
@@ -468,25 +475,27 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void cleanupQuery(final QueryId queryId) {
-    Set<InetSocketAddress> workers = Sets.newHashSet();
-    for (Stage stage : getQuery().getStages()) {
-      workers.addAll(stage.getAssignedWorkerMap().values());
-    }
+    if (getQuery() != null) {
+      Set<InetSocketAddress> workers = Sets.newHashSet();
+      for (Stage stage : getQuery().getStages()) {
+        workers.addAll(stage.getAssignedWorkerMap().values());
+      }
 
-    LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
-    for (final InetSocketAddress worker : workers) {
-      queryMasterContext.getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
-            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
-            tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
-          } catch (Throwable e) {
-            LOG.error(e.getMessage(), e);
+      LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
+      for (final InetSocketAddress worker : workers) {
+        queryMasterContext.getEventExecutor().submit(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+              TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
+              tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
+            } catch (Throwable e) {
+              LOG.error(e.getMessage(), e);
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 

@@ -283,7 +283,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
               // broadcast method.
               return Long.MAX_VALUE;
             } else {
-              return scanNode.getTableDesc().getStats().getNumBytes();
+              return scanNode.getTableDesc().getStats().getNumBytes() /
+                  SchemaUtil.estimateRowByteSizeWithSchema(scanNode.getTableDesc().getSchema());
             }
           case PARTITIONS_SCAN:
             PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
@@ -296,7 +297,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
               if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
                 return 0;
               } else {
-                return pScanNode.getTableDesc().getStats().getNumBytes();
+                return pScanNode.getTableDesc().getStats().getNumBytes() /
+                    SchemaUtil.estimateRowByteSizeWithSchema(pScanNode.getTableDesc().getLogicalSchema());
               }
             }
           case TABLE_SUBQUERY:

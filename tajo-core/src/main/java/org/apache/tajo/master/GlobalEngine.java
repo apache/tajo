@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
@@ -54,10 +55,8 @@ import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
-import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
-import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
-import org.apache.tajo.plan.verifier.VerificationState;
+import org.apache.tajo.plan.verifier.*;
+import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.VerifyContext;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -80,6 +79,7 @@ public class GlobalEngine extends AbstractService {
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
   private LogicalPlanVerifier annotatedPlanVerifier;
+  private PostLogicalPlanVerifier postLogicalPlanVerifier;
 
   private QueryExecutor queryExecutor;
   private DDLExecutor ddlExecutor;
@@ -101,6 +101,7 @@ public class GlobalEngine extends AbstractService {
       // Access path rewriter is enabled only in QueryMasterTask
       optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
       annotatedPlanVerifier = new LogicalPlanVerifier();
+      postLogicalPlanVerifier = new PostLogicalPlanVerifier();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
       throw new RuntimeException(t);
@@ -264,8 +265,6 @@ public class GlobalEngine extends AbstractService {
     VerificationState state = new VerificationState();
     preVerifier.verify(queryContext, state, expression);
     if (!state.verified()) {
-      StringBuilder sb = new StringBuilder();
-
       for (Throwable error : state.getErrors()) {
         throw error;
       }
@@ -286,6 +285,18 @@ public class GlobalEngine extends AbstractService {
     annotatedPlanVerifier.verify(state, plan);
     verifyInsertTableSchema(state, plan);
 
+    if (!state.verified()) {
+      for (Throwable error : state.getErrors()) {
+        throw error;
+      }
+    }
+
+    VerifyContext verifyContext = new VerifyContext(
+        queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD),
+        queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD),
+        queryContext.getLong(SessionVars.CROSS_JOIN_RESULT_THRESHOLD)
+    );
+    postLogicalPlanVerifier.verify(verifyContext, state, plan);
     if (!state.verified()) {
       for (Throwable error : state.getErrors()) {
         throw error;

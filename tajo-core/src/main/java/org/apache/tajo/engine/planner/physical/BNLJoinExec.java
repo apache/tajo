@@ -70,7 +70,11 @@ public class BNLJoinExec extends CommonJoinExec {
         leftTupleSlots.add(t);
       }
       leftIterator = leftTupleSlots.iterator();
-      leftTuple = leftIterator.next();
+      if (leftIterator.hasNext()) {
+        leftTuple = leftIterator.next();
+      } else {
+        return null;
+      }
     }
 
     if (rightTupleSlots.isEmpty()) {

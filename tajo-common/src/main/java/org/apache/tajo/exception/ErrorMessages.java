@@ -109,6 +109,10 @@ public class ErrorMessages {
     ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory" +
       " : '%s'", 1);
 
+    ADD_MESSAGE(TOO_LARGE_INPUT_FOR_CROSS_JOIN,
+        "Cross join of large tables is not allowed: %s" +
+            "To execute cross join, please increase tajo.dist-query.broadcast.cross-join.threshold-bytes.", 1);
+    ADD_MESSAGE(TOO_LARGE_RESULT_FOR_CROSS_JOIN, "Estimated size of cross join is too large.");
 
     ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
     ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);

@@ -173,26 +173,27 @@ enum ResultCode {
   CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1103; // SQLState: ?
 
   // 53 - Invalid Operand or Inconsistent Specification
-  INSUFFICIENT_RESOURCE          = 53000;
-  DISK_FULL                      = 53100;
-  OUT_OF_MEMORY                  = 53200;
+  INSUFFICIENT_RESOURCE           = 53000;
+  DISK_FULL                       = 53100;
+  OUT_OF_MEMORY                   = 53200;
 
   // 54 - SQL or Product Limit Exceeded
-  PROGRAM_LIMIT_EXCEEDED         = 54000;
-  STATEMENT_TOO_COMPLEX          = 54001;
-  STRING_CONSTANT_TOOL_LONG      = 54002;
-  TOO_LARGE_TABLE_FOR_CROSS_JOIN = 54003;
+  PROGRAM_LIMIT_EXCEEDED          = 54000;
+  STATEMENT_TOO_COMPLEX           = 54001;
+  STRING_CONSTANT_TOOL_LONG       = 54002;
+  TOO_LARGE_INPUT_FOR_CROSS_JOIN  = 54003;
+  TOO_LARGE_RESULT_FOR_CROSS_JOIN = 54004;
 
-  TOO_MANY_TABLES                = 54004;
-  TOO_MANY_COLUMNS               = 54011;
-  TOO_MANY_ARGUMENTS             = 54023;
+  TOO_MANY_TABLES                 = 54005;
+  TOO_MANY_COLUMNS                = 54011;
+  TOO_MANY_ARGUMENTS              = 54023;
 
   // 55 - Object Not in Prerequisite State
   // 56 - Miscellaneous SQL or Product Error
   // 57 - Resource Not Available or Operator Intervention
 
   // 58 - System Error
-  IO_ERROR                       = 58030;
+  IO_ERROR                        = 58030;
 
 
   // underlying system errors based on errno.h.

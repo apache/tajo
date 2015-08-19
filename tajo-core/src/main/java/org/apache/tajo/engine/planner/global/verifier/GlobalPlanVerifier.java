@@ -22,6 +22,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TooLargeInputForCrossJoinException;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
@@ -58,7 +59,11 @@ public class GlobalPlanVerifier implements DirectedGraphVisitor<ExecutionBlockId
         // In the case of cross join, this execution block must be executed with broadcast join.
         // 
         if (block.getBroadcastRelations().size() == 0 || block.getNonBroadcastRelNum() > 1) {
-
+          String[] relNames = new String[block.getScanNodes().length];
+          for (int i = 0; i < relNames.length; i++) {
+            relNames[i] = block.getScanNodes()[i].getCanonicalName();
+          }
+          state.addVerification(new TooLargeInputForCrossJoinException(new String[]{}));
         }
       }
     }
