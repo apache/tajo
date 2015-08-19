@@ -160,8 +160,8 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
     }
 
     private EvalNode rewrite(BinaryEval evalNode) {
-      // Example qual: ( a | b ) ^ ( a | c )
-      EvalType outerType = evalNode.getType(); // type of the outer operation. ex) ^
+      // Example qual: ( a OR b ) AND ( a OR c )
+      EvalType outerType = evalNode.getType(); // type of the outer operation. ex) AND
 
       EvalNode finalQual = evalNode;
       if ((evalNode.getLeftExpr().getType() == EvalType.AND || evalNode.getLeftExpr().getType() == EvalType.OR) &&
@@ -188,19 +188,19 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
 
         if (leftChildSplits.size() == rightChildSplits.size() &&
             commonQuals.size() == leftChildSplits.size()) {
-          // Ex) ( a | b ) ^ ( a | b )
+          // Ex) ( a OR b ) AND ( a OR b )
           // Current binary eval has the same left and right children, so it is useless.
           // Connect the parent of the current eval and one of the children directly.
           finalQual = leftChild;
         } else if (commonQuals.size() == leftChildSplits.size()) {
-          // Ex) ( a | b ) ^ ( a | b | c )
+          // Ex) ( a OR b ) AND ( a OR b OR c )
           finalQual = rightChild;
         } else if (commonQuals.size() == rightChildSplits.size()) {
-          // Ex) ( a | b | c ) ^ ( a | b )
+          // Ex) ( a OR b OR c ) AND ( a OR b )
           finalQual = leftChild;
         } else if (commonQuals.size() > 0) {
           // Common quals are found.
-          // ( a | b ) ^ ( a | c ) -> a | (b ^ c)
+          // ( a OR b ) AND ( a OR c ) -> a OR (b AND c)
 
           // Find non-common quals.
           leftChildSplits.removeAll(commonQuals);
