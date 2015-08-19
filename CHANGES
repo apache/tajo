@@ -34,6 +34,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1775: TAJO-1775: HCatalogStore need to be deprecated. (jaehwa)
+
     TAJO-1745: Add positive and negative test methods. (hyunsik)
  
     TAJO-1757: Add examples for TajoClient v2. (hyunsik)
