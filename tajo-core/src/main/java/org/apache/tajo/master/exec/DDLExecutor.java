@@ -359,7 +359,8 @@ public class DDLExecutor {
       TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
 
       if (tableDesc.isExternal()) {
-        throw new UnsupportedException("table truncation on an external table '" + eachTableName + "'");
+        throw new TajoRuntimeException(
+            new UnsupportedException("table truncation on an external table '" + eachTableName + "'"));
       }
 
       Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
@@ -367,7 +368,8 @@ public class DDLExecutor {
       if (space instanceof FileTablespace) {
         tableDescList.add(tableDesc);
       } else {
-        throw new UnsupportedException("table truncation on " + space.getName() + " storage");
+        throw new TajoRuntimeException(
+            new UnsupportedException("table truncation on " + space.getName() + " storage"));
       }
     }
 

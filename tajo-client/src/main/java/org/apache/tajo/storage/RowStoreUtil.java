@@ -23,7 +23,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.exception.UnsupportedDataTypeException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.util.BitArray;
@@ -153,11 +153,10 @@ public class RowStoreUtil {
             bb.get(_ipv4);
             tuple.put(i, DatumFactory.createInet4(_ipv4));
             break;
-          case INET6:
-            // TODO - to be implemented
-            throw new UnsupportedException(type.getType().name());
+
           default:
-            throw new RuntimeException(new UnsupportedDataTypeException(type.getType().name()));
+            throw new TajoRuntimeException(
+                new UnsupportedException("data type '" + col.getDataType().getType().name() + "'"));
         }
       }
       return tuple;
@@ -258,7 +257,8 @@ public class RowStoreUtil {
             bb.put(tuple.getBytes(i));
             break;
           default:
-            throw new RuntimeException(new UnsupportedDataTypeException(col.getDataType().getType().name()));
+            throw new TajoRuntimeException(
+                new UnsupportedException("data type '" + col.getDataType().getType().name() + "'"));
         }
       }
 
@@ -319,7 +319,8 @@ public class RowStoreUtil {
             size += tuple.getBytes(i).length;
             break;
           default:
-            throw new RuntimeException(new UnsupportedDataTypeException(col.getDataType().getType().name()));
+            throw new TajoRuntimeException(
+                new UnsupportedException("data type '" + col.getDataType().getType().name() + "'"));
         }
       }
 

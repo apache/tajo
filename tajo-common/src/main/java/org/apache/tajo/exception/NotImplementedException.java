@@ -21,7 +21,7 @@ package org.apache.tajo.exception;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class NotImplementedException extends TajoRuntimeException {
+public class NotImplementedException extends TajoException {
   private static final long serialVersionUID = -5467580471721530536L;
 
   public NotImplementedException() {

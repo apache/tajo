@@ -33,6 +33,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -431,7 +432,7 @@ public class RawFile {
 
     @Override
     public void setFilter(EvalNode filter) {
-      throw new UnsupportedException();
+      throw new TajoRuntimeException(new UnsupportedException());
     }
 
     @Override

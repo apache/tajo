@@ -28,6 +28,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.StorageConstants;
@@ -148,7 +149,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
             nullChars);
         break;
       default:
-        throw new UnsupportedException(dataType.getType().name());
+        throw new TajoRuntimeException(new UnsupportedException("data type '" + dataType.getType().name() + "'"));
     }
     return length;
   }
