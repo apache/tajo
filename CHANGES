@@ -34,6 +34,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1757: Add examples for TajoClient v2. (hyunsik)
+
     TAJO-1761: Separate an integration unit test kit into an independent 
     module. (hyunsik)
 
