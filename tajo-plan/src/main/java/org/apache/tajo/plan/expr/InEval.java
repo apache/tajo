@@ -19,15 +19,14 @@
 package org.apache.tajo.plan.expr;
 
 
-import com.google.common.collect.Sets;
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Set;
 
@@ -37,7 +36,7 @@ public class InEval extends BinaryEval {
   @Expose private boolean not;
   Set<Datum> values;
 
-  public InEval(EvalNode lhs, RowConstantEval valueList, boolean not) {
+  public InEval(EvalNode lhs, ValueSetEval valueList, boolean not) {
     super(EvalType.IN, lhs, valueList);
     this.not = not;
   }
@@ -62,7 +61,7 @@ public class InEval extends BinaryEval {
       throw new IllegalStateException("bind() must be called before eval()");
     }
     if (values == null) {
-      values = Sets.newHashSet(((RowConstantEval)rightExpr).getValues());
+      values = TUtil.newHashSet(((ValueSetEval) rightExpr).getValues());
     }
 
     Datum leftValue = leftExpr.eval(tuple);
@@ -93,6 +92,6 @@ public class InEval extends BinaryEval {
   }
 
   public String toString() {
-    return leftExpr + " IN (" + rightExpr + ")";
+    return leftExpr + (not? " NOT" : "") + " IN (" + rightExpr + ")";
   }
 }

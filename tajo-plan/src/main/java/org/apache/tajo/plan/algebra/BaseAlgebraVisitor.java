@@ -86,8 +86,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case Intersect:
       current = visitIntersect(ctx, stack, (SetOperation) expr);
       break;
-    case SimpleTableSubQuery:
-      current = visitSimpleTableSubQuery(ctx, stack, (SimpleTableSubQuery) expr);
+    case SimpleTableSubquery:
+      current = visitSimpleTableSubquery(ctx, stack, (SimpleTableSubquery) expr);
       break;
     case TablePrimaryTableSubQuery:
       current = visitTableSubQuery(ctx, stack, (TablePrimarySubQuery) expr);
@@ -404,9 +404,12 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr)
+  public RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr)
       throws TajoException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+    stack.push(expr);
+    RESULT child = visit(ctx, stack, expr.getSubQuery());
+    stack.pop();
+    return child;
   }
 
   @Override
