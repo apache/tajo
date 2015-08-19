@@ -18,6 +18,9 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,7 +32,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.cli.tsql.InvalidStatementException;
 import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
@@ -37,6 +40,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -80,7 +84,10 @@ import static org.junit.Assert.*;
  *
  *   <li>src/test/resources/queries - This is the query directory. It contains sub directories, each of which
  *   corresponds each test class. All query files in each sub directory can be used in the corresponding test
- *   class.</li>
+ *   class. This directory also can include <code>positive</code> and <code>negative</code> directories, each
+ *   of which include multiple files containing multiple queries. They are used by <code>runPositiveTests()</code> and
+ *   <code>runNegativeTests()</code>, which test just successfully completed and failed respectively
+ *   without compararing query results.</li>
  *
  *   <li>src/test/resources/results - This is the result directory. It contains sub directories, each of which
  *   corresponds each test class. All result files in each sub directory can be used in the corresponding test class.
@@ -100,6 +107,10 @@ import static org.junit.Assert.*;
  *             |
  *             |- queries
  *             |     |- TestJoinQuery
+ *             |              |- positive
+ *             |                    |- valid_join_conditions.sql
+ *             |              |- negative
+ *             |                    |- invalid_join_conditions.sql
  *             |              |- TestInnerJoin.sql
  *             |              |- table1_ddl.sql
  *             |              |- table2_ddl.sql
@@ -464,6 +475,62 @@ public class QueryTestCaseBase {
     public boolean sort() { return sort;}
   }
 
+  protected Collection<String> getBatchQueries(Collection<Path> paths) throws IOException, InvalidStatementException {
+    List<String> queries = Lists.newArrayList();
+
+    for (Path p : paths) {
+      for (ParsedResult statement: SimpleParser.parseScript(FileUtil.readTextFile(new File(p.toUri())))) {
+        queries.add(statement.getStatement());
+      }
+    }
+
+    return queries;
+  }
+
+  /**
+   * Run all positive tests
+   *
+   * @throws Exception
+   */
+  protected void runPositiveTests() throws Exception {
+    Collection<String> queries = getBatchQueries(getPositiveQueryFiles());
+
+    ResultSet result = null;
+    for (String query: queries) {
+      try {
+        result = client.executeQueryAndGetResult(query);
+      } catch (TajoException e) {
+        fail("Positive Test Failed: " + e.getMessage());
+      } finally {
+        if (result != null) {
+          result.close();
+        }
+      }
+    }
+  }
+
+  /**
+   * Run all negative tests
+   *
+   * @throws Exception
+   */
+  protected void runNegativeTests() throws Exception {
+    Collection<String> queries = getBatchQueries(getNegativeQueryFiles());
+
+    ResultSet result = null;
+    for (String query: queries) {
+      try {
+        result = client.executeQueryAndGetResult(query);
+        fail("Negative Test Failed: " + query);
+      } catch (TajoException e) {
+      } finally {
+        if (result != null) {
+          result.close();
+        }
+      }
+    }
+  }
+
   protected void runSimpleTests() throws Exception {
     String methodName = getMethodName();
     Method method = current.getTestClass().getMethod(methodName);
@@ -769,6 +836,38 @@ public class QueryTestCaseBase {
     String actualResult = resultSetToString(res);
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
     assertEquals(message, expectedResult.trim(), actualResult.trim());
+  }
+
+  private Collection<Path> getPositiveQueryFiles() throws IOException {
+    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "positive");
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+
+    if (!fs.exists(positiveQueryDir)) {
+      throw new IOException("Cannot find " + positiveQueryDir);
+    }
+
+    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)), new Function<FileStatus, Path>(){
+      @Override
+      public Path apply(@Nullable FileStatus fileStatus) {
+        return fileStatus.getPath();
+      }
+    });
+  }
+
+  private Collection<Path> getNegativeQueryFiles() throws IOException {
+    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "nagative");
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+
+    if (!fs.exists(positiveQueryDir)) {
+      throw new IOException("Cannot find " + positiveQueryDir);
+    }
+
+    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)),new Function<FileStatus, Path>(){
+      @Override
+      public Path apply(@Nullable FileStatus fileStatus) {
+        return fileStatus.getPath();
+      }
+    });
   }
 
   private Path getQueryFilePath(String fileName) throws IOException {
