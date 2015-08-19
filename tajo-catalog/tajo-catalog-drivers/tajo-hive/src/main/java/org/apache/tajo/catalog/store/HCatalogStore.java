@@ -16,14 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.catalog.store;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.hadoop.conf.Configuration;
 
-public class InvalidSessionException extends TajoException {
-  public InvalidSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+@Deprecated
+/**
+ * <code>HCatalogStore</code> is no longer used since Tajo 0.11.0. This is a dummy HCatalogStore class, which is used
+ * to be compatible with Tajo 0.10.x applications.
+ */
+public class HCatalogStore extends HiveCatalogStore {
+  public HCatalogStore(final Configuration conf) {
+    super(conf);
   }
 }

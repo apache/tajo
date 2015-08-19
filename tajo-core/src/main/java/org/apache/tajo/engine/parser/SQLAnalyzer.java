@@ -33,6 +33,7 @@ import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.exception.SQLSyntaxError;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -47,7 +48,7 @@ import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
-  public Expr parse(String sql) {
+  public Expr parse(String sql) throws SQLSyntaxError {
     ANTLRInputStream input = new ANTLRInputStream(sql);
     SQLLexer lexer = new SQLLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -114,7 +115,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       return new SetSession(SessionVars.TIMEZONE.name(), value);
 
     } else {
-      throw new SQLSyntaxError("Unsupported session statement");
+      throw new TajoRuntimeException(new SQLSyntaxError("Unsupported session statement"));
     }
   }
 
@@ -1017,7 +1018,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else if (checkIfExist(matcher.REGEXP()) || checkIfExist(matcher.RLIKE())) {
         return new PatternMatchPredicate(OpType.Regexp, not, predicand, pattern);
       } else {
-        throw new SQLSyntaxError("Unsupported predicate: " + matcher.getText());
+        throw new TajoRuntimeException(new SQLSyntaxError("Unsupported predicate: " + matcher.getText()));
       }
     } else if (checkIfExist(ctx.pattern_matcher().regex_matcher())) {
       Regex_matcherContext matcher = ctx.pattern_matcher().regex_matcher();
@@ -1030,10 +1031,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else if (checkIfExist(matcher.Not_Similar_To_Case_Insensitive())) {
         return new PatternMatchPredicate(OpType.Regexp, true, predicand, pattern, true);
       } else {
-        throw new SQLSyntaxError("Unsupported predicate: " + matcher.getText());
+        throw new TajoRuntimeException(new SQLSyntaxError("Unsupported predicate: " + matcher.getText()));
       }
     } else {
-      throw new SQLSyntaxError("Unsupported predicate: " + ctx.pattern_matcher().getText());
+      throw new TajoRuntimeException(new SQLSyntaxError("Unsupported predicate: " + ctx.pattern_matcher().getText()));
     }
   }
 
@@ -1414,7 +1415,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     } else if (checkIfExist(ctx.column_partitions())) { // For Column Partition (Hive Style)
       return new CreateTable.ColumnPartition(getDefinitions(ctx.column_partitions().table_elements()));
     } else {
-      throw new SQLSyntaxError("Invalid Partition Type: " + ctx.toStringTree());
+      throw new TajoRuntimeException(new SQLSyntaxError("Invalid Partition Type: " + ctx.toStringTree()));
     }
   }
 

@@ -384,18 +384,22 @@ public class AlgebraicUtil {
     }
   }
 
+  public static EvalNode createSingletonExprFromDNF(Collection<EvalNode> dnfExprs) {
+    return createSingletonExprFromDNF(dnfExprs.toArray(new EvalNode[dnfExprs.size()]));
+  }
+
   /**
    * Convert a list of conjunctive normal forms into a singleton expression.
    *
-   * @param cnfExprs
+   * @param dnfExprs
    * @return The EvalNode object that merges all CNF-formed expressions.
    */
-  public static EvalNode createSingletonExprFromDNF(EvalNode... cnfExprs) {
-    if (cnfExprs.length == 1) {
-      return cnfExprs[0];
+  public static EvalNode createSingletonExprFromDNF(EvalNode... dnfExprs) {
+    if (dnfExprs.length == 1) {
+      return dnfExprs[0];
     }
 
-    return createSingletonExprFromDNFRecursive(cnfExprs, 0);
+    return createSingletonExprFromDNFRecursive(dnfExprs, 0);
   }
 
   private static EvalNode createSingletonExprFromDNFRecursive(EvalNode[] evalNode, int idx) {

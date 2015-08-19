@@ -188,7 +188,13 @@ public class BinaryEval extends EvalNode implements Cloneable {
   }
 
 	public String toString() {
-		return leftExpr +" " + type.getOperatorName() + " "+ rightExpr;
+    StringBuilder sb = new StringBuilder();
+    sb.append(leftExpr).append(" ").append(type.getOperatorName()).append(" ").append(rightExpr);
+    if (type == EvalType.AND || type == EvalType.OR) {
+      sb.insert(0, "(");
+      sb.append(")");
+    }
+    return sb.toString();
 	}
 
   @Override
