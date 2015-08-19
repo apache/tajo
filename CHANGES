@@ -229,6 +229,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1781: Join condition is still not found when it exists in OR clause. i
+    (jihoon)
+
     TAJO-1777: JsonLineDeserializer returns invalid unicode text, 
     if contains control character. (jinho)
 
