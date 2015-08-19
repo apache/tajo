@@ -22,11 +22,10 @@ import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.exception.AmbiguousColumnException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
@@ -99,7 +98,8 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                     ColumnReferenceExpr columnRef) throws AmbiguousColumnException {
+                                                     ColumnReferenceExpr columnRef)
+      throws AmbiguousColumnException, UndefinedColumnException {
 
     Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     if (found != null) {

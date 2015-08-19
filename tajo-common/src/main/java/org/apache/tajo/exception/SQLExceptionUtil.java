@@ -20,7 +20,6 @@ package org.apache.tajo.exception;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 import java.sql.SQLException;
@@ -54,25 +53,32 @@ public class SQLExceptionUtil {
     }
   }
 
-  public static SQLException toSQLException(ReturnState state) throws SQLException {
-
-    if (SQLSTATES.containsKey(state.getReturnCode())) {
+  private static SQLException toSQLException(ResultCode code, String message) throws SQLException {
+    if (SQLSTATES.containsKey(code)) {
 
       return new SQLException(
-          state.getMessage(),
-          SQLSTATES.get(state.getReturnCode()),
-          state.getReturnCode().getNumber()
+          message,
+          SQLSTATES.get(code),
+          code.getNumber()
       );
 
     } else {
       // If there is no SQLState corresponding to error code,
       // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).
       return new SQLException(
-          state.getMessage(),
+          message,
           "42000",
           ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION_VALUE
       );
     }
+  }
+
+  public static SQLException toSQLException(TajoException e) throws SQLException {
+    return toSQLException(e.getErrorCode(), e.getMessage());
+  }
+
+  public static SQLException toSQLException(ReturnState state) throws SQLException {
+    return toSQLException(state.getReturnCode(), state.getMessage());
   }
 
   public static SQLException makeSQLException(ResultCode code, String ...args) {

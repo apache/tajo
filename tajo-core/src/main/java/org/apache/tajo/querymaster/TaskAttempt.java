@@ -26,6 +26,7 @@ import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ResourceProtos.TaskCompletionReport;
 import org.apache.tajo.ResourceProtos.ShuffleFileOutput;
@@ -35,6 +36,7 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
+import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -66,6 +68,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private float progress;
   private CatalogProtos.TableStatsProto inputStats;
   private CatalogProtos.TableStatsProto resultStats;
+
+  private List<PartitionDescProto> partitions;
 
   protected static final StateMachineFactory
       <TaskAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -190,6 +194,8 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     this.writeLock = readWriteLock.writeLock();
 
     stateMachine = stateMachineFactory.make(this);
+
+    this.partitions = TUtil.newList();
   }
 
   public TaskAttemptState getState() {
@@ -250,6 +256,14 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       return null;
     }
     return new TableStats(resultStats);
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    return partitions;
+  }
+
+  public void setPartitions(List<PartitionDescProto> partitions) {
+    this.partitions = partitions;
   }
 
   private void fillTaskStatistics(TaskCompletionReport report) {
@@ -392,6 +406,10 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       TaskCompletionReport report = ((TaskCompletionEvent)event).getReport();
 
       try {
+        if (report.getPartitionsCount() > 0) {
+          taskAttempt.setPartitions(report.getPartitionsList());
+        }
+
         taskAttempt.fillTaskStatistics(report);
         taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_SUCCEEDED));
       } catch (Throwable t) {

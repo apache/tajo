@@ -18,23 +18,32 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
+import org.apache.tajo.plan.logical.IndexScanNode;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
 public class BSTIndexScanExec extends PhysicalExec {
-  private ScanNode scanNode;
+  private IndexScanNode plan;
   private SeekableScanner fileScanner;
   
   private EvalNode qual;
@@ -48,31 +57,122 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   private Tuple indexLookupKey;
 
-  public BSTIndexScanExec(TaskAttemptContext context, ScanNode scanNode ,
-       FileFragment fragment, Path fileName , Schema keySchema,
-       TupleComparator comparator , Datum[] datum) throws IOException {
-    super(context, scanNode.getInSchema(), scanNode.getOutSchema());
-    this.scanNode = scanNode;
-    this.qual = scanNode.getQual();
-    indexLookupKey = new VTuple(datum);
+  private TableStats inputStats;
 
-    this.fileScanner = OldStorageManager.getSeekableScanner(context.getConf(),
-        scanNode.getTableDesc().getMeta(), scanNode.getInSchema(), fragment, outSchema);
-    this.fileScanner.init();
-    this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
+  private CatalogProtos.FragmentProto fragment;
 
-    FileSystem fs = fileName.getFileSystem(context.getConf());
-    this.reader = new BSTIndex(fs.getConf()).
-        getIndexReader(fileName, keySchema, comparator);
+  private Schema keySchema;
+
+  public BSTIndexScanExec(TaskAttemptContext context, IndexScanNode plan,
+                          CatalogProtos.FragmentProto fragment, URI indexPrefix , Schema keySchema,
+                          SimplePredicate [] predicates) throws IOException {
+    super(context, plan.getInSchema(), plan.getOutSchema());
+    this.plan = plan;
+    this.qual = plan.getQual();
+    this.fragment = fragment;
+    this.keySchema = keySchema;
+
+    SortSpec[] keySortSpecs = new SortSpec[predicates.length];
+    Datum[] values = new Datum[predicates.length];
+    for (int i = 0; i < predicates.length; i++) {
+      keySortSpecs[i] = predicates[i].getKeySortSpec();
+      values[i] = predicates[i].getValue();
+    }
+    indexLookupKey = new VTuple(values);
+
+    TupleComparator comparator = new BaseTupleComparator(keySchema,
+        keySortSpecs);
+
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+
+    Path indexPath = new Path(indexPrefix.toString(), context.getUniqueKeyFromFragments());
+    this.reader = new BSTIndex(context.getConf()).
+        getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();
+  }
+
+  private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, Target[] targets, EvalNode qual) {
+    Schema mergedSchema = new Schema();
+    Set<Column> qualAndTargets = TUtil.newHashSet();
+    qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(qual));
+    for (Target target : targets) {
+      qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
+    }
+    for (Column column : originalSchema.getRootColumns()) {
+      if (subSchema.contains(column)
+          || qualAndTargets.contains(column)
+          || qualAndTargets.contains(column)) {
+        mergedSchema.addColumn(column);
+      }
+    }
+    return mergedSchema;
   }
 
   @Override
   public void init() throws IOException {
+    Schema projected;
+
+    // in the case where projected column or expression are given
+    // the target can be an empty list.
+    if (plan.hasTargets()) {
+      projected = new Schema();
+      Set<Column> columnSet = new HashSet<Column>();
+
+      if (plan.hasQual()) {
+        columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual));
+      }
+
+      for (Target t : plan.getTargets()) {
+        columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
+      }
+
+      for (Column column : inSchema.getAllColumns()) {
+        if (columnSet.contains(column)) {
+          projected.addColumn(column);
+        }
+      }
+
+    } else {
+      // no any projected columns, meaning that all columns should be projected.
+      // TODO - this implicit rule makes code readability bad. So, we should remove it later
+      projected = outSchema;
+    }
+
+    initScanner(projected);
     super.init();
     progress = 0.0f;
-    if (qual != null) {
-      qual.bind(context.getEvalContext(), inSchema);
+
+    if (plan.hasQual()) {
+      if (fileScanner.isProjectable()) {
+        qual.bind(context.getEvalContext(), projected);
+      } else {
+        qual.bind(context.getEvalContext(), inSchema);
+      }
+    }
+  }
+
+  private void initScanner(Schema projected) throws IOException {
+
+    // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
+    if (fragment != null) {
+
+      Schema fileScanOutSchema = mergeSubSchemas(projected, keySchema, plan.getTargets(), qual);
+
+      this.fileScanner = OldStorageManager.getStorageManager(context.getConf(),
+          plan.getTableDesc().getMeta().getStoreType())
+          .getSeekableScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragment, fileScanOutSchema);
+      this.fileScanner.init();
+
+      // See Scanner.isProjectable() method Depending on the result of isProjectable(),
+      // the width of retrieved tuple is changed.
+      //
+      // If TRUE, the retrieved tuple will contain only projected fields.
+      // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
+      if (fileScanner.isProjectable()) {
+        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
+      } else {
+        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+      }
     }
   }
 
@@ -102,8 +202,9 @@ public class BSTIndexScanExec extends PhysicalExec {
       fileScanner.seek(offset);
       }
     }
+
     Tuple tuple;
-    if (!scanNode.hasQual()) {
+    if (!plan.hasQual()) {
       if ((tuple = fileScanner.next()) != null) {
         return projector.eval(tuple);
       } else {
@@ -115,8 +216,11 @@ public class BSTIndexScanExec extends PhysicalExec {
            return projector.eval(tuple);
          } else {
            long offset = reader.next();
-           if (offset == -1) return null;
+           if (offset == -1) {
+             return null;
+           }
            else fileScanner.seek(offset);
+           return null;
          }
        }
      }
@@ -131,9 +235,19 @@ public class BSTIndexScanExec extends PhysicalExec {
   @Override
   public void close() throws IOException {
     IOUtils.cleanup(null, reader, fileScanner);
+    if (fileScanner != null) {
+      try {
+        TableStats stats = fileScanner.getInputStats();
+        if (stats != null) {
+          inputStats = (TableStats) stats.clone();
+        }
+      } catch (CloneNotSupportedException e) {
+        e.printStackTrace();
+      }
+    }
     reader = null;
     fileScanner = null;
-    scanNode = null;
+    plan = null;
     qual = null;
     projector = null;
     indexLookupKey = null;
@@ -142,5 +256,14 @@ public class BSTIndexScanExec extends PhysicalExec {
   @Override
   public float getProgress() {
     return progress;
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    if (fileScanner != null) {
+      return fileScanner.getInputStats();
+    } else {
+      return inputStats;
+    }
   }
 }

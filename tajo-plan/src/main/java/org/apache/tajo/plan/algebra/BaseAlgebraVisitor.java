@@ -86,8 +86,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case Intersect:
       current = visitIntersect(ctx, stack, (SetOperation) expr);
       break;
-    case SimpleTableSubQuery:
-      current = visitSimpleTableSubQuery(ctx, stack, (SimpleTableSubQuery) expr);
+    case SimpleTableSubquery:
+      current = visitSimpleTableSubquery(ctx, stack, (SimpleTableSubquery) expr);
       break;
     case TablePrimaryTableSubQuery:
       current = visitTableSubQuery(ctx, stack, (TablePrimarySubQuery) expr);
@@ -123,8 +123,14 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     case AlterTable:
       current = visitAlterTable(ctx, stack, (AlterTable) expr);
       break;
+    case CreateIndex:
+      current = visitCreateIndex(ctx, stack, (CreateIndex) expr);
+      break;
     case TruncateTable:
       current = visitTruncateTable(ctx, stack, (TruncateTable)expr);
+      break;
+    case DropIndex:
+      current = visitDropIndex(ctx, stack, (DropIndex) expr);
       break;
 
     case Insert:
@@ -398,9 +404,12 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   }
 
   @Override
-  public RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr)
+  public RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr)
       throws TajoException {
-    return visitDefaultUnaryExpr(ctx, stack, expr);
+    stack.push(expr);
+    RESULT child = visit(ctx, stack, expr.getSubQuery());
+    stack.pop();
+    return child;
   }
 
   @Override
@@ -481,6 +490,17 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     return null;
   }
 
+  @Override
+  public RESULT visitCreateIndex(CONTEXT ctx, Stack<Expr> stack, CreateIndex expr) throws TajoException {
+    return null;
+  }
+
+  @Override
+  public RESULT visitDropIndex(CONTEXT ctx, Stack<Expr> stack, DropIndex expr) {
+    return null;
+  }
+
+  @Override
   public RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws TajoException {
     return null;
   }

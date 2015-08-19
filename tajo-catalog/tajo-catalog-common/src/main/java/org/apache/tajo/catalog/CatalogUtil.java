@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
@@ -46,12 +47,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
@@ -503,9 +500,13 @@ public class CatalogUtil {
           basisTypeOfVarLengthType = givenTypes.get(j).getType();
         } else if (basisTypeOfVarLengthType != null) {
           // If there are more than one type, we choose the most widen type as the basis type.
-          basisTypeOfVarLengthType =
-              getWidestType(CatalogUtil.newSimpleDataTypeArray(basisTypeOfVarLengthType, givenTypes.get(j).getType()))
-              .getType();
+          try {
+            basisTypeOfVarLengthType =
+                getWidestType(CatalogUtil.newSimpleDataTypeArray(basisTypeOfVarLengthType, givenTypes.get(j).getType()))
+                .getType();
+          } catch (UndefinedOperatorException e) {
+            continue;
+          }
         }
       }
 
@@ -679,7 +680,7 @@ public class CatalogUtil {
    * @param types A list of DataTypes
    * @return The widest DataType
    */
-  public static DataType getWidestType(DataType...types) {
+  public static DataType getWidestType(DataType...types) throws UndefinedOperatorException {
     DataType widest = types[0];
     for (int i = 1; i < types.length; i++) {
 
@@ -691,7 +692,7 @@ public class CatalogUtil {
       if (types[i].getType() != Type.NULL_TYPE) {
         Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
         if (candidate == null) {
-          throw new TajoRuntimeException(new UndefinedOperatorException(StringUtils.join(types)));
+          throw new UndefinedOperatorException(StringUtils.join(types));
         }
         widest = newSimpleDataType(candidate);
       }
@@ -966,5 +967,44 @@ public class CatalogUtil {
     }
 
     return options;
+  }
+
+  /**
+   * Make a unique name by concatenating column names.
+   * The concatenation is performed in sequence of columns' occurrence in the relation schema.
+   *
+   * @param originalSchema original relation schema
+   * @param columnNames column names which will be unified
+   * @return unified name
+   */
+  public static String getUnifiedSimpleColumnName(Schema originalSchema, String[] columnNames) {
+    String[] simpleNames = new String[columnNames.length];
+    for (int i = 0; i < simpleNames.length; i++) {
+      String[] identifiers = columnNames[i].split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
+      simpleNames[i] = identifiers[identifiers.length-1];
+    }
+    Arrays.sort(simpleNames, new ColumnPosComparator(originalSchema));
+    StringBuilder sb = new StringBuilder();
+    for (String colName : simpleNames) {
+      sb.append(colName).append("_");
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
+  }
+
+  /**
+   * Given column names, compare the position of columns in the relation schema.
+   */
+  public static class ColumnPosComparator implements Comparator<String> {
+
+    private Schema originlSchema;
+    public ColumnPosComparator(Schema originalSchema) {
+      this.originlSchema = originalSchema;
+    }
+
+    @Override
+    public int compare(String o1, String o2) {
+      return originlSchema.getColumnId(o1) - originlSchema.getColumnId(o2);
+    }
   }
 }

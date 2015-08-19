@@ -27,16 +27,18 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -69,10 +71,31 @@ public class PlannerUtil {
         type == NodeType.CREATE_DATABASE ||
             type == NodeType.DROP_DATABASE ||
             (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
-            baseNode.getType() == NodeType.DROP_TABLE ||
-            baseNode.getType() == NodeType.ALTER_TABLESPACE ||
-            baseNode.getType() == NodeType.ALTER_TABLE ||
-            baseNode.getType() == NodeType.TRUNCATE_TABLE;
+            type == NodeType.DROP_TABLE ||
+            type == NodeType.ALTER_TABLESPACE ||
+            type == NodeType.ALTER_TABLE ||
+            type == NodeType.TRUNCATE_TABLE ||
+            type == NodeType.CREATE_INDEX ||
+            type == NodeType.DROP_INDEX;
+  }
+
+  /**
+   * Most update queries require only the updates to the catalog information,
+   * but some queries such as "CREATE INDEX" or CTAS requires distributed execution on multiple cluster nodes.
+   * This function checks whether the given DDL plan requires distributed execution or not.
+   * @param node the root node of a query plan
+   * @return Return true if the input query plan requires distributed execution. Otherwise, return false.
+   */
+  public static boolean isDistExecDDL(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    NodeType type = baseNode.getType();
+
+    return type == NodeType.CREATE_INDEX && !((CreateIndexNode)baseNode).isExternal() ||
+        type == NodeType.CREATE_TABLE && ((CreateTableNode)baseNode).hasSubQuery();
   }
 
   /**
@@ -384,6 +407,12 @@ public class PlannerUtil {
     @Override
     public LogicalNode visitPartitionedTableScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.
         QueryBlock block, PartitionedTableScanNode node, Stack<LogicalNode> stack) {
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitIndexScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
       return node;
     }
   }
@@ -837,6 +866,16 @@ public class PlannerUtil {
     return explains.toString();
   }
 
+  public static String getShuffleType(ShuffleType shuffleType) {
+    if (shuffleType == null) return ShuffleType.NONE_SHUFFLE.toString();
+    return shuffleType.toString();
+  }
+
+  public static ShuffleType getShuffleType(String shuffleType) {
+    if (StringUtils.isEmpty(shuffleType)) return ShuffleType.NONE_SHUFFLE;
+    return ShuffleType.valueOf(shuffleType);
+  }
+
   public static boolean isFileStorageType(String storageType) {
     if (storageType.equalsIgnoreCase("hbase")) {
       return false;
@@ -885,7 +924,7 @@ public class PlannerUtil {
     }
   }
 
-  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws UndefinedTableException {
     if (node.getType() == NodeType.ROOT) {
       node = ((LogicalRootNode)node).getChild();
     }
@@ -952,5 +991,22 @@ public class PlannerUtil {
     }
 
     return tableDescTobeCreated;
+  }
+
+  /**
+   * Extract all in-subqueries from the given qual.
+   *
+   * @param qual
+   * @return
+   */
+  public static List<Expr> extractInSubquery(Expr qual) {
+    List<Expr> inSubqueries = TUtil.newList();
+    for (Expr eachIn : ExprFinder.findsInOrder(qual, OpType.InPredicate)) {
+      InPredicate inPredicate = (InPredicate) eachIn;
+      if (inPredicate.getInValue().getType() == OpType.SimpleTableSubquery) {
+        inSubqueries.add(eachIn);
+      }
+    }
+    return inSubqueries;
   }
 }

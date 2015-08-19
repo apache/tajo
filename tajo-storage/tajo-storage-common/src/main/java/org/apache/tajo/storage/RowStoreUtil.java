@@ -24,7 +24,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
-import org.apache.tajo.exception.UnknownDataTypeException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.tuple.offheap.RowWriter;
@@ -160,7 +160,7 @@ public class RowStoreUtil {
             // TODO - to be implemented
             throw new UnsupportedException(type.getType().name());
           default:
-            throw new RuntimeException(new UnknownDataTypeException(type.getType().name()));
+            throw new RuntimeException(new UnsupportedDataTypeException(type.getType().name()));
         }
       }
       return tuple;
@@ -261,7 +261,7 @@ public class RowStoreUtil {
           bb.put(tuple.getBytes(i));
           break;
         default:
-          throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
+          throw new RuntimeException(new UnsupportedDataTypeException(col.getDataType().getType().name()));
         }
       }
 
@@ -322,7 +322,7 @@ public class RowStoreUtil {
           size += tuple.getBytes(i).length;
           break;
         default:
-          throw new RuntimeException(new UnknownDataTypeException(col.getDataType().getType().name()));
+          throw new RuntimeException(new UnsupportedDataTypeException(col.getDataType().getType().name()));
         }
       }
 
@@ -381,7 +381,7 @@ public class RowStoreUtil {
         writer.skipField();
         break;
       default:
-        throw new UnsupportedException("Unknown data type: " + writer.dataTypes()[i]);
+        throw new UnsupportedException("data type " + writer.dataTypes()[i]);
       }
     }
     writer.endRow();

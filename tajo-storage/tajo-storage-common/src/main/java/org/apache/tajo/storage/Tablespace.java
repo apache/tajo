@@ -107,8 +107,7 @@ public abstract class Tablespace {
    * @return Root URI
    */
   public URI getRootUri() {
-    throw new UnsupportedException(
-        String.format("Tablespace '%s' does not allow the use of artibrary paths", uri.toString()));
+    throw new UnsupportedException(String.format("artibrary path '%s'", uri.toString()));
   }
 
   /**
@@ -129,7 +128,7 @@ public abstract class Tablespace {
    * @throws java.io.IOException
    */
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
-                                           ScanNode scanNode) throws IOException;
+                                           ScanNode scanNode) throws IOException, TajoException;
 
   /**
    * It returns the splits that will serve as input for the non-forward query scanner such as 'select * from table1'.
@@ -201,7 +200,7 @@ public abstract class Tablespace {
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException {
+  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException, TajoException {
     return getSplits(fragmentId, tableDesc, null);
   }
 
@@ -268,6 +267,21 @@ public abstract class Tablespace {
   }
 
   /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target The output schema
+   * @return Scanner instance
+   * @throws IOException
+   */
+  public synchronized SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, FragmentProto fragment,
+                                                         Schema target) throws IOException {
+    return (SeekableScanner)this.getScanner(meta, schema, fragment, target);
+  }
+
+  /**
    * Returns Appender instance.
    * @param queryContext Query property.
    * @param taskAttemptId Task id.
@@ -331,7 +345,7 @@ public abstract class Tablespace {
    * @param outSchema  The output schema of select query for inserting.
    * @throws java.io.IOException
    */
-  public abstract void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException;
+  public abstract void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws TajoException;
 
   /**
    * Rewrite the logical plan. It is assumed that the final plan will be given in this method.
@@ -352,7 +366,7 @@ public abstract class Tablespace {
    * @param ifNotExists Creates the table only when the table does not exist.
    * @throws java.io.IOException
    */
-  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
+  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException;
 
   /**
    * This method is called after executing "DROP TABLE" statement with the 'PURGE' option
@@ -361,7 +375,7 @@ public abstract class Tablespace {
    * @param tableDesc
    * @throws java.io.IOException
    */
-  public abstract void purgeTable(TableDesc tableDesc) throws IOException;
+  public abstract void purgeTable(TableDesc tableDesc) throws IOException, TajoException;
 
   /**
    * This method is called before executing 'INSERT' or 'CREATE TABLE as SELECT'.
@@ -372,7 +386,7 @@ public abstract class Tablespace {
    * @param node The child node of the root node.
    * @throws java.io.IOException
    */
-  public abstract void prepareTable(LogicalNode node) throws IOException;
+  public abstract void prepareTable(LogicalNode node) throws IOException, TajoException;
 
   /**
    * Finalizes result data. Tajo stores result data in the staging directory.
@@ -392,7 +406,7 @@ public abstract class Tablespace {
                                    LogicalPlan plan, Schema schema,
                                    TableDesc tableDesc) throws IOException;
 
-  public abstract void rollbackTable(LogicalNode node) throws IOException;
+  public abstract void rollbackTable(LogicalNode node) throws IOException, TajoException;
 
   @Override
   public boolean equals(Object obj) {

@@ -21,13 +21,12 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.exception.DuplicateColumnException;
+import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
@@ -37,6 +36,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -61,13 +61,13 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    LogicalNode toBeOptimized = context.getPlan().getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
       return false;
     }
-    for (QueryBlock eachBlock: plan.getQueryBlocks()) {
+    for (QueryBlock eachBlock: context.getPlan().getQueryBlocks()) {
       if (eachBlock.hasTableExpression()) {
         return true;
       }
@@ -76,7 +76,8 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws TajoException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws TajoException {
+    LogicalPlan plan = rewriteRuleContext.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
@@ -195,7 +196,7 @@ public class ProjectionPushDownRule extends
      * Add an expression with a specified name, which is usually an alias.
      * Later, you can refer this expression by the specified name.
      */
-    private String add(String specifiedName, EvalNode evalNode) {
+    private String add(String specifiedName, EvalNode evalNode) throws DuplicateColumnException {
 
       // if a name already exists, it only just keeps an actual
       // expression instead of a column reference.
@@ -253,7 +254,7 @@ public class ProjectionPushDownRule extends
      * Adds an expression without any name. It returns an automatically
      * generated name. It can be also used for referring this expression.
      */
-    public String add(EvalNode evalNode) {
+    public String add(EvalNode evalNode) throws DuplicateColumnException {
       String name;
 
       if (evalNode.getType() == EvalType.FIELD) {
@@ -283,7 +284,7 @@ public class ProjectionPushDownRule extends
       return nameToIdBiMap.keySet();
     }
 
-    public String add(Target target) {
+    public String add(Target target) throws DuplicateColumnException {
       return add(target.getCanonicalName(), target.getEvalTree());
     }
 
@@ -419,13 +420,13 @@ public class ProjectionPushDownRule extends
       targetListMgr = upperContext.targetListMgr;
     }
 
-    public String addExpr(Target target) {
+    public String addExpr(Target target) throws DuplicateColumnException {
       String reference = targetListMgr.add(target);
       addNecessaryReferences(target.getEvalTree());
       return reference;
     }
 
-    public String addExpr(EvalNode evalNode) {
+    public String addExpr(EvalNode evalNode) throws DuplicateColumnException {
       String reference = targetListMgr.add(evalNode);
       addNecessaryReferences(evalNode);
       return reference;
@@ -523,6 +524,11 @@ public class ProjectionPushDownRule extends
           CreateTableNode createTableNode = (CreateTableNode) parentNode;
           createTableNode.setChild(child);
           createTableNode.setInSchema(child.getOutSchema());
+          break;
+        case CREATE_INDEX:
+          CreateIndexNode createIndexNode = (CreateIndexNode) parentNode;
+          createIndexNode.setChild(child);
+          createIndexNode.setInSchema(child.getOutSchema());
           break;
         default:
           throw new TajoInternalError("unexpected parent node: " + parentNode.getType());
@@ -1111,8 +1117,14 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
+  public LogicalNode visitIndexScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws TajoException {
+    return visitScan(context, plan, block,node, stack);
+  }
+
+  @Override
   public LogicalNode visitTableSubQuery(Context upperContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     Context childContext = new Context(plan, upperContext.requiredSet);
     stack.push(node);
     LogicalNode child = super.visitTableSubQuery(childContext, plan, block, node, stack);

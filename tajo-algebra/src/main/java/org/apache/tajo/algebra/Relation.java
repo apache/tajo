@@ -25,9 +25,9 @@ import org.apache.tajo.util.TUtil;
 
 public class Relation extends Expr {
   @Expose @SerializedName("TableName")
-  private String tableName;
+  protected String tableName;
   @Expose @SerializedName("TableAlias")
-  private String alias;
+  protected String alias;
 
   protected Relation(OpType type, String relationName) {
     super(type);
@@ -44,6 +44,10 @@ public class Relation extends Expr {
 
   public String getName() {
     return tableName;
+  }
+
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
   }
 
   public boolean hasAlias() {

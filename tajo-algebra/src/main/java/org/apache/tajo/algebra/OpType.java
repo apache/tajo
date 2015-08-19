@@ -38,8 +38,8 @@ public enum OpType {
   Union(SetOperation.class),
   Except(SetOperation.class),
   Intersect(SetOperation.class),
-  SimpleTableSubQuery(SimpleTableSubQuery.class),
   TablePrimaryTableSubQuery(TablePrimarySubQuery.class),
+  SimpleTableSubquery(SimpleTableSubquery.class),
   RelationList(RelationList.class),
   Relation(Relation.class),
   ScalarSubQuery(ScalarSubQuery.class),
@@ -53,6 +53,8 @@ public enum OpType {
   DropTable(DropTable.class),
   AlterTablespace(AlterTablespace.class),
   AlterTable(AlterTable.class),
+  CreateIndex(CreateIndex.class),
+  DropIndex(DropIndex.class),
   TruncateTable(TruncateTable.class),
 
   // Insert or Update

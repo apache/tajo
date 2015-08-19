@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
@@ -91,7 +91,7 @@ public class InfoSchemaMetadataDictionary {
     return systemTableNames;
   }
   
-  private TableDescriptor getTableDescriptor(String tableName) {
+  private TableDescriptor getTableDescriptor(String tableName) throws UndefinedTableException {
     TableDescriptor tableDescriptor = null;
     
     if (tableName == null || tableName.isEmpty()) {
@@ -106,11 +106,15 @@ public class InfoSchemaMetadataDictionary {
         break;
       }
     }
-    
+
+    if (tableDescriptor == null) {
+      throw new UndefinedTableException(tableName);
+    }
+
     return tableDescriptor;
   }
   
-  public CatalogProtos.TableDescProto getTableDesc(String tableName) {
+  public CatalogProtos.TableDescProto getTableDesc(String tableName) throws UndefinedTableException {
     TableDescriptor tableDescriptor;
     
     tableDescriptor = getTableDescriptor(tableName);
@@ -122,7 +126,11 @@ public class InfoSchemaMetadataDictionary {
   }
   
   public boolean existTable(String tableName) {
-    return getTableDescriptor(tableName) != null;
+    try {
+      return getTableDescriptor(tableName) != null;
+    } catch (UndefinedTableException e) {
+      return false;
+    }
   }
   
   protected String getTablePath() {

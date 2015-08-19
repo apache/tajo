@@ -29,10 +29,10 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -46,7 +46,7 @@ public class EvalTreeUtil {
   public static int replace(EvalNode expr, EvalNode targetExpr, EvalNode tobeReplaced) {
     EvalReplaceVisitor replacer = new EvalReplaceVisitor(targetExpr, tobeReplaced);
     ReplaceContext context = new ReplaceContext();
-    replacer.visitChild(context, expr, new Stack<EvalNode>());
+    replacer.visit(context, expr, new Stack<EvalNode>());
     return context.countOfReplaces;
   }
 
@@ -64,8 +64,8 @@ public class EvalTreeUtil {
     }
 
     @Override
-    public EvalNode visitChild(ReplaceContext context, EvalNode evalNode, Stack<EvalNode> stack) {
-      super.visitChild(context, evalNode, stack);
+    public EvalNode visit(ReplaceContext context, EvalNode evalNode, Stack<EvalNode> stack) {
+      super.visit(context, evalNode, stack);
 
       if (evalNode.equals(target)) {
         context.countOfReplaces++;
@@ -144,8 +144,7 @@ public class EvalTreeUtil {
     return finder.getColumnRefs();
   }
   
-  public static Schema getSchemaByTargets(Schema inputSchema, Target[] targets)
-      throws InternalException {
+  public static Schema getSchemaByTargets(Schema inputSchema, Target[] targets) {
     Schema schema = new Schema();
     for (Target target : targets) {
       schema.addColumn(
@@ -167,8 +166,7 @@ public class EvalTreeUtil {
     return sb.toString();
   }
   
-  public static DataType getDomainByExpr(Schema inputSchema, EvalNode expr)
-      throws InternalException {
+  public static DataType getDomainByExpr(Schema inputSchema, EvalNode expr) {
     switch (expr.getType()) {
     case AND:      
     case OR:
@@ -192,8 +190,7 @@ public class EvalTreeUtil {
 
       
     default:
-      throw new InternalException("Unknown expr type: " 
-          + expr.getType().toString());
+      throw new TajoInternalError("Unknown expr type: " + expr.getType().toString());
     }
   }
 
@@ -385,7 +382,7 @@ public class EvalTreeUtil {
     return !leftQualifier.equals(rightQualifier);
   }
 
-  static boolean isSingleColumn(EvalNode evalNode) {
+  public static boolean isSingleColumn(EvalNode evalNode) {
     return EvalTreeUtil.findUniqueColumns(evalNode).size() == 1;
   }
   
@@ -514,13 +511,13 @@ public class EvalTreeUtil {
 
   public static <T extends EvalNode> Collection<T> findEvalsByType(EvalNode evalNode, EvalType type) {
     EvalFinder finder = new EvalFinder(type);
-    finder.visitChild(null, evalNode, new Stack<EvalNode>());
+    finder.visit(null, evalNode, new Stack<EvalNode>());
     return (Collection<T>) finder.evalNodes;
   }
 
   public static <T extends EvalNode> Collection<T> findOuterJoinSensitiveEvals(EvalNode evalNode) {
     OuterJoinSensitiveEvalFinder finder = new OuterJoinSensitiveEvalFinder();
-    finder.visitChild(null, evalNode, new Stack<EvalNode>());
+    finder.visit(null, evalNode, new Stack<EvalNode>());
     return (Collection<T>) finder.evalNodes;
   }
 
@@ -533,8 +530,8 @@ public class EvalTreeUtil {
     }
 
     @Override
-    public Object visitChild(Object context, EvalNode evalNode, Stack<EvalNode> stack) {
-      super.visitChild(context, evalNode, stack);
+    public Object visit(Object context, EvalNode evalNode, Stack<EvalNode> stack) {
+      super.visit(context, evalNode, stack);
 
       if (evalNode.type == targetType) {
         evalNodes.add(evalNode);
@@ -542,14 +539,18 @@ public class EvalTreeUtil {
 
       return evalNode;
     }
+
+    public List<EvalNode> getEvalNodes() {
+      return evalNodes;
+    }
   }
 
   public static class OuterJoinSensitiveEvalFinder extends BasicEvalNodeVisitor<Object, Object> {
     private List<EvalNode> evalNodes = TUtil.newList();
 
     @Override
-    public Object visitChild(Object context, EvalNode evalNode, Stack<EvalNode> stack) {
-      super.visitChild(context, evalNode, stack);
+    public Object visit(Object context, EvalNode evalNode, Stack<EvalNode> stack) {
+      super.visit(context, evalNode, stack);
 
       if (evalNode.type == EvalType.CASE) {
         evalNodes.add(evalNode);

@@ -18,9 +18,7 @@
 
 package org.apache.tajo.benchmark;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -29,15 +27,14 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
@@ -192,7 +189,7 @@ public class TPCH extends BenchmarkSet {
     loadQueries(BENCHMARK_DIR);
   }
 
-  public void loadTables() throws SQLException {
+  public void loadTables() throws TajoException {
     loadTable(LINEITEM);
     loadTable(CUSTOMER);
     loadTable(CUSTOMER_PARTS);
@@ -206,7 +203,7 @@ public class TPCH extends BenchmarkSet {
 
   }
 
-  public void loadTable(String tableName) throws SQLException {
+  public void loadTable(String tableName) throws TajoException {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     meta.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
@@ -226,22 +223,11 @@ public class TPCH extends BenchmarkSet {
         new Path(dataDir, tableName).toUri(), meta, partitionMethodDesc);
   }
 
-  public static List<String> getDataFilePaths(String... tables) {
-    List<String> tablePaths = Lists.newArrayList();
-    File file;
-    for (String table : tables) {
-      file = getDataFile(table);
-      tablePaths.add(file.getAbsolutePath());
-    }
-    return tablePaths;
-  }
-
   public static File getDataFile(String table) {
-    File file = new File("src/test/tpch/" + table + ".tbl");
-    if (!file.exists()) {
-      file = new File(System.getProperty("user.dir") + "/tajo-core/src/test/tpch/" + table
-          + ".tbl");
+    try {
+      return new File(FileUtil.getResourcePath("tpch/" + table + ".tbl").toURI());
+    } catch (Throwable t) {
+      throw new RuntimeException(t);
     }
-    return file;
   }
 }

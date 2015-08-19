@@ -20,18 +20,13 @@ package org.apache.tajo.exception;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.ErrorMessages;
-import org.apache.tajo.exception.ErrorUtil;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.TajoExceptionInterface;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Collection;
+import java.util.List;
 
 public class ReturnStateUtil {
 
@@ -43,10 +38,17 @@ public class ReturnStateUtil {
     OK = builder.build();
   }
 
-  public static void ensureOk(ReturnState state) {
+  /**
+   * Throw a TajoRuntimeException. It is usually used for unexpected exceptions.
+   *
+   * @param state ReturnState
+   * @return True if no error.
+   */
+  public static boolean ensureOk(ReturnState state) {
     if (isError(state)) {
       throw new TajoRuntimeException(state);
     }
+    return true;
   }
 
   public static StringListResponse returnStringList(Collection<String> values) {
@@ -62,13 +64,6 @@ public class ReturnStateUtil {
         .build();
   }
 
-  public static ReturnState returnError(ResultCode code) {
-    ReturnState.Builder builder = ReturnState.newBuilder();
-    builder.setReturnCode(code);
-    builder.setMessage(ErrorMessages.getMessage(code));
-    return builder.build();
-  }
-
   public static ReturnState returnError(ResultCode code, String...args) {
     Preconditions.checkNotNull(args);
 
@@ -82,7 +77,7 @@ public class ReturnStateUtil {
     ReturnState.Builder builder = ReturnState.newBuilder();
 
     if (ExceptionUtil.isExceptionWithResultCode(t)) {
-      TajoExceptionInterface tajoException = (TajoExceptionInterface) t;
+      DefaultTajoException tajoException = (DefaultTajoException) t;
       builder.setReturnCode(tajoException.getErrorCode());
       builder.setMessage(tajoException.getMessage());
     } else {
@@ -127,7 +122,7 @@ public class ReturnStateUtil {
   }
 
   public static ReturnState errNoSuchQueryId(QueryId queryId) {
-    return returnError(ResultCode.NO_SUCH_QUERYID, queryId.toString());
+    return returnError(ResultCode.QUERY_NOT_FOUND, queryId.toString());
   }
 
   public static ReturnState errNoData(QueryId queryId) {
@@ -143,7 +138,7 @@ public class ReturnStateUtil {
   }
 
   public static ReturnState errNoSessionVar(String varName) {
-    return returnError(ResultCode.NO_SUCH_QUERYID, varName);
+    return returnError(ResultCode.QUERY_NOT_FOUND, varName);
   }
 
   public static ReturnState errInsufficientPrivilege(String message) {
@@ -170,8 +165,13 @@ public class ReturnStateUtil {
     return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);
   }
 
-  public static ReturnState errUndefinedIndex(String tbName, String columnName) {
-    return returnError(ResultCode.UNDEFINED_INDEX, tbName, columnName);
+  public static ReturnState errUndefinedIndex(String tbName) {
+    return returnError(ResultCode.UNDEFINED_INDEX_FOR_TABLE, tbName);
+  }
+
+  public static ReturnState errUndefinedIndex(String tbName, List<String> columnNameList) {
+    String columnNames = StringUtils.join(columnNameList, ",");
+    return returnError(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, columnNames, tbName);
   }
 
   public static ReturnState errUndefinedIndexName(String indexName) {

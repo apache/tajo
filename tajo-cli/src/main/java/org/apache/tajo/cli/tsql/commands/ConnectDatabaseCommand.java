@@ -18,8 +18,11 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 
 import java.sql.SQLException;
 
@@ -36,28 +39,28 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    if (cmd.length == 1) {
+
+    if (cmd.length == 1) { // no given database name
+
       context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
           client.getCurrentDatabase(), client.getUserInfo().getUserName()));
+
     } else if (cmd.length == 2) {
-      String databaseName = cmd[1];
-      databaseName = databaseName.replace("\"", "");
-      if (!client.existDatabase(databaseName)) {
-        context.getOutput().write("Database '" + databaseName + "'  not found\n");
-      } else {
-        try {
-          if (client.selectDatabase(databaseName)) {
-            context.setCurrentDatabase(client.getCurrentDatabase());
-            context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
-                context.getCurrentDatabase(), client.getUserInfo().getUserName()));
-          }
-        } catch (SQLException se) {
-          if (se.getMessage() != null) {
-            context.getOutput().write(se.getMessage());
-          } else {
-            context.getOutput().write(String.format("cannot connect the database \"%s\"", databaseName));
-          }
-        }
+      final String databaseName = cmd[1].replace("\"", "");
+
+      try {
+        client.selectDatabase(databaseName);
+        Preconditions.checkState(databaseName.equals(client.getCurrentDatabase()));
+
+        context.setCurrentDatabase(client.getCurrentDatabase());
+        context.getOutput().write(String.format(
+                "You are now connected to database \"%s\" as user \"%s\".%n",
+                context.getCurrentDatabase(),
+                client.getUserInfo().getUserName())
+        );
+
+      } catch (TajoException se) {
+        context.getOutput().write("ERROR: " + se.getMessage());
       }
     }
   }

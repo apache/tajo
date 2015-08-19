@@ -8,8 +8,12 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.*;
+import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.service.ServiceTrackerFactory;
@@ -40,7 +44,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.exception.ReturnStateUtil.isError;
-import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -360,7 +363,7 @@ public class QueryExecutorServlet extends HttpServlet {
         if (queryId != null) {
           try {
             tajoClient.closeQuery(queryId);
-          } catch (SQLException e) {
+          } catch (Throwable e) {
             LOG.warn(e);
           }
         }
@@ -394,7 +397,7 @@ public class QueryExecutorServlet extends HttpServlet {
       }
     }
 
-    private QueryStatus waitForComplete(QueryId queryid) throws SQLException {
+    private QueryStatus waitForComplete(QueryId queryid) throws TajoException {
       QueryStatus status = null;
 
       while (!stop.get()) {

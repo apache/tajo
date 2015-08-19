@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -33,7 +32,7 @@ import java.io.IOException;
 public class ClassBasedAggFunctionInvoke extends AggFunctionInvoke implements Cloneable {
   @Expose private AggFunction function;
 
-  public ClassBasedAggFunctionInvoke(FunctionDesc functionDesc) throws InternalException {
+  public ClassBasedAggFunctionInvoke(FunctionDesc functionDesc) {
     super(functionDesc);
     function = (AggFunction) functionDesc.newInstance();
   }

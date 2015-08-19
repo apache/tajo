@@ -1,5 +1,7 @@
 Tajo Change Log 
 
+Release 0.12.0 - unreleased
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -31,6 +33,27 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1761: Separate an integration unit test kit into an independent 
+    module. (hyunsik)
+
+    TAJO-680: Improve the IN operator to support sub queries. (jihoon)
+
+    TAJO-1751: Reduce the client connection timeout. (jinho)
+
+    TAJO-1746: Improve resource usage at first request of DefaultTaskScheduler.
+    (jinho)
+
+    TAJO-1743: Improve calculation of intermediate table statistics. (jinho)
+
+    TAJO-1699: Tajo Java Client version 2. (hyunsik)
+
+    TAJO-1721: Separate routine for CREATE TABLE from DDLExecutor. (hyunsik)
+
+    TAJO-1736: Remove unnecessary getMountPath(). 
+    (Contributed by YeonSu Han, Committed by jinho)
+
+    TAJO-1645: Bump up hbase to 1.1.1. (hyunsik)
 
     TAJO-1715: Precompute the hash value of various kinds of ids. (jihoon)
 
@@ -199,6 +222,41 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1777: JsonLineDeserializer returns invalid unicode text, 
+    if contains control character. (jinho)
+
+    TAJO-1779: Remove "DFSInputStream has been closed already" messages 
+    in DelimitedLineReader. (jinho)
+
+    TAJO-1763: tpch/*.tbl files cannot be founded in maven modules except for 
+    core-tests. (hyunsik)
+
+    TAJO-1561: Query which contains join condition in "OR" clause does not 
+    finish. (jihoon)
+
+    TAJO-1752: NameResolver cannot find nested records properly. (jihoon)
+
+    TAJO-1732: During filter push down phase, join conditions are not set 
+    properly. (jihoon)
+
+    TAJO-1742: Remove hadoop dependency in DatumFactory. (jinho)
+
+    TAJO-1733: Finished query occasionally does not appear in Web-UI. (jinho)
+
+    TAJO-1731: With a task failure, query processing is hanged after first 
+    retry. (jihoon)
+
+    TAJO-1608: Fix test failure in index_support branch. (jihoon)
+
+    TAJO-1594: Catalog schema is invalid for some databases. (jihoon)
+
+    TAJO-1657: Tajo Rest API /database/{database-name]/tables should return 
+    table names only without invalid external table info. 
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1552: NPE occurs when GreedyHeuristicJoinOrderAlgorithm.getCost() 
+    returns infinity. (Contributed by Hyoungjun Kim, Committed by jihoon)
 
     TAJO-1712: querytasks.jsp throws NPE occasionally when tasks are running.
     (jinho)
@@ -370,6 +428,17 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1755: Add documentation for missing built-in functions. (jihoon)
+
+    TAJO-1750: Upgrade hadoop dependency to 2.7.1. (jinho)
+
+    TAJO-1590: Moving to JDK 7. (jinho)
+
+    TAJO-1300: Merge the index branch into the master branch. (jihoon)
+
+    TAJO-1713: Change the type of edge cache in JoinGraphContext from 
+    HashMap to LRUMap. (jihoon)
+
     TAJO-1273: Merge DirectRawFile to master branch. (jinho)
 
     TAJO-1628: Add a documentation for join operation. (jihoon)
@@ -425,6 +494,17 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1754: Implement several functions to handle json array. (jihoon)
+
+    TAJO-1748: Refine client APIs to throw specific exceptions. (hyunsik)
+
+    TAJO-1735: Implement MetadataProvider and LinkedMetadataManager. (hyunsik)
+
+    TAJO-1723: INSERT INTO statement should allow nested fields as 
+    target columns. (hyunsik)
+
+    TAJO-1302: Support index metadata backup and restore. (jihoon)
 
     TAJO-1484 Apply on ColPartitionStoreExec. (Contributed by Navis, 
     committed by hyunsik)

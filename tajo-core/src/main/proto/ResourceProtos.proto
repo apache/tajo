@@ -108,6 +108,7 @@ message TaskCompletionReport {
   optional TableStatsProto inputStats = 3;
   optional TableStatsProto resultStats = 4;
   repeated ShuffleFileOutput shuffleFileOutputs = 5;
+  repeated PartitionDescProto partitions = 6;
 }
 
 message TaskFatalErrorReport {

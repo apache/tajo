@@ -31,6 +31,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -40,6 +42,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
@@ -59,6 +62,7 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
@@ -481,6 +485,18 @@ public class Stage implements EventHandler<StageEvent> {
     stageHistory.setNumShuffles(numShuffles);
     stageHistory.setProgress(getProgress());
     return stageHistory;
+  }
+
+  public List<PartitionDescProto> getPartitions() {
+    List<PartitionDescProto> partitions = TUtil.newList();
+
+    for(Task eachTask : getTasks()) {
+      if (eachTask.getLastAttempt() != null && !eachTask.getLastAttempt().getPartitions().isEmpty()) {
+        partitions.addAll(eachTask.getLastAttempt().getPartitions());
+      }
+    }
+
+    return partitions;
   }
 
   /**
@@ -1000,7 +1016,7 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
-    private static void schedule(Stage stage) throws IOException {
+    private static void schedule(Stage stage) throws IOException, TajoException {
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock execBlock = stage.getBlock();
       if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
@@ -1061,7 +1077,7 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
-    private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException {
+    private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException, TajoException {
       ExecutionBlock execBlock = stage.getBlock();
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");

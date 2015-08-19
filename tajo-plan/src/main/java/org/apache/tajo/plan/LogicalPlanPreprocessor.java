@@ -21,7 +21,7 @@ package org.apache.tajo.plan;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
@@ -33,7 +33,6 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
 
@@ -124,8 +123,10 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
       while (iterator.hasNext()) {
         relationOp = iterator.next();
-        schema = relationOp.getLogicalSchema();
-        resolvedColumns.addAll(schema.getRootColumns());
+        if (relationOp.isNameResolveBase()) {
+          schema = relationOp.getLogicalSchema();
+          resolvedColumns.addAll(schema.getRootColumns());
+        }
       }
 
       if (resolvedColumns.size() == 0) {
@@ -346,6 +347,13 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   public LogicalNode visitFilter(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Selection expr)
       throws TajoException {
     stack.push(expr);
+    // Since filter push down will be done later, it is guaranteed that in-subqueries are found at only selection.
+    for (Expr eachQual : PlannerUtil.extractInSubquery(expr.getQual())) {
+      InPredicate inPredicate = (InPredicate) eachQual;
+      stack.push(inPredicate);
+      visit(ctx, stack, inPredicate.getRight());
+      stack.pop();
+    }
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();
 
@@ -415,6 +423,30 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
     node.init(CatalogUtil.buildFQName(ctx.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getName()), child);
     ctx.queryBlock.addRelation(node);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitSimpleTableSubquery(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, SimpleTableSubquery expr)
+    throws TajoException {
+    LogicalPlanner.PlanContext newContext;
+    // Note: TableSubQuery always has a table name.
+    // SELECT .... FROM (SELECT ...) TB_NAME <-
+    QueryBlock queryBlock = ctx.plan.newQueryBlock();
+    newContext = new LogicalPlanner.PlanContext(ctx, queryBlock);
+    LogicalNode child = super.visitSimpleTableSubquery(newContext, stack, expr);
+    queryBlock.setRoot(child);
+
+    // a table subquery should be dealt as a relation.
+    TableSubQueryNode node = ctx.plan.createNode(TableSubQueryNode.class);
+    node.init(CatalogUtil.buildFQName(ctx.queryContext.get(SessionVars.CURRENT_DATABASE),
+        ctx.generateUniqueSubQueryName()), child);
+    ctx.queryBlock.addRelation(node);
+    if (stack.peek().getType() == OpType.InPredicate) {
+      // In-subquery and scalar subquery cannot be the base for name resolution.
+      node.setNameResolveBase(false);
+    }
     return node;
   }
 
@@ -473,6 +505,23 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
+  public LogicalNode visitCreateIndex(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, CreateIndex expr)
+      throws TajoException {
+    stack.push(expr);
+    LogicalNode child = visit(ctx, stack, expr.getChild());
+    stack.pop();
+
+    CreateIndexNode createIndex = ctx.plan.createNode(CreateIndexNode.class);
+    createIndex.setInSchema(child.getOutSchema());
+    createIndex.setOutSchema(child.getOutSchema());
+    return createIndex;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DropIndex expr) {
+    return ctx.plan.createNode(DropIndexNode.class);
+  }
+
   public LogicalNode visitTruncateTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TruncateTable expr)
       throws TajoException {
     TruncateTableNode truncateTableNode = ctx.plan.createNode(TruncateTableNode.class);

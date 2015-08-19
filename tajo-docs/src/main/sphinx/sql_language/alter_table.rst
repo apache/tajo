@@ -79,7 +79,7 @@ ADD PARTITION
   ALTER TABLE table1 ADD PARTITION (col1 = 1 , col2 = 2)
   ALTER TABLE table1 ADD PARTITION (col1 = 1 , col2 = 2) LOCATION 'hdfs://xxx.com/warehouse/table1/col1=1/col2=2'
 
-You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The location must be a directory inside of which data files reside. If the location doesn't exist on the file system, Tajo will make the location by force. ``ADD PARTITION`` changes the table metadata, but does not load data. If the data does not exist in the partition's location, queries will not return any results.
+You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The location must be a directory inside of which data files reside. If the location doesn't exist on the file system, Tajo will make the location by force. ``ADD PARTITION`` changes the table metadata, but does not load data. If the data does not exist in the partition's location, queries will not return any results. An error is thrown if the partition for the table already exists. You can use ``IF NOT EXISTS`` to skip the error.
 
 ========================
  DROP PARTITION
@@ -89,12 +89,11 @@ You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The loca
 
 .. code-block:: sql
 
-  ALTER TABLE <table_name> [IF NOT EXISTS] DROP PARTITION (<partition column> = <partition value>, ...) [PURGE]
+  ALTER TABLE <table_name> [IF EXISTS] DROP PARTITION (<partition column> = <partition value>, ...) [PURGE]
 
   For example:
   ALTER TABLE table1 DROP PARTITION (col1 = 1 , col2 = 2)
   ALTER TABLE table1 DROP PARTITION (col1 = '2015' , col2 = '01', col3 = '11' )
   ALTER TABLE table1 DROP PARTITION (col1 = 'TAJO' ) PURGE
 
-You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This removes the data for a managed table
- and this doesn't remove the data for an external table. But if ``PURGE`` is specified for an external table, the partition data will be removed. The metadata is completely lost in all cases.
+You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This removes the data for a managed table and this doesn't remove the data for an external table. But if ``PURGE`` is specified for an external table, the partition data will be removed. The metadata is completely lost in all cases. An error is thrown if the partition for the table doesn't exists. You can use ``IF EXISTS`` to skip the error.

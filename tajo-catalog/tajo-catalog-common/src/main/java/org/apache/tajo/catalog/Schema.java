@@ -24,13 +24,14 @@ import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
-import org.apache.tajo.catalog.exception.DuplicateColumnException;
+import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
@@ -419,8 +420,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   public synchronized Schema addColumn(String name, TypeDesc typeDesc) {
     String normalized = name;
     if(fieldsByQualifiedName.containsKey(normalized)) {
-      LOG.error("Already exists column " + normalized);
-      throw new DuplicateColumnException(normalized);
+      throw new TajoRuntimeException(new DuplicateColumnException(normalized));
     }
 
     Column newCol = new Column(normalized, typeDesc);

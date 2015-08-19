@@ -27,8 +27,11 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
+import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
+import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.engine.parser.SQLParser.*;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -42,9 +45,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
-
-  public SQLAnalyzer() {
-  }
 
   public Expr parse(String sql) {
     ANTLRInputStream input = new ANTLRInputStream(sql);
@@ -60,7 +60,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
-      throw new SQLSyntaxError(e);
+      throw new SQLSyntaxError(e.getMessage());
     }
     return visitSql(context);
   }
@@ -984,7 +984,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
       return new ValueListExpr(exprs);
     } else {
-      return new SimpleTableSubQuery(visitChildren(ctx.table_subquery()));
+      return new SimpleTableSubquery(visitChildren(ctx.table_subquery()));
     }
   }
 
@@ -1044,7 +1044,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public ExistsPredicate visitExists_predicate(SQLParser.Exists_predicateContext ctx) {
-    return new ExistsPredicate(new SimpleTableSubQuery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
+    return new ExistsPredicate(new SimpleTableSubquery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
   }
 
   @Override
@@ -1218,6 +1218,51 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     return new FunctionExpr(functionName, params);
+  }
+
+  @Override
+  public Expr visitCreate_index_statement(SQLParser.Create_index_statementContext ctx) {
+    String indexName = ctx.index_name.getText();
+    String tableName = ctx.table_name().getText();
+    Relation relation = new Relation(tableName);
+    SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
+    NamedExpr[] targets = new NamedExpr[sortSpecs.length];
+    Projection projection = new Projection();
+    int i = 0;
+    for (SortSpec sortSpec : sortSpecs) {
+      targets[i++] = new NamedExpr(sortSpec.getKey());
+    }
+    projection.setNamedExprs(targets);
+    projection.setChild(relation);
+
+    CreateIndex createIndex = new CreateIndex(indexName, sortSpecs);
+    if (checkIfExist(ctx.UNIQUE())) {
+      createIndex.setUnique(true);
+    }
+    if (checkIfExist(ctx.method_specifier())) {
+      String methodName = ctx.method_specifier().identifier().getText();
+      createIndex.setMethodSpec(new IndexMethodSpec(methodName));
+    }
+    if (checkIfExist(ctx.param_clause())) {
+      Map<String, String> params = getParams(ctx.param_clause());
+      createIndex.setParams(params);
+    }
+    if (checkIfExist(ctx.where_clause())) {
+      Selection selection = visitWhere_clause(ctx.where_clause());
+      selection.setChild(relation);
+      projection.setChild(selection);
+    }
+    if (checkIfExist(ctx.LOCATION())) {
+      createIndex.setIndexPath(stripQuote(ctx.path.getText()));
+    }
+    createIndex.setChild(projection);
+    return createIndex;
+  }
+
+  @Override
+  public Expr visitDrop_index_statement(SQLParser.Drop_index_statementContext ctx) {
+    String indexName = ctx.identifier().getText();
+    return new DropIndex(indexName);
   }
 
   @Override
@@ -1574,10 +1619,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (ctx.table_name() != null) {
       insertExpr.setTableName(ctx.table_name().getText());
 
-      if (ctx.column_name_list() != null) {
-        String[] targetColumns = new String[ctx.column_name_list().identifier().size()];
+      if (ctx.column_reference_list() != null) {
+        ColumnReferenceExpr [] targetColumns =
+            new ColumnReferenceExpr[ctx.column_reference_list().column_reference().size()];
+
         for (int i = 0; i < targetColumns.length; i++) {
-          targetColumns[i] = ctx.column_name_list().identifier().get(i).getText();
+          targetColumns[i] = visitColumn_reference(ctx.column_reference_list().column_reference(i));
         }
 
         insertExpr.setTargetColumns(targetColumns);
@@ -1839,6 +1886,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         alterTable.setLocation(path);
       }
       alterTable.setPurge(checkIfExist(ctx.PURGE()));
+      alterTable.setIfNotExists(checkIfExist(ctx.if_not_exists()));
+      alterTable.setIfExists(checkIfExist(ctx.if_exists()));
     }
 
     if (checkIfExist(ctx.property_list())) {

@@ -38,7 +38,7 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitUnion(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws TajoException;
   RESULT visitExcept(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws TajoException;
   RESULT visitIntersect(CONTEXT ctx, Stack<Expr> stack, SetOperation expr) throws TajoException;
-  RESULT visitSimpleTableSubQuery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubQuery expr) throws TajoException;
+  RESULT visitSimpleTableSubquery(CONTEXT ctx, Stack<Expr> stack, SimpleTableSubquery expr) throws TajoException;
   RESULT visitTableSubQuery(CONTEXT ctx, Stack<Expr> stack, TablePrimarySubQuery expr) throws TajoException;
   RESULT visitRelationList(CONTEXT ctx, Stack<Expr> stack, RelationList expr) throws TajoException;
   RESULT visitRelation(CONTEXT ctx, Stack<Expr> stack, Relation expr) throws TajoException;
@@ -53,6 +53,8 @@ public interface AlgebraVisitor<CONTEXT, RESULT> {
   RESULT visitAlterTablespace(CONTEXT ctx, Stack<Expr> stack, AlterTablespace expr) throws TajoException;
   RESULT visitAlterTable(CONTEXT ctx, Stack<Expr> stack, AlterTable expr) throws TajoException;
   RESULT visitTruncateTable(CONTEXT ctx, Stack<Expr> stack, TruncateTable expr) throws TajoException;
+  RESULT visitCreateIndex(CONTEXT ctx, Stack<Expr> stack, CreateIndex expr) throws TajoException;
+  RESULT visitDropIndex(CONTEXT ctx, Stack<Expr> stack, DropIndex expr) throws TajoException;
 
     // Insert or Update
   RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws TajoException;

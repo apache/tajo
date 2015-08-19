@@ -21,7 +21,6 @@ package org.apache.tajo.plan.visitor;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 
 import java.util.Stack;
@@ -113,6 +112,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case PARTITIONS_SCAN:
         current = visitPartitionedTableScan(context, plan, block, (PartitionedTableScanNode) node, stack);
         break;
+      case INDEX_SCAN:
+        current = visitIndexScan(context, plan, block, (IndexScanNode) node, stack);
+        break;
       case STORE:
         current = visitStoreTable(context, plan, block, (StoreTableNode) node, stack);
         break;
@@ -137,8 +139,14 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case ALTER_TABLE:
         current = visitAlterTable(context, plan, block, (AlterTableNode) node, stack);
         break;
+      case CREATE_INDEX:
+        current = visitCreateIndex(context, plan, block, (CreateIndexNode) node, stack);
+        break;
       case TRUNCATE_TABLE:
         current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
+        break;
+      case DROP_INDEX:
+        current = visitDropIndex(context, plan, block, (DropIndexNode) node, stack);
         break;
       default:
         throw new TajoInternalError("Unknown logical node type: " + node.getType());
@@ -312,6 +320,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   @Override
+  public RESULT visitIndexScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, IndexScanNode node,
+                               Stack<LogicalNode> stack) throws TajoException {
+    return null;
+  }
+
+  @Override
   public RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
       throws TajoException {
@@ -377,6 +391,22 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
                                  Stack<LogicalNode> stack) {
         return null;
     }
+
+  @Override
+  public RESULT visitCreateIndex(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, CreateIndexNode node,
+                                 Stack<LogicalNode> stack) throws TajoException {
+    RESULT result = null;
+    stack.push(node);
+    result = visit(context, plan, block, node.getChild(), stack);
+    stack.pop();
+    return result;
+  }
+
+  @Override
+  public RESULT visitDropIndex(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropIndexNode node,
+                               Stack<LogicalNode> stack) {
+    return null;
+  }
 
   @Override
   public RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,

@@ -26,7 +26,10 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.client.v2.exception.ClientConnectionException;
+import org.apache.tajo.exception.NoSuchSessionVariableException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.ClientProtos.UpdateSessionVariableRequest;
@@ -36,7 +39,6 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
@@ -57,14 +59,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
-import static org.apache.tajo.exception.ReturnStateUtil.isError;
-import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
-import static org.apache.tajo.exception.ReturnStateUtil.isThisError;
+import static org.apache.tajo.error.Errors.ResultCode.UNDEFINED_DATABASE;
+import static org.apache.tajo.exception.ReturnStateUtil.*;
 import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
-import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
-import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 
 public class SessionConnection implements Closeable {
 
@@ -101,7 +100,7 @@ public class SessionConnection implements Closeable {
    * @throws SQLException
    */
   public SessionConnection(@NotNull ServiceTracker tracker, @Nullable String baseDatabase,
-                           @NotNull KeyValueSet properties) throws SQLException {
+                           @NotNull KeyValueSet properties) {
     this.serviceTracker = tracker;
     this.baseDatabase = baseDatabase;
     this.properties = properties;
@@ -117,7 +116,7 @@ public class SessionConnection implements Closeable {
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public synchronized NettyClientBase getTajoMasterConnection() throws SQLException {
+  public synchronized NettyClientBase getTajoMasterConnection() {
 
     if (client != null && client.isConnected()) {
       return client;
@@ -138,14 +137,14 @@ public class SessionConnection implements Closeable {
         connections.incrementAndGet();
 
       } catch (Throwable t) {
-        throw SQLExceptionUtil.makeUnableToEstablishConnection(t);
+        throw new ClientConnectionException(t);
       }
 
       return client;
     }
   }
 
-  protected BlockingInterface getTMStub() throws SQLException {
+  protected BlockingInterface getTMStub() {
     NettyClientBase tmClient;
     tmClient = getTajoMasterConnection();
     BlockingInterface stub = tmClient.getStub();
@@ -185,7 +184,7 @@ public class SessionConnection implements Closeable {
     return userInfo;
   }
 
-  public String getCurrentDatabase() throws SQLException {
+  public String getCurrentDatabase() {
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
 
@@ -198,11 +197,11 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return response.getValue();
   }
 
-  public Map<String, String> updateSessionVariables(final Map<String, String> variables) throws SQLException {
+  public Map<String, String> updateSessionVariables(final Map<String, String> variables) {
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
 
@@ -221,15 +220,12 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    if (isSuccess(response.getState())) {
-      updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-      return Collections.unmodifiableMap(sessionVarsCache);
-    } else {
-      throw toSQLException(response.getState());
-    }
+    ensureOk(response.getState());
+    updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+    return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public Map<String, String> unsetSessionVariables(final List<String> variables) throws SQLException {
+  public Map<String, String> unsetSessionVariables(final List<String> variables) {
 
     final BlockingInterface stub = getTMStub();
     final UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
@@ -244,12 +240,9 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    if (isSuccess(response.getState())) {
-      updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-      return Collections.unmodifiableMap(sessionVarsCache);
-    } else {
-      throw toSQLException(response.getState());
-    }
+    ensureOk(response.getState());
+    updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+    return Collections.unmodifiableMap(sessionVarsCache);
   }
 
   void updateSessionVarsCache(Map<String, String> variables) {
@@ -259,7 +252,7 @@ public class SessionConnection implements Closeable {
     }
   }
 
-  public String getSessionVariable(final String varname) throws SQLException {
+  public String getSessionVariable(final String varname) throws NoSuchSessionVariableException {
     synchronized (sessionVarsCache) {
       // If a desired variable is client side one and exists in the cache, immediately return the variable.
       if (sessionVarsCache.containsKey(varname)) {
@@ -271,35 +264,41 @@ public class SessionConnection implements Closeable {
     checkSessionAndGet(client);
 
     BlockingInterface stub = client.getStub();
-
+    StringResponse response;
     try {
-      return stub.getSessionVariable(null, getSessionedString(varname)).getValue();
+      response = stub.getSessionVariable(null, getSessionedString(varname));
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    if (isThisError(response.getState(), NO_SUCH_SESSION_VARIABLE)) {
+      throw new NoSuchSessionVariableException(response.getState());
+    }
+
+    ensureOk(response.getState());
+    return response.getValue();
   }
 
-  public Boolean existSessionVariable(final String varname) throws SQLException {
+  public boolean existSessionVariable(final String varname) {
 
+    ReturnState state;
     try {
       final BlockingInterface stub = getTMStub();
-      ReturnState state = stub.existSessionVariable(null, getSessionedString(varname));
-
-      if (isThisError(state, NO_SUCH_SESSION_VARIABLE)) {
-        return false;
-      } else if (isError(state)){
-        throw SQLExceptionUtil.toSQLException(state);
-      }
-
-      return isSuccess(state);
-
+      state = stub.existSessionVariable(null, getSessionedString(varname));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
+
+    if (isThisError(state, NO_SUCH_SESSION_VARIABLE)) {
+      return false;
+    }
+
+    ensureOk(state);
+    return true;
   }
 
-  public Map<String, String> getAllSessionVariables() throws SQLException {
+  public Map<String, String> getAllSessionVariables() {
     NettyClientBase client = getTajoMasterConnection();
     checkSessionAndGet(client);
 
@@ -311,24 +310,23 @@ public class SessionConnection implements Closeable {
       throw new RuntimeException(e);
     }
 
-    throwIfError(response.getState());
+    ensureOk(response.getState());
     return ProtoUtil.convertToMap(response.getValue());
   }
 
-  public Boolean selectDatabase(final String databaseName) throws SQLException {
+  public void selectDatabase(final String dbName) throws UndefinedDatabaseException {
 
-    BlockingInterface stub = getTMStub();
-    boolean selected;
     try {
-      selected = isSuccess(stub.selectDatabase(null, getSessionedString(databaseName)));
+      final BlockingInterface stub = getTMStub();
+      final ReturnState state = stub.selectDatabase(null, getSessionedString(dbName));
+
+      ExceptionUtil.throwsIfThisError(state, UndefinedDatabaseException.class);
+      ensureOk(state);
+      this.baseDatabase = dbName;
+
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
-
-    if (selected) {
-      this.baseDatabase = databaseName;
-    }
-    return selected;
   }
 
   @Override
@@ -362,7 +360,7 @@ public class SessionConnection implements Closeable {
     return serviceTracker.getClientServiceAddress();
   }
 
-  protected void checkSessionAndGet(NettyClientBase client) throws SQLException {
+  protected void checkSessionAndGet(NettyClientBase client) {
 
     if (sessionId == null) {
 
@@ -373,7 +371,6 @@ public class SessionConnection implements Closeable {
       if (baseDatabase != null) {
         builder.setBaseDatabaseName(baseDatabase);
       }
-
 
       CreateSessionResponse response = null;
 
@@ -391,7 +388,7 @@ public class SessionConnection implements Closeable {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }
       } else {
-        throw SQLExceptionUtil.toSQLException(response.getState());
+        throw new InvalidClientSessionException(sessionId.getId());
       }
     }
   }

@@ -77,8 +77,17 @@ schema_statement
   ;
 
 index_statement
-  : CREATE (u=UNIQUE)? INDEX n=identifier ON t=table_name (m=method_specifier)?
-    LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?
+  : create_index_statement
+  | drop_index_statement
+  ;
+
+create_index_statement
+  : CREATE (u=UNIQUE)? INDEX index_name = identifier ON table_name (method_specifier)?
+    LEFT_PAREN sort_specifier_list RIGHT_PAREN param_clause? (where_clause)? (LOCATION path=Character_String_Literal)?
+  ;
+
+drop_index_statement
+  : DROP INDEX index_name = identifier
   ;
 
 database_definition
@@ -1584,7 +1593,7 @@ null_ordering
 */
 
 insert_statement
-  : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
+  : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_reference_list RIGHT_PAREN)? query_expression
   | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING storage_type=identifier (param_clause)?)? query_expression
   ;
 
@@ -1602,8 +1611,8 @@ alter_table_statement
   : ALTER TABLE table_name RENAME TO table_name
   | ALTER TABLE table_name RENAME COLUMN column_name TO column_name
   | ALTER TABLE table_name ADD COLUMN field_element
-  | ALTER TABLE table_name (if_not_exists)? ADD PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
-  | ALTER TABLE table_name (if_exists)? DROP PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (PURGE)?
+  | ALTER TABLE table_name ADD (if_not_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
+  | ALTER TABLE table_name DROP (if_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (PURGE)?
   | ALTER TABLE table_name SET PROPERTY property_list
   ;
 

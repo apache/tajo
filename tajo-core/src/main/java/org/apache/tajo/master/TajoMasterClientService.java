@@ -33,17 +33,16 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionListResponse;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableResponse;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.ErrorUtil;
-import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.QueryNotFoundException;
 import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.UnavailableTableLocationException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -65,7 +64,10 @@ import org.apache.tajo.util.ProtoUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.exception.ExceptionUtil.printStackTraceIfError;
@@ -185,7 +187,6 @@ public class TajoMasterClientService extends AbstractService {
         for (String unsetVariable : request.getUnsetVariablesList()) {
           context.getSessionManager().removeVariable(sessionId, unsetVariable);
         }
-
 
         builder.setState(OK);
         builder.setSessionVars(new KeyValueSet(context.getSessionManager().getAllVariables(sessionId)).getProto());
@@ -311,7 +312,6 @@ public class TajoMasterClientService extends AbstractService {
             .setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto())
             .setUserName(context.getConf().getVar(ConfVars.USERNAME))
             .build();
-
       }
     }
 
@@ -541,9 +541,13 @@ public class TajoMasterClientService extends AbstractService {
 
         QueryId queryId = new QueryId(request.getQueryId());
         NonForwardQueryResultScanner queryResultScanner = session.getNonForwardQueryResultScanner(queryId);
+
         if (queryResultScanner == null) {
+
           QueryInfo queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
-          Preconditions.checkNotNull(queryInfo, "QueryInfo cannot be NULL.");
+          if (queryInfo == null) {
+            throw new QueryNotFoundException(queryId.toString());
+          }
 
           TableDesc resultTableDesc = queryInfo.getResultDesc();
           Preconditions.checkNotNull(resultTableDesc, "QueryInfo::getResultDesc results in NULL.");
@@ -604,7 +608,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetQueryInfoResponse getQueryInfo(RpcController controller, QueryIdRequest request) throws ServiceException {
+    public GetQueryInfoResponse getQueryInfo(RpcController controller, QueryIdRequest request) {
       GetQueryInfoResponse.Builder builder = GetQueryInfoResponse.newBuilder();
 
       try {
@@ -621,9 +625,11 @@ public class TajoMasterClientService extends AbstractService {
           queryInfo = queryInProgress.getQueryInfo();
         }
 
-        if (queryInfo != null) {
-          builder.setQueryInfo(queryInfo.getProto());
+        if (queryInfo == null) {
+          throw new QueryNotFoundException(queryId.toString());
         }
+
+        builder.setQueryInfo(queryInfo.getProto());
         builder.setState(OK);
 
       } catch (Throwable t) {
@@ -698,14 +704,11 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public ReturnState createDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
-        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-        QueryContext queryContext = new QueryContext(conf, session);
+        final Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        final QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false)) {
-          return OK;
-        } else {
-          return errDuplicateDatabase(request.getValue());
-        }
+        context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false);
+        return OK;
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -732,14 +735,11 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public ReturnState dropDatabase(RpcController controller, SessionedStringProto request) throws ServiceException {
       try {
-        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-        QueryContext queryContext = new QueryContext(conf, session);
+        final Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        final QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false)) {
-          return OK;
-        } else {
-          return errUndefinedDatabase(request.getValue());
-        }
+        context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false);
+        return OK;
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
@@ -874,7 +874,7 @@ public class TajoMasterClientService extends AbstractService {
         FileSystem fs = path.getFileSystem(conf);
 
         if (!fs.exists(path)) {
-          throw new IOException("No such a directory: " + path);
+          throw new UnavailableTableLocationException(path.toString(), "no such a directory");
         }
 
         Schema schema = new Schema(request.getSchema());
@@ -884,11 +884,10 @@ public class TajoMasterClientService extends AbstractService {
           partitionDesc = new PartitionMethodDesc(request.getPartition());
         }
 
-        TableDesc desc = context.getGlobalEngine().getDDLExecutor().createTable(
+        TableDesc desc = context.getGlobalEngine().getDDLExecutor().getCreateTableExecutor().create(
             queryContext,
             request.getName(),
             null,
-            meta.getStoreType(),
             schema,
             meta,
             path.toUri(),
@@ -957,6 +956,201 @@ public class TajoMasterClientService extends AbstractService {
         return FunctionListResponse.newBuilder().
             setState(returnError(t))
             .build();
+      }
+    }
+
+    @Override
+    public IndexResponse getIndexWithName(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String indexName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+        IndexDescProto indexProto = catalog.getIndexByName(databaseName, indexName).getProto();
+        return IndexResponse.newBuilder()
+            .setState(OK)
+            .setIndexDesc(indexProto)
+            .build();
+
+      } catch (Throwable t) {
+        return IndexResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+      }
+    }
+
+    @Override
+    public ReturnState existIndexWithName(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String indexName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+
+        if (catalog.existIndexByName(databaseName, indexName)) {
+          return OK;
+        } else {
+          return errUndefinedIndexName(indexName);
+        }
+      } catch (Throwable t) {
+        return returnError(t);
+      }
+    }
+
+    @Override
+    public IndexListResponse getIndexesForTable(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getValue();
+        }
+
+        IndexListResponse.Builder builder = IndexListResponse.newBuilder().setState(OK);
+        for (IndexDesc index : catalog.getAllIndexesByTable(databaseName, tableName)) {
+          builder.addIndexDesc(index.getProto());
+        }
+        return builder.build();
+      } catch (Throwable t) {
+        return IndexListResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+      }
+    }
+
+    @Override
+    public ReturnState existIndexesForTable(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getValue();
+        }
+        if (catalog.existIndexesByTable(databaseName, tableName)) {
+          return OK;
+        } else {
+          return errUndefinedIndex(tableName);
+        }
+      } catch (Throwable t) {
+        return returnError(t);
+      }
+    }
+
+    @Override
+    public IndexResponse getIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getTableName())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getTableName();
+        }
+        String[] columnNames = new String[request.getColumnNamesCount()];
+        columnNames = request.getColumnNamesList().toArray(columnNames);
+
+        return IndexResponse.newBuilder()
+            .setState(OK)
+            .setIndexDesc(catalog.getIndexByColumnNames(databaseName, tableName, columnNames).getProto())
+            .build();
+
+      } catch (Throwable t) {
+        return IndexResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+      }
+    }
+
+    @Override
+    public ReturnState existIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getTableName())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getTableName();
+        }
+        String[] columnNames = new String[request.getColumnNamesCount()];
+        columnNames = request.getColumnNamesList().toArray(columnNames);
+        if (catalog.existIndexByColumnNames(databaseName, tableName, columnNames)) {
+          return OK;
+        } else {
+          return errUndefinedIndex(tableName, request.getColumnNamesList());
+        }
+      } catch (Throwable t) {
+        return returnError(t);
+      }
+    }
+
+    @Override
+    public ReturnState dropIndex(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        QueryContext queryContext = new QueryContext(conf, session);
+
+        String indexName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+        catalog.dropIndex(databaseName, indexName);
+
+        return OK;
+      } catch (Throwable t) {
+        return returnError(t);
       }
     }
   }

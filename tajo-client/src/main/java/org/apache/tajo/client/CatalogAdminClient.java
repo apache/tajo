@@ -24,10 +24,11 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.exception.*;
 
 import java.io.Closeable;
 import java.net.URI;
-import java.sql.SQLException;
 import java.util.List;
 
 public interface CatalogAdminClient extends Closeable {
@@ -36,27 +37,26 @@ public interface CatalogAdminClient extends Closeable {
    *
    * @param databaseName The database name to be created. This name is case sensitive.
    * @return True if created successfully.
-   * @throws java.sql.SQLException
+   * @throws DuplicateDatabaseException
    */
-  boolean createDatabase(final String databaseName) throws SQLException;
+  void createDatabase(final String databaseName) throws DuplicateDatabaseException;
   /**
    * Does the database exist?
    *
    * @param databaseName The database name to be checked. This name is case sensitive.
    * @return True if so.
-   * @throws java.sql.SQLException
    */
-  boolean existDatabase(final String databaseName) throws SQLException;
+  boolean existDatabase(final String databaseName);
   /**
    * Drop the database
    *
    * @param databaseName The database name to be dropped. This name is case sensitive.
    * @return True if the database is dropped successfully.
-   * @throws java.sql.SQLException
+   * @throws UndefinedDatabaseException
    */
-  boolean dropDatabase(final String databaseName) throws SQLException;
+  void dropDatabase(final String databaseName) throws UndefinedDatabaseException, InsufficientPrivilegeException;
 
-  List<String> getAllDatabaseNames() throws SQLException;
+  List<String> getAllDatabaseNames();
 
   /**
    * Does the table exist?
@@ -64,7 +64,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to be checked. This name is case sensitive.
    * @return True if so.
    */
-  boolean existTable(final String tableName) throws SQLException;
+  boolean existTable(final String tableName);
 
   /**
    * Create an external table.
@@ -75,10 +75,11 @@ public interface CatalogAdminClient extends Closeable {
    * @param path The external table location
    * @param meta Table meta
    * @return the created table description.
-   * @throws java.sql.SQLException
+   * @throws DuplicateTableException
    */
   TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws SQLException;
+                                       final TableMeta meta)
+      throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException;
 
   /**
    * Create an external table.
@@ -90,20 +91,20 @@ public interface CatalogAdminClient extends Closeable {
    * @param meta Table meta
    * @param partitionMethodDesc Table partition description
    * @return the created table description.
-   * @throws java.sql.SQLException
+   * @throws DuplicateTableException
    */
   TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws SQLException;
+      throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException;
 
   /**
    * Drop a table
    *
    * @param tableName The table name to be dropped. This name is case sensitive.
    * @return True if the table is dropped successfully.
-   * @throws java.sql.SQLException
+   * @throws InsufficientPrivilegeException
    */
-  boolean dropTable(final String tableName) throws SQLException;
+  void dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException;
 
   /**
    * Drop a table.
@@ -111,9 +112,11 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to be dropped. This name is case sensitive.
    * @param purge If purge is true, this call will remove the entry in catalog as well as the table contents.
    * @return True if the table is dropped successfully.
-   * @throws java.sql.SQLException
+   * @throws UndefinedTableException
+   * @throws InsufficientPrivilegeException
    */
-  boolean dropTable(final String tableName, final boolean purge) throws SQLException;
+  void dropTable(final String tableName, final boolean purge) throws UndefinedTableException,
+      InsufficientPrivilegeException;
 
   /**
    * Get a list of table names.
@@ -121,18 +124,31 @@ public interface CatalogAdminClient extends Closeable {
    * @param databaseName The database name to show all tables. This name is case sensitive.
    *                     If it is null, this method will show all tables
    *                     in the current database of this session.
-   * @throws java.sql.SQLException
    */
-  List<String> getTableList(@Nullable final String databaseName) throws SQLException;
+  List<String> getTableList(@Nullable final String databaseName);
 
   /**
    * Get a table description
    *
    * @param tableName The table name to get. This name is case sensitive.
    * @return Table description
-   * @throws java.sql.SQLException
+   * @throws UndefinedTableException
    */
-  TableDesc getTableDesc(final String tableName) throws SQLException;
+  TableDesc getTableDesc(final String tableName) throws UndefinedTableException;
 
-  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws SQLException;
+  List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);
+
+  IndexDescProto getIndex(final String indexName);
+
+  boolean existIndex(final String indexName);
+
+  List<IndexDescProto> getIndexes(final String tableName);
+
+  boolean hasIndexes(final String tableName);
+
+  IndexDescProto getIndex(final String tableName, final String[] columnNames);
+
+  boolean existIndex(final String tableName, final String[] columnName);
+
+  boolean dropIndex(final String indexName);
 }

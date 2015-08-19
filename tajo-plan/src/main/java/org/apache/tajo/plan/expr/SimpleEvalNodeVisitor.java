@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
@@ -75,8 +76,12 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
         result = visitFuncCall(context, (FunctionEval) evalNode, stack);
         break;
 
+      case SUBQUERY:
+        result = visitSubquery(context, (SubqueryEval) evalNode, stack);
+        break;
+
       default:
-        throw new UnsupportedException("Unknown EvalType: " + evalNode);
+        throw new TajoInternalError("Unknown EvalType: " + evalNode);
       }
     }
 
@@ -168,5 +173,9 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
 
   protected EvalNode visitFuncCall(CONTEXT context, FunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
+  }
+
+  protected EvalNode visitSubquery(CONTEXT context, SubqueryEval evalNode, Stack<EvalNode> stack) {
+    return evalNode;
   }
 }

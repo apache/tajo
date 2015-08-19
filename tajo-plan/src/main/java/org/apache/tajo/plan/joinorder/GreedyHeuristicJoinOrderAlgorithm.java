@@ -203,7 +203,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         JoinOrderingUtil.updateQualIfNecessary(graphContext, foundJoin);
         double cost = getCost(foundJoin);
 
-        if (cost < minCost) {
+        if (cost < minCost ||
+            (cost == minCost && cost == Double.MAX_VALUE)) {
           minCost = cost;
           bestJoin = foundJoin;
         }
@@ -236,7 +237,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
-    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType()) || edge.getJoinType() == JoinType.FULL_OUTER) {
+    if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
       double leftCost = getCost(edge.getLeftVertex());
       double rightCost = getCost(edge.getRightVertex());
       if (leftCost < rightCost) {
@@ -305,7 +306,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           if (interchangeableWithRightVertex.contains(rightTarget)) {
             JoinEdge targetEdge = joinGraph.getEdge(leftTarget, rightTarget);
             if (targetEdge == null) {
-              if (joinGraph.isSymmetricJoinOnly()) {
+              if (joinGraph.allowArbitraryCrossJoin()) {
                 // Since the targets of the both sides are searched with symmetric characteristics,
                 // the join type is assumed as CROSS.
                 // TODO: This must be improved to consider a case when a query involves multiple commutative and
@@ -379,6 +380,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
                   SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
                   SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
           break;
+        case LEFT_ANTI:
+        case LEFT_SEMI:
+          factor *= DEFAULT_SELECTION_FACTOR * SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
+          break;
         case INNER:
         default:
           // by default, do the same operation with that of inner join
@@ -398,7 +404,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           getCost(joinEdge.getRightVertex()), 2);
     }
 
-    return cost * COMPUTATION_FACTOR;
+    return checkInfinity(cost * COMPUTATION_FACTOR);
   }
 
   public static double getCost(JoinVertex joinVertex) {
@@ -409,6 +415,22 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       cost = getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
     }
     return cost;
+  }
+
+  /**
+   * Return the MAX(MIN) value if the given cost is positive(negative) infinity.
+   *
+   * @param cost
+   * @return
+   */
+  private static double checkInfinity(double cost) {
+    if (cost == Double.POSITIVE_INFINITY) {
+      return Long.MAX_VALUE;
+    } else if (cost == Double.NEGATIVE_INFINITY) {
+      return Long.MIN_VALUE;
+    } else {
+      return cost;
+    }
   }
 
   // TODO - costs of other operator operators (e.g., group-by and sort) should be computed in proper manners.
@@ -449,7 +471,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (scanNode.getTableDesc().getStats() != null) {
         cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
       } else {
-        cost = Long.MAX_VALUE;
+        cost = Integer.MAX_VALUE;
       }
       break;
 
