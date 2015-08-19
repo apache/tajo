@@ -672,7 +672,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public void testLoadIntoTimeZonedTable() throws Exception {
     // Insert from timezoned table into another timezoned table
-    
+
     try {
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned_load1");
       executeDDL("datetime_table_timezoned_ddl.sql", "temp", "timezoned_load2");
