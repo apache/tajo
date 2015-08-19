@@ -56,7 +56,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testPositives() throws Exception {
-    runNegativeTests();
+    runPositiveTests();
   }
 
   @Test
