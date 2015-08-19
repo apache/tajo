@@ -26,7 +26,6 @@ import org.apache.hadoop.conf.Configuration;
  * to be compatible with Tajo 0.10.x applications.
  */
 public class HCatalogStore extends HiveCatalogStore {
-
   public HCatalogStore(final Configuration conf) {
     super(conf);
   }
