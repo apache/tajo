@@ -192,7 +192,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public void release() {
+    public void close() {
       queryClient.closeQuery(id);
     }
 
@@ -332,7 +332,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public void release() {
+    public void close() {
       queryClient.closeQuery(queryId);
     }
 
