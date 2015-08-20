@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.function.python;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -322,6 +323,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
     try {
       int exitCode = process.waitFor();
+
       if (systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
         LOG.warn("Process exit code: " + exitCode);
       } else {
@@ -523,8 +525,18 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext(methodName, input, inSchema);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e);
+    } catch (Throwable e) {
+      byte[] bytes;
+      try {
+        bytes = new byte[stderr.available()];
+        IOUtils.readFully(stderr, bytes);
+        String message = new String(bytes, Charset.defaultCharset());
+        throw new RuntimeException("Failed adding input to inputQueue while executing "
+            + methodName + " with " + input + ", caused by :" + message, e);
+      } catch (IOException e1) {
+        throw new RuntimeException("Failed adding input to inputQueue while executing "
+            + methodName + " with " + input, e1);
+      }
     }
 
     try {
