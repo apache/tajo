@@ -38,7 +38,7 @@ public class ExceptionUtil {
 
     // General Errors
     ADD_EXCEPTION(INTERNAL_ERROR, TajoInternalError.class);
-    ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, UnsupportedException.class);
+    ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, org.apache.tajo.exception.client.UnsupportedException.class);
     ADD_EXCEPTION(NOT_IMPLEMENTED, NotImplementedException.class);
 
     // Query Management and Scheduler
