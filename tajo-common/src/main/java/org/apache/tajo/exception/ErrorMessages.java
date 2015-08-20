@@ -21,7 +21,6 @@ package org.apache.tajo.exception;
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.StringUtils;
 
 import java.util.Map;
 
@@ -109,6 +108,14 @@ public class ErrorMessages {
     ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory" +
       " : '%s'", 1);
 
+    ADD_MESSAGE(TOO_LARGE_INPUT_FOR_CROSS_JOIN, "Cross join of large tables is not allowed: (%s). " +
+        "To execute cross join, please increase BROADCAST_CROSS_JOIN_THRESHOLD " +
+        "which is currently set to %s.", 2);
+    ADD_MESSAGE(TOO_LARGE_RESULT_FOR_CROSS_JOIN, "Estimated size of cross join is too large." +
+        "To execute cross join, please increase CROSS_JOIN_RESULT_THRESHOLD " +
+        "which is currently set to %s.", 1);
+    ADD_MESSAGE(INVALID_INPUTS_FOR_CROSS_JOIN, "At least one of both inputs for the cross join must be a simple " +
+        "relation.");
 
     ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
     ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);
@@ -135,6 +142,18 @@ public class ErrorMessages {
 
   }
 
+  public static String concat(String[] args) {
+    StringBuilder sb = new StringBuilder();
+    boolean first = true;
+    for (String s : args) {
+      if (!first) {
+        sb.append(",");
+      }
+      sb.append(s);
+    }
+    return sb.toString();
+  }
+
   public static String getMessage(ResultCode code, String...args) {
     if (!MESSAGES.containsKey(code)) {
       throw new TajoInternalError("no error message for " + code);
@@ -151,7 +170,7 @@ public class ErrorMessages {
         }
 
       } else {
-        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + StringUtils.join(args));
+        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + concat(args));
       }
     }
   }

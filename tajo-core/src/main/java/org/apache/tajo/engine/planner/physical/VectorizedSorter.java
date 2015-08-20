@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.QuickSort;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
@@ -68,7 +69,7 @@ public class VectorizedSorter extends ComparableVector implements IndexedSortabl
           int index;
           public boolean hasNext() { return index < mappings.length; }
           public Tuple next() { return tuples[mappings[index++]]; }
-          public void remove() { throw new UnsupportedException(); }
+          public void remove() { throw new TajoRuntimeException(new UnsupportedException()); }
         };
       }
     };

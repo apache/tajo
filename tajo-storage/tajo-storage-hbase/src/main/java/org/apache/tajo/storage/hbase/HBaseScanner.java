@@ -434,7 +434,7 @@ public class HBaseScanner implements Scanner {
 
   @Override
   public void setFilter(EvalNode filter) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override

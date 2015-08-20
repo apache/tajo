@@ -36,9 +36,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.global.verifier.GlobalPlanVerifier;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
@@ -58,8 +56,6 @@ import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.metrics.TajoMetrics;
-import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -71,8 +67,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
 import static org.apache.tajo.TajoProtos.QueryState;
-import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
@@ -359,10 +355,6 @@ public class QueryMasterTask extends CompositeService {
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
       queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
 
-      // Checking is required to guarantee that cross join is always executed with broadcast join.
-      GlobalPlanVerifier verifier = new GlobalPlanVerifier();
-      verifier.verify(masterPlan);
-
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);
 
@@ -468,25 +460,27 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void cleanupQuery(final QueryId queryId) {
-    Set<InetSocketAddress> workers = Sets.newHashSet();
-    for (Stage stage : getQuery().getStages()) {
-      workers.addAll(stage.getAssignedWorkerMap().values());
-    }
+    if (getQuery() != null) {
+      Set<InetSocketAddress> workers = Sets.newHashSet();
+      for (Stage stage : getQuery().getStages()) {
+        workers.addAll(stage.getAssignedWorkerMap().values());
+      }
 
-    LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
-    for (final InetSocketAddress worker : workers) {
-      queryMasterContext.getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
-            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
-            tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
-          } catch (Throwable e) {
-            LOG.error(e.getMessage(), e);
+      LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
+      for (final InetSocketAddress worker : workers) {
+        queryMasterContext.getEventExecutor().submit(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+              TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
+              tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
+            } catch (Throwable e) {
+              LOG.error(e.getMessage(), e);
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 

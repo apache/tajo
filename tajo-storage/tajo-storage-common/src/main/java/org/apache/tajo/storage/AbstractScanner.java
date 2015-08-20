@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 
@@ -34,56 +35,56 @@ public abstract class AbstractScanner implements Scanner {
 
   @Override
   public void init() throws IOException {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void reset() throws IOException {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void close() throws IOException {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public boolean isProjectable() {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void setTarget(Column[] targets) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public boolean isSelectable() {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void setFilter(EvalNode filter) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public boolean isSplittable() {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public float getProgress() {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public TableStats getInputStats() {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public Schema getSchema() {
-    throw new NotImplementedException();
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 }

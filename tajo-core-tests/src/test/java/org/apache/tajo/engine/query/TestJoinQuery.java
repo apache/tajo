@@ -63,7 +63,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
         "" + (5 * 1024));
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
-        "" + (1 * 1024));
+        "" + (2 * 1024));
 
     testingCluster.setAllTajoDaemonConfValue(
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
