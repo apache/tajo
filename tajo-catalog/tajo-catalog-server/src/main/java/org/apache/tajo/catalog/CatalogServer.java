@@ -1007,7 +1007,7 @@ public class CatalogServer extends AbstractService {
       try {
         return GetTablePartitionsResponse.newBuilder()
             .setState(OK)
-            .addAllPart(store.getAllPartitions())
+            .addAllPartition(store.getAllPartitions())
             .build();
 
       } catch (Throwable t) {
@@ -1051,7 +1051,7 @@ public class CatalogServer extends AbstractService {
       try {
         return GetTablePartitionKeysResponse.newBuilder()
           .setState(OK)
-          .addAllPartKey(store.getAllPartitionKeys())
+          .addAllPartitionKey(store.getAllPartitionKeys())
           .build();
 
       } catch (Throwable t) {

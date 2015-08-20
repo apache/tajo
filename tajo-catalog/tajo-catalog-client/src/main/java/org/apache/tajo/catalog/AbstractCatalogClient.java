@@ -452,7 +452,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final GetTablePartitionsResponse response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
 
       ensureOk(response.getState());
-      return response.getPartList();
+      return response.getPartitionList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -497,7 +497,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final GetTablePartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);
       ensureOk(response.getState());
 
-      return response.getPartKeyList();
+      return response.getPartitionKeyList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
