@@ -123,6 +123,7 @@ public class TimestampDatum extends Datum {
     return asChars();
   }
 
+  // includeTimeZone should be used specific types like TIMESTAMPZ
   public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
     DateTimeUtil.toUserTimezone(tm, timeZone);
     if (includeTimeZone) {
