@@ -79,9 +79,12 @@ enum ResultCode {
   INVALID_RPC_CALL              = 204; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
 
   // Query Management and Scheduler
-  NO_SUCH_QUERYID               = 301; // No query id in TajoMaster
-  NO_DATA                       = 302; // No data due to query fail or error
-  INCOMPLETE_QUERY              = 303; // It occurs when a client requests something of a completed query.
+  QUERY_FAILED                  = 301; // SQLState: ? - Query failed
+  QUERY_KILLED                  = 302; // SQLState: ? - Query killed
+  QUERY_TIMEOUT                 = 303; // SQLState: ? - Timeout for the query
+  QUERY_NOT_FOUND               = 304; // No such query in TajoMaster
+  NO_DATA                       = 305; // No data due to query fail or error
+  INCOMPLETE_QUERY              = 306; // It occurs when a client requests something of a completed query.
 
   // Session
   INVALID_SESSION               = 401; // Session already was invalid
@@ -155,11 +158,15 @@ enum ResultCode {
   CAT_UPGRADE_REQUIRED                  = 901;  // Migration
   CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server
 
-  // MetaData Connector (MDC)
-  MDC_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
+  // Linked Metadata (LMD)
+  LMD_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
 
   // Storage and Data Format
-  UNKNOWN_DATAFORMAT                    = 1001; // Unknown Data Format
+  UNAVAILABLE_TABLE_LOCATION            = 1001; // SQLState: ? - Unavailable table location
+  UNKNOWN_DATAFORMAT                    = 1002; // SQLState: ? - Unknown Data Format
+  UNSUPPORTED_DATATYPE                  = 1003; // SQLState: ? - Unsupported data type
+  INVALID_TABLE_PROPERTY                = 1004; // SQLState: ? - Invalid Table Property
+  MISSING_TABLE_PROPERTY                = 1005; // SQLState: ? - Missing table property
 
 
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error

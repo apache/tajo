@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.storage.FileAppender;
@@ -138,10 +137,7 @@ public class AvroAppender extends FileAppender {
   public void addTuple(Tuple tuple) throws IOException {
     GenericRecord record = new GenericData.Record(avroSchema);
     for (int i = 0; i < schema.size(); ++i) {
-      Column column = schema.getColumn(i);
-      if (enabledStats) {
-        stats.analyzeField(i, tuple);
-      }
+
       Object value;
       Schema.Field avroField = avroFields.get(i);
       Schema.Type avroType = avroField.schema().getType();

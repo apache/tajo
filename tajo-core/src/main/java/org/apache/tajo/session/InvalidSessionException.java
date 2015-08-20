@@ -19,9 +19,10 @@
 package org.apache.tajo.session;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
 
-public class InvalidSessionException extends TajoRuntimeException {
+public class InvalidSessionException extends TajoException {
   public InvalidSessionException(String sessionId) {
     super(Errors.ResultCode.INVALID_SESSION, sessionId);
   }

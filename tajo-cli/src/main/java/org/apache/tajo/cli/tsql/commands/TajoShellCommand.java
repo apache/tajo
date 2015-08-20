@@ -28,8 +28,11 @@ public abstract class TajoShellCommand {
     return new String[] {};
   }
   public abstract void invoke(String [] command) throws Exception;
+
   public abstract String getUsage();
+
   public abstract String getDescription();
+
   public void printHelp() {
     context.getOutput().print(getCommand());
     context.getOutput().print(" - ");
@@ -76,10 +79,6 @@ public abstract class TajoShellCommand {
     if(warp) {
       println();
     }
-  }
-
-  protected void printCenter(String message) {
-    printCenter(message, maxColumn, true);
   }
 
   protected void print(char c, int count) {

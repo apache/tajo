@@ -31,8 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.PartitionFilterDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -124,7 +123,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    */
   private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
-      throws IOException  {
+      throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
@@ -481,7 +480,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return paths;
   }
 
-  public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
+  public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException,
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 

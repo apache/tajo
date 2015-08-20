@@ -21,7 +21,7 @@ package org.apache.tajo.plan;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
+import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;

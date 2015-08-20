@@ -36,10 +36,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.parser.SQLSyntaxError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
@@ -62,6 +60,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
@@ -98,7 +97,7 @@ public class GlobalEngine extends AbstractService {
       planner = new LogicalPlanner(context.getCatalog(), TablespaceManager.getInstance());
       // Access path rewriter is enabled only in QueryMasterTask
       optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
-      annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
+      annotatedPlanVerifier = new LogicalPlanVerifier();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
       throw new RuntimeException(t);
@@ -213,19 +212,27 @@ public class GlobalEngine extends AbstractService {
     return JsonHelper.fromJson(json, Expr.class);
   }
 
-  public Expr buildExpressionFromSql(String sql, Session session) throws InterruptedException, IOException,
-      IllegalQueryStatusException {
+  public Expr buildExpressionFromSql(String sql, Session session) throws TajoException {
     try {
+
       if (session.getQueryCache() == null) {
         return analyzer.parse(sql);
+
       } else {
-        return (Expr) session.getQueryCache().get(sql.trim()).clone();
+        try {
+          return (Expr) session.getQueryCache().get(sql.trim()).clone();
+        } catch (ExecutionException e) {
+          throw e.getCause();
+        }
       }
-    } catch (Exception e) {
-      if (e.getCause() instanceof SQLSyntaxError) {
-        throw (SQLSyntaxError) e.getCause();
+
+    } catch (Throwable t) {
+      if (t instanceof TajoException) {
+        throw (TajoException)t;
+      } else if (t instanceof TajoRuntimeException) {
+        throw (TajoException)t.getCause();
       } else {
-        throw new SQLSyntaxError(e.getCause().getMessage());
+        throw new TajoInternalError(t);
       }
     }
   }
@@ -281,8 +288,8 @@ public class GlobalEngine extends AbstractService {
     LOG.info("Optimized Query: \n" + plan.toString());
     LOG.info("=============================================");
 
-    annotatedPlanVerifier.verify(queryContext, state, plan);
-    verifyInsertTableSchema(queryContext, state, plan);
+    annotatedPlanVerifier.verify(state, plan);
+    verifyInsertTableSchema(state, plan);
 
     if (!state.verified()) {
       for (Throwable error : state.getErrors()) {
@@ -293,7 +300,7 @@ public class GlobalEngine extends AbstractService {
     return plan;
   }
 
-  private void verifyInsertTableSchema(QueryContext queryContext, VerificationState state, LogicalPlan plan) {
+  private void verifyInsertTableSchema(VerificationState state, LogicalPlan plan) {
     String storeType = PlannerUtil.getStoreType(plan);
     if (storeType != null) {
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
@@ -305,6 +312,10 @@ public class GlobalEngine extends AbstractService {
 
           TablespaceManager.get(tableDesc.getUri()).get().verifySchemaToWrite(tableDesc, outSchema);
 
+        } catch (TajoException t) {
+          state.addVerification(t);
+        } catch (TajoRuntimeException t) {
+          state.addVerification(t);
         } catch (Throwable t) {
           state.addVerification(SyntaxErrorUtil.makeSyntaxError(t.getMessage()));
         }

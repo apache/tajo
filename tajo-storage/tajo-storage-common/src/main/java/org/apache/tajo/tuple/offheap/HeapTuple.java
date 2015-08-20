@@ -22,6 +22,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -100,7 +101,7 @@ public class HeapTuple implements Tuple {
 
   @Override
   public void put(int fieldId, Tuple tuple) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Tuple).");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -110,12 +111,12 @@ public class HeapTuple implements Tuple {
 
   @Override
   public void put(int fieldId, Datum value) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Datum).");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void put(Datum[] values) {
-    throw new UnsupportedException("UnSafeTuple does not support put(Datum[]).");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -153,7 +154,7 @@ public class HeapTuple implements Tuple {
     case PROTOBUF:
       return getProtobufDatum(fieldId);
     default:
-      throw new UnsupportedException("Unknown type: " + types[fieldId]);
+      throw new TajoRuntimeException(new UnsupportedException("data type '" + types[fieldId] + "'"));
     }
   }
 
