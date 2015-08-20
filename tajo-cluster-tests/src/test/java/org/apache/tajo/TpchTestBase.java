@@ -107,11 +107,10 @@ public class TpchTestBase {
     return util.getTestingCluster();
   }
 
-  public void tearDown() throws IOException {
-    try {
-      Thread.sleep(2000);
-    } catch (InterruptedException e) {
+  public String getPath(String tableName) {
+    if (!nameMap.containsKey(tableName)) {
+      throw new RuntimeException("No such a table name '" + tableName + "'");
     }
-    util.shutdown();
+    return paths[nameMap.get(tableName)];
   }
 }
