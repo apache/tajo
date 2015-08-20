@@ -284,10 +284,7 @@ public class ExprTestBase {
         codegen = new EvalCodeGenerator(classLoader);
       }
 
-      if (evalContext.getAllScriptEngines().size() > 0) {
-        QueryExecutor.startScriptExecutors(queryContext, evalContext, targets);
-        Thread.sleep(100);
-      }
+      QueryExecutor.startScriptExecutors(queryContext, evalContext, targets);
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
@@ -329,7 +326,6 @@ public class ExprTestBase {
       } else {
         throw e;
       }
-    } catch (InterruptedException e) {
     } finally {
       if (schema != null) {
         cat.dropTable(qualifiedTableName);
