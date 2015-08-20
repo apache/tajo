@@ -41,7 +41,6 @@ import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.File;
 import java.io.OutputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;

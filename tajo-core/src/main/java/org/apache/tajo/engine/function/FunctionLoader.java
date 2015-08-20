@@ -45,6 +45,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.GENERAL;
@@ -99,7 +100,15 @@ public class FunctionLoader {
     if (codePaths != null) {
       FileSystem localFS = FileSystem.getLocal(conf);
       for (String codePathStr : codePaths) {
-        Path codePath = new Path(codePathStr);
+
+        Path codePath;
+        try {
+          codePath = new Path(codePathStr);
+        } catch (IllegalArgumentException e) {
+          LOG.warn(e);
+          continue;
+        }
+
         List<Path> filePaths = TUtil.newList();
         if (localFS.isDirectory(codePath)) {
           for (FileStatus file : localFS.listStatus(codePath, new PathFilter() {
