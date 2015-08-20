@@ -27,7 +27,7 @@ SORT(8)
               => out schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
               => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
          JOIN(18)(INNER)
-           => Join Cond: default.customer.c_custkey (INT4) = default.orders.o_custkey (INT4) AND default.lineitem.l_suppkey (INT4) = default.supplier.s_suppkey (INT4)
+           => Join Cond: (default.customer.c_custkey (INT4) = default.orders.o_custkey (INT4) AND default.lineitem.l_suppkey (INT4) = default.supplier.s_suppkey (INT4))
            => target list: ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)
            => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)}
            => in schema: {(8) ?multiply (FLOAT8), default.customer.c_custkey (INT4), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4), default.orders.o_custkey (INT4), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
@@ -37,7 +37,7 @@ SORT(8)
               => out schema: {(5) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4), default.orders.o_custkey (INT4)}
               => in schema: {(7) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_orderkey (INT4), default.lineitem.l_suppkey (INT4), default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
                SCAN(1) on default.orders
-                 => filter: default.orders.o_orderdate (TEXT) >= 1994-01-01 AND default.orders.o_orderdate (TEXT) < 1995-01-01
+                 => filter: (default.orders.o_orderdate (TEXT) >= 1994-01-01 AND default.orders.o_orderdate (TEXT) < 1995-01-01)
                  => target list: default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)
                  => out schema: {(2) default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
                  => in schema: {(9) default.orders.o_clerk (TEXT), default.orders.o_comment (TEXT), default.orders.o_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), default.orders.o_orderpriority (TEXT), default.orders.o_orderstatus (TEXT), default.orders.o_shippriority (INT4), default.orders.o_totalprice (FLOAT8)}
@@ -140,7 +140,7 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
 [q_0000000000000_0000] 5 => 6 (type=HASH_SHUFFLE, key=default.orders.o_orderkey (INT4), num=32)
 
 SCAN(1) on default.orders
-  => filter: default.orders.o_orderdate (TEXT) >= 1994-01-01 AND default.orders.o_orderdate (TEXT) < 1995-01-01
+  => filter: (default.orders.o_orderdate (TEXT) >= 1994-01-01 AND default.orders.o_orderdate (TEXT) < 1995-01-01)
   => target list: default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)
   => out schema: {(2) default.orders.o_custkey (INT4), default.orders.o_orderkey (INT4)}
   => in schema: {(9) default.orders.o_clerk (TEXT), default.orders.o_comment (TEXT), default.orders.o_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), default.orders.o_orderpriority (TEXT), default.orders.o_orderstatus (TEXT), default.orders.o_shippriority (INT4), default.orders.o_totalprice (FLOAT8)}
@@ -228,7 +228,7 @@ Block Id: eb_0000000000000_0000_000007 [INTERMEDIATE]
 [q_0000000000000_0000] 7 => 11 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
 
 JOIN(18)(INNER)
-  => Join Cond: default.customer.c_custkey (INT4) = default.orders.o_custkey (INT4) AND default.lineitem.l_suppkey (INT4) = default.supplier.s_suppkey (INT4)
+  => Join Cond: (default.customer.c_custkey (INT4) = default.orders.o_custkey (INT4) AND default.lineitem.l_suppkey (INT4) = default.supplier.s_suppkey (INT4))
   => target list: ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)
   => out schema: {(4) ?multiply (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.supplier.s_nationkey (INT4)}
   => in schema: {(8) ?multiply (FLOAT8), default.customer.c_custkey (INT4), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_suppkey (INT4), default.orders.o_custkey (INT4), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
