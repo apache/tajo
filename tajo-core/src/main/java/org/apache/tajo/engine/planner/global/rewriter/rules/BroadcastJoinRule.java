@@ -26,6 +26,7 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -178,7 +179,11 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           }
         }
         if (fullyBroadcastable && current.getScanNodes().length == 1) {
-          updateScanOfParentAsBroadcastable(plan, current);
+          try {
+            updateScanOfParentAsBroadcastable(plan, current);
+          } catch (NoScanNodeForChildEbException e) {
+            // This case is when the current has two or more inputs via union, and simply ignored.
+          }
         }
       }
     }
@@ -251,7 +256,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private void updateScanOfParentAsBroadcastable(MasterPlan plan, ExecutionBlock current) {
       ExecutionBlock parent = plan.getParent(current);
       if (parent != null && !plan.isTerminal(parent)) {
-        ScanNode scanForCurrent = GlobalPlanRewriteUtil.findScanForChildEb(current, parent);
+        ScanNode scanForCurrent = findScanForChildEb(current, parent);
         parent.addBroadcastRelation(scanForCurrent);
       }
     }
@@ -265,7 +270,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      * @return
      */
     private ExecutionBlock mergeTwoPhaseJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
-      ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(child, parent);
+      ScanNode scanForChild = findScanForChildEb(child, parent);
 
       parentFinder.set(scanForChild);
       parentFinder.find(parent.getPlan());
@@ -319,7 +324,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             left = unionNode;
           }
 
-          ScanNode scanForChild = GlobalPlanRewriteUtil.findScanForChildEb(plan.getExecBlock(representativeId), current);
+          ScanNode scanForChild = findScanForChildEb(plan.getExecBlock(representativeId), current);
           PlannerUtil.replaceNode(plan.getLogicalPlan(), current.getPlan(), scanForChild, topUnion);
 
           current.getUnionScanMap().clear();
@@ -331,5 +336,33 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   private static boolean isFullyBroadcastable(ExecutionBlock block) {
     return block.getBroadcastRelations().size() == block.getScanNodes().length;
+  }
+
+  /**
+   * Find a scan node in the plan of the parent EB corresponding to the output of the child EB.
+   *
+   * @param child
+   * @param parent
+   * @return ScanNode
+   */
+  private static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
+    ScanNode scanForChild = null;
+    for (ScanNode scanNode : parent.getScanNodes()) {
+      if (scanNode.getTableName().equals(child.getId().toString())) {
+        scanForChild = scanNode;
+        break;
+      }
+    }
+    if (scanForChild == null) {
+      throw new NoScanNodeForChildEbException(
+          "cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
+    }
+    return scanForChild;
+  }
+
+  private static class NoScanNodeForChildEbException extends RuntimeException  {
+    NoScanNodeForChildEbException(String message) {
+      super(message);
+    }
   }
 }

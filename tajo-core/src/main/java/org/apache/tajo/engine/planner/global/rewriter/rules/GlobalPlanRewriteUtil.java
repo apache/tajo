@@ -90,27 +90,6 @@ public class GlobalPlanRewriteUtil {
   }
 
   /**
-   * Find a scan node in the plan of the parent EB corresponding to the output of the child EB.
-   *
-   * @param child
-   * @param parent
-   * @return ScanNode
-   */
-  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) {
-    ScanNode scanForChild = null;
-    for (ScanNode scanNode : parent.getScanNodes()) {
-      if (scanNode.getTableName().equals(child.getId().toString())) {
-        scanForChild = scanNode;
-        break;
-      }
-    }
-    if (scanForChild == null) {
-      throw new TajoInternalError("cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
-    }
-    return scanForChild;
-  }
-
-  /**
    * Get a volume of a table of a partitioned table
    * @param scanNode ScanNode corresponding to a table
    * @return table volume (bytes)
