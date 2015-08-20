@@ -34,6 +34,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1792: tajo-cluster-tests is not available when it is used as an 
+    external maven module. (hyunsik)
+
     TAJO-1775: TAJO-1775: HCatalogStore need to be deprecated. (jaehwa)
 
     TAJO-1745: Add positive and negative test methods. (hyunsik)
