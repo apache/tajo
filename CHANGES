@@ -515,6 +515,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1787: Remove unused and legacy exceptions. (hyunsik)
+
     TAJO-1758: Some TajoRuntimeException should be restored as TajoException 
     in client side. (hyunsik)
 
