@@ -57,7 +57,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private TaskAttemptContext taskContext;
   private TajoConf tajoConf;
   private ScanNode scanNode;
-  private List<Fragment> fragments;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
       TableDesc tableDesc, int maxRow) throws IOException {
@@ -68,7 +67,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.tableDesc = tableDesc;
     this.maxRow = maxRow;
     this.rowEncoder = RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
-    this.fragments = Lists.newArrayList();
   }
 
   public void init() throws IOException, TajoException {
@@ -78,6 +76,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private void initSeqScanExec() throws IOException, TajoException {
     Tablespace tablespace = TablespaceManager.get(tableDesc.getUri()).get();
 
+    List<Fragment> fragments = Lists.newArrayList();
     if (tableDesc.hasPartition()) {
       FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
       fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc));
@@ -91,11 +90,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           new QueryContext(tajoConf), null,
           new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0),
           fragmentProtos, null);
-      try {
-        scanExec = new PartitionMergeScanExec(taskContext, (ScanNode) scanNode.clone(), fragmentProtos);
-      } catch (CloneNotSupportedException e) {
-        throw new IOException(e.getMessage(), e);
-      }
+      scanExec = new PartitionMergeScanExec(taskContext, scanNode, fragmentProtos);
       scanExec.init();
     }
   }
