@@ -9,7 +9,7 @@ public class TooLargeResultForCrossJoinException extends TajoException {
     super(e);
   }
 
-  public TooLargeResultForCrossJoinException() {
-    super(ResultCode.TOO_LARGE_RESULT_FOR_CROSS_JOIN);
+  public TooLargeResultForCrossJoinException(long currentThreshold) {
+    super(ResultCode.TOO_LARGE_RESULT_FOR_CROSS_JOIN, currentThreshold + "");
   }
 }

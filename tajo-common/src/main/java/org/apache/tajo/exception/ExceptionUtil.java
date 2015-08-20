@@ -80,6 +80,9 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNSUPPORTED_DATATYPE, UnsupportedDataTypeException.class);
     ADD_EXCEPTION(INVALID_TABLE_PROPERTY, InvalidTablePropertyException.class);
     ADD_EXCEPTION(MISSING_TABLE_PROPERTY, MissingTablePropertyException.class);
+
+    ADD_EXCEPTION(TOO_LARGE_INPUT_FOR_CROSS_JOIN, TooLargeInputForCrossJoinException.class);
+    ADD_EXCEPTION(TOO_LARGE_RESULT_FOR_CROSS_JOIN, TooLargeResultForCrossJoinException.class);
   }
 
   private static void ADD_EXCEPTION(Errors.ResultCode code, Class<? extends DefaultTajoException> cls) {

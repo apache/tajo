@@ -103,18 +103,21 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<InputContex
       if (estimatedLeftResultSize > context.verifyContext.broadcastThresholdForCrossJoin &&
           context.estimatedResultSize > context.verifyContext.broadcastThresholdForCrossJoin) {
         context.state.addVerification(new TooLargeInputForCrossJoinException(
-            context.nonBroadcastableRelations.toArray(new String[context.nonBroadcastableRelations.size()])
+            context.nonBroadcastableRelations.toArray(new String[context.nonBroadcastableRelations.size()]),
+            context.verifyContext.broadcastThresholdForCrossJoin
         ));
       }
 
       if (context.nonBroadcastableRelations.size() > 1) {
         context.state.addVerification(new TooLargeInputForCrossJoinException(
-            context.nonBroadcastableRelations.toArray(new String[context.nonBroadcastableRelations.size()])
+            context.nonBroadcastableRelations.toArray(new String[context.nonBroadcastableRelations.size()]),
+            context.verifyContext.broadcastThresholdForCrossJoin
         ));
       }
 
       if (context.verifyContext.crossJoinResultThreshold < context.estimatedResultSize) {
-        context.state.addVerification(new TooLargeResultForCrossJoinException());
+        context.state.addVerification(
+            new TooLargeResultForCrossJoinException(context.verifyContext.crossJoinResultThreshold));
       }
 
     }

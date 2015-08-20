@@ -63,7 +63,7 @@ public class GlobalPlanVerifier implements DirectedGraphVisitor<ExecutionBlockId
           for (int i = 0; i < relNames.length; i++) {
             relNames[i] = block.getScanNodes()[i].getCanonicalName();
           }
-          state.addVerification(new TooLargeInputForCrossJoinException(new String[]{}));
+          state.addVerification(new TooLargeInputForCrossJoinException(new String[]{}, 0));
         }
       }
     }
