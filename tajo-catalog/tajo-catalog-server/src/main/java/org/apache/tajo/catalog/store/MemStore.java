@@ -574,10 +574,19 @@ public class MemStore implements CatalogStore {
   }
 
   public List<PartitionDescProto> getAllPartitions() {
+    int tableId = 0, partitionId = 0;
+    List<TableDescriptorProto> tables = getAllTables();
     List<PartitionDescProto> protos = new ArrayList<PartitionDescProto>();
-    Set<String> tables = partitions.keySet();
-    for (String table : tables) {
-      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(table);
+
+    Set<String> partitionTables = partitions.keySet();
+    for (String partitionTable : partitionTables) {
+      for (TableDescriptorProto table : tables) {
+        if (table.getName().equals(partitionTable)) {
+          tableId = table.getTid();
+        }
+      }
+
+      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(partitionTable);
       for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
         CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
 
@@ -585,14 +594,11 @@ public class MemStore implements CatalogStore {
 
         builder.setPartitionName(partitionDescProto.getPartitionName());
         builder.setPath(partitionDescProto.getPath());
-
-        // PARTITION_ID and TID is always necessary variables. In other CatalogStore excepting MemStore,
-        // all partitions would have PARTITION_ID and TID. But MemStore doesn't contain these variable values because
-        // it is implemented for test purpose. Thus, we need to set each variables to 0.
-        builder.setPartitionId(0);
-        builder.setTid(0);
+        builder.setPartitionId(partitionId);
+        builder.setTid(tableId);
 
         protos.add(builder.build());
+        partitionId++;
       }
     }
     return protos;
@@ -600,6 +606,8 @@ public class MemStore implements CatalogStore {
 
   public List<PartitionKeyProto> getAllPartitionKeys() {
     List<PartitionKeyProto> protos = new ArrayList<PartitionKeyProto>();
+    int partitionId = 0;
+
     Set<String> partitionTables = partitions.keySet();
     for (String partitionTable : partitionTables) {
       Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(partitionTable);
@@ -610,12 +618,13 @@ public class MemStore implements CatalogStore {
           PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
           builder.setColumnName(partitionKey.getColumnName());
           builder.setPartitionValue(partitionKey.getPartitionValue());
-          builder.setPartitionId(0);
+          builder.setPartitionId(partitionId);
           protos.add(builder.build());
         }
+
+        partitionId++;
       }
     }
-
     return protos;
   }
 

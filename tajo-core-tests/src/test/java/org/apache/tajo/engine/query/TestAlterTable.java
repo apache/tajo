@@ -77,8 +77,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
-    String simpleTableName = "partitioned_table";
-    String tableName = CatalogUtil.buildFQName(getCurrentDatabase(), simpleTableName);
+    String tableName = CatalogUtil.buildFQName("TestAlterTable", "partitioned_table");
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc retrieved = catalog.getTableDesc(tableName);
@@ -91,8 +90,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(getCurrentDatabase()
-      , simpleTableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -107,33 +105,10 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.exists(partitionPath));
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
-    boolean existPartition = false;
-    List<CatalogProtos.PartitionDescProto> allPartitions = catalog.getAllPartitions();
-    for (CatalogProtos.PartitionDescProto partition : allPartitions) {
-      if (partition.getPartitionName().equals("col3=1/col4=2")
-        && partition.getPath().equals(retrieved.getUri().toString() + "/col3=1/col4=2")
-        ){
-        existPartition = true;
-        break;
-      }
-    }
-    assertTrue(existPartition);
-
-    boolean existPartitionKey = false;
-    List<CatalogProtos.PartitionKeyProto> tablePartitionKeys = catalog.getAllPartitionKeys();
-    for (CatalogProtos.PartitionKeyProto partitionKey: tablePartitionKeys) {
-      if ((partitionKey.getColumnName().equals("col3") && partitionKey.getPartitionValue().equals("1")
-      || partitionKey.getColumnName().equals("col4") && partitionKey.getPartitionValue().equals("2"))) {
-        existPartitionKey = true;
-        break;
-      }
-    }
-    assertTrue(existPartitionKey);
-
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));
