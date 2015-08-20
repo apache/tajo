@@ -21,7 +21,6 @@ package org.apache.tajo.engine.planner.global.rewriter;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.PlanningException;
 
 /**
  * A rewrite rule for global plans

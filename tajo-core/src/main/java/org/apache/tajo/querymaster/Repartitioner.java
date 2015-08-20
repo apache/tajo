@@ -42,7 +42,6 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UndefinedTableException;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
@@ -108,11 +107,7 @@ public class Repartitioner {
 
       } else {
 
-        try {
-          stats[i] = GlobalPlanRewriteUtil.computeDescendentVolume(scans[i]);
-        } catch (PlanningException e) {
-          throw new IOException(e);
-        }
+        stats[i] = GlobalPlanRewriteUtil.computeDescendentVolume(scans[i]);
 
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.

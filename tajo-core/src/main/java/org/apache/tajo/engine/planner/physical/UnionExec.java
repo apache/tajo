@@ -21,8 +21,8 @@
  */
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -34,8 +34,7 @@ public class UnionExec extends BinaryPhysicalExec {
   public UnionExec(TaskAttemptContext context, PhysicalExec outer, PhysicalExec inner) {
     super(context, outer.getSchema(), inner.getSchema(), outer, inner);
     if (!outer.getSchema().equals(inner.getSchema())) {
-      throw new InvalidQueryException(
-          "The both schemas are not same");
+      throw new TajoInternalError("the both schemas are not same");
     }
   }
 
