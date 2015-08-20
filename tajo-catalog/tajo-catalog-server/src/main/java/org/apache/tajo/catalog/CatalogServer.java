@@ -999,9 +999,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request)
-        throws ServiceException {
-
+    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request) {
       rlock.lock();
 
       try {
@@ -1044,8 +1042,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetTablePartitionKeysResponse getAllPartitionKeys(RpcController controller, NullProto request) throws
-      ServiceException {
+    public GetTablePartitionKeysResponse getAllPartitionKeys(RpcController controller, NullProto request) {
       rlock.lock();
 
       try {
