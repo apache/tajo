@@ -1005,7 +1005,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<TablePartitionProto> getAllPartitions() {
+  public List<PartitionDescProto> getAllPartitions() {
     throw new UnsupportedOperationException();
   }
 

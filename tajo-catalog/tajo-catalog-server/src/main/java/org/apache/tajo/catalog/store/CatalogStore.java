@@ -105,7 +105,7 @@ public interface CatalogStore extends Closeable {
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
       UndefinedPartitionMethodException;
 
-  List<TablePartitionProto> getAllPartitions();
+  List<PartitionDescProto> getAllPartitions();
 
   List<PartitionKeyProto> getAllPartitionKeys();
 

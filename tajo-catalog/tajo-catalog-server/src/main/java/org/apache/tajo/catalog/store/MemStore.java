@@ -573,15 +573,15 @@ public class MemStore implements CatalogStore {
     }
   }
 
-  public List<TablePartitionProto> getAllPartitions() {
-    List<TablePartitionProto> protos = new ArrayList<TablePartitionProto>();
+  public List<PartitionDescProto> getAllPartitions() {
+    List<PartitionDescProto> protos = new ArrayList<PartitionDescProto>();
     Set<String> tables = partitions.keySet();
     for (String table : tables) {
       Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(table);
       for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
         CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
 
-        TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
+        PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
 
         builder.setPartitionName(partitionDescProto.getPartitionName());
         builder.setPath(partitionDescProto.getPath());

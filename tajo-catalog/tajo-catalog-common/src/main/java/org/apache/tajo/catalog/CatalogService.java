@@ -164,7 +164,7 @@ public interface CatalogService {
 
   List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
-  List<TablePartitionProto> getAllPartitions();
+  List<PartitionDescProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
     , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException;

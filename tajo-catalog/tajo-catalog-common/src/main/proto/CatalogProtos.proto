@@ -145,13 +145,6 @@ message TableOptionProto {
   required KeyValueProto keyval = 2;
 }
 
-message TablePartitionProto {
-  required int32 partition_id = 1;
-  required int32 tid = 2;
-  optional string partitionName = 3;
-  optional string path = 4;
-}
-
 message GetFunctionsResponse {
   required ReturnState state = 1;
   repeated FunctionDescProto functionDesc = 2;
@@ -247,7 +240,8 @@ message PartitionDescProto {
   required string partitionName = 1;
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
-  optional int32 id = 4;
+  optional int32 partition_id = 4;
+  optional int32 tid = 5;
 }
 
 message PartitionKeyProto {

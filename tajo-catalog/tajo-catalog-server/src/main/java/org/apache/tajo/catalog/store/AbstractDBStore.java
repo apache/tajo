@@ -1041,7 +1041,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (partitionDesc == null) {
         throw new UndefinedPartitionException(partitionName);
       }
-      dropPartition(partitionDesc.getId());
+      dropPartition(partitionDesc.getPartitionId());
       break;
     case SET_PROPERTY:
       setProperties(tableId, alterTableDescProto.getParams());
@@ -2045,7 +2045,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       if (res.next()) {
         builder = PartitionDescProto.newBuilder();
-        builder.setId(res.getInt(COL_PARTITIONS_PK));
+        builder.setPartitionId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
@@ -2130,12 +2130,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getAllPartitions() {
+  public List<PartitionDescProto> getAllPartitions() {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
+    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
 
     try {
       String sql = "SELECT A." + COL_PARTITIONS_PK + ", A." + COL_TABLES_PK + ", A.PARTITION_NAME, A.PATH "
@@ -2145,7 +2145,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
-        TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
+        PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
 
         builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
         builder.setTid(resultSet.getInt(COL_TABLES_PK));
@@ -2205,11 +2205,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
           // Delete existing partition and partition keys
           if (ifNotExists) {
-            pstmt1.setInt(1, partitionDesc.getId());
+            pstmt1.setInt(1, partitionDesc.getPartitionId());
             pstmt1.addBatch();
             pstmt1.clearParameters();
 
-            pstmt2.setInt(1, partitionDesc.getId());
+            pstmt2.setInt(1, partitionDesc.getPartitionId());
             pstmt2.addBatch();
             pstmt2.clearParameters();
           }

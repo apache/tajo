@@ -108,8 +108,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
     boolean existPartition = false;
-    List<CatalogProtos.TablePartitionProto> allPartitions = catalog.getAllPartitions();
-    for (CatalogProtos.TablePartitionProto partition : allPartitions) {
+    List<CatalogProtos.PartitionDescProto> allPartitions = catalog.getAllPartitions();
+    for (CatalogProtos.PartitionDescProto partition : allPartitions) {
       if (partition.getPartitionName().equals("col3=1/col4=2")
         && partition.getPath().equals(retrieved.getUri().toString() + "/col3=1/col4=2")
         ){

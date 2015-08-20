@@ -84,11 +84,6 @@ message GetPartitionsResponse {
   repeated PartitionDescProto partition = 2;
 }
 
-message GetTablePartitionsResponse {
-  required ReturnState state = 1;
-  repeated TablePartitionProto partition = 2;
-}
-
 message GetPartitionKeysResponse {
   required ReturnState state = 1;
   repeated PartitionKeyProto partitionKey = 2;
@@ -127,7 +122,7 @@ service CatalogProtocolService {
 
   rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
   rpc getPartitionsByTableName(PartitionIdentifierProto) returns (GetPartitionsResponse);
-  rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
+  rpc getAllPartitions(NullProto) returns (GetPartitionsResponse);
   rpc addPartitions(AddPartitionsProto) returns (ReturnState);
   rpc getAllPartitionKeys(NullProto) returns (GetPartitionKeysResponse);
 

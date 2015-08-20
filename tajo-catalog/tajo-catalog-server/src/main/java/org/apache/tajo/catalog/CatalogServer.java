@@ -999,11 +999,11 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request) {
+    public GetPartitionsResponse getAllPartitions(RpcController controller, NullProto request) {
       rlock.lock();
 
       try {
-        return GetTablePartitionsResponse.newBuilder()
+        return GetPartitionsResponse.newBuilder()
             .setState(OK)
             .addAllPartition(store.getAllPartitions())
             .build();
@@ -1011,7 +1011,7 @@ public class CatalogServer extends AbstractService {
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetTablePartitionsResponse.newBuilder()
+        return GetPartitionsResponse.newBuilder()
             .setState(returnError(t))
             .build();
 
