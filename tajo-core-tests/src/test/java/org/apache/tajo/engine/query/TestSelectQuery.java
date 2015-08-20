@@ -676,7 +676,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     try {
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned_load1");
       executeDDL("datetime_table_timezoned_ddl2.sql", null, "timezoned_load2");
-      executeString("insert overwrite into timezoned_load2 select * from timezoned_load1");
+      executeString("INSERT OVERWRITE INTO timezoned_load2 SELECT * FROM timezoned_load1");
 
       ResultSet res = executeQuery();
       assertResultSet(res, "testTimezonedTable3.result");
@@ -693,7 +693,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     try {
 
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned");
-      executeDDL("datetime_table_timezoned_orc_ddl.sql", "timezoned_orc", "timezoned_orc");
+      executeDDL("datetime_table_timezoned_orc_ddl.sql", null, "timezoned_orc");
 
       executeString("INSERT OVERWRITE INTO timezoned_orc SELECT * FROM timezoned");
 
@@ -702,7 +702,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
       cleanupQuery(res);
     } finally {
       executeString("DROP TABLE IF EXISTS timezoned");
-      executeString("DROP TABLE IF EXISTS timezoned_orc");
+      executeString("DROP TABLE IF EXISTS timezoned_orc PURGE");
     }
   }
   

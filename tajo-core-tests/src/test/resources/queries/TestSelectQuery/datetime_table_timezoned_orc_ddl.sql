@@ -1,4 +1,4 @@
-CREATE EXTERNAL TABLE ${0} (
+CREATE TABLE ${0} (
   t_timestamp  TIMESTAMP,
   t_date    DATE
-) USING ORC WITH ('timezone' = 'GMT+9') LOCATION ${table.path}
+) USING ORC WITH ('timezone' = 'GMT+9')
