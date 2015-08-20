@@ -36,12 +36,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.exception.SQLSyntaxError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
@@ -64,6 +60,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
@@ -215,19 +212,27 @@ public class GlobalEngine extends AbstractService {
     return JsonHelper.fromJson(json, Expr.class);
   }
 
-  public Expr buildExpressionFromSql(String sql, Session session) throws InterruptedException, IOException,
-      IllegalQueryStatusException {
+  public Expr buildExpressionFromSql(String sql, Session session) throws TajoException {
     try {
+
       if (session.getQueryCache() == null) {
         return analyzer.parse(sql);
+
       } else {
-        return (Expr) session.getQueryCache().get(sql.trim()).clone();
+        try {
+          return (Expr) session.getQueryCache().get(sql.trim()).clone();
+        } catch (ExecutionException e) {
+          throw e.getCause();
+        }
       }
-    } catch (Exception e) {
-      if (e.getCause() instanceof SQLSyntaxError) {
-        throw (SQLSyntaxError) e.getCause();
+
+    } catch (Throwable t) {
+      if (t instanceof TajoException) {
+        throw (TajoException)t;
+      } else if (t instanceof TajoRuntimeException) {
+        throw (TajoException)t.getCause();
       } else {
-        throw new SQLSyntaxError(e.getCause().getMessage());
+        throw new TajoInternalError(t);
       }
     }
   }

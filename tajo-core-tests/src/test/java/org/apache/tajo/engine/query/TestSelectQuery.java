@@ -55,6 +55,16 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testPositives() throws Exception {
+    runPositiveTests();
+  }
+
+  @Test
+  public final void testNegatives() throws Exception {
+    runNegativeTests();
+  }
+
+  @Test
   public final void testNonQualifiedNames() throws Exception {
     // select l_orderkey, l_partkey from lineitem;
     ResultSet res = executeQuery();
@@ -660,6 +670,25 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public void testLoadIntoTimezonedTable() throws Exception {
+    // Insert from timezoned table into another timezoned table
+
+    try {
+      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned_load1");
+      executeDDL("datetime_table_timezoned_ddl2.sql", null, "timezoned_load2");
+      executeString("insert overwrite into timezoned_load2 select * from timezoned_load1");
+
+      ResultSet res = executeQuery();
+      assertResultSet(res, "testTimezonedTable3.result");
+      executeString("SET TIME ZONE 'GMT'");
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS timezoned_load1");
+      executeString("DROP TABLE IF EXISTS timezoned_load2 PURGE");
+    }
+  }
+
+  @Test
   public void testTimeZonedORCTable() throws Exception {
     try {
 
@@ -765,32 +794,5 @@ public class TestSelectQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
-  }
-
-  @Test
-  @Option(withExplain = true)
-  @SimpleTest (
-      queries = @QuerySpec("select * from nation where (n_regionkey = 1 or n_name is not null) and (n_regionkey = 1 or n_comment is not null)")
-  )
-  public void testSelectWithCommonQuals1() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true)
-  @SimpleTest(
-      queries = @QuerySpec("select * from nation where (n_regionkey = 1 or n_name is not null) and (n_regionkey = 1 or n_name is not null)")
-  )
-  public void testSelectWithCommonQuals2() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true)
-  @SimpleTest(
-      queries = @QuerySpec("select * from nation where (n_regionkey = 1 and n_name is not null) or (n_regionkey = 1 and n_comment is not null)")
-  )
-  public void testSelectWithCommonQuals3() throws Exception {
-    runSimpleTests();
   }
 }

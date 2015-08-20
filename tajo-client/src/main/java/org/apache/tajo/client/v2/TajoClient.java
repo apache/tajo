@@ -18,6 +18,8 @@
 
 package org.apache.tajo.client.v2;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.exception.QueryFailedException;
 import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
@@ -29,6 +31,8 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 public class TajoClient implements Closeable {
+  private static Log LOG = LogFactory.getLog(TajoClient.class);
+
   /**
    * default client port number
    */
@@ -130,8 +134,12 @@ public class TajoClient implements Closeable {
     return delegate.executeSQLAsync(sql);
   }
 
-  public void close() throws IOException {
-    delegate.close();
+  public void close() {
+    try {
+      delegate.close();
+    } catch (IOException e) {
+      LOG.warn(e);
+    }
   }
 
   /**

@@ -527,7 +527,6 @@ public class TestTajoClient {
 
   @Test
   public final void testFailCreateTablePartitionedOtherExceptColumn() throws IOException, TajoException {
-    TajoConf conf = cluster.getConfiguration();
     final String tableName = "testFailCreateTablePartitionedOtherExceptColumn";
 
     assertFalse(client.existTable(tableName));

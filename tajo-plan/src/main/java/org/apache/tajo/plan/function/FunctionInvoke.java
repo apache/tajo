@@ -21,6 +21,7 @@ package org.apache.tajo.plan.function;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
@@ -47,7 +48,7 @@ public abstract class FunctionInvoke implements Cloneable {
     } else if (desc.getInvocation().hasPython()) {
       return new PythonFunctionInvoke(desc);
     } else {
-      throw new UnsupportedException(desc.getInvocation() + " is not supported");
+      throw new TajoRuntimeException(new UnsupportedException("function invocation '" + desc.getInvocation() + "'"));
     }
   }
 
