@@ -22,7 +22,6 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -267,15 +266,14 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
 
     private long estimateOutputVolume(ExecutionBlock block) {
-      // output volume = output row number * output row width
-      return SchemaUtil.estimateRowByteSizeWithSchema(block.getPlan().getOutSchema())
-          * estimateOutputRowNum(PlannerUtil.<JoinNode>findTopNode(block.getPlan(), NodeType.JOIN));
+      return estimateOutputVolumeInternal(PlannerUtil.<JoinNode>findTopNode(block.getPlan(), NodeType.JOIN));
     }
 
-    private long estimateOutputRowNum(LogicalNode node) throws TajoInternalError {
+    private long estimateOutputVolumeInternal(LogicalNode node) throws TajoInternalError {
 
       if (node instanceof RelationNode) {
         switch (node.getType()) {
+          case INDEX_SCAN:
           case SCAN:
             ScanNode scanNode = (ScanNode) node;
             if (scanNode.getTableDesc().getStats() == null) {
@@ -283,8 +281,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
               // broadcast method.
               return Long.MAX_VALUE;
             } else {
-              return scanNode.getTableDesc().getStats().getNumBytes() /
-                  SchemaUtil.estimateRowByteSizeWithSchema(scanNode.getTableDesc().getSchema());
+              return scanNode.getTableDesc().getStats().getNumBytes();
             }
           case PARTITIONS_SCAN:
             PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
@@ -297,44 +294,42 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
               if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
                 return 0;
               } else {
-                return pScanNode.getTableDesc().getStats().getNumBytes() /
-                    SchemaUtil.estimateRowByteSizeWithSchema(pScanNode.getTableDesc().getLogicalSchema());
+                return pScanNode.getTableDesc().getStats().getNumBytes();
               }
             }
           case TABLE_SUBQUERY:
-            return estimateOutputRowNum(((TableSubQueryNode) node).getSubQuery());
-          default:
-            throw new IllegalArgumentException("Not RelationNode");
+            return estimateOutputVolumeInternal(((TableSubQueryNode) node).getSubQuery());
         }
       } else if (node instanceof UnaryNode) {
-        return estimateOutputRowNum(((UnaryNode) node).getChild());
+        return estimateOutputVolumeInternal(((UnaryNode) node).getChild());
       } else if (node instanceof UnionNode) {
         UnionNode binaryNode = (UnionNode) node;
-        return estimateOutputRowNum(binaryNode.getLeftChild()) + estimateOutputRowNum(binaryNode.getRightChild());
+        return estimateOutputVolumeInternal(binaryNode.getLeftChild()) +
+            estimateOutputVolumeInternal(binaryNode.getRightChild());
       } else if (node instanceof JoinNode) {
         JoinNode joinNode = (JoinNode) node;
         JoinSpec joinSpec = joinNode.getJoinSpec();
-        long leftChildRowNum = estimateOutputRowNum(joinNode.getLeftChild());
-        long rightChildRownum = estimateOutputRowNum(joinNode.getRightChild());
+        long leftChildVolume = estimateOutputVolumeInternal(joinNode.getLeftChild());
+        long rightChildVolume = estimateOutputVolumeInternal(joinNode.getRightChild());
         switch (joinNode.getJoinType()) {
           case CROSS:
-            return leftChildRowNum * rightChildRownum;
+            return leftChildVolume * rightChildVolume;
           case INNER:
-            return (long) (leftChildRowNum * rightChildRownum *
+            return (long) (leftChildVolume * rightChildVolume *
                 Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size()));
           case LEFT_OUTER:
-            return leftChildRowNum;
+            return leftChildVolume;
           case RIGHT_OUTER:
-            return rightChildRownum;
+            return rightChildVolume;
           case FULL_OUTER:
-            return leftChildRowNum < rightChildRownum ? leftChildRowNum : rightChildRownum;
+            return leftChildVolume < rightChildVolume ? leftChildVolume : rightChildVolume;
           case LEFT_ANTI:
           case LEFT_SEMI:
-            return (long) (leftChildRowNum *
+            return (long) (leftChildVolume *
                 Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size()));
           case RIGHT_ANTI:
           case RIGHT_SEMI:
-            return (long) (rightChildRownum *
+            return (long) (rightChildVolume *
                 Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, joinSpec.getPredicates().size()));
         }
       }

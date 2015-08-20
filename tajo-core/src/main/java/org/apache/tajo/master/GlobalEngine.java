@@ -35,14 +35,9 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
@@ -56,7 +51,6 @@ import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.*;
-import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.VerifyContext;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -291,12 +285,7 @@ public class GlobalEngine extends AbstractService {
       }
     }
 
-    VerifyContext verifyContext = new VerifyContext(
-        queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD),
-        queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD),
-        queryContext.getLong(SessionVars.CROSS_JOIN_RESULT_THRESHOLD)
-    );
-    postLogicalPlanVerifier.verify(verifyContext, state, plan);
+    postLogicalPlanVerifier.verify(queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD), state, plan);
     if (!state.verified()) {
       for (Throwable error : state.getErrors()) {
         throw error;

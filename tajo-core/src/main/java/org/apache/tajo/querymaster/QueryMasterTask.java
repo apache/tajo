@@ -36,9 +36,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.global.verifier.GlobalPlanVerifier;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
@@ -50,7 +48,6 @@ import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -59,8 +56,6 @@ import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.metrics.TajoMetrics;
-import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -72,8 +67,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
 import static org.apache.tajo.TajoProtos.QueryState;
-import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
@@ -359,16 +354,6 @@ public class QueryMasterTask extends CompositeService {
       }
       MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
       queryMasterContext.getGlobalPlanner().build(queryContext, masterPlan);
-
-//      // Checking is required to guarantee that cross join is always executed with broadcast join.
-//      GlobalPlanVerifier verifier = new GlobalPlanVerifier();
-//      VerificationState state = verifier.verify(masterPlan);
-//
-//      if (!state.verified()) {
-//        for (Throwable error : state.getErrors()) {
-//          throw error;
-//        }
-//      }
 
       query = new Query(queryTaskContext, queryId, querySubmitTime,
           "", queryTaskContext.getEventHandler(), masterPlan);

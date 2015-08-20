@@ -19,76 +19,56 @@
 package org.apache.tajo.plan.verifier;
 
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.exception.InvalidInputsForCrossJoin;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TooLargeInputForCrossJoinException;
-import org.apache.tajo.exception.TooLargeResultForCrossJoinException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.util.PlanVerifierUtil;
-import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.InputContext;
+import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.Context;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Set;
+import java.util.List;
 import java.util.Stack;
 
-public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<InputContext, Object> {
+/**
+ *
+ * PostLogicalPlanVerifier verifies the logical plan with some physical information.
+ */
+public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Object> {
 
-  public static class VerifyContext {
-    private long broadcastThresholdForNonCrossJoin;
-    private long broadcastThresholdForCrossJoin;
-    private long crossJoinResultThreshold;
-
-    public VerifyContext(long broadcastThresholdForNonCrossJoin,
-                         long broadcastThresholdForCrossJoin,
-                         long crossJoinResultThreshold) {
-      this.broadcastThresholdForNonCrossJoin = broadcastThresholdForNonCrossJoin;
-      this.broadcastThresholdForCrossJoin = broadcastThresholdForCrossJoin;
-      this.crossJoinResultThreshold = crossJoinResultThreshold;
-    }
-  }
-
-  static class InputContext {
-    VerifyContext verifyContext;
+  static class Context {
+    long bcastLimitForCrossJoin;
     VerificationState state;
-    double estimatedResultSize;
-    double estimatedRowNum;
-    Set<String> nonBroadcastableRelations = TUtil.newHashSet();
 
-    public InputContext(VerificationState state) {
+    public Context(VerificationState state, long bcastLimitForCrossJoin) {
       this.state = state;
+      this.bcastLimitForCrossJoin = bcastLimitForCrossJoin;
     }
   }
 
-  public VerificationState verify(VerifyContext verifyContext, VerificationState state, LogicalPlan plan)
+  public VerificationState verify(long broadcastThresholdForCrossJoin, VerificationState state, LogicalPlan plan)
       throws TajoException {
-    InputContext context = new InputContext(state);
-    context.verifyContext = verifyContext;
+    Context context = new Context(state, broadcastThresholdForCrossJoin);
     visit(context, plan, plan.getRootBlock());
     return context.state;
   }
 
   @Override
-  public Object visitJoin(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
+  public Object visitJoin(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
                           Stack<LogicalNode> stack) throws TajoException {
-    stack.push(node);
-    visit(context, plan, block, node.getLeftChild(), stack);
-    double estimatedLeftResultSize = context.estimatedResultSize;
-    double estimatedLeftRowNum = context.estimatedRowNum;
-    visit(context, plan, block, node.getRightChild(), stack);
-    stack.pop();
-
-    context.estimatedRowNum = PlanVerifierUtil.estimateOutputRowNumForJoin(node.getJoinSpec(),
-        estimatedLeftRowNum, context.estimatedRowNum);
-    context.estimatedResultSize = context.estimatedRowNum *
-        SchemaUtil.estimateRowByteSizeWithSchema(node.getOutSchema());
+    super.visitJoin(context, plan, block, node, stack);
 
     if (node.getJoinType() == JoinType.CROSS) {
+
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      //
       // Cross join is one of the most heavy operations. To avoid the trouble caused by exhausting resources to perform
       // cross join, we allow it only when it does not burden cluster too much.
+      //
+      // Currently, we simply allow the cross join only when it has at least one of inputs is a broadcastable relation.
+      // However, we can lose a lot of possible opportunities because this rule is too simple.
+      // This rule must be improved as follows.
       //
       // If the join type is cross, the following two restrictions are checked.
       // 1) The expected result size does not exceed the predefined threshold.
@@ -98,108 +78,71 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<InputContex
       // 1) There is at most a single relation which size is greater than the broadcast join threshold for non-cross
       // join.
       // 2) At least one of the cross join's inputs must not exceed the broadcast join threshold for cross join.
+      //
       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-      if (estimatedLeftResultSize > context.verifyContext.broadcastThresholdForCrossJoin &&
-          context.estimatedResultSize > context.verifyContext.broadcastThresholdForCrossJoin) {
-        context.state.addVerification(new TooLargeInputForCrossJoinException(
-            context.nonBroadcastableRelations.toArray(new String[context.nonBroadcastableRelations.size()]),
-            context.verifyContext.broadcastThresholdForCrossJoin
-        ));
-      }
+      if (!isSimpleRelationNode(node.getLeftChild()) && !isSimpleRelationNode(node.getRightChild())) {
+        context.state.addVerification(new InvalidInputsForCrossJoin());
+      } else {
 
-      if (context.nonBroadcastableRelations.size() > 1) {
-        context.state.addVerification(new TooLargeInputForCrossJoinException(
-            context.nonBroadcastableRelations.toArray(new String[context.nonBroadcastableRelations.size()]),
-            context.verifyContext.broadcastThresholdForCrossJoin
-        ));
-      }
+        boolean crossJoinAllowed = false;
+        List<String> largeRelationNames = TUtil.newList();
 
-      if (context.verifyContext.crossJoinResultThreshold < context.estimatedResultSize) {
-        context.state.addVerification(
-            new TooLargeResultForCrossJoinException(context.verifyContext.crossJoinResultThreshold));
+        if (isSimpleRelationNode(node.getLeftChild())) {
+          if (getTableVolume((ScanNode) node.getLeftChild()) <= context.bcastLimitForCrossJoin) {
+            crossJoinAllowed = true;
+          } else {
+            largeRelationNames.add(((ScanNode) node.getLeftChild()).getCanonicalName());
+          }
+        }
+
+        if (isSimpleRelationNode(node.getRightChild())) {
+          if (getTableVolume((ScanNode) node.getRightChild()) <= context.bcastLimitForCrossJoin) {
+            crossJoinAllowed = true;
+          } else {
+            largeRelationNames.add(((ScanNode) node.getRightChild()).getCanonicalName());
+          }
+
+          if (!crossJoinAllowed) {
+            context.state.addVerification(new TooLargeInputForCrossJoinException(
+                largeRelationNames.toArray(new String[largeRelationNames.size()]),
+                context.bcastLimitForCrossJoin));
+          }
+        }
       }
 
     }
     return null;
   }
 
-  @Override
-  public Object visitProjection(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, ProjectionNode node,
-                                Stack<LogicalNode> stack) throws TajoException {
-    super.visitProjection(context, plan, block, node, stack);
-    context.estimatedResultSize *= (double) SchemaUtil.estimateRowByteSizeWithSchema(node.getOutSchema()) /
-        (double) SchemaUtil.estimateRowByteSizeWithSchema(node.getInSchema());
-    return null;
-  }
-
-  @Override
-  public Object visitLimit(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, LimitNode node,
-                           Stack<LogicalNode> stack) throws TajoException {
-    super.visitLimit(context, plan, block, node, stack);
-    context.estimatedRowNum = node.getFetchFirstNum();
-    context.estimatedResultSize = node.getFetchFirstNum() *
-        SchemaUtil.estimateRowByteSizeWithSchema(node.getOutSchema());
-    return null;
-  }
-
-  @Override
-  public Object visitFilter(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, SelectionNode node,
-                            Stack<LogicalNode> stack) throws TajoException {
-    super.visitFilter(context, plan, block, node, stack);
-    context.estimatedResultSize *= GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR;
-    context.estimatedRowNum *= GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR;
-    return null;
-  }
-
-  @Override
-  public Object visitUnion(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
-                           Stack<LogicalNode> stack) throws TajoException {
-    stack.push(node);
-    if (plan != null) {
-      LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
-      visit(context, plan, leftBlock, leftBlock.getRoot(), stack);
-      double estimatedLeftResultSize = context.estimatedResultSize;
-      double estimatedLeftRowNum = context.estimatedRowNum;
-      LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
-      visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
-      context.estimatedResultSize += estimatedLeftResultSize;
-      context.estimatedRowNum += estimatedLeftRowNum;
+  private static boolean isSimpleRelationNode(LogicalNode node) {
+    if (node instanceof ScanNode) {
+      // PartitionedTableScanNode and IndexScanNode extends ScanNode.
+      // TableSubqueryNode is not the simple relation node.
+      return true;
     } else {
-      visit(context, null, null, node.getLeftChild(), stack);
-      double estimatedLeftResultSize = context.estimatedResultSize;
-      double estimatedLeftRowNum = context.estimatedRowNum;
-      visit(context, null, null, node.getRightChild(), stack);
-      context.estimatedResultSize += estimatedLeftResultSize;
-      context.estimatedRowNum += estimatedLeftRowNum;
+      return false;
     }
-
-    stack.pop();
-    return null;
   }
 
-  @Override
-  public Object visitScan(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
-                          Stack<LogicalNode> stack) throws TajoException {
-    context.estimatedResultSize = PlanVerifierUtil.getTableVolume(node);
-    context.estimatedRowNum = context.estimatedResultSize /
-        (double) SchemaUtil.estimateRowByteSizeWithSchema(node.getTableDesc().getLogicalSchema());
-    if (context.estimatedResultSize > context.verifyContext.broadcastThresholdForNonCrossJoin) {
-      context.nonBroadcastableRelations.add(node.getTableDesc().getName());
-    }
-    return null;
-  }
+  /**
+   * Get a volume of a table of a partitioned table
+   * @param scanNode ScanNode corresponding to a table
+   * @return table volume (bytes)
+   */
+  private static long getTableVolume(ScanNode scanNode) {
+    if (scanNode.getTableDesc().hasStats()) {
+      long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
+      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
+        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
+        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+          scanBytes = 0L;
+        }
+      }
 
-  @Override
-  public Object visitPartitionedTableScan(InputContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                          PartitionedTableScanNode node, Stack<LogicalNode> stack)
-      throws TajoException {
-    context.estimatedResultSize = PlanVerifierUtil.getTableVolume(node);
-    context.estimatedRowNum = context.estimatedResultSize /
-        (double) SchemaUtil.estimateRowByteSizeWithSchema(node.getTableDesc().getLogicalSchema());
-    if (context.estimatedResultSize > context.verifyContext.broadcastThresholdForNonCrossJoin) {
-      context.nonBroadcastableRelations.add(node.getTableDesc().getName());
+      return scanBytes;
+    } else {
+      return -1;
     }
-    return null;
   }
 }

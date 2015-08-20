@@ -103,19 +103,4 @@ public class TestMultipleJoinTypes extends TestJoinQuery {
   public final void testInnerAndOuterWithEmpty() throws Exception {
     runSimpleTests();
   }
-
-  @Test
-  public final void testCrossAndNonCross() throws Exception {
-    executeString("select * from nation cross join region left outer join lineitem on r_regionkey = l_orderkey inner join supplier on l_suppkey = s_suppkey");
-  }
-
-  @Test
-  public final void testCrossAndNonCross2() throws Exception {
-    executeString("select * from region full outer join lineitem on r_regionkey = l_orderkey full outer join supplier on s_suppkey = l_suppkey cross join nation");
-  }
-
-  @Test
-  public final void testCrossAndNonCross3() throws Exception {
-    executeString("select * from nation n1 cross join nation n2");
-  }
 }

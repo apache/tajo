@@ -83,6 +83,7 @@ public class ExceptionUtil {
 
     ADD_EXCEPTION(TOO_LARGE_INPUT_FOR_CROSS_JOIN, TooLargeInputForCrossJoinException.class);
     ADD_EXCEPTION(TOO_LARGE_RESULT_FOR_CROSS_JOIN, TooLargeResultForCrossJoinException.class);
+    ADD_EXCEPTION(INVALID_INPUTS_FOR_CROSS_JOIN, InvalidInputsForCrossJoin.class);
   }
 
   private static void ADD_EXCEPTION(Errors.ResultCode code, Class<? extends DefaultTajoException> cls) {
