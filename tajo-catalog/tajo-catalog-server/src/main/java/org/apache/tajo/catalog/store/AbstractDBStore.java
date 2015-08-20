@@ -2139,9 +2139,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       String sql = "SELECT A." + COL_PARTITIONS_PK + ", A." + COL_TABLES_PK + ", A.PARTITION_NAME, A.PATH "
-        + " FROM " + TB_PARTTIONS + " A "
-        + " WHERE A." + COL_PARTITIONS_PK + " > 0 "
-        + " AND A." + COL_TABLES_PK + " > 0 ";
+        + " FROM " + TB_PARTTIONS + " A ";
 
       conn = getConnection();
       stmt = conn.createStatement();
@@ -2289,10 +2287,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       String sql = " SELECT A." + COL_PARTITIONS_PK + ", A.COLUMN_NAME, A.PARTITION_VALUE " +
-        " FROM " + TB_PARTTION_KEYS + " A " +
-        " WHERE A." + COL_PARTITIONS_PK + " > 0 "+
-        " AND A.COLUMN_NAME IS NOT NULL " +
-        " AND A.PARTITION_VALUE IS NOT NULL ";
+        " FROM " + TB_PARTTION_KEYS + " A ";
 
       conn = getConnection();
       stmt = conn.createStatement();
