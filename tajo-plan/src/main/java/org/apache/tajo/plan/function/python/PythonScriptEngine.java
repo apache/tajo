@@ -27,16 +27,12 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.function.FunctionInvocation;
-import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.function.FunctionSupplement;
-import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -315,19 +311,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
   @Override
   public void shutdown() {
     process.destroy();
-    try {
-      int exitCode = process.waitFor();
-      if (systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
-        LOG.warn("Process exit code: " + exitCode);
-      } else {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Process exit code: " + exitCode);
-        }
-      }
-    } catch (InterruptedException e) {
-      LOG.warn(e.getMessage(), e);
-    }
-
     FileUtil.cleanup(LOG, stdin, stdout, stderr, inputHandler, outputHandler);
     stdin = null;
     stdout = stderr = null;
