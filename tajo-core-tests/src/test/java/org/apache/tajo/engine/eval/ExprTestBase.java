@@ -129,7 +129,6 @@ public class ExprTestBase {
    * @param query a query for execution
    * @param condition this parameter means whether it is for success case or is not for failure case.
    * @return
-   * @throws PlanningException
    */
   private static Target[] getRawTargets(QueryContext context, String query, boolean condition)
       throws TajoException, InvalidStatementException {

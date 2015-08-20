@@ -21,11 +21,6 @@ package org.apache.tajo.plan.joinorder;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.joinorder.FoundJoinOrder;
-import org.apache.tajo.plan.joinorder.JoinGraph;
-
-import java.util.Set;
 
 /**
  * An interface for join order algorithms
@@ -42,7 +37,6 @@ public interface JoinOrderAlgorithm {
    *                         relations. A vertex can be a relation or a group of joined relations.
    *                         An edge represents a join relation between two vertexes.
    * @return found join order
-   * @throws org.apache.tajo.plan.PlanningException
    */
   FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext joinGraphContext)
       throws TajoException;

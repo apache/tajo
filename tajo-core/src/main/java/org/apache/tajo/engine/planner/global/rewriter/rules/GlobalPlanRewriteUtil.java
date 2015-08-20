@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
-import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
@@ -73,10 +71,8 @@ public class GlobalPlanRewriteUtil {
    * @param newChild
    * @param originalChild
    * @param parent
-   * @throws TajoInternalError
    */
-  public static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent)
-      throws TajoInternalError {
+  public static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent) {
     if (parent instanceof UnaryNode) {
       ((UnaryNode) parent).setChild(newChild);
     } else if (parent instanceof BinaryNode) {
@@ -91,28 +87,6 @@ public class GlobalPlanRewriteUtil {
     } else {
       throw new TajoInternalError(parent.getPID() + " seems to not have any children");
     }
-  }
-
-  /**
-   * Find a scan node in the plan of the parent EB corresponding to the output of the child EB.
-   *
-   * @param child
-   * @param parent
-   * @return
-   * @throws TajoInternalError
-   */
-  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) throws TajoInternalError {
-    ScanNode scanForChild = null;
-    for (ScanNode scanNode : parent.getScanNodes()) {
-      if (scanNode.getTableName().equals(child.getId().toString())) {
-        scanForChild = scanNode;
-        break;
-      }
-    }
-    if (scanForChild == null) {
-      throw new TajoInternalError("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
-    }
-    return scanForChild;
   }
 
   /**
@@ -139,7 +113,7 @@ public class GlobalPlanRewriteUtil {
   /**
    * It calculates the total volume of all descendent relation nodes.
    */
-  public static long computeDescendentVolume(LogicalNode node) throws TajoInternalError {
+  public static long computeDescendentVolume(LogicalNode node) {
 
     if (node instanceof RelationNode) {
       switch (node.getType()) {
@@ -194,9 +168,9 @@ public class GlobalPlanRewriteUtil {
       this.visit(root);
     }
 
-    public LogicalNode getFound() throws TajoInternalError {
+    public LogicalNode getFound() {
       if (found == null) {
-        throw new TajoInternalError("Cannot find the parent of " + target.getPID());
+        throw new TajoInternalError("cannot find the parent of " + target.getPID());
       }
       return this.found;
     }

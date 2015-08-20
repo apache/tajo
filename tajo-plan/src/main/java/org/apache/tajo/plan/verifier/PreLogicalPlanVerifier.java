@@ -160,6 +160,14 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
+  private void assertRelationSchema(Context context, CreateTable createTable) {
+    for (ColumnDefinition colDef : createTable.getTableElements()) {
+      if (colDef.isMapType()) {
+        context.state.addVerification(new UnsupportedException("map type"));
+      }
+    }
+  }
+
   private boolean assertRelationNoExistence(Context context, String tableName) {
     String qualifiedName;
 
@@ -231,12 +239,19 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   @Override
   public Expr visitCreateTable(Context context, Stack<Expr> stack, CreateTable expr) throws TajoException {
     super.visitCreateTable(context, stack, expr);
+
     if (!expr.isIfNotExists()) {
       assertRelationNoExistence(context, expr.getTableName());
     }
+
+    if (expr.hasTableElements()) {
+      assertRelationSchema(context, expr);
+    }
+
     if (expr.hasStorageType()) {
       assertSupportedStoreType(context.state, expr.getStorageType());
     }
+
     return expr;
   }
 

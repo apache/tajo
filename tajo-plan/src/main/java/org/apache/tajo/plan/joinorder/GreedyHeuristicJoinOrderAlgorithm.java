@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -168,7 +167,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    *                     each edge is join condition.
    * @param vertexes candidate operators to be joined.
    * @return The best join pair among them
-   * @throws PlanningException
    */
   private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraphContext graphContext, Set<JoinVertex> vertexes)
       throws TajoException {
@@ -270,7 +268,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @param leftTarget left target join vertex
    * @param rightTarget right target join vertex
    * @return If there is no join edge between two vertexes, it returns null.
-   * @throws PlanningException
    */
   private static JoinEdge findJoin(final JoinEdgeFinderContext context, final JoinGraphContext graphContext,
                                    JoinVertex begin, final JoinVertex leftTarget, final JoinVertex rightTarget)

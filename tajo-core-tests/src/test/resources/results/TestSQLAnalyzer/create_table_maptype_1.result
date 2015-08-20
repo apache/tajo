@@ -14,20 +14,16 @@
     },
     {
       "ColumnDefName": "c",
-      "DataTypeName": "RECORD",
-      "Record": {
-        "Schema": [
-          {
-            "ColumnDefName": "d",
-            "DataTypeName": "TEXT",
-            "OpType": "DataType"
-          },
-          {
-            "ColumnDefName": "e",
-            "DataTypeName": "INT8",
-            "OpType": "DataType"
-          }
-        ]
+      "DataTypeName": "MAP",
+      "Map": {
+        "KeyType": {
+          "DataTypeName": "TEXT",
+          "OpType": "DataType"
+        },
+        "ValueType": {
+          "DataTypeName": "INT8",
+          "OpType": "DataType"
+        }
       },
       "OpType": "DataType"
     },

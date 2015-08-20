@@ -34,6 +34,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1792: tajo-cluster-tests is not available when it is used as an 
+    external maven module. (hyunsik)
+
     TAJO-1775: TAJO-1775: HCatalogStore need to be deprecated. (jaehwa)
 
     TAJO-1745: Add positive and negative test methods. (hyunsik)
@@ -511,6 +514,10 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1737: Implement SQL Parser rule for Map type. (hyunsik)
+
+    TAJO-1787: Remove unused and legacy exceptions. (hyunsik)
 
     TAJO-1758: Some TajoRuntimeException should be restored as TajoException 
     in client side. (hyunsik)
