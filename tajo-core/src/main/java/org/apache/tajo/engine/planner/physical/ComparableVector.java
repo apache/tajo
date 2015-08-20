@@ -32,6 +32,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -356,9 +357,10 @@ public class ComparableVector {
       case TEXT: case CHAR: case BLOB: return 7;
       case INET4: return 8;
       case NULL_TYPE: return -1;
+      default:
+        throw new TajoRuntimeException(new UnsupportedException("data type '" + type.name() + "'"));
     }
-    // todo
-    throw new UnsupportedException(type.name());
+
   }
 
   private static TupleType[] tupleTypes(Schema schema, int[] keyIndex) {

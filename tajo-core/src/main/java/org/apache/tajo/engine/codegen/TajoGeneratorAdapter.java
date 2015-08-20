@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.MethodVisitor;
@@ -620,7 +621,7 @@ class TajoGeneratorAdapter {
       invokeVirtual(Datum.class, "asChars", String.class, new Class[]{});
       break;
     default:
-      throw new UnsupportedException("Unsupported type: " + type);
+      throw new TajoRuntimeException(new UnsupportedException("data type '" + type + "'"));
     }
 
     pushNullFlag(true);

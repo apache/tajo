@@ -34,6 +34,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1775: TAJO-1775: HCatalogStore need to be deprecated. (jaehwa)
+
     TAJO-1745: Add positive and negative test methods. (hyunsik)
  
     TAJO-1757: Add examples for TajoClient v2. (hyunsik)
@@ -226,6 +228,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1781: Join condition is still not found when it exists in OR clause. i
+    (jihoon)
 
     TAJO-1777: JsonLineDeserializer returns invalid unicode text, 
     if contains control character. (jinho)
@@ -498,6 +503,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1758: Some TajoRuntimeException should be restored as TajoException 
+    in client side. (hyunsik)
 
     TAJO-1754: Implement several functions to handle json array. (jihoon)
 
