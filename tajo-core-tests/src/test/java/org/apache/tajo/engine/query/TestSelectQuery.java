@@ -689,7 +689,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testTimeZonedORCTable() throws Exception {
+  public void testTimezonedORCTable() throws Exception {
     try {
 
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned");
