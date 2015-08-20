@@ -225,7 +225,7 @@ public class TPCH extends BenchmarkSet {
 
   public static File getDataFile(String table) {
     try {
-      return new File(FileUtil.getResourcePath("tpch/" + table + ".tbl").toURI());
+      return new File(TPCH.class.getClassLoader().getResource("tpch/" + table + ".tbl").toURI());
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
