@@ -699,6 +699,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
       ResultSet res = executeQuery();
       assertResultSet(res, "testTimezonedTable3.result");
+      executeString("SET TIME ZONE 'GMT'");
       cleanupQuery(res);
     } finally {
       executeString("DROP TABLE IF EXISTS timezoned");
