@@ -23,7 +23,6 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.QueryStatus;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -435,7 +434,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
       assertEquals("integer", rsmd.getColumnTypeName(1));
       assertEquals("varchar", rsmd.getColumnTypeName(2));
-      assertEquals("float8", rsmd.getColumnTypeName(3));
+      assertEquals("double", rsmd.getColumnTypeName(3));
       assertEquals("timestamp", rsmd.getColumnTypeName(4));
       assertEquals("date", rsmd.getColumnTypeName(5));
       assertEquals("time", rsmd.getColumnTypeName(6));
