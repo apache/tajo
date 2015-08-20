@@ -120,8 +120,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(existPartition);
 
     boolean existPartitionKey = false;
-    List<CatalogProtos.TablePartitionKeyProto> tablePartitionKeys = catalog.getAllPartitionKeys();
-    for (CatalogProtos.TablePartitionKeyProto partitionKey: tablePartitionKeys) {
+    List<CatalogProtos.PartitionKeyProto> tablePartitionKeys = catalog.getAllPartitionKeys();
+    for (CatalogProtos.PartitionKeyProto partitionKey: tablePartitionKeys) {
       if ((partitionKey.getColumnName().equals("col3") && partitionKey.getPartitionValue().equals("1")
       || partitionKey.getColumnName().equals("col4") && partitionKey.getPartitionValue().equals("2"))) {
         existPartitionKey = true;

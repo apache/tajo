@@ -2278,12 +2278,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
   @Override
-  public List<TablePartitionKeyProto> getAllPartitionKeys() {
+  public List<PartitionKeyProto> getAllPartitionKeys() {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<TablePartitionKeyProto> partitions = new ArrayList<TablePartitionKeyProto>();
+    List<PartitionKeyProto> partitions = new ArrayList<PartitionKeyProto>();
 
     try {
       String sql = " SELECT A." + COL_PARTITIONS_PK + ", A.COLUMN_NAME, A.PARTITION_VALUE " +
@@ -2293,7 +2293,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
-        TablePartitionKeyProto.Builder builder = TablePartitionKeyProto.newBuilder();
+        PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
 
         builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
         builder.setColumnName(resultSet.getString("COLUMN_NAME"));

@@ -107,7 +107,7 @@ public interface CatalogStore extends Closeable {
 
   List<TablePartitionProto> getAllPartitions();
 
-  List<TablePartitionKeyProto> getAllPartitionKeys();
+  List<PartitionKeyProto> getAllPartitionKeys();
 
   void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
       , boolean ifNotExists) throws UndefinedDatabaseException,

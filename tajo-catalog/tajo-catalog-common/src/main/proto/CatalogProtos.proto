@@ -152,12 +152,6 @@ message TablePartitionProto {
   optional string path = 4;
 }
 
-message TablePartitionKeyProto {
-  required int32 partition_id = 1;
-  required string columnName = 2;
-  optional string partitionValue = 3;
-}
-
 message GetFunctionsResponse {
   required ReturnState state = 1;
   repeated FunctionDescProto functionDesc = 2;
@@ -260,6 +254,7 @@ message PartitionKeyProto {
   required string columnName = 1;
   optional string parentColumnName = 2;
   optional string partitionValue = 3;
+  optional int32 partition_id = 4;
 }
 
 message PartitionIdentifierProto {

@@ -491,10 +491,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<TablePartitionKeyProto> getAllPartitionKeys() {
+  public List<PartitionKeyProto> getAllPartitionKeys() {
     try {
       final BlockingInterface stub = getStub();
-      final GetTablePartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);
+      final GetPartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);
       ensureOk(response.getState());
 
       return response.getPartitionKeyList();
