@@ -679,7 +679,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("insert overwrite into timezoned_load2 select * from timezoned_load1");
 
       ResultSet res = executeQuery();
-      assertResultSet(res, "testTimeZonedTable3.result");
+      assertResultSet(res, "testTimezonedTable3.result");
       executeString("SET TIME ZONE 'GMT'");
       cleanupQuery(res);
     } finally {
