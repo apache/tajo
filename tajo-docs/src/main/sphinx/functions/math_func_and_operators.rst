@@ -87,6 +87,7 @@ Math Functions and Operators
 
   :param number: target real number
   :rtype: int8
+  :alias: ceiling
   :example:
 
   .. code-block:: sql
@@ -212,6 +213,19 @@ Math Functions and Operators
 
     select radians(45.0);
     > 0.7853981633974483
+
+.. function:: random(number int4)
+
+  Returns a pseudorandom number.
+
+  :param number: range restriction
+  :rtype: int4
+  :example:
+
+  .. code-block:: sql
+
+    select random(10);
+    > 4
 
 .. function:: round (number int|float)
 

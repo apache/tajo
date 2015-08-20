@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -107,7 +108,7 @@ public abstract class Tablespace {
    * @return Root URI
    */
   public URI getRootUri() {
-    throw new UnsupportedException(String.format("artibrary path '%s'", uri.toString()));
+    throw new TajoRuntimeException(new UnsupportedException(String.format("artibrary path '%s'", uri.toString())));
   }
 
   /**

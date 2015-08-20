@@ -21,7 +21,6 @@ package org.apache.tajo.exception;
 import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.StringUtils;
 
 import java.util.Map;
 
@@ -135,6 +134,18 @@ public class ErrorMessages {
 
   }
 
+  public static String concat(String[] args) {
+    StringBuilder sb = new StringBuilder();
+    boolean first = true;
+    for (String s : args) {
+      if (!first) {
+        sb.append(",");
+      }
+      sb.append(s);
+    }
+    return sb.toString();
+  }
+
   public static String getMessage(ResultCode code, String...args) {
     if (!MESSAGES.containsKey(code)) {
       throw new TajoInternalError("no error message for " + code);
@@ -151,7 +162,7 @@ public class ErrorMessages {
         }
 
       } else {
-        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + StringUtils.join(args));
+        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + concat(args));
       }
     }
   }

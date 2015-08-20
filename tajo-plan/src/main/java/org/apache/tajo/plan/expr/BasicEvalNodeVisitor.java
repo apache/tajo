@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
@@ -141,7 +142,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         break;
 
       default:
-        throw new UnsupportedException("Unknown EvalType: " + evalNode);
+        throw new TajoRuntimeException(new UnsupportedException("EvalType '" + evalNode + "'"));
     }
 
     return result;

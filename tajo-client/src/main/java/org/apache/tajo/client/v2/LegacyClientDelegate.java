@@ -192,7 +192,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public void release() {
+    public void close() {
       queryClient.closeQuery(id);
     }
 
@@ -332,7 +332,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public void release() {
+    public void close() {
       queryClient.closeQuery(queryId);
     }
 
@@ -434,52 +434,52 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
     @Override
     public InetSocketAddress getResourceTrackerAddress() throws ServiceTrackerException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public InetSocketAddress getCatalogAddress() throws ServiceTrackerException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public int getState(String masterName, TajoConf conf) throws ServiceTrackerException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public int formatHA(TajoConf conf) throws ServiceTrackerException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public void register() throws IOException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public void delete() throws IOException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public boolean isActiveMaster() {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public List<TajoMasterInfo> getMasters() throws IOException {
-      throw new NotImplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
   }
 

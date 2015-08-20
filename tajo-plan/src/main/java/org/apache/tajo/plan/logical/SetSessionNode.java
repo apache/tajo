@@ -19,7 +19,8 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.PlanString;
 
 public class SetSessionNode extends LogicalNode {
@@ -61,7 +62,7 @@ public class SetSessionNode extends LogicalNode {
 
   @Override
   public LogicalNode getChild(int idx) {
-    throw new UnsupportedException();
+    throw new TajoInternalError(new NotImplementedException());
   }
 
   @Override

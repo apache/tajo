@@ -45,6 +45,6 @@ public class ByteBufInputChannel extends InputChannel {
 
   @Override
   protected void implCloseChannel() throws IOException {
-    IOUtils.cleanup(null, channel, inputStream);
+    IOUtils.cleanup(null, channel);
   }
 }
