@@ -37,6 +37,7 @@ import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionCo
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
@@ -491,14 +492,15 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext(input, inSchema);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
-    Datum result;
+
+    Datum result = null;
     try {
       result = outputHandler.getNext().asDatum(0);
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
 
     return result;
@@ -526,23 +528,35 @@ public class PythonScriptEngine extends TajoScriptEngine {
       inputHandler.putNext(methodName, input, inSchema);
       stdin.flush();
     } catch (Throwable e) {
-      byte[] bytes;
-      try {
-        bytes = new byte[stderr.available()];
-        IOUtils.readFully(stderr, bytes);
-        String message = new String(bytes, Charset.defaultCharset());
-        throw new RuntimeException("Failed adding input to inputQueue while executing "
-            + methodName + " with " + input + ", caused by :" + message, e);
-      } catch (IOException e1) {
-        throw new RuntimeException("Failed adding input to inputQueue while executing "
-            + methodName + " with " + input, e1);
-      }
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue while executing "
+          + methodName + " with " + input, e));
     }
 
     try {
       outputHandler.getNext();
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
+    }
+  }
+
+  /**
+   * Get the standard error streams of the external process and throw the exception
+   *
+   * @throws RuntimeException
+   */
+  private void throwException(InputStream stderr, RuntimeException e) {
+    try {
+      if (stderr.available() > 0) {
+        byte[] bytes = new byte[Math.min(stderr.available(), 100 * StorageUnit.KB)];
+        IOUtils.readFully(stderr, bytes);
+        String message = new String(bytes, Charset.defaultCharset());
+
+        throw new RuntimeException("Python exception caused by: " + message, e);
+      } else {
+        throw e;
+      }
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe.getMessage(), ioe);
     }
   }
 
