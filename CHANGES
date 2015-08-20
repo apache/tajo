@@ -227,6 +227,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1790: TestTajoClientV2::testExecuteQueryAsyncWithListener 
+    occasionally is failed. (hyunsik)
+
     TAJO-1776: Fix Invalid column type in JDBC. (jinho)
 
     TAJO-1781: Join condition is still not found when it exists in OR clause.
