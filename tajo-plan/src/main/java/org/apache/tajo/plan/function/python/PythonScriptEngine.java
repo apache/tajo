@@ -544,7 +544,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
    *
    * @throws RuntimeException
    */
-  private void throwException(InputStream stderr, RuntimeException e) {
+  private void throwException(InputStream stderr, RuntimeException e) throws RuntimeException {
     try {
       if (stderr.available() > 0) {
         byte[] bytes = new byte[Math.min(stderr.available(), 100 * StorageUnit.KB)];
@@ -570,13 +570,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext("update_context", functionContext);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
     try {
       outputHandler.getNext();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
   }
 
@@ -590,13 +590,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext("get_context", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
     try {
       outputHandler.getNext(functionContext);
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
   }
 
@@ -611,14 +611,16 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext("get_partial_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
+    String result = null;
     try {
-      return outputHandler.getPartialResultString();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+      result = outputHandler.getPartialResultString();
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
+    return result;
   }
 
   /**
@@ -633,13 +635,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
       inputHandler.putNext("get_final_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
-    Datum result;
+    Datum result = null;
     try {
       result = outputHandler.getNext().asDatum(0);
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
 
     return result;
