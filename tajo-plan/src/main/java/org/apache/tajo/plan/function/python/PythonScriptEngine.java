@@ -33,7 +33,6 @@ import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionCo
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -324,10 +323,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   private void startUdfController() throws IOException {
     ProcessBuilder processBuilder = StreamingUtil.createProcess(buildCommand());
-    if (systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
-      processBuilder.redirectErrorStream(true);
-    }
-
     process = processBuilder.start();
   }
 
