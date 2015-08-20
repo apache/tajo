@@ -856,7 +856,7 @@ public class QueryTestCaseBase {
   }
 
   private Collection<Path> getNegativeQueryFiles() throws IOException {
-    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "nagative");
+    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "negative");
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
 
     if (!fs.exists(positiveQueryDir)) {
