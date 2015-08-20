@@ -670,7 +670,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testLoadIntoTimeZonedTable() throws Exception {
+  public void testLoadIntoTimezonedTable() throws Exception {
     // Insert from timezoned table into another timezoned table
 
     try {
