@@ -56,15 +56,6 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
     out.reset();
   }
 
-  public void assertMetaCommandFailures(String cmd) throws Exception {
-    Path resultFile = getResultFile(getMethodName() + ".result");
-    String expected = FileUtil.readTextFile(new File(resultFile.toUri()));
-
-    tajoCli.executeMetaCommand(cmd);
-    String consoleResult = new String(out.toByteArray());
-    assertEquals(expected, consoleResult);
-  }
-
   public void assertMetaCommandFailure(String cmd, String expectedMsg) throws Exception {
     tajoCli.executeMetaCommand(cmd);
     String consoleResult = new String(out.toByteArray());

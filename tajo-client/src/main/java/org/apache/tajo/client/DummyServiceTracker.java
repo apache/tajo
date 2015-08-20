@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerException;
@@ -43,7 +44,7 @@ public class DummyServiceTracker implements ServiceTracker {
 
   @Override
   public InetSocketAddress getUmbilicalAddress() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -53,17 +54,17 @@ public class DummyServiceTracker implements ServiceTracker {
 
   @Override
   public InetSocketAddress getResourceTrackerAddress() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public InetSocketAddress getCatalogAddress() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -96,6 +97,6 @@ public class DummyServiceTracker implements ServiceTracker {
 
   @Override
   public List<TajoMasterInfo> getMasters() throws IOException {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 }

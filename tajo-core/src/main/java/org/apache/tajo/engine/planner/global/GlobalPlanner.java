@@ -474,7 +474,7 @@ public class GlobalPlanner {
       rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
 
     } else {
-      throw new UnsupportedException("Cannot support a mix of other functions");
+      throw new UnsupportedException("a mix of other functions");
     }
 
     return rewritten;

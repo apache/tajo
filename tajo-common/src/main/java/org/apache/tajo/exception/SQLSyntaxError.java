@@ -22,7 +22,7 @@ package org.apache.tajo.exception;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class SQLSyntaxError extends TajoRuntimeException {
+public class SQLSyntaxError extends TajoException {
   private static final long serialVersionUID = 5388279335175632067L;
 
   public SQLSyntaxError(ReturnState state) {
