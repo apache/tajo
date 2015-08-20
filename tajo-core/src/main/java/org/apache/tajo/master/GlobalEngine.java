@@ -267,7 +267,6 @@ public class GlobalEngine extends AbstractService {
     VerificationState state = new VerificationState();
     preVerifier.verify(queryContext, state, expression);
     if (!state.verified()) {
-      StringBuilder sb = new StringBuilder();
 
       for (Throwable error : state.getErrors()) {
         throw error;
