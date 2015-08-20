@@ -675,7 +675,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
     try {
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned_load1");
-      executeDDL("datetime_table_timezoned_ddl.sql", "temp", "timezoned_load2");
+      executeDDL("datetime_table_timezoned_ddl2.sql", null, "timezoned_load2");
       executeString("insert overwrite into timezoned_load2 select * from timezoned_load1");
 
       ResultSet res = executeQuery();
