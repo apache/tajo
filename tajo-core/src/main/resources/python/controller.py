@@ -113,9 +113,6 @@ class PythonStreamingController:
         self.stream_error = os.fdopen(sys.stderr.fileno(), 'wb', 0)
 
         self.input_stream = sys.stdin
-        # TODO: support controller logging
-        self.log_stream = open(output_stream_path, 'a')
-        sys.stderr = open(error_stream_path, 'w')
 
         sys.path.append(file_path)
         sys.path.append(cache_path)
