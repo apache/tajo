@@ -1,6 +1,6 @@
 package org.apache.tajo.storage.pgsql;
 
-import com.facebook.presto.hive.shaded.com.google.common.collect.Sets;
+import com.google.common.collect.Sets;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.TajoClient;
