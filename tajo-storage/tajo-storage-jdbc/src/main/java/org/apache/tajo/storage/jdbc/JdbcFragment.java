@@ -16,28 +16,43 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.mysql;
+package org.apache.tajo.storage.jdbc;
 
-import org.apache.tajo.util.FileUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.storage.fragment.Fragment;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Statement;
+public class JdbcFragment implements Fragment, Cloneable {
+  String inputSourceId;
 
-public abstract class JdbcTablespaceTestBase {
+  String [] hostNames;
 
-  @BeforeClass
-  public static void setUp() throws Exception {
+  @Override
+  public String getTableName() {
+    return inputSourceId;
   }
 
-  @AfterClass
-  public static void tearDown() {
+  @Override
+  public CatalogProtos.FragmentProto getProto() {
+    return null;
   }
 
-  protected void prepareDefaultTables(Statement statement) throws IOException, SQLException {
-    statement.addBatch(FileUtil.readTextFileFromResource("table_ddl/all_types"));
-    statement.executeBatch();
+  @Override
+  public long getLength() {
+    return 0;
+  }
+
+  @Override
+  public String getKey() {
+    return null;
+  }
+
+  @Override
+  public String[] getHosts() {
+    return hostNames;
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return false;
   }
 }

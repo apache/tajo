@@ -16,14 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.mysql;
+package org.apache.tajo.storage.jdbc;
 
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.FormatProperty;
@@ -32,6 +36,7 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.Fragment;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
@@ -45,6 +50,7 @@ import java.util.List;
 public abstract class JdbcTablespace extends Tablespace {
 
   static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
+  static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
 
 
   public JdbcTablespace(String name, URI uri, JSONObject config) {
@@ -53,7 +59,6 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   protected void storageInit() throws IOException {
-
   }
 
   @Override
@@ -67,7 +72,9 @@ public abstract class JdbcTablespace extends Tablespace {
   }
 
   @Override
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode) throws IOException {
+  public List<Fragment> getSplits(String inputSourceId,
+                                  TableDesc tableDesc,
+                                  @Nullable EvalNode filterCondition) throws IOException {
     return null;
   }
 
@@ -83,12 +90,11 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   public FormatProperty getFormatProperty(TableMeta meta) {
-    return null;
+    return FORMAT_PROPERTY;
   }
 
   @Override
   public void close() {
-
   }
 
   @Override
@@ -97,42 +103,43 @@ public abstract class JdbcTablespace extends Tablespace {
                                           Schema inputSchema,
                                           SortSpec[] sortSpecs,
                                           TupleRange dataRange) throws IOException {
-    return new TupleRange[0];
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) {
-
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException {
-
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void prepareTable(LogicalNode node) throws IOException {
-
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan, Schema schema,
                           TableDesc tableDesc) throws IOException {
-    return null;
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public void rollbackTable(LogicalNode node) throws IOException {
-
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
   public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
-    return null;
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   public abstract MetadataProvider getMetadataProvider();

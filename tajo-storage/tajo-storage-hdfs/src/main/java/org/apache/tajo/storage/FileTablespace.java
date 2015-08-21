@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -44,6 +45,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.TUtil;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.text.NumberFormat;
@@ -635,8 +637,10 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
-    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getUri()));
+  public List<Fragment> getSplits(String inputSourceId,
+                                  TableDesc table,
+                                  @Nullable EvalNode filterCondition) throws IOException {
+    return getSplits(inputSourceId, table.getMeta(), table.getSchema(), new Path(table.getUri()));
   }
 
   @Override

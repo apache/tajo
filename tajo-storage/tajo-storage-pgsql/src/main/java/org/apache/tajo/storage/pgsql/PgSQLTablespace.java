@@ -21,7 +21,7 @@ package org.apache.tajo.storage.pgsql;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.storage.mysql.JdbcTablespace;
+import org.apache.tajo.storage.jdbc.JdbcTablespace;
 
 import java.net.URI;
 

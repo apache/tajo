@@ -18,10 +18,22 @@
 
 package org.apache.tajo.storage.pgsql;
 
+import org.apache.tajo.catalog.MetadataProvider;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.junit.Test;
 
+import java.io.IOException;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestPgSQLJdbcTableSpace {
@@ -37,5 +49,27 @@ public class TestPgSQLJdbcTableSpace {
 
     assertEquals(jdbcUrl, TablespaceManager.get(jdbcUrl).get().getUri().toASCIIString());
     assertTrue(TablespaceManager.get(jdbcUrl).get().getMetadataProvider() instanceof PgSQLMetadataProvider);
+  }
+
+  @Test(expected = TajoRuntimeException.class)
+  public void testCreateTable() throws IOException, TajoException {
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    space.createTable(null, false);
+  }
+
+  @Test(expected = TajoRuntimeException.class)
+  public void testDropTable() throws IOException, TajoException {
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    space.purgeTable(null);
+  }
+
+  @Test
+  public void testGetSplits() throws IOException, TajoException {
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    MetadataProvider provider = space.getMetadataProvider();
+    TableDesc table = provider.getTableDescriptor(null, "lineitem");
+    List<Fragment> fragments = space.getSplits("lineitem", table, null);
+    assertNotNull(fragments);
+    assertEquals(1, fragments.size());
   }
 }

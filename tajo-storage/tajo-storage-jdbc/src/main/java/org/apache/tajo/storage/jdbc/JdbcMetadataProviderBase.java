@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.mysql;
+package org.apache.tajo.storage.jdbc;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;

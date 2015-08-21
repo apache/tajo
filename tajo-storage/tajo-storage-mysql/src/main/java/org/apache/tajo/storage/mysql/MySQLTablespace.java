@@ -21,6 +21,7 @@ package org.apache.tajo.storage.mysql;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.jdbc.JdbcTablespace;
 
 import java.net.URI;
 

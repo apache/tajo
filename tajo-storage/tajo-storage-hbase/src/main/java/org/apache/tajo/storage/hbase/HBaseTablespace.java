@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
@@ -59,6 +60,7 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.*;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -418,12 +420,14 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode)
+  public List<Fragment> getSplits(String inputSourceId,
+                                  TableDesc tableDesc,
+                                  @Nullable EvalNode filterCondition)
       throws IOException, TajoException {
 
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
 
-    List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, scanNode);
+    List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, filterCondition);
     HTable htable = null;
     HBaseAdmin hAdmin = null;
 
@@ -439,7 +443,7 @@ public class HBaseTablespace extends Tablespace {
         List<Fragment> fragments = new ArrayList<Fragment>(1);
         Fragment fragment = new HBaseFragment(
             tableDesc.getUri(),
-            fragmentId, htable.getName().getNameAsString(),
+            inputSourceId, htable.getName().getNameAsString(),
             HConstants.EMPTY_BYTE_ARRAY,
             HConstants.EMPTY_BYTE_ARRAY,
             regLoc.getHostname());
@@ -517,7 +521,7 @@ public class HBaseTablespace extends Tablespace {
               }
             } else {
               HBaseFragment fragment = new HBaseFragment(tableDesc.getUri(),
-                  fragmentId,
+                  inputSourceId,
                   htable.getName().getNameAsString(),
                   fragmentStart,
                   fragmentStop,
@@ -790,14 +794,15 @@ public class HBaseTablespace extends Tablespace {
   }
 
   public List<IndexPredication> getIndexPredications(ColumnMapping columnMapping,
-                                                     TableDesc tableDesc, ScanNode scanNode)
+                                                     TableDesc tableDesc,
+                                                     @Nullable EvalNode filterCondition)
       throws IOException, MissingTablePropertyException, InvalidTablePropertyException {
 
     List<IndexPredication> indexPredications = new ArrayList<IndexPredication>();
     Column[] indexableColumns = getIndexableColumns(tableDesc);
     if (indexableColumns != null && indexableColumns.length == 1) {
       // Currently supports only single index column.
-      List<Set<EvalNode>> indexablePredicateList = findIndexablePredicateSet(scanNode, indexableColumns);
+      List<Set<EvalNode>> indexablePredicateList = findIndexablePredicateSet(filterCondition, indexableColumns);
       for (Set<EvalNode> eachEvalSet: indexablePredicateList) {
         Pair<Datum, Datum> indexPredicationValues = getIndexablePredicateValue(columnMapping, eachEvalSet);
         if (indexPredicationValues != null) {
@@ -814,12 +819,15 @@ public class HBaseTablespace extends Tablespace {
     return indexPredications;
   }
 
-  public List<Set<EvalNode>> findIndexablePredicateSet(ScanNode scanNode, Column[] indexableColumns) throws IOException {
+  public List<Set<EvalNode>> findIndexablePredicateSet(@Nullable EvalNode qual,
+                                                       Column[] indexableColumns) throws IOException {
+    Preconditions.checkNotNull(qual);
+
     List<Set<EvalNode>> indexablePredicateList = new ArrayList<Set<EvalNode>>();
 
     // if a query statement has a search condition, try to find indexable predicates
-    if (indexableColumns != null && scanNode.getQual() != null) {
-      EvalNode[] disjunctiveForms = AlgebraicUtil.toDisjunctiveNormalFormArray(scanNode.getQual());
+    if (indexableColumns != null && qual != null) {
+      EvalNode[] disjunctiveForms = AlgebraicUtil.toDisjunctiveNormalFormArray(qual);
 
       // add qualifier to schema for qual
       for (Column column : indexableColumns) {

@@ -113,7 +113,7 @@ public class Repartitioner {
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
         Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc);
+        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc, null);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
@@ -389,8 +389,8 @@ public class Repartitioner {
 
         } else {
 
-          Collection<Fragment> scanFragments = space.getSplits(eachScan.getCanonicalName(),
-              tableDesc, eachScan);
+          Collection<Fragment> scanFragments =
+              space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -512,7 +512,7 @@ public class Repartitioner {
         // set null to inputPaths in getFragmentsFromPartitionedTable()
         scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
       } else {
-        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan);
+        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
       }
 
       if (scanFragments != null) {

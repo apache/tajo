@@ -30,11 +30,13 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -120,14 +122,15 @@ public abstract class Tablespace {
   /**
    * Returns the splits that will serve as input for the scan tasks. The
    * number of splits matches the number of regions in a table.
-   * @param fragmentId The table name or previous ExecutionBlockId
+   * @param inputSourceId Input source identifier, which can be either relation name or execution block id
    * @param tableDesc The table description for the target data.
-   * @param scanNode The logical node for scanning.
+   * @param filterCondition filter condition which can prune splits if possible
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
-  public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
-                                           ScanNode scanNode) throws IOException, TajoException;
+  public abstract List<Fragment> getSplits(String inputSourceId,
+                                           TableDesc tableDesc,
+                                           @Nullable EvalNode filterCondition) throws IOException, TajoException;
 
   /**
    * It returns the splits that will serve as input for the non-forward query scanner such as 'select * from table1'.
@@ -188,19 +191,6 @@ public abstract class Tablespace {
   public void init(TajoConf tajoConf) throws IOException {
     this.conf = new TajoConf(tajoConf);
     storageInit();
-  }
-
-  /**
-   * Returns the splits that will serve as input for the scan tasks. The
-   * number of splits matches the number of regions in a table.
-   *
-   * @param fragmentId The table name or previous ExecutionBlockId
-   * @param tableDesc The table description for the target data.
-   * @return The list of input fragments.
-   * @throws java.io.IOException
-   */
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException, TajoException {
-    return getSplits(fragmentId, tableDesc, null);
   }
 
   /**

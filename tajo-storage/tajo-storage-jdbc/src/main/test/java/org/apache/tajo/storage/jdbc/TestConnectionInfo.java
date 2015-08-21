@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.mysql;
+package org.apache.tajo.storage.jdbc;
 
 import org.junit.Test;
 

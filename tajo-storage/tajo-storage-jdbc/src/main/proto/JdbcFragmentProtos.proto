@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.pgsql;
+option java_package = "org.apache.tajo.storage.jdbc";
+option java_outer_classname = "JdbcFragmentProtos";
+option optimize_for = SPEED;
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
 
-import org.apache.tajo.storage.jdbc.JdbcMetadataProviderBase;
+import "CatalogProtos.proto";
 
-import javax.annotation.Nullable;
-import java.util.Collection;
-
-public class PgSQLMetadataProvider extends JdbcMetadataProviderBase {
-
-  public PgSQLMetadataProvider(PgSQLTablespace space, String dbName) {
-    super(space, dbName);
-  }
-
-  @Override
-  protected String getJdbcDriverName() {
-    return "org.postgresql.Driver";
-  }
-
-  @Override
-  public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
-    return super.getTables("public", tablePattern);
-  }
+message JdbcFragmentProto {
+  required string uri = 1;
 }
