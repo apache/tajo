@@ -111,9 +111,6 @@ public class ErrorMessages {
     ADD_MESSAGE(TOO_LARGE_INPUT_FOR_CROSS_JOIN, "Cross join of large tables is not allowed: (%s). " +
         "To execute cross join, please increase BROADCAST_CROSS_JOIN_THRESHOLD " +
         "which is currently set to %s.", 2);
-    ADD_MESSAGE(TOO_LARGE_RESULT_FOR_CROSS_JOIN, "Estimated size of cross join is too large." +
-        "To execute cross join, please increase CROSS_JOIN_RESULT_THRESHOLD " +
-        "which is currently set to %s.", 1);
     ADD_MESSAGE(INVALID_INPUTS_FOR_CROSS_JOIN, "At least one of both inputs for the cross join must be a simple " +
         "relation.");
 

@@ -94,8 +94,6 @@ public enum SessionVars implements ConfigKey {
       Validators.min("0")),
   BROADCAST_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD,
       "restriction for the total bytes of broadcasted table for cross join", DEFAULT, Long.class, Validators.min("0")),
-  CROSS_JOIN_RESULT_THRESHOLD(ConfVars.$DIST_QUERY_CROSS_JOIN_RESULT_THRESHOLD,
-      "restriction for the result size the cross join", DEFAULT, Long.class, Validators.min("0")),
 
   JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb) ", DEFAULT,
       Integer.class, Validators.min("1")),

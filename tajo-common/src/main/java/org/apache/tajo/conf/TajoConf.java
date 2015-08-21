@@ -314,7 +314,6 @@ public class TajoConf extends Configuration {
         (long)5 * 1048576), // 5 MB
     $DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD("tajo.dist-query.broadcast.cross-join.threshold-bytes",
         (long)1 * 1048576), // 1 MB
-    $DIST_QUERY_CROSS_JOIN_RESULT_THRESHOLD("tajo.dist-query.cross-join.result.threshold-bytes", 1024 * 1048576), // 1 GB
 
     $DIST_QUERY_JOIN_TASK_VOLUME("tajo.dist-query.join.task-volume-mb", 128),
     $DIST_QUERY_SORT_TASK_VOLUME("tajo.dist-query.sort.task-volume-mb", 128),
