@@ -44,9 +44,6 @@ import java.util.*;
  * <h3>Broadcastable relation</h3>
  * A relation is broadcastable when its size is smaller than a given threshold.
  *
- * <h3>Assumetion</h3>
- * If every input of an execution block is broadcastable, the output of the execution block is also broadcastable.
- *
  * <h3>Rules to convert repartition join into broadcast join</h3>
  * <ul>
  *   <li>Given an EB containing a join and its child EBs, those EBs can be merged into a single EB if at least one child EB's output is broadcastable.</li>
@@ -67,11 +64,12 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private BroadcastJoinPlanBuilder planBuilder;
   private BroadcastJoinPlanFinalizer planFinalizer;
 
-  protected void init(MasterPlan plan, long thresholdForNonCrossJoin, long thresholdForCrossJoin) {
+  protected void init(MasterPlan plan, long thresholdForNonCrossJoin, long thresholdForCrossJoin,
+                      boolean broadcastForNonCrossJoinEnabled) {
     GlobalPlanRewriteUtil.ParentFinder parentFinder = new GlobalPlanRewriteUtil.ParentFinder();
     RelationSizeComparator relSizeComparator = new RelationSizeComparator();
     planBuilder = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder, thresholdForNonCrossJoin,
-        thresholdForCrossJoin);
+        thresholdForCrossJoin, broadcastForNonCrossJoinEnabled);
     planFinalizer = new BroadcastJoinPlanFinalizer(plan, relSizeComparator);
   }
 
@@ -84,11 +82,12 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
     long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD);
     long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD);
-    if (queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED) && thresholdForNonCrossJoin > 0
-        || thresholdForCrossJoin > 0) {
+    boolean broadcastJoinEnabled = queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
+    if (broadcastJoinEnabled &&
+        (thresholdForNonCrossJoin > 0 || thresholdForCrossJoin > 0)) {
       for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
         if (block.hasNode(NodeType.JOIN)) {
-          init(plan, thresholdForNonCrossJoin, thresholdForCrossJoin);
+          init(plan, thresholdForNonCrossJoin, thresholdForCrossJoin, broadcastJoinEnabled);
           return true;
         }
       }
@@ -153,17 +152,20 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private final RelationSizeComparator relSizeComparator;
     private final long thresholdForNonCrossJoin;
     private final long thresholdForCrossJoin;
+    private final boolean broadcastForNonCrossJoinEnabled;
     private final GlobalPlanRewriteUtil.ParentFinder parentFinder;
     private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = TUtil.newHashMap();
 
     public BroadcastJoinPlanBuilder(MasterPlan plan, RelationSizeComparator relationSizeComparator,
                                     GlobalPlanRewriteUtil.ParentFinder parentFinder,
-                                    long thresholdForNonCrossJoin, long thresholdForCrossJoin) {
+                                    long thresholdForNonCrossJoin, long thresholdForCrossJoin,
+                                    boolean broadcastForNonCrossJoinEnabled) {
       this.plan = plan;
       this.relSizeComparator = relationSizeComparator;
       this.thresholdForNonCrossJoin = thresholdForNonCrossJoin;
       this.thresholdForCrossJoin = thresholdForCrossJoin;
       this.parentFinder = parentFinder;
+      this.broadcastForNonCrossJoinEnabled = broadcastForNonCrossJoinEnabled;
     }
 
     @Override
@@ -185,7 +187,6 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private void visitLeafNode(ExecutionBlock current) {
       // Preserved-row relations must not be broadcasted to avoid data duplication.
       if (!current.isPreservedRow()) {
-        // Assume that the output size is equal to the input size.
         long totalVolume = 0;
         for (ScanNode scanNode : current.getScanNodes()) {
           totalVolume += GlobalPlanRewriteUtil.getTableVolume(scanNode);
@@ -217,15 +218,17 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           JoinType joinType = ((JoinNode)found).getJoinType();
 
           for (ExecutionBlock child : childs) {
-            updateBroadcastableRelForChildEb(child, joinType);
-            updateInputBasedOnChildEb(child, current);
+            if (!child.isPreservedRow()) {
+              updateBroadcastableRelForChildEb(child, joinType);
+              updateInputBasedOnChildEb(child, current);
+            }
           }
 
           if (current.hasBroadcastRelation()) {
             // The current execution block and its every child are able to be merged.
             for (ExecutionBlock child : childs) {
               addUnionNodeIfNecessary(unionScanMap, plan, child, current);
-              mergeTwoPhaseJoin(plan, child, current);
+              mergeTwoPhaseJoinIfPossible(plan, child, current);
             }
 
             checkTotalSizeOfBroadcastableRelations(current);
@@ -243,11 +246,11 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
 
     private void updateInputBasedOnChildEb(ExecutionBlock child, ExecutionBlock parent) {
-      if (!child.isPreservedRow() && isFullyBroadcastable(child)) {
+      if (isFullyBroadcastable(child)) {
         if (plan.isLeaf(child) && child.getScanNodes().length == 1) {
           try {
             updateScanOfParentAsBroadcastable(plan, child, parent);
-          } catch (TajoInternalError e) {
+          } catch (NoScanNodeForChildEbException e) {
             // This case is when the current has two or more inputs via union, and simply ignored.
           }
         } else {
@@ -259,7 +262,40 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private void updateBroadcastableRelForChildEb(ExecutionBlock child, JoinType joinType) {
       long threshold = joinType == JoinType.CROSS ? thresholdForCrossJoin : thresholdForNonCrossJoin;
       for (ScanNode scanNode : child.getScanNodes()) {
-        if (GlobalPlanRewriteUtil.getTableVolume(scanNode) <= threshold) {
+        long volume = GlobalPlanRewriteUtil.getTableVolume(scanNode);
+        if (volume >= 0 && volume <= threshold) {
+          // If the child eb is already visited, the below line may update its broadcast relations.
+          // Furthermore, this operation might mark the preserved-row relation as the broadcast relation with outer join.
+          // However, the rewriting result is still valid. Please consider the following query:
+          //
+          // EX) SELECT ... FROM a LEFT OUTER JOIN b on ... LEFT OUTER JOIN c on ...
+          //
+          // and assume that three relations of a, b, and c are all broadcastable.
+          // The initial global plan will be as follow:
+          //
+          // EB 2)
+          //     LEFT OUTER JOIN
+          //        /       \
+          //       c        EB_1
+          // EB 1)
+          //     LEFT OUTER JOIN
+          //        /       \
+          //       a         b
+          //
+          // When visiting EB_1, the bellow line marks only b as the broadcast relation because a is the preserved-row
+          // relation. However, when visiting EB_2, it marks both a and b as the broadcast relations because EB_1 is
+          // the null-supplying relation which has a and b as its inputs.
+          // Thus, the rewriting result will be like
+          //
+          // EB 2) broadcast: a, b
+          //     LEFT OUTER JOIN
+          //        /       \
+          //       c     LEFT OUTER JOIN
+          //                /       \
+          //               a         b
+          //
+          // This plan returns the same result as a plan that broadcasts the result of the first join.
+          // Obviously, the result must be valid.
           child.addBroadcastRelation(scanNode);
         }
       }
@@ -381,7 +417,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      * @param parent parent block who has join nodes
      * @return
      */
-    private ExecutionBlock mergeTwoPhaseJoin(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
+    private ExecutionBlock mergeTwoPhaseJoinIfPossible(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
       ScanNode scanForChild = findScanForChildEb(child, parent);
 
       parentFinder.set(scanForChild);
