@@ -21,12 +21,16 @@ package org.apache.tajo;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
@@ -68,10 +72,14 @@ public class TpchTestBase {
       schemas[i] = tpch.getSchema(names[i]);
     }
 
-    File file;
+    // create a temporal table
+    File tpchTablesDir = new File(new File(CommonTestingUtil.getTestDir().toUri()), "tpch");
+
     for (int i = 0; i < names.length; i++) {
-      file = TPCH.getDataFile(names[i]);
-      paths[i] = file.getAbsolutePath();
+      String str = FileUtil.readTextFileFromResource("tpch/" + names[i] + ".tbl");
+      Path tablePath = new Path(new Path(tpchTablesDir.toURI()), names[i] + ".tbl");
+      FileUtil.writeTextToFile(str, tablePath);
+      paths[i] = tablePath.toString();
     }
     try {
       Thread.sleep(1000);
@@ -99,11 +107,10 @@ public class TpchTestBase {
     return util.getTestingCluster();
   }
 
-  public void tearDown() throws IOException {
-    try {
-      Thread.sleep(2000);
-    } catch (InterruptedException e) {
+  public String getPath(String tableName) {
+    if (!nameMap.containsKey(tableName)) {
+      throw new RuntimeException("No such a table name '" + tableName + "'");
     }
-    util.shutdown();
+    return paths[nameMap.get(tableName)];
   }
 }

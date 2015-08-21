@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -84,7 +83,6 @@ public abstract class NameResolver {
    * @param block the current block
    * @param tableName The table name which can be either qualified or not.
    * @return A corresponding relation
-   * @throws PlanningException
    */
   public static RelationNode lookupTable(LogicalPlan.QueryBlock block, String tableName)
       throws AmbiguousTableException {
@@ -143,7 +141,6 @@ public abstract class NameResolver {
    * @param block The current query block
    * @param columnRef The column reference to be found
    * @return The found column
-   * @throws PlanningException
    */
   static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                            ColumnReferenceExpr columnRef)
@@ -320,7 +317,6 @@ public abstract class NameResolver {
    * @param block The current block
    * @param columnRef The column name
    * @return A pair of normalized qualifier and column name
-   * @throws PlanningException
    */
   static Pair<String, String> lookupQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
                                                               ColumnReferenceExpr columnRef)
