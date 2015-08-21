@@ -20,6 +20,7 @@ package org.apache.tajo.storage.mysql;
 
 import com.google.common.collect.ImmutableSet;
 import io.airlift.testing.mysql.TestingMySqlServer;
+import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.storage.TablespaceManager;
 import org.junit.BeforeClass;
 import org.junit.Test;

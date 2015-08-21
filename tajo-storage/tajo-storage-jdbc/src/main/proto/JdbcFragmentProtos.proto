@@ -26,4 +26,6 @@ import "CatalogProtos.proto";
 
 message JdbcFragmentProto {
   required string uri = 1;
+  required string input_source_id = 2;
+  repeated string hosts = 3;
 }

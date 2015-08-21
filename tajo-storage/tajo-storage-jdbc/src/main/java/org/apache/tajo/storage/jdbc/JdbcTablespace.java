@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.jdbc;
 
+import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
@@ -29,7 +30,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.Tablespace;
@@ -75,12 +75,7 @@ public abstract class JdbcTablespace extends Tablespace {
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc tableDesc,
                                   @Nullable EvalNode filterCondition) throws IOException {
-    return null;
-  }
-
-  @Override
-  public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments) throws IOException {
-    return null;
+    return Lists.newArrayList((Fragment)new JdbcFragment(inputSourceId, tableDesc.getUri().toASCIIString()));
   }
 
   @Override
