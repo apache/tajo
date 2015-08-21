@@ -572,16 +572,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testNonForwardQuery() throws Exception {
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:#b', " +
+    executeString("CREATE TABLE hbase_mapped_table1 (rk text, col1 text, col2 text, col3 int) " +
+        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table1', 'columns'=':key,col1:a,col2:,col3:#b', " +
         "'hbase.split.rowkeys'='010,040,060,080')").close();
 
-    assertTableExists("hbase_mapped_table");
+    assertTableExists("hbase_mapped_table1");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     HTable htable = null;
     try {
-      hAdmin.tableExists("hbase_table");
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
+      hAdmin.tableExists("hbase_table1");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table1");
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
 
@@ -596,11 +596,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from hbase_mapped_table");
+      ResultSet res = executeString("select * from hbase_mapped_table1");
       assertResultSet(res);
       res.close();
     } finally {
-      executeString("DROP TABLE hbase_mapped_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
       hAdmin.close();
       if (htable == null) {
         htable.close();

@@ -119,7 +119,7 @@ public class PlannerUtil {
         PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
     boolean noComplexComputation = false;
-    boolean prefixPartitionWhere = false;
+    boolean partitionWhere = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
       if (scanNode == null) {
@@ -154,33 +154,18 @@ public class PlannerUtil {
         }
       }
 
-      /**
-       * TODO: Remove isExternal check after resolving the following issues
-       * - TAJO-1416: INSERT INTO EXTERNAL PARTITIONED TABLE
-       * - TAJO-1441: INSERT INTO MANAGED PARTITIONED TABLE
-       */
-      if (!noWhere && scanNode.getTableDesc().isExternal() && scanNode.getTableDesc().getPartitionMethod() != null) {
+      if (!noWhere && scanNode.getTableDesc().hasPartition()) {
         EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
         Schema partSchema = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema();
         if (EvalTreeUtil.checkIfPartitionSelection(node, partSchema)) {
-          prefixPartitionWhere = true;
-          boolean isPrefix = true;
-          for (Column c : partSchema.getRootColumns()) {
-            String value = EvalTreeUtil.getPartitionValue(node, c.getSimpleName());
-            if (isPrefix && value == null)
-              isPrefix = false;
-            else if (!isPrefix && value != null) {
-              prefixPartitionWhere = false;
-              break;
-            }
-          }
+          partitionWhere = true;
         }
       }
     }
 
     return !checkIfDDLPlan(rootNode) &&
         (simpleOperator && noComplexComputation && isOneQueryBlock &&
-            noOrderBy && noGroupBy && (noWhere || prefixPartitionWhere) && noJoin && singleRelation);
+            noOrderBy && noGroupBy && (noWhere || partitionWhere) && noJoin && singleRelation);
   }
   
   /**
