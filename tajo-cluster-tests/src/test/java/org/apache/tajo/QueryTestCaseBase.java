@@ -161,23 +161,18 @@ public class QueryTestCaseBase {
   protected static LogicalPlanVerifier postVerifier;
 
   /** the base path of dataset directories */
-  protected static final Path datasetBasePath;
+  protected static Path datasetBasePath;
   /** the base path of query directories */
-  protected static final Path queryBasePath;
+  protected static Path queryBasePath;
   /** the base path of result directories */
-  protected static final Path resultBasePath;
+  protected static Path resultBasePath;
 
   static {
     testBase = TpchTestBase.getInstance();
     testingCluster = testBase.getTestingCluster();
     conf = testBase.getTestingCluster().getConfiguration();
     catalog = testBase.getTestingCluster().getMaster().getCatalog();
-    URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
-    datasetBasePath = new Path(datasetBaseURL.toString());
-    URL queryBaseURL = ClassLoader.getSystemResource("queries");
-    queryBasePath = new Path(queryBaseURL.toString());
-    URL resultBaseURL = ClassLoader.getSystemResource("results");
-    resultBasePath = new Path(resultBaseURL.toString());
+
 
     GlobalEngine engine = testingCluster.getMaster().getContext().getGlobalEngine();
     sqlParser = engine.getAnalyzer();
@@ -206,8 +201,14 @@ public class QueryTestCaseBase {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    conf = testBase.getTestingCluster().getConfiguration();
     client = testBase.getTestingCluster().newTajoClient();
+
+    URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
+    datasetBasePath = new Path(datasetBaseURL.toString());
+    URL queryBaseURL = ClassLoader.getSystemResource("queries");
+    queryBasePath = new Path(queryBaseURL.toString());
+    URL resultBaseURL = ClassLoader.getSystemResource("results");
+    resultBasePath = new Path(resultBaseURL.toString());
   }
 
   @AfterClass
@@ -855,7 +856,7 @@ public class QueryTestCaseBase {
   }
 
   private Collection<Path> getNegativeQueryFiles() throws IOException {
-    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "nagative");
+    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "negative");
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
 
     if (!fs.exists(positiveQueryDir)) {

@@ -21,7 +21,7 @@ package org.apache.tajo.engine.planner.global.rewriter.rules;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.*;
 
 import java.util.List;
@@ -71,10 +71,8 @@ public class GlobalPlanRewriteUtil {
    * @param newChild
    * @param originalChild
    * @param parent
-   * @throws PlanningException
    */
-  public static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent)
-      throws PlanningException {
+  public static void replaceChild(LogicalNode newChild, ScanNode originalChild, LogicalNode parent) {
     if (parent instanceof UnaryNode) {
       ((UnaryNode) parent).setChild(newChild);
     } else if (parent instanceof BinaryNode) {
@@ -84,33 +82,11 @@ public class GlobalPlanRewriteUtil {
       } else if (binary.getRightChild().equals(originalChild)) {
         binary.setRightChild(newChild);
       } else {
-        throw new PlanningException(originalChild.getPID() + " is not a child of " + parent.getPID());
+        throw new TajoInternalError(originalChild.getPID() + " is not a child of " + parent.getPID());
       }
     } else {
-      throw new PlanningException(parent.getPID() + " seems to not have any children");
+      throw new TajoInternalError(parent.getPID() + " seems to not have any children");
     }
-  }
-
-  /**
-   * Find a scan node in the plan of the parent EB corresponding to the output of the child EB.
-   *
-   * @param child
-   * @param parent
-   * @return
-   * @throws PlanningException
-   */
-  public static ScanNode findScanForChildEb(ExecutionBlock child, ExecutionBlock parent) throws PlanningException {
-    ScanNode scanForChild = null;
-    for (ScanNode scanNode : parent.getScanNodes()) {
-      if (scanNode.getTableName().equals(child.getId().toString())) {
-        scanForChild = scanNode;
-        break;
-      }
-    }
-    if (scanForChild == null) {
-      throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
-    }
-    return scanForChild;
   }
 
   /**
@@ -137,7 +113,7 @@ public class GlobalPlanRewriteUtil {
   /**
    * It calculates the total volume of all descendent relation nodes.
    */
-  public static long computeDescendentVolume(LogicalNode node) throws PlanningException {
+  public static long computeDescendentVolume(LogicalNode node) {
 
     if (node instanceof RelationNode) {
       switch (node.getType()) {
@@ -176,7 +152,7 @@ public class GlobalPlanRewriteUtil {
       return computeDescendentVolume(binaryNode.getLeftChild()) + computeDescendentVolume(binaryNode.getRightChild());
     }
 
-    throw new PlanningException("Invalid State");
+    throw new TajoInternalError("invalid state");
   }
 
   public static class ParentFinder implements LogicalNodeVisitor {
@@ -192,9 +168,9 @@ public class GlobalPlanRewriteUtil {
       this.visit(root);
     }
 
-    public LogicalNode getFound() throws PlanningException {
+    public LogicalNode getFound() {
       if (found == null) {
-        throw new PlanningException("Cannot find the parent of " + target.getPID());
+        throw new TajoInternalError("cannot find the parent of " + target.getPID());
       }
       return this.found;
     }

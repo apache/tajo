@@ -188,6 +188,9 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
       Thread.sleep(100);
     }
 
+    // avoid the race condition between future.isDone() and a listener.
+    Thread.sleep(1000);
+
     assertTrue(success.get());
     assertResultSet(resultContainer.get(0));
     resultContainer.get(0).close();
