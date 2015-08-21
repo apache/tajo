@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.jdbc;
+package org.apache.tajo.storage.mysql;
 
 import org.apache.tajo.exception.TajoInternalError;
 

@@ -187,22 +187,18 @@
       <artifactId>tajo-storage-common</artifactId>
       <scope>provided</scope>
     </dependency>
+
     <dependency>
-      <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-cluster-tests</artifactId>
-      <type>test-jar</type>
-      <scope>provided</scope>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
     </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
+
   </dependencies>
 
   <profiles>

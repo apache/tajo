@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.jdbc;
+package org.apache.tajo.storage.mysql;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
@@ -25,9 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UndefinedTablespaceException;
-import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 
@@ -101,7 +99,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     ResultSet res = null;
     List<String> tableNames = Lists.newArrayList();
     try {
-      res = connection.getMetaData().getTables(databaseName, schemaPattern, tablePattern, new String [] {});
+      res = connection.getMetaData().getTables(databaseName, schemaPattern, tablePattern, null);
       while(res.next()) {
         tableNames.add(res.getString("TABLE_NAME"));
       }
@@ -138,6 +136,8 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     case Types.FLOAT:
       return new TypeDesc(newSimpleDataType(Type.FLOAT4));
 
+    case Types.NUMERIC:
+    case Types.DECIMAL:
     case Types.DOUBLE:
       return new TypeDesc(newSimpleDataType(Type.FLOAT8));
 
@@ -166,7 +166,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       return new TypeDesc(newSimpleDataType(Type.BLOB));
 
     default:
-      throw new UnsupportedException("DATA_TYPE(" + typeId + ")");
+      throw SQLExceptionUtil.toSQLException(new UnsupportedDataTypeException(typeId + ""));
     }
   }
 
@@ -177,7 +177,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     try {
 
       // get table name
-      resultForTable = connection.getMetaData().getTables(databaseName, schemaName, tableName, new String[]{});
+      resultForTable = connection.getMetaData().getTables(databaseName, schemaName, tableName, null);
 
       if (!resultForTable.next()) {
         throw new UndefinedTablespaceException(tableName);

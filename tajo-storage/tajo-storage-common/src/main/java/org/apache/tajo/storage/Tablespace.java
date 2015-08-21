@@ -49,16 +49,20 @@ public abstract class Tablespace {
 
   protected final String name;
   protected final URI uri;
-  protected final JSONObject spec;
+  protected final JSONObject config;
   /** this space is visible or not. */
   protected boolean visible = true;
 
   protected TajoConf conf;
 
-  public Tablespace(String name, URI uri, JSONObject spec) {
+  public Tablespace(String name, URI uri, JSONObject config) {
     this.name = name;
     this.uri = uri;
-    this.spec = spec;
+    this.config = config;
+  }
+
+  public JSONObject getConfig() {
+    return config;
   }
 
   public void setVisible(boolean visible) {
@@ -107,8 +111,9 @@ public abstract class Tablespace {
   /**
    * Get Table URI
    *
-   * @param tableName
-   * @return
+   * @param databaseName Database name
+   * @param tableName Table name
+   * @return Table URI
    */
   public abstract URI getTableUri(String databaseName, String tableName);
 
@@ -420,6 +425,6 @@ public abstract class Tablespace {
   }
 
   public MetadataProvider getMetadataProvider() {
-    throw new UnsupportedException("Linked Metadata Provider for " + name);
+    throw new TajoRuntimeException(new UnsupportedException("Linked Metadata Provider for " + name));
   }
 }

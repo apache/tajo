@@ -19,25 +19,10 @@
 package org.apache.tajo.storage.mysql;
 
 import net.minidev.json.JSONObject;
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.FormatProperty;
-import org.apache.tajo.storage.StorageProperty;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TupleRange;
-import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.jdbc.*;
+import org.apache.tajo.storage.*;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.List;
-import java.util.Map;
 
 /**
  * <h3>URI Examples:</h3>
@@ -46,12 +31,14 @@ import java.util.Map;
  * </ul>
  */
 public class MySQLTablespace extends JdbcTablespace {
+  private final String database;
 
   public MySQLTablespace(String name, URI uri, JSONObject config) {
     super(name, uri, config);
+    database = ((JSONObject)config.get(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY)).getAsString("database");
   }
 
   public MetadataProvider getMetadataProvider() {
-    return new MySQLMetadataProvider(this, "db1");
+    return new MySQLMetadataProvider(this, database);
   }
 }

@@ -18,8 +18,6 @@
 
 package org.apache.tajo.storage.mysql;
 
-import org.apache.tajo.storage.jdbc.JdbcMetadataProviderBase;
-
 public class MySQLMetadataProvider extends JdbcMetadataProviderBase {
 
 

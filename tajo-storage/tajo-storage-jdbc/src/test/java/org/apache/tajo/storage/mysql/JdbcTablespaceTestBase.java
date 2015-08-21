@@ -16,10 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.jdbc;
+package org.apache.tajo.storage.mysql;
 
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -28,7 +26,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public abstract class JdbcTablespaceTestBase extends QueryTestCaseBase {
+public abstract class JdbcTablespaceTestBase {
 
   @BeforeClass
   public static void setUp() throws Exception {

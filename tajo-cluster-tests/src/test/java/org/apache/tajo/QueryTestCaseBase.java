@@ -19,6 +19,7 @@
 package org.apache.tajo;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
@@ -204,10 +205,13 @@ public class QueryTestCaseBase {
     client = testBase.getTestingCluster().newTajoClient();
 
     URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
+    Preconditions.checkNotNull(datasetBaseURL, "dataset directory is absent.");
     datasetBasePath = new Path(datasetBaseURL.toString());
     URL queryBaseURL = ClassLoader.getSystemResource("queries");
+    Preconditions.checkNotNull(queryBaseURL, "queries directory is absent.");
     queryBasePath = new Path(queryBaseURL.toString());
     URL resultBaseURL = ClassLoader.getSystemResource("results");
+    Preconditions.checkNotNull(resultBaseURL, "results directory is absent.");
     resultBasePath = new Path(resultBaseURL.toString());
   }
 

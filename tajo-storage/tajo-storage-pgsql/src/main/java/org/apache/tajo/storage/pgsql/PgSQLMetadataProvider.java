@@ -18,7 +18,10 @@
 
 package org.apache.tajo.storage.pgsql;
 
-import org.apache.tajo.storage.jdbc.JdbcMetadataProviderBase;
+import org.apache.tajo.storage.mysql.JdbcMetadataProviderBase;
+
+import javax.annotation.Nullable;
+import java.util.Collection;
 
 public class PgSQLMetadataProvider extends JdbcMetadataProviderBase {
 
@@ -29,5 +32,10 @@ public class PgSQLMetadataProvider extends JdbcMetadataProviderBase {
   @Override
   protected String getJdbcDriverName() {
     return "org.postgresql.Driver";
+  }
+
+  @Override
+  public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
+    return super.getTables("public", tablePattern);
   }
 }

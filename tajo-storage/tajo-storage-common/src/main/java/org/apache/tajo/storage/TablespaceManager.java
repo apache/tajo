@@ -77,6 +77,8 @@ public class TablespaceManager implements StorageService {
 
   public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class, JSONObject.class};
 
+  public static final String TABLESPACE_SPEC_CONFIGS_KEY = "configs";
+
   static {
     instance = new TablespaceManager();
   }
@@ -193,7 +195,7 @@ public class TablespaceManager implements StorageService {
             entry.getKey(),
             URI.create(spaceDetail.getAsString("uri")),
             Boolean.parseBoolean(spaceDetail.getAsString("default")),
-            (JSONObject) spaceDetail.get("configs"),
+            (JSONObject) spaceDetail.get(TABLESPACE_SPEC_CONFIGS_KEY),
             override);
       }
     }
@@ -310,7 +312,7 @@ public class TablespaceManager implements StorageService {
       existing = TABLE_SPACES.remove(space.getUri());
 
       // Add anotherone for test
-      registerTableSpace(space.name, space.uri, null, true, true);
+      registerTableSpace(space.name, space.uri, space.getConfig(), true, true);
     }
     // if there is an existing one, return it.
     return Optional.fromNullable(existing);

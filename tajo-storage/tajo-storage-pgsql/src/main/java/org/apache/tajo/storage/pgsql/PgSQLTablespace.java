@@ -20,7 +20,8 @@ package org.apache.tajo.storage.pgsql;
 
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.MetadataProvider;
-import org.apache.tajo.storage.jdbc.JdbcTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.mysql.JdbcTablespace;
 
 import java.net.URI;
 
@@ -31,12 +32,15 @@ import java.net.URI;
  * </ul>
  */
 public class PgSQLTablespace extends JdbcTablespace {
+  private final String database;
+
 
   public PgSQLTablespace(String name, URI uri, JSONObject config) {
     super(name, uri, config);
+    database = ((JSONObject)config.get(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY)).getAsString("database");
   }
 
   public MetadataProvider getMetadataProvider() {
-    return new PgSQLMetadataProvider(this, "db1");
+    return new PgSQLMetadataProvider(this, database);
   }
 }
