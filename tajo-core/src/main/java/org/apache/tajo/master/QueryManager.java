@@ -226,8 +226,9 @@ public class QueryManager extends CompositeService {
   public boolean startQueryJob(QueryId queryId, AllocationResourceProto allocation) {
 
     if (submittedQueries.get(queryId).allocateToQueryMaster(allocation)) {
-      QueryInProgress queryInProgress = submittedQueries.remove(queryId);
+      QueryInProgress queryInProgress = submittedQueries.get(queryId);
       runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
+      submittedQueries.remove(queryId);
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
           queryInProgress.getQueryInfo()));
       return true;
