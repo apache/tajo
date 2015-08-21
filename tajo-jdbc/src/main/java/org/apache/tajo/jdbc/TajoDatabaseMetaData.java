@@ -18,7 +18,6 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.client.CatalogAdminClient;

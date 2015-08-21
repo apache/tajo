@@ -39,6 +39,11 @@ import static org.junit.Assert.*;
 public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
+  public final void testNegatives() throws Exception {
+    runNegativeTests();
+  }
+
+  @Test
   public final void testVariousTypes() throws Exception {
     List<String> createdNames;
     if (testingCluster.isHiveCatalogStoreRunning()) {

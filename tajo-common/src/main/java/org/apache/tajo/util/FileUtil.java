@@ -22,6 +22,7 @@ import com.google.protobuf.Message;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.conf.TajoConf;
 
 import java.io.*;
 import java.net.URL;
@@ -132,8 +133,17 @@ public class FileUtil {
     return fileData.toString();
   }
 
-  public static void writeTextToStream(String text, OutputStream outputStream)
-      throws IOException {
+  public static void writeTextToFile(String text, Path path) throws IOException {
+    FileSystem fs = path.getFileSystem(new TajoConf());
+    if (!fs.exists(path.getParent())) {
+      fs.mkdirs(path.getParent());
+    }
+    FSDataOutputStream out = fs.create(path);
+    out.write(text.getBytes());
+    out.close();
+  }
+
+  public static void writeTextToStream(String text, OutputStream outputStream) throws IOException {
     try {
       outputStream.write(text.getBytes());
     } finally {
@@ -147,10 +157,6 @@ public class FileUtil {
     int exp = (int) (Math.log(bytes) / Math.log(unit));
     String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
     return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-  }
-
-  public static boolean isLocalPath(Path path) {
-    return path.toUri().getScheme().equals("file");
   }
 
 

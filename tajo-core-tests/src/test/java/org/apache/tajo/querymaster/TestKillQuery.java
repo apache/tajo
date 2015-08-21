@@ -75,14 +75,12 @@ public class TestKillQuery {
     cluster.startMiniClusterInLocal(1);
     conf = cluster.getConfiguration();
     client = cluster.newTajoClient();
-    File file = TPCH.getDataFile("lineitem");
     client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
-        + "using text location 'file://" + file.getAbsolutePath() + "'");
+        + "using text location '" + TpchTestBase.getInstance().getPath("lineitem") + "'");
     assertTrue(client.existTable("default.lineitem"));
 
-    file = TPCH.getDataFile("customer");
     client.executeQueryAndGetResult("create external table default.customer (c_custkey int, c_name text) "
-        + "using text location 'file://" + file.getAbsolutePath() + "'");
+        + "using text location '" + TpchTestBase.getInstance().getPath("customer") + "'");
     assertTrue(client.existTable("default.customer"));
   }
 
