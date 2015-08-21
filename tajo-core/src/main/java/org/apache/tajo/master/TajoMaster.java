@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.codahale.metrics.Gauge;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -405,6 +406,14 @@ public class TajoMaster extends CompositeService {
     super.serviceStop();
 
     LOG.info("Tajo Master main thread exiting");
+  }
+
+  /**
+   * This is only for unit tests.
+   */
+  @VisibleForTesting
+  public void refresh() {
+    catalogServer.refresh(TablespaceManager.getMetadataProviders());
   }
 
   public EventHandler getEventHandler() {

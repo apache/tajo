@@ -30,7 +30,7 @@ import java.net.URI;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestMysqlJdbcTableSpace {
+public class TestMySQLJdbcTableSpace {
   static String jdbcUrl = EmbedMySQLServer.getInstance().getJdbcUrl();
 
 

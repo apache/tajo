@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -84,7 +85,7 @@ public class CatalogServer extends AbstractService {
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
 
-  private final LinkedMetadataManager linkedMetadataManager;
+  private LinkedMetadataManager linkedMetadataManager;
   private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
@@ -186,6 +187,11 @@ public class CatalogServer extends AbstractService {
       store.close();
     }
     super.serviceStop();
+  }
+
+  @VisibleForTesting
+  public void refresh(Collection<MetadataProvider> metadataProviders) {
+    this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
   }
 
   public CatalogProtocolHandler getHandler() {
