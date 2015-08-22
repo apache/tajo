@@ -72,7 +72,7 @@ public class ExecutionBlockContext {
   private TajoWorker.WorkerContext workerContext;
   private String plan;
 
-  private ExecutionBlockSharedResource resource;
+  private final ExecutionBlockSharedResource resource;
 
   private TajoQueryEngine queryEngine;
   private RpcClientManager connManager;

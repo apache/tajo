@@ -18,11 +18,13 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
@@ -60,22 +62,32 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
 
-    // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
-        inner.getSchema(), false);
+    if (joinQual != null) {
+      // HashJoin only can manage equi join key pairs.
+      this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
+          inner.getSchema(), false);
 
-    leftKeyList = new Column[joinKeyPairs.size()];
-    rightKeyList = new Column[joinKeyPairs.size()];
+      leftKeyList = new Column[joinKeyPairs.size()];
+      rightKeyList = new Column[joinKeyPairs.size()];
 
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
-      rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+      for (int i = 0; i < joinKeyPairs.size(); i++) {
+        leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
+        rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+      }
+
+      leftNumCols = outer.getSchema().size();
+      rightNumCols = inner.getSchema().size();
+
+      leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
+    } else {
+      if (plan.getJoinType() != JoinType.CROSS) {
+        throw new TajoInternalError("Any join condition must be defined for " +plan.getJoinType());
+      }
+      joinKeyPairs = null;
+      rightNumCols = leftNumCols = -1;
+      leftKeyList = rightKeyList = null;
+      leftKeyExtractor = null;
     }
-
-    leftNumCols = outer.getSchema().size();
-    rightNumCols = inner.getSchema().size();
-
-    leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -109,6 +121,26 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   }
 
   protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
+    if (rightKeyList == null) {
+      return buildRightToHashTableForCrossJoin();
+    } else {
+      return buildRightToHashTableForNonCrossJoin();
+    }
+  }
+
+  protected TupleMap<TupleList> buildRightToHashTableForCrossJoin() throws IOException {
+    Tuple tuple;
+    TupleMap<TupleList> map = new TupleMap<>(1);
+    TupleList tuples = new TupleList();
+
+    while (!context.isStopped() && (tuple = rightChild.next()) != null) {
+      tuples.add(tuple);
+    }
+    map.put(null, tuples);
+    return map;
+  }
+
+  protected TupleMap<TupleList> buildRightToHashTableForNonCrossJoin() throws IOException {
     Tuple tuple;
     TupleMap<TupleList> map = new TupleMap<TupleList>(100000);
     KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);

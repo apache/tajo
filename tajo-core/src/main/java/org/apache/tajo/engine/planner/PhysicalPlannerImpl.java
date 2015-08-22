@@ -343,7 +343,11 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       }
 
     } else {
-      return new BNLJoinExec(context, plan, leftExec, rightExec);
+//      return new BNLJoinExec(context, plan, leftExec, rightExec);
+      LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
+      // returns two PhysicalExec. smaller one is 0, and larger one is 1.
+      PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+      return new HashJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
     }
   }
 
