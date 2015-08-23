@@ -330,20 +330,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
 
       switch (algorithm) {
-        case NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
-          return new NLJoinExec(context, plan, leftExec, rightExec);
-        case BLOCK_NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Block Nested Loop Join]");
-          return new BNLJoinExec(context, plan, leftExec, rightExec);
         default:
           // fallback algorithm
           LOG.error("Invalid Cross Join Algorithm Enforcer: " + algorithm.name());
-          return new BNLJoinExec(context, plan, leftExec, rightExec);
+          PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+          return new HashJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
       }
 
     } else {
-//      return new BNLJoinExec(context, plan, leftExec, rightExec);
       LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
       // returns two PhysicalExec. smaller one is 0, and larger one is 1.
       PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
@@ -360,12 +354,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
 
       switch (algorithm) {
-        case NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
-          return new NLJoinExec(context, plan, leftExec, rightExec);
-        case BLOCK_NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Block Nested Loop Join]");
-          return new BNLJoinExec(context, plan, leftExec, rightExec);
         case IN_MEMORY_HASH_JOIN:
           LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
           // returns two PhysicalExec. smaller one is 0, and larger one is 1.
