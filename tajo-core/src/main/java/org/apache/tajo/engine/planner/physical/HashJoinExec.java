@@ -35,8 +35,8 @@ public class HashJoinExec extends CommonHashJoinExec<TupleList> {
   @Override
   protected TupleMap<TupleList> convert(TupleMap<TupleList> hashed, boolean fromCache)
       throws IOException {
-//    return fromCache ? new TupleMap<TupleList>(hashed) : hashed;
-    return hashed;
+    return fromCache ? new TupleMap<TupleList>(hashed) : hashed;
+//    return hashed;
   }
 
   @Override
@@ -61,7 +61,7 @@ public class HashJoinExec extends CommonHashJoinExec<TupleList> {
 
       // getting corresponding right
       Iterable<Tuple> hashed;
-      if (leftKeyExtractor != null) {
+      if (!isCrossJoin) {
         hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       } else {
         hashed = tupleSlots.get(null);

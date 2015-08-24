@@ -42,13 +42,14 @@ import java.util.List;
  */
 public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
-  protected final List<Column[]> joinKeyPairs;
-
   // temporal tuples and states for nested loop join
   protected boolean first = true;
   protected TupleMap<T> tupleSlots;
 
   protected Iterator<Tuple> iterator;
+
+  protected final boolean isCrossJoin;
+  protected final List<Column[]> joinKeyPairs;
 
   protected final int rightNumCols;
   protected final int leftNumCols;
@@ -56,37 +57,51 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   protected final Column[] leftKeyList;
   protected final Column[] rightKeyList;
 
-  protected boolean finished;
   protected final KeyProjector leftKeyExtractor;
+
+  protected boolean finished;
 
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
 
-    if (joinQual != null) {
-      // HashJoin only can manage equi join key pairs.
-      this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
-          inner.getSchema(), false);
+    switch (plan.getJoinType()) {
 
-      leftKeyList = new Column[joinKeyPairs.size()];
-      rightKeyList = new Column[joinKeyPairs.size()];
+      case CROSS:
+        if (hasJoinQual) {
+          throw new TajoInternalError("Cross join cannot evaluate join conditions.");
+        } else {
+          isCrossJoin = true;
+          joinKeyPairs = null;
+          rightNumCols = leftNumCols = -1;
+          leftKeyList = rightKeyList = null;
+          leftKeyExtractor = null;
+        }
+        break;
 
-      for (int i = 0; i < joinKeyPairs.size(); i++) {
-        leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
-        rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
-      }
+      case INNER:
+        // Other join types except INNER join can have empty join condition.
+        if (!hasJoinQual) {
+          throw new TajoInternalError("Inner join must have any join conditions.");
+        }
+      default:
+        isCrossJoin = false;
+        // HashJoin only can manage equi join key pairs.
+        this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
+            inner.getSchema(), false);
 
-      leftNumCols = outer.getSchema().size();
-      rightNumCols = inner.getSchema().size();
+        leftKeyList = new Column[joinKeyPairs.size()];
+        rightKeyList = new Column[joinKeyPairs.size()];
 
-      leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
-    } else {
-      if (plan.getJoinType() != JoinType.CROSS) {
-        throw new TajoInternalError("Any join condition must be defined for " +plan.getJoinType());
-      }
-      joinKeyPairs = null;
-      rightNumCols = leftNumCols = -1;
-      leftKeyList = rightKeyList = null;
-      leftKeyExtractor = null;
+        for (int i = 0; i < joinKeyPairs.size(); i++) {
+          leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
+          rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+        }
+
+        leftNumCols = outer.getSchema().size();
+        rightNumCols = inner.getSchema().size();
+
+        leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
+        break;
     }
   }
 
@@ -121,7 +136,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   }
 
   protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
-    if (rightKeyList == null) {
+    if (isCrossJoin) {
       return buildRightToHashTableForCrossJoin();
     } else {
       return buildRightToHashTableForNonCrossJoin();

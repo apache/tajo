@@ -75,8 +75,6 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
     if (joinOption.indexOf("NoBroadcast") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
-          "" + 0);
     }
 
     if (joinOption.indexOf("Hash") >= 0) {

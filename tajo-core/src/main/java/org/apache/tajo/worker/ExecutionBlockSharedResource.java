@@ -43,7 +43,6 @@ public class ExecutionBlockSharedResource {
   private AtomicBoolean initializing = new AtomicBoolean(false);
   private volatile Boolean resourceInitSuccess = Boolean.valueOf(false);
   private final Object lock = new Object();
-//  private final AtomicBoolean lock = new AtomicBoolean(false);
 
   // Query
   private QueryContext context;
@@ -118,14 +117,6 @@ public class ExecutionBlockSharedResource {
   public synchronized Object getLock() {
     return lock;
   }
-
-//  public synchronized boolean getLock() {
-//    return lock.compareAndSet(false, true);
-//  }
-//
-//  public synchronized void releaseLock() {
-//    lock.set(false);
-//  }
 
   public boolean hasBroadcastCache(TableCacheKey key) {
     return TableCache.getInstance().hasCache(key);
