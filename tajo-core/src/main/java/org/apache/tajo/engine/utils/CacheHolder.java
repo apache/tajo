@@ -81,7 +81,7 @@ public interface CacheHolder<T> {
                                             CatalogProtos.FragmentProto[] fragments) throws IOException {
 
       return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(), canonicalName,
-          ctx.getUniqueKeyFromFragments());
+          TaskAttemptContext.getUniqueKeyFromFragments(fragments));
     }
   }
 }

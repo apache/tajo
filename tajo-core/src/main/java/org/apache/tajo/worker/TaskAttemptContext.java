@@ -374,39 +374,43 @@ public class TaskAttemptContext {
   }
 
   public String getUniqueKeyFromFragments() {
-    StringBuilder sb = new StringBuilder();
+    List<FragmentProto> allFragments = TUtil.newList();
+
     for (List<FragmentProto> fragments : fragmentMap.values()) {
+      allFragments.addAll(fragments);
+    }
+    return getUniqueKeyFromFragments(allFragments);
+  }
+
+  private static class FileFragmentComparator implements Comparator<FragmentProto> {
+
+    @Override
+    public int compare(FragmentProto o1, FragmentProto o2) {
+      FileFragment f1 = FragmentConvertor.convert(FileFragment.class, o1);
+      FileFragment f2 = FragmentConvertor.convert(FileFragment.class, o2);
+      return f1.compareTo(f2);
+    }
+  }
+
+  private final static FileFragmentComparator fileFragmentComparator = new FileFragmentComparator();
+
+  public static String getUniqueKeyFromFragments(FragmentProto[] fragments) {
+    if (fragments == null) {
+      return "";
+    } else {
+      Arrays.sort(fragments, fileFragmentComparator);
+      StringBuilder sb = new StringBuilder();
       for (FragmentProto f : fragments) {
         FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
         sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
       }
+      return sb.toString();
     }
-    return sb.toString();
   }
 
-//  private static class FragmentProtoComparator implements Comparator<FragmentProto> {
-//
-//    @Override
-//    public int compare(FragmentProto o1, FragmentProto o2) {
-//
-//    }
-//  }
-
-//  public static String getUniqueKeyFromFragments(FragmentProto[] fragments) {
-//    Arrays.sort(fragments);
-//    StringBuilder sb = new StringBuilder();
-//    for (List<FragmentProto> fragments : fragmentMap.values()) {
-//      for (FragmentProto f : fragments) {
-//        FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
-//        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
-//      }
-//    }
-//    return sb.toString();
-//  }
-//
-//  public static String getUniqueKeyFromFragments(List<FragmentProto> fragments) {
-//    return getUniqueKeyFromFragments(fragments.toArray(new FragmentProto[fragments.size()]));
-//  }
+  public static String getUniqueKeyFromFragments(List<FragmentProto> fragments) {
+    return getUniqueKeyFromFragments(fragments.toArray(new FragmentProto[fragments.size()]));
+  }
 
   public int hashCode() {
     return Objects.hashCode(taskId);

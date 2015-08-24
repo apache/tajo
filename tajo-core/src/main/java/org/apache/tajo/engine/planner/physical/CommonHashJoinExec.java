@@ -60,6 +60,8 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected boolean finished;
 
+  protected TableStats tableStatsOfCachedRightChild = null;
+
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
 
@@ -131,6 +133,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
         sharedResource.addBroadcastCache(key, holder);
       }
     }
+    this.tableStatsOfCachedRightChild = holder.getTableStats();
     this.tupleSlots = convert(holder.getData(), true);
   }
 
@@ -208,7 +211,8 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
       inputStats.setNumRows(leftInputStats.getNumRows());
     }
 
-    TableStats rightInputStats = rightChild.getInputStats();
+    TableStats rightInputStats = tableStatsOfCachedRightChild == null ?
+        rightChild.getInputStats() : tableStatsOfCachedRightChild;
     if (rightInputStats != null) {
       inputStats.setNumBytes(inputStats.getNumBytes() + rightInputStats.getNumBytes());
       inputStats.setReadBytes(inputStats.getReadBytes() + rightInputStats.getReadBytes());

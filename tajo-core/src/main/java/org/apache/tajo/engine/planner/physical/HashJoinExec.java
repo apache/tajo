@@ -36,7 +36,6 @@ public class HashJoinExec extends CommonHashJoinExec<TupleList> {
   protected TupleMap<TupleList> convert(TupleMap<TupleList> hashed, boolean fromCache)
       throws IOException {
     return fromCache ? new TupleMap<TupleList>(hashed) : hashed;
-//    return hashed;
   }
 
   @Override
