@@ -27,6 +27,7 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsByAlgebraRequest;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsByDirectSqlRequest;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -122,46 +123,38 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    */
   private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
-      throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+      throws IOException, UndefinedDatabaseException, UndefinedTableException,
+      UndefinedPartitionMethodException, UndefinedOperatorException {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
-    GetPartitionsByAlgebraRequest request = null;
-
-    boolean canUseDirectSql = true;
+    List<TablePartitionProto> partitions = null;
 
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 
-    // Currently, tajo doesn't provide Catalog::getPartitionsByDirectSql in MemStore.
-    // In this case, this will build path filter with searching filesystem directories.
-    if (store.equals("org.apache.tajo.catalog.store.MemStore")) {
-      canUseDirectSql = false;
-    }
-
-    if (canUseDirectSql) {
+    try {
       if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
-        request = buildDirectSQLForHive(splits[0], splits[1], partitionColumns,
+        GetPartitionsByDirectSqlRequest request = buildDirectSQLForHive(splits[0], splits[1], partitionColumns,
           conjunctiveForms);
+        partitions = catalog.getPartitionsByDirectSql(request);
       } else if (!store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")
         && catalog.existPartitions(splits[0], splits[1])) {
-        if (conjunctiveForms == null) {
-          request = buildDirectSQLForRDBMS(splits[0], splits[1], null);
-        } else {
-          request = buildDirectSQLForRDBMS(splits[0], splits[1], conjunctiveForms);
-        }
+        GetPartitionsByAlgebraRequest request = buildDirectSQLForRDBMS(splits[0], splits[1], conjunctiveForms);
+        partitions = catalog.getPartitionsByAlgebra(request);
       }
 
-      if (request != null) {
-        List<TablePartitionProto> partitions = catalog.getPartitionsByAlgebra(request);
+      if (partitions != null) {
         filteredPaths = new Path[partitions.size()];
         for (int i = 0; i < partitions.size(); i++) {
           filteredPaths[i] = new Path(partitions.get(i).getPath());
         }
       }
+    } catch (TajoRuntimeException e) {
+      partitions = null;
     }
 
-    if (!canUseDirectSql || (canUseDirectSql && request == null)) {
+    if (partitions == null || filteredPaths == null) {
       PathFilter [] filters;
       if (conjunctiveForms == null) {
         filters = buildAllAcceptingPathFilters(partitionColumns);
@@ -254,6 +247,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       ScanQualConverter convertor = new ScanQualConverter(databaseName + "." + tableName);
       convertor.visit(null, evalNode, new Stack<EvalNode>());
       request.setAlgebra(convertor.getResult().toJson());
+    } else {
+      request.setAlgebra("");
     }
 
     return request.build();
@@ -276,10 +271,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsByAlgebraRequest buildDirectSQLForHive(
+  public static GetPartitionsByDirectSqlRequest buildDirectSQLForHive(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
-    GetPartitionsByAlgebraRequest.Builder request = GetPartitionsByAlgebraRequest.newBuilder();
+    GetPartitionsByDirectSqlRequest.Builder request = GetPartitionsByDirectSqlRequest.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
@@ -336,7 +331,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  private static List<EvalNode> getAccumulatedFilters(Schema partitionColumns, EvalNode [] conjunctiveForms) {
+  private static List<EvalNode> getAccumulatedFilters(Schema partitionColumns, EvalNode[] conjunctiveForms) {
     List<EvalNode> accumulatedFilters = Lists.newArrayList();
     Column target;
 
@@ -443,7 +438,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException,
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 

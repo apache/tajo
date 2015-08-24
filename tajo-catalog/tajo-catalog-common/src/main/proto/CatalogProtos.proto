@@ -264,7 +264,7 @@ message PartitionIdentifierProto {
 message GetPartitionsByAlgebraRequest {
   required string databaseName = 1;
   required string tableName = 2;
-  optional string algebra = 3;
+  required string algebra = 3;
 }
 
 message GetPartitionsByDirectSqlRequest {

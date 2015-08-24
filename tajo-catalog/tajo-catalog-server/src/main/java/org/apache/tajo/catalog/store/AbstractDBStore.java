@@ -2169,20 +2169,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException{
-    throw new UnsupportedOperationException();
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request)
+    throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException {
+    throw new UndefinedOperatorException("getPartitionsByDirectSql");
   }
 
   @Override
   public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException{
+      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+      UndefinedOperatorException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
     ColumnProto column = null;
     int currentIndex = 1;
-    String selectStatement = null;
+    String directSQL = null;
 
     List<TablePartitionProto> partitions = TUtil.newList();
     List<PartitionFilterDescProto> partitionFilters = TUtil.newList();
@@ -2190,13 +2192,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       int databaseId = getDatabaseId(request.getDatabaseName());
       int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
+
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
 
       conn = getConnection();
-      selectStatement = getPartitionFilterSelectStatement(tableDesc.getTableName(), tableDesc.getPartition()
-          .getExpressionSchema().getFieldsList(), request.getAlgebra(), partitionFilters);
+      directSQL = getDirectSQL(tableDesc.getTableName(), tableDesc.getPartition()
+        .getExpressionSchema().getFieldsList(), request.getAlgebra(), partitionFilters);
 
-      pstmt = conn.prepareStatement(selectStatement);
+      pstmt = conn.prepareStatement(directSQL);
 
       // Set table id by force because first parameter of all direct sql is table id
       pstmt.setInt(currentIndex, tableId);
@@ -2290,7 +2293,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * @throws TajoException
    * @throws SQLException
    */
-  private String getPartitionFilterSelectStatement(String tableName, List<ColumnProto> partitionColumns, String json,
+  private String getDirectSQL(String tableName, List<ColumnProto> partitionColumns, String json,
     List<PartitionFilterDescProto> partitionFilters) throws TajoException, SQLException {
 
     Expr[] exprs = null;
@@ -2305,7 +2308,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
 
-    List<Expr> accumulatedFilters = getAccumulatedFilters(tableName, partitionColumns, exprs);
+    List<Expr> accumulatedFilters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
 
     StringBuffer sb = new StringBuffer();
     sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
@@ -2370,54 +2373,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return sb.toString();
   }
 
-  /**
-   * Build Exprs for all columns with a list of filter conditions.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Then, this methods will create three Exprs for (col1), (col2), (col3).
-   *
-   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
-   * There is no filter condition corresponding to col2.
-   * Then, the path filter conditions are corresponding to the followings:
-   *
-   * The first Expr: col1 = 'A'
-   * The second Expr: col2 IS NOT NULL
-   * The third Expr: col3 = 'C'
-   *
-   * 'IS NOT NULL' predicate is always true against the partition path.
-   *
-   *
-   * @param partitionColumns
-   * @param conjunctiveForms
-   * @return
-   */
-  private List<Expr> getAccumulatedFilters(String tableName, List<ColumnProto> partitionColumns,
-    Expr[] conjunctiveForms) throws TajoException {
-    List<Expr> accumulatedFilters = Lists.newArrayList();
-    Column target;
-
-    for (int i = 0; i < partitionColumns.size(); i++) {
-      target = new Column(partitionColumns.get(i));
-      ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
-
-      if (conjunctiveForms == null) {
-        accumulatedFilters.add(new IsNullPredicate(true, columnReference));
-      } else {
-        for (Expr expr : conjunctiveForms) {
-          if (AlgebraicUtil.findUniqueColumnReferences(expr).contains(columnReference)) {
-            // Accumulate one qual per level
-            accumulatedFilters.add(expr);
-          }
-        }
-
-        if (accumulatedFilters.size() < (i + 1)) {
-          accumulatedFilters.add(new IsNullPredicate(true, columnReference));
-        }
-      }
-    }
-
-    return accumulatedFilters;
-  }
 
   @Override
   public List<TablePartitionProto> getAllPartitions() {

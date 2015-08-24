@@ -34,6 +34,9 @@ import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.JsonHelper;
+import org.apache.tajo.algebra.NullLiteral;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -42,12 +45,18 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.plan.expr.AlgebraicUtil;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.IsNullEval;
+import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.plan.util.PartitionFilterEvalNodeVisitor;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.*;
 
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
@@ -686,7 +695,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
       columns.add(new FieldSchema(columnProto.getName(),
-          HiveCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
+        HiveCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
       client.getHiveClient().alter_table(databaseName, tableName, table);
 
 
@@ -851,14 +860,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException{
-    throw new UnsupportedOperationException();
+  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request)
+    throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException {
+    throw new UndefinedOperatorException("getPartitionsByAlgebra");
   }
 
   @Override
   public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request)
-    throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+      UndefinedOperatorException {
 
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<TablePartitionProto> partitions = null;
@@ -866,6 +877,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+
       partitions = TUtil.newList();
 
       client = clientPool.getClient();

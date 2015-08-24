@@ -19,9 +19,11 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
@@ -596,4 +598,52 @@ public class AlgebraicUtil {
 
   }
 
+  /**
+   * Build Exprs for all columns with a list of filter conditions.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Then, this methods will create three Exprs for (col1), (col2), (col3).
+   *
+   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
+   * There is no filter condition corresponding to col2.
+   * Then, the path filter conditions are corresponding to the followings:
+   *
+   * The first Expr: col1 = 'A'
+   * The second Expr: col2 IS NOT NULL
+   * The third Expr: col3 = 'C'
+   *
+   * 'IS NOT NULL' predicate is always true against the partition path.
+   *
+   *
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @return
+   */
+  public static List<Expr> getAccumulatedFiltersByExpr(String tableName,
+   List<CatalogProtos.ColumnProto> partitionColumns, Expr[] conjunctiveForms) throws TajoException {
+    List<Expr> accumulatedFilters = Lists.newArrayList();
+    Column target;
+
+    for (int i = 0; i < partitionColumns.size(); i++) {
+      target = new Column(partitionColumns.get(i));
+      ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
+
+      if (conjunctiveForms == null) {
+        accumulatedFilters.add(new IsNullPredicate(true, columnReference));
+      } else {
+        for (Expr expr : conjunctiveForms) {
+          if (AlgebraicUtil.findUniqueColumnReferences(expr).contains(columnReference)) {
+            // Accumulate one qual per level
+            accumulatedFilters.add(expr);
+          }
+        }
+
+        if (accumulatedFilters.size() < (i + 1)) {
+          accumulatedFilters.add(new IsNullPredicate(true, columnReference));
+        }
+      }
+    }
+
+    return accumulatedFilters;
+  }
 }
