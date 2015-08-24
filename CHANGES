@@ -230,6 +230,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1799: Fix incorrect event handler when kill-query failed. (jinho)
+
     TAJO-1783: Query result is not returned by invalid output path. (jinho)
 
     TAJO-1596: TestPythonFunctions occasionally fails. (jinho)
