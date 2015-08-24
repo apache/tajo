@@ -24,9 +24,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.DuplicateIndexException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -37,6 +39,9 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.DuplicateIndexException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse.ResultType;
@@ -47,16 +52,12 @@ import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
-import org.apache.tajo.plan.expr.EvalContext;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.expr.GeneralFunctionEval;
+import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.ProtoUtil;
@@ -246,15 +247,12 @@ public class QueryExecutor {
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
                               SubmitQueryResponse.Builder response) throws Exception {
     ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
-    if (scanNode == null) {
+    TableDesc desc = scanNode.getTableDesc();
+
+    if (desc.hasPartition()) {
       scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
     }
-    TableDesc desc = scanNode.getTableDesc();
-    // Keep info for partition-column-only queries
-    SelectionNode selectionNode = plan.getRootBlock().getNode(NodeType.SELECTION);
-    if (desc.isExternal() && desc.hasPartition() && selectionNode != null) {
-      scanNode.setQual(selectionNode.getQual());
-    }
+
     int maxRow = Integer.MAX_VALUE;
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
@@ -287,7 +285,7 @@ public class QueryExecutor {
     EvalContext evalContext = new EvalContext();
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
-      throw new PlanningException("No targets");
+      throw new TajoInternalError("no targets");
     }
     try {
       // start script executor
@@ -501,8 +499,8 @@ public class QueryExecutor {
       FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
 
       if (!formatProperty.isInsertable()) {
-        throw new VerifyException(
-            String.format("%s tablespace does not allow INSERT operation.", tableDesc.getUri().toString()));
+        throw new UnsupportedException(
+            String.format("INSERT operation on %s tablespace", tableDesc.getUri().toString()));
       }
 
       space.prepareTable(rootNode.getChild());
