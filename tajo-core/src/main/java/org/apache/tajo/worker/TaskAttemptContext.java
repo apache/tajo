@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
@@ -33,7 +32,6 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
-import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -373,13 +371,6 @@ public class TaskAttemptContext {
       return null;
     }
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
-  }
-
-  public static String getUniqueKeyFromFragments(TaskAttemptContext context, ScanExec scanExec) {
-    QueryId queryId = context.taskId.getTaskId().getExecutionBlockId().getQueryId();
-    int pid = scanExec.getScanNode().getPID();
-
-    return queryId.toString() + pid;
   }
 
   public int hashCode() {
