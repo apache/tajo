@@ -135,12 +135,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     try {
       if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
-        GetPartitionsByDirectSqlRequest request = buildDirectSQLForHive(splits[0], splits[1], partitionColumns,
-          conjunctiveForms);
+        GetPartitionsByDirectSqlRequest request = buildDirectSQLWithHiveCatalogStore(splits[0], splits[1],
+          partitionColumns, conjunctiveForms);
         partitions = catalog.getPartitionsByDirectSql(request);
       } else if (!store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")
         && catalog.existPartitions(splits[0], splits[1])) {
-        GetPartitionsByAlgebraRequest request = buildDirectSQLForRDBMS(splits[0], splits[1], conjunctiveForms);
+        GetPartitionsByAlgebraRequest request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
       }
 
@@ -235,7 +235,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsByAlgebraRequest buildDirectSQLForRDBMS(
+  public static GetPartitionsByAlgebraRequest buildDirectSQLWithDBStore(
     String databaseName, String tableName, EvalNode [] conjunctiveForms) {
 
     GetPartitionsByAlgebraRequest.Builder request = GetPartitionsByAlgebraRequest.newBuilder();
@@ -271,7 +271,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsByDirectSqlRequest buildDirectSQLForHive(
+  public static GetPartitionsByDirectSqlRequest buildDirectSQLWithHiveCatalogStore(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
     GetPartitionsByDirectSqlRequest.Builder request = GetPartitionsByDirectSqlRequest.newBuilder();
