@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.CreateIndexNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
@@ -65,8 +66,15 @@ public class StoreIndexExec extends UnaryPhysicalExec {
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
     }
 
+    // TODO: this line should be improved to allow multiple scan executors.
+    ScanExec scanExec = PhysicalPlanUtil.findExecutor(this, ScanExec.class);
+    if (scanExec == null) {
+      throw new TajoInternalError("Cannot find scan executors.");
+    }
+
     TajoConf conf = context.getConf();
-    Path indexPath = new Path(logicalPlan.getIndexPath().toString(), context.getUniqueKeyFromFragments());
+    Path indexPath = new Path(logicalPlan.getIndexPath().toString(),
+        IndexExecutorUtil.getIndexFileName(scanExec.getFragments()[0]));
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
     this.comparator = new BaseTupleComparator(keySchema, sortSpecs);

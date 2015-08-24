@@ -97,4 +97,7 @@ public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
 
   RESULT visitStoreTable(CONTEXT context, StoreTableExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
+
+  RESULT visitStoreIndex(CONTEXT context, StoreIndexExec exec, Stack<PhysicalExec> stack)
+      throws PhysicalPlanningException;
 }

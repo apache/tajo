@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
@@ -32,6 +33,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
+import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -373,43 +375,11 @@ public class TaskAttemptContext {
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
 
-  public String getUniqueKeyFromFragments() {
-    List<FragmentProto> allFragments = TUtil.newList();
+  public static String getUniqueKeyFromFragments(TaskAttemptContext context, ScanExec scanExec) {
+    QueryId queryId = context.taskId.getTaskId().getExecutionBlockId().getQueryId();
+    int pid = scanExec.getScanNode().getPID();
 
-    for (List<FragmentProto> fragments : fragmentMap.values()) {
-      allFragments.addAll(fragments);
-    }
-    return getUniqueKeyFromFragments(allFragments);
-  }
-
-  private static class FileFragmentComparator implements Comparator<FragmentProto> {
-
-    @Override
-    public int compare(FragmentProto o1, FragmentProto o2) {
-      FileFragment f1 = FragmentConvertor.convert(FileFragment.class, o1);
-      FileFragment f2 = FragmentConvertor.convert(FileFragment.class, o2);
-      return f1.compareTo(f2);
-    }
-  }
-
-  private final static FileFragmentComparator fileFragmentComparator = new FileFragmentComparator();
-
-  public static String getUniqueKeyFromFragments(FragmentProto[] fragments) {
-    if (fragments == null) {
-      return "";
-    } else {
-      Arrays.sort(fragments, fileFragmentComparator);
-      StringBuilder sb = new StringBuilder();
-      for (FragmentProto f : fragments) {
-        FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
-        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
-      }
-      return sb.toString();
-    }
-  }
-
-  public static String getUniqueKeyFromFragments(List<FragmentProto> fragments) {
-    return getUniqueKeyFromFragments(fragments.toArray(new FragmentProto[fragments.size()]));
+    return queryId.toString() + pid;
   }
 
   public int hashCode() {

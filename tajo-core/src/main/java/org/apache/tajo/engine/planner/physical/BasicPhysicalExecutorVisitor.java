@@ -77,6 +77,8 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
       return visitSortBasedColPartitionStore(context, (SortBasedColPartitionStoreExec) exec, stack);
     } else if (exec instanceof StoreTableExec) {
       return visitStoreTable(context, (StoreTableExec) exec, stack);
+    } else if (exec instanceof StoreIndexExec) {
+      return visitStoreIndex(context, (StoreIndexExec) exec, stack);
     }
 
     throw new PhysicalPlanningException("Unsupported Type: " + exec.getClass().getSimpleName());
@@ -237,7 +239,14 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   }
 
   @Override
-  public RESULT visitStoreTable(CONTEXT context, StoreTableExec exec, Stack<PhysicalExec> stack) throws PhysicalPlanningException {
+  public RESULT visitStoreTable(CONTEXT context, StoreTableExec exec, Stack<PhysicalExec> stack)
+      throws PhysicalPlanningException {
+    return visitUnaryExecutor(context, exec, stack);
+  }
+
+  @Override
+  public RESULT visitStoreIndex(CONTEXT context, StoreIndexExec exec, Stack<PhysicalExec> stack)
+      throws PhysicalPlanningException {
     return visitUnaryExecutor(context, exec, stack);
   }
 }

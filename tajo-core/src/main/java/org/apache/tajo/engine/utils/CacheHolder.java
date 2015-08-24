@@ -20,6 +20,7 @@ package org.apache.tajo.engine.utils;
 
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.planner.physical.TupleList;
 import org.apache.tajo.engine.planner.physical.TupleMap;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -77,11 +78,10 @@ public interface CacheHolder<T> {
       if(rowBlock != null) rowBlock.release();
     }
 
-    public static TableCacheKey getCacheKey(TaskAttemptContext ctx, String canonicalName,
-                                            CatalogProtos.FragmentProto[] fragments) throws IOException {
+    public static TableCacheKey getCacheKey(TaskAttemptContext ctx, ScanExec scanExec) throws IOException {
 
-      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(), canonicalName,
-          TaskAttemptContext.getUniqueKeyFromFragments(fragments));
+      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(),
+          scanExec.getCanonicalName(), TaskAttemptContext.getUniqueKeyFromFragments(ctx, scanExec));
     }
   }
 }
