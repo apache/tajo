@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.exception.TajoException;
@@ -422,8 +423,8 @@ public class AlgebraicUtil {
 
   private static void toDisjunctiveNormalFormArrayRecursive(EvalNode node, List<EvalNode> found) {
     if (node.getType() == EvalType.OR) {
-      toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getLeftExpr(), found);
-      toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getRightExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(((BinaryEval) node).getLeftExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(((BinaryEval) node).getRightExpr(), found);
     } else {
       found.add(node);
     }
@@ -548,6 +549,49 @@ public class AlgebraicUtil {
 
     public List<Expr> getFoundExprs() {
       return list;
+    }
+
+  }
+
+  public static Expr[] toConjunctiveNormalFormArray(Expr expr) {
+    List<Expr> list = new ArrayList<Expr>();
+    toConjunctiveNormalFormArrayRecursive(expr, list);
+    return list.toArray(new Expr[list.size()]);
+  }
+
+  private static void toConjunctiveNormalFormArrayRecursive(Expr node, List<Expr> found) {
+    if (node.getType() == OpType.And) {
+      toConjunctiveNormalFormArrayRecursive(((BinaryOperator)node).getLeft(), found);
+      toConjunctiveNormalFormArrayRecursive(((BinaryOperator)node).getRight(), found);
+    } else {
+      found.add(node);
+    }
+  }
+
+  /**
+   * It finds unique columns from a Expr.
+   */
+  public static LinkedHashSet<ColumnReferenceExpr> findUniqueColumnReferences(Expr expr) throws TajoException {
+    UniqueColumnReferenceFinder finder = new UniqueColumnReferenceFinder();
+    finder.visit(null, new Stack<Expr>(), expr);
+    return finder.getColumnRefs();
+  }
+
+  private static class UniqueColumnReferenceFinder extends SimpleAlgebraVisitor<Object, Expr> {
+    private LinkedHashSet<ColumnReferenceExpr> columnSet = Sets.newLinkedHashSet();
+    private ColumnReferenceExpr field = null;
+
+    @Override
+    public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
+      if (expr.getType() == OpType.Column) {
+        field = (ColumnReferenceExpr) expr;
+        columnSet.add(field);
+      }
+      return super.visit(ctx, stack, expr);
+    }
+
+    public LinkedHashSet<ColumnReferenceExpr> getColumnRefs() {
+      return this.columnSet;
     }
 
   }

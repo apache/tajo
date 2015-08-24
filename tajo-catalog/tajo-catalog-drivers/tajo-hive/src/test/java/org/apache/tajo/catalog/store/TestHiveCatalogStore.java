@@ -275,21 +275,21 @@ public class TestHiveCatalogStore {
     partitionNames.add("n_nationkey=50/n_date=20150802");
     testAddPartitions(table1.getUri(), NATION, partitionNames);
 
-    CatalogProtos.GetPartitionsWithDirectSQLRequest.Builder directSQLRequest = CatalogProtos
-      .GetPartitionsWithDirectSQLRequest.newBuilder();
+    CatalogProtos.GetPartitionsByDirectSqlRequest.Builder directSQLRequest = CatalogProtos
+      .GetPartitionsByDirectSqlRequest.newBuilder();
 
     directSQLRequest.setDatabaseName(DB_NAME);
     directSQLRequest.setTableName(NATION);
-    directSQLRequest.setDirectSQL("n_nationkey = 10 or n_nationkey = 20");
+    directSQLRequest.setDirectSql("n_nationkey = 10 or n_nationkey = 20");
 
     List<CatalogProtos.TablePartitionProto> tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
     assertEquals(tablePartitions.size(), 4);
 
-    directSQLRequest = CatalogProtos.GetPartitionsWithDirectSQLRequest.newBuilder();
+    directSQLRequest = CatalogProtos.GetPartitionsByDirectSqlRequest.newBuilder();
     directSQLRequest.setDatabaseName(DB_NAME);
     directSQLRequest.setTableName(NATION);
 
-    directSQLRequest.setDirectSQL("n_nationkey = 10 and n_date = \"20150101\"");
+    directSQLRequest.setDirectSql("n_nationkey = 10 and n_date = \"20150101\"");
 
     tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
     assertEquals(tablePartitions.size(), 1);

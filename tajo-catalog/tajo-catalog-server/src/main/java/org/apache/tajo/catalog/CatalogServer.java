@@ -1077,8 +1077,73 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
+    public GetTablePartitionsResponse getPartitionsByAlgebra(RpcController controller,
+                                                             GetPartitionsByAlgebraRequest request) throws ServiceException {
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
+
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return GetTablePartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetTablePartitionsResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return GetTablePartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+      }
+
+      rlock.lock();
+      try {
+        boolean contain;
+
+        contain = store.existDatabase(dbName);
+        if (contain) {
+          contain = store.existTable(dbName, tbName);
+          if (contain) {
+
+            if (store.existPartitionMethod(dbName, tbName)) {
+              GetTablePartitionsResponse.Builder builder = GetTablePartitionsResponse.newBuilder();
+              List<TablePartitionProto> partitions = store.getPartitionsByAlgebra(request);
+              builder.addAllPart(partitions);
+              builder.setState(OK);
+              return builder.build();
+            } else {
+              return GetTablePartitionsResponse.newBuilder()
+                .setState(errUndefinedPartitionMethod(tbName))
+                .build();
+            }
+          } else {
+            return GetTablePartitionsResponse.newBuilder()
+              .setState(errUndefinedTable(tbName))
+              .build();
+          }
+        } else {
+          return GetTablePartitionsResponse.newBuilder()
+            .setState(errUndefinedDatabase(dbName))
+            .build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetTablePartitionsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
+
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
     public GetTablePartitionsResponse getPartitionsByDirectSql(RpcController controller,
-                                                   GetPartitionsWithDirectSQLRequest request) throws ServiceException {
+                                                             GetPartitionsByDirectSqlRequest request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
@@ -1133,14 +1198,13 @@ public class CatalogServer extends AbstractService {
         printStackTraceIfError(LOG, t);
 
         return GetTablePartitionsResponse.newBuilder()
-            .setState(returnError(t))
-            .build();
+          .setState(returnError(t))
+          .build();
 
       } finally {
         rlock.unlock();
       }
     }
-
     @Override
     public ReturnState addPartitions(RpcController controller, AddPartitionsProto request) {
 

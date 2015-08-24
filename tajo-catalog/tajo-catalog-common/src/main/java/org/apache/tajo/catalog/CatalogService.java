@@ -168,7 +168,10 @@ public interface CatalogService {
   boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
   UndefinedTableException, UndefinedPartitionMethodException;
 
-  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request) throws
+  List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+
+  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
   List<TablePartitionProto> getAllPartitions();

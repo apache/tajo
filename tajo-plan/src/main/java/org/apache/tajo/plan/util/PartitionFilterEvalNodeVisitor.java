@@ -33,7 +33,7 @@ import java.util.Stack;
  *  And above columns type are text type. Thus this will assume type of FieldEval to text type.
  *
  */
-public class PartitionDirectSQLBuilder extends SimpleEvalNodeVisitor<Object>{
+public class PartitionFilterEvalNodeVisitor extends SimpleEvalNodeVisitor<Object>{
 
   private boolean isHiveCatalog = false;
   private boolean existRowCostant = false;

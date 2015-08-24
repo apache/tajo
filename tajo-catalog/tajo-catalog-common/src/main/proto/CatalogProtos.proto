@@ -261,11 +261,16 @@ message PartitionIdentifierProto {
   optional string partitionName = 3;
 }
 
-message GetPartitionsWithDirectSQLRequest {
+message GetPartitionsByAlgebraRequest {
   required string databaseName = 1;
   required string tableName = 2;
-  required string directSQL = 3;
-  repeated PartitionFilterDescProto filters = 4;
+  optional string algebra = 3;
+}
+
+message GetPartitionsByDirectSqlRequest {
+  required string databaseName = 1;
+  required string tableName = 2;
+  required string directSql = 3;
 }
 
 message PartitionFilterDescProto {

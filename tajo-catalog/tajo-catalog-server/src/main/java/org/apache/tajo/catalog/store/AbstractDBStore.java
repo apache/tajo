@@ -21,31 +21,32 @@
  */
 package org.apache.tajo.catalog.store;
 
+import com.google.common.collect.Lists;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.IsNullPredicate;
+import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
@@ -2168,33 +2169,40 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request) throws
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException{
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException{
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
     ColumnProto column = null;
     int currentIndex = 1;
+    String selectStatement = null;
 
-    List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
+    List<TablePartitionProto> partitions = TUtil.newList();
+    List<PartitionFilterDescProto> partitionFilters = TUtil.newList();
 
     try {
       int databaseId = getDatabaseId(request.getDatabaseName());
       int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
 
-      if(LOG.isDebugEnabled()) {
-        LOG.debug(request.getDirectSQL());
-      }
-
       conn = getConnection();
-      pstmt = conn.prepareStatement(request.getDirectSQL());
+      selectStatement = getPartitionFilterSelectStatement(tableDesc.getTableName(), tableDesc.getPartition()
+          .getExpressionSchema().getFieldsList(), request.getAlgebra(), partitionFilters);
+
+      pstmt = conn.prepareStatement(selectStatement);
 
       // Set table id by force because first parameter of all direct sql is table id
       pstmt.setInt(currentIndex, tableId);
       currentIndex++;
 
-      for (PartitionFilterDescProto filter : request.getFiltersList()) {
+      for (PartitionFilterDescProto filter : partitionFilters) {
         // Find column data type
         for(ColumnProto field : tableDesc.getPartition().getExpressionSchema().getFieldsList()) {
           if (field.getName().equals(filter.getColumnName())) {
@@ -2243,6 +2251,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
         partitions.add(builder.build());
       }
+    } catch (TajoException se) {
+      throw new TajoInternalError(se);
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
@@ -2250,6 +2260,163 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     return partitions;
+  }
+
+  /**
+   * This will build select statement and parameters for querying partitions and partition keys in CatalogStore.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
+   * There is no filter condition corresponding to col2.
+   *
+   * Then, the sql would be generated as following:
+   *
+   *  SELECT A.PARTITION_ID, A.PARTITION_NAME, A.PATH FROM PARTITIONS A
+   *  WHERE A.TID = ?
+   *  AND A.PARTITION_ID IN (
+   *    SELECT T1.PARTITION_ID FROM PARTITION_KEYS T1
+   *    JOIN PARTITION_KEYS T2 ON T1.TID=T2.TID AND T1.PARTITION_ID = T2.PARTITION_ID AND T2.TID = ?
+   *    AND ( T2.COLUMN_NAME = 'col2' AND T2.PARTITION_VALUE IS NOT NULL )
+   *    JOIN PARTITION_KEYS T3 ON T1.TID=T3.TID AND T1.PARTITION_ID = T3.PARTITION_ID AND T3.TID = ?
+   *    AND ( T3.COLUMN_NAME = 'col3' AND T3.PARTITION_VALUE > ? )
+   *    WHERE T1.TID = ? AND ( T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = ? )
+   *    OR ( T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = ? )
+   )
+   *
+   * @param partitionColumns
+   * @param json
+   * @param partitionFilters
+   * @return
+   * @throws TajoException
+   * @throws SQLException
+   */
+  private String getPartitionFilterSelectStatement(String tableName, List<ColumnProto> partitionColumns, String json,
+    List<PartitionFilterDescProto> partitionFilters) throws TajoException, SQLException {
+
+    Expr[] exprs = null;
+
+    if (json != null && !json.isEmpty()) {
+      Expr algebra = JsonHelper.fromJson(json, Expr.class);
+      exprs = AlgebraicUtil.toConjunctiveNormalFormArray(algebra);
+    }
+
+    // Write table alias for all levels
+    String tableAlias;
+
+    PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
+
+    List<Expr> accumulatedFilters = getAccumulatedFilters(tableName, partitionColumns, exprs);
+
+    StringBuffer sb = new StringBuffer();
+    sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
+      .append(", A.PARTITION_NAME, A.PATH FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
+      .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
+      .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
+      .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
+      .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
+
+    // Write join clause from second column to last column.
+    Column target;
+
+    for (int i = 1; i < partitionColumns.size(); i++) {
+      target = new Column(partitionColumns.get(i));
+      tableAlias = "T" + (i+1);
+
+      visitor.setColumn(target);
+      visitor.setTableAlias(tableAlias);
+      visitor.visit(null, new Stack<Expr>(), accumulatedFilters.get(i));
+
+      sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
+        .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
+        .append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK)
+        .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
+        .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
+        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
+      sb.append(visitor.getResult());
+
+      // Set parameters for executing PrepareStament
+      PartitionFilterDescProto.Builder builder = PartitionFilterDescProto.newBuilder();
+      builder.setColumnName(target.getSimpleName());
+
+      List<String> list = TUtil.newList();
+      list.addAll(visitor.getParameters());
+      builder.addAllParameterValue(list);
+
+      partitionFilters.add(builder.build());
+      visitor.clearParameters();
+    }
+
+    // Write where clause for first column
+    target = new Column(partitionColumns.get(0));
+    tableAlias = "T1";
+    visitor.setColumn(target);
+    visitor.setTableAlias(tableAlias);
+    visitor.visit(null, new Stack<Expr>(), accumulatedFilters.get(0));
+
+    sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
+    sb.append(visitor.getResult())
+      .append("\n )");
+
+    // Set parameters for executing PrepareStament
+    PartitionFilterDescProto.Builder builder = PartitionFilterDescProto.newBuilder();
+    builder.setColumnName(target.getSimpleName());
+
+    List<String> list = TUtil.newList();
+    list.addAll(visitor.getParameters());
+    builder.addAllParameterValue(list);
+
+    partitionFilters.add(builder.build());
+
+    return sb.toString();
+  }
+
+  /**
+   * Build Exprs for all columns with a list of filter conditions.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Then, this methods will create three Exprs for (col1), (col2), (col3).
+   *
+   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
+   * There is no filter condition corresponding to col2.
+   * Then, the path filter conditions are corresponding to the followings:
+   *
+   * The first Expr: col1 = 'A'
+   * The second Expr: col2 IS NOT NULL
+   * The third Expr: col3 = 'C'
+   *
+   * 'IS NOT NULL' predicate is always true against the partition path.
+   *
+   *
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @return
+   */
+  private List<Expr> getAccumulatedFilters(String tableName, List<ColumnProto> partitionColumns,
+    Expr[] conjunctiveForms) throws TajoException {
+    List<Expr> accumulatedFilters = Lists.newArrayList();
+    Column target;
+
+    for (int i = 0; i < partitionColumns.size(); i++) {
+      target = new Column(partitionColumns.get(i));
+      ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
+
+      if (conjunctiveForms == null) {
+        accumulatedFilters.add(new IsNullPredicate(true, columnReference));
+      } else {
+        for (Expr expr : conjunctiveForms) {
+          if (AlgebraicUtil.findUniqueColumnReferences(expr).contains(columnReference)) {
+            // Accumulate one qual per level
+            accumulatedFilters.add(expr);
+          }
+        }
+
+        if (accumulatedFilters.size() < (i + 1)) {
+          accumulatedFilters.add(new IsNullPredicate(true, columnReference));
+        }
+      }
+    }
+
+    return accumulatedFilters;
   }
 
   @Override

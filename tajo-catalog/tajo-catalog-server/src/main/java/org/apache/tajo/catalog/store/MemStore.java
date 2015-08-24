@@ -586,7 +586,13 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request)
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException{
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
     // The filter parameter is WHERE clause. So, it just can be applied to AbstractDBStore, such as,

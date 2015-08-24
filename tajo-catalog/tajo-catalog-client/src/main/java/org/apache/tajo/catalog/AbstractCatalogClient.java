@@ -457,13 +457,27 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request) throws
+  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    try {
+      final BlockingInterface stub = getStub();
+      GetTablePartitionsResponse response = stub.getPartitionsByAlgebra(null, request);
+      ensureOk(response.getState());
+    return response.getPartList();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
+  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     try {
       final BlockingInterface stub = getStub();
       GetTablePartitionsResponse response = stub.getPartitionsByDirectSql(null, request);
       ensureOk(response.getState());
-    return response.getPartList();
+      return response.getPartList();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;

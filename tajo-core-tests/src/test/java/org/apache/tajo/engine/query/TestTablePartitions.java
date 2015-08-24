@@ -428,8 +428,15 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(resultRows2.get(res.getDouble(4))[1], res.getInt(3));
     }
 
-    res = executeString("SELECT col1, col2, col3 FROM " + tableName);
+    res = executeString("select * from " + tableName + " WHERE (col1 ='1' or col1 = '100') and col3 > 20");
     String result = resultSetToString(res);
+    String expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,36.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT col1, col2, col3 FROM " + tableName);
     res.close();
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},

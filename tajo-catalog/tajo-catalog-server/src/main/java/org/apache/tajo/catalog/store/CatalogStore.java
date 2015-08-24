@@ -113,11 +113,14 @@ public interface CatalogStore extends Closeable {
    * it might be cause overload to NameNode. Thus, CatalogStore need to provide partition directories for specified
    * filter conditions. This scan right partition directories on CatalogStore with where clause.
    *
-   * @param request contains database name, table name, directSQL, parameter for executing PrepareStatement
+   * @param request contains database name, table name, algebra expressions, parameter for executing PrepareStatement
    * @return list of TablePartitionProto
    * @throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException
    */
-  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsWithDirectSQLRequest request) throws
+  List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+
+  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
   List<TablePartitionProto> getAllPartitions();

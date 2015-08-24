@@ -26,8 +26,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsWithDirectSQLRequest;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionFilterDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsByAlgebraRequest;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -37,13 +36,13 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
-import org.apache.tajo.plan.util.PartitionDirectSQLBuilder;
+import org.apache.tajo.plan.util.PartitionFilterEvalNodeVisitor;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.plan.util.ScanQualConverter;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -128,9 +127,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
-    GetPartitionsWithDirectSQLRequest request = null;
+    GetPartitionsByAlgebraRequest request = null;
 
-    boolean canUseDirectSql = true, existRowCostant = false;
+    boolean canUseDirectSql = true;
 
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 
@@ -147,14 +146,14 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       } else if (!store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")
         && catalog.existPartitions(splits[0], splits[1])) {
         if (conjunctiveForms == null) {
-          request = buildDirectSQLForRDBMS(splits[0], splits[1], partitionColumns, null);
+          request = buildDirectSQLForRDBMS(splits[0], splits[1], null);
         } else {
-          request = buildDirectSQLForRDBMS(splits[0], splits[1], partitionColumns, conjunctiveForms);
+          request = buildDirectSQLForRDBMS(splits[0], splits[1], conjunctiveForms);
         }
       }
 
       if (request != null) {
-        List<TablePartitionProto> partitions = catalog.getPartitionsByDirectSql(request);
+        List<TablePartitionProto> partitions = catalog.getPartitionsByAlgebra(request);
         filteredPaths = new Path[partitions.size()];
         for (int i = 0; i < partitions.size(); i++) {
           filteredPaths[i] = new Path(partitions.get(i).getPath());
@@ -185,107 +184,77 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   /**
-   * This will build direct sql and parameters for querying partitions and partition keys in CatalogStore.
+   * This will build algebra expressions for querying partitions and partition keys in CatalogStore.
    *
    * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
-   * There is no filter condition corresponding to col2.
+   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
    *
-   * Then, the sql would be generated as following:
+   * Then, the algebra expression would be generated as following:
    *
-   *  SELECT A.PARTITION_ID, A.PARTITION_NAME, A.PATH
-   *  FROM PARTITIONS A
-   *  WHERE A.PARTITION_ID IN (
-   *    SELECT T1.PARTITION_ID
-   *    FROM PARTITION_KEYS T1
-   *    JOIN ON PARTITION_KEYS T2 ON T1.TID = T2.TID AND T1.PARTITION_ID = T2.PARTITION_ID
-   *      AND T2.TID = ? AND (T2.COLUMN_NAME = 'col2' AND T2.PARTITION_VALUE IS NOT NULL)
-   *    JOIN PARTITION_KEYS T3 ON T1.TID = T3.TID AND T1.PARTITION_ID = T3.PARTITION_ID
-   *      AND T3.TID = ? AND (T3.COLUMN_NAME = 'col3' AND T3.PARTITION_VALUE > 20)
-   *    WHERE T1.TID = ? AND (T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = '1')
-   *    OR (T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE ='100')
+   *  {
+   *  "LeftExpr": {
+   *    "LeftExpr": {
+   *      "Qualifier": "default.table1",
+   *      "ColumnName": "col3",
+   *      "OpType": "Column"
+   *    },
+   *    "RightExpr": {
+   *      "Value": "20.0",
+   *      "ValueType": "Unsigned_Integer",
+   *      "OpType": "Literal"
+   *    },
+   *    "OpType": "GreaterThan"
+   *  },
+   *  "RightExpr": {
+   *    "LeftExpr": {
+   *      "LeftExpr": {
+   *        "Qualifier": "default.table1",
+   *        "ColumnName": "col1",
+   *        "OpType": "Column"
+   *      },
+   *      "RightExpr": {
+   *        "Value": "1",
+   *        "ValueType": "String",
+   *        "OpType": "Literal"
+   *      },
+   *      "OpType": "Equals"
+   *    },
+   *    "RightExpr": {
+   *      "LeftExpr": {
+   *        "Qualifier": "default.table1",
+   *        "ColumnName": "col1",
+   *        "OpType": "Column"
+   *      },
+   *      "RightExpr": {
+   *        "Value": "100",
+   *        "ValueType": "String",
+   *        "OpType": "Literal"
+   *      },
+   *      "OpType": "Equals"
+   *    },
+   *    "OpType": "Or"
+   *  },
+   *  "OpType": "And"
+   *}
    *
    * @param databaseName
    * @param tableName
-   * @param partitionColumns
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsWithDirectSQLRequest buildDirectSQLForRDBMS(
-    String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
+  public static GetPartitionsByAlgebraRequest buildDirectSQLForRDBMS(
+    String databaseName, String tableName, EvalNode [] conjunctiveForms) {
 
-    // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
-    GetPartitionsWithDirectSQLRequest.Builder request = GetPartitionsWithDirectSQLRequest.newBuilder();
+    GetPartitionsByAlgebraRequest.Builder request = GetPartitionsByAlgebraRequest.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
-    // Write table alias for all levels
-    String tableAlias;
-
-    PartitionDirectSQLBuilder sqlBuilder = new PartitionDirectSQLBuilder();
-
-    List<EvalNode> accumulatedFilters = getAccumulatedFilters(partitionColumns, conjunctiveForms);
-
-    StringBuffer sb = new StringBuffer();
-    sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
-      .append(", A.PARTITION_NAME, A.PATH FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
-      .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
-      .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
-      .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
-      .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
-
-    // Write join clause from second column to last column.
-    for (int i = 1; i < partitionColumns.size(); i++) {
-      Column target = partitionColumns.getColumn(i);
-      tableAlias = "T" + (i+1);
-
-      sqlBuilder.setColumn(target);
-      sqlBuilder.setTableAlias(tableAlias);
-      sqlBuilder.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
-
-      sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
-        .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
-        .append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK)
-        .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
-        .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
-        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-      sb.append(sqlBuilder.getResult());
-
-      // Set parameters for executing PrepareStament
-      PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
-      partitionFilter.setColumnName(target.getSimpleName());
-
-      List<String> list = TUtil.newList();
-      list.addAll(sqlBuilder.getParameters());
-      partitionFilter.addAllParameterValue(list);
-
-      request.addFilters(partitionFilter.build());
-
-      sqlBuilder.clearParameters();
+    if (conjunctiveForms != null) {
+      EvalNode evalNode = AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms);
+      ScanQualConverter convertor = new ScanQualConverter(databaseName + "." + tableName);
+      convertor.visit(null, evalNode, new Stack<EvalNode>());
+      request.setAlgebra(convertor.getResult().toJson());
     }
-
-    // Write where clause for first column
-    tableAlias = "T1";
-    sqlBuilder.setColumn(partitionColumns.getColumn(0));
-    sqlBuilder.setTableAlias(tableAlias);
-    sqlBuilder.visit(null, accumulatedFilters.get(0), new Stack<EvalNode>());
-
-    sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-    sb.append(sqlBuilder.getResult())
-      .append("\n )");
-
-    // Set parameters for executing PrepareStament
-    PartitionFilterDescProto.Builder partitionFilter = PartitionFilterDescProto.newBuilder();
-    partitionFilter.setColumnName(partitionColumns.getColumn(0).getSimpleName());
-
-    List<String> list = TUtil.newList();
-    list.addAll(sqlBuilder.getParameters());
-    partitionFilter.addAllParameterValue(list);
-
-    request.addFilters(partitionFilter.build());
-
-    // Set final direct sql
-    request.setDirectSQL(sb.toString());
 
     return request.build();
   }
@@ -307,19 +276,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsWithDirectSQLRequest buildDirectSQLForHive(
+  public static GetPartitionsByAlgebraRequest buildDirectSQLForHive(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
-    // Build input parameter for executing CatalogStore::getPartitionsByDirectSql
-    GetPartitionsWithDirectSQLRequest.Builder request = GetPartitionsWithDirectSQLRequest.newBuilder();
+    GetPartitionsByAlgebraRequest.Builder request = GetPartitionsByAlgebraRequest.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
-    // Write table alias for all levels
-    String tableAlias;
-
-    PartitionDirectSQLBuilder sqlBuilder = new PartitionDirectSQLBuilder();
-    sqlBuilder.setIsHiveCatalog(true);
+    PartitionFilterEvalNodeVisitor visitor = new PartitionFilterEvalNodeVisitor();
+    visitor.setIsHiveCatalog(true);
 
     List<EvalNode> accumulatedFilters = getAccumulatedFilters(partitionColumns, conjunctiveForms);
 
@@ -335,21 +300,18 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           sb.append(" AND ");
         }
 
-        sqlBuilder.setColumn(target);
-        sqlBuilder.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
+        visitor.setColumn(target);
+        visitor.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
 
         // Hive api doesn't support row constant statement;
-        if (sqlBuilder.isExistRowCostant()) {
+        if (visitor.isExistRowCostant()) {
           return null;
         }
 
-        sb.append(sqlBuilder.getResult());
-        sqlBuilder.clearParameters();
+        sb.append(visitor.getResult());
+        visitor.clearParameters();
       }
     }
-
-    // Set final direct sql
-    request.setDirectSQL(sb.toString());
 
     return request.build();
   }

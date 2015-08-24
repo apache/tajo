@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.visitor;
+package org.apache.tajo.plan.util;
 
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.datum.Datum;
@@ -30,6 +30,12 @@ import java.util.Stack;
  */
 public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
   private Stack<Expr> exprs = new Stack<Expr>();
+
+  private String tableName;
+
+  public ScanQualConverter(String tableName) {
+    this.tableName = tableName;
+  }
 
   public Expr getResult() {
     return exprs.pop();
@@ -194,7 +200,7 @@ public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
 
   @Override
   protected EvalNode visitField(Object o, Stack<EvalNode> stack, FieldEval evalNode) {
-    ColumnReferenceExpr expr = new ColumnReferenceExpr(evalNode.getQualifier(), evalNode.getColumnName());
+    ColumnReferenceExpr expr = new ColumnReferenceExpr(tableName, evalNode.getColumnName());
     exprs.push(expr);
     return super.visitField(o, stack, evalNode);
   }
