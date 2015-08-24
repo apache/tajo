@@ -18,10 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.base.Preconditions;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
 import java.util.ArrayList;
@@ -498,4 +498,62 @@ public class AlgebraicUtil {
       return super.visitTimeLiteral(ctx, stack, expr);
     }
   }
+
+  /**
+   * Find the top expr matched to type from the given expr
+   *
+   * @param expr start expr
+   * @param type to find
+   * @return a found expr
+   */
+  public static <T extends Expr> T findTopExpr(Expr expr, OpType type) throws TajoException {
+    Preconditions.checkNotNull(expr);
+    Preconditions.checkNotNull(type);
+
+    ExprFinder finder = new ExprFinder(type);
+    finder.visit(null, new Stack<Expr>(), expr);
+
+    if (finder.getFoundExprs().size() == 0) {
+      return null;
+    }
+    return (T) finder.getFoundExprs().get(0);
+  }
+
+  private static class ExprFinder extends SimpleAlgebraVisitor<Object, Expr> {
+    private List<Expr> list = new ArrayList<Expr>();
+    private final OpType[] tofind;
+    private boolean topmost = false;
+    private boolean finished = false;
+
+    public ExprFinder(OpType... type) {
+
+      this.tofind = type;
+    }
+
+    public ExprFinder(OpType[] type, boolean topmost) {
+      this(type);
+      this.topmost = topmost;
+    }
+
+    @Override
+    public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
+      if (!finished) {
+        for (OpType type : tofind) {
+          if (expr.getType() == type) {
+            list.add(expr);
+          }
+          if (topmost && list.size() > 0) {
+            finished = true;
+          }
+        }
+      }
+      return super.visit(ctx, stack, expr);
+    }
+
+    public List<Expr> getFoundExprs() {
+      return list;
+    }
+
+  }
+
 }
