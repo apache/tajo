@@ -57,7 +57,6 @@ import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.File;
@@ -154,12 +153,6 @@ public class TaskImpl implements Task {
         + (interQuery ? ", Use " + this.shuffleType + " shuffle" : "") +
         ", Fragments (num: " + request.getFragments().size() + ")" +
         ", Fetches (total:" + request.getFetches().size() + ") :");
-
-    LOG.info("Fragments of " + getTaskContext().getTaskId());
-    for (FragmentProto eachProto : request.getFragments()) {
-      FileFragment fragment = FragmentConvertor.convert(FileFragment.class, eachProto);
-      LOG.info(fragment.toString());
-    }
 
     if(LOG.isDebugEnabled()) {
       for (FetchImpl f : request.getFetches()) {

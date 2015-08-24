@@ -381,7 +381,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
    */
   @VisibleForTesting
   public PhysicalExec [] switchJoinSidesIfNecessary(TaskAttemptContext context, JoinNode plan,
-                                                     PhysicalExec left, PhysicalExec right) throws IOException {
+                                                    PhysicalExec left, PhysicalExec right) throws IOException {
     String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
     long leftSize = estimateSizeRecursive(context, leftLineage);

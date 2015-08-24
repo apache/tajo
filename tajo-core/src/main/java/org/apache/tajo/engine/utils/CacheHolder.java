@@ -78,18 +78,10 @@ public interface CacheHolder<T> {
     }
 
     public static TableCacheKey getCacheKey(TaskAttemptContext ctx, String canonicalName,
-                                                 CatalogProtos.FragmentProto[] fragments) throws IOException {
-      String pathNameKey = "";
-      if (fragments != null) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (CatalogProtos.FragmentProto f : fragments) {
-          Fragment fragement = FragmentConvertor.convert(ctx.getConf(), f);
-          stringBuilder.append(fragement.getKey());
-        }
-        pathNameKey = stringBuilder.toString();
-      }
+                                            CatalogProtos.FragmentProto[] fragments) throws IOException {
 
-      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(), canonicalName, pathNameKey);
+      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(), canonicalName,
+          ctx.getUniqueKeyFromFragments());
     }
   }
 }

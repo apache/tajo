@@ -384,6 +384,30 @@ public class TaskAttemptContext {
     return sb.toString();
   }
 
+//  private static class FragmentProtoComparator implements Comparator<FragmentProto> {
+//
+//    @Override
+//    public int compare(FragmentProto o1, FragmentProto o2) {
+//
+//    }
+//  }
+
+//  public static String getUniqueKeyFromFragments(FragmentProto[] fragments) {
+//    Arrays.sort(fragments);
+//    StringBuilder sb = new StringBuilder();
+//    for (List<FragmentProto> fragments : fragmentMap.values()) {
+//      for (FragmentProto f : fragments) {
+//        FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
+//        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
+//      }
+//    }
+//    return sb.toString();
+//  }
+//
+//  public static String getUniqueKeyFromFragments(List<FragmentProto> fragments) {
+//    return getUniqueKeyFromFragments(fragments.toArray(new FragmentProto[fragments.size()]));
+//  }
+
   public int hashCode() {
     return Objects.hashCode(taskId);
   }
