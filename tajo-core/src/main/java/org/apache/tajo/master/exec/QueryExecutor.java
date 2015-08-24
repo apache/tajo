@@ -54,9 +54,7 @@ import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
-import org.apache.tajo.plan.expr.EvalContext;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.expr.GeneralFunctionEval;
+import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
@@ -250,15 +248,12 @@ public class QueryExecutor {
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
                               SubmitQueryResponse.Builder response) throws Exception {
     ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
-    if (scanNode == null) {
+    TableDesc desc = scanNode.getTableDesc();
+
+    if (desc.hasPartition()) {
       scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
     }
-    TableDesc desc = scanNode.getTableDesc();
-    // Keep info for partition-column-only queries
-    SelectionNode selectionNode = plan.getRootBlock().getNode(NodeType.SELECTION);
-    if (desc.isExternal() && desc.hasPartition() && selectionNode != null) {
-      scanNode.setQual(selectionNode.getQual());
-    }
+
     int maxRow = Integer.MAX_VALUE;
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);

@@ -599,41 +599,11 @@ public class EvalTreeUtil {
         } else if (left instanceof ConstEval && right instanceof FieldEval && partSchema.contains(((FieldEval) right).getColumnName())) {
           return true;
         }
-      } else if (type == EvalType.AND && left instanceof BinaryEval && right instanceof BinaryEval) {
+      } else if ((type == EvalType.AND || type == EvalType.OR)
+          && left instanceof BinaryEval && right instanceof BinaryEval) {
         return checkIfPartitionSelection(left, partSchema) && checkIfPartitionSelection(right, partSchema);
       }
     }
     return false;
-  }
-
-  /**
-   * Get partition constant value associated with `columnName`.
-   *
-   * @param node EvalNode having query predicates
-   * @param columnName Column name to be looked up
-   * @return String The value associated with `columnName` in the predicates
-   */
-  public static String getPartitionValue(EvalNode node, String columnName) {
-    if (node != null && node instanceof BinaryEval) {
-      BinaryEval eval = (BinaryEval)node;
-      EvalNode left = eval.getLeftExpr();
-      EvalNode right = eval.getRightExpr();
-      EvalType type = eval.getType();
-
-      if (type == EvalType.EQUAL) {
-        if (left instanceof FieldEval && right instanceof ConstEval && columnName.equals(((FieldEval) left).getColumnName())) {
-          return ((ConstEval)right).getValue().toString();
-        } else if (left instanceof ConstEval && right instanceof FieldEval && columnName.equals(((FieldEval) right).getColumnName())) {
-          return ((ConstEval)left).getValue().toString();
-        }
-      } else if (type == EvalType.AND && left instanceof BinaryEval && right instanceof BinaryEval) {
-        String value = getPartitionValue(left, columnName);
-        if (value == null) {
-          value = getPartitionValue(right, columnName);
-        }
-        return value;
-      }
-    }
-    return null;
   }
 }
