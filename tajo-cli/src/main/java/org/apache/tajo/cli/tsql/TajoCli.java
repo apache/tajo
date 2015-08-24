@@ -425,10 +425,9 @@ public class TajoCli {
             latestState = parser.getState();
             currentPrompt = updatePrompt(latestState);
 
-            // if at least one failed,and ON_ERROR_STOP flag is setted
+            // if at least one failed, and ON_ERROR_STOP flag is setted
             if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
-              Exception e = new Exception(String.valueOf(exitCode));
-              throw e;
+              return exitCode;
             }
           }
         }
