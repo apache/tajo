@@ -152,7 +152,7 @@ public class GlobalPlanRewriteUtil {
       return computeDescendentVolume(binaryNode.getLeftChild()) + computeDescendentVolume(binaryNode.getRightChild());
     }
 
-    throw new TajoInternalError("invalid state");
+    throw new TajoInternalError("Invalid State at node " + node.getPID());
   }
 
   public static class ParentFinder implements LogicalNodeVisitor {

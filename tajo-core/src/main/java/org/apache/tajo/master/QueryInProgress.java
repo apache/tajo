@@ -25,6 +25,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.ResourceProtos.AllocationResourceProto;
 import org.apache.tajo.ResourceProtos.QueryExecutionRequest;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
@@ -259,12 +260,12 @@ public class QueryInProgress {
       // Update diagnosis message
       if (queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
         this.queryInfo.setLastMessage(queryInfo.getLastMessage());
-        LOG.info(queryId + queryInfo.getLastMessage());
       }
 
       // if any error occurs, print outs the error message
-      if (this.queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_FAILED) {
-        LOG.warn(queryId + " failed, " + queryInfo.getLastMessage());
+      if (this.queryInfo.getQueryState() == QueryState.QUERY_FAILED ||
+          this.queryInfo.getQueryState() == QueryState.QUERY_ERROR) {
+        LOG.warn(queryId + " is stopped because " + queryInfo.getLastMessage());
       }
 
       // terminal state will let client to retrieve a query result

@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -48,6 +49,8 @@ public abstract class ScanExec extends PhysicalExec {
 
     super.init();
   }
+
+  public abstract ScanNode getScanNode();
 
   public boolean canBroadcast() {
     return canBroadcast;

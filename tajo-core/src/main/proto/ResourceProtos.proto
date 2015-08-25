@@ -208,7 +208,7 @@ message NodeHeartbeatResponse {
   repeated QueryIdProto queryId = 3;
 }
 
-//deplecated
+// deprecated
 message TajoHeartbeatRequest {
   required WorkerConnectionInfoProto connectionInfo = 1;
   optional QueryIdProto queryId = 2;
@@ -218,7 +218,7 @@ message TajoHeartbeatRequest {
   optional float queryProgress = 6;
 }
 
-//deplecated
+// deprecated
 message TajoHeartbeatResponse {
   message ResponseCommand {
       required string command = 1;
