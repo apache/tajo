@@ -18,6 +18,9 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
@@ -332,7 +335,7 @@ public class Query implements EventHandler<QueryEvent> {
     return queryHistory;
   }
 
-  public List<PartitionDescProto> getPartitions() {
+  public ImmutableList<PartitionDescProto> getPartitions() {
     List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
     for(Stage eachStage : getStages()) {
       if (!eachStage.getPartitions().isEmpty()) {
@@ -340,7 +343,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
     }
 
-    return partitions;
+    return ImmutableSet.copyOf(partitions).asList();
   }
 
   public List<String> getDiagnostics() {
