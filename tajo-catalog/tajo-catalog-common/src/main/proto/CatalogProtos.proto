@@ -246,7 +246,6 @@ message PartitionDescProto {
 
 message PartitionKeyProto {
   required string columnName = 1;
-  optional string parentColumnName = 2;
   optional string partitionValue = 3;
   optional int32 partition_id = 4;
 }

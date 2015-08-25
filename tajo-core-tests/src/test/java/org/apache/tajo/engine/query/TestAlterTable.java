@@ -25,7 +25,6 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -36,7 +35,6 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
-
   @Test
   public final void testAlterTableName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "ABC");
