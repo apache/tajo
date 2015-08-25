@@ -54,11 +54,13 @@ public class TestNonForwardQueryResultSystemScanner extends QueryTestCaseBase {
     executeDDL("create_partitioned_table.sql", null);
 
     ResultSet resultSet = null;
-    String actualResult, expectedResult;
     String simpleTableName = "information_schema_test_table";
+    int totalCount = 1000;
 
-    executeDDL("alter_table_add_partition1.sql", null);
-    executeDDL("alter_table_add_partition2.sql", null);
+    for (int i = 0; i < totalCount; i++) {
+      executeString("ALTER TABLE information_schema_test_table ADD PARTITION (col3 = " + i
+        + ", col4 = " + (i + 1) + ")");
+    }
 
     resultSet = executeString("SELECT tid, table_name FROM INFORMATION_SCHEMA.TABLES "
     + " WHERE TABLE_NAME = '" + simpleTableName + "'");
@@ -69,24 +71,35 @@ public class TestNonForwardQueryResultSystemScanner extends QueryTestCaseBase {
     resultSet.close();
     assertTrue(tid > -1);
 
-    int partitionId = -1;
-    resultSet = executeString("SELECT partition_id, partition_name FROM INFORMATION_SCHEMA.PARTITIONS "
+    int resultPartitionCount = 0;
+    resultSet = executeString("SELECT count(*) FROM INFORMATION_SCHEMA.PARTITIONS "
       + " WHERE tid = " + tid);
     while (resultSet.next()) {
-      partitionId = resultSet.getInt("partition_id");
+      resultPartitionCount = resultSet.getInt(1);
     }
     resultSet.close();
-    assertTrue(partitionId > -1);
+    assertEquals(totalCount, resultPartitionCount);
 
-    resultSet = executeString("SELECT column_name,partition_value FROM INFORMATION_SCHEMA.PARTITION_KEYS" +
-      " WHERE partition_id = " + partitionId);
+    // Setting select statement for getting partition keys.
+    String selectPartitionKeys = "SELECT count(*) FROM INFORMATION_SCHEMA.PARTITION_KEYS WHERE partition_id IN (";
+    resultSet = executeString("SELECT partition_id FROM INFORMATION_SCHEMA.PARTITIONS ");
+    int i = 0;
+    while (resultSet.next()) {
+      if (i > 0) {
+        selectPartitionKeys += ",";
+      }
+      selectPartitionKeys +=  resultSet.getInt(1);
+      i++;
+    }
+    selectPartitionKeys += ")";
+    resultSet.close();
 
-    actualResult = resultSetToString(resultSet);
-    expectedResult = "column_name,partition_value\n" +
-      "-------------------------------\n" +
-      "col3,1\n" +
-      "col4,2\n";
-    assertEquals(expectedResult, actualResult);
+    resultSet = executeString(selectPartitionKeys);
+    int resultPartitionKeyCount = 0;
+    while (resultSet.next()) {
+      resultPartitionKeyCount = resultSet.getInt(1);
+    }
+    assertEquals(totalCount * 2, resultPartitionKeyCount);
 
     executeDDL("drop_partitioned_table.sql", null);
   }

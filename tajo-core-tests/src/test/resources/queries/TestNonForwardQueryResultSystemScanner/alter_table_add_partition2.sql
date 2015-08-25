@@ -1,1 +1,0 @@
-ALTER TABLE information_schema_test_table ADD IF NOT EXISTS PARTITION (col3 = 1 , col4 = 2)
