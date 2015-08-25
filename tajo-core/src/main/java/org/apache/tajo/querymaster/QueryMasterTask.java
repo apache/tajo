@@ -91,7 +91,8 @@ public class QueryMasterTask extends CompositeService {
 
   private final long querySubmitTime;
 
-  private Map<String, TableDesc> tableDescMap = new HashMap<String, TableDesc>();
+//  private Map<String, TableDesc> tableDescMap = new HashMap<String, TableDesc>();
+  private final Map<Integer, TableDesc> tableDescMap = new HashMap<>();
 
   private TajoConf systemConf;
 
@@ -332,7 +333,8 @@ public class QueryMasterTask extends CompositeService {
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;
-            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+//            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+            tableDescMap.put(scanNode.getPID(), scanNode.getTableDesc());
           }
         }
 
@@ -340,7 +342,8 @@ public class QueryMasterTask extends CompositeService {
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;
-            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+//            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+            tableDescMap.put(scanNode.getPID(), scanNode.getTableDesc());
           }
         }
 
@@ -348,7 +351,8 @@ public class QueryMasterTask extends CompositeService {
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;
-            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+//            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+            tableDescMap.put(scanNode.getPID(), scanNode.getTableDesc());
           }
         }
       }
@@ -533,8 +537,12 @@ public class QueryMasterTask extends CompositeService {
       return query.getStage(id);
     }
 
-    public Map<String, TableDesc> getTableDescMap() {
-      return tableDescMap;
+//    public Map<String, TableDesc> getTableDescMap() {
+//      return tableDescMap;
+//    }
+
+    public TableDesc getTableDesc(ScanNode scanNode) {
+      return tableDescMap.get(scanNode.getPID());
     }
 
     public float getProgress() {
