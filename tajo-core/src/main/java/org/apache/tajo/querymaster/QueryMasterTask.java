@@ -460,25 +460,27 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void cleanupQuery(final QueryId queryId) {
-    Set<InetSocketAddress> workers = Sets.newHashSet();
-    for (Stage stage : getQuery().getStages()) {
-      workers.addAll(stage.getAssignedWorkerMap().values());
-    }
+    if (getQuery() != null) {
+      Set<InetSocketAddress> workers = Sets.newHashSet();
+      for (Stage stage : getQuery().getStages()) {
+        workers.addAll(stage.getAssignedWorkerMap().values());
+      }
 
-    LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
-    for (final InetSocketAddress worker : workers) {
-      queryMasterContext.getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
-            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
-            tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
-          } catch (Throwable e) {
-            LOG.error(e.getMessage(), e);
+      LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
+      for (final InetSocketAddress worker : workers) {
+        queryMasterContext.getEventExecutor().submit(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+              TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
+              tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
+            } catch (Throwable e) {
+              LOG.error(e.getMessage(), e);
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 

@@ -3,7 +3,7 @@ explain
 SORT(4)
   => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
    SELECTION(3)
-     => Search Cond: default.orders.o_orderdate (TEXT) IS NOT NULL AND default.orders.o_orderdate (TEXT)LIKE'1996%'
+     => Search Cond: (default.orders.o_orderdate (TEXT) IS NOT NULL AND default.orders.o_orderdate (TEXT)LIKE'1996%')
       JOIN(7)(LEFT_OUTER)
         => Join Cond: default.customer.c_custkey (INT4) = default.orders.o_orderkey (INT4)
         => target list: default.customer.c_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), coalesce(default.orders.o_orderstatus (TEXT),N/A) as ?coalesce
@@ -46,7 +46,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 SORT(11)
   => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
    SELECTION(3)
-     => Search Cond: default.orders.o_orderdate (TEXT) IS NOT NULL AND default.orders.o_orderdate (TEXT)LIKE'1996%'
+     => Search Cond: (default.orders.o_orderdate (TEXT) IS NOT NULL AND default.orders.o_orderdate (TEXT)LIKE'1996%')
       JOIN(7)(LEFT_OUTER)
         => Join Cond: default.customer.c_custkey (INT4) = default.orders.o_orderkey (INT4)
         => target list: default.customer.c_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4), coalesce(default.orders.o_orderstatus (TEXT),N/A) as ?coalesce
