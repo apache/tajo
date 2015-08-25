@@ -302,10 +302,6 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
       sb.append("type=Join,alg=");
       if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.MERGE_JOIN) {
         sb.append("merge_join");
-      } else if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.NESTED_LOOP_JOIN) {
-        sb.append("nested_loop");
-      } else if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN) {
-        sb.append("block_nested_loop");
       } else if (join.getAlgorithm() == JoinEnforce.JoinAlgorithm.IN_MEMORY_HASH_JOIN) {
         sb.append("in_memory_hash");
       }

@@ -49,10 +49,7 @@ import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
-import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
-import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
-import org.apache.tajo.plan.verifier.VerificationState;
+import org.apache.tajo.plan.verifier.*;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -75,6 +72,7 @@ public class GlobalEngine extends AbstractService {
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
   private LogicalPlanVerifier annotatedPlanVerifier;
+  private PostLogicalPlanVerifier postLogicalPlanVerifier;
 
   private QueryExecutor queryExecutor;
   private DDLExecutor ddlExecutor;
@@ -96,6 +94,7 @@ public class GlobalEngine extends AbstractService {
       // Access path rewriter is enabled only in QueryMasterTask
       optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
       annotatedPlanVerifier = new LogicalPlanVerifier();
+      postLogicalPlanVerifier = new PostLogicalPlanVerifier();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
       throw new RuntimeException(t);
@@ -267,7 +266,6 @@ public class GlobalEngine extends AbstractService {
     VerificationState state = new VerificationState();
     preVerifier.verify(queryContext, state, expression);
     if (!state.verified()) {
-
       for (Throwable error : state.getErrors()) {
         throw error;
       }
@@ -288,6 +286,13 @@ public class GlobalEngine extends AbstractService {
     annotatedPlanVerifier.verify(state, plan);
     verifyInsertTableSchema(state, plan);
 
+    if (!state.verified()) {
+      for (Throwable error : state.getErrors()) {
+        throw error;
+      }
+    }
+
+    postLogicalPlanVerifier.verify(queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD), state, plan);
     if (!state.verified()) {
       for (Throwable error : state.getErrors()) {
         throw error;

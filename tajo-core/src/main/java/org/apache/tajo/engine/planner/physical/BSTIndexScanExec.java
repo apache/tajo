@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Projector;
@@ -31,6 +32,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.IndexScanNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -42,7 +44,7 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 
-public class BSTIndexScanExec extends PhysicalExec {
+public class BSTIndexScanExec extends ScanExec {
   private IndexScanNode plan;
   private SeekableScanner fileScanner;
   
@@ -85,7 +87,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
-    Path indexPath = new Path(indexPrefix.toString(), context.getUniqueKeyFromFragments());
+    Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(fragment));
     this.reader = new BSTIndex(context.getConf()).
         getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();
@@ -106,6 +108,21 @@ public class BSTIndexScanExec extends PhysicalExec {
       }
     }
     return mergedSchema;
+  }
+
+  @Override
+  public String getTableName() {
+    return plan.getTableName();
+  }
+
+  @Override
+  public String getCanonicalName() {
+    return plan.getCanonicalName();
+  }
+
+  @Override
+  public FragmentProto[] getFragments() {
+    return new FragmentProto[]{fragment};
   }
 
   @Override
@@ -149,6 +166,11 @@ public class BSTIndexScanExec extends PhysicalExec {
         qual.bind(context.getEvalContext(), inSchema);
       }
     }
+  }
+
+  @Override
+  public ScanNode getScanNode() {
+    return plan;
   }
 
   private void initScanner(Schema projected) throws IOException {

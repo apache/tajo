@@ -34,6 +34,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1766: Improve the performance of cross join. (jihoon)
+
     TAJO-1792: tajo-cluster-tests is not available when it is used as an 
     external maven module. (hyunsik)
 

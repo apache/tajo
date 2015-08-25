@@ -20,6 +20,8 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.util.TUtil;
 
 import java.util.HashMap;
@@ -226,7 +228,7 @@ public class SchemaUtil {
       case BOOLEAN:
         return 1;
       case CHAR:
-        return 1;
+        return col.getDataType().getLength();
       case BIT:
         return 1;
       case INT2:
@@ -242,7 +244,7 @@ public class SchemaUtil {
       case INET4:
         return 4;
       case INET6:
-        return 32;
+        return 16;
       case TEXT:
         return 256;
       case BLOB:
@@ -254,7 +256,7 @@ public class SchemaUtil {
       case TIMESTAMP:
         return 8;
       default:
-        return 0;
+        throw new TajoRuntimeException(new UnsupportedDataTypeException(col.getDataType().toString()));
     }
   }
 }

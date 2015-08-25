@@ -211,6 +211,11 @@ public class SeqScanExec extends ScanExec {
   }
 
   @Override
+  public ScanNode getScanNode() {
+    return plan;
+  }
+
+  @Override
   protected void compile() throws CompilationError {
     if (plan.hasQual()) {
       qual = context.getPrecompiledEval(inSchema, qual);
