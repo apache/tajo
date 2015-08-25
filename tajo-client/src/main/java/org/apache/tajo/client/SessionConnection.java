@@ -26,10 +26,10 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientConnectionException;
 import org.apache.tajo.exception.NoSuchSessionVariableException;
-import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.ClientProtos.UpdateSessionVariableRequest;
@@ -61,7 +61,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
 import static org.apache.tajo.error.Errors.ResultCode.UNDEFINED_DATABASE;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
-import static org.apache.tajo.exception.SQLExceptionUtil.throwIfError;
 import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
@@ -226,7 +225,7 @@ public class SessionConnection implements Closeable {
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public Map<String, String> unsetSessionVariables(final List<String> variables) throws NoSuchSessionVariableException {
+  public Map<String, String> unsetSessionVariables(final List<String> variables) {
 
     final BlockingInterface stub = getTMStub();
     final UpdateSessionVariableRequest request = UpdateSessionVariableRequest.newBuilder()
@@ -239,10 +238,6 @@ public class SessionConnection implements Closeable {
       response = stub.updateSessionVariables(null, request);
     } catch (ServiceException e) {
       throw new RuntimeException(e);
-    }
-
-    if (isThisError(response.getState(), NO_SUCH_SESSION_VARIABLE)) {
-      throw new NoSuchSessionVariableException(response.getState());
     }
 
     ensureOk(response.getState());
@@ -285,7 +280,7 @@ public class SessionConnection implements Closeable {
     return response.getValue();
   }
 
-  public Boolean existSessionVariable(final String varname) {
+  public boolean existSessionVariable(final String varname) {
 
     ReturnState state;
     try {
@@ -319,27 +314,19 @@ public class SessionConnection implements Closeable {
     return ProtoUtil.convertToMap(response.getValue());
   }
 
-  public Boolean selectDatabase(final String dbName) throws UndefinedDatabaseException {
+  public void selectDatabase(final String dbName) throws UndefinedDatabaseException {
 
-    BlockingInterface stub = getTMStub();
-    boolean selected;
     try {
-      ReturnState state = stub.selectDatabase(null, getSessionedString(dbName));
+      final BlockingInterface stub = getTMStub();
+      final ReturnState state = stub.selectDatabase(null, getSessionedString(dbName));
 
-      if (isThisError(state, UNDEFINED_DATABASE)) {
-        throw new UndefinedDatabaseException(dbName);
-      }
-
-      selected = ensureOk(state);
+      ExceptionUtil.throwsIfThisError(state, UndefinedDatabaseException.class);
+      ensureOk(state);
+      this.baseDatabase = dbName;
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
-
-    if (selected) {
-      this.baseDatabase = dbName;
-    }
-    return selected;
   }
 
   @Override

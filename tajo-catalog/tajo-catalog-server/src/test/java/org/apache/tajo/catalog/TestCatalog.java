@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
-import org.apache.tajo.catalog.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -33,7 +32,9 @@ import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -64,8 +65,7 @@ public class TestCatalog {
 	static CatalogServer server;
 	static CatalogService catalog;
 
-	@BeforeClass
-	public static void setUp() throws Exception {
+  public static TajoConf newTajoConfForCatalogTest() throws IOException {
     final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
 
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
@@ -98,10 +98,17 @@ public class TestCatalog {
       }
     }
 
+    return conf;
+  }
+
+	@BeforeClass
+	public static void setUp() throws Exception {
+
+
     Path defaultTableSpace = CommonTestingUtil.getTestDir();
 
 	  server = new CatalogServer();
-    server.init(conf);
+    server.init(newTajoConfForCatalogTest());
     server.start();
     catalog = new LocalCatalogWrapper(server);
     if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
@@ -135,11 +142,11 @@ public class TestCatalog {
     //////////////////////////////////////////////////////////////////////////////
 
     assertFalse(catalog.existTablespace("space1"));
-    assertTrue(catalog.createTablespace("space1", "hdfs://xxx.com/warehouse"));
+    catalog.createTablespace("space1", "hdfs://xxx.com/warehouse");
     assertTrue(catalog.existTablespace("space1"));
 
     assertFalse(catalog.existTablespace("space2"));
-    assertTrue(catalog.createTablespace("space2", "hdfs://yyy.com/warehouse"));
+    catalog.createTablespace("space2", "hdfs://yyy.com/warehouse");
     assertTrue(catalog.existTablespace("space2"));
 
     //////////////////////////////////////////////////////////////////////////////
@@ -193,32 +200,32 @@ public class TestCatalog {
     //////////////////////////////////////////////////////////////////////////////
     // Clean up
     //////////////////////////////////////////////////////////////////////////////
-    assertTrue(catalog.dropTablespace("space1"));
+    catalog.dropTablespace("space1");
     assertFalse(catalog.existTablespace("space1"));
-    assertTrue(catalog.dropTablespace("space2"));
+    catalog.dropTablespace("space2");
     assertFalse(catalog.existTablespace("space2"));
   }
 
   @Test
   public void testCreateAndDropDatabases() throws Exception {
     assertFalse(catalog.existDatabase("testCreateAndDropDatabases"));
-    assertTrue(catalog.createDatabase("testCreateAndDropDatabases", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase("testCreateAndDropDatabases", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("testCreateAndDropDatabases"));
-    assertTrue(catalog.dropDatabase("testCreateAndDropDatabases"));
+    catalog.dropDatabase("testCreateAndDropDatabases");
   }
   
   @Test
   public void testCreateAndDropDatabaseWithCharacterSensitivity() throws Exception {
     assertFalse(catalog.existDatabase("TestDatabase1"));
     assertFalse(catalog.existDatabase("testDatabase1"));
-    assertTrue(catalog.createDatabase("TestDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase("TestDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("TestDatabase1"));
     assertFalse(catalog.existDatabase("testDatabase1"));
-    assertTrue(catalog.createDatabase("testDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase("testDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("TestDatabase1"));
     assertTrue(catalog.existDatabase("testDatabase1"));
-    assertTrue(catalog.dropDatabase("TestDatabase1"));
-    assertTrue(catalog.dropDatabase("testDatabase1"));
+    catalog.dropDatabase("TestDatabase1");
+    catalog.dropDatabase("testDatabase1");
   }
 
   @Test
@@ -230,7 +237,7 @@ public class TestCatalog {
     for (int i = 0; i < NUM; i++) {
       String databaseName = namePrefix + i;
       assertFalse(catalog.existDatabase(databaseName));
-      assertTrue(catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME));
+      catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME);
       assertTrue(catalog.existDatabase(databaseName));
       createdDatabases.add(databaseName);
     }
@@ -246,7 +253,7 @@ public class TestCatalog {
     Collections.shuffle(createdDatabases);
     for (String tobeDropped : createdDatabases) {
       assertTrue(catalog.existDatabase(tobeDropped));
-      assertTrue(catalog.dropDatabase(tobeDropped));
+      catalog.dropDatabase(tobeDropped);
       assertFalse(catalog.existDatabase(tobeDropped));
     }
   }
@@ -267,16 +274,16 @@ public class TestCatalog {
 
   @Test
   public void testCreateAndDropTable() throws Exception {
-    assertTrue(catalog.createDatabase("tmpdb1", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase("tmpdb1", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("tmpdb1"));
-    assertTrue(catalog.createDatabase("tmpdb2", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase("tmpdb2", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("tmpdb2"));
 
     TableDesc table1 = createMockupTable("tmpdb1", "table1");
-    assertTrue(catalog.createTable(table1));
+    catalog.createTable(table1);
 
     TableDesc table2 = createMockupTable("tmpdb2", "table2");
-    assertTrue(catalog.createTable(table2));
+    catalog.createTable(table2);
 
     Set<String> tmpdb1 = Sets.newHashSet(catalog.getAllTableNames("tmpdb1"));
     assertEquals(1, tmpdb1.size());
@@ -287,21 +294,21 @@ public class TestCatalog {
     assertEquals(1, tmpdb2.size());
     assertTrue(tmpdb2.contains("table2"));
 
-    assertTrue(catalog.dropDatabase("tmpdb1"));
+    catalog.dropDatabase("tmpdb1");
     assertFalse(catalog.existDatabase("tmpdb1"));
 
     tmpdb2 = Sets.newHashSet(catalog.getAllTableNames("tmpdb2"));
     assertEquals(1, tmpdb2.size());
     assertTrue(tmpdb2.contains("table2"));
 
-    assertTrue(catalog.dropDatabase("tmpdb2"));
+    catalog.dropDatabase("tmpdb2");
     assertFalse(catalog.existDatabase("tmpdb2"));
   }
   
   @Test
   public void testCreateAndDropTableWithCharacterSensivity() throws Exception {
     String databaseName = "TestDatabase1";
-    assertTrue(catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase(databaseName));
     
     String tableName = "TestTable1";
@@ -316,7 +323,7 @@ public class TestCatalog {
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     
-    assertTrue(catalog.createTable(table));
+    catalog.createTable(table);
     
     tableName = "testTable1";
     schema = new Schema();
@@ -330,9 +337,9 @@ public class TestCatalog {
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     
-    assertTrue(catalog.createTable(table));
+    catalog.createTable(table);
     
-    assertTrue(catalog.dropDatabase(databaseName));
+    catalog.dropDatabase(databaseName);
   }
 
   static String dbPrefix = "db_";
@@ -341,7 +348,7 @@ public class TestCatalog {
   static final int TABLE_NUM_PER_DB = 3;
   static final int TOTAL_TABLE_NUM = DB_NUM * TABLE_NUM_PER_DB;
 
-  private Map<String, List<String>> createBaseDatabaseAndTables() throws IOException {
+  private Map<String, List<String>> createBaseDatabaseAndTables() throws IOException, TajoException {
 
     Map<String, List<String>> createdDatabaseAndTablesMap = new HashMap<String, List<String>>();
 
@@ -351,12 +358,12 @@ public class TestCatalog {
       String databaseName = dbPrefix + dbIdx;
 
       if (!catalog.existDatabase(databaseName)) {
-        assertTrue(catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME));
+        catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME);
       }
 
       String tableName = tablePrefix + tableId;
       TableDesc table = createMockupTable(databaseName, tableName);
-      assertTrue(catalog.createTable(table));
+      catalog.createTable(table);
 
       TUtil.putToNestedList(createdDatabaseAndTablesMap, databaseName, tableName);
     }
@@ -432,7 +439,7 @@ public class TestCatalog {
   /**
    * It asserts the equality between an original table desc and a restored table desc.
    */
-  private static void assertSchemaEquality(String tableName, Schema schema) throws IOException {
+  private static void assertSchemaEquality(String tableName, Schema schema) throws IOException, TajoException {
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
@@ -571,30 +578,30 @@ public class TestCatalog {
   }
 
   @Test
-  public void testCreateSameTables() throws IOException {
-    assertTrue(catalog.createDatabase("tmpdb3", TajoConstants.DEFAULT_TABLESPACE_NAME));
+  public void testCreateSameTables() throws IOException, TajoException {
+    catalog.createDatabase("tmpdb3", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("tmpdb3"));
-    assertTrue(catalog.createDatabase("tmpdb4", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    catalog.createDatabase("tmpdb4", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("tmpdb4"));
 
     TableDesc table1 = createMockupTable("tmpdb3", "table1");
-    assertTrue(catalog.createTable(table1));
+    catalog.createTable(table1);
     TableDesc table2 = createMockupTable("tmpdb3", "table2");
-    assertTrue(catalog.createTable(table2));
+    catalog.createTable(table2);
     assertTrue(catalog.existsTable("tmpdb3", "table1"));
     assertTrue(catalog.existsTable("tmpdb3", "table2"));
 
     TableDesc table3 = createMockupTable("tmpdb4", "table1");
-    assertTrue(catalog.createTable(table3));
+    catalog.createTable(table3);
     TableDesc table4 = createMockupTable("tmpdb4", "table2");
-    assertTrue(catalog.createTable(table4));
+    catalog.createTable(table4);
     assertTrue(catalog.existsTable("tmpdb4", "table1"));
     assertTrue(catalog.existsTable("tmpdb4", "table2"));
 
-    assertTrue(catalog.dropTable("tmpdb3.table1"));
-    assertTrue(catalog.dropTable("tmpdb3.table2"));
-    assertTrue(catalog.dropTable("tmpdb4.table1"));
-    assertTrue(catalog.dropTable("tmpdb4.table2"));
+    catalog.dropTable("tmpdb3.table1");
+    catalog.dropTable("tmpdb3.table2");
+    catalog.dropTable("tmpdb4.table1");
+    catalog.dropTable("tmpdb4.table2");
 
     assertFalse(catalog.existsTable("tmpdb3.table1"));
     assertFalse(catalog.existsTable("tmpdb3.table2"));
@@ -606,7 +613,7 @@ public class TestCatalog {
 	public void testAddAndDelIndex() throws Exception {
 	  TableDesc desc = prepareTable();
     prepareIndexDescs();
-	  assertTrue(catalog.createTable(desc));
+	  catalog.createTable(desc);
 	  
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
 	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
@@ -1105,7 +1112,7 @@ public class TestCatalog {
     FunctionDesc meta = new FunctionDesc("testint", TestIntFunc.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4));
-    assertTrue(catalog.createFunction(meta));
+    catalog.createFunction(meta);
 
     // UPGRADE TO INT4 SUCCESS==> LOOK AT SECOND PARAM BELOW
     FunctionDesc retrieved = catalog.getFunction("testint", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT2));
@@ -1121,7 +1128,7 @@ public class TestCatalog {
     FunctionDesc meta = new FunctionDesc("testintinvalid", TestIntFunc.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT4));
-    assertTrue(catalog.createFunction(meta));
+    catalog.createFunction(meta);
 
     //UPGRADE TO INT8 WILL FAIL ==> LOOK AT SECOND PARAM BELOW
     catalog.getFunction("testintinvalid", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
@@ -1133,7 +1140,7 @@ public class TestCatalog {
     FunctionDesc meta = new FunctionDesc("testfloat", TestFloatFunc.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4));
-    assertTrue(catalog.createFunction(meta));
+    catalog.createFunction(meta);
 
     //UPGRADE TO FLOAT 8 SUCCESS==> LOOK AT FIRST PARAM BELOW
     FunctionDesc retrieved = catalog.getFunction("testfloat",
@@ -1150,7 +1157,7 @@ public class TestCatalog {
     FunctionDesc meta = new FunctionDesc("testfloatinvalid", TestFloatFunc.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4));
-    assertTrue(catalog.createFunction(meta));
+    catalog.createFunction(meta);
 
     // UPGRADE TO DECIMAL WILL FAIL ==> LOOK AT FIRST PARAM BELOW
     catalog.getFunction("testfloatinvalid", CatalogUtil.newSimpleDataTypeArray(Type.NUMERIC, Type.INT4));
@@ -1162,7 +1169,7 @@ public class TestCatalog {
     FunctionDesc meta = new FunctionDesc("testany", TestAnyParamFunc.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.ANY));
-    assertTrue(catalog.createFunction(meta));
+    catalog.createFunction(meta);
 
     FunctionDesc retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.INT1));
     assertEquals(retrieved.getFunctionName(), "testany");

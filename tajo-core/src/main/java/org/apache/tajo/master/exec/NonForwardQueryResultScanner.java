@@ -18,14 +18,14 @@
 
 package org.apache.tajo.master.exec;
 
-import java.io.IOException;
-import java.util.List;
-
+import com.google.protobuf.ByteString;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.TajoException;
 
-import com.google.protobuf.ByteString;
+import java.io.IOException;
+import java.util.List;
 
 public interface NonForwardQueryResultScanner {
 
@@ -41,7 +41,7 @@ public interface NonForwardQueryResultScanner {
   
   public TableDesc getTableDesc();
 
-  public void init() throws IOException;
+  public void init() throws IOException, TajoException;
 
   public int getCurrentRowNumber();
 

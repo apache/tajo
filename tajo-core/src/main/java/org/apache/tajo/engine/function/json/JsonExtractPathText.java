@@ -20,7 +20,6 @@ package org.apache.tajo.engine.function.json;
 
 import com.jayway.jsonpath.JsonPath;
 import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -28,13 +27,12 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
 /**
  * json_extract_path_text(string, string) -
  * Extracts JSON string from a JSON string based on json path specified,
- * and returns JSON string pointed to by xPath.
+ * and returns JSON string pointed to by JSONPath.
  *
  *
  * Returns null if either argument is null.
@@ -45,16 +43,15 @@ import org.apache.tajo.storage.Tuple;
  */
 @Description(
     functionName = "json_extract_path_text",
-    description = "Returns JSON string pointed to by xPath",
+    description = "Returns JSON string pointed to by JSONPath",
     detail = "Extracts JSON string from a JSON string based on json path specified,\n"
-        + "and returns JSON string pointed to by xPath.",
+        + "and returns JSON string pointed to by JSONPath.",
     example = "> SELECT json_extract_path_text('{\"sample\" : {\"name\" : \"tajo\"}}','$.sample.name');\n"
         + "tajo",
     returnType = TajoDataTypes.Type.TEXT,
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
 )
-public class JsonExtractPathText extends GeneralFunction {
-  private JSONParser parser;
+public class JsonExtractPathText extends ScalarJsonFunction {
   private JsonPath jsonPath;
 
   public JsonExtractPathText() {
@@ -62,7 +59,6 @@ public class JsonExtractPathText extends GeneralFunction {
         new Column("string", TajoDataTypes.Type.TEXT),
         new Column("string", TajoDataTypes.Type.TEXT),
     });
-    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
   }
 
   @Override

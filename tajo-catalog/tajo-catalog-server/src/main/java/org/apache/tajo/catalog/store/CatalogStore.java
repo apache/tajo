@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,126 +18,134 @@
 
 package org.apache.tajo.catalog.store;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.exception.*;
 
 import java.io.Closeable;
-
-import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
-
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
 public interface CatalogStore extends Closeable {
   /*************************** Tablespace ******************************/
-  void createTablespace(String spaceName, String spaceUri) throws CatalogException;
+  void createTablespace(String spaceName, String spaceUri) throws DuplicateTablespaceException;
 
-  boolean existTablespace(String spaceName) throws CatalogException;
+  boolean existTablespace(String spaceName);
 
-  void dropTablespace(String spaceName) throws CatalogException;
+  void dropTablespace(String spaceName) throws UndefinedTablespaceException, UndefinedTableException;
 
-  Collection<String> getAllTablespaceNames() throws CatalogException;
-  
-  List<TablespaceProto> getTablespaces() throws CatalogException;
+  Collection<String> getAllTablespaceNames();
 
-  TablespaceProto getTablespace(String spaceName) throws CatalogException;
+  List<TablespaceProto> getTablespaces();
 
-  void alterTablespace(AlterTablespaceProto alterProto) throws CatalogException;
+  TablespaceProto getTablespace(String spaceName) throws UndefinedTablespaceException;
+
+  void alterTablespace(AlterTablespaceProto alterProto) throws UndefinedTablespaceException;
 
   /*************************** Database ******************************/
-  void createDatabase(String databaseName, String tablespaceName) throws CatalogException;
+  void createDatabase(String databaseName, String tablespaceName) throws UndefinedTablespaceException,
+      DuplicateDatabaseException;
 
-  boolean existDatabase(String databaseName) throws CatalogException;
+  boolean existDatabase(String databaseName);
 
-  void dropDatabase(String databaseName) throws CatalogException;
+  void dropDatabase(String databaseName) throws UndefinedDatabaseException, UndefinedTableException;
 
-  Collection<String> getAllDatabaseNames() throws CatalogException;
-  
-  List<DatabaseProto> getAllDatabases() throws CatalogException;
+  Collection<String> getAllDatabaseNames();
+
+  List<DatabaseProto> getAllDatabases();
 
   /*************************** TABLE ******************************/
-  void createTable(CatalogProtos.TableDescProto desc) throws CatalogException;
-  
-  boolean existTable(String databaseName, String tableName) throws CatalogException;
-  
-  void dropTable(String databaseName, String tableName) throws CatalogException;
-  
-  CatalogProtos.TableDescProto getTable(String databaseName, String tableName) throws CatalogException;
-  
-  List<String> getAllTableNames(String databaseName) throws CatalogException;
+  void createTable(CatalogProtos.TableDescProto desc) throws UndefinedDatabaseException, DuplicateTableException;
 
-  void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException;
-  
-  List<TableDescriptorProto> getAllTables() throws CatalogException;
+  boolean existTable(String databaseName, String tableName) throws UndefinedDatabaseException;
 
-  List<TableOptionProto> getAllTableProperties() throws CatalogException;
-  
-  List<TableStatsProto> getAllTableStats() throws CatalogException;
-  
-  List<ColumnProto> getAllColumns() throws CatalogException;
+  void dropTable(String databaseName, String tableName) throws UndefinedDatabaseException, UndefinedTableException;
 
-  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws CatalogException;
+  CatalogProtos.TableDescProto getTable(String databaseName, String tableName) throws UndefinedDatabaseException,
+      UndefinedTableException;
+
+  List<String> getAllTableNames(String databaseName) throws UndefinedDatabaseException;
+
+  void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws UndefinedDatabaseException,
+      DuplicateTableException, DuplicateColumnException, DuplicatePartitionException, UndefinedPartitionException,
+      UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException;
+
+  List<TableDescriptorProto> getAllTables();
+
+  List<TableOptionProto> getAllTableProperties();
+
+  List<TableStatsProto> getAllTableStats();
+
+  List<ColumnProto> getAllColumns();
+
+  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws UndefinedDatabaseException, UndefinedTableException;
 
   /************************ PARTITION METHOD **************************/
-  void addPartitionMethod(PartitionMethodProto partitionMethodProto) throws CatalogException;
+  PartitionMethodProto getPartitionMethod(String databaseName, String tableName) throws UndefinedDatabaseException,
+      UndefinedTableException, UndefinedPartitionMethodException;
 
-  PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
-      throws CatalogException;
-
-  boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException;
-
-  void dropPartitionMethod(String dbName, String tableName) throws CatalogException;
-
+  boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedDatabaseException,
+      UndefinedTableException;
 
   /************************** PARTITIONS *****************************/
   /**
    * Get all partitions of a table
    * @param tableName the table name
    * @return
-   * @throws CatalogException
+   * @throws TajoException
    */
-  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException;
+  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws
+      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                String partitionName) throws CatalogException;
+                                                String partitionName)
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
+      UndefinedPartitionMethodException;
 
-  List<TablePartitionProto> getAllPartitions() throws CatalogException;
+  List<TablePartitionProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
-    , boolean ifNotExists) throws CatalogException;
+      , boolean ifNotExists) throws UndefinedDatabaseException,
+      UndefinedTableException, DuplicatePartitionException, UndefinedPartitionException,
+      UndefinedPartitionMethodException;
 
   /**************************** INDEX *******************************/
-  void createIndex(IndexDescProto proto) throws CatalogException;
-  
-  void dropIndex(String databaseName, String indexName) throws CatalogException;
-  
-  IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException;
+  void createIndex(IndexDescProto proto) throws UndefinedDatabaseException, UndefinedTableException,
+      DuplicateIndexException;
 
-  IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws CatalogException;
-  
-  boolean existIndexByName(String databaseName, String indexName) throws CatalogException;
+  void dropIndex(String databaseName, String indexName) throws UndefinedDatabaseException,
+      UndefinedTableException, UndefinedIndexException;
 
-  boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      throws CatalogException;
+  IndexDescProto getIndexByName(String databaseName, String indexName) throws UndefinedDatabaseException,
+      UndefinedIndexException;
 
-  List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException;
+  IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws
+      UndefinedDatabaseException, UndefinedTableException, UndefinedIndexException
+      ;
 
-  boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException;
+  boolean existIndexByName(String databaseName, String indexName) throws UndefinedDatabaseException;
 
-  List<IndexDescProto> getAllIndexes() throws CatalogException;
+  boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) throws
+      UndefinedDatabaseException, UndefinedTableException;
+
+  List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws UndefinedDatabaseException, UndefinedTableException;
+
+  boolean existIndexesByTable(String databaseName, String tableName)
+      throws UndefinedDatabaseException, UndefinedTableException;
+
+  List<IndexDescProto> getAllIndexes() throws UndefinedDatabaseException;
 
   /************************** FUNCTION *****************************/
 
-  
-  void addFunction(FunctionDesc func) throws CatalogException;
-  
-  void deleteFunction(FunctionDesc func) throws CatalogException;
-  
-  void existFunction(FunctionDesc func) throws CatalogException;
-  
-  List<String> getAllFunctionNames() throws CatalogException;
+
+  void addFunction(FunctionDesc func);
+
+  void deleteFunction(FunctionDesc func);
+
+  void existFunction(FunctionDesc func);
+
+  List<String> getAllFunctionNames();
 }

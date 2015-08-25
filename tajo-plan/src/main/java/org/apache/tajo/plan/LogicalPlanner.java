@@ -35,8 +35,8 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.UndefinedColumnException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.UndefinedColumnException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
@@ -46,7 +46,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -56,7 +56,6 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -100,7 +99,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock queryBlock;
     EvalTreeOptimizer evalOptimizer;
     TimeZone timeZone;
+    List<Expr> unplannedExprs = TUtil.newList();
     boolean debugOrUnitTests;
+    Integer noNameSubqueryId = 0;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
                        boolean debugOrUnitTests) {
@@ -138,6 +139,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return "block=" + queryBlock.getName() + ", relNum=" + queryBlock.getRelations().size() + ", "+
           queryBlock.namedExprsMgr.toString();
     }
+
+    /**
+     * It generates a unique table subquery name
+     */
+    public String generateUniqueSubQueryName() {
+      return LogicalPlan.NONAME_SUBQUERY_PREFIX + noNameSubqueryId++;
+    }
   }
 
   /**
@@ -153,7 +161,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @VisibleForTesting
   public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug) throws TajoException {
 
-    LogicalPlan plan = new LogicalPlan(this);
+    LogicalPlan plan = new LogicalPlan();
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, debug);
@@ -235,8 +243,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public LogicalNode visitProjection(PlanContext context, Stack<Expr> stack, Projection projection)
       throws TajoException {
 
-
-    LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
     // If a non-from statement is given
@@ -280,6 +286,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     projectionNode.init(projection.isDistinct(), targets);
     projectionNode.setChild(child);
     projectionNode.setInSchema(child.getOutSchema());
+    projectionNode.setOutSchema(PlannerUtil.targetToSchema(targets));
 
     if (projection.isDistinct() && block.hasNode(NodeType.GROUP_BY)) {
       throw makeSyntaxError("Cannot support grouping and distinct at the same time yet");
@@ -374,7 +381,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private interface Matcher {
-    public boolean isMatch(Expr expr);
+    boolean isMatch(Expr expr);
   }
 
   public List<Integer> normalize(PlanContext context, Projection projection, ExprNormalizedResult [] normalizedExprList,
@@ -554,7 +561,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       throws TajoException {
     for (Target t : projectable.getTargets()) {
       if (t.getEvalTree().getValueType().getType() == TajoDataTypes.Type.RECORD) {
-        throw new UnimplementedException("record field projection");
+        throw new NotImplementedException("record field projection");
       }
     }
   }
@@ -1090,6 +1097,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Visit and Build Child Plan
     ////////////////////////////////////////////////////////
     stack.push(selection);
+    // Since filter push down will be done later, it is guaranteed that in-subqueries are found at only selection.
+    for (Expr eachQual : PlannerUtil.extractInSubquery(selection.getQual())) {
+      InPredicate inPredicate = (InPredicate) eachQual;
+      visit(context, stack, inPredicate.getInValue());
+      context.unplannedExprs.add(inPredicate.getInValue());
+    }
     LogicalNode child = visit(context, stack, selection.getChild());
     stack.pop();
     ////////////////////////////////////////////////////////
@@ -1385,13 +1398,26 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
+  @Override
   public TableSubQueryNode visitTableSubQuery(PlanContext context, Stack<Expr> stack, TablePrimarySubQuery expr)
+      throws TajoException {
+    return visitCommonTableSubquery(context, stack, expr);
+  }
+
+  @Override
+  public TableSubQueryNode visitSimpleTableSubquery(PlanContext context, Stack<Expr> stack, SimpleTableSubquery expr)
+      throws TajoException {
+    return visitCommonTableSubquery(context, stack, expr);
+  }
+
+  private TableSubQueryNode visitCommonTableSubquery(PlanContext context, Stack<Expr> stack, CommonSubquery expr)
       throws TajoException {
     QueryBlock currentBlock = context.queryBlock;
     QueryBlock childBlock = context.plan.getBlock(context.plan.getBlockNameByExpr(expr.getSubQuery()));
     context.plan.connectBlocks(childBlock, currentBlock, BlockType.TableSubQuery);
 
     PlanContext newContext = new PlanContext(context, childBlock);
+    context.plan.connectBlocks(childBlock, context.queryBlock, BlockType.TableSubQuery);
     LogicalNode child = visit(newContext, new Stack<Expr>(), expr.getSubQuery());
     TableSubQueryNode subQueryNode = currentBlock.getNodeFromExpr(expr);
 
@@ -1401,7 +1427,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return subQueryNode;
   }
 
-  private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode) throws TajoException {
+  private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode)
+      throws TajoException {
     // Add additional expressions required in upper nodes.
     Set<String> newlyEvaluatedExprs = TUtil.newHashSet();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
@@ -1458,12 +1485,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return resultingNode;
   }
 
-  private ProjectionNode insertProjectionGroupbyBeforeSetOperation(PlanContext context, SetOperationNode setOperationNode) throws TajoException {
+  private ProjectionNode insertProjectionGroupbyBeforeSetOperation(PlanContext context,
+                                                                   SetOperationNode setOperationNode)
+      throws TajoException {
     QueryBlock currentBlock = context.queryBlock;
 
     // make table subquery node which has set operation as its subquery
     TableSubQueryNode setOpTableSubQueryNode = context.plan.createNode(TableSubQueryNode.class);
-    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), context.plan.generateUniqueSubQueryName()), setOperationNode);
+    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+        context.generateUniqueSubQueryName()), setOperationNode);
     setTargetOfTableSubQuery(context, currentBlock, setOpTableSubQueryNode);
     currentBlock.registerNode(setOpTableSubQueryNode);
     currentBlock.addRelation(setOpTableSubQueryNode);
@@ -1656,10 +1686,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
-      String [] targets = expr.getTargetColumns();
+      ColumnReferenceExpr [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
       for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i]);
+        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i].getCanonicalName().replace(".", "/"));
 
         if (targetColumn == null) {
           throw makeSyntaxError("column '" + targets[i] + "' of relation '" + desc.getName() + "' does not exist");
@@ -1702,15 +1732,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (child instanceof Projectable) {
-      Projectable projectionNode = (Projectable)insertNode.getChild();
+      Projectable projectionNode = insertNode.getChild();
 
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
       List<Target> targets = TUtil.newList();
-      for (int i = 0; i < tableSchema.size(); i++) {
-        Column column = tableSchema.getColumn(i);
 
+      for (Column column : tableSchema.getAllColumns()) {
         int idxInProjectionNode = targetColumns.getIndex(column);
+
+        // record type itself cannot be projected yet.
+        if (column.getDataType().getType() == TajoDataTypes.Type.RECORD) {
+          continue;
+        }
+
         if (idxInProjectionNode >= 0 && idxInProjectionNode < projectionNode.getTargets().length) {
           targets.add(projectionNode.getTargets()[idxInProjectionNode]);
         } else {
@@ -1999,7 +2034,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       partitionMethodDesc = new PartitionMethodDesc(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName,
           CatalogProtos.PartitionType.COLUMN, partitionExpression, convertColumnsToSchema(partition.getColumns()));
     } else {
-      throw new UnimplementedException("partition type '" + expr.getPartitionType() + "'");
+      throw new NotImplementedException("partition type '" + expr.getPartitionType() + "'");
     }
     return partitionMethodDesc;
   }

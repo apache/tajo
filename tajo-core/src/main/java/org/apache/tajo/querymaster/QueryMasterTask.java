@@ -56,8 +56,6 @@ import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.metrics.TajoMetrics;
-import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -69,8 +67,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
 import static org.apache.tajo.TajoProtos.QueryState;
-import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
@@ -263,13 +261,13 @@ public class QueryMasterTask extends CompositeService {
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), callFuture);
 
       if(!callFuture.get().getValue()){
-        queryMasterContext.getEventHandler().handle(
+        getEventHandler().handle(
             new TaskFatalErrorEvent(taskAttemptId, "Can't kill task :" + taskAttemptId));
       }
     } catch (Exception e) {
       /* Node RPC failure */
       LOG.error(e.getMessage(), e);
-      queryMasterContext.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
+      getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
     }
   }
 
@@ -370,7 +368,7 @@ public class QueryMasterTask extends CompositeService {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
           space.rollbackTable(rootNode.getChild());
-        } catch (IOException e) {
+        } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
       }

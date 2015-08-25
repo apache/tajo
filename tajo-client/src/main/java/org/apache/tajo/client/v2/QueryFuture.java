@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 /**
  *
  */
-public interface QueryFuture extends Future<ResultSet> {
+public interface QueryFuture extends Future<ResultSet>, AutoCloseable {
   /**
    * Get a query id
    *
@@ -122,7 +122,7 @@ public interface QueryFuture extends Future<ResultSet> {
   /**
    * Release a query future. It will be automatically released after the session invalidation.
    */
-  void release();
+  void close();
 
   /**
    * Add a listener which will be executed after this query is completed, error, failed or killed.

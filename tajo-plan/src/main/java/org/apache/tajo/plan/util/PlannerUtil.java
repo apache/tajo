@@ -27,19 +27,19 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.io.IOException;
 import java.util.*;
 
 public class PlannerUtil {
@@ -119,7 +119,7 @@ public class PlannerUtil {
         PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
     boolean noComplexComputation = false;
-    boolean prefixPartitionWhere = false;
+    boolean partitionWhere = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
       if (scanNode == null) {
@@ -154,33 +154,18 @@ public class PlannerUtil {
         }
       }
 
-      /**
-       * TODO: Remove isExternal check after resolving the following issues
-       * - TAJO-1416: INSERT INTO EXTERNAL PARTITIONED TABLE
-       * - TAJO-1441: INSERT INTO MANAGED PARTITIONED TABLE
-       */
-      if (!noWhere && scanNode.getTableDesc().isExternal() && scanNode.getTableDesc().getPartitionMethod() != null) {
+      if (!noWhere && scanNode.getTableDesc().hasPartition()) {
         EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
         Schema partSchema = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema();
         if (EvalTreeUtil.checkIfPartitionSelection(node, partSchema)) {
-          prefixPartitionWhere = true;
-          boolean isPrefix = true;
-          for (Column c : partSchema.getRootColumns()) {
-            String value = EvalTreeUtil.getPartitionValue(node, c.getSimpleName());
-            if (isPrefix && value == null)
-              isPrefix = false;
-            else if (!isPrefix && value != null) {
-              prefixPartitionWhere = false;
-              break;
-            }
-          }
+          partitionWhere = true;
         }
       }
     }
 
     return !checkIfDDLPlan(rootNode) &&
         (simpleOperator && noComplexComputation && isOneQueryBlock &&
-            noOrderBy && noGroupBy && (noWhere || prefixPartitionWhere) && noJoin && singleRelation);
+            noOrderBy && noGroupBy && (noWhere || partitionWhere) && noJoin && singleRelation);
   }
   
   /**
@@ -304,10 +289,10 @@ public class PlannerUtil {
       } else if (binaryParent.getRightChild().deepEquals(child)) {
         binaryParent.setRightChild(grandChild);
       } else {
-        throw new IllegalStateException("ERROR: both logical node must be parent and child nodes");
+        throw new TajoInternalError("both logical node must be parent and child nodes");
       }
     } else {
-      throw new InvalidQueryException("Unexpected logical plan: " + parent);
+      throw new TajoInternalError("unexpected logical plan: " + parent);
     }
     return child;
   }
@@ -864,6 +849,16 @@ public class PlannerUtil {
     return explains.toString();
   }
 
+  public static String getShuffleType(ShuffleType shuffleType) {
+    if (shuffleType == null) return ShuffleType.NONE_SHUFFLE.toString();
+    return shuffleType.toString();
+  }
+
+  public static ShuffleType getShuffleType(String shuffleType) {
+    if (StringUtils.isEmpty(shuffleType)) return ShuffleType.NONE_SHUFFLE;
+    return ShuffleType.valueOf(shuffleType);
+  }
+
   public static boolean isFileStorageType(String storageType) {
     if (storageType.equalsIgnoreCase("hbase")) {
       return false;
@@ -912,7 +907,7 @@ public class PlannerUtil {
     }
   }
 
-  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws UndefinedTableException {
     if (node.getType() == NodeType.ROOT) {
       node = ((LogicalRootNode)node).getChild();
     }
@@ -979,5 +974,22 @@ public class PlannerUtil {
     }
 
     return tableDescTobeCreated;
+  }
+
+  /**
+   * Extract all in-subqueries from the given qual.
+   *
+   * @param qual
+   * @return
+   */
+  public static List<Expr> extractInSubquery(Expr qual) {
+    List<Expr> inSubqueries = TUtil.newList();
+    for (Expr eachIn : ExprFinder.findsInOrder(qual, OpType.InPredicate)) {
+      InPredicate inPredicate = (InPredicate) eachIn;
+      if (inPredicate.getInValue().getType() == OpType.SimpleTableSubquery) {
+        inSubqueries.add(eachIn);
+      }
+    }
+    return inSubqueries;
   }
 }

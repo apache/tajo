@@ -39,19 +39,20 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
-import org.apache.tajo.querymaster.Task.IntermediateEntry;
-import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -77,7 +78,7 @@ public class Repartitioner {
   private final static String UNKNOWN_HOST = "unknown";
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, Stage stage)
-      throws IOException {
+      throws IOException, TajoException {
     ExecutionBlock execBlock = stage.getBlock();
     QueryMasterTask.QueryMasterTaskContext masterContext = stage.getContext();
 
@@ -106,11 +107,7 @@ public class Repartitioner {
 
       } else {
 
-        try {
-          stats[i] = GlobalPlanRewriteUtil.computeDescendentVolume(scans[i]);
-        } catch (PlanningException e) {
-          throw new IOException(e);
-        }
+        stats[i] = GlobalPlanRewriteUtil.computeDescendentVolume(scans[i]);
 
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
@@ -282,7 +279,7 @@ public class Repartitioner {
                                                        Fragment[] fragments,
                                                        ScanNode[] broadcastScans,
                                                        long[] broadcastStats,
-                                                       Fragment[] broadcastFragments) throws IOException {
+                                                       Fragment[] broadcastFragments) throws IOException, TajoException {
     MasterPlan masterPlan = stage.getMasterPlan();
     ExecutionBlock execBlock = stage.getBlock();
     // The hash map is modeling as follows:
@@ -597,7 +594,7 @@ public class Repartitioner {
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
       scheduleRangeShuffledFetches(schedulerContext, masterPlan, stage, channel, maxNum);
     } else {
-      throw new InternalException("Cannot support partition type");
+      throw new TajoInternalError("Cannot support partition type");
     }
   }
 
@@ -639,8 +636,10 @@ public class Repartitioner {
       String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
       CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();
-      TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
-      if (tableDesc == null) {
+      TableDesc tableDesc = null;
+      try {
+        tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
+      } catch (UndefinedTableException e) {
         throw new IOException("Can't get table meta data from catalog: " +
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
