@@ -335,15 +335,20 @@ public class Query implements EventHandler<QueryEvent> {
     return queryHistory;
   }
 
-  public ImmutableList<PartitionDescProto> getPartitions() {
-    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
+  public Set<PartitionDescProto> getPartitions() {
+    Set<PartitionDescProto> partitions = TUtil.newHashSet();
     for(Stage eachStage : getStages()) {
       if (!eachStage.getPartitions().isEmpty()) {
         partitions.addAll(eachStage.getPartitions());
       }
     }
+    return partitions;
+  }
 
-    return ImmutableSet.copyOf(partitions).asList();
+  public void clearPartitions() {
+    for(Stage eachStage : getStages()) {
+      eachStage.clearPartitions();
+    }
   }
 
   public List<String> getDiagnostics() {
@@ -508,30 +513,31 @@ public class Query implements EventHandler<QueryEvent> {
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
-        TableDesc desc = query.getResultDesc();
+        // Add dynamic partitions to catalog for partition table.
+        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
+          Set<PartitionDescProto> partitions = query.getPartitions();
+          if (partitions != null) {
+            String databaseName, simpleTableName;
 
-        // If there is partitions
-        List<PartitionDescProto> partitions = query.getPartitions();
-        if (partitions!= null && !partitions.isEmpty()) {
+            if (CatalogUtil.isFQTableName(tableDesc.getName())) {
+              String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
+              databaseName = split[0];
+              simpleTableName = split[1];
+            } else {
+              databaseName = queryContext.getCurrentDatabase();
+              simpleTableName = tableDesc.getName();
+            }
 
-          String databaseName, simpleTableName;
-
-          if (CatalogUtil.isFQTableName(desc.getName())) {
-            String[] split = CatalogUtil.splitFQTableName(desc.getName());
-            databaseName = split[0];
-            simpleTableName = split[1];
+            // Store partitions to CatalogStore using alter table statement.
+            catalog.addPartitions(databaseName, simpleTableName, TUtil.newList(partitions), true);
+            LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           } else {
-            databaseName = queryContext.getCurrentDatabase();
-            simpleTableName = desc.getName();
+            LOG.info("Can't find partitions for adding.");
           }
-
-          // Store partitions to CatalogStore using alter table statement.
-          catalog.addPartitions(databaseName, simpleTableName, partitions, true);
-        } else {
-          LOG.info("Can't find partitions for adding.");
+          query.clearPartitions();
+          partitions.clear();
         }
-
-      } catch (Exception e) {
+      } catch (Throwable e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;
       }
