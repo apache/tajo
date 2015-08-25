@@ -21,7 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.plan.InvalidQueryException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -37,8 +37,7 @@ public class SortIntersectExec extends BinaryPhysicalExec {
     TajoDataTypes.DataType[] leftTypes = SchemaUtil.toDataTypes(left.getSchema());
     TajoDataTypes.DataType[] rightTypes = SchemaUtil.toDataTypes(right.getSchema());
     if (!CatalogUtil.isMatchedFunction(Arrays.asList(leftTypes), Arrays.asList(rightTypes))) {
-      throw new InvalidQueryException(
-          "The both schemas are not compatible");
+      throw new TajoInternalError("the both schemas are not compatible");
     }
     comparator = new SetTupleComparator(left.getSchema(), right.getSchema());
     this.isDistinct = isDistinct;

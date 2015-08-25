@@ -48,9 +48,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.rm.NodeStatus;
-import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -121,7 +119,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     }
 
     if (leafBlock == null) {
-      throw new InvalidQueryException("Global planner could not find any leaf block.");
+      throw new TajoInternalError("global planner could not find any leaf block.");
     }
 
     taskContext = new TaskAttemptContext(queryContext, null,

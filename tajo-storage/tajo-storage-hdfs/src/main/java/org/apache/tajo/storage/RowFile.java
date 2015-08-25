@@ -34,8 +34,11 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BitArray;
@@ -303,7 +306,7 @@ public class RowFile {
 
     @Override
     public void setFilter(EvalNode filter) {
-      throw new UnsupportedException();
+      throw new TajoRuntimeException(new UnsupportedException());
     }
 
     @Override
@@ -322,6 +325,7 @@ public class RowFile {
     private BitArray nullFlags;
     // statistics
     private TableStatistics stats;
+    private ShuffleType shuffleType;
 
     public RowFileAppender(Configuration conf, final TaskAttemptId taskAttemptId,
                            final Schema schema, final TableMeta meta, final Path workDir)
@@ -364,6 +368,9 @@ public class RowFile {
 
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
+        this.shuffleType = PlannerUtil.getShuffleType(
+            meta.getOption(StorageConstants.SHUFFLE_TYPE,
+                PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
       }
     }
 
@@ -383,7 +390,8 @@ public class RowFile {
       nullFlags.clear();
 
       for (int i = 0; i < schema.size(); i++) {
-        if (enabledStats) {
+        if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
+          // it is to calculate min/max values, and it is only used for the intermediate file.
           stats.analyzeField(i, t);
         }
 

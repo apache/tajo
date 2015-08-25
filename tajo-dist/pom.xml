@@ -21,7 +21,7 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.11.0-SNAPSHOT</version>
+    <version>0.12.0-SNAPSHOT</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -138,6 +138,7 @@
                       run cp -r $ROOT/tajo-algebra/target/tajo-algebra-${project.version}/* .
                       run cp -r $ROOT/tajo-plan/target/tajo-plan-${project.version}/* .
                       run cp -r $ROOT/tajo-client/target/tajo-client-${project.version}/* .
+                      run cp -r $ROOT/tajo-client-example/target/tajo-client-example-${project.version}/* .
                       run cp -r $ROOT/tajo-cli/target/tajo-cli-${project.version}/* .
                       run cp -r $ROOT/tajo-catalog/target/tajo-catalog-${project.version}/* .
                       run cp -r $ROOT/tajo-storage/target/tajo-storage-${project.version}/* .

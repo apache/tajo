@@ -23,9 +23,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 public class InvalidOperationException extends RuntimeException {
 	private static final long serialVersionUID = -7689027447969916148L;
 
-	/**
-	 * 
-	 */
 	public InvalidOperationException() {
 	}
 

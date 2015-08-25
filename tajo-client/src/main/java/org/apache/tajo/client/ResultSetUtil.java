@@ -18,7 +18,8 @@
 
 package org.apache.tajo.client;
 
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.sql.ResultSet;
@@ -51,8 +52,10 @@ public class ResultSetUtil {
     return sb.toString();
   }
 
-  public static String toSqlType(TajoDataTypes.DataType type) {
+  public static String toSqlType(DataType type) {
     switch (type.getType()) {
+    case BIT:
+      return "bit";
     case BOOLEAN:
       return "boolean";
     case INT1:
@@ -66,30 +69,36 @@ public class ResultSetUtil {
     case FLOAT4:
       return "float";
     case FLOAT8:
-      return "float8";
+      return "double";
     case NUMERIC:
       return "numeric";
     case VARBINARY:
       return "bytea";
-    case CHAR:
-      return "character";
     case DATE:
       return "date";
     case TIMESTAMP:
       return "timestamp";
     case TIME:
       return "time";
+    case CHAR:
     case VARCHAR:
-      return "varchar";
     case TEXT:
       return "varchar";
+    case BLOB:
+      return "blob";
+    case RECORD:
+      return "struct";
+    case NULL_TYPE:
+      return "null";
     default:
-      throw new UnsupportedException("Unrecognized column type:" + type);
+      throw new TajoRuntimeException(new UnsupportedException("unknown data type '" + type.getType().name() + "'"));
     }
   }
 
-  public static int tajoTypeToSqlType(TajoDataTypes.DataType type) throws SQLException {
+  public static int tajoTypeToSqlType(DataType type) throws SQLException {
     switch (type.getType()) {
+    case BIT:
+      return Types.BIT;
     case BOOLEAN:
       return Types.BOOLEAN;
     case INT1:
@@ -112,28 +121,37 @@ public class ResultSetUtil {
       return Types.TIMESTAMP;
     case TIME:
       return Types.TIME;
+    case CHAR:
     case VARCHAR:
-      return Types.VARCHAR;
     case TEXT:
       return Types.VARCHAR;
+    case BLOB:
+      return Types.BLOB;
+    case RECORD:
+      return Types.STRUCT;
+    case NULL_TYPE:
+      return Types.NULL;
     default:
       throw new SQLException("Unrecognized column type: " + type);
     }
   }
 
   public static int columnDisplaySize(int columnType) throws SQLException {
-    // according to hiveTypeToSqlType possible options are:
-    switch(columnType) {
+
+    switch (columnType) {
+    case Types.BIT:
     case Types.BOOLEAN:
-      return columnPrecision(columnType);
+    case Types.CHAR:
     case Types.VARCHAR:
-      return Integer.MAX_VALUE; // hive has no max limit for strings
+      return columnPrecision(columnType);
     case Types.TINYINT:
     case Types.SMALLINT:
     case Types.INTEGER:
     case Types.BIGINT:
       return columnPrecision(columnType) + 1; // allow +/-
     case Types.TIMESTAMP:
+    case Types.DATE:
+    case Types.TIME:
       return columnPrecision(columnType);
     // see http://download.oracle.com/javase/6/docs/api/constant-values.html#java.lang.Float.MAX_EXPONENT
     case Types.FLOAT:
@@ -143,18 +161,30 @@ public class ResultSetUtil {
       return 25; // e.g. -(17#).e-####
     case Types.DECIMAL:
       return Integer.MAX_VALUE;
+    case Types.NULL:
+      return 4;
+    case Types.BLOB:
+    case Types.BINARY:
+    case Types.ARRAY:
+    case Types.STRUCT:
     default:
-      throw new SQLException("Invalid column type: " + columnType);
+      return 0;  //unknown width
     }
   }
 
   public static int columnPrecision(int columnType) throws SQLException {
-    // according to hiveTypeToSqlType possible options are:
-    switch(columnType) {
+
+    switch (columnType) {
+    case Types.BIT:
     case Types.BOOLEAN:
       return 1;
+    case Types.CHAR:
     case Types.VARCHAR:
-      return Integer.MAX_VALUE; // hive has no max limit for strings
+    case Types.BLOB:
+    case Types.BINARY:
+    case Types.STRUCT:
+    case Types.ARRAY:
+      return Integer.MAX_VALUE;
     case Types.TINYINT:
       return 3;
     case Types.SMALLINT:
@@ -167,29 +197,44 @@ public class ResultSetUtil {
       return 7;
     case Types.DOUBLE:
       return 15;
+    case Types.DATE:
+      return 10;
+    case Types.TIME:
+      return 18;
     case Types.TIMESTAMP:
       return 29;
     case Types.DECIMAL:
       return Integer.MAX_VALUE;
+    case Types.NULL:
+      return 0;
     default:
       throw new SQLException("Invalid column type: " + columnType);
     }
   }
 
   public static int columnScale(int columnType) throws SQLException {
-    // according to hiveTypeToSqlType possible options are:
-    switch(columnType) {
+
+    switch (columnType) {
     case Types.BOOLEAN:
+    case Types.CHAR:
     case Types.VARCHAR:
     case Types.TINYINT:
     case Types.SMALLINT:
     case Types.INTEGER:
     case Types.BIGINT:
+    case Types.DATE:
+    case Types.BIT:
+    case Types.BLOB:
+    case Types.BINARY:
+    case Types.ARRAY:
+    case Types.STRUCT:
+    case Types.NULL:
       return 0;
     case Types.FLOAT:
       return 7;
     case Types.DOUBLE:
       return 15;
+    case Types.TIME:
     case Types.TIMESTAMP:
       return 9;
     case Types.DECIMAL:

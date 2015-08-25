@@ -26,14 +26,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.exception.CatalogExceptionUtil;
-import org.apache.tajo.catalog.exception.DuplicateDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.catalog.exception.UndefinedTableException;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.TUtil;
@@ -43,7 +36,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.Stack;
 
-import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeUndefinedTable;
 import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
 
 public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVerifier.Context, Expr> {
@@ -162,10 +154,18 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (!catalog.existsTable(qualifiedName)) {
-      context.state.addVerification(makeUndefinedTable(qualifiedName));
+      context.state.addVerification(new UndefinedTableException(qualifiedName));
       return false;
     }
     return true;
+  }
+
+  private void assertRelationSchema(Context context, CreateTable createTable) {
+    for (ColumnDefinition colDef : createTable.getTableElements()) {
+      if (colDef.isMapType()) {
+        context.state.addVerification(new UnsupportedException("map type"));
+      }
+    }
   }
 
   private boolean assertRelationNoExistence(Context context, String tableName) {
@@ -180,7 +180,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
       System.out.println("A");
     }
     if (catalog.existsTable(qualifiedName)) {
-      context.state.addVerification(CatalogExceptionUtil.makeDuplicateTable(qualifiedName));
+      context.state.addVerification(new DuplicateTableException(qualifiedName));
       return false;
     }
     return true;
@@ -239,12 +239,19 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   @Override
   public Expr visitCreateTable(Context context, Stack<Expr> stack, CreateTable expr) throws TajoException {
     super.visitCreateTable(context, stack, expr);
+
     if (!expr.isIfNotExists()) {
       assertRelationNoExistence(context, expr.getTableName());
     }
+
+    if (expr.hasTableElements()) {
+      assertRelationSchema(context, expr);
+    }
+
     if (expr.hasStorageType()) {
       assertSupportedStoreType(context.state, expr.getStorageType());
     }
+
     return expr;
   }
 

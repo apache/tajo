@@ -18,17 +18,17 @@
 
 package org.apache.tajo.client.v2;
 
-import com.google.common.base.Optional;
 import com.google.common.util.concurrent.AbstractFuture;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.catalog.exception.UndefinedDatabaseException;
-import org.apache.tajo.client.*;
+import org.apache.tajo.client.DummyServiceTracker;
+import org.apache.tajo.client.QueryClientImpl;
+import org.apache.tajo.client.SessionConnection;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.GetQueryStatusResponse;
 import org.apache.tajo.service.ServiceTracker;
@@ -72,10 +72,20 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   }
 
   @Override
-  public ResultSet executeSQL(String sql) throws TajoException {
+  public ResultSet executeSQL(String sql) throws TajoException, QueryFailedException, QueryKilledException {
     try {
       return executeSQLAsync(sql).get();
-    } catch (InterruptedException | ExecutionException e) {
+
+    } catch (ExecutionException e) {
+
+      if (e.getCause() instanceof TajoException) {
+        throw (TajoException) e.getCause();
+      } else if (e.getCause() instanceof TajoRuntimeException) {
+        throw new TajoException((TajoRuntimeException)e.getCause());
+      } else {
+        throw new TajoInternalError(e);
+      }
+    } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
@@ -83,7 +93,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   @Override
   public QueryFuture executeSQLAsync(String sql) throws TajoException {
     ClientProtos.SubmitQueryResponse response = queryClient.executeQuery(sql);
-    ClientExceptionUtil.throwIfError(response.getState());
+    ExceptionUtil.throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
 
@@ -182,7 +192,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public void release() {
+    public void close() {
       queryClient.closeQuery(id);
     }
 
@@ -270,7 +280,11 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
     @Override
     public boolean isKilled() {
-      return queryClient.getQueryStatus(queryId).getState() == TajoProtos.QueryState.QUERY_KILLED;
+      try {
+        return queryClient.getQueryStatus(queryId).getState() == TajoProtos.QueryState.QUERY_KILLED;
+      } catch (QueryNotFoundException e) {
+        throw new TajoInternalError(e);
+      }
     }
 
     @Override
@@ -295,7 +309,11 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
     @Override
     public void kill() {
-      queryClient.killQuery(queryId).getState();
+      try {
+        queryClient.killQuery(queryId).getState();
+      } catch (QueryNotFoundException e) {
+        throw new TajoInternalError(e);
+      }
     }
 
     @Override
@@ -314,7 +332,7 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     @Override
-    public void release() {
+    public void close() {
       queryClient.closeQuery(queryId);
     }
 
@@ -337,7 +355,8 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
     }
 
     GetQueryStatusResponse waitCompletion() {
-      GetQueryStatusResponse response = queryClient.getRawQueryStatus(queryId);
+      GetQueryStatusResponse response;
+      response = queryClient.getRawQueryStatus(queryId);
       ensureOk(response.getState());
       updateState(response);
 
@@ -367,13 +386,26 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
       if (finalResponse.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
         if (finalResponse.hasHasResult()) {
-          set(queryClient.getQueryResult(queryId));
+          try {
+            set(queryClient.getQueryResult(queryId));
+          } catch (QueryNotFoundException e) {
+            setException(e);
+            return;
+          }
         } else { // when update
           set(TajoClientUtil.NULL_RESULT_SET);
         }
+
+      } else if (finalResponse.getQueryState() == TajoProtos.QueryState.QUERY_KILLED) {
+        setException(new QueryKilledException());
+
       } else {
-        cancel(false); // failed
-        set(TajoClientUtil.NULL_RESULT_SET);
+        if (finalResponse.hasErrorMessage()) {
+          setException(new QueryFailedException(finalResponse.getErrorMessage()));
+        } else {
+          setException(new QueryFailedException(
+              "internal error. See master and worker logs in ${tajo-install-dir}/logs for the cause of this error"));
+        }
       }
     }
   }
@@ -402,52 +434,52 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
     @Override
     public InetSocketAddress getResourceTrackerAddress() throws ServiceTrackerException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public InetSocketAddress getCatalogAddress() throws ServiceTrackerException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public int getState(String masterName, TajoConf conf) throws ServiceTrackerException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public int formatHA(TajoConf conf) throws ServiceTrackerException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public void register() throws IOException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public void delete() throws IOException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public boolean isActiveMaster() {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
 
     @Override
     public List<TajoMasterInfo> getMasters() throws IOException {
-      throw new UnimplementedException();
+      throw new TajoRuntimeException(new NotImplementedException());
     }
   }
 

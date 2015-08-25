@@ -25,6 +25,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.exception.QueryNotFoundException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
@@ -58,7 +59,7 @@ public class TajoClientUtil {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
   }
 
-  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) {
+  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws QueryNotFoundException {
     QueryStatus status = client.getQueryStatus(queryId);
 
     while(!isQueryComplete(status.getState())) {

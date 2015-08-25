@@ -402,7 +402,7 @@ public class TestAsyncRpc {
     assertNotNull(future.getController().errorText(), future.getController().errorText());
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
@@ -425,7 +425,7 @@ public class TestAsyncRpc {
 
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testUnresolvedAddress2() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());

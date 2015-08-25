@@ -419,6 +419,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         } else {
           PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
         }
+        block.registerNode(rewrittenScanNode);
       } catch (IOException e) {
         throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
       }

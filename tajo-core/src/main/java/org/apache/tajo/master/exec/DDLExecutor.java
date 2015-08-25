@@ -28,7 +28,6 @@ import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
@@ -36,14 +35,15 @@ import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -209,7 +209,8 @@ public class DDLExecutor {
    * Alter a given table
    */
   public static void alterTablespace(final TajoMaster.MasterContext context, final QueryContext queryContext,
-                                     final AlterTablespaceNode alterTablespace) {
+                                     final AlterTablespaceNode alterTablespace)
+      throws UndefinedTablespaceException, InsufficientPrivilegeException {
 
     final CatalogService catalog = context.getCatalog();
     final String spaceName = alterTablespace.getTablespaceName();
@@ -234,7 +235,7 @@ public class DDLExecutor {
 
   // Database Section
   //--------------------------------------------------------------------------
-  public boolean createDatabase(@Nullable QueryContext queryContext, String databaseName,
+  public void createDatabase(@Nullable QueryContext queryContext, String databaseName,
                                 @Nullable String tablespace,
                                 boolean ifNotExists) throws IOException, DuplicateDatabaseException {
 
@@ -250,30 +251,27 @@ public class DDLExecutor {
     if (exists) {
       if (ifNotExists) {
         LOG.info("database \"" + databaseName + "\" is already exists.");
-        return true;
+        return;
       } else {
         throw new DuplicateDatabaseException(databaseName);
       }
     }
 
-    if (catalog.createDatabase(databaseName, tablespaceName)) {
-      String normalized = databaseName;
-      Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
-      FileSystem fs = databaseDir.getFileSystem(context.getConf());
-      fs.mkdirs(databaseDir);
-    }
-
-    return true;
+    catalog.createDatabase(databaseName, tablespaceName);
+    String normalized = databaseName;
+    Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
+    FileSystem fs = databaseDir.getFileSystem(context.getConf());
+    fs.mkdirs(databaseDir);
   }
 
-  public boolean dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)
-      throws UndefinedDatabaseException {
+  public void dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException {
 
     boolean exists = catalog.existDatabase(databaseName);
     if (!exists) {
       if (ifExists) { // DROP DATABASE IF EXISTS
         LOG.info("database \"" + databaseName + "\" does not exists.");
-        return true;
+        return;
       } else { // Otherwise, it causes an exception.
         throw new UndefinedDatabaseException(databaseName);
       }
@@ -283,9 +281,7 @@ public class DDLExecutor {
       throw new RuntimeException("ERROR: Cannot drop the current open database");
     }
 
-    boolean result = catalog.dropDatabase(databaseName);
-    LOG.info("database " + databaseName + " is dropped.");
-    return result;
+    catalog.dropDatabase(databaseName);
   }
 
   //--------------------------------------------------------------------------
@@ -299,8 +295,8 @@ public class DDLExecutor {
    * @param tableName to be dropped
    * @param purge     Remove all data if purge is true.
    */
-  public boolean dropTable(QueryContext queryContext, String tableName, boolean ifExists, boolean purge)
-      throws UndefinedTableException {
+  public void dropTable(QueryContext queryContext, String tableName, boolean ifExists, boolean purge)
+      throws TajoException {
 
     String databaseName;
     String simpleTableName;
@@ -318,7 +314,7 @@ public class DDLExecutor {
     if (!exists) {
       if (ifExists) { // DROP TABLE IF EXISTS
         LOG.info("relation \"" + qualifiedName + "\" is already exists.");
-        return true;
+        return;
       } else { // Otherwise, it causes an exception.
         throw new UndefinedTableException(qualifiedName);
       }
@@ -334,9 +330,7 @@ public class DDLExecutor {
         throw new InternalError(e.getMessage());
       }
     }
-
     LOG.info(String.format("relation \"%s\" is " + (purge ? " purged." : " dropped."), qualifiedName));
-    return true;
   }
 
   /**
@@ -367,15 +361,22 @@ public class DDLExecutor {
         throw new UndefinedTableException(qualifiedName);
       }
 
-      Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
+      // only file-based tablespace is supported yet.
       TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
-      Path tablePath = new Path(tableDesc.getUri());
-      if (tablePath.getParent() == null ||
-          !tablePath.getParent().toUri().getPath().equals(warehousePath.toUri().getPath())) {
-        throw new IOException("Can't truncate external table:" + eachTableName + ", data dir=" + tablePath +
-            ", warehouse dir=" + warehousePath);
+
+      if (tableDesc.isExternal()) {
+        throw new TajoRuntimeException(
+            new UnsupportedException("table truncation on an external table '" + eachTableName + "'"));
       }
-      tableDescList.add(tableDesc);
+
+      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+
+      if (space instanceof FileTablespace) {
+        tableDescList.add(tableDesc);
+      } else {
+        throw new TajoRuntimeException(
+            new UnsupportedException("table truncation on " + space.getName() + " storage"));
+      }
     }
 
     for (TableDesc eachTable : tableDescList) {
@@ -403,9 +404,7 @@ public class DDLExecutor {
    */
   public void alterTable(TajoMaster.MasterContext context, final QueryContext queryContext,
                          final AlterTableNode alterTable)
-      throws IOException, UndefinedTableException, DuplicateTableException, DuplicateColumnException,
-      DuplicatePartitionException, UndefinedPartitionException, UndefinedPartitionKeyException,
-      AmbiguousPartitionDirectoryExistException, UndefinedPartitionMethodException {
+      throws IOException, TajoException {
 
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
@@ -570,9 +569,7 @@ public class DDLExecutor {
    * @throws IOException
    */
   public void repairPartition(TajoMaster.MasterContext context, final QueryContext queryContext,
-                         final AlterTableNode alterTable) throws IOException, UndefinedTableException,
-    UndefinedPartitionMethodException {
-
+                         final AlterTableNode alterTable) throws IOException, TajoException {
     final CatalogService catalog = context.getCatalog();
     final String tableName = alterTable.getTableName();
 
@@ -664,7 +661,7 @@ public class DDLExecutor {
   }
 
   private boolean ensureColumnPartitionKeys(String tableName, String[] columnNames)
-      throws UndefinedPartitionKeyException {
+      throws UndefinedPartitionKeyException, UndefinedTableException {
 
     for(String columnName : columnNames) {
       if (!ensureColumnPartitionKeys(tableName, columnName)) {
@@ -674,7 +671,7 @@ public class DDLExecutor {
     return true;
   }
 
-  private boolean ensureColumnPartitionKeys(String tableName, String columnName) {
+  private boolean ensureColumnPartitionKeys(String tableName, String columnName) throws UndefinedTableException {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
     if (tableDesc.getPartitionMethod().getExpressionSchema().contains(columnName)) {
       return true;
@@ -683,7 +680,7 @@ public class DDLExecutor {
     }
   }
 
-  private boolean ensureColumnExistance(String tableName, String columnName) {
+  private boolean ensureColumnExistance(String tableName, String columnName) throws UndefinedTableException {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
     return tableDesc.getSchema().containsByName(columnName);
   }

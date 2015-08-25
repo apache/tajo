@@ -18,7 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
@@ -26,7 +26,7 @@ import java.util.Stack;
 public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<CONTEXT, RESULT> {
 
   @Override
-  public RESULT visitChild(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack) {
+  public RESULT visit(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack) {
     RESULT result;
     switch (evalNode.getType()) {
       // Column and Value reference expressions
@@ -137,8 +137,12 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
         result = visitCast(context, (CastEval) evalNode, stack);
         break;
 
+      case SUBQUERY:
+        result = visitSubquery(context, (SubqueryEval) evalNode, stack);
+        break;
+
       default:
-        throw new UnsupportedException("Unknown EvalType: " + evalNode);
+        throw new TajoRuntimeException(new UnsupportedException("EvalType '" + evalNode + "'"));
     }
 
     return result;
@@ -146,15 +150,15 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   private RESULT visitDefaultUnaryEval(CONTEXT context, UnaryEval unaryEval, Stack<EvalNode> stack) {
     stack.push(unaryEval);
-    RESULT result = visitChild(context, unaryEval.getChild(), stack);
+    RESULT result = visit(context, unaryEval.getChild(), stack);
     stack.pop();
     return result;
   }
 
   private RESULT visitDefaultBinaryEval(CONTEXT context, BinaryEval binaryEval, Stack<EvalNode> stack) {
     stack.push(binaryEval);
-    RESULT result = visitChild(context, binaryEval.getLeftExpr(), stack);
-    visitChild(context, binaryEval.getRightExpr(), stack);
+    RESULT result = visit(context, binaryEval.getLeftExpr(), stack);
+    visit(context, binaryEval.getRightExpr(), stack);
     stack.pop();
     return result;
   }
@@ -164,7 +168,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
     stack.push(functionEval);
     if (functionEval.getArgs() != null) {
       for (EvalNode arg : functionEval.getArgs()) {
-        result = visitChild(context, arg, stack);
+        result = visit(context, arg, stack);
       }
     }
     stack.pop();
@@ -264,9 +268,9 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   @Override
   public RESULT visitBetween(CONTEXT context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
-    RESULT result = visitChild(context, evalNode.getPredicand(), stack);
-    visitChild(context, evalNode.getBegin(), stack);
-    visitChild(context, evalNode.getEnd(), stack);
+    RESULT result = visit(context, evalNode.getPredicand(), stack);
+    visit(context, evalNode.getBegin(), stack);
+    visit(context, evalNode.getEnd(), stack);
     return result;
   }
 
@@ -278,7 +282,7 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
       result = visitIfThen(context, ifThenEval, stack);
     }
     if (evalNode.hasElse()) {
-      result = visitChild(context, evalNode.getElse(), stack);
+      result = visit(context, evalNode.getElse(), stack);
     }
     stack.pop();
     return result;
@@ -288,8 +292,8 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   public RESULT visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     RESULT result;
     stack.push(evalNode);
-    result = visitChild(context, evalNode.getCondition(), stack);
-    visitChild(context, evalNode.getResult(), stack);
+    result = visit(context, evalNode.getCondition(), stack);
+    visit(context, evalNode.getResult(), stack);
     stack.pop();
     return result;
   }
@@ -342,5 +346,10 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
   @Override
   public RESULT visitCast(CONTEXT context, CastEval castEval, Stack<EvalNode> stack) {
     return visitDefaultUnaryEval(context, castEval, stack);
+  }
+
+  @Override
+  public RESULT visitSubquery(CONTEXT context, SubqueryEval signedEval, Stack<EvalNode> stack) {
+    return null;
   }
 }
