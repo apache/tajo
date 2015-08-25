@@ -548,7 +548,6 @@ public class DDLExecutor {
           deletePartitionPath(partitionDescProto);
         }
       }
-
       break;
     case REPAIR_PARTITION:
       repairPartition(context, queryContext, alterTable);
