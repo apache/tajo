@@ -356,6 +356,8 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   public RESULT visitGroupBy(CONTEXT ctx, Stack<Expr> stack, Aggregation expr) throws TajoException {
     stack.push(expr);
 
+    if (expr.getGroupSet() == null)
+      throw new PlanningException("Empty Group Set");
     for (org.apache.tajo.algebra.Aggregation.GroupElement groupElement : expr.getGroupSet()) {
       for (Expr groupingSet : groupElement.getGroupingSets()) {
         visit(ctx, stack, groupingSet);

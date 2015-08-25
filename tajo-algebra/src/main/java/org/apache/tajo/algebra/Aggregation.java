@@ -149,6 +149,7 @@ public class Aggregation extends UnaryOperator {
     OrdinaryGroup(""),
     Cube("Cube"),
     Rollup("Rollup"),
+    GroupingSet("GroupingSet"),
     EmptySet("()");
 
     String displayName;
