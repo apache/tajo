@@ -36,7 +36,6 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.DefaultTajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
@@ -405,43 +404,44 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
-    
-    try {
-      while((line = reader.readLine(currentPrompt + "> ")) != null) {
-        if (line.equals("")) {
-          continue;
-        }
-        wasError = false;
-        if (line.startsWith("{")) {
-          executeJsonQuery(line);
-        } else {
-          List<ParsedResult> parsedResults = parser.parseLines(line);
-
-          if (latestState != ParsingState.TOK_START && parsedResults.size() > 0) {
-            // Add multi-line statements to history in addition to individual lines.
-            ParsedResult parsed = parsedResults.get(0);
-            history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
+      try {
+        while((line = reader.readLine(currentPrompt + "> ")) != null) {
+          if (line.equals("")) {
+            continue;
           }
+          wasError = false;
+          if (line.startsWith("{")) {
+            executeJsonQuery(line);
+          } else {
+            List<ParsedResult> parsedResults = parser.parseLines(line);
 
-          exitCode = executeParsedResults(parsedResults);
-          latestState = parser.getState();
-          currentPrompt = updatePrompt(latestState);
+            if (latestState != ParsingState.TOK_START && parsedResults.size() > 0) {
+              // Add multi-line statements to history in addition to individual lines.
+              ParsedResult parsed = parsedResults.get(0);
+              history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
+            }
 
-          // if at least one failed
-          if (exitCode != 0) {
-            return exitCode;
+            exitCode = executeParsedResults(parsedResults);
+            latestState = parser.getState();
+            currentPrompt = updatePrompt(latestState);
+
+            // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
+            if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
+              return exitCode;
+            }
           }
         }
+      } catch (Exception e) {
+        System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
+
+        if (client != null) {
+          client.close();
+        }
+
+        throw e;
+
       }
-    } catch (Exception e) {
-      System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
-      
-      if (client != null) {
-        client.close();
-      }
-      
-      throw e;
-    }
+
     return 0;
   }
 
