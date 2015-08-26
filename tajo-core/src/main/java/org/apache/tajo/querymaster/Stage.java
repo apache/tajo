@@ -489,7 +489,6 @@ public class Stage implements EventHandler<StageEvent> {
 
   public Set<PartitionDescProto> getPartitions() {
     Set<PartitionDescProto> partitions = TUtil.newHashSet();
-
     for(Task eachTask : getTasks()) {
       if (eachTask.getLastAttempt() != null && !eachTask.getLastAttempt().getPartitions().isEmpty()) {
         partitions.addAll(eachTask.getLastAttempt().getPartitions());

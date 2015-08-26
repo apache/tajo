@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
@@ -332,14 +333,12 @@ public class Query implements EventHandler<QueryEvent> {
     return queryHistory;
   }
 
-  public Set<PartitionDescProto> getPartitions() {
+  public List<PartitionDescProto> getPartitions() {
     Set<PartitionDescProto> partitions = TUtil.newHashSet();
     for(Stage eachStage : getStages()) {
-      if (!eachStage.getPartitions().isEmpty()) {
-        partitions.addAll(eachStage.getPartitions());
-      }
+      partitions.addAll(eachStage.getPartitions());
     }
-    return partitions;
+    return Lists.newArrayList(partitions);
   }
 
   public void clearPartitions() {
@@ -512,7 +511,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         // Add dynamic partitions to catalog for partition table.
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
-          Set<PartitionDescProto> partitions = query.getPartitions();
+          List<PartitionDescProto> partitions = query.getPartitions();
           if (partitions != null) {
             String databaseName, simpleTableName;
 
@@ -526,13 +525,12 @@ public class Query implements EventHandler<QueryEvent> {
             }
 
             // Store partitions to CatalogStore using alter table statement.
-            catalog.addPartitions(databaseName, simpleTableName, TUtil.newList(partitions), true);
+            catalog.addPartitions(databaseName, simpleTableName, partitions, true);
             LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           } else {
             LOG.info("Can't find partitions for adding.");
           }
           query.clearPartitions();
-          partitions.clear();
         }
       } catch (Throwable e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
