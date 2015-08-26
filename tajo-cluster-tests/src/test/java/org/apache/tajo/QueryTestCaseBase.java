@@ -578,8 +578,8 @@ public class QueryTestCaseBase {
 
         // plan test
         if (prefix.length() > 0) {
-          String planResultName = methodName + (fromFile ? "" : "" + (i + 1)) +
-              ((option.parameterized() && testParameter != null) ? "" + testParameter : "") + ".plan";
+          String planResultName = methodName + (fromFile ? "" : "." + (i + 1)) +
+              ((option.parameterized() && testParameter != null) ? "." + testParameter : "") + ".plan";
           Path resultPath = StorageUtil.concatPath(currentResultPath, planResultName);
           if (currentResultFS.exists(resultPath)) {
             assertEquals("Plan Verification for: " + (i + 1) + " th test",
@@ -596,7 +596,7 @@ public class QueryTestCaseBase {
         ResultSet result = client.executeQueryAndGetResult(spec.value());
 
         // result test
-        String fileName = methodName + (fromFile ? "" : "" + (i + 1)) + ".result";
+        String fileName = methodName + (fromFile ? "" : "." + (i + 1)) + ".result";
         Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
         if (currentResultFS.exists(resultPath)) {
           assertEquals("Result Verification for: " + (i + 1) + " th test",

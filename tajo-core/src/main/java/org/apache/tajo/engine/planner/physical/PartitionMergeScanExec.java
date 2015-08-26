@@ -68,6 +68,11 @@ public class PartitionMergeScanExec extends ScanExec {
     super.init();
   }
 
+  @Override
+  public ScanNode getScanNode() {
+    return plan;
+  }
+
   private void initScanExecutors() throws IOException {
     if (scanners.size() > 0) {
       iterator = scanners.iterator();

@@ -608,8 +608,6 @@ message OutputDistinctEnforce {
 
 message JoinEnforce {
   enum JoinAlgorithm {
-    NESTED_LOOP_JOIN = 0;
-    BLOCK_NESTED_LOOP_JOIN = 1;
     IN_MEMORY_HASH_JOIN = 2;
     HYBRID_HASH_JOIN = 3;
     MERGE_JOIN = 4;
