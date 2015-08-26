@@ -38,6 +38,7 @@ import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
+import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.exception.DuplicateDatabaseException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -396,7 +397,7 @@ public class TajoMaster extends CompositeService {
 
     if (webServer != null) webServer.stop();
 
-    IOUtils.cleanup(LOG, catalogServer);
+//    IOUtils.cleanup(LOG, catalogServer);
 
     if (systemMetrics != null) systemMetrics.stop();
 
@@ -539,6 +540,7 @@ public class TajoMaster extends CompositeService {
         LOG.info("TajoMaster received SIGINT Signal");
         LOG.info("============================================");
         stop();
+        DerbyStore.shutdown();
         RpcChannelFactory.shutdownGracefully();
       }
     }

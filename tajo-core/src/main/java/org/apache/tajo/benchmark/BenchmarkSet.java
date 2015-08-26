@@ -22,7 +22,8 @@ import com.google.protobuf.ServiceException;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.store.MemStore;
+//import org.apache.tajo.catalog.store.MemStore;
+import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.client.DummyServiceTracker;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
@@ -58,7 +59,8 @@ public abstract class BenchmarkSet {
       tajo = new TajoClientImpl(serviceTracker, null);
 
     } else {
-      conf.set(CatalogConstants.STORE_CLASS, MemStore.class.getCanonicalName());
+//      conf.set(CatalogConstants.STORE_CLASS, MemStore.class.getCanonicalName());
+      conf.set(CatalogConstants.STORE_CLASS, DerbyStore.class.getCanonicalName());
       tajo = new TajoClientImpl(ServiceTrackerFactory.get(conf));
     }
   }

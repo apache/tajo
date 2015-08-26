@@ -292,7 +292,7 @@ public class TajoTestingCluster {
   }
 
   private static String getCatalogURI(String testDirPath) {
-    return "jdbc:derby:memory:" + testDirPath + System.currentTimeMillis() + "/db;create=true";
+    return "jdbc:derby:memory:" + testDirPath + "/db;create=true";
   }
 
   ////////////////////////////////////////////////////////
