@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.parquet;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -34,6 +36,7 @@ import java.io.IOException;
  * FileScanner for reading Parquet files
  */
 public class ParquetScanner extends FileScanner {
+  private static final Log LOG = LogFactory.getLog(ParquetScanner.class);
   private TajoParquetReader reader;
 
   /**
@@ -55,10 +58,10 @@ public class ParquetScanner extends FileScanner {
    */
   @Override
   public void init() throws IOException {
-    if (targets == null) {
-      targets = schema.toArray();
-    }
-    reader = new TajoParquetReader(fragment.getPath(), schema, new Schema(targets));
+    reader = targets == null || targets.length == 0
+            ? new TajoParquetReader(fragment.getPath(), schema)
+            : new TajoParquetReader(fragment.getPath(), schema, new Schema(targets));
+
     super.init();
   }
 
