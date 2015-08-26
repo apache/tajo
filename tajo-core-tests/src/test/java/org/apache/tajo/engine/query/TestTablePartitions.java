@@ -1336,5 +1336,4 @@ public class TestTablePartitions extends QueryTestCaseBase {
       executeString("DROP TABLE " + tableName + " PURGE");
     }
   }
-
 }
