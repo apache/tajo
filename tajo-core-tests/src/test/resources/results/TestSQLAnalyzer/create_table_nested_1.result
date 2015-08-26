@@ -15,18 +15,20 @@
     {
       "ColumnDefName": "c",
       "DataTypeName": "RECORD",
-      "Record": [
-        {
-          "ColumnDefName": "d",
-          "DataTypeName": "TEXT",
-          "OpType": "DataType"
-        },
-        {
-          "ColumnDefName": "e",
-          "DataTypeName": "INT8",
-          "OpType": "DataType"
-        }
-      ],
+      "Record": {
+        "Schema": [
+          {
+            "ColumnDefName": "d",
+            "DataTypeName": "TEXT",
+            "OpType": "DataType"
+          },
+          {
+            "ColumnDefName": "e",
+            "DataTypeName": "INT8",
+            "OpType": "DataType"
+          }
+        ]
+      },
       "OpType": "DataType"
     },
     {

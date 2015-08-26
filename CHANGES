@@ -34,6 +34,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1766: Improve the performance of cross join. (jihoon)
+
+    TAJO-1792: tajo-cluster-tests is not available when it is used as an 
+    external maven module. (hyunsik)
+
     TAJO-1775: TAJO-1775: HCatalogStore need to be deprecated. (jaehwa)
 
     TAJO-1745: Add positive and negative test methods. (hyunsik)
@@ -228,6 +233,22 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1798: Dynamic partitioning occasionally fails. (jaehwa)
+    
+    TAJO-1799: Fix incorrect event handler when kill-query failed. (jinho)
+
+    TAJO-1783: Query result is not returned by invalid output path. (jinho)
+
+    TAJO-1596: TestPythonFunctions occasionally fails. (jinho)
+
+    TAJO-1741: Two tables having same time zone display different timestamps.
+    (Contributed Jongyoung Park, committed by hyunsik)
+
+    TAJO-1790: TestTajoClientV2::testExecuteQueryAsyncWithListener 
+    occasionally is failed. (hyunsik)
+
+    TAJO-1776: Fix Invalid column type in JDBC. (jinho)
 
     TAJO-1781: Join condition is still not found when it exists in OR clause. i
     (jihoon)
@@ -503,6 +524,10 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1737: Implement SQL Parser rule for Map type. (hyunsik)
+
+    TAJO-1787: Remove unused and legacy exceptions. (hyunsik)
 
     TAJO-1758: Some TajoRuntimeException should be restored as TajoException 
     in client side. (hyunsik)

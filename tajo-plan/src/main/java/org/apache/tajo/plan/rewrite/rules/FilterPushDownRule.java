@@ -29,7 +29,6 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -40,7 +39,6 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
-import org.apache.tajo.plan.util.IndexUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -144,7 +142,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         UnaryNode unary = (UnaryNode) node;
         unary.setChild(selNode.getChild());
       } else {
-        throw new InvalidQueryException("Unexpected Logical Query Plan");
+        throw new TajoInternalError("The node must be an unary node");
       }
     } else { // if there remain search conditions
 
@@ -966,7 +964,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       databaseName = CatalogUtil.extractQualifier(table.getName());
       tableName = CatalogUtil.extractSimpleName(table.getName());
       Set<Predicate> predicates = TUtil.newHashSet();
-      for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
+      for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
         BinaryEval binaryEval = (BinaryEval) eval;
         // TODO: consider more complex predicates
         if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&

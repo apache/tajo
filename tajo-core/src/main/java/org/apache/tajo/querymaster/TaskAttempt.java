@@ -38,9 +38,7 @@ import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -69,7 +67,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private CatalogProtos.TableStatsProto inputStats;
   private CatalogProtos.TableStatsProto resultStats;
 
-  private List<PartitionDescProto> partitions;
+  private Set<PartitionDescProto> partitions;
 
   protected static final StateMachineFactory
       <TaskAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -194,8 +192,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     this.writeLock = readWriteLock.writeLock();
 
     stateMachine = stateMachineFactory.make(this);
-
-    this.partitions = TUtil.newList();
+    this.partitions = TUtil.newHashSet();
   }
 
   public TaskAttemptState getState() {
@@ -258,12 +255,12 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     return new TableStats(resultStats);
   }
 
-  public List<PartitionDescProto> getPartitions() {
+  public Set<PartitionDescProto> getPartitions() {
     return partitions;
   }
 
-  public void setPartitions(List<PartitionDescProto> partitions) {
-    this.partitions = partitions;
+  public void addPartitions(List<PartitionDescProto> partitions) {
+    this.partitions.addAll(partitions);
   }
 
   private void fillTaskStatistics(TaskCompletionReport report) {
@@ -407,7 +404,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
       try {
         if (report.getPartitionsCount() > 0) {
-          taskAttempt.setPartitions(report.getPartitionsList());
+          taskAttempt.addPartitions(report.getPartitionsList());
         }
 
         taskAttempt.fillTaskStatistics(report);

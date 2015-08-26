@@ -3,7 +3,7 @@ explain
 SORT(10)
   => Sort Keys: default.s.s_acctbal (FLOAT8) (asc),default.s.s_name (TEXT) (asc),default.n.n_name (TEXT) (asc),default.p.p_partkey (INT4) (asc)
    JOIN(16)(INNER)
-     => Join Cond: default.n.n_regionkey (INT4) = default.ps.ps_suppkey (INT4) AND default.s.s_nationkey (INT4) = default.n.n_nationkey (INT4)
+     => Join Cond: (default.n.n_regionkey (INT4) = default.ps.ps_suppkey (INT4) AND default.s.s_nationkey (INT4) = default.n.n_nationkey (INT4))
      => target list: default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)
      => out schema: {(8) default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)}
      => in schema: {(12) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}
@@ -74,7 +74,7 @@ Block Id: eb_0000000000000_0000_000009 [LEAF]
 SORT(26)
   => Sort Keys: default.s.s_acctbal (FLOAT8) (asc),default.s.s_name (TEXT) (asc),default.n.n_name (TEXT) (asc),default.p.p_partkey (INT4) (asc)
    JOIN(16)(INNER)
-     => Join Cond: default.n.n_regionkey (INT4) = default.ps.ps_suppkey (INT4) AND default.s.s_nationkey (INT4) = default.n.n_nationkey (INT4)
+     => Join Cond: (default.n.n_regionkey (INT4) = default.ps.ps_suppkey (INT4) AND default.s.s_nationkey (INT4) = default.n.n_nationkey (INT4))
      => target list: default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)
      => out schema: {(8) default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)}
      => in schema: {(12) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.ps.ps_suppkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT)}

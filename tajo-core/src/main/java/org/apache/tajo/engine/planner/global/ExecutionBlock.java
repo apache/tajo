@@ -194,8 +194,10 @@ public class ExecutionBlock {
   }
 
   public void addBroadcastRelation(ScanNode relationNode) {
+    if (!broadcastRelations.containsKey(relationNode.getCanonicalName())) {
+      enforcer.addBroadcast(relationNode.getCanonicalName());
+    }
     broadcastRelations.put(relationNode.getCanonicalName(), relationNode);
-    enforcer.addBroadcast(relationNode.getCanonicalName());
   }
 
   public void removeBroadcastRelation(ScanNode relationNode) {

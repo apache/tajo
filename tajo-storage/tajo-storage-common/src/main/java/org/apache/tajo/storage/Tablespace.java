@@ -132,18 +132,6 @@ public abstract class Tablespace {
                                            ScanNode scanNode) throws IOException, TajoException;
 
   /**
-   * It returns the splits that will serve as input for the non-forward query scanner such as 'select * from table1'.
-   * The result list should be small. If there is many fragments for scanning, TajoMaster uses the paging navigation.
-   * @param tableDesc The table description for the target data.
-   * @param currentPage The current page number within the entire list.
-   * @param numFragments The number of fragments in the result.
-   * @return The list of input fragments.
-   * @throws java.io.IOException
-   */
-  public abstract List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
-      throws IOException;
-
-  /**
    * It returns the storage property.
    * @return The storage property
    */

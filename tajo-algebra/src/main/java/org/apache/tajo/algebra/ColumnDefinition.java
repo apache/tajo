@@ -43,8 +43,13 @@ public  class ColumnDefinition extends DataTypeExpr {
     }
 
     // nested records
-    if (dataType.isNestedRecordType()) {
-      this.nestedRecordTypes = dataType.nestedRecordTypes;
+    if (dataType.isRecordType()) {
+      this.recordType = dataType.recordType;
+    }
+
+    // map type
+    if (dataType.isMapType()) {
+      this.mapType = dataType.mapType;
     }
   }
 
