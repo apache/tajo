@@ -232,6 +232,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1798: Dynamic partitioning occasionally fails. (jaehwa)
+    
     TAJO-1799: Fix incorrect event handler when kill-query failed. (jinho)
 
     TAJO-1783: Query result is not returned by invalid output path. (jinho)
