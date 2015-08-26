@@ -486,9 +486,8 @@ public class Stage implements EventHandler<StageEvent> {
     return stageHistory;
   }
 
-  public List<PartitionDescProto> getPartitions() {
-    List<PartitionDescProto> partitions = TUtil.newList();
-
+  public Set<PartitionDescProto> getPartitions() {
+    Set<PartitionDescProto> partitions = TUtil.newHashSet();
     for(Task eachTask : getTasks()) {
       if (eachTask.getLastAttempt() != null && !eachTask.getLastAttempt().getPartitions().isEmpty()) {
         partitions.addAll(eachTask.getLastAttempt().getPartitions());
@@ -496,6 +495,14 @@ public class Stage implements EventHandler<StageEvent> {
     }
 
     return partitions;
+  }
+
+  public void clearPartitions() {
+    for(Task eachTask : getTasks()) {
+      if (eachTask.getLastAttempt() != null && !eachTask.getLastAttempt().getPartitions().isEmpty()) {
+        eachTask.getLastAttempt().getPartitions().clear();
+      }
+    }
   }
 
   /**
