@@ -1057,12 +1057,10 @@ public class Stage implements EventHandler<StageEvent> {
 
     public static long getInputVolume(MasterPlan masterPlan, QueryMasterTask.QueryMasterTaskContext context,
                                       ExecutionBlock execBlock) {
-//      Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
         ScanNode[] outerScans = execBlock.getScanNodes();
         long maxVolume = 0;
         for (ScanNode eachScanNode: outerScans) {
-//          TableStats stat = tableMap.get(eachScanNode.getCanonicalName()).getStats();
           TableStats stat = context.getTableDesc(eachScanNode).getStats();
           if (stat.getNumBytes() > maxVolume) {
             maxVolume = stat.getNumBytes();
@@ -1089,7 +1087,6 @@ public class Stage implements EventHandler<StageEvent> {
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
       ScanNode scan = scans[0];
-//      TableDesc table = stage.context.getTableDescMap().get(scan.getCanonicalName());
       TableDesc table = stage.context.getTableDesc(scan);
 
       Collection<Fragment> fragments;
