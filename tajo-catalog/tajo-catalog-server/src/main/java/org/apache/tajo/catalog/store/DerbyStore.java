@@ -55,7 +55,7 @@ public class DerbyStore extends AbstractDBStore {
     return super.readSchemaFile("derby/" + filename);
   }
 
-  public static final void shutdown() {
+  public static void shutdown() {
     Connection conn = null;
     // shutdown embedded database.
     try {
@@ -72,7 +72,6 @@ public class DerbyStore extends AbstractDBStore {
     } finally {
       CatalogUtil.closeQuietly(conn);
     }
-//    LOG.info("Shutdown database (" + catalogUri + ")");
     LOG.info("Shutdown database");
   }
 

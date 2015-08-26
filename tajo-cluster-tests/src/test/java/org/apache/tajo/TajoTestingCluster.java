@@ -303,10 +303,6 @@ public class TajoTestingCluster {
 
     TajoConf c = getConfiguration();
 
-    conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.DerbyStore");
-//    conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
-//    conf.set(CatalogConstants.CATALOG_URI, getCatalogURI(clusterTestBuildDir.getAbsolutePath()));
     initializeDerbyStore(conf, clusterTestBuildDir.getAbsolutePath());
     LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
@@ -429,10 +425,6 @@ public class TajoTestingCluster {
         throw new IOException(cnfe);
       }
     } else { // for derby
-//      c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-//      conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.DerbyStore");
-//      c.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
-//      conf.set(CatalogConstants.CATALOG_URI, getCatalogURI(testBuildDir.getAbsolutePath()));
       initializeDerbyStore(conf, testBuildDir.getAbsolutePath());
     }
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");

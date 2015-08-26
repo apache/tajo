@@ -439,24 +439,25 @@ public class DDLExecutor {
         throw new DuplicateTableException(alterTable.getNewTableName());
       }
 
-//      if (!desc.isExternal()) { // if the table is the managed table
-//        Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
-//            databaseName, simpleTableName);
-//        Path newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
-//            databaseName, alterTable.getNewTableName());
-//        FileSystem fs = oldPath.getFileSystem(context.getConf());
-//
-//        if (!fs.exists(oldPath)) {
-//          throw new IOException("No such a table directory: " + oldPath);
-//        }
-//        if (fs.exists(newPath)) {
-//          throw new IOException("Already table directory exists: " + newPath);
-//        }
-//
-//        fs.rename(oldPath, newPath);
-//      }
+      Path newPath = null;
+      if (!desc.isExternal()) { // if the table is the managed table
+        Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
+            databaseName, simpleTableName);
+        newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
+            databaseName, alterTable.getNewTableName());
+        FileSystem fs = oldPath.getFileSystem(context.getConf());
+
+        if (!fs.exists(oldPath)) {
+          throw new IOException("No such a table directory: " + oldPath);
+        }
+        if (fs.exists(newPath)) {
+          throw new IOException("Already table directory exists: " + newPath);
+        }
+
+        fs.rename(oldPath, newPath);
+      }
       catalog.alterTable(CatalogUtil.renameTable(qualifiedName, alterTable.getNewTableName(),
-          AlterTableType.RENAME_TABLE));
+          AlterTableType.RENAME_TABLE, newPath));
       break;
     case RENAME_COLUMN:
       if (ensureColumnExistance(qualifiedName, alterTable.getNewColumnName())) {

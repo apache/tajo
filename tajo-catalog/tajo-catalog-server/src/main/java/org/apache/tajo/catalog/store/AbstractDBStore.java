@@ -38,6 +38,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.*;
 import java.util.*;
 
@@ -72,6 +73,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private Connection conn;
   
   protected XMLCatalogSchemaManager catalogSchemaManager;
+
+  public static boolean needShutdown(String catalogUri) {
+    URI uri = URI.create(catalogUri);
+    // If the current catalog is embedded in-memory derby, shutdown is required.
+    if (uri.getHost() == null) {
+      String schemeSpecificPart = uri.getSchemeSpecificPart();
+      if (schemeSpecificPart != null) {
+        return schemeSpecificPart.contains("memory");
+      }
+    }
+    return false;
+  }
 
   protected abstract String getCatalogDriverName();
   
@@ -173,6 +186,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (Throwable se) {
       throw new TajoInternalError(se);
     }
+  }
+
+  public String getUri() {
+    return catalogUri;
   }
 
   public int getDriverVersion() {
@@ -1005,7 +1022,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (existTable(databaseName, alterTableDescProto.getNewTableName())) {
         throw new DuplicateTableException(alterTableDescProto.getNewTableName());
       }
-      renameTable(tableId, alterTableDescProto.getNewTableName());
+      if (alterTableDescProto.hasNewTablePath()) {
+        renameManagedTable(tableId, alterTableDescProto.getNewTableName(), alterTableDescProto.getNewTablePath());
+      } else {
+        renameExternalTable(tableId, alterTableDescProto.getNewTableName());
+      }
       break;
     case RENAME_COLUMN:
       if (existColumn(tableId, alterTableDescProto.getAlterColumnName().getNewColumnName())) {
@@ -1113,7 +1134,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void renameTable(final int tableId, final String tableName) {
+  private void renameExternalTable(final int tableId, final String tableName) {
 
     final String updtaeRenameTableSql = "UPDATE " + TB_TABLES + " SET " + COL_TABLES_NAME + " = ? " + " WHERE TID = ?";
 
@@ -1130,6 +1151,34 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(updtaeRenameTableSql);
       pstmt.setString(1, tableName);
       pstmt.setInt(2, tableId);
+      pstmt.executeUpdate();
+
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
+  }
+
+  private void renameManagedTable(final int tableId, final String tableName, final String newTablePath) {
+
+    final String updtaeRenameTableSql = "UPDATE " + TB_TABLES + " SET " + COL_TABLES_NAME + " = ? , PATH = ?"
+        + " WHERE TID = ?";
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(updtaeRenameTableSql);
+    }
+
+    Connection conn;
+    PreparedStatement pstmt = null;
+
+    try {
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(updtaeRenameTableSql);
+      pstmt.setString(1, tableName);
+      pstmt.setString(2, newTablePath);
+      pstmt.setInt(3, tableId);
       pstmt.executeUpdate();
 
     } catch (SQLException se) {
@@ -2294,19 +2343,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-//      final Schema schemaOfTargetTable = new Schema(proto.getTargetRelationSchema());
       final SortSpec[] keySortSpecs = new SortSpec[proto.getKeySortSpecsCount()];
       for (int i = 0; i < keySortSpecs.length; i++) {
         keySortSpecs[i] = new SortSpec(proto.getKeySortSpecs(i));
       }
-
-//      Arrays.sort(keySortSpecs, new Comparator<SortSpec>() {
-//        @Override
-//        public int compare(SortSpec o1, SortSpec o2) {
-//          return schemaOfTargetTable.getColumnId(o1.getSortKey().getSimpleName()) -
-//              schemaOfTargetTable.getColumnId(o2.getSortKey().getSimpleName());
-//        }
-//      });
 
       StringBuilder columnNamesBuilder = new StringBuilder();
       StringBuilder dataTypesBuilder= new StringBuilder();
@@ -2740,7 +2780,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   public void close() {
     CatalogUtil.closeQuietly(conn);
-    LOG.info("Shutdown database (" + catalogUri + ")");
+    LOG.info("Close database (" + catalogUri + ")");
   }
 
   @Override

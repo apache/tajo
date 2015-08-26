@@ -388,11 +388,6 @@ public class SessionConnection implements Closeable {
         }
       } else {
         throw new TajoRuntimeException(response.getState());
-//        if (sessionId != null) {
-//          throw new InvalidClientSessionException(sessionId.getId());
-//        } else {
-//          throw new InvalidClientSessionException("unknown session");
-//        }
       }
     }
   }
