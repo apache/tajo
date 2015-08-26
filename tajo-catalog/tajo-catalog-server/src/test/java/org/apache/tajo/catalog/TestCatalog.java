@@ -127,7 +127,7 @@ public class TestCatalog {
     return driverClass.equals(MySQLStore.class.getCanonicalName()) ||
            driverClass.equals(MariaDBStore.class.getCanonicalName()) ||
            driverClass.equals(PostgreSQLStore.class.getCanonicalName()) ||
-	   driverClass.equals(OracleStore.class.getCanonicalName());
+        driverClass.equals(OracleStore.class.getCanonicalName());
   }
 	
 	@AfterClass

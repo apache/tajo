@@ -986,7 +986,7 @@ public class CatalogUtil {
     Arrays.sort(simpleNames, new ColumnPosComparator(originalSchema));
     StringBuilder sb = new StringBuilder();
     for (String colName : simpleNames) {
-      sb.append(colName).append("_");
+      sb.append(colName).append(",");
     }
     sb.deleteCharAt(sb.length()-1);
     return sb.toString();
