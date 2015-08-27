@@ -856,6 +856,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       builder = GetPartitionDescProto.newBuilder();
       builder.setPartitionName(partitionName);
       builder.setPath(partition.getSd().getLocation());
+      // These are dummy values because there is no way to get partition id and table id in HiveMetaStore.
+      builder.setPartitionId(0);
+      builder.setTid(0);
 
       String[] partitionNames = partitionName.split("/");
 
@@ -866,6 +869,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         String columnName = partitionNames[i].split("=")[0];
         keyBuilder.setColumnName(columnName);
         keyBuilder.setPartitionValue(value);
+        // This is dummy value because there is no way to get partition id in HiveMetaStore.
+        keyBuilder.setPartitionId(0);
         builder.addPartitionKeys(keyBuilder);
       }
     } catch (NoSuchObjectException e) {
