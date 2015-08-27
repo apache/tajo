@@ -2045,6 +2045,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       if (res.next()) {
         builder = GetPartitionDescProto.newBuilder();
+        builder.setTid(tableId);
         builder.setPartitionId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
@@ -2078,6 +2079,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         GetPartitionKeyProto.Builder builder = GetPartitionKeyProto.newBuilder();
         builder.setColumnName(res.getString(COL_COLUMN_NAME));
         builder.setPartitionValue(res.getString(COL_PARTITION_VALUE));
+        builder.setPartitionId(pid);
         partitionDesc.addPartitionKeys(builder);
       }
     } catch (SQLException se) {
@@ -2116,6 +2118,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       while (res.next()) {
         builder = GetPartitionDescProto.newBuilder();
+        builder.setTid(tableId);
+        builder.setPartitionId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
