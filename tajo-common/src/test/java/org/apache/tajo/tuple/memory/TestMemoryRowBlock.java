@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
@@ -59,7 +60,7 @@ public class TestMemoryRowBlock {
         DataType.newBuilder().setType(Type.TIME).build(),
         DataType.newBuilder().setType(Type.INTERVAL).build(),
         DataType.newBuilder().setType(Type.INET4).build(),
-        DataType.newBuilder().setType(Type.PROTOBUF).build()
+        DataType.newBuilder().setType(Type.PROTOBUF).setCode(PrimitiveProtos.StringProto.class.getName()).build()
     };
   }
 
