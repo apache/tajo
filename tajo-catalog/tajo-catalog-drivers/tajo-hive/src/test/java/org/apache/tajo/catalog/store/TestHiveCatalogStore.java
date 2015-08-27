@@ -29,6 +29,8 @@ import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
@@ -266,7 +268,7 @@ public class TestHiveCatalogStore {
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
     testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
 
-    CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
+    GetPartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
     assertNull(partition);
 
     partition = store.getPartition(DB_NAME, NATION, "n_nationkey=20/n_date=20150102");
@@ -303,14 +305,14 @@ public class TestHiveCatalogStore {
 
     store.alterTable(alterTableDesc.getProto());
 
-    CatalogProtos.PartitionDescProto resultDesc = store.getPartition(DB_NAME, NATION, partitionName);
+    GetPartitionDescProto resultDesc = store.getPartition(DB_NAME, NATION, partitionName);
     assertNotNull(resultDesc);
     assertEquals(resultDesc.getPartitionName(), partitionName);
     assertEquals(resultDesc.getPath(), uri.toString() + "/" + partitionName);
     assertEquals(resultDesc.getPartitionKeysCount(), 2);
 
     for (int i = 0; i < resultDesc.getPartitionKeysCount(); i++) {
-      CatalogProtos.PartitionKeyProto keyProto = resultDesc.getPartitionKeys(i);
+      GetPartitionKeyProto keyProto = resultDesc.getPartitionKeys(i);
       String[] eachName = partitionNames[i].split("=");
       assertEquals(keyProto.getPartitionValue(), eachName[1]);
     }

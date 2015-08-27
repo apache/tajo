@@ -928,7 +928,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
+        GetPartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
         if (partitionDesc != null) {
           return GetPartitionDescResponse.newBuilder()
               .setState(OK)
@@ -976,10 +976,10 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
+        List<GetPartitionDescProto> partitions = store.getPartitions(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        for (PartitionDescProto partition : partitions) {
+        for (GetPartitionDescProto partition : partitions) {
           builder.addPartition(partition);
         }
 

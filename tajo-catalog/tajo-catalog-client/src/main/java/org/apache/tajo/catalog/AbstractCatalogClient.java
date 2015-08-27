@@ -401,7 +401,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final PartitionDescProto getPartition(final String databaseName, final String tableName,
+  public final GetPartitionDescProto getPartition(final String databaseName, final String tableName,
                                                final String partitionName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
       UndefinedPartitionMethodException {
@@ -428,7 +428,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final List<PartitionDescProto> getPartitions(final String databaseName, final String tableName) {
+  public final List<GetPartitionDescProto> getPartitions(final String databaseName, final String tableName) {
     try {
       final BlockingInterface stub = getStub();
       final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
@@ -446,7 +446,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<PartitionDescProto> getAllPartitions() {
+  public List<GetPartitionDescProto> getAllPartitions() {
     try {
       final BlockingInterface stub = getStub();
       final GetPartitionsResponse response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
@@ -491,7 +491,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<PartitionKeyProto> getAllPartitionKeys() {
+  public List<GetPartitionKeyProto> getAllPartitionKeys() {
     try {
       final BlockingInterface stub = getStub();
       final GetPartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);

@@ -25,9 +25,7 @@ import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -50,7 +48,6 @@ import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.CatalogConstants.CATALOG_URI;
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
@@ -930,7 +927,7 @@ public class TestCatalog {
     testAddPartition(tableName, "id=10/name=aaa");
     testAddPartition(tableName, "id=20/name=bbb");
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    List<CatalogProtos.GetPartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
 
@@ -974,7 +971,7 @@ public class TestCatalog {
 
     catalog.alterTable(alterTableDesc);
 
-    CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(DEFAULT_DATABASE_NAME,
+    GetPartitionDescProto resultDesc = catalog.getPartition(DEFAULT_DATABASE_NAME,
       "addedtable", partitionName);
 
     assertNotNull(resultDesc);

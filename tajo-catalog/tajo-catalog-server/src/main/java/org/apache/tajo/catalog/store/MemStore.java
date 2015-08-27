@@ -48,7 +48,7 @@ public class MemStore implements CatalogStore {
   private final Map<String, CatalogProtos.FunctionDescProto> functions = Maps.newHashMap();
   private final Map<String, Map<String, IndexDescProto>> indexes = Maps.newHashMap();
   private final Map<String, Map<String, IndexDescProto>> indexesByColumn = Maps.newHashMap();
-  private final Map<String, Map<String, CatalogProtos.PartitionDescProto>> partitions = Maps.newHashMap();
+  private final Map<String, Map<String, GetPartitionDescProto>> partitions = Maps.newHashMap();
 
   public MemStore(Configuration conf) {
   }
@@ -337,21 +337,21 @@ public class MemStore implements CatalogStore {
     }
   }
 
-  private void addPartition(CatalogProtos.PartitionDescProto partitionDesc, String tableName, String partitionName) {
-    CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+  private void addPartition(PartitionDescProto partitionDesc, String tableName, String partitionName) {
+    GetPartitionDescProto.Builder builder = GetPartitionDescProto.newBuilder();
     builder.setPartitionName(partitionName);
     builder.setPath(partitionDesc.getPath());
 
     if (partitionDesc.getPartitionKeysCount() > 0) {
-      for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
-        CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
+      for (PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
+        GetPartitionKeyProto.Builder keyBuilder = GetPartitionKeyProto.newBuilder();
         keyBuilder.setColumnName(eachKey.getColumnName());
         keyBuilder.setPartitionValue(eachKey.getPartitionValue());
         builder.addPartitionKeys(keyBuilder.build());
       }
     }
 
-    Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
+    Map<String, GetPartitionDescProto> protoMap = null;
     if (!partitions.containsKey(tableName)) {
       protoMap = Maps.newHashMap();
     } else {
@@ -552,11 +552,11 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) {
-    List<CatalogProtos.PartitionDescProto> protos = new ArrayList<CatalogProtos.PartitionDescProto>();
+  public List<GetPartitionDescProto> getPartitions(String databaseName, String tableName) {
+    List<GetPartitionDescProto> protos = TUtil.newList();
 
     if (partitions.containsKey(tableName)) {
-      for (CatalogProtos.PartitionDescProto proto : partitions.get(tableName).values()) {
+      for (GetPartitionDescProto proto : partitions.get(tableName).values()) {
         protos.add(proto);
       }
     }
@@ -564,7 +564,7 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+  public GetPartitionDescProto getPartition(String databaseName, String tableName,
                                                        String partitionName) throws UndefinedPartitionException {
     if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
       return partitions.get(tableName).get(partitionName);
@@ -573,10 +573,10 @@ public class MemStore implements CatalogStore {
     }
   }
 
-  public List<PartitionDescProto> getAllPartitions() {
+  public List<GetPartitionDescProto> getAllPartitions() {
     int tableId = 0, partitionId = 0;
     List<TableDescriptorProto> tables = getAllTables();
-    List<PartitionDescProto> protos = new ArrayList<PartitionDescProto>();
+    List<GetPartitionDescProto> protos = TUtil.newList();
 
     Set<String> partitionTables = partitions.keySet();
     for (String partitionTable : partitionTables) {
@@ -586,11 +586,11 @@ public class MemStore implements CatalogStore {
         }
       }
 
-      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(partitionTable);
-      for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
-        CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
+      Map<String, GetPartitionDescProto> entryMap = partitions.get(partitionTable);
+      for (Map.Entry<String, GetPartitionDescProto> proto : entryMap.entrySet()) {
+        GetPartitionDescProto partitionDescProto = proto.getValue();
 
-        PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
+        GetPartitionDescProto.Builder builder = GetPartitionDescProto.newBuilder();
 
         builder.setPartitionName(partitionDescProto.getPartitionName());
         builder.setPath(partitionDescProto.getPath());
@@ -604,18 +604,18 @@ public class MemStore implements CatalogStore {
     return protos;
   }
 
-  public List<PartitionKeyProto> getAllPartitionKeys() {
-    List<PartitionKeyProto> protos = new ArrayList<PartitionKeyProto>();
+  public List<GetPartitionKeyProto> getAllPartitionKeys() {
+    List<GetPartitionKeyProto> protos = TUtil.newList();
     int partitionId = 0;
 
     Set<String> partitionTables = partitions.keySet();
     for (String partitionTable : partitionTables) {
-      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(partitionTable);
-      for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
-        CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
+      Map<String, GetPartitionDescProto> entryMap = partitions.get(partitionTable);
+      for (Map.Entry<String, GetPartitionDescProto> proto : entryMap.entrySet()) {
+        GetPartitionDescProto partitionDescProto = proto.getValue();
 
-        for (PartitionKeyProto partitionKey : partitionDescProto.getPartitionKeysList()) {
-          PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+        for (GetPartitionKeyProto partitionKey : partitionDescProto.getPartitionKeysList()) {
+          GetPartitionKeyProto.Builder builder = GetPartitionKeyProto.newBuilder();
           builder.setColumnName(partitionKey.getColumnName());
           builder.setPartitionValue(partitionKey.getPartitionValue());
           builder.setPartitionId(partitionId);

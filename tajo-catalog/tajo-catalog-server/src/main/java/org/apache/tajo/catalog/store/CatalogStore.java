@@ -18,14 +18,12 @@
 
 package org.apache.tajo.catalog.store;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.exception.*;
 
 import java.io.Closeable;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
@@ -97,17 +95,17 @@ public interface CatalogStore extends Closeable {
    * @return
    * @throws TajoException
    */
-  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws
+  List<GetPartitionDescProto> getPartitions(String databaseName, String tableName) throws
       UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
-  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+  GetPartitionDescProto getPartition(String databaseName, String tableName,
                                                 String partitionName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
       UndefinedPartitionMethodException;
 
-  List<PartitionDescProto> getAllPartitions();
+  List<GetPartitionDescProto> getAllPartitions();
 
-  List<PartitionKeyProto> getAllPartitionKeys();
+  List<GetPartitionKeyProto> getAllPartitionKeys();
 
   void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
       , boolean ifNotExists) throws UndefinedDatabaseException,

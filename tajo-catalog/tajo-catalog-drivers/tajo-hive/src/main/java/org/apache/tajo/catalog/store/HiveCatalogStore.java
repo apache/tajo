@@ -588,7 +588,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     final String databaseName = split[0];
     final String tableName = split[1];
     String partitionName = null;
-    CatalogProtos.PartitionDescProto partitionDesc = null;
+    GetPartitionDescProto partitionDesc = null;
 
     switch (alterTableDescProto.getAlterTableType()) {
       case RENAME_TABLE:
@@ -732,15 +732,14 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     }
   }
 
-  private void dropPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
-    partitionDescProto) {
+  private void dropPartition(String databaseName, String tableName, GetPartitionDescProto partitionDescProto) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
 
       List<String> values = Lists.newArrayList();
-      for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+      for(GetPartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
         values.add(keyProto.getPartitionValue());
       }
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
@@ -838,23 +837,23 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName,
+  public List<GetPartitionDescProto> getPartitions(String databaseName,
                                                          String tableName) {
     throw new UnsupportedOperationException();
   }
 
 
   @Override
-  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+  public GetPartitionDescProto getPartition(String databaseName, String tableName,
                                                        String partitionName) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
-    CatalogProtos.PartitionDescProto.Builder builder = null;
+    GetPartitionDescProto.Builder builder = null;
 
     try {
       client = clientPool.getClient();
 
       Partition partition = client.getHiveClient().getPartition(databaseName, tableName, partitionName);
-      builder = CatalogProtos.PartitionDescProto.newBuilder();
+      builder = GetPartitionDescProto.newBuilder();
       builder.setPartitionName(partitionName);
       builder.setPath(partition.getSd().getLocation());
 
@@ -862,7 +861,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       for (int i = 0; i < partition.getValues().size(); i++) {
         String value = partition.getValues().get(i);
-        CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
+        GetPartitionKeyProto.Builder keyBuilder = GetPartitionKeyProto.newBuilder();
 
         String columnName = partitionNames[i].split("=")[0];
         keyBuilder.setColumnName(columnName);
@@ -1005,12 +1004,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<PartitionDescProto> getAllPartitions() {
+  public List<GetPartitionDescProto> getAllPartitions() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<PartitionKeyProto> getAllPartitionKeys() {
+  public List<GetPartitionKeyProto> getAllPartitionKeys() {
     throw new UnsupportedOperationException();
   }
 
@@ -1019,7 +1018,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     , boolean ifNotExists) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<Partition> addPartitions = TUtil.newList();
-    CatalogProtos.PartitionDescProto existingPartition = null;
+    GetPartitionDescProto existingPartition = null;
 
     try {
       client = clientPool.getClient();

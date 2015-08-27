@@ -240,14 +240,25 @@ message PartitionDescProto {
   required string partitionName = 1;
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
-  optional int32 partition_id = 4;
-  optional int32 tid = 5;
 }
 
 message PartitionKeyProto {
   required string columnName = 1;
   optional string partitionValue = 3;
-  optional int32 partition_id = 4;
+}
+
+message GetPartitionDescProto {
+  required string partitionName = 1;
+  repeated GetPartitionKeyProto partitionKeys = 2;
+  optional string path = 3;
+  required int32 partition_id = 4;
+  required int32 tid = 5;
+}
+
+message GetPartitionKeyProto {
+  required string columnName = 1;
+  optional string partitionValue = 3;
+  required int32 partition_id = 4;
 }
 
 message PartitionIdentifierProto {

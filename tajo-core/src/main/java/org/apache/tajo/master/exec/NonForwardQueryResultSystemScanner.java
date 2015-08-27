@@ -385,12 +385,12 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   }
   
   private List<Tuple> getAllPartitions(Schema outSchema) {
-    List<PartitionDescProto> partitionList = masterContext.getCatalog().getAllPartitions();
+    List<GetPartitionDescProto> partitionList = masterContext.getCatalog().getAllPartitions();
     List<Tuple> tuples = new ArrayList<Tuple>(partitionList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
-    for (PartitionDescProto partition: partitionList) {
+    for (GetPartitionDescProto partition: partitionList) {
       aTuple = new VTuple(outSchema.size());
       
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
@@ -418,12 +418,12 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   }
 
   private List<Tuple> getAllPartitionKeys(Schema outSchema) {
-    List<PartitionKeyProto> partitionKeyList = masterContext.getCatalog().getAllPartitionKeys();
+    List<GetPartitionKeyProto> partitionKeyList = masterContext.getCatalog().getAllPartitionKeys();
     List<Tuple> tuples = new ArrayList<Tuple>(partitionKeyList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
-    for (PartitionKeyProto partitionKey: partitionKeyList) {
+    for (GetPartitionKeyProto partitionKey: partitionKeyList) {
       aTuple = new VTuple(outSchema.size());
 
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {

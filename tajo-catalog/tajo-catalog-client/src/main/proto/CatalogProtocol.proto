@@ -66,7 +66,7 @@ message GetPartitionMethodResponse {
 
 message GetPartitionDescResponse {
   required ReturnState state = 1;
-  optional PartitionDescProto partition = 2;
+  optional GetPartitionDescProto partition = 2;
 }
 
 message GetIndexeDescResponse {
@@ -81,12 +81,12 @@ message GetIndexByColumnNamesRequest {
 
 message GetPartitionsResponse {
   required ReturnState state = 1;
-  repeated PartitionDescProto partition = 2;
+  repeated GetPartitionDescProto partition = 2;
 }
 
 message GetPartitionKeysResponse {
   required ReturnState state = 1;
-  repeated PartitionKeyProto partitionKey = 2;
+  repeated GetPartitionKeyProto partitionKey = 2;
 }
 
 service CatalogProtocolService {

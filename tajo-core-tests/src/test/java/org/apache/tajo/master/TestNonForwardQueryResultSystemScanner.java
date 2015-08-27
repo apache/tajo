@@ -19,14 +19,9 @@
 package org.apache.tajo.master;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 
 import java.sql.ResultSet;
-import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;

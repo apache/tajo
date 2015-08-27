@@ -27,9 +27,9 @@ import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.*;
@@ -422,7 +422,7 @@ public class DDLExecutor {
     Path partitionPath = null;
     TableDesc desc = null;
     Pair<List<PartitionKeyProto>, String> pair = null;
-    CatalogProtos.PartitionDescProto partitionDescProto = null;
+    GetPartitionDescProto partitionDescProto = null;
 
     if (alterTable.getAlterTableOpType() == AlterTableOpType.RENAME_TABLE
         || alterTable.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION
@@ -554,7 +554,7 @@ public class DDLExecutor {
     }
   }
 
-  private void deletePartitionPath(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException {
+  private void deletePartitionPath(GetPartitionDescProto partitionDescProto) throws IOException {
     Path partitionPath = new Path(partitionDescProto.getPath());
     FileSystem fs = partitionPath.getFileSystem(context.getConf());
     if (fs.exists(partitionPath)) {
