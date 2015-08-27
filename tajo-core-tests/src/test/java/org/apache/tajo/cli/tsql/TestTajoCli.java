@@ -18,7 +18,6 @@
 
 package org.apache.tajo.cli.tsql;
 
-import jline.console.ConsoleReader;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
@@ -44,7 +43,6 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
-import java.util.Scanner;
 
 import static org.junit.Assert.*;
 
