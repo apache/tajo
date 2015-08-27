@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -338,18 +339,6 @@ public class MemStore implements CatalogStore {
   }
 
   private void addPartition(PartitionDescProto partitionDesc, String tableName, String partitionName) {
-    GetPartitionDescProto.Builder builder = GetPartitionDescProto.newBuilder();
-    builder.setPartitionName(partitionName);
-    builder.setPath(partitionDesc.getPath());
-
-    if (partitionDesc.getPartitionKeysCount() > 0) {
-      for (PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
-        GetPartitionKeyProto.Builder keyBuilder = GetPartitionKeyProto.newBuilder();
-        keyBuilder.setColumnName(eachKey.getColumnName());
-        keyBuilder.setPartitionValue(eachKey.getPartitionValue());
-        builder.addPartitionKeys(keyBuilder.build());
-      }
-    }
 
     Map<String, GetPartitionDescProto> protoMap = null;
     if (!partitions.containsKey(tableName)) {
@@ -357,8 +346,45 @@ public class MemStore implements CatalogStore {
     } else {
       protoMap = partitions.get(tableName);
     }
+
+    GetPartitionDescProto.Builder builder = GetPartitionDescProto.newBuilder();
+    builder.setPartitionName(partitionName);
+    builder.setPath(partitionDesc.getPath());
+    builder.setPartitionId(protoMap.size() + 1);
+    builder.setTid(getTableId(tableName));
+
+    if (partitionDesc.getPartitionKeysCount() > 0) {
+      for (PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
+        GetPartitionKeyProto.Builder keyBuilder = GetPartitionKeyProto.newBuilder();
+        keyBuilder.setColumnName(eachKey.getColumnName());
+        keyBuilder.setPartitionValue(eachKey.getPartitionValue());
+        keyBuilder.setPartitionId(protoMap.size()+1);
+        builder.addPartitionKeys(keyBuilder.build());
+      }
+    }
+
     protoMap.put(partitionName, builder.build());
     partitions.put(tableName, protoMap);
+  }
+
+  private int getTableId(String tableName) {
+    int tableId = 0, retValue = 0;
+
+    for (String databaseName: databases.keySet()) {
+      Map<String, TableDescProto> tables = databases.get(databaseName);
+      List<String> tableNameList = TUtil.newList(tables.keySet());
+      Collections.sort(tableNameList);
+
+      for (String eachTableName: tableNameList) {
+        if (eachTableName.equals(tableName)) {
+          retValue = tableId;
+          break;
+        }
+        tableId++;
+      }
+    }
+
+    return retValue;
   }
 
   private void dropPartition(String databaseName, String tableName, String partitionName)
@@ -574,18 +600,10 @@ public class MemStore implements CatalogStore {
   }
 
   public List<GetPartitionDescProto> getAllPartitions() {
-    int tableId = 0, partitionId = 0;
-    List<TableDescriptorProto> tables = getAllTables();
     List<GetPartitionDescProto> protos = TUtil.newList();
 
     Set<String> partitionTables = partitions.keySet();
     for (String partitionTable : partitionTables) {
-      for (TableDescriptorProto table : tables) {
-        if (table.getName().equals(partitionTable)) {
-          tableId = table.getTid();
-        }
-      }
-
       Map<String, GetPartitionDescProto> entryMap = partitions.get(partitionTable);
       for (Map.Entry<String, GetPartitionDescProto> proto : entryMap.entrySet()) {
         GetPartitionDescProto partitionDescProto = proto.getValue();
@@ -594,11 +612,10 @@ public class MemStore implements CatalogStore {
 
         builder.setPartitionName(partitionDescProto.getPartitionName());
         builder.setPath(partitionDescProto.getPath());
-        builder.setPartitionId(partitionId);
-        builder.setTid(tableId);
+        builder.setPartitionId(partitionDescProto.getPartitionId());
+        builder.setTid(partitionDescProto.getTid());
 
         protos.add(builder.build());
-        partitionId++;
       }
     }
     return protos;
@@ -606,7 +623,6 @@ public class MemStore implements CatalogStore {
 
   public List<GetPartitionKeyProto> getAllPartitionKeys() {
     List<GetPartitionKeyProto> protos = TUtil.newList();
-    int partitionId = 0;
 
     Set<String> partitionTables = partitions.keySet();
     for (String partitionTable : partitionTables) {
@@ -618,11 +634,9 @@ public class MemStore implements CatalogStore {
           GetPartitionKeyProto.Builder builder = GetPartitionKeyProto.newBuilder();
           builder.setColumnName(partitionKey.getColumnName());
           builder.setPartitionValue(partitionKey.getPartitionValue());
-          builder.setPartitionId(partitionId);
+          builder.setPartitionId(partitionKey.getPartitionId());
           protos.add(builder.build());
         }
-
-        partitionId++;
       }
     }
     return protos;
