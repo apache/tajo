@@ -427,6 +427,8 @@ public class TajoCli {
 
             // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
             if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
+              if(client != null)
+                client.close();
               return exitCode;
             }
           }

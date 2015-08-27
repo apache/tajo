@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
+import jline.console.ConsoleReader;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
@@ -43,6 +44,7 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Scanner;
 
 import static org.junit.Assert.*;
 
@@ -315,6 +317,14 @@ public class TestTajoCli {
     assertOutputResult(consoleResult);
   }
 
+  private void verifyRunWhenError() throws Exception {
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+    assertSessionVar(tajoCli, SessionVars.ON_ERROR_STOP.keyname(), "false");
+
+    assertFalse(tajoCli.executeScript("asdf;") == 0);
+  }
+
   @Test
   public void testGetConf() throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
@@ -359,6 +369,12 @@ public class TestTajoCli {
   public void testStopWhenError() throws Exception {
     tajoCli.executeMetaCommand("\\set ON_ERROR_STOP true");
     verifyStopWhenError();
+  }
+
+  @Test
+  public void testRunWhenError() throws Exception {
+    tajoCli.executeMetaCommand("\\set ON_ERROR_STOP false");
+    verifyRunWhenError();
   }
 
   @Test
