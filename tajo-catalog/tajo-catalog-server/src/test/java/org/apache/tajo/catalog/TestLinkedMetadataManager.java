@@ -152,7 +152,8 @@ public class TestLinkedMetadataManager {
   static CatalogService catalog;
 
   @BeforeClass
-  public static void setUp() throws IOException, DuplicateTablespaceException, DuplicateDatabaseException {
+  public static void setUp() throws IOException, DuplicateTablespaceException, DuplicateDatabaseException,
+      UnsupportedCatalogStore {
     TajoConf conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 

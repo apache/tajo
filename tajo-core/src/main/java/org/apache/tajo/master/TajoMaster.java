@@ -539,6 +539,7 @@ public class TajoMaster extends CompositeService {
         LOG.info("============================================");
         stop();
 
+        // If embedded derby is used as catalog, shutdown it.
         if (catalogServer.getStoreClassName().equals("org.apache.tajo.catalog.store.DerbyStore")
             && AbstractDBStore.needShutdown(catalogServer.getStoreUri())) {
           DerbyStore.shutdown();

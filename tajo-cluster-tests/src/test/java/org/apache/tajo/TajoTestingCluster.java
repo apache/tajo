@@ -31,13 +31,17 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.tajo.annotation.NotNull;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
+import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
 import org.apache.tajo.querymaster.Query;
@@ -285,15 +289,92 @@ public class TajoTestingCluster {
     return hbaseUtil;
   }
 
-  private static TajoConf initializeDerbyStore(TajoConf conf, String testDirPath) {
-    conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.DerbyStore");
-    conf.set(CatalogConstants.CATALOG_URI, getCatalogURI(testDirPath));
-    return conf;
-  }
-
-  private static String getCatalogURI(String testDirPath) {
-    return "jdbc:derby:memory:" + testDirPath + "/db;create=true";
-  }
+//  public static TajoConf configureCatalog(TajoConf conf, String testDirPath) throws UnsupportedCatalogStore {
+//
+//    String driverClassName = System.getProperty(CatalogConstants.STORE_CLASS);
+//    final boolean useDefaultCatalog = driverClassName == null;
+//
+//    if (useDefaultCatalog) {
+//      conf = initializeDerbyStore(conf, testDirPath);
+//
+//    } else {
+//      Class<? extends CatalogStore> catalogClass = conf.getClass(driverClassName, null, CatalogStore.class);
+//      if (catalogClass == null) {
+//        throw new UnsupportedCatalogStore(driverClassName);
+//      }
+//
+//      String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
+//      if (catalogURI == null) {
+//        catalogURI = getCatalogURI(catalogClass, null, testDirPath);
+//      }
+//
+//      configureCatalogClassAndUri(conf, catalogClass, catalogURI);
+//
+//      if (requireAuth(catalogClass)) {
+//        String connectionId = System.getProperty(CatalogConstants.CONNECTION_ID);
+//        String connectionPasswd = System.getProperty(CatalogConstants.CONNECTION_PASSWORD);
+//
+//        assert connectionId != null;
+//        conf.set(CatalogConstants.CONNECTION_ID, connectionId);
+//        if (connectionPasswd != null) {
+//          conf.set(CatalogConstants.CONNECTION_PASSWORD, connectionPasswd);
+//        }
+//      }
+//    }
+//    return conf;
+//  }
+//
+//  static <T extends CatalogStore> boolean requireAuth(Class<T> clazz) {
+//    return clazz.equals(MySQLStore.class) ||
+//        clazz.equals(MariaDBStore.class) ||
+//        clazz.equals(PostgreSQLStore.class) ||
+//        clazz.equals(OracleStore.class);
+//  }
+//
+//  private static TajoConf initializeDerbyStore(TajoConf conf, String testDirPath) throws UnsupportedCatalogStore {
+//    return configureCatalogClassAndUri(conf, DerbyStore.class, getInmemoryDerbyCatalogURI(testDirPath));
+//  }
+//
+//  private static <T extends CatalogStore> TajoConf configureCatalogClassAndUri(TajoConf conf,
+//                                                                               Class<T> catalogClass,
+//                                                                               String catalogUri) {
+//    conf.set(CatalogConstants.STORE_CLASS, catalogClass.getCanonicalName());
+//    conf.set(CatalogConstants.CATALOG_URI, catalogUri);
+//    return conf;
+//  }
+//
+//  private static String getInmemoryDerbyCatalogURI(String testDirPath) throws UnsupportedCatalogStore {
+//    return getCatalogURI(DerbyStore.class, "memory", testDirPath);
+//  }
+//
+//  private static <T extends CatalogStore> String getCatalogURI(@NotNull Class<T> clazz,
+//                                                               @Nullable String schemeSpecificPart,
+//                                                               @NotNull String testDirPath)
+//      throws UnsupportedCatalogStore {
+//    String uriScheme = getCatalogURIScheme(clazz);
+//    StringBuilder sb = new StringBuilder("jdbc:").append(uriScheme).append(":");
+//    if (schemeSpecificPart != null) {
+//      sb.append(schemeSpecificPart).append(":");
+//    }
+//    sb.append(testDirPath).append("/db;create=true");
+//    return sb.toString();
+//  }
+//
+//  private static <T extends CatalogStore> String getCatalogURIScheme(Class<T> clazz) throws UnsupportedCatalogStore {
+//    if (clazz.equals(DerbyStore.class)) {
+//      return "derby";
+//    } else if (clazz.equals(MariaDBStore.class)) {
+//      return "mariadb";
+//    } else if (clazz.equals(MySQLStore.class)) {
+//      return "mysql";
+//    } else if (clazz.equals(OracleStore.class)) {
+//      return "oracle";
+//    } else if (clazz.equals(PostgreSQLStore.class)) {
+//      return "postgresql";
+//    } else {
+//      throw new UnsupportedCatalogStore(clazz.getCanonicalName());
+//    }
+//  }
 
   ////////////////////////////////////////////////////////
   // Catalog Section
@@ -303,7 +384,8 @@ public class TajoTestingCluster {
 
     TajoConf c = getConfiguration();
 
-    initializeDerbyStore(conf, clusterTestBuildDir.getAbsolutePath());
+//    initializeDerbyStore(conf, clusterTestBuildDir.getAbsolutePath());
+    CatalogTestingUtil.configureCatalog(conf, clusterTestBuildDir.getAbsolutePath());
     LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
@@ -395,7 +477,7 @@ public class TajoTestingCluster {
     LOG.info("====================================================================================");
   }
 
-  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException {
+  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException, UnsupportedCatalogStore {
     final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
     boolean hiveCatalogClassExists = false;
     try {
@@ -425,7 +507,8 @@ public class TajoTestingCluster {
         throw new IOException(cnfe);
       }
     } else { // for derby
-      initializeDerbyStore(conf, testBuildDir.getAbsolutePath());
+//      initializeDerbyStore(conf, testBuildDir.getAbsolutePath());
+      CatalogTestingUtil.configureCatalog(conf, testBuildDir.getAbsolutePath());
     }
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
   }
