@@ -16,26 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
-import org.apache.tajo.util.Deallocatable;
-import org.apache.tajo.util.UnsafeUtil;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+public class ZeroCopyTuple extends UnSafeTuple {
 
-import static org.apache.tajo.common.TajoDataTypes.DataType;
-
-public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
-  private ByteBuffer bb;
-
-  public DirectBufTuple(int length, DataType[] types) {
-    bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
-    set(bb, 0, length, types);
+  public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
+    super.set(memoryBlock, relativePos, length, types);
   }
 
   @Override
   public void release() {
-    UnsafeUtil.free(bb);
+    // nothing to do
   }
 }

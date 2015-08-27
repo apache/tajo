@@ -18,73 +18,53 @@
 
 package org.apache.tajo.tuple;
 
+import io.netty.util.internal.PlatformDependent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.tuple.offheap.HeapTuple;
-import org.apache.tajo.tuple.offheap.OffHeapRowWriter;
-import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
+import org.apache.tajo.tuple.memory.*;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Deallocatable;
-import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.UnsafeUtil;
-import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, Deallocatable {
   private static final Log LOG = LogFactory.getLog(BaseTupleBuilder.class);
 
-  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
-
   // buffer
-  private ByteBuffer buffer;
-  private long address;
+  private MemoryBlock memoryBlock;
 
-  public BaseTupleBuilder(Schema schema) {
-    super(SchemaUtil.toDataTypes(schema));
-    buffer = ByteBuffer.allocateDirect(64 * StorageUnit.KB).order(ByteOrder.nativeOrder());
-    address = UnsafeUtil.getAddress(buffer);
+  public BaseTupleBuilder(DataType[] schema) {
+    super(schema);
+    this.memoryBlock = new OffHeapMemoryBlock(new ResizableLimitSpec(64 * StorageUnit.KB));
   }
 
   @Override
   public long address() {
-    return address;
+    return memoryBlock.address();
   }
 
   public void ensureSize(int size) {
-    if (buffer.remaining() - size < 0) { // check the remain size
-      // enlarge new buffer and copy writing data
-      int newBlockSize = UnsafeUtil.alignedSize(buffer.capacity() * 2);
-      ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
-      long newAddress = ((DirectBuffer)newByteBuf).address();
-      UNSAFE.copyMemory(this.address, newAddress, buffer.limit());
-      LOG.debug("Increase the buffer size to " + FileUtil.humanReadableByteCount(newBlockSize, false));
-
-      // release existing buffer and replace variables
-      UnsafeUtil.free(buffer);
-      buffer = newByteBuf;
-      address = newAddress;
-    }
+    memoryBlock.ensureSize(size);
   }
 
   @Override
   public int position() {
-    return 0;
+    return memoryBlock.writerPosition();
   }
 
   @Override
   public void forward(int length) {
+    memoryBlock.writerPosition(memoryBlock.writerPosition() + length);
+  }
+
+  @Override
+  public boolean startRow() {
+    return super.startRow();
   }
 
   @Override
   public void endRow() {
     super.endRow();
-    buffer.position(0).limit(offset());
   }
 
   @Override
@@ -93,20 +73,20 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   }
 
   public HeapTuple buildToHeapTuple() {
-    byte [] bytes = new byte[buffer.limit()];
-    UNSAFE.copyMemory(null, address, bytes, UnsafeUtil.ARRAY_BOOLEAN_BASE_OFFSET, buffer.limit());
+    byte[] bytes = new byte[memoryBlock.readableBytes()];
+    PlatformDependent.copyMemory(memoryBlock.address(), bytes, memoryBlock.readerPosition(), bytes.length);
+    memoryBlock.writerPosition(0);
     return new HeapTuple(bytes, dataTypes());
   }
 
   public ZeroCopyTuple buildToZeroCopyTuple() {
     ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    zcTuple.set(buffer, 0, buffer.limit(), dataTypes());
+    zcTuple.set(memoryBlock, memoryBlock.readerPosition(), memoryBlock.readableBytes(), dataTypes());
+    memoryBlock.writerPosition(0);
     return zcTuple;
   }
 
   public void release() {
-    UnsafeUtil.free(buffer);
-    buffer = null;
-    address = 0;
+    memoryBlock.release();
   }
 }

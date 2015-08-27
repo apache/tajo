@@ -16,38 +16,37 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
+import io.netty.util.internal.PlatformDependent;
 import org.apache.tajo.tuple.RowBlockReader;
-import org.apache.tajo.util.UnsafeUtil;
-import sun.misc.Unsafe;
 
 public class OffHeapRowBlockReader implements RowBlockReader<ZeroCopyTuple> {
-  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
-  OffHeapRowBlock rowBlock;
+  private MemoryRowBlock rowBlock;
 
   // Read States
   private int curRowIdxForRead;
   private int curPosForRead;
 
-  public OffHeapRowBlockReader(OffHeapRowBlock rowBlock) {
+  public OffHeapRowBlockReader(MemoryRowBlock rowBlock) {
     this.rowBlock = rowBlock;
   }
 
   public long remainForRead() {
-    return rowBlock.memorySize - curPosForRead;
+    return rowBlock.capacity() - curPosForRead;
   }
 
   @Override
   public boolean next(ZeroCopyTuple tuple) {
     if (curRowIdxForRead < rowBlock.rows()) {
 
-      long recordStartPtr = rowBlock.address() + curPosForRead;
-      int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(rowBlock.buffer, curPosForRead, recordLen, rowBlock.dataTypes);
+      long recordStartPtr = rowBlock.getMemory().address() + curPosForRead;
+      int recordLen = PlatformDependent.getInt(recordStartPtr);
+      tuple.set(rowBlock.getMemory(), curPosForRead, recordLen, rowBlock.getDataTypes());
 
       curPosForRead += recordLen;
       curRowIdxForRead++;
+      rowBlock.getMemory().readerPosition(curPosForRead);
 
       return true;
     } else {

@@ -1,4 +1,4 @@
-/***
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
-import org.apache.tajo.catalog.SchemaUtil;
-import org.junit.Test;
+import org.apache.tajo.util.Deallocatable;
 
-public class TestHeapTuple {
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-  @Test
-  public void testHeapTuple() {
-    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(1024);
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
+  private MemoryBlock memoryBlock;
 
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    int i = 0;
-    while (reader.next(zcTuple)) {
-      byte [] bytes = new byte[zcTuple.nioBuffer().limit()];
-      zcTuple.nioBuffer().get(bytes);
+  public DirectBufTuple(int length, DataType[] types) {
+    ByteBuffer bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+    memoryBlock = new OffHeapMemoryBlock(bb, new FixedSizeLimitSpec(length));
 
-      HeapTuple heapTuple = new HeapTuple(bytes, SchemaUtil.toDataTypes(TestOffHeapRowBlock.schema));
-      TestOffHeapRowBlock.validateTupleResult(i, heapTuple);
-      i++;
-    }
+    set(memoryBlock, 0, length, types);
+  }
 
-    rowBlock.release();
+  @Override
+  public void release() {
+    memoryBlock.release();
   }
 }

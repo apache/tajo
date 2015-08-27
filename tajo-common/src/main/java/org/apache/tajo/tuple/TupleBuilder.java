@@ -1,4 +1,4 @@
-/**
+/***
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,15 +19,8 @@
 package org.apache.tajo.tuple;
 
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.RowWriter;
 
-public interface RowBlockReader<T extends Tuple> {
-
-  /**
-   * Return for each tuple
-   *
-   * @return True if tuple block is filled with tuples. Otherwise, It will return false.
-   */
-  public boolean next(T tuple);
-
-  public void reset();
+public interface TupleBuilder extends RowWriter {
+  public Tuple build();
 }

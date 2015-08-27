@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -37,7 +37,7 @@ import java.nio.charset.Charset;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class HeapTuple implements Tuple {
+public class HeapTuple implements Tuple, Cloneable {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
   private static final long BASE_OFFSET = UnsafeUtil.ARRAY_BYTE_BASE_OFFSET;
 
@@ -73,12 +73,12 @@ public class HeapTuple implements Tuple {
   }
 
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(data, BASE_OFFSET + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
+    return UNSAFE.getInt(data, BASE_OFFSET + (SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));
   }
 
   private int checkNullAndGetOffset(int fieldId) {
     int offset = getFieldOffset(fieldId);
-    if (offset == OffHeapRowBlock.NULL_FIELD_OFFSET) {
+    if (offset == MemoryRowBlock.NULL_FIELD_OFFSET) {
       throw new RuntimeException("Invalid Field Access: " + fieldId);
     }
     return offset;
@@ -86,17 +86,17 @@ public class HeapTuple implements Tuple {
 
   @Override
   public boolean contains(int fieldid) {
-    return getFieldOffset(fieldid) > OffHeapRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) > MemoryRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isBlank(int fieldid) {
-    return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) == MemoryRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isBlankOrNull(int fieldid) {
-    return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) == MemoryRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
@@ -269,7 +269,7 @@ public class HeapTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return this;
+    return (HeapTuple) super.clone();
   }
 
   @Override

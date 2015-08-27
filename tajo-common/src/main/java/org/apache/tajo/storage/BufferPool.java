@@ -119,7 +119,7 @@ public class BufferPool {
    * @param buf
    * @param minWritableBytes required minimum writable size
    */
-  public static void ensureWritable(ByteBuf buf, int minWritableBytes) {
-    buf.ensureWritable(minWritableBytes);
+  public static ByteBuf ensureWritable(ByteBuf buf, int minWritableBytes) {
+    return buf.ensureWritable(minWritableBytes);
   }
 }
