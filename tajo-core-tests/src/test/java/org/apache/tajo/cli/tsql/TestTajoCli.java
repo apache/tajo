@@ -318,9 +318,11 @@ public class TestTajoCli {
   private void verifyRunWhenError() throws Exception {
     PipedOutputStream po = new PipedOutputStream();
     InputStream is = new PipedInputStream(po);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    TajoCli tc = new TajoCli(new TajoConf(), new String[]{}, is, System.out);
-    setVar(tc, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
 
     tc.executeMetaCommand("\\set ON_ERROR_STOP false");
     assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
