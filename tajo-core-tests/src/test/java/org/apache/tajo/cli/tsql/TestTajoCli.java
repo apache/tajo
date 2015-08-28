@@ -18,7 +18,6 @@
 
 package org.apache.tajo.cli.tsql;
 
-import com.sun.tools.doclets.internal.toolkit.util.DocFinder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
