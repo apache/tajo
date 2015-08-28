@@ -28,6 +28,7 @@ import org.apache.tajo.exception.UnsupportedCatalogStore;
 public class CatalogTestingUtil {
 
   public static TajoConf configureCatalog(TajoConf conf, String testDirPath) throws UnsupportedCatalogStore {
+    System.setProperty(CatalogConstants.STORE_CLASS, MariaDBStore.class.getCanonicalName());
 
     String driverClassName = System.getProperty(CatalogConstants.STORE_CLASS);
     final boolean useDefaultCatalog = driverClassName == null;
@@ -36,10 +37,17 @@ public class CatalogTestingUtil {
       conf = initializeDerbyStore(conf, testDirPath);
 
     } else {
-      Class<? extends CatalogStore> catalogClass = conf.getClass(driverClassName, null, CatalogStore.class);
-      if (catalogClass == null) {
+      Class clazz;
+      try {
+        clazz = Class.forName(driverClassName);
+      } catch (ClassNotFoundException e) {
         throw new UnsupportedCatalogStore(driverClassName);
       }
+//      Class<? extends CatalogStore> catalogClass = conf.getClass(driverClassName, null, CatalogStore.class);
+//      if (catalogClass == null) {
+//        throw new UnsupportedCatalogStore(driverClassName);
+//      }
+      Class<? extends CatalogStore> catalogClass = clazz;
 
       String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
       if (catalogURI == null) {
