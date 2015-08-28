@@ -58,6 +58,7 @@
             <exclude>derby.log</exclude>
             <exclude>benchmark/**</exclude>
             <exclude>src/test/resources/tpch/**</exclude>
+            <exclude>src/test/resources/tpch_partition/**</exclude>
           </excludes>
         </configuration>
       </plugin>
