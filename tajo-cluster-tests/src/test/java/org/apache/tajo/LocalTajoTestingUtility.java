@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -30,6 +31,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -46,6 +48,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.ResultSet;
+import java.util.Map;
 import java.util.UUID;
 
 public class LocalTajoTestingUtility {
@@ -97,6 +100,14 @@ public class LocalTajoTestingUtility {
                     String[] tablepaths,
                     Schema[] schemas,
                     KeyValueSet option) throws Exception {
+    setup(names, tablepaths, schemas, option, null);
+  }
+
+  public void setup(String[] names,
+                    String[] tablepaths,
+                    Schema[] schemas,
+                    KeyValueSet option,
+                    Map<String, PartitionMethodDesc> partitionMap) throws Exception {
     LOG.info("===================================================");
     LOG.info("Starting Test Cluster.");
     LOG.info("===================================================");
@@ -111,20 +122,44 @@ public class LocalTajoTestingUtility {
     fs.mkdirs(rootDir);
     for (int i = 0; i < tablepaths.length; i++) {
       Path localPath = new Path(tablepaths[i]);
+
       Path tablePath = new Path(rootDir, names[i]);
       fs.mkdirs(tablePath);
-      Path dfsPath = new Path(tablePath, localPath.getName());
-      fs.copyFromLocalFile(localPath, dfsPath);
+      if (partitionMap != null && partitionMap.get(names[i]) != null) {
+        FileSystem localFs = localPath.getFileSystem(new TajoConf());
+
+        FileStatus[] partitionStatues = localFs.listStatus(localPath);
+        for(FileStatus partitionStatus : partitionStatues) {
+          Path partitionPath = new Path(tablePath, partitionStatus.getPath().getName());
+          fs.mkdirs(partitionPath);
+
+          FileStatus[] fileStatuses = localFs.listStatus(partitionStatus.getPath());
+          for(FileStatus fileStatus : fileStatuses) {
+            fs.copyFromLocalFile(fileStatus.getPath(), partitionPath);
+          }
+        }
+      } else {
+        Path dfsPath = new Path(tablePath, localPath.getName());
+        fs.copyFromLocalFile(localPath, dfsPath);
+      }
+
       TableMeta meta = CatalogUtil.newTableMeta("TEXT", option);
 
       // Add fake table statistic data to tables.
       // It gives more various situations to unit tests.
       TableStats stats = new TableStats();
       stats.setNumBytes(TPCH.tableVolumes.get(names[i]));
+
       TableDesc tableDesc = new TableDesc(
-          CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
-          tablePath.toUri());
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
+        tablePath.toUri());
+
+      if (partitionMap != null && partitionMap.get(names[i]) != null) {
+        tableDesc.setPartitionMethod(partitionMap.get(names[i]));
+      }
+
       tableDesc.setStats(stats);
+
       util.getMaster().getCatalog().createTable(tableDesc);
     }
 

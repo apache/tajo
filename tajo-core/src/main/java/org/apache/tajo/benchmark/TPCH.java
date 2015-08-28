@@ -19,9 +19,8 @@
 package org.apache.tajo.benchmark;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -31,14 +30,11 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.FileUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
-  private final Log LOG = LogFactory.getLog(TPCH.class);
   private final String BENCHMARK_DIR = "benchmark/tpch";
 
   public static final String LINEITEM = "lineitem";
@@ -54,6 +50,7 @@ public class TPCH extends BenchmarkSet {
 
 
   public static final Map<String, Long> tableVolumes = Maps.newHashMap();
+  public static String PARTITION_TABLE;
 
   static {
     tableVolumes.put(LINEITEM, 759863287L);
@@ -66,7 +63,7 @@ public class TPCH extends BenchmarkSet {
     tableVolumes.put(PARTSUPP, 118984616L);
     tableVolumes.put(SUPPLIER, 1409184L);
     tableVolumes.put(EMPTY_ORDERS, 0L);
-
+    PARTITION_TABLE = System.getProperty("partition-table");
   }
 
   @Override
@@ -80,12 +77,17 @@ public class TPCH extends BenchmarkSet {
         .addColumn("l_extendedprice", Type.FLOAT8) // 5
         .addColumn("l_discount", Type.FLOAT8) // 6
         .addColumn("l_tax", Type.FLOAT8) // 7
-            // TODO - This is temporal solution. 8 and 9 are actually Char type.
-        .addColumn("l_returnflag", Type.TEXT) // 8
-        .addColumn("l_linestatus", Type.TEXT) // 9
-            // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
-        .addColumn("l_shipdate", Type.TEXT) // 10
-        .addColumn("l_commitdate", Type.TEXT) // 11
+        // TODO - This is temporal solution. 8 and 9 are actually Char type.
+        .addColumn("l_returnflag", Type.TEXT); // 8
+
+    lineitem.addColumn("l_linestatus", Type.TEXT); // 9
+
+    // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      lineitem.addColumn("l_shipdate", Type.TEXT); // 10
+    }
+
+    lineitem.addColumn("l_commitdate", Type.TEXT) // 11
         .addColumn("l_receiptdate", Type.TEXT) // 12
         .addColumn("l_shipinstruct", Type.TEXT) // 13
         .addColumn("l_shipmode", Type.TEXT) // 14
@@ -95,9 +97,13 @@ public class TPCH extends BenchmarkSet {
     Schema customer = new Schema()
         .addColumn("c_custkey", Type.INT4) // 0
         .addColumn("c_name", Type.TEXT) // 1
-        .addColumn("c_address", Type.TEXT) // 2
-        .addColumn("c_nationkey", Type.INT4) // 3
-        .addColumn("c_phone", Type.TEXT) // 4
+        .addColumn("c_address", Type.TEXT); // 2
+
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      customer.addColumn("c_nationkey", Type.INT4); // 3
+    }
+
+    customer.addColumn("c_phone", Type.TEXT) // 4
         .addColumn("c_acctbal", Type.FLOAT8) // 5
         .addColumn("c_mktsegment", Type.TEXT) // 6
         .addColumn("c_comment", Type.TEXT); // 7
@@ -115,9 +121,13 @@ public class TPCH extends BenchmarkSet {
 
     Schema nation = new Schema()
         .addColumn("n_nationkey", Type.INT4) // 0
-        .addColumn("n_name", Type.TEXT) // 1
-        .addColumn("n_regionkey", Type.INT4) // 2
-        .addColumn("n_comment", Type.TEXT); // 3
+        .addColumn("n_name", Type.TEXT); // 1
+
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      nation.addColumn("n_regionkey", Type.INT4); // 2
+    }
+
+    nation.addColumn("n_comment", Type.TEXT); // 3
     schemas.put(NATION, nation);
 
     Schema part = new Schema()
@@ -125,16 +135,24 @@ public class TPCH extends BenchmarkSet {
         .addColumn("p_name", Type.TEXT) // 1
         .addColumn("p_mfgr", Type.TEXT) // 2
         .addColumn("p_brand", Type.TEXT) // 3
-        .addColumn("p_type", Type.TEXT) // 4
-        .addColumn("p_size", Type.INT4) // 5
-        .addColumn("p_container", Type.TEXT) // 6
+        .addColumn("p_type", Type.TEXT); // 4
+
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      part.addColumn("p_size", Type.INT4); // 5
+    }
+
+    part.addColumn("p_container", Type.TEXT) // 6
         .addColumn("p_retailprice", Type.FLOAT8) // 7
         .addColumn("p_comment", Type.TEXT); // 8
     schemas.put(PART, part);
 
-    Schema region = new Schema()
-        .addColumn("r_regionkey", Type.INT4) // 0
-        .addColumn("r_name", Type.TEXT) // 1
+    Schema region = new Schema();
+
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      region.addColumn("r_regionkey", Type.INT4); // 0
+    }
+
+    region.addColumn("r_name", Type.TEXT) // 1
         .addColumn("r_comment", Type.TEXT); // 2
     schemas.put(REGION, region);
 
@@ -142,10 +160,14 @@ public class TPCH extends BenchmarkSet {
         .addColumn("o_orderkey", Type.INT4) // 0
         .addColumn("o_custkey", Type.INT4) // 1
         .addColumn("o_orderstatus", Type.TEXT) // 2
-        .addColumn("o_totalprice", Type.FLOAT8) // 3
-            // TODO - This is temporal solution. o_orderdate is actually Date type.
-        .addColumn("o_orderdate", Type.TEXT) // 4
-        .addColumn("o_orderpriority", Type.TEXT) // 5
+        .addColumn("o_totalprice", Type.FLOAT8); // 3
+
+    // TODO - This is temporal solution. o_orderdate is actually Date type.
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      orders.addColumn("o_orderdate", Type.TEXT); // 4
+    }
+
+    orders.addColumn("o_orderpriority", Type.TEXT) // 5
         .addColumn("o_clerk", Type.TEXT) // 6
         .addColumn("o_shippriority", Type.INT4) // 7
         .addColumn("o_comment", Type.TEXT); // 8
@@ -164,10 +186,14 @@ public class TPCH extends BenchmarkSet {
     Schema supplier = new Schema()
         .addColumn("s_suppkey", Type.INT4) // 0
         .addColumn("s_name", Type.TEXT) // 1
-        .addColumn("s_address", Type.TEXT) // 2
-        .addColumn("s_nationkey", Type.INT4) // 3
-        .addColumn("s_phone", Type.TEXT) // 4
-        .addColumn("s_acctbal", Type.FLOAT8) // 5
+        .addColumn("s_address", Type.TEXT); // 2
+
+    if (PARTITION_TABLE == null || PARTITION_TABLE.equals("")) {
+      supplier.addColumn("s_nationkey", Type.INT4); // 3
+    }
+
+    supplier.addColumn("s_phone", Type.TEXT) // 4
+      .addColumn("s_acctbal", Type.FLOAT8) // 5
         .addColumn("s_comment", Type.TEXT); // 6
     schemas.put(SUPPLIER, supplier);
   }
@@ -201,6 +227,42 @@ public class TPCH extends BenchmarkSet {
     loadTable(SUPPLIER);
     loadTable(EMPTY_ORDERS);
 
+  }
+
+  public PartitionMethodDesc getPartitionMethodDesc(String tableName) {
+    PartitionMethodDesc partitionMethodDesc = null;
+
+    if (tableName.equals(LINEITEM)) {
+      Schema expressionSchema = new Schema().addColumn("l_shipdate", Type.TEXT);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME,  LINEITEM,
+        CatalogProtos.PartitionType.COLUMN, "l_shipdate", expressionSchema);
+    } else if (tableName.equals(CUSTOMER)) {
+      Schema expressionSchema = new Schema().addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME, CUSTOMER,
+        CatalogProtos.PartitionType.COLUMN, "c_nationkey", expressionSchema);
+    } else if (tableName.equals(NATION)) {
+      Schema expressionSchema = new Schema().addColumn("n_regionkey", TajoDataTypes.Type.INT4);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME, NATION,
+        CatalogProtos.PartitionType.COLUMN, "n_regionkey", expressionSchema);
+    } else if (tableName.equals(PART)) {
+      Schema expressionSchema = new Schema().addColumn("p_size", TajoDataTypes.Type.INT4);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME, PART,
+        CatalogProtos.PartitionType.COLUMN, "p_size", expressionSchema);
+    } else if (tableName.equals(REGION)) {
+      Schema expressionSchema = new Schema().addColumn("r_regionkey", TajoDataTypes.Type.INT4);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME, REGION,
+        CatalogProtos.PartitionType.COLUMN, "r_regionkey", expressionSchema);
+    } else if (tableName.equals(ORDERS)) {
+      Schema expressionSchema = new Schema().addColumn("o_orderdate", Type.TEXT);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME, ORDERS,
+        CatalogProtos.PartitionType.COLUMN, "o_orderdate", expressionSchema);
+    } else if (tableName.equals(SUPPLIER)) {
+      Schema expressionSchema = new Schema().addColumn("s_nationkey", TajoDataTypes.Type.INT4);
+      partitionMethodDesc = new PartitionMethodDesc(TajoConstants.DEFAULT_DATABASE_NAME, SUPPLIER,
+        CatalogProtos.PartitionType.COLUMN, "s_nationkey", expressionSchema);
+    }
+
+    return partitionMethodDesc;
   }
 
   public void loadTable(String tableName) throws TajoException {
