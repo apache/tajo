@@ -375,7 +375,7 @@ public class TestTajoCli {
     verifyStopWhenError();
   }
 
-  @Test(timeout=100)
+  @Test
   public void testRunWhenError() throws Exception {
     verifyRunWhenError();
   }
