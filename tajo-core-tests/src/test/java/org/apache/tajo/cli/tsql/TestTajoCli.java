@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
+import com.sun.tools.doclets.internal.toolkit.util.DocFinder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
@@ -316,11 +317,17 @@ public class TestTajoCli {
   }
 
   private void verifyRunWhenError() throws Exception {
-    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    PipedOutputStream po = new PipedOutputStream();
+    InputStream is = new PipedInputStream(po);
 
-    assertSessionVar(tajoCli, SessionVars.ON_ERROR_STOP.keyname(), "false");
+    TajoCli tc = new TajoCli(new TajoConf(), new String[]{}, is, System.out);
+    setVar(tc, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
-    assertFalse(tajoCli.executeScript("asdf;") == 0);
+    tc.executeMetaCommand("\\set ON_ERROR_STOP false");
+    assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
+
+    po.write(new String("asdf;\n\\q\n").getBytes());
+    assertTrue((tc.runShell()) == 0);
   }
 
   @Test
@@ -369,9 +376,8 @@ public class TestTajoCli {
     verifyStopWhenError();
   }
 
-  @Test
+  @Test(timeout=100)
   public void testRunWhenError() throws Exception {
-    tajoCli.executeMetaCommand("\\set ON_ERROR_STOP false");
     verifyRunWhenError();
   }
 

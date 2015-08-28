@@ -406,6 +406,7 @@ public class TajoCli {
     SimpleParser parser = new SimpleParser();
       try {
         while((line = reader.readLine(currentPrompt + "> ")) != null) {
+          if (line.equals("\\q")) break;
           if (line.equals("")) {
             continue;
           }
@@ -434,7 +435,7 @@ public class TajoCli {
           }
         }
       } catch (Exception e) {
-        System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
+        System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
 
         if (client != null) {
           client.close();
