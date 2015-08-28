@@ -308,8 +308,8 @@ public class TestTajoCli {
     assertSessionVar(tajoCli, SessionVars.ON_ERROR_STOP.keyname(), "true");
 
     tajoCli.executeScript("select count(*) from lineitem; " +
-      "select count(*) from lineitem2; " +
-      "select count(*) from orders");
+            "select count(*) from lineitem2; " +
+            "select count(*) from orders");
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);

@@ -398,55 +398,58 @@ public class TajoCli {
   public int runShell() throws Exception {
     String line;
     String currentPrompt = context.getCurrentDatabase();
-    int exitCode;
+    int exitCode = 0;
     ParsingState latestState = SimpleParser.START_STATE;
 
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
-      try {
-        while((line = reader.readLine(currentPrompt + "> ")) != null) {
-          if (line.equals("\\q")) break;
-          if (line.equals("")) {
-            continue;
-          }
-          wasError = false;
-          if (line.startsWith("{")) {
-            executeJsonQuery(line);
-          } else {
-            List<ParsedResult> parsedResults = parser.parseLines(line);
-
-            if (latestState != ParsingState.TOK_START && parsedResults.size() > 0) {
-              // Add multi-line statements to history in addition to individual lines.
-              ParsedResult parsed = parsedResults.get(0);
-              history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
-            }
-
-            exitCode = executeParsedResults(parsedResults);
-            latestState = parser.getState();
-            currentPrompt = updatePrompt(latestState);
-
-            // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
-            if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
-              if(client != null)
-                client.close();
-              return exitCode;
-            }
-          }
+    try {
+      while (!(line = reader.readLine(currentPrompt + "> ")).equals("\\q")) {
+        if (line.equals("")) {
+          continue;
         }
-      } catch (Exception e) {
-        System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
+        wasError = false;
+        if (line.startsWith("{")) {
+          executeJsonQuery(line);
+        } else {
+          List<ParsedResult> parsedResults = parser.parseLines(line);
 
-        if (client != null) {
-          client.close();
+          if (latestState != ParsingState.TOK_START && parsedResults.size() > 0) {
+            // Add multi-line statements to history in addition to individual lines.
+            ParsedResult parsed = parsedResults.get(0);
+            history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
+          }
+
+          exitCode = executeParsedResults(parsedResults);
+          latestState = parser.getState();
+          currentPrompt = updatePrompt(latestState);
+
+          // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
+          if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP))
+            break;
+          else
+            exitCode = 0;
         }
-
-        throw e;
-
       }
+    } catch (Exception e) {
+      System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
 
-    return 0;
+      throw e;
+    } finally {
+      if (client != null) {
+        client.close();
+      }
+    }
+
+    return exitCode;
   }
+
+
+
+
+
+
 
   private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
     int exitCode = 0;
