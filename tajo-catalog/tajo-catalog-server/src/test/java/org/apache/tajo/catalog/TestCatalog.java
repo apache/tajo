@@ -66,40 +66,7 @@ public class TestCatalog {
 	static CatalogService catalog;
 
   public static TajoConf newTajoConfForCatalogTest() throws IOException, UnsupportedCatalogStore {
-//    final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
-//
-//    String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
-//
-//    // here, we don't choose HiveCatalogStore due to some dependency problems.
-//    if (driverClass == null || driverClass.equals(HIVE_CATALOG_CLASS_NAME)) {
-//      driverClass = DerbyStore.class.getCanonicalName();
-//    }
-//    String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
-//    if (catalogURI == null) {
-//      Path path = CommonTestingUtil.getTestDir();
-//      catalogURI = String.format("jdbc:derby:%s/db;create=true", path.toUri().getPath());
-//    }
-//    String connectionId = System.getProperty(CatalogConstants.CONNECTION_ID);
-//    String password = System.getProperty(CatalogConstants.CONNECTION_PASSWORD);
-//
-//    TajoConf conf = new TajoConf();
-//    conf.set(CatalogConstants.STORE_CLASS, driverClass);
-//    conf.set(CATALOG_URI, catalogURI);
-//    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
-//
-//    // MySQLStore/MariaDB/PostgreSQL requires username (and password).
-//    if (isConnectionIdRequired(driverClass)) {
-//      if (connectionId == null) {
-//        throw new TajoInternalError(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
-//      }
-//      conf.set(CatalogConstants.CONNECTION_ID, connectionId);
-//      if (password != null) {
-//        conf.set(CatalogConstants.CONNECTION_PASSWORD, password);
-//      }
-//    }
-
-    TajoConf conf = new TajoConf();
-    return CatalogTestingUtil.configureCatalog(conf, setupClusterTestBuildDir().getAbsolutePath());
+    return CatalogTestingUtil.configureCatalog(new TajoConf(), setupClusterTestBuildDir().getAbsolutePath());
   }
 
   public static File setupClusterTestBuildDir() throws IOException {
@@ -133,13 +100,6 @@ public class TestCatalog {
     }
 	}
 
-  public static boolean isConnectionIdRequired(String driverClass) {
-    return driverClass.equals(MySQLStore.class.getCanonicalName()) ||
-           driverClass.equals(MariaDBStore.class.getCanonicalName()) ||
-           driverClass.equals(PostgreSQLStore.class.getCanonicalName()) ||
-        driverClass.equals(OracleStore.class.getCanonicalName());
-  }
-	
 	@AfterClass
 	public static void tearDown() throws IOException {
 	  server.stop();

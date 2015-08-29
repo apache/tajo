@@ -28,45 +28,13 @@ import org.apache.tajo.exception.UnsupportedCatalogStore;
 public class CatalogTestingUtil {
 
   public static TajoConf configureCatalog(TajoConf conf, String testDirPath) throws UnsupportedCatalogStore {
-    System.setProperty(CatalogConstants.STORE_CLASS, MariaDBStore.class.getCanonicalName());
 
     String driverClassName = System.getProperty(CatalogConstants.STORE_CLASS);
     final boolean useDefaultCatalog = driverClassName == null;
 
-    if (useDefaultCatalog) {
-      conf = initializeDerbyStore(conf, testDirPath);
+    conf = initializeDerbyStore(conf, testDirPath);
 
-    } else {
-      Class clazz;
-      try {
-        clazz = Class.forName(driverClassName);
-      } catch (ClassNotFoundException e) {
-        throw new UnsupportedCatalogStore(driverClassName);
-      }
-//      Class<? extends CatalogStore> catalogClass = conf.getClass(driverClassName, null, CatalogStore.class);
-//      if (catalogClass == null) {
-//        throw new UnsupportedCatalogStore(driverClassName);
-//      }
-      Class<? extends CatalogStore> catalogClass = clazz;
-
-      String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
-      if (catalogURI == null) {
-        catalogURI = getCatalogURI(catalogClass, null, testDirPath);
-      }
-
-      configureCatalogClassAndUri(conf, catalogClass, catalogURI);
-
-      if (requireAuth(catalogClass)) {
-        String connectionId = System.getProperty(CatalogConstants.CONNECTION_ID);
-        String connectionPasswd = System.getProperty(CatalogConstants.CONNECTION_PASSWORD);
-
-        assert connectionId != null;
-        conf.set(CatalogConstants.CONNECTION_ID, connectionId);
-        if (connectionPasswd != null) {
-          conf.set(CatalogConstants.CONNECTION_PASSWORD, connectionPasswd);
-        }
-      }
-    }
+    // TODO: if useDefaultCatalog is false, use external database as catalog
     return conf;
   }
 

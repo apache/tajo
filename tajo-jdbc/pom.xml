@@ -66,7 +66,7 @@
             <exclude>src/test/resources/dataset/**</exclude>
             <exclude>src/test/resources/queries/**</exclude>
             <exclude>src/test/resources/results/**</exclude>
-	    <exclude>derby.log</exclude>
+            <exclude>derby.log</exclude>
           </excludes>
         </configuration>
       </plugin>

@@ -75,9 +75,6 @@
             <tajo.test>TRUE</tajo.test>
           </systemProperties>
           <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
-          <additionalClasspathElements>
-            <additionalClasspathElement>/home/jihoon/Projects/mariadb-java-client-1.1.8.jar</additionalClasspathElement>
-          </additionalClasspathElements>
         </configuration>
       </plugin>
       <plugin>
