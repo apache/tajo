@@ -134,7 +134,12 @@ case $startStop in
     if [ -f $pid ]; then
       if kill -0 `cat $pid` > /dev/null 2>&1; then
         echo stopping $command
-        kill `cat $pid`
+        kill_pid=`cat $pid`
+        kill $kill_pid
+        kill_msg=`kill $kill_pid`
+        if [ "$kill_msg" = "" ] ; then
+          rm $pid
+        fi
       else
         echo no $command to stop
       fi
