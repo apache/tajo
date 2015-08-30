@@ -18,6 +18,7 @@
 
 package org.apache.tajo.tuple.memory;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.tajo.util.Deallocatable;
 
 import java.io.IOException;
@@ -108,13 +109,19 @@ public interface MemoryBlock extends Deallocatable {
   int writeBytes(ScatteringByteChannel in) throws IOException;
 
   /**
-   * Transfers the content of this bufer to the byte array
+   * Transfers the content of this buffer to the byte array
    * @param dst the destination byte array
    * @param dstIndex the first index of the destination
    * @param length   the number of bytes to transfer
    * @return the actual number of bytes transfers to the destination byte array
    */
   int getBytes(byte[] dst, int dstIndex, int length) throws IOException;
+
+  /**
+   * This method does not modify {@code readerPosition} or {@code writerPosition} of this buffer.
+   * @return a 32-bit integer in this buffer
+   */
+  int getInt(int index);
 
   /**
    * Transfers the content of this buffer to the channel
@@ -137,7 +144,12 @@ public interface MemoryBlock extends Deallocatable {
   int writeTo(OutputStream out) throws IOException;
 
   /**
-   * @return a {@MemoryBlock} which shares the whole region of this.
+   * @return a MemoryBlock which shares the whole region of this.
    */
   MemoryBlock duplicate();
+
+  /**
+   * @return a internal buffer
+   */
+  ByteBuf getBuffer();
 }

@@ -18,10 +18,9 @@
 
 package org.apache.tajo.tuple.memory;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.util.SizeOf;
@@ -44,28 +43,30 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
   private RowWriter builder;
   private MemoryBlock memory;
 
-  public MemoryRowBlock(DataType[] dataTypes, ResizableLimitSpec limitSpec, boolean offheap) {
-    if (offheap) {
-      this.memory = new OffHeapMemoryBlock(limitSpec);
-    } else {
-      throw new TajoRuntimeException(new NotImplementedException("Heap memory not implemented yet"));
-    }
+  public MemoryRowBlock(DataType[] dataTypes, ResizableLimitSpec limitSpec, boolean isDirect) {
+    this.memory = new ResizableMemoryBlock(limitSpec, isDirect);
     this.dataTypes = dataTypes;
-    this.builder = new OffHeapRowBlockWriter(this);
   }
 
   public MemoryRowBlock(MemoryRowBlock rowBlock) {
-    this.memory = TUtil.checkTypeAndGet(rowBlock.getMemory().duplicate(), OffHeapMemoryBlock.class);
+    this.memory = TUtil.checkTypeAndGet(rowBlock.getMemory().duplicate(), ResizableMemoryBlock.class);
     this.rowNum = rowBlock.rowNum;
     this.dataTypes = rowBlock.dataTypes;
-    this.builder = new OffHeapRowBlockWriter(this);
   }
 
-  @VisibleForTesting
+  public MemoryRowBlock(MemoryBlock memory, DataType[] dataTypes, int rowNum) {
+    this.memory = memory;
+    this.rowNum = rowNum;
+    this.dataTypes = dataTypes;
+  }
+
   public MemoryRowBlock(DataType[] dataTypes, int bytes) {
     this(dataTypes, new ResizableLimitSpec(bytes), true);
   }
 
+  public MemoryRowBlock(DataType[] dataTypes, int bytes, boolean isDirect) {
+    this(dataTypes, new ResizableLimitSpec(bytes), isDirect);
+  }
 
   @Override
   public void clear() {
@@ -75,7 +76,9 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
 
   private void reset() {
     rowNum = 0;
-    builder.clear();
+    if (builder != null) {
+      builder.clear();
+    }
   }
 
   @Override
@@ -103,8 +106,7 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
   }
 
   @Override
-  public boolean copyFromChannel(ScatteringByteChannel channel)
-      throws IOException {
+  public boolean copyFromChannel(ScatteringByteChannel channel) throws IOException {
     reset();
 
     int readBytes = memory.writeBytes(channel);
@@ -135,6 +137,14 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
 
   @Override
   public RowWriter getWriter() {
+
+    if (builder == null) {
+      if (!getMemory().hasAddress()) {
+        throw new TajoInternalError(new NotImplementedException("Heap memory writer not implemented yet"));
+      } else {
+        this.builder = new OffHeapRowBlockWriter(this);
+      }
+    }
     return builder;
   }
 
@@ -150,6 +160,10 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
 
   @Override
   public RowBlockReader getReader() {
-    return new OffHeapRowBlockReader(this);
+    if (!getMemory().hasAddress()) {
+      return new HeapRowBlockReader(this);
+    } else {
+      return new OffHeapRowBlockReader(this);
+    }
   }
 }

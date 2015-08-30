@@ -18,9 +18,6 @@
 
 package org.apache.tajo.tuple;
 
-import io.netty.util.internal.PlatformDependent;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.memory.*;
@@ -28,14 +25,12 @@ import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Deallocatable;
 
 public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, Deallocatable {
-  private static final Log LOG = LogFactory.getLog(BaseTupleBuilder.class);
 
-  // buffer
   private MemoryBlock memoryBlock;
 
   public BaseTupleBuilder(DataType[] schema) {
     super(schema);
-    this.memoryBlock = new OffHeapMemoryBlock(new ResizableLimitSpec(64 * StorageUnit.KB));
+    this.memoryBlock = new ResizableMemoryBlock(new ResizableLimitSpec(64 * StorageUnit.KB), true);
   }
 
   @Override
@@ -59,6 +54,7 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
 
   @Override
   public boolean startRow() {
+    memoryBlock.writerPosition(0);
     return super.startRow();
   }
 
@@ -73,16 +69,12 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   }
 
   public HeapTuple buildToHeapTuple() {
-    byte[] bytes = new byte[memoryBlock.readableBytes()];
-    PlatformDependent.copyMemory(memoryBlock.address(), bytes, memoryBlock.readerPosition(), bytes.length);
-    memoryBlock.writerPosition(0);
-    return new HeapTuple(bytes, dataTypes());
+    return buildToZeroCopyTuple().toHeapTuple();
   }
 
-  public ZeroCopyTuple buildToZeroCopyTuple() {
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
+  public UnSafeTuple buildToZeroCopyTuple() {
+    UnSafeTuple zcTuple = new UnSafeTuple();
     zcTuple.set(memoryBlock, memoryBlock.readerPosition(), memoryBlock.readableBytes(), dataTypes());
-    memoryBlock.writerPosition(0);
     return zcTuple;
   }
 

@@ -39,28 +39,25 @@ import java.nio.charset.Charset;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public abstract class UnSafeTuple implements Tuple {
+public class UnSafeTuple extends ZeroCopyTuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   private long address;
-  private int relativePos;
-  private int length;
-  private DataType [] types;
+  private DataType[] types;
 
-  protected void set(MemoryBlock memoryBlock, int relativePos, int length, DataType [] types) {
+  @Override
+  public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
     Preconditions.checkArgument(memoryBlock.hasAddress());
 
     this.address = memoryBlock.address();
-    this.relativePos = relativePos;
-    this.length = length;
     this.types = types;
+    super.set(relativePos, length);
   }
 
-  void set(UnSafeTuple tuple) {
+  public void set(UnSafeTuple tuple) {
     this.address = tuple.address;
-    this.relativePos = tuple.relativePos;
-    this.length = tuple.length;
     this.types = tuple.types;
+    super.set(tuple.getRelativePos(), tuple.getLength());
   }
 
   @Override
@@ -79,34 +76,32 @@ public abstract class UnSafeTuple implements Tuple {
   }
 
   public void writeTo(ByteBuffer bb) {
-    if (bb.remaining() < length) {
+    if (bb.remaining() < getLength()) {
       throw new IndexOutOfBoundsException("remaining length: " + bb.remaining()
           + ", tuple length: " + getLength());
     }
 
-    if (length > 0) {
+    if (getLength() > 0) {
       if (bb.isDirect()) {
-        PlatformDependent.copyMemory(address(), PlatformDependent.directBufferAddress(bb) + bb.position(), length);
+        PlatformDependent.copyMemory(address(), PlatformDependent.directBufferAddress(bb) + bb.position(), getLength());
         bb.position(bb.position() + getLength());
       } else {
-        PlatformDependent.copyMemory(address(), bb.array(), bb.arrayOffset() + bb.position(), length);
+        PlatformDependent.copyMemory(address(), bb.array(), bb.arrayOffset() + bb.position(), getLength());
         bb.position(bb.position() + getLength());
       }
     }
   }
 
   public long address() {
-    return address + relativePos;
-  }
-
-  public int getLength() {
-    return length;
+    return address + getRelativePos();
   }
 
   public HeapTuple toHeapTuple() {
-    byte [] bytes = new byte[length];
-    PlatformDependent.copyMemory(address(), bytes, 0, length);
-    return new HeapTuple(bytes, types);
+    HeapTuple heapTuple = new HeapTuple();
+    byte [] bytes = new byte[getLength()];
+    PlatformDependent.copyMemory(address(), bytes, 0, getLength());
+    heapTuple.set(bytes, types);
+    return heapTuple;
   }
 
   private int getFieldOffset(int fieldId) {
@@ -163,43 +158,43 @@ public abstract class UnSafeTuple implements Tuple {
     }
 
     switch (types[fieldId].getType()) {
-      case BOOLEAN:
-        return DatumFactory.createBool(getBool(fieldId));
-      case BIT:
-        return DatumFactory.createBit(getByte(fieldId));
-      case INT1:
-      case INT2:
-        return DatumFactory.createInt2(getInt2(fieldId));
-      case INT4:
-        return DatumFactory.createInt4(getInt4(fieldId));
-      case INT8:
-        return DatumFactory.createInt8(getInt8(fieldId));
-      case FLOAT4:
-        return DatumFactory.createFloat4(getFloat4(fieldId));
-      case FLOAT8:
-        return DatumFactory.createFloat8(getFloat8(fieldId));
-      case CHAR:
-        return DatumFactory.createChar(getBytes(fieldId));
-      case TEXT:
-        return DatumFactory.createText(getBytes(fieldId));
-      case BLOB :
-        return DatumFactory.createBlob(getBytes(fieldId));
-      case TIMESTAMP:
-        return DatumFactory.createTimestamp(getInt8(fieldId));
-      case DATE:
-        return DatumFactory.createDate(getInt4(fieldId));
-      case TIME:
-        return DatumFactory.createTime(getInt8(fieldId));
-      case INTERVAL:
-        return getInterval(fieldId);
-      case INET4:
-        return DatumFactory.createInet4(getInt4(fieldId));
-      case PROTOBUF:
-        return getProtobufDatum(fieldId);
-      case NULL_TYPE:
-        return NullDatum.get();
-      default:
-        throw new TajoRuntimeException(new UnsupportedException("data type '" + types[fieldId] + "'"));
+    case BOOLEAN:
+      return DatumFactory.createBool(getBool(fieldId));
+    case BIT:
+      return DatumFactory.createBit(getByte(fieldId));
+    case INT1:
+    case INT2:
+      return DatumFactory.createInt2(getInt2(fieldId));
+    case INT4:
+      return DatumFactory.createInt4(getInt4(fieldId));
+    case INT8:
+      return DatumFactory.createInt8(getInt8(fieldId));
+    case FLOAT4:
+      return DatumFactory.createFloat4(getFloat4(fieldId));
+    case FLOAT8:
+      return DatumFactory.createFloat8(getFloat8(fieldId));
+    case CHAR:
+      return DatumFactory.createChar(getBytes(fieldId));
+    case TEXT:
+      return DatumFactory.createText(getBytes(fieldId));
+    case BLOB:
+      return DatumFactory.createBlob(getBytes(fieldId));
+    case TIMESTAMP:
+      return DatumFactory.createTimestamp(getInt8(fieldId));
+    case DATE:
+      return DatumFactory.createDate(getInt4(fieldId));
+    case TIME:
+      return DatumFactory.createTime(getInt8(fieldId));
+    case INTERVAL:
+      return getInterval(fieldId);
+    case INET4:
+      return DatumFactory.createInet4(getInt4(fieldId));
+    case PROTOBUF:
+      return getProtobufDatum(fieldId);
+    case NULL_TYPE:
+      return NullDatum.get();
+    default:
+      throw new TajoRuntimeException(new UnsupportedException("data type '" + types[fieldId] + "'"));
     }
   }
 
@@ -340,5 +335,7 @@ public abstract class UnSafeTuple implements Tuple {
     return VTuple.toDisplayString(getValues());
   }
 
-  public abstract void release();
+  public void release() {
+
+  }
 }

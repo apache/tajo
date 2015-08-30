@@ -19,6 +19,7 @@
 package org.apache.tajo.tuple.memory;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoInternalError;
 
 public class OffHeapRowBlockWriter extends OffHeapRowWriter {
   private RowBlock rowBlock;
@@ -26,6 +27,10 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
   OffHeapRowBlockWriter(RowBlock rowBlock) {
     super(rowBlock.getDataTypes());
     this.rowBlock = rowBlock;
+    if (!rowBlock.getMemory().hasAddress()) {
+      throw new TajoInternalError(rowBlock.getMemory().getClass().getSimpleName()
+          + " does not support to direct memory access");
+    }
   }
 
   public long address() {

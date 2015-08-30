@@ -47,6 +47,7 @@ import java.nio.channels.FileChannel;
 
 public class DirectRawFileWriter extends FileAppender {
   public static final String FILE_EXTENSION = "draw";
+  private static final int BUFFER_SIZE = 64 * StorageUnit.KB;
   private static final Log LOG = LogFactory.getLog(DirectRawFileWriter.class);
 
   private FileChannel channel;
@@ -95,22 +96,14 @@ public class DirectRawFileWriter extends FileAppender {
               PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
     }
 
-    memoryRowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), 64 * StorageUnit.KB);
+    memoryRowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), BUFFER_SIZE, true);
     pos = 0;
     super.init();
   }
 
   @Override
   public long getOffset() throws IOException {
-    return pos;
-  }
-
-  private long getFilePosition() throws IOException {
-    if (isLocal) {
-      return channel.position();
-    } else {
-      return fos.getPos();
-    }
+    return pos + memoryRowBlock.getMemory().writerPosition();
   }
 
   public void writeRowBlock(MemoryRowBlock rowBlock) throws IOException {
@@ -137,7 +130,8 @@ public class DirectRawFileWriter extends FileAppender {
     }
 
     memoryRowBlock.getWriter().addTuple(t);
-    if(memoryRowBlock.getMemory().readableBytes() > 64 * StorageUnit.KB) {
+
+    if(memoryRowBlock.getMemory().readableBytes() >= BUFFER_SIZE) {
       writeRowBlock(memoryRowBlock);
     }
   }

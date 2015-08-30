@@ -30,7 +30,7 @@ public class TestBaseTupleBuilder {
     MemoryRowBlock rowBlock = TestMemoryRowBlock.createRowBlock(10248);
     RowBlockReader reader = rowBlock.getReader();
 
-    ZeroCopyTuple inputTuple = new ZeroCopyTuple();
+    ZeroCopyTuple inputTuple = new UnSafeTuple();
 
     HeapTuple heapTuple;
     ZeroCopyTuple zcTuple;
@@ -38,11 +38,11 @@ public class TestBaseTupleBuilder {
     while(reader.next(inputTuple)) {
       OffHeapRowBlockUtils.convert(inputTuple, builder);
 
-      heapTuple = builder.buildToHeapTuple();
-      TestMemoryRowBlock.validateTupleResult(i, heapTuple);
-
       zcTuple = builder.buildToZeroCopyTuple();
       TestMemoryRowBlock.validateTupleResult(i, zcTuple);
+
+      heapTuple = builder.buildToHeapTuple();
+      TestMemoryRowBlock.validateTupleResult(i, heapTuple);
 
       i++;
     }
@@ -57,7 +57,7 @@ public class TestBaseTupleBuilder {
     MemoryRowBlock rowBlock = TestMemoryRowBlock.createRowBlockWithNull(10248);
     RowBlockReader reader = rowBlock.getReader();
 
-    ZeroCopyTuple inputTuple = new ZeroCopyTuple();
+    ZeroCopyTuple inputTuple = new UnSafeTuple();
 
     HeapTuple heapTuple;
     ZeroCopyTuple zcTuple;

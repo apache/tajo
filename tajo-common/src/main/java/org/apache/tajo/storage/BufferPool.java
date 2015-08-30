@@ -18,10 +18,7 @@
 
 package org.apache.tajo.storage;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.buffer.*;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -29,6 +26,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.lang.reflect.Field;
+import java.nio.ByteOrder;
 
 /* this class is PooledBuffer holder */
 public class BufferPool {
@@ -106,7 +104,17 @@ public class BufferPool {
    * @return allocated ByteBuf from pool
    */
   public static ByteBuf directBuffer(int size, int max) {
-    return ALLOCATOR.directBuffer(size, max);
+    return ALLOCATOR.directBuffer(size, max).order(ByteOrder.nativeOrder());
+  }
+
+  /**
+   *
+   * @param size the initial capacity
+   * @param max the max capacity
+   * @return heap ByteBuf
+   */
+  public static ByteBuf heapBuffer(int size, int max) {
+    return Unpooled.buffer(size, max).order(ByteOrder.nativeOrder());
   }
 
   @InterfaceStability.Unstable
@@ -120,6 +128,6 @@ public class BufferPool {
    * @param minWritableBytes required minimum writable size
    */
   public static ByteBuf ensureWritable(ByteBuf buf, int minWritableBytes) {
-    return buf.ensureWritable(minWritableBytes);
+    return buf.ensureWritable(minWritableBytes).order(ByteOrder.nativeOrder());
   }
 }

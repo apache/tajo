@@ -19,15 +19,30 @@
 package org.apache.tajo.tuple.memory;
 
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.storage.Tuple;
 
-public class ZeroCopyTuple extends UnSafeTuple {
+public abstract class ZeroCopyTuple implements Tuple {
 
-  public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
-    super.set(memoryBlock, relativePos, length, types);
+  protected int relativePos;
+  protected int length;
+
+  public abstract void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types);
+
+  void set(int relativePos, int length) {
+    this.relativePos = relativePos;
+    this.length = length;
+  }
+
+  public int getRelativePos() {
+    return relativePos;
+  }
+
+  public int getLength() {
+    return length;
   }
 
   @Override
-  public void release() {
-    // nothing to do
+  public Tuple clone() throws CloneNotSupportedException {
+    return (Tuple) super.clone();
   }
 }

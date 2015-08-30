@@ -123,13 +123,13 @@ public abstract class OffHeapRowWriter implements RowWriter {
   public void endRow() {
     long rowHeaderPos = recordStartAddr();
     // curOffset is equivalent to a byte length of this row.
-    OffHeapMemoryBlock.UNSAFE.putInt(rowHeaderPos, curOffset);
+    PlatformDependent.putInt(rowHeaderPos, curOffset);
 
     //forward (record offset + fields offset)
     rowHeaderPos += SizeOf.SIZE_OF_INT + curFieldOffset;
     // set remain header field length
     for (int i = curFieldIdx; i < dataTypes.length; i++) {
-      OffHeapMemoryBlock.UNSAFE.putInt(rowHeaderPos, MemoryRowBlock.NULL_FIELD_OFFSET);
+      PlatformDependent.putInt(rowHeaderPos, MemoryRowBlock.NULL_FIELD_OFFSET);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
   }
@@ -154,7 +154,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     long currentHeaderAddr = currentAddr - curOffset + curFieldOffset;
 
     // set header field length
-    OffHeapMemoryBlock.UNSAFE.putInt(currentHeaderAddr, length);
+    PlatformDependent.putInt(currentHeaderAddr, length);
     curFieldOffset += SizeOf.SIZE_OF_INT;
     curFieldIdx++;
   }
@@ -164,7 +164,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_BYTE);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putByte(addr, val);
+    PlatformDependent.putByte(addr, val);
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_BYTE);
   }
@@ -174,7 +174,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_BOOL);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putByte(addr, (byte) (val ? 0x01 : 0x00));
+    PlatformDependent.putByte(addr, (byte) (val ? 0x01 : 0x00));
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_BOOL);
   }
@@ -184,7 +184,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_SHORT);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putShort(addr, val);
+    PlatformDependent.putShort(addr, val);
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_SHORT);
   }
@@ -194,7 +194,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_INT);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putInt(addr, val);
+    PlatformDependent.putInt(addr, val);
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_INT);
   }
@@ -204,7 +204,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_LONG);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putLong(addr, val);
+    PlatformDependent.putLong(addr, val);
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_LONG);
   }
@@ -214,7 +214,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_INT);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putInt(addr, Float.floatToRawIntBits(val));
+    PlatformDependent.putInt(addr, Float.floatToRawIntBits(val));
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_INT);
   }
@@ -224,7 +224,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_LONG);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putLong(addr, Double.doubleToRawLongBits(val));
+    PlatformDependent.putLong(addr, Double.doubleToRawLongBits(val));
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_LONG);
   }
@@ -248,7 +248,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(fieldLen);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putInt(addr, bytesLen);
+    PlatformDependent.putInt(addr, bytesLen);
     PlatformDependent.copyMemory(val, 0, addr + SizeOf.SIZE_OF_INT, bytesLen);
     putFieldHeader(addr, curOffset);
     forwardField(fieldLen);
@@ -274,8 +274,8 @@ public abstract class OffHeapRowWriter implements RowWriter {
     ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
     long addr = currentAddr();
 
-    OffHeapMemoryBlock.UNSAFE.putInt(addr, val.getMonths());
-    OffHeapMemoryBlock.UNSAFE.putLong(addr + SizeOf.SIZE_OF_INT, val.getMilliSeconds());
+    PlatformDependent.putInt(addr, val.getMonths());
+    PlatformDependent.putLong(addr + SizeOf.SIZE_OF_INT, val.getMilliSeconds());
     putFieldHeader(addr, curOffset);
     forwardField(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
   }

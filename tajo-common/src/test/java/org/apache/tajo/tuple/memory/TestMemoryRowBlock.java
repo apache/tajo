@@ -27,6 +27,7 @@ import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.NumberUtil;
@@ -39,6 +40,7 @@ import java.util.List;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestMemoryRowBlock {
@@ -78,14 +80,14 @@ public class TestMemoryRowBlock {
     long allocEnd = System.currentTimeMillis();
     explainRowBlockAllocation(rowBlock, allocStart, allocEnd);
 
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+    RowBlockReader reader = null;
 
-    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    ZeroCopyTuple tuple = new UnSafeTuple();
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
       fillRow(i, rowBlock.getWriter());
 
-      reader.reset();
+      reader = rowBlock.getReader();
       int j = 0;
       while(reader.next(tuple)) {
         validateTupleResult(j, tuple);
@@ -93,11 +95,12 @@ public class TestMemoryRowBlock {
       }
     }
 
+    assertNotNull(reader);
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
 
     long readStart = System.currentTimeMillis();
-    tuple = new ZeroCopyTuple();
+    tuple = new UnSafeTuple();
     int j = 0;
     reader.reset();
     while(reader.next(tuple)) {
@@ -120,14 +123,14 @@ public class TestMemoryRowBlock {
     long allocEnd = System.currentTimeMillis();
     explainRowBlockAllocation(rowBlock, allocStart, allocEnd);
 
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
-    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    RowBlockReader reader = null;
+    ZeroCopyTuple tuple = new UnSafeTuple();
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
 
       fillRowBlockWithNull(i, rowBlock.getWriter());
 
-      reader.reset();
+      reader = rowBlock.getReader();
       int j = 0;
       while(reader.next(tuple)) {
         validateNullity(j, tuple);
@@ -135,11 +138,13 @@ public class TestMemoryRowBlock {
         j++;
       }
     }
+
+    assertNotNull(reader);
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing and nullity validating take " + (writeEnd - writeStart) + " msec");
 
     long readStart = System.currentTimeMillis();
-    tuple = new ZeroCopyTuple();
+    tuple = new UnSafeTuple();
     int j = 0;
     reader.reset();
     while(reader.next(tuple)) {
@@ -172,10 +177,10 @@ public class TestMemoryRowBlock {
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing tooks " + (writeEnd - writeStart) + " msec");
 
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+    RowBlockReader reader = rowBlock.getReader();
 
     long readStart = System.currentTimeMillis();
-    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    ZeroCopyTuple tuple = new UnSafeTuple();
     int j = 0;
     reader.reset();
     while(reader.next(tuple)) {
@@ -196,16 +201,15 @@ public class TestMemoryRowBlock {
     int rowNum = 1000;
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
-
     List<ZeroCopyTuple> unSafeTuples = Lists.newArrayList();
 
     long readStart = System.currentTimeMillis();
-    ZeroCopyTuple tuple = new ZeroCopyTuple();
-    reader.reset();
+    ZeroCopyTuple tuple = new UnSafeTuple();
+
+    RowBlockReader reader = rowBlock.getReader();
     while(reader.next(tuple)) {
       unSafeTuples.add(tuple);
-      tuple = new ZeroCopyTuple();
+      tuple = new UnSafeTuple();
     }
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
@@ -297,19 +301,18 @@ public class TestMemoryRowBlock {
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
     MemoryRowBlock restoredRowBlock = new MemoryRowBlock(rowBlock);
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(restoredRowBlock);
+    RowBlockReader reader = restoredRowBlock.getReader();
 
     long readStart = System.currentTimeMillis();
-    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    UnSafeTuple tuple = new UnSafeTuple();
 
     int j = 0;
     List<ZeroCopyTuple> copyTuples = Lists.newArrayList();
-    reader.reset();
 
     while (reader.next(tuple)) {
       validateTupleResult(j, tuple);
 
-      ZeroCopyTuple copyTuple = new ZeroCopyTuple();
+      UnSafeTuple copyTuple = new UnSafeTuple();
       copyTuple.set(tuple);
       copyTuples.add(copyTuple);
 
@@ -481,7 +484,7 @@ public class TestMemoryRowBlock {
 
   public static void validateResults(MemoryRowBlock rowBlock) {
     long readStart = System.currentTimeMillis();
-    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    ZeroCopyTuple tuple = new UnSafeTuple();
     int j = 0;
     OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
     reader.reset();
@@ -489,6 +492,7 @@ public class TestMemoryRowBlock {
       validateTupleResult(j, tuple);
       j++;
     }
+    assertEquals(rowBlock.rows(), j);
     long readEnd = System.currentTimeMillis();
     LOG.info("Reading takes " + (readEnd - readStart) + " msec");
   }

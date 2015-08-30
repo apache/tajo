@@ -34,6 +34,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.tuple.memory.RowBlock;
+import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.tuple.memory.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 
@@ -45,13 +46,12 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private static final Log LOG = LogFactory.getLog(DirectRawFileScanner.class);
 
   private SeekableInputChannel channel;
-  //private DataType[] columnTypes;
 
   private boolean eof = false;
   private long fileSize;
   private long recordCount;
 
-  private ZeroCopyTuple unSafeTuple = new ZeroCopyTuple();
+  private ZeroCopyTuple unSafeTuple = new UnSafeTuple();
   private RowBlock tupleBuffer;
   private RowBlockReader reader;
 
@@ -62,7 +62,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void init() throws IOException {
     initChannel();
 
-    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), 64 * StorageUnit.KB);
+    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), 64 * StorageUnit.KB, true);
 
     reader = tupleBuffer.getReader();
 

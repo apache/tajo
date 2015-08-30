@@ -26,37 +26,36 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.UnsafeUtil;
-import sun.misc.Unsafe;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
-public class OffHeapMemoryBlock implements MemoryBlock {
-  private static final Log LOG = LogFactory.getLog(OffHeapMemoryBlock.class);
+public class ResizableMemoryBlock implements MemoryBlock {
+  private static final Log LOG = LogFactory.getLog(ResizableMemoryBlock.class);
 
   protected ByteBuf buffer;
   protected ResizableLimitSpec limitSpec;
-  protected static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
-  protected OffHeapMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
-    Preconditions.checkState(buffer.hasMemoryAddress());
+  protected ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
     this.buffer = buffer;
     this.limitSpec = limitSpec;
   }
 
-  protected OffHeapMemoryBlock(ByteBuffer buffer, ResizableLimitSpec limitSpec) {
-    Preconditions.checkState(buffer.isDirect());
+  protected ResizableMemoryBlock(ByteBuffer buffer, ResizableLimitSpec limitSpec) {
     this.buffer = Unpooled.wrappedBuffer(buffer);
     this.limitSpec = limitSpec;
   }
 
-  public OffHeapMemoryBlock(ResizableLimitSpec limitSpec) {
-    this(BufferPool.directBuffer((int) limitSpec.initialSize(),
-        (int) limitSpec.limit()).order(ByteOrder.nativeOrder()), limitSpec);
+  public ResizableMemoryBlock(ResizableLimitSpec limitSpec, boolean isDirect) {
+    if (isDirect) {
+      this.buffer = BufferPool.directBuffer((int) limitSpec.initialSize(), (int) limitSpec.limit());
+    } else {
+      this.buffer = BufferPool.heapBuffer((int) limitSpec.initialSize(), (int) limitSpec.limit());
+    }
+    this.limitSpec = limitSpec;
   }
 
   @Override
@@ -66,7 +65,7 @@ public class OffHeapMemoryBlock implements MemoryBlock {
 
   @Override
   public boolean hasAddress() {
-    return true;
+    return buffer.hasMemoryAddress();
   }
 
   @Override
@@ -156,7 +155,12 @@ public class OffHeapMemoryBlock implements MemoryBlock {
 
   @Override
   public MemoryBlock duplicate() {
-    return new OffHeapMemoryBlock(buffer.duplicate().readerIndex(0), limitSpec);
+    return new ResizableMemoryBlock(buffer.duplicate().readerIndex(0), limitSpec);
+  }
+
+  @Override
+  public ByteBuf getBuffer() {
+    return buffer;
   }
 
   @Override
@@ -186,6 +190,11 @@ public class OffHeapMemoryBlock implements MemoryBlock {
     int readableBytes = buffer.readableBytes();
     buffer.readBytes(bytes, dstIndex, length);
     return readableBytes - buffer.readableBytes();
+  }
+
+  @Override
+  public int getInt(int index) {
+    return buffer.getInt(index);
   }
 
   @Override

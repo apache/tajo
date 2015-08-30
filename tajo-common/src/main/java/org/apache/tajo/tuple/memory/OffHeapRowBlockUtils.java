@@ -24,6 +24,7 @@ import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.RowBlockReader;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,11 +35,23 @@ public class OffHeapRowBlockUtils {
 
   public static List<Tuple> sort(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
     List<Tuple> tupleList = Lists.newArrayList();
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+
+    ZeroCopyTuple zcTuple;
+    if(rowBlock.getMemory().hasAddress()) {
+      zcTuple = new UnSafeTuple();
+    } else {
+      zcTuple = new HeapTuple();
+    }
+
+    RowBlockReader reader = rowBlock.getReader();
     while(reader.next(zcTuple)) {
       tupleList.add(zcTuple);
-      zcTuple = new ZeroCopyTuple();
+
+      if(rowBlock.getMemory().hasAddress()) {
+        zcTuple = new UnSafeTuple();
+      } else {
+        zcTuple = new HeapTuple();
+      }
     }
     Collections.sort(tupleList, comparator);
     return tupleList;
@@ -46,11 +59,22 @@ public class OffHeapRowBlockUtils {
 
   public static Tuple[] sortToArray(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
     Tuple[] tuples = new Tuple[rowBlock.rows()];
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+
+    ZeroCopyTuple zcTuple;
+    if(rowBlock.getMemory().hasAddress()) {
+      zcTuple = new UnSafeTuple();
+    } else {
+      zcTuple = new HeapTuple();
+    }
+
+    RowBlockReader reader = rowBlock.getReader();
     for (int i = 0; i < rowBlock.rows() && reader.next(zcTuple); i++) {
       tuples[i] = zcTuple;
-      zcTuple = new ZeroCopyTuple();
+      if(rowBlock.getMemory().hasAddress()) {
+        zcTuple = new UnSafeTuple();
+      } else {
+        zcTuple = new HeapTuple();
+      }
     }
     Arrays.sort(tuples, comparator);
     return tuples;
