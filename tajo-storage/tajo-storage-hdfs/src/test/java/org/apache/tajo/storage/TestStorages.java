@@ -139,7 +139,7 @@ public class TestStorages {
     return Arrays.asList(new Object[][] {
         //type, splitable, statsable, seekable, internalType
         {BuiltinStorages.RAW, false, true, true, true},
-        {BuiltinStorages.DRAW, false, true, false, true},
+        {BuiltinStorages.DRAW, false, true, true, true},
         {BuiltinStorages.RCFILE, true, true, false, false},
         {BuiltinStorages.PARQUET, false, false, false, false},
         {BuiltinStorages.SEQUENCE_FILE, true, true, false, false},

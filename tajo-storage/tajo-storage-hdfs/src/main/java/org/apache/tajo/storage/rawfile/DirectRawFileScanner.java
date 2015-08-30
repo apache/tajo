@@ -47,9 +47,11 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
   private SeekableInputChannel channel;
 
-  private boolean eof = false;
+  private boolean eos = false;
   private long fileSize;
   private long recordCount;
+  private long filePosition;
+  private long endOffset;
 
   private ZeroCopyTuple unSafeTuple = new UnSafeTuple();
   private RowBlock tupleBuffer;
@@ -87,44 +89,55 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       }
 
       channel = new LocalFileInputChannel(new FileInputStream(file));
-      channel.seek(fragment.getStartKey());
       fileSize = channel.size();
     } else {
       channel = new FSDataInputChannel(fs.open(fragment.getPath()));
-      channel.seek(fragment.getStartKey());
       fileSize = channel.size();
+    }
+
+    // initial set position
+    if (fragment.getStartKey() > 0) {
+      channel.seek(fragment.getStartKey());
     }
 
     if (tableStats != null) {
       tableStats.setNumBytes(fileSize);
     }
 
+    filePosition = fragment.getStartKey();
+    endOffset = fragment.getStartKey() + fragment.getLength();
     if (LOG.isDebugEnabled()) {
       LOG.debug("RawFileScanner open:" + fragment.getPath() + ", offset :" +
-          fragment.getStartKey() + ", file capacity :" + fileSize);
+          fragment.getStartKey() + ", fragment length :" + fragment.getLength());
     }
   }
 
   @Override
   public long getNextOffset() throws IOException {
-    return channel.position() - reader.remainForRead();
+    return filePosition - reader.remainForRead();
   }
 
   @Override
   public void seek(long offset) throws IOException {
     channel.seek(offset);
+    filePosition = channel.position();
+    tupleBuffer.getMemory().clear();
     fetchNeeded = true;
   }
 
   public boolean next(RowBlock rowblock) throws IOException {
-    return rowblock.copyFromChannel(channel);
+    long reamin = reader.remainForRead();
+    boolean ret = rowblock.copyFromChannel(channel);
+    reader = rowblock.getReader();
+    filePosition += rowblock.getMemory().writerPosition() - reamin;
+    return ret;
   }
 
   private boolean fetchNeeded = true;
 
   @Override
   public Tuple next() throws IOException {
-    if(eof) {
+    if(eos) {
       return null;
     }
 
@@ -133,13 +146,15 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
         if (!next(tupleBuffer)) {
           return null;
         }
-        reader.reset();
       }
 
       fetchNeeded = !reader.next(unSafeTuple);
 
       if (!fetchNeeded) {
         recordCount++;
+        if(filePosition - reader.remainForRead() >= endOffset){
+          eos = true;
+        }
         return unSafeTuple;
       }
     }
@@ -148,8 +163,9 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   @Override
   public void reset() throws IOException {
     // reload initial buffer
-    seek(0);
-    eof = false;
+    filePosition = fragment.getStartKey();
+    seek(filePosition);
+    eos = false;
     reader.reset();
   }
 
@@ -200,7 +216,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
         tableStats.setReadBytes(filePos);
       }
 
-      if(eof || channel == null) {
+      if(eos || channel == null) {
         tableStats.setReadBytes(fileSize);
         return 1.0f;
       }

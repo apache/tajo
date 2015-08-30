@@ -116,7 +116,7 @@ public class DirectRawFileWriter extends FileAppender {
     rowBlock.getMemory().clear();
 
     if (enabledStats) {
-      stats.incrementRows(rowBlock.rows());
+      stats.incrementRows(rowBlock.rows() - stats.getNumRows());
     }
   }
 
