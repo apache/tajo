@@ -16,38 +16,51 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
+import io.netty.util.internal.PlatformDependent;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.tuple.RowBlockReader;
-import org.apache.tajo.util.UnsafeUtil;
-import sun.misc.Unsafe;
 
 public class OffHeapRowBlockReader implements RowBlockReader<ZeroCopyTuple> {
-  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
-  OffHeapRowBlock rowBlock;
+  private final DataType[] dataTypes;
+  private final MemoryBlock memoryBlock;
+  private final int rows;
 
   // Read States
   private int curRowIdxForRead;
   private int curPosForRead;
 
-  public OffHeapRowBlockReader(OffHeapRowBlock rowBlock) {
-    this.rowBlock = rowBlock;
+  public OffHeapRowBlockReader(MemoryRowBlock rowBlock) {
+    this(rowBlock.getMemory(), rowBlock.getDataTypes(), rowBlock.rows());
+  }
+
+  public OffHeapRowBlockReader(MemoryBlock memoryBlock, DataType[] dataTypes, int rows) {
+    this.memoryBlock = memoryBlock;
+    this.dataTypes = dataTypes;
+    this.rows = rows;
+    if (!memoryBlock.hasAddress()) {
+      throw new TajoInternalError(memoryBlock.getClass().getSimpleName()
+          + " does not support to direct memory access");
+    }
   }
 
   public long remainForRead() {
-    return rowBlock.memorySize - curPosForRead;
+    return memoryBlock.readableBytes();
   }
 
   @Override
   public boolean next(ZeroCopyTuple tuple) {
-    if (curRowIdxForRead < rowBlock.rows()) {
+    if (curRowIdxForRead < rows) {
 
-      long recordStartPtr = rowBlock.address() + curPosForRead;
-      int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(rowBlock.buffer, curPosForRead, recordLen, rowBlock.dataTypes);
+      long recordStartPtr = memoryBlock.address() + curPosForRead;
+      int recordLen = PlatformDependent.getInt(recordStartPtr);
+      tuple.set(memoryBlock, curPosForRead, recordLen, dataTypes);
 
       curPosForRead += recordLen;
       curRowIdxForRead++;
+      memoryBlock.readerPosition(curPosForRead);
 
       return true;
     } else {
@@ -59,5 +72,6 @@ public class OffHeapRowBlockReader implements RowBlockReader<ZeroCopyTuple> {
   public void reset() {
     curPosForRead = 0;
     curRowIdxForRead = 0;
+    memoryBlock.readerPosition(curPosForRead);
   }
 }

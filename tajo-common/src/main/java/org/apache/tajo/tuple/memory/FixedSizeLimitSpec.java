@@ -16,26 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
-import org.apache.tajo.util.Deallocatable;
-import org.apache.tajo.util.UnsafeUtil;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import static org.apache.tajo.common.TajoDataTypes.DataType;
-
-public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
-  private ByteBuffer bb;
-
-  public DirectBufTuple(int length, DataType[] types) {
-    bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
-    set(bb, 0, length, types);
+/**
+ * Fixed size limit specification
+ */
+public class FixedSizeLimitSpec extends ResizableLimitSpec {
+  public FixedSizeLimitSpec(long size) {
+    super(size, size);
   }
 
-  @Override
-  public void release() {
-    UnsafeUtil.free(bb);
+  public FixedSizeLimitSpec(long size, float allowedOverflowRatio) {
+    super(size, size, allowedOverflowRatio);
   }
 }

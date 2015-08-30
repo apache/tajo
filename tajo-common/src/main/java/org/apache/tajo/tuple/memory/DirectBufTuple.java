@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple;
+package org.apache.tajo.tuple.memory;
 
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.Deallocatable;
 
-public interface RowBlockReader<T extends Tuple> {
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-  /**
-   * Return for each tuple
-   *
-   * @return True if tuple block is filled with tuples. Otherwise, It will return false.
-   */
-  public boolean next(T tuple);
+import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-  public void reset();
+public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
+  private MemoryBlock memoryBlock;
+
+  public DirectBufTuple(int length, DataType[] types) {
+    ByteBuffer bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+    memoryBlock = new ResizableMemoryBlock(bb, new FixedSizeLimitSpec(length));
+
+    set(memoryBlock, 0, length, types);
+  }
+
+  @Override
+  public void release() {
+    memoryBlock.release();
+  }
 }

@@ -25,15 +25,17 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
-import org.apache.tajo.tuple.offheap.OffHeapRowBlockReader;
-import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.tuple.memory.RowBlock;
+import org.apache.tajo.tuple.memory.UnSafeTuple;
+import org.apache.tajo.tuple.memory.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -44,30 +46,25 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private static final Log LOG = LogFactory.getLog(DirectRawFileScanner.class);
 
   private SeekableInputChannel channel;
-  private TajoDataTypes.DataType[] columnTypes;
 
   private boolean eof = false;
   private long fileSize;
   private long recordCount;
 
-  private ZeroCopyTuple unSafeTuple = new ZeroCopyTuple();
-  private OffHeapRowBlock tupleBuffer;
-  private OffHeapRowBlockReader reader;
+  private ZeroCopyTuple unSafeTuple = new UnSafeTuple();
+  private RowBlock tupleBuffer;
+  private RowBlockReader reader;
 
-  public DirectRawFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
+  public DirectRawFileScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
     super(conf, schema, meta, fragment);
   }
 
   public void init() throws IOException {
     initChannel();
 
-    columnTypes = new TajoDataTypes.DataType[schema.size()];
-    for (int i = 0; i < schema.size(); i++) {
-      columnTypes[i] = schema.getColumn(i).getDataType();
-    }
+    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), 64 * StorageUnit.KB, true);
 
-    tupleBuffer = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    reader = new OffHeapRowBlockReader(tupleBuffer);
+    reader = tupleBuffer.getReader();
 
     fetchNeeded = !next(tupleBuffer);
 
@@ -104,7 +101,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("RawFileScanner open:" + fragment.getPath() + ", offset :" +
-          fragment.getStartKey() + ", file size :" + fileSize);
+          fragment.getStartKey() + ", file capacity :" + fileSize);
     }
   }
 
@@ -119,8 +116,8 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     fetchNeeded = true;
   }
 
-  public boolean next(OffHeapRowBlock rowblock) throws IOException {
-    return rowblock.copyFromChannel(channel, tableStats);
+  public boolean next(RowBlock rowblock) throws IOException {
+    return rowblock.copyFromChannel(channel);
   }
 
   private boolean fetchNeeded = true;
@@ -162,8 +159,10 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       tableStats.setReadBytes(fileSize);
       tableStats.setNumRows(recordCount);
     }
-    tupleBuffer.release();
-    tupleBuffer = null;
+    if(tupleBuffer != null) {
+      tupleBuffer.release();
+      tupleBuffer = null;
+    }
     reader = null;
 
     IOUtils.cleanup(LOG, channel);

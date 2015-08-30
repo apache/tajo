@@ -18,59 +18,63 @@
 
 package org.apache.tajo.tuple;
 
-import org.apache.tajo.storage.RowStoreUtil;
-import org.apache.tajo.tuple.offheap.*;
+import org.apache.tajo.tuple.memory.*;
 import org.junit.Test;
 
 public class TestBaseTupleBuilder {
 
   @Test
   public void testBuild() {
-    BaseTupleBuilder builder = new BaseTupleBuilder(TestOffHeapRowBlock.schema);
+    BaseTupleBuilder builder = new BaseTupleBuilder(TestMemoryRowBlock.schema);
 
-    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(10248);
-    OffHeapRowBlockReader reader = rowBlock.getReader();
+    MemoryRowBlock rowBlock = TestMemoryRowBlock.createRowBlock(10248);
+    RowBlockReader reader = rowBlock.getReader();
 
-    ZeroCopyTuple inputTuple = new ZeroCopyTuple();
+    ZeroCopyTuple inputTuple = new UnSafeTuple();
 
-    HeapTuple heapTuple = null;
-    ZeroCopyTuple zcTuple = null;
+    HeapTuple heapTuple;
+    ZeroCopyTuple zcTuple;
     int i = 0;
     while(reader.next(inputTuple)) {
-      RowStoreUtil.convert(inputTuple, builder);
-
-      heapTuple = builder.buildToHeapTuple();
-      TestOffHeapRowBlock.validateTupleResult(i, heapTuple);
+      OffHeapRowBlockUtils.convert(inputTuple, builder);
 
       zcTuple = builder.buildToZeroCopyTuple();
-      TestOffHeapRowBlock.validateTupleResult(i, zcTuple);
+      TestMemoryRowBlock.validateTupleResult(i, zcTuple);
+
+      heapTuple = builder.buildToHeapTuple();
+      TestMemoryRowBlock.validateTupleResult(i, heapTuple);
 
       i++;
     }
+    builder.release();
+    rowBlock.release();
   }
 
   @Test
   public void testBuildWithNull() {
-    BaseTupleBuilder builder = new BaseTupleBuilder(TestOffHeapRowBlock.schema);
+    BaseTupleBuilder builder = new BaseTupleBuilder(TestMemoryRowBlock.schema);
 
-    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlockWithNull(10248);
-    OffHeapRowBlockReader reader = rowBlock.getReader();
+    MemoryRowBlock rowBlock = TestMemoryRowBlock.createRowBlockWithNull(10248);
+    RowBlockReader reader = rowBlock.getReader();
 
-    ZeroCopyTuple inputTuple = new ZeroCopyTuple();
+    ZeroCopyTuple inputTuple = new UnSafeTuple();
 
-    HeapTuple heapTuple = null;
-    ZeroCopyTuple zcTuple = null;
+    HeapTuple heapTuple;
+    ZeroCopyTuple zcTuple;
     int i = 0;
     while(reader.next(inputTuple)) {
-      RowStoreUtil.convert(inputTuple, builder);
+      OffHeapRowBlockUtils.convert(inputTuple, builder);
 
       heapTuple = builder.buildToHeapTuple();
-      TestOffHeapRowBlock.validateNullity(i, heapTuple);
+      TestMemoryRowBlock.validateNullity(i, heapTuple);
 
       zcTuple = builder.buildToZeroCopyTuple();
-      TestOffHeapRowBlock.validateNullity(i, zcTuple);
+      TestMemoryRowBlock.validateNullity(i, zcTuple);
 
       i++;
     }
+
+    builder.release();
+    rowBlock.release();
   }
 }

@@ -16,20 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
-import java.nio.ByteBuffer;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.storage.Tuple;
 
-import static org.apache.tajo.common.TajoDataTypes.DataType;
+public abstract class ZeroCopyTuple implements Tuple {
 
-public class ZeroCopyTuple extends UnSafeTuple {
+  protected int relativePos;
+  protected int length;
 
-  public void set(ByteBuffer bb, int relativePos, int length, DataType [] types) {
-    super.set(bb, relativePos, length, types);
+  public abstract void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types);
+
+  void set(int relativePos, int length) {
+    this.relativePos = relativePos;
+    this.length = length;
+  }
+
+  public int getRelativePos() {
+    return relativePos;
+  }
+
+  public int getLength() {
+    return length;
   }
 
   @Override
-  public void release() {
-    // nothing to do
+  public Tuple clone() throws CloneNotSupportedException {
+    return (Tuple) super.clone();
   }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;

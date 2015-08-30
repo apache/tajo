@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -29,34 +30,28 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
-import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public abstract class UnSafeTuple implements Tuple {
-  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
+public class HeapTuple extends ZeroCopyTuple implements Cloneable {
+  private ByteBuf buffer;
+  private DataType[] types;
 
-  private DirectBuffer bb;
-  private int relativePos;
-  private int length;
-  private DataType [] types;
-
-  protected void set(ByteBuffer bb, int relativePos, int length, DataType [] types) {
-    this.bb = (DirectBuffer) bb;
-    this.relativePos = relativePos;
-    this.length = length;
+  @Override
+  public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
+    this.buffer = memoryBlock.getBuffer();
     this.types = types;
+    super.set(relativePos, length);
   }
 
-  void set(ByteBuffer bb, DataType [] types) {
-    set(bb, 0, bb.limit(), types);
+  protected void set(final byte[] bytes, final DataType[] types) {
+    this.buffer = Unpooled.wrappedBuffer(bytes).order(ByteOrder.nativeOrder());
+    this.types = types;
+    super.set(0, bytes.length);
   }
 
   @Override
@@ -71,58 +66,43 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public int size(int fieldId) {
-    return UNSAFE.getInt(getFieldAddr(fieldId));
+    return buffer.getInt(checkNullAndGetOffset(fieldId));
   }
 
-  public ByteBuffer nioBuffer() {
-    return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(relativePos + length)).slice();
-  }
-
-  public HeapTuple toHeapTuple() {
-    byte [] bytes = new byte[length];
-    UNSAFE.copyMemory(null, bb.address() + relativePos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, length);
-    return new HeapTuple(bytes, types);
-  }
-
-  public void copyFrom(UnSafeTuple tuple) {
-    Preconditions.checkNotNull(tuple);
-
-    ((ByteBuffer) bb).clear();
-    if (length < tuple.length) {
-      UnsafeUtil.free((ByteBuffer) bb);
-      bb = (DirectBuffer) ByteBuffer.allocateDirect(tuple.length).order(ByteOrder.nativeOrder());
-      this.relativePos = 0;
-      this.length = tuple.length;
-    }
-
-    ((ByteBuffer) bb).put(tuple.nioBuffer());
+  @Override
+  public void clearOffset() {
   }
 
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(bb.address() + (long)(relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));
+    return buffer.getInt(getRelativePos() + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
   }
 
-  public long getFieldAddr(int fieldId) {
-    int fieldOffset = getFieldOffset(fieldId);
-    if (fieldOffset == -1) {
+  private int checkNullAndGetOffset(int fieldId) {
+    int offset = getFieldOffset(fieldId);
+    if (offset == MemoryRowBlock.NULL_FIELD_OFFSET) {
       throw new RuntimeException("Invalid Field Access: " + fieldId);
     }
-    return bb.address() + relativePos + fieldOffset;
+    return offset + getRelativePos();
   }
 
   @Override
   public boolean contains(int fieldid) {
-    return getFieldOffset(fieldid) > OffHeapRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) > MemoryRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isBlank(int fieldid) {
-    return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) == MemoryRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isBlankOrNull(int fieldid) {
-    return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) == MemoryRowBlock.NULL_FIELD_OFFSET;
+  }
+
+  @Override
+  public void put(int fieldId, Tuple tuple) {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -132,11 +112,6 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public void put(int fieldId, Datum value) {
-    throw new TajoRuntimeException(new UnsupportedException());
-  }
-
-  @Override
-  public void put(int fieldId, Tuple tuple) {
     throw new TajoRuntimeException(new UnsupportedException());
   }
 
@@ -154,19 +129,25 @@ public abstract class UnSafeTuple implements Tuple {
     switch (types[fieldId].getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(getBool(fieldId));
+    case BIT:
+      return DatumFactory.createBit(getByte(fieldId));
     case INT1:
     case INT2:
       return DatumFactory.createInt2(getInt2(fieldId));
     case INT4:
       return DatumFactory.createInt4(getInt4(fieldId));
     case INT8:
-      return DatumFactory.createInt8(getInt4(fieldId));
+      return DatumFactory.createInt8(getInt8(fieldId));
     case FLOAT4:
       return DatumFactory.createFloat4(getFloat4(fieldId));
     case FLOAT8:
       return DatumFactory.createFloat8(getFloat8(fieldId));
+    case CHAR:
+      return DatumFactory.createChar(getBytes(fieldId));
     case TEXT:
-      return DatumFactory.createText(getText(fieldId));
+      return DatumFactory.createText(getBytes(fieldId));
+    case BLOB :
+      return DatumFactory.createBlob(getBytes(fieldId));
     case TIMESTAMP:
       return DatumFactory.createTimestamp(getInt8(fieldId));
     case DATE:
@@ -179,13 +160,11 @@ public abstract class UnSafeTuple implements Tuple {
       return DatumFactory.createInet4(getInt4(fieldId));
     case PROTOBUF:
       return getProtobufDatum(fieldId);
+    case NULL_TYPE:
+      return NullDatum.get();
     default:
       throw new TajoRuntimeException(new UnsupportedException("data type '" + types[fieldId] + "'"));
     }
-  }
-
-  @Override
-  public void clearOffset() {
   }
 
   @Override
@@ -199,77 +178,73 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public boolean getBool(int fieldId) {
-    return UNSAFE.getByte(getFieldAddr(fieldId)) == 0x01;
+    return buffer.getByte(checkNullAndGetOffset(fieldId)) == 0x01;
   }
 
   @Override
   public byte getByte(int fieldId) {
-    return UNSAFE.getByte(getFieldAddr(fieldId));
+    return buffer.getByte(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public char getChar(int fieldId) {
-    return UNSAFE.getChar(getFieldAddr(fieldId));
+    return buffer.getChar(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public byte[] getBytes(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
+    int pos = checkNullAndGetOffset(fieldId);
+    int len = buffer.getInt(pos);
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
+    buffer.getBytes(pos + SizeOf.SIZE_OF_INT, bytes);
     return bytes;
   }
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
-
-    byte[] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
-    return bytes;
+    return getText(fieldId).getBytes();
   }
 
   @Override
   public short getInt2(int fieldId) {
-    long addr = getFieldAddr(fieldId);
-    return UNSAFE.getShort(addr);
+    return buffer.getShort(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public int getInt4(int fieldId) {
-    return UNSAFE.getInt(getFieldAddr(fieldId));
+    return buffer.getInt(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public long getInt8(int fieldId) {
-    return UNSAFE.getLong(getFieldAddr(fieldId));
+    return buffer.getLong(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public float getFloat4(int fieldId) {
-    return UNSAFE.getFloat(getFieldAddr(fieldId));
+    return buffer.getFloat(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public double getFloat8(int fieldId) {
-    return UNSAFE.getDouble(getFieldAddr(fieldId));
+    return buffer.getDouble(checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public String getText(int fieldId) {
-    return new String(getTextBytes(fieldId));
+    return new String(getBytes(fieldId));
+  }
+
+  @Override
+  public TimeMeta getTimeDate(int fieldId) {
+    return asDatum(fieldId).asTimeMeta();
   }
 
   public IntervalDatum getInterval(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int months = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
-    long millisecs = UNSAFE.getLong(pos);
+    int pos = checkNullAndGetOffset(fieldId);
+    int months = buffer.getInt(pos);
+    long millisecs = buffer.getLong(pos + SizeOf.SIZE_OF_INT);
     return new IntervalDatum(months, millisecs);
   }
 
@@ -277,7 +252,7 @@ public abstract class UnSafeTuple implements Tuple {
   public Datum getProtobufDatum(int fieldId) {
     byte [] bytes = getBytes(fieldId);
 
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId]);
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId].getCode());
     Message.Builder builder = factory.newBuilder();
     try {
       builder.mergeFrom(bytes);
@@ -290,23 +265,12 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public char[] getUnicodeChars(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
+    int pos = checkNullAndGetOffset(fieldId);
+    int len = buffer.getInt(pos);
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
+    buffer.getBytes(pos + SizeOf.SIZE_OF_INT, bytes);
     return StringUtils.convertBytesToChars(bytes, Charset.forName("UTF-8"));
-  }
-
-  @Override
-  public TimeMeta getTimeDate(int fieldId) {
-    return null;
-  }
-
-  @Override
-  public Tuple clone() throws CloneNotSupportedException {
-    return toHeapTuple();
   }
 
   @Override
@@ -327,5 +291,11 @@ public abstract class UnSafeTuple implements Tuple {
     return VTuple.toDisplayString(getValues());
   }
 
-  public abstract void release();
+  @Override
+  public Tuple clone() throws CloneNotSupportedException {
+    HeapTuple heapTuple = (HeapTuple) super.clone();
+    heapTuple.buffer = buffer.copy(getRelativePos(), getLength());
+    heapTuple.relativePos = 0;
+    return heapTuple;
+  }
 }

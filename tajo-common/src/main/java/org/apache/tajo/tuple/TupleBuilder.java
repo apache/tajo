@@ -16,30 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple;
 
-import org.apache.tajo.catalog.SchemaUtil;
-import org.junit.Test;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.RowWriter;
 
-public class TestHeapTuple {
-
-  @Test
-  public void testHeapTuple() {
-    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(1024);
-
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
-
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    int i = 0;
-    while (reader.next(zcTuple)) {
-      byte [] bytes = new byte[zcTuple.nioBuffer().limit()];
-      zcTuple.nioBuffer().get(bytes);
-
-      HeapTuple heapTuple = new HeapTuple(bytes, SchemaUtil.toDataTypes(TestOffHeapRowBlock.schema));
-      TestOffHeapRowBlock.validateTupleResult(i, heapTuple);
-      i++;
-    }
-
-    rowBlock.release();
-  }
+public interface TupleBuilder extends RowWriter {
+  public Tuple build();
 }
