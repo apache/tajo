@@ -150,7 +150,6 @@ public class ResizableMemoryBlock implements MemoryBlock {
   @Override
   public void release() {
     buffer.release();
-    this.buffer = null;
   }
 
   @Override
