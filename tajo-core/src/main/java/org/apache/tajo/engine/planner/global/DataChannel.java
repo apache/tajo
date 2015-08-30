@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.global;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -39,7 +40,7 @@ public class DataChannel {
 
   private Schema schema;
 
-  private String storeType = "RAW";
+  private String storeType = BuiltinStorages.RAW;
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
     this.srcId = srcId;

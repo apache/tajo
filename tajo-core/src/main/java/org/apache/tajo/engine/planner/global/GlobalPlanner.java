@@ -25,7 +25,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
@@ -38,9 +37,9 @@ import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteEngine;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvider;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
@@ -70,6 +69,7 @@ public class GlobalPlanner {
 
   private final TajoConf conf;
   private final String storeType;
+  private final String finalOutputStoreType;
   private final CatalogService catalog;
   private final GlobalPlanRewriteEngine rewriteEngine;
 
@@ -78,7 +78,7 @@ public class GlobalPlanner {
     this.conf = conf;
     this.catalog = catalog;
     this.storeType = conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase();
-    Preconditions.checkArgument(storeType != null);
+    this.finalOutputStoreType = conf.getVar(ConfVars.FINAL_OUTPUT_FILE_FORMAT).toUpperCase();
 
     Class<? extends GlobalPlanRewriteRuleProvider> clazz =
         (Class<? extends GlobalPlanRewriteRuleProvider>) conf.getClassVar(GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
@@ -160,10 +160,10 @@ public class GlobalPlanner {
     LOG.info("\n\nOptimized master plan\n" + masterPlan.toString());
   }
 
-  private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
+  private void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType(BuiltinStorages.DRAW);
+    outputChannel.setStoreType(finalOutputStoreType);
     outputChannel.setSchema(outputSchema);
   }
 
@@ -989,9 +989,8 @@ public class GlobalPlanner {
           ((TableSubQueryNode)child).getSubQuery().getType() == NodeType.UNION) {
         MasterPlan masterPlan = context.plan;
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
-          // This data channel will be stored in staging directory, but RawFile, default file type, does not support
-          // distributed file system. It needs to change the file format for distributed file system.
-          dataChannel.setStoreType(BuiltinStorages.DRAW);
+
+          dataChannel.setStoreType(finalOutputStoreType);
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);
