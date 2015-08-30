@@ -30,7 +30,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlockReader;
 import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
@@ -54,7 +54,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private OffHeapRowBlock tupleBuffer;
   private OffHeapRowBlockReader reader;
 
-  public DirectRawFileScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
+  public DirectRawFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
     super(conf, schema, meta, fragment);
   }
 

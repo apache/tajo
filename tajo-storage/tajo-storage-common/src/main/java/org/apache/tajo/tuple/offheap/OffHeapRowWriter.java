@@ -85,14 +85,12 @@ public abstract class OffHeapRowWriter implements RowWriter {
     return dataTypes;
   }
 
-  @Override
   public boolean startRow() {
     curOffset = headerSize;
     curFieldIdx = 0;
     return true;
   }
 
-  @Override
   public void endRow() {
     long rowHeaderPos = address() + position();
     OffHeapMemory.UNSAFE.putInt(rowHeaderPos, curOffset);
@@ -111,7 +109,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     forward(curOffset);
   }
 
-  @Override
   public void skipField() {
     fieldOffsets[curFieldIdx++] = OffHeapRowBlock.NULL_FIELD_OFFSET;
   }
@@ -120,17 +117,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     fieldOffsets[curFieldIdx++] = curOffset;
   }
 
-  @Override
-  public void putByte(byte val) {
-    ensureSize(SizeOf.SIZE_OF_BYTE);
-    forwardField();
-
-    OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, val);
-
-    curOffset += SizeOf.SIZE_OF_BYTE;
-  }
-
-  @Override
   public void putBool(boolean val) {
     ensureSize(SizeOf.SIZE_OF_BOOL);
     forwardField();
@@ -140,7 +126,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_BOOL;
   }
 
-  @Override
   public void putInt2(short val) {
     ensureSize(SizeOf.SIZE_OF_SHORT);
     forwardField();
@@ -149,7 +134,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_SHORT;
   }
 
-  @Override
   public void putInt4(int val) {
     ensureSize(SizeOf.SIZE_OF_INT);
     forwardField();
@@ -158,7 +142,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_INT;
   }
 
-  @Override
   public void putInt8(long val) {
     ensureSize(SizeOf.SIZE_OF_LONG);
     forwardField();
@@ -167,7 +150,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_LONG;
   }
 
-  @Override
   public void putFloat4(float val) {
     ensureSize(SizeOf.SIZE_OF_FLOAT);
     forwardField();
@@ -176,7 +158,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_FLOAT;
   }
 
-  @Override
   public void putFloat8(double val) {
     ensureSize(SizeOf.SIZE_OF_DOUBLE);
     forwardField();
@@ -185,13 +166,11 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_DOUBLE;
   }
 
-  @Override
   public void putText(String val) {
     byte[] bytes = val.getBytes(TextDatum.DEFAULT_CHARSET);
     putText(bytes);
   }
 
-  @Override
   public void putText(byte[] val) {
     int bytesLen = val.length;
 
@@ -206,7 +185,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += bytesLen;
   }
 
-  @Override
   public void putBlob(byte[] val) {
     int bytesLen = val.length;
 
@@ -221,22 +199,18 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += bytesLen;
   }
 
-  @Override
   public void putTimestamp(long val) {
     putInt8(val);
   }
 
-  @Override
   public void putDate(int val) {
     putInt4(val);
   }
 
-  @Override
   public void putTime(long val) {
     putInt8(val);
   }
 
-  @Override
   public void putInterval(IntervalDatum val) {
     ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
     forwardField();
@@ -248,12 +222,10 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
   }
 
-  @Override
   public void putInet4(int val) {
     putInt4(val);
   }
 
-  @Override
   public void putProtoDatum(ProtobufDatum val) {
     putBlob(val.asByteArray());
   }

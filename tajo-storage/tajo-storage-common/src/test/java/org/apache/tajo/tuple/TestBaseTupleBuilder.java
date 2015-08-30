@@ -18,6 +18,7 @@
 
 package org.apache.tajo.tuple;
 
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.tuple.offheap.*;
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ public class TestBaseTupleBuilder {
     ZeroCopyTuple zcTuple = null;
     int i = 0;
     while(reader.next(inputTuple)) {
-      OffHeapRowBlockUtils.convert(inputTuple, builder);
+      RowStoreUtil.convert(inputTuple, builder);
 
       heapTuple = builder.buildToHeapTuple();
       TestOffHeapRowBlock.validateTupleResult(i, heapTuple);
@@ -61,7 +62,7 @@ public class TestBaseTupleBuilder {
     ZeroCopyTuple zcTuple = null;
     int i = 0;
     while(reader.next(inputTuple)) {
-      OffHeapRowBlockUtils.convert(inputTuple, builder);
+      RowStoreUtil.convert(inputTuple, builder);
 
       heapTuple = builder.buildToHeapTuple();
       TestOffHeapRowBlock.validateNullity(i, heapTuple);

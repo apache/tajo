@@ -27,6 +27,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.BaseTupleComparator;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
@@ -263,7 +264,7 @@ public class TestOffHeapRowBlock {
     for (int i = 0; i < rowNum; i++) {
       fillVTuple(i, tuple);
 
-      OffHeapRowBlockUtils.convert(tuple, rowBlock.getWriter());
+      RowStoreUtil.convert(tuple, rowBlock.getWriter());
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
