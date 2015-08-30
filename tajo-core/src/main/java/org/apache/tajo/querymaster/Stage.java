@@ -31,7 +31,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -44,12 +43,12 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.rpc.AsyncRpcClient;
@@ -57,8 +56,8 @@ import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.FileTablespace;
-import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
@@ -76,9 +75,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static org.apache.tajo.ResourceProtos.*;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import static org.apache.tajo.ResourceProtos.*;
 
 
 /**
@@ -1058,12 +1057,11 @@ public class Stage implements EventHandler<StageEvent> {
 
     public static long getInputVolume(MasterPlan masterPlan, QueryMasterTask.QueryMasterTaskContext context,
                                       ExecutionBlock execBlock) {
-      Map<String, TableDesc> tableMap = context.getTableDescMap();
       if (masterPlan.isLeaf(execBlock)) {
         ScanNode[] outerScans = execBlock.getScanNodes();
         long maxVolume = 0;
         for (ScanNode eachScanNode: outerScans) {
-          TableStats stat = tableMap.get(eachScanNode.getCanonicalName()).getStats();
+          TableStats stat = context.getTableDesc(eachScanNode).getStats();
           if (stat.getNumBytes() > maxVolume) {
             maxVolume = stat.getNumBytes();
           }
@@ -1089,7 +1087,7 @@ public class Stage implements EventHandler<StageEvent> {
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
       ScanNode scan = scans[0];
-      TableDesc table = stage.context.getTableDescMap().get(scan.getCanonicalName());
+      TableDesc table = stage.context.getTableDesc(scan);
 
       Collection<Fragment> fragments;
       Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri()).get();
