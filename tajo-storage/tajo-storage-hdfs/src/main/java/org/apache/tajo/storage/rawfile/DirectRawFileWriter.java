@@ -31,12 +31,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.storage.FileAppender;
-import org.apache.tajo.storage.TableStatistics;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.BaseTupleBuilder;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
-import org.apache.tajo.tuple.offheap.OffHeapRowBlockUtils;
 import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
@@ -58,6 +57,7 @@ public class DirectRawFileWriter extends FileAppender {
   private long pos;
 
   private TableStatistics stats;
+  private ShuffleType shuffleType;
 
   private BaseTupleBuilder builder;
 
@@ -98,6 +98,9 @@ public class DirectRawFileWriter extends FileAppender {
 
     if (enabledStats) {
       this.stats = new TableStatistics(this.schema);
+      this.shuffleType = PlannerUtil.getShuffleType(
+          meta.getOption(StorageConstants.SHUFFLE_TYPE,
+              PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
     }
 
     builder = new BaseTupleBuilder(schema);
@@ -151,7 +154,8 @@ public class DirectRawFileWriter extends FileAppender {
 
   @Override
   public void addTuple(Tuple t) throws IOException {
-    if (enabledStats) {
+    if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
+      // it is to calculate min/max values, and it is only used for the intermediate file.
       for (int i = 0; i < schema.size(); i++) {
         stats.analyzeField(i, t);
       }
@@ -164,7 +168,7 @@ public class DirectRawFileWriter extends FileAppender {
     UnSafeTuple unSafeTuple;
 
     if (!(t instanceof UnSafeTuple)) {
-      OffHeapRowBlockUtils.convert(t, builder);
+      RowStoreUtil.convert(t, builder);
       unSafeTuple = builder.buildToZeroCopyTuple();
     } else {
       unSafeTuple = (UnSafeTuple) t;

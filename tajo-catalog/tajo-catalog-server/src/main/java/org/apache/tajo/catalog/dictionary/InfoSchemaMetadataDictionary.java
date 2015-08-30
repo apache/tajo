@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.tajo.catalog.exception.UndefinedTableException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
@@ -125,8 +125,12 @@ public class InfoSchemaMetadataDictionary {
     return tableDescriptor.getTableDescription();
   }
   
-  public boolean existTable(String tableName) throws UndefinedTableException {
-    return getTableDescriptor(tableName) != null;
+  public boolean existTable(String tableName) {
+    try {
+      return getTableDescriptor(tableName) != null;
+    } catch (UndefinedTableException e) {
+      return false;
+    }
   }
   
   protected String getTablePath() {

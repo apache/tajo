@@ -26,11 +26,10 @@ import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.service.ServiceTracker;
@@ -96,7 +95,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     queryClient.closeQuery(queryId);
   }
 
-  public void closeNonForwardQuery(final QueryId queryId) throws SQLException {
+  public void closeNonForwardQuery(final QueryId queryId) {
     queryClient.closeNonForwardQuery(queryId);
   }
 
@@ -116,23 +115,23 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.executeJsonQueryAndGetResult(json);
   }
 
-  public QueryStatus getQueryStatus(QueryId queryId) {
+  public QueryStatus getQueryStatus(QueryId queryId) throws QueryNotFoundException {
     return queryClient.getQueryStatus(queryId);
   }
 
-  public ResultSet getQueryResult(QueryId queryId) throws SQLException {
+  public ResultSet getQueryResult(QueryId queryId) throws TajoException {
     return queryClient.getQueryResult(queryId);
   }
 
-  public ResultSet createNullResultSet(QueryId queryId) throws SQLException {
+  public ResultSet createNullResultSet(QueryId queryId) {
     return TajoClientUtil.createNullResultSet(queryId);
   }
 
-  public GetQueryResultResponse getResultResponse(QueryId queryId) throws SQLException {
+  public GetQueryResultResponse getResultResponse(QueryId queryId) throws TajoException {
     return queryClient.getResultResponse(queryId);
   }
 
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws SQLException {
+  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException {
     return queryClient.fetchNextQueryResult(queryId, fetchRowNum);
   }
 
@@ -144,11 +143,11 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.updateQueryWithJson(json);
   }
 
-  public QueryStatus killQuery(final QueryId queryId) {
+  public QueryStatus killQuery(final QueryId queryId) throws QueryNotFoundException {
     return queryClient.killQuery(queryId);
   }
 
-  public List<BriefQueryInfo> getRunningQueryList() throws SQLException {
+  public List<BriefQueryInfo> getRunningQueryList() {
     return queryClient.getRunningQueryList();
   }
 
@@ -156,15 +155,15 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.getFinishedQueryList();
   }
 
-  public List<WorkerResourceInfo> getClusterInfo() throws SQLException {
+  public List<WorkerResourceInfo> getClusterInfo() {
     return queryClient.getClusterInfo();
   }
 
-  public QueryInfoProto getQueryInfo(final QueryId queryId) throws SQLException {
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws QueryNotFoundException {
     return queryClient.getQueryInfo(queryId);
   }
 
-  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws SQLException {
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws QueryNotFoundException {
     return queryClient.getQueryHistory(queryId);
   }
 
@@ -180,16 +179,18 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   // CatalogClient wrappers
   /*------------------------------------------------------------------------*/
 
-  public boolean createDatabase(final String databaseName) throws DuplicateDatabaseException {
-    return catalogClient.createDatabase(databaseName);
+  public void createDatabase(final String databaseName) throws DuplicateDatabaseException {
+    catalogClient.createDatabase(databaseName);
   }
 
   public boolean existDatabase(final String databaseName) {
     return catalogClient.existDatabase(databaseName);
   }
 
-  public boolean dropDatabase(final String databaseName) throws UndefinedDatabaseException {
-    return catalogClient.dropDatabase(databaseName);
+  public void dropDatabase(final String databaseName) throws UndefinedDatabaseException,
+      InsufficientPrivilegeException {
+
+    catalogClient.dropDatabase(databaseName);
   }
 
   public List<String> getAllDatabaseNames() {
@@ -200,23 +201,28 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.existTable(tableName);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
-                                       final TableMeta meta) throws DuplicateTableException {
+  public TableDesc createExternalTable(final String tableName,
+                                       final Schema schema,
+                                       final URI path,
+                                       final TableMeta meta)
+      throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException {
+
     return catalogClient.createExternalTable(tableName, schema, path, meta);
   }
 
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
-      throws DuplicateTableException {
+      throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException {
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);
   }
 
-  public boolean dropTable(final String tableName) throws UndefinedTableException {
-    return dropTable(tableName, false);
+  public void dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException {
+    dropTable(tableName, false);
   }
 
-  public boolean dropTable(final String tableName, final boolean purge) throws UndefinedTableException {
-    return catalogClient.dropTable(tableName, purge);
+  public void dropTable(final String tableName, final boolean purge) throws UndefinedTableException,
+      InsufficientPrivilegeException {
+    catalogClient.dropTable(tableName, purge);
   }
 
   public List<String> getTableList(@Nullable final String databaseName) {
@@ -232,37 +238,37 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   @Override
-  public IndexDescProto getIndex(String indexName) throws SQLException {
+  public IndexDescProto getIndex(String indexName) {
     return catalogClient.getIndex(indexName);
   }
 
   @Override
-  public boolean existIndex(String indexName) throws SQLException {
+  public boolean existIndex(String indexName) {
     return catalogClient.existIndex(indexName);
   }
 
   @Override
-  public List<IndexDescProto> getIndexes(String tableName) throws SQLException {
+  public List<IndexDescProto> getIndexes(String tableName) {
     return catalogClient.getIndexes(tableName);
   }
 
   @Override
-  public boolean hasIndexes(String tableName) throws SQLException {
+  public boolean hasIndexes(String tableName) {
     return catalogClient.hasIndexes(tableName);
   }
 
   @Override
-  public IndexDescProto getIndex(String tableName, String[] columnNames) throws SQLException {
+  public IndexDescProto getIndex(String tableName, String[] columnNames) {
     return catalogClient.getIndex(tableName, columnNames);
   }
 
   @Override
-  public boolean existIndex(String tableName, String[] columnName) throws SQLException {
+  public boolean existIndex(String tableName, String[] columnName) {
     return catalogClient.existIndex(tableName, columnName);
   }
 
   @Override
-  public boolean dropIndex(String indexName) throws SQLException {
+  public boolean dropIndex(String indexName) {
     return catalogClient.dropIndex(indexName);
   }
 }

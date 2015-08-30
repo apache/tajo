@@ -21,16 +21,13 @@
  */
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 /**
  * This class generates a physical execution plan.
  */
 public interface PhysicalPlanner {
-  PhysicalExec createPlan(TaskAttemptContext context,
-                          LogicalNode logicalPlan)
-      throws InternalException;
+  PhysicalExec createPlan(TaskAttemptContext context, LogicalNode logicalPlan);
 }

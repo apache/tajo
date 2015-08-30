@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.KeyProjector;
+import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -56,14 +57,19 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private KeyProjector keyProjector;
 
   public RangeShuffleFileWriteExec(final TaskAttemptContext context,
-                                   final PhysicalExec child, final Schema inSchema, final Schema outSchema,
-                                   final SortSpec[] sortSpecs) throws IOException {
-    super(context, inSchema, outSchema, child);
+                                   final ShuffleFileWriteNode plan,
+                                   final PhysicalExec child, final SortSpec[] sortSpecs) throws IOException {
+    super(context, plan.getInSchema(), plan.getInSchema(), child);
     this.sortSpecs = sortSpecs;
+
+    if (plan.hasOptions()) {
+      this.meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
+    } else {
+      this.meta = CatalogUtil.newTableMeta(plan.getStorageType());
+    }
   }
 
   public void init() throws IOException {
-    super.init();
 
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
     keyProjector = new KeyProjector(inSchema, keySchema.toArray());
@@ -72,8 +78,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     this.comp = new BaseTupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
-    this.meta = CatalogUtil.newTableMeta(context.getDataChannel() != null ?
-        context.getDataChannel().getStoreType() : "RAW");
+
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
     this.appender = (FileAppender) ((FileTablespace) TablespaceManager.getDefault())
@@ -84,6 +89,8 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     this.indexWriter.setLoadNum(100);
     this.indexWriter.open();
+
+    super.init();
   }
 
   @Override

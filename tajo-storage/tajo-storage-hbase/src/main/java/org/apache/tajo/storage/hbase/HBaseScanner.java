@@ -36,7 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -123,7 +123,11 @@ public class HBaseScanner implements Scanner {
 
     outTuple = new VTuple(targets.length);
 
-    columnMapping = new ColumnMapping(schema, meta.getOptions());
+    try {
+      columnMapping = new ColumnMapping(schema, meta.getOptions());
+    } catch (TajoException e) {
+      new TajoInternalError(e);
+    }
     targetIndexes = new int[targets.length];
     int index = 0;
     for (Column eachTargetColumn: targets) {
@@ -430,7 +434,7 @@ public class HBaseScanner implements Scanner {
 
   @Override
   public void setFilter(EvalNode filter) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override

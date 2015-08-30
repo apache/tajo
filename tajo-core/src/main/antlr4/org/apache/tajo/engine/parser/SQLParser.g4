@@ -282,6 +282,7 @@ nonreserved_keywords
   | LESS
   | LIST
   | LOCATION
+  | MAP
   | MAX
   | MAXVALUE
   | MICROSECONDS
@@ -441,6 +442,7 @@ predefined_type
   | binary_type
   | network_type
   | record_type
+  | map_type
   ;
 
 character_string_type
@@ -538,6 +540,10 @@ network_type
 
 record_type
   : RECORD table_elements
+  ;
+
+map_type
+  : MAP LTH key_type=data_type COMMA value_type=data_type GTH
   ;
 
 /*
@@ -1593,7 +1599,7 @@ null_ordering
 */
 
 insert_statement
-  : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
+  : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_reference_list RIGHT_PAREN)? query_expression
   | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING storage_type=identifier (param_clause)?)? query_expression
   ;
 

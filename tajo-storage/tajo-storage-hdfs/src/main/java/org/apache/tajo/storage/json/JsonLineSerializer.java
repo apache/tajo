@@ -21,98 +21,117 @@ package org.apache.tajo.storage.json;
 
 import net.minidev.json.JSONObject;
 import org.apache.commons.net.util.Base64;
+import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Map;
 
 public class JsonLineSerializer extends TextLineSerializer {
-  private Type [] types;
-  private String [] simpleNames;
-  private int columnNum;
+  // Full Path -> Type
+  private final Map<String, Type> types;
+  private final String [] projectedPaths;
 
 
   public JsonLineSerializer(Schema schema, TableMeta meta) {
     super(schema, meta);
+
+    projectedPaths = SchemaUtil.convertColumnsToPaths(schema.getAllColumns(), true);
+    types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
   }
 
   @Override
   public void init() {
-    types = SchemaUtil.toTypes(schema);
-    simpleNames = SchemaUtil.toSimpleNames(schema);
-    columnNum = schema.size();
+  }
+
+  private void putValue(JSONObject json,
+                        String fullPath,
+                        String [] pathElements,
+                        int depth,
+                        int fieldIndex,
+                        Tuple input) throws IOException {
+    String fieldName = pathElements[depth];
+
+    if (input.isBlankOrNull(fieldIndex)) {
+      return;
+    }
+
+    switch (types.get(fullPath)) {
+
+    case BOOLEAN:
+      json.put(fieldName, input.getBool(fieldIndex));
+      break;
+
+    case INT1:
+    case INT2:
+      json.put(fieldName, input.getInt2(fieldIndex));
+      break;
+
+    case INT4:
+      json.put(fieldName, input.getInt4(fieldIndex));
+      break;
+
+    case INT8:
+      json.put(fieldName, input.getInt8(fieldIndex));
+      break;
+
+    case FLOAT4:
+      json.put(fieldName, input.getFloat4(fieldIndex));
+      break;
+
+    case FLOAT8:
+      json.put(fieldName, input.getFloat8(fieldIndex));
+      break;
+
+    case CHAR:
+    case TEXT:
+    case VARCHAR:
+    case INET4:
+    case TIMESTAMP:
+    case DATE:
+    case TIME:
+    case INTERVAL:
+      json.put(fieldName, input.getText(fieldIndex));
+      break;
+
+    case BIT:
+    case BINARY:
+    case BLOB:
+    case VARBINARY:
+      json.put(fieldName,  Base64.encodeBase64String(input.getBytes(fieldIndex)));
+      break;
+
+    case NULL_TYPE:
+      break;
+
+    case RECORD:
+      JSONObject record = json.containsKey(fieldName) ? (JSONObject) json.get(fieldName) : new JSONObject();
+      json.put(fieldName, record);
+      putValue(record, fullPath + "/" + pathElements[depth + 1], pathElements, depth + 1, fieldIndex, input);
+      break;
+
+    default:
+      throw new TajoRuntimeException(
+          new NotImplementedException("" + types.get(fullPath).name() + " for json"));
+    }
   }
 
   @Override
   public int serialize(OutputStream out, Tuple input) throws IOException {
     JSONObject jsonObject = new JSONObject();
 
-    for (int i = 0; i < columnNum; i++) {
-      if (input.isBlankOrNull(i)) {
-        continue;
-      }
-
-      String fieldName = simpleNames[i];
-      Type type = types[i];
-
-      switch (type) {
-
-      case BOOLEAN:
-        jsonObject.put(fieldName, input.getBool(i));
-        break;
-
-      case INT1:
-      case INT2:
-        jsonObject.put(fieldName, input.getInt2(i));
-        break;
-
-      case INT4:
-        jsonObject.put(fieldName, input.getInt4(i));
-        break;
-
-      case INT8:
-        jsonObject.put(fieldName, input.getInt8(i));
-        break;
-
-      case FLOAT4:
-        jsonObject.put(fieldName, input.getFloat4(i));
-        break;
-
-      case FLOAT8:
-        jsonObject.put(fieldName, input.getFloat8(i));
-        break;
-
-      case CHAR:
-      case TEXT:
-      case VARCHAR:
-      case INET4:
-      case TIMESTAMP:
-      case DATE:
-      case TIME:
-      case INTERVAL:
-        jsonObject.put(fieldName, input.getText(i));
-        break;
-
-      case BIT:
-      case BINARY:
-      case BLOB:
-      case VARBINARY:
-        jsonObject.put(fieldName,  Base64.encodeBase64String(input.getBytes(i)));
-        break;
-
-      case NULL_TYPE:
-        break;
-
-      default:
-        throw new UnimplementedException(types[i].name() + " is not supported.");
-      }
+    for (int i = 0; i < projectedPaths.length; i++) {
+      String [] paths = projectedPaths[i].split(NestedPathUtil.PATH_DELIMITER);
+      putValue(jsonObject, paths[0], paths, 0, i, input);
     }
 
     String jsonStr = jsonObject.toJSONString();
@@ -123,6 +142,5 @@ public class JsonLineSerializer extends TextLineSerializer {
 
   @Override
   public void release() {
-
   }
 }

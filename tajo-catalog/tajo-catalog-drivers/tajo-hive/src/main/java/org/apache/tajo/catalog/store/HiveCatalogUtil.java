@@ -26,28 +26,26 @@ import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
 import org.apache.tajo.BuiltinStorages;
-import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.ExceptionUtil;
+import org.apache.tajo.exception.*;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
-import static org.apache.tajo.catalog.exception.CatalogExceptionUtil.makeMDCNoMatchedDataType;
 import static org.apache.tajo.exception.ExceptionUtil.makeNotSupported;
 
 public class HiveCatalogUtil {
-  public static void validateSchema(Table tblSchema) throws CatalogException {
+  public static void validateSchema(Table tblSchema) {
     for (FieldSchema fieldSchema : tblSchema.getCols()) {
       String fieldType = fieldSchema.getType();
       if (fieldType.equalsIgnoreCase("ARRAY") || fieldType.equalsIgnoreCase("STRUCT")
         || fieldType.equalsIgnoreCase("MAP")) {
-        throw makeNotSupported(fieldType.toUpperCase());
+        throw new TajoRuntimeException(new UnsupportedException("data type '" + fieldType.toUpperCase() + "'"));
       }
     }
   }
 
-  public static TajoDataTypes.Type getTajoFieldType(String dataType) throws CatalogException {
+  public static TajoDataTypes.Type getTajoFieldType(String dataType) throws LMDNoMatchedDatatypeException {
     Preconditions.checkNotNull(dataType);
 
     if(dataType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
@@ -73,11 +71,11 @@ public class HiveCatalogUtil {
     } else if(dataType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
       return TajoDataTypes.Type.DATE;
     } else {
-      throw makeMDCNoMatchedDataType(dataType);
+      throw new LMDNoMatchedDatatypeException(dataType);
     }
   }
 
-  public static String getHiveFieldType(TajoDataTypes.DataType dataType) {
+  public static String getHiveFieldType(TajoDataTypes.DataType dataType) throws LMDNoMatchedDatatypeException {
     Preconditions.checkNotNull(dataType);
 
     switch (dataType.getType()) {
@@ -99,7 +97,7 @@ public class HiveCatalogUtil {
     case DATE: return serdeConstants.DATE_TYPE_NAME;
     case TIMESTAMP: return serdeConstants.TIMESTAMP_TYPE_NAME;
     default:
-      throw ExceptionUtil.makeInvalidDataType(dataType);
+      throw new LMDNoMatchedDatatypeException(dataType.getType().name());
     }
   }
 
@@ -108,7 +106,7 @@ public class HiveCatalogUtil {
 
     String[] fileFormatArrary = fileFormat.split("\\.");
     if(fileFormatArrary.length < 1) {
-      throw makeNotSupported(fileFormat);
+      throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
     }
 
     String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
@@ -121,7 +119,7 @@ public class HiveCatalogUtil {
     } else if(outputFormatClass.equals(DeprecatedParquetOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.PARQUET.name();
     } else {
-      throw makeNotSupported(fileFormat);
+      throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
     }
   }
 

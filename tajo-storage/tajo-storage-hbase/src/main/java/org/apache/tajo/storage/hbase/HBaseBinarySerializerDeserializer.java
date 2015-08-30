@@ -66,7 +66,7 @@ public class HBaseBinarySerializerDeserializer {
     return datum;
   }
 
-  public static byte[] serialize(Column col, Datum datum) throws IOException {
+  public static byte[] serialize(Column col, Datum datum) {
     if (datum == null || datum instanceof NullDatum) {
       return null;
     }

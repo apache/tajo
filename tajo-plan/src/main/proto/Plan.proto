@@ -112,6 +112,7 @@ message ScanNode {
   repeated Target targets = 4;
   optional EvalNodeTree qual = 5;
   optional bool broadcast = 6;
+  required bool nameResolveBase = 7;
 }
 
 message PartitionScanSpec {
@@ -190,6 +191,7 @@ message TableSubQueryNode {
   required int32 childSeq = 1;
   required string tableName = 2;
   repeated Target targets = 3;
+  required bool nameResolveBase = 4;
 }
 
 message ProjectionNode {
@@ -396,6 +398,8 @@ enum EvalType {
   ROW_CONSTANT = 32;
   FIELD = 33;
   CONST = 34;
+
+  SUBQUERY = 35;
 }
 
 message EvalNodeTree {
@@ -419,6 +423,7 @@ message EvalNode {
   optional CaseWhenEval casewhen = 13;
   optional IfCondEval ifCond = 14;
   optional PatternMatchEvalSpec patternMatch = 15;
+  optional SubqueryEval subquery = 16;
 }
 
 message UnaryEval {
@@ -436,6 +441,10 @@ message BinaryEval {
 
 message PatternMatchEvalSpec { // requires BinaryEval
   optional bool caseSensitive = 1;
+}
+
+message SubqueryEval {
+  required LogicalNodeTree subquery = 1;
 }
 
 message BetweenEval {
@@ -599,8 +608,6 @@ message OutputDistinctEnforce {
 
 message JoinEnforce {
   enum JoinAlgorithm {
-    NESTED_LOOP_JOIN = 0;
-    BLOCK_NESTED_LOOP_JOIN = 1;
     IN_MEMORY_HASH_JOIN = 2;
     HYBRID_HASH_JOIN = 3;
     MERGE_JOIN = 4;

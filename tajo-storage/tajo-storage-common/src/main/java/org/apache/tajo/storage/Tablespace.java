@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -107,7 +108,7 @@ public abstract class Tablespace {
    * @return Root URI
    */
   public URI getRootUri() {
-    throw new UnsupportedException(String.format("artibrary path '%s'", uri.toString()));
+    throw new TajoRuntimeException(new UnsupportedException(String.format("artibrary path '%s'", uri.toString())));
   }
 
   /**
@@ -128,19 +129,7 @@ public abstract class Tablespace {
    * @throws java.io.IOException
    */
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
-                                           ScanNode scanNode) throws IOException;
-
-  /**
-   * It returns the splits that will serve as input for the non-forward query scanner such as 'select * from table1'.
-   * The result list should be small. If there is many fragments for scanning, TajoMaster uses the paging navigation.
-   * @param tableDesc The table description for the target data.
-   * @param currentPage The current page number within the entire list.
-   * @param numFragments The number of fragments in the result.
-   * @return The list of input fragments.
-   * @throws java.io.IOException
-   */
-  public abstract List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
-      throws IOException;
+                                           ScanNode scanNode) throws IOException, TajoException;
 
   /**
    * It returns the storage property.
@@ -200,7 +189,7 @@ public abstract class Tablespace {
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException {
+  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException, TajoException {
     return getSplits(fragmentId, tableDesc, null);
   }
 
@@ -345,7 +334,7 @@ public abstract class Tablespace {
    * @param outSchema  The output schema of select query for inserting.
    * @throws java.io.IOException
    */
-  public abstract void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws IOException;
+  public abstract void verifySchemaToWrite(TableDesc tableDesc, Schema outSchema) throws TajoException;
 
   /**
    * Rewrite the logical plan. It is assumed that the final plan will be given in this method.
@@ -366,7 +355,7 @@ public abstract class Tablespace {
    * @param ifNotExists Creates the table only when the table does not exist.
    * @throws java.io.IOException
    */
-  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
+  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException;
 
   /**
    * This method is called after executing "DROP TABLE" statement with the 'PURGE' option
@@ -375,7 +364,7 @@ public abstract class Tablespace {
    * @param tableDesc
    * @throws java.io.IOException
    */
-  public abstract void purgeTable(TableDesc tableDesc) throws IOException;
+  public abstract void purgeTable(TableDesc tableDesc) throws IOException, TajoException;
 
   /**
    * This method is called before executing 'INSERT' or 'CREATE TABLE as SELECT'.
@@ -386,7 +375,7 @@ public abstract class Tablespace {
    * @param node The child node of the root node.
    * @throws java.io.IOException
    */
-  public abstract void prepareTable(LogicalNode node) throws IOException;
+  public abstract void prepareTable(LogicalNode node) throws IOException, TajoException;
 
   /**
    * Finalizes result data. Tajo stores result data in the staging directory.
@@ -406,7 +395,7 @@ public abstract class Tablespace {
                                    LogicalPlan plan, Schema schema,
                                    TableDesc tableDesc) throws IOException;
 
-  public abstract void rollbackTable(LogicalNode node) throws IOException;
+  public abstract void rollbackTable(LogicalNode node) throws IOException, TajoException;
 
   @Override
   public boolean equals(Object obj) {

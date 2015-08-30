@@ -19,12 +19,9 @@
 package org.apache.tajo.plan.verifier;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -40,20 +37,20 @@ import java.util.Stack;
 import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.*;
 
 public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVerifier.Context, LogicalNode> {
-  public LogicalPlanVerifier(TajoConf conf, CatalogService catalog) {
+  public LogicalPlanVerifier() {
   }
 
   public static class Context {
     VerificationState state;
 
-    public Context(OverridableConf queryContext, VerificationState state) {
+    public Context(VerificationState state) {
       this.state = state;
     }
   }
 
-  public VerificationState verify(OverridableConf queryContext, VerificationState state, LogicalPlan plan)
+  public VerificationState verify(VerificationState state, LogicalPlan plan)
       throws TajoException {
-    Context context = new Context(queryContext, state);
+    Context context = new Context(state);
     visit(context, plan, plan.getRootBlock());
     return context.state;
   }
@@ -75,7 +72,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       Column outputColumn = outputSchema.getColumn(i);
 
       if (outputColumn.getDataType().getType() == Type.RECORD) {
-        context.state.addVerification(new UnsupportedException("RECORD field projection"));
+        context.state.addVerification(new UnsupportedException("record field in select list"));
       }
 
       if (!outputColumn.getDataType().equals(targetSchema.getColumn(i).getDataType())) {

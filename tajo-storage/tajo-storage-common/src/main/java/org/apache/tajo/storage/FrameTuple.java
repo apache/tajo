@@ -26,6 +26,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -96,22 +97,22 @@ public class FrameTuple implements Tuple, Cloneable {
 
   @Override
   public void put(int fieldId, Tuple tuple) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void clear() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void put(int fieldId, Datum value) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void put(Datum[] values) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -126,17 +127,17 @@ public class FrameTuple implements Tuple, Cloneable {
 
   @Override
   public void clearOffset() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void setOffset(long offset) {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
   
   @Override
   public long getOffset() {
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -235,7 +236,7 @@ public class FrameTuple implements Tuple, Cloneable {
 
   @Override
   public Datum[] getValues(){
-    throw new UnsupportedException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   public String toString() {

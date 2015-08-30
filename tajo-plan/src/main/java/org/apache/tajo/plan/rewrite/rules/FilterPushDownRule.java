@@ -24,25 +24,21 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
-import org.apache.tajo.plan.util.IndexUtil;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -146,7 +142,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         UnaryNode unary = (UnaryNode) node;
         unary.setChild(selNode.getChild());
       } else {
-        throw new InvalidQueryException("Unexpected Logical Query Plan");
+        throw new TajoInternalError("The node must be an unary node");
       }
     } else { // if there remain search conditions
 
@@ -171,12 +167,14 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   @Override
   public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                               JoinNode joinNode,
-                               Stack<LogicalNode> stack) throws TajoException {
+                               JoinNode joinNode, Stack<LogicalNode> stack) throws TajoException {
     Set<EvalNode> onPredicates = TUtil.newHashSet();
     if (joinNode.hasJoinQual()) {
       onPredicates.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
+    // clear join qual
+    joinNode.clearJoinQual();
+
     // we assume all the quals in pushingDownFilters as where predicates
     Set<EvalNode> nonPushableQuals = extractNonPushableJoinQuals(plan, block, joinNode, onPredicates,
         context.pushingDownFilters);
@@ -966,7 +964,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       databaseName = CatalogUtil.extractQualifier(table.getName());
       tableName = CatalogUtil.extractSimpleName(table.getName());
       Set<Predicate> predicates = TUtil.newHashSet();
-      for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
+      for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
         BinaryEval binaryEval = (BinaryEval) eval;
         // TODO: consider more complex predicates
         if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&

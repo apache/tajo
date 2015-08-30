@@ -23,6 +23,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -131,17 +132,17 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public void put(int fieldId, Datum value) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Datum).");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void put(int fieldId, Tuple tuple) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Tuple).");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void put(Datum[] values) {
-    throw new UnsupportedException("UnSafeTuple does not support put(Datum[]).");
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -151,43 +152,35 @@ public abstract class UnSafeTuple implements Tuple {
     }
 
     switch (types[fieldId].getType()) {
-      case BOOLEAN:
-        return DatumFactory.createBool(getBool(fieldId));
-      case BIT:
-        return DatumFactory.createBit(getByte(fieldId));
-      case INT1:
-      case INT2:
-        return DatumFactory.createInt2(getInt2(fieldId));
-      case INT4:
-        return DatumFactory.createInt4(getInt4(fieldId));
-      case INT8:
-        return DatumFactory.createInt8(getInt8(fieldId));
-      case FLOAT4:
-        return DatumFactory.createFloat4(getFloat4(fieldId));
-      case FLOAT8:
-        return DatumFactory.createFloat8(getFloat8(fieldId));
-      case CHAR:
-        return DatumFactory.createChar(getBytes(fieldId));
-      case TEXT:
-        return DatumFactory.createText(getBytes(fieldId));
-      case BLOB :
-        return DatumFactory.createBlob(getBytes(fieldId));
-      case TIMESTAMP:
-        return DatumFactory.createTimestamp(getInt8(fieldId));
-      case DATE:
-        return DatumFactory.createDate(getInt4(fieldId));
-      case TIME:
-        return DatumFactory.createTime(getInt8(fieldId));
-      case INTERVAL:
-        return getInterval(fieldId);
-      case INET4:
-        return DatumFactory.createInet4(getInt4(fieldId));
-      case PROTOBUF:
-        return getProtobufDatum(fieldId);
-      case NULL_TYPE:
-        return NullDatum.get();
-      default:
-        throw new UnsupportedException("Unknown type: " + types[fieldId]);
+    case BOOLEAN:
+      return DatumFactory.createBool(getBool(fieldId));
+    case INT1:
+    case INT2:
+      return DatumFactory.createInt2(getInt2(fieldId));
+    case INT4:
+      return DatumFactory.createInt4(getInt4(fieldId));
+    case INT8:
+      return DatumFactory.createInt8(getInt4(fieldId));
+    case FLOAT4:
+      return DatumFactory.createFloat4(getFloat4(fieldId));
+    case FLOAT8:
+      return DatumFactory.createFloat8(getFloat8(fieldId));
+    case TEXT:
+      return DatumFactory.createText(getText(fieldId));
+    case TIMESTAMP:
+      return DatumFactory.createTimestamp(getInt8(fieldId));
+    case DATE:
+      return DatumFactory.createDate(getInt4(fieldId));
+    case TIME:
+      return DatumFactory.createTime(getInt8(fieldId));
+    case INTERVAL:
+      return getInterval(fieldId);
+    case INET4:
+      return DatumFactory.createInet4(getInt4(fieldId));
+    case PROTOBUF:
+      return getProtobufDatum(fieldId);
+    default:
+      throw new TajoRuntimeException(new UnsupportedException("data type '" + types[fieldId] + "'"));
     }
   }
 
@@ -232,7 +225,13 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    return getBytes(fieldId);
+    long pos = getFieldAddr(fieldId);
+    int len = UNSAFE.getInt(pos);
+    pos += SizeOf.SIZE_OF_INT;
+
+    byte[] bytes = new byte[len];
+    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
+    return bytes;
   }
 
   @Override
@@ -263,7 +262,7 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public String getText(int fieldId) {
-    return new String(getTextBytes(fieldId), TextDatum.DEFAULT_CHARSET);
+    return new String(getTextBytes(fieldId));
   }
 
   public IntervalDatum getInterval(int fieldId) {

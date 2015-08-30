@@ -26,7 +26,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.exception.DuplicateColumnException;
+import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
@@ -1124,7 +1124,7 @@ public class ProjectionPushDownRule extends
 
   @Override
   public LogicalNode visitTableSubQuery(Context upperContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
+                                        TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     Context childContext = new Context(plan, upperContext.requiredSet);
     stack.push(node);
     LogicalNode child = super.visitTableSubQuery(childContext, plan, block, node, stack);

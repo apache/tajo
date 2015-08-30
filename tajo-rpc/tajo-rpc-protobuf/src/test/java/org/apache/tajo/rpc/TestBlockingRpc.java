@@ -363,7 +363,7 @@ public class TestBlockingRpc {
     RpcClientManager.cleanup(client);
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
@@ -385,7 +385,7 @@ public class TestBlockingRpc {
     assertTrue(expected);
   }
 
-  @Test
+  @Test(timeout = 120000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testUnresolvedAddress2() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());

@@ -26,6 +26,10 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.InvalidTablePropertyException;
+import org.apache.tajo.exception.MissingTablePropertyException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
@@ -89,7 +93,11 @@ public abstract class AbstractHBaseAppender implements Appender {
     if (enabledStats) {
       stats = new TableStatistics(this.schema);
     }
-    columnMapping = new ColumnMapping(schema, meta.getOptions());
+    try {
+      columnMapping = new ColumnMapping(schema, meta.getOptions());
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
+    }
 
     mappingColumnFamilies = columnMapping.getMappingColumns();
 

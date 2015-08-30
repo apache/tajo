@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.function.python;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -27,12 +28,17 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.function.*;
+import org.apache.tajo.function.FunctionInvocation;
+import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.function.FunctionSupplement;
+import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -75,28 +81,35 @@ public class PythonScriptEngine extends TajoScriptEngine {
     } finally {
       in.close();
     }
+
     for(FunctionInfo funcInfo : functions) {
-      FunctionSignature signature;
-      FunctionInvocation invocation = new FunctionInvocation();
-      FunctionSupplement supplement = new FunctionSupplement();
-      if (funcInfo instanceof ScalarFuncInfo) {
-        ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
-        TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
-        signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
-            returnType, createParamTypes(scalarFuncInfo.paramNum));
-        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
-        invocation.setPython(invocationDesc);
-        functionDescs.add(new FunctionDesc(signature, invocation, supplement));
-      } else {
-        AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
-        if (isValidUdaf(aggFuncInfo)) {
-          TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
-          signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
-              returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
-          PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
-          invocation.setPythonAggregation(invocationDesc);
+      try {
+        FunctionSignature signature;
+        FunctionInvocation invocation = new FunctionInvocation();
+        FunctionSupplement supplement = new FunctionSupplement();
+        if (funcInfo instanceof ScalarFuncInfo) {
+          ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
+          TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
+          signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
+              returnType, createParamTypes(scalarFuncInfo.paramNum));
+          PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
+          invocation.setPython(invocationDesc);
           functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+        } else {
+          AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
+          if (isValidUdaf(aggFuncInfo)) {
+            TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
+            signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
+                returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
+            PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
+
+            invocation.setPythonAggregation(invocationDesc);
+            functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+          }
         }
+      } catch (Throwable t) {
+        // ignore invalid functions
+        LOG.warn(t);
       }
     }
     return functionDescs;
@@ -168,59 +181,65 @@ public class PythonScriptEngine extends TajoScriptEngine {
     String line = br.readLine();
     String[] quotedSchemaStrings = null;
     AggFuncInfo aggFuncInfo = null;
+
     while (line != null) {
-      if (pSchema.matcher(line).matches()) {
-        int start = line.indexOf("(") + 1; //drop brackets
-        int end = line.lastIndexOf(")");
-        quotedSchemaStrings = line.substring(start,end).trim().split(",");
-      } else if (pDef.matcher(line).matches()) {
-        boolean isUdaf = aggFuncInfo != null && line.indexOf("def ") > 0;
-        int nameStart = line.indexOf("def ") + "def ".length();
-        int nameEnd = line.indexOf('(');
-        int signatureEnd = line.indexOf(')');
-        String[] params = line.substring(nameEnd+1, signatureEnd).split(",");
-        int paramNum;
-        if (params.length == 1) {
-          paramNum = params[0].equals("") ? 0 : 1;
-        } else {
-          paramNum = params.length;
-        }
-        if (params[0].trim().equals("self")) {
-          paramNum--;
-        }
-
-        String functionName = line.substring(nameStart, nameEnd).trim();
-        quotedSchemaStrings = quotedSchemaStrings == null ? new String[] {"'blob'"} : quotedSchemaStrings;
-
-        if (isUdaf) {
-          if (functionName.equals("eval")) {
-            aggFuncInfo.evalInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
-          } else if (functionName.equals("merge")) {
-            aggFuncInfo.mergeInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
-          } else if (functionName.equals("get_partial_result")) {
-            aggFuncInfo.getPartialResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
-          } else if (functionName.equals("get_final_result")) {
-            aggFuncInfo.getFinalResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+      try {
+        if (pSchema.matcher(line).matches()) {
+          int start = line.indexOf("(") + 1; //drop brackets
+          int end = line.lastIndexOf(")");
+          quotedSchemaStrings = line.substring(start, end).trim().split(",");
+        } else if (pDef.matcher(line).matches()) {
+          boolean isUdaf = aggFuncInfo != null && line.indexOf("def ") > 0;
+          int nameStart = line.indexOf("def ") + "def ".length();
+          int nameEnd = line.indexOf('(');
+          int signatureEnd = line.indexOf(')');
+          String[] params = line.substring(nameEnd + 1, signatureEnd).split(",");
+          int paramNum;
+          if (params.length == 1) {
+            paramNum = params[0].equals("") ? 0 : 1;
+          } else {
+            paramNum = params.length;
           }
-        } else {
-          aggFuncInfo = null;
-          functions.add(new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum));
-        }
+          if (params[0].trim().equals("self")) {
+            paramNum--;
+          }
 
-        quotedSchemaStrings = null;
-      } else if (pClass.matcher(line).matches()) {
-        // UDAF
-        if (aggFuncInfo != null) {
-          functions.add(aggFuncInfo);
+          String functionName = line.substring(nameStart, nameEnd).trim();
+          quotedSchemaStrings = quotedSchemaStrings == null ? new String[]{"'blob'"} : quotedSchemaStrings;
+
+          if (isUdaf) {
+            if (functionName.equals("eval")) {
+              aggFuncInfo.evalInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+            } else if (functionName.equals("merge")) {
+              aggFuncInfo.mergeInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+            } else if (functionName.equals("get_partial_result")) {
+              aggFuncInfo.getPartialResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+            } else if (functionName.equals("get_final_result")) {
+              aggFuncInfo.getFinalResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+            }
+          } else {
+            aggFuncInfo = null;
+            functions.add(new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum));
+          }
+
+          quotedSchemaStrings = null;
+        } else if (pClass.matcher(line).matches()) {
+          // UDAF
+          if (aggFuncInfo != null) {
+            functions.add(aggFuncInfo);
+          }
+          aggFuncInfo = new AggFuncInfo();
+          int classNameStart = line.indexOf("class ") + "class ".length();
+          int classNameEnd = line.indexOf("(");
+          if (classNameEnd < 0) {
+            classNameEnd = line.indexOf(":");
+          }
+          aggFuncInfo.className = line.substring(classNameStart, classNameEnd).trim();
+          aggFuncInfo.funcName = aggFuncInfo.className.toLowerCase();
         }
-        aggFuncInfo = new AggFuncInfo();
-        int classNameStart = line.indexOf("class ") + "class ".length();
-        int classNameEnd = line.indexOf("(");
-        if (classNameEnd < 0) {
-          classNameEnd = line.indexOf(":");
-        }
-        aggFuncInfo.className = line.substring(classNameStart, classNameEnd).trim();
-        aggFuncInfo.funcName = aggFuncInfo.className.toLowerCase();
+      } catch (Throwable t) {
+        // ignore unexpected function and source lines
+        LOG.warn(t);
       }
       line = br.readLine();
     }
@@ -310,12 +329,26 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   @Override
   public void shutdown() {
-    process.destroy();
     FileUtil.cleanup(LOG, stdin, stdout, stderr, inputHandler, outputHandler);
     stdin = null;
     stdout = stderr = null;
     inputHandler = null;
     outputHandler = null;
+
+    try {
+      int exitCode = process.waitFor();
+
+      if (systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+        LOG.warn("Process exit code: " + exitCode);
+      } else {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Process exit code: " + exitCode);
+        }
+      }
+    } catch (InterruptedException e) {
+      LOG.warn(e.getMessage(), e);
+    }
+
     if (LOG.isDebugEnabled()) {
       LOG.debug("PythonScriptExecutor shuts down");
     }
@@ -472,14 +505,15 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext(input, inSchema);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
-    Datum result;
+
+    Datum result = null;
     try {
       result = outputHandler.getNext().asDatum(0);
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
 
     return result;
@@ -506,14 +540,36 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext(methodName, input, inSchema);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue while executing "
+          + methodName + " with " + input, e));
     }
 
     try {
       outputHandler.getNext();
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
+    }
+  }
+
+  /**
+   * Get the standard error streams of the external process and throw the exception
+   *
+   * @throws RuntimeException
+   */
+  private void throwException(InputStream stderr, RuntimeException e) throws RuntimeException {
+    try {
+      if (stderr.available() > 0) {
+        byte[] bytes = new byte[Math.min(stderr.available(), 100 * StorageUnit.KB)];
+        IOUtils.readFully(stderr, bytes);
+        String message = new String(bytes, Charset.defaultCharset());
+
+        throw new RuntimeException("Python exception caused by: " + message, e);
+      } else {
+        throw e;
+      }
+    } catch (IOException ioe) {
+      throw new RuntimeException(ioe.getMessage(), ioe);
     }
   }
 
@@ -527,13 +583,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext("update_context", functionContext);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
     try {
       outputHandler.getNext();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
   }
 
@@ -547,13 +603,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext("get_context", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
     try {
       outputHandler.getNext(functionContext);
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
   }
 
@@ -568,14 +624,16 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       inputHandler.putNext("get_partial_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
+    String result = null;
     try {
-      return outputHandler.getPartialResultString();
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+      result = outputHandler.getPartialResultString();
+    } catch (Throwable e) {
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
+    return result;
   }
 
   /**
@@ -590,13 +648,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
       inputHandler.putNext("get_final_result", EMPTY_INPUT, EMPTY_SCHEMA);
       stdin.flush();
     } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue", e));
     }
-    Datum result;
+    Datum result = null;
     try {
       result = outputHandler.getNext().asDatum(0);
     } catch (Exception e) {
-      throw new RuntimeException("Problem getting output: " + e.getMessage(), e);
+      throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
 
     return result;

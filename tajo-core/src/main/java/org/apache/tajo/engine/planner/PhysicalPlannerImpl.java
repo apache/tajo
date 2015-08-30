@@ -16,9 +16,6 @@
  * limitations under the License.
  */
 
-/**
- *
- */
 package org.apache.tajo.engine.planner;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -38,7 +35,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
@@ -83,8 +80,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     this.conf = conf;
   }
 
-  public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan)
-      throws InternalException {
+  public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan) {
 
     PhysicalExec execPlan;
 
@@ -101,7 +97,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         return execPlan;
       }
     } catch (IOException ioe) {
-      throw new InternalException(ioe);
+      throw new TajoInternalError(ioe);
     }
   }
 
@@ -334,20 +330,18 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
 
       switch (algorithm) {
-        case NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
-          return new NLJoinExec(context, plan, leftExec, rightExec);
-        case BLOCK_NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Block Nested Loop Join]");
-          return new BNLJoinExec(context, plan, leftExec, rightExec);
         default:
           // fallback algorithm
           LOG.error("Invalid Cross Join Algorithm Enforcer: " + algorithm.name());
-          return new BNLJoinExec(context, plan, leftExec, rightExec);
+          PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+          return new HashJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
       }
 
     } else {
-      return new BNLJoinExec(context, plan, leftExec, rightExec);
+      LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
+      // returns two PhysicalExec. smaller one is 0, and larger one is 1.
+      PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+      return new HashJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
     }
   }
 
@@ -360,12 +354,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
 
       switch (algorithm) {
-        case NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
-          return new NLJoinExec(context, plan, leftExec, rightExec);
-        case BLOCK_NESTED_LOOP_JOIN:
-          LOG.info("Join (" + plan.getPID() +") chooses [Block Nested Loop Join]");
-          return new BNLJoinExec(context, plan, leftExec, rightExec);
         case IN_MEMORY_HASH_JOIN:
           LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
           // returns two PhysicalExec. smaller one is 0, and larger one is 1.
@@ -393,7 +381,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
    */
   @VisibleForTesting
   public PhysicalExec [] switchJoinSidesIfNecessary(TaskAttemptContext context, JoinNode plan,
-                                                     PhysicalExec left, PhysicalExec right) throws IOException {
+                                                    PhysicalExec left, PhysicalExec right) throws IOException {
     String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
     String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
     long leftSize = estimateSizeRecursive(context, leftLineage);
@@ -770,6 +758,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
    */
   public PhysicalExec createShuffleFileWritePlan(TaskAttemptContext ctx,
                                                  ShuffleFileWriteNode plan, PhysicalExec subOp) throws IOException {
+    plan.getOptions().set(StorageConstants.SHUFFLE_TYPE,
+        PlannerUtil.getShuffleType(ctx.getDataChannel().getShuffleType()));
+
     switch (plan.getShuffleType()) {
     case HASH_SHUFFLE:
     case SCATTERED_HASH_SHUFFLE:
@@ -788,7 +779,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           specs[i] = new SortSpec(columns[i]);
         }
       }
-      return new RangeShuffleFileWriteExec(ctx, subOp, plan.getInSchema(), plan.getInSchema(), sortSpecs);
+      return new RangeShuffleFileWriteExec(ctx, plan, subOp, sortSpecs);
 
     case NONE_SHUFFLE:
       // if there is no given NULL CHAR property in the table property and the query is neither CTAS or INSERT,

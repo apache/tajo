@@ -56,8 +56,6 @@ import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.metrics.TajoMetrics;
-import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -69,8 +67,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
 import static org.apache.tajo.TajoProtos.QueryState;
-import static org.apache.tajo.ResourceProtos.*;
 
 public class QueryMasterTask extends CompositeService {
   private static final Log LOG = LogFactory.getLog(QueryMasterTask.class.getName());
@@ -93,7 +91,7 @@ public class QueryMasterTask extends CompositeService {
 
   private final long querySubmitTime;
 
-  private Map<String, TableDesc> tableDescMap = new HashMap<String, TableDesc>();
+  private final Map<Integer, TableDesc> tableDescMap = new HashMap<>();
 
   private TajoConf systemConf;
 
@@ -263,13 +261,13 @@ public class QueryMasterTask extends CompositeService {
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), callFuture);
 
       if(!callFuture.get().getValue()){
-        queryMasterContext.getEventHandler().handle(
+        getEventHandler().handle(
             new TaskFatalErrorEvent(taskAttemptId, "Can't kill task :" + taskAttemptId));
       }
     } catch (Exception e) {
       /* Node RPC failure */
       LOG.error(e.getMessage(), e);
-      queryMasterContext.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
+      getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
     }
   }
 
@@ -334,7 +332,7 @@ public class QueryMasterTask extends CompositeService {
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;
-            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+            tableDescMap.put(scanNode.getPID(), scanNode.getTableDesc());
           }
         }
 
@@ -342,7 +340,7 @@ public class QueryMasterTask extends CompositeService {
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;
-            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+            tableDescMap.put(scanNode.getPID(), scanNode.getTableDesc());
           }
         }
 
@@ -350,7 +348,7 @@ public class QueryMasterTask extends CompositeService {
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;
-            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+            tableDescMap.put(scanNode.getPID(), scanNode.getTableDesc());
           }
         }
       }
@@ -370,7 +368,7 @@ public class QueryMasterTask extends CompositeService {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
           space.rollbackTable(rootNode.getChild());
-        } catch (IOException e) {
+        } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
       }
@@ -462,25 +460,27 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void cleanupQuery(final QueryId queryId) {
-    Set<InetSocketAddress> workers = Sets.newHashSet();
-    for (Stage stage : getQuery().getStages()) {
-      workers.addAll(stage.getAssignedWorkerMap().values());
-    }
+    if (getQuery() != null) {
+      Set<InetSocketAddress> workers = Sets.newHashSet();
+      for (Stage stage : getQuery().getStages()) {
+        workers.addAll(stage.getAssignedWorkerMap().values());
+      }
 
-    LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
-    for (final InetSocketAddress worker : workers) {
-      queryMasterContext.getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
-            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
-            tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
-          } catch (Throwable e) {
-            LOG.error(e.getMessage(), e);
+      LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
+      for (final InetSocketAddress worker : workers) {
+        queryMasterContext.getEventExecutor().submit(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+              TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
+              tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
+            } catch (Throwable e) {
+              LOG.error(e.getMessage(), e);
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
@@ -533,8 +533,8 @@ public class QueryMasterTask extends CompositeService {
       return query.getStage(id);
     }
 
-    public Map<String, TableDesc> getTableDescMap() {
-      return tableDescMap;
+    public TableDesc getTableDesc(ScanNode scanNode) {
+      return tableDescMap.get(scanNode.getPID());
     }
 
     public float getProgress() {
