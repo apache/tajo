@@ -19,10 +19,10 @@
 package org.apache.tajo.plan.exprrewrite.rules;
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.annotator.Prioritized;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizationRule;
-import org.apache.tajo.plan.annotator.Prioritized;
-import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
@@ -98,12 +98,14 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
       if (evalNode.getFuncDesc().getInvocation().hasPython()) {
         TajoScriptEngine executor = new PythonScriptEngine(evalNode.getFuncDesc());
         try {
+          PythonScriptEngine.initPythonScriptEngineFiles();
           executor.start(context.getQueryContext().getConf());
           EvalContext evalContext = new EvalContext();
           evalContext.addScriptEngine(evalNode, executor);
           evalNode.bind(evalContext, null);
           Datum funcRes = evalNode.eval(null);
           executor.shutdown();
+          PythonScriptEngine.clearPythonScriptEngineFiles();
           return new ConstEval(funcRes);
         } catch (IOException e) {
           throw new RuntimeException(e);

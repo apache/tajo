@@ -54,7 +54,9 @@ import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
-import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.expr.EvalContext;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.GeneralFunctionEval;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
@@ -327,6 +329,7 @@ public class QueryExecutor {
 
   public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
       throws IOException {
+    PythonScriptEngine.initPythonScriptEngineFiles();
     for (int i = 0; i < targets.length; i++) {
       EvalNode eval = targets[i].getEvalTree();
       if (eval instanceof GeneralFunctionEval) {
@@ -344,6 +347,7 @@ public class QueryExecutor {
     for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
       executor.shutdown();
     }
+    PythonScriptEngine.clearPythonScriptEngineFiles();
   }
 
   /**
