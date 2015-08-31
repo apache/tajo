@@ -66,7 +66,6 @@
             <exclude>src/test/resources/dataset/**</exclude>
             <exclude>src/test/resources/queries/**</exclude>
             <exclude>src/test/resources/results/**</exclude>
-            <exclude>derby.log</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -87,6 +86,16 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemProperties>
+            <tajo.test>TRUE</tajo.test>
+          </systemProperties>
+          <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8 -Dderby.storage.pageSize=1024 -Dderby.stream.error.file=/dev/null</argLine>
+        </configuration>
       </plugin>
     </plugins>
   </build>
