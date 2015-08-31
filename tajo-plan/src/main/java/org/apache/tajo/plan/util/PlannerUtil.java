@@ -992,4 +992,10 @@ public class PlannerUtil {
     }
     return inSubqueries;
   }
+
+  public static List<EvalNode> getAllEqualEvals(EvalNode qual) {
+    EvalTreeUtil.EvalFinder finder = new EvalTreeUtil.EvalFinder(EvalType.EQUAL);
+    finder.visit(null, qual, new Stack<EvalNode>());
+    return finder.getEvalNodes();
+  }
 }

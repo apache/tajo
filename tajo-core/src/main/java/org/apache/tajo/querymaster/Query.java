@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
@@ -34,26 +35,22 @@ import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
@@ -333,14 +330,17 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public List<PartitionDescProto> getPartitions() {
-    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
+    Set<PartitionDescProto> partitions = TUtil.newHashSet();
     for(Stage eachStage : getStages()) {
-      if (!eachStage.getPartitions().isEmpty()) {
-        partitions.addAll(eachStage.getPartitions());
-      }
+      partitions.addAll(eachStage.getPartitions());
     }
+    return Lists.newArrayList(partitions);
+  }
 
-    return partitions;
+  public void clearPartitions() {
+    for(Stage eachStage : getStages()) {
+      eachStage.clearPartitions();
+    }
   }
 
   public List<String> getDiagnostics() {
@@ -505,30 +505,30 @@ public class Query implements EventHandler<QueryEvent> {
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
-        TableDesc desc = query.getResultDesc();
+        // Add dynamic partitions to catalog for partition table.
+        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
+          List<PartitionDescProto> partitions = query.getPartitions();
+          if (partitions != null) {
+            String databaseName, simpleTableName;
 
-        // If there is partitions
-        List<PartitionDescProto> partitions = query.getPartitions();
-        if (partitions!= null && !partitions.isEmpty()) {
+            if (CatalogUtil.isFQTableName(tableDesc.getName())) {
+              String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
+              databaseName = split[0];
+              simpleTableName = split[1];
+            } else {
+              databaseName = queryContext.getCurrentDatabase();
+              simpleTableName = tableDesc.getName();
+            }
 
-          String databaseName, simpleTableName;
-
-          if (CatalogUtil.isFQTableName(desc.getName())) {
-            String[] split = CatalogUtil.splitFQTableName(desc.getName());
-            databaseName = split[0];
-            simpleTableName = split[1];
+            // Store partitions to CatalogStore using alter table statement.
+            catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+            LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           } else {
-            databaseName = queryContext.getCurrentDatabase();
-            simpleTableName = desc.getName();
+            LOG.info("Can't find partitions for adding.");
           }
-
-          // Store partitions to CatalogStore using alter table statement.
-          catalog.addPartitions(databaseName, simpleTableName, partitions, true);
-        } else {
-          LOG.info("Can't find partitions for adding.");
+          query.clearPartitions();
         }
-
-      } catch (Exception e) {
+      } catch (Throwable e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;
       }
