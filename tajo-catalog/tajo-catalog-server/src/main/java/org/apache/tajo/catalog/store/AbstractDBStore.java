@@ -2359,6 +2359,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
     sb.append(visitor.getResult())
       .append("\n )");
+    sb.append("\n ORDER BY A.PARTITION_NAME");
 
     // Set parameters for executing PrepareStament
     PartitionFilterDescProto.Builder builder = PartitionFilterDescProto.newBuilder();
@@ -2369,6 +2370,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     builder.addAllParameterValue(list);
 
     partitionFilters.add(builder.build());
+
 
     return sb.toString();
   }

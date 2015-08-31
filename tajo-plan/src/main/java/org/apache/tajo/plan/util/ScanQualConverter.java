@@ -114,8 +114,17 @@ public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
 
       // String operators and Pattern match predicates
       case LIKE:
+        LikePredicateEval likePredicateEval = (LikePredicateEval) binaryEval;
+        expr = new PatternMatchPredicate(OpType.LikePredicate, likePredicateEval.isNot(), left, right);
+        break;
       case SIMILAR_TO:
+        SimilarToPredicateEval similarToPredicateEval = (SimilarToPredicateEval) binaryEval;
+        expr = new PatternMatchPredicate(OpType.SimilarToPredicate, similarToPredicateEval.isNot(), left, right);
+        break;
       case REGEX:
+        RegexPredicateEval regexPredicateEval = (RegexPredicateEval) binaryEval;
+        expr = new PatternMatchPredicate(OpType.Regexp, regexPredicateEval.isNot(), left, right);
+        break;
       case CONCATENATE:
       default:
         throw new RuntimeException("Unsupported type: " + binaryEval.getType().name());

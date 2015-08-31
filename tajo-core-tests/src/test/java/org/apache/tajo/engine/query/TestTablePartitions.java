@@ -1343,4 +1343,94 @@ public class TestTablePartitions extends QueryTestCaseBase {
       executeString("DROP TABLE " + tableName + " PURGE");
     }
   }
+
+  @Test
+  public final void testPatternMatchingPredicatesAndStringFunctions() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testPatternMatchingPredicatesAndStringFunctions");
+    String actualResult, expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      executeString("create table " + tableName + " (col1 int4, col2 int4) partition by column(key text) ").close();
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_shipdate from lineitem");
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key text) "
+          + " as select l_orderkey, l_partkey, l_shipdate from lineitem");
+    }
+
+    assertTrue(client.existTable(tableName));
+
+    // Like
+    res = executeString("SELECT * FROM " + tableName + " WHERE key LIKE '1996%' order by key");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13\n" +
+      "1,1,1996-04-12\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    // Not like
+    res = executeString("SELECT * FROM " + tableName + " WHERE key NOT LIKE '1996%' order by key");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09\n" +
+      "3,2,1994-02-02\n" +
+      "2,2,1997-01-28\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    // Similar to
+    res = executeString("SELECT * FROM " + tableName + " WHERE key similar to '1993%' order by key");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    // Regular expression
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key regexp '[1-2][0-9][0-9][5-9]-[0-1][0-9]-[0-3][0-9]' order by key");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13\n" +
+      "1,1,1996-04-12\n" +
+      "2,2,1997-01-28\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    // Concatenate
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key = ( '1996' || '-' || '03' || '-' || '13' ) order by key");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
 }

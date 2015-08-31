@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Stack;
 
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
-
   private boolean isHiveCatalog = false;
   private boolean existRowCostant = false;
   private String tableAlias;
@@ -89,6 +88,14 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   @Override
   public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
+    if (expr.getType() == OpType.LikePredicate) {
+      return visitLikePredicate(ctx, stack, (PatternMatchPredicate) expr);
+    } else if (expr.getType() == OpType.SimilarToPredicate) {
+      return visitSimilarToPredicate(ctx, stack, (PatternMatchPredicate) expr);
+    } else if (expr.getType() == OpType.Regexp) {
+      return visitRegexpPredicate(ctx, stack, (PatternMatchPredicate) expr);
+    }
+
     return super.visit(ctx, stack, expr);
   }
 
@@ -366,6 +373,85 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     }
 
     return operator;
+  }
+
+  @Override
+  public Expr visitLikePredicate(Object ctx, Stack<Expr> stack, PatternMatchPredicate expr) throws TajoException {
+    stack.push(expr);
+
+    visit(ctx, stack, expr.getPredicand());
+    String predicand = queries.pop();
+    visit(ctx, stack, expr.getPattern());
+    String pattern = queries.pop();
+    stack.pop();
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(predicand);
+
+    if (expr.isNot()) {
+      sb.append(" NOT ");
+    }
+
+    if (expr.isCaseInsensitive()) {
+      sb.append(" ILIKE ");
+    } else {
+      sb.append(" LIKE ");
+    }
+
+
+    sb.append(pattern);
+    queries.push(sb.toString());
+
+    return expr;
+  }
+
+  @Override
+  public Expr visitSimilarToPredicate(Object ctx, Stack<Expr> stack, PatternMatchPredicate expr) throws TajoException {
+    stack.push(expr);
+
+    visit(ctx, stack, expr.getPredicand());
+    String predicand = queries.pop();
+    visit(ctx, stack, expr.getPattern());
+    String pattern = queries.pop();
+    stack.pop();
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(predicand);
+
+    if (expr.isNot()) {
+      sb.append(" NOT ");
+    }
+
+    sb.append(" SIMILAR TO ");
+
+    sb.append(pattern);
+    queries.push(sb.toString());
+
+    return expr;
+  }
+
+  @Override
+  public Expr visitRegexpPredicate(Object ctx, Stack<Expr> stack, PatternMatchPredicate expr) throws TajoException {
+    stack.push(expr);
+
+    visit(ctx, stack, expr.getPredicand());
+    String predicand = queries.pop();
+    visit(ctx, stack, expr.getPattern());
+    String pattern = queries.pop();
+    stack.pop();
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(predicand);
+
+    if (expr.isNot()) {
+      sb.append(" NOT ");
+    }
+    sb.append(" REGEXP ");
+
+    sb.append(pattern);
+    queries.push(sb.toString());
+
+    return expr;
   }
 
 }
