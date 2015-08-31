@@ -61,7 +61,7 @@ public class TestHeapTuple {
     assertFalse(heapBuffer.isDirect());
 
     ResizableMemoryBlock memoryBlock =
-        new ResizableMemoryBlock(heapBuffer, new ResizableLimitSpec((long) heapBuffer.capacity()));
+        new ResizableMemoryBlock(heapBuffer);
     assertFalse(memoryBlock.hasAddress());
 
 

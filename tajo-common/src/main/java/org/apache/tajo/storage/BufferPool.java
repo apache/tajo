@@ -26,6 +26,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /* this class is PooledBuffer holder */
@@ -129,5 +130,13 @@ public class BufferPool {
    */
   public static ByteBuf ensureWritable(ByteBuf buf, int minWritableBytes) {
     return buf.ensureWritable(minWritableBytes).order(ByteOrder.nativeOrder());
+  }
+
+  /**
+   * deallocate the specified direct
+   * @param byteBuffer
+   */
+  public static void free(ByteBuffer byteBuffer) {
+    PlatformDependent.freeDirectBuffer(byteBuffer);
   }
 }

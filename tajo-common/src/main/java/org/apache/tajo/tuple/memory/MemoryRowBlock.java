@@ -22,6 +22,7 @@ import io.netty.util.internal.PlatformDependent;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.TUtil;
@@ -58,6 +59,10 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
     this.memory = memory;
     this.rowNum = rowNum;
     this.dataTypes = dataTypes;
+  }
+
+  public MemoryRowBlock(DataType[] dataTypes) {
+    this(dataTypes, new ResizableLimitSpec(64 * StorageUnit.KB), true);
   }
 
   public MemoryRowBlock(DataType[] dataTypes, int bytes) {

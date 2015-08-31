@@ -267,7 +267,7 @@ public class TestDirectRawFile {
 
   public static MemoryRowBlock createRowBlock(int rowNum) {
     long allocateStart = System.currentTimeMillis();
-    MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), StorageUnit.MB * 8);
+    MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), StorageUnit.KB * 128);
     long allocatedEnd = System.currentTimeMillis();
     LOG.info(FileUtil.humanReadableByteCount(rowBlock.capacity(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
