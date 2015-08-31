@@ -239,7 +239,7 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    return getBytes(fieldId);
+    return getText(fieldId).getBytes(TextDatum.DEFAULT_CHARSET);
   }
 
   @Override
@@ -270,7 +270,7 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   @Override
   public String getText(int fieldId) {
-    return new String(getTextBytes(fieldId), TextDatum.DEFAULT_CHARSET);
+    return asDatum(fieldId).asChars();
   }
 
   public IntervalDatum getInterval(int fieldId) {
