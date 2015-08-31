@@ -30,6 +30,7 @@ import org.apache.tajo.util.UnsafeUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
@@ -40,7 +41,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
   protected ResizableLimitSpec limitSpec;
 
   public ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
-    this.buffer = buffer;
+    this.buffer = buffer.order(ByteOrder.nativeOrder());
     this.limitSpec = limitSpec;
   }
 
@@ -49,7 +50,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
   }
 
   public ResizableMemoryBlock(ByteBuffer buffer) {
-    this.buffer = Unpooled.wrappedBuffer(buffer);
+    this.buffer = Unpooled.wrappedBuffer(buffer).order(ByteOrder.nativeOrder());
     this.limitSpec = new ResizableLimitSpec(buffer.capacity());
   }
 
