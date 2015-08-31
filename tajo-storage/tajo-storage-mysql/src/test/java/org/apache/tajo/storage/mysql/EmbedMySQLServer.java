@@ -24,7 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -76,7 +76,7 @@ public class EmbedMySQLServer {
 
       try (Statement statement = connection.createStatement()) {
         for (String tableName : TPCH_TABLES) {
-          String sql = FileUtil.readTextFileFromResource("tpch/" + tableName + ".sql");
+          String sql = JavaResourceUtil.readTextFromResource("tpch/" + tableName + ".sql");
           statement.addBatch(sql);
         }
 

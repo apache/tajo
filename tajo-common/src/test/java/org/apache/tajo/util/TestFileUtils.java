@@ -18,21 +18,11 @@
 
 package org.apache.tajo.util;
 
-import com.google.protobuf.Message;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.tajo.util.TestProtos.TestMessageProto;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
-import org.apache.tajo.util.TestProtos.TestMessageProto;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import static org.junit.Assert.assertEquals;
 
 public class TestFileUtils {
 	private static final String TEST_PATH = "target/test-data/TestFileUTils";
@@ -56,52 +46,9 @@ public class TestFileUtils {
 	
 	@After
 	public void tearDown() throws Exception {
-		File testDir = new File(TEST_PATH);
-		if(testDir.exists()) {
-			testDir.delete();
-		}
-	}
-
-	@Test
-	public final void testWriteLoadProtoFromFile() throws IOException {		
-		File file = new File(TEST_PATH+"/file.bin");
-		file.createNewFile();
-		FileUtil.writeProto(file, proto);
-		
-		Message defaultInstance = TestMessageProto.getDefaultInstance();
-		TestMessageProto message = (TestMessageProto) 
-			FileUtil.loadProto(new File(TEST_PATH+"/file.bin"), defaultInstance);
-		
-		assertEquals(proto, message);
-	}
-
-	@Test
-	public final void testWriteLoadProtoFromStream() throws IOException {
-		FileOutputStream out = new FileOutputStream(new File(TEST_PATH+"/file.bin"));		
-		FileUtil.writeProto(out, proto);
-		
-		
-		FileInputStream in = new FileInputStream(new File(TEST_PATH+"/file.bin"));
-		Message defaultInstance = TestMessageProto.getDefaultInstance();
-		TestMessageProto message = (TestMessageProto) 
-			FileUtil.loadProto(in, defaultInstance);
-		
-		assertEquals(proto, message);
-	}
-
-	@Test
-	public final void testWriteLoadProtoFromPath() throws IOException {	
-		Path path = new Path(TEST_PATH+"/file.bin");
-    Configuration conf = new Configuration();
-    FileSystem localFS = FileSystem.getLocal(conf);
-		FileUtil.writeProto(localFS, path, proto);
-		
-		Message defaultInstance = TestMessageProto.getDefaultInstance();
-		TestMessageProto message = (TestMessageProto) 
-			FileUtil.loadProto(localFS, new Path(TEST_PATH+"/file.bin"),
-          defaultInstance);
-		
-		assertEquals(proto, message);
-	}
-	
+    File testDir = new File(TEST_PATH);
+    if (testDir.exists()) {
+      testDir.delete();
+    }
+  }
 }

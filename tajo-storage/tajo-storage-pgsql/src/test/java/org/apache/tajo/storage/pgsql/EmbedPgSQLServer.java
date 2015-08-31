@@ -22,9 +22,12 @@ import io.airlift.testing.postgresql.TestingPostgreSqlServer;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -71,20 +74,33 @@ public class EmbedPgSQLServer {
   }
 
   private void loadTPCHTables() throws SQLException, IOException {
-    try (Connection connection = DriverManager.getConnection(server.getJdbcUrl())) {
+    Path testPath = CommonTestingUtil.getTestDir();
+
+    try (Connection connection = DriverManager.getConnection(getJdbcUrlForAdmin(), "postgres", null)) {
       connection.setCatalog("tpch");
 
       try (Statement statement = connection.createStatement()) {
+
         for (String tableName : TPCH_TABLES) {
-          String sql = FileUtil.readTextFileFromResource("tpch/" + tableName + ".sql");
+          String sql = JavaResourceUtil.readTextFromResource("tpch/pgsql/" + tableName + ".sql");
           statement.addBatch(sql);
         }
 
-        try {
-          statement.executeBatch();
-        } catch (SQLException e) {
-          LOG.error(e);
+        statement.executeBatch();
+
+        for (String tableName : TPCH_TABLES) {
+          String table = JavaResourceUtil.readTextFromResource("tpch/" + tableName + ".tbl");
+          Path filePath = new Path(testPath, tableName + ".tbl");
+          FileUtil.writeTextToFile(table, filePath);
+
+          String copyCommand =
+              "COPY " + tableName + " FROM '" + filePath.toUri().getPath() + "' WITH (FORMAT csv, DELIMITER '|');";
+          statement.executeUpdate(copyCommand);
         }
+
+      } catch (Throwable t) {
+        t.printStackTrace();
+        throw t;
       }
     }
   }
@@ -97,14 +113,20 @@ public class EmbedPgSQLServer {
     configMap.put(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY, configElements);
     JSONObject config = new JSONObject(configMap);
 
-    PgSQLTablespace tablespace = new PgSQLTablespace(SPACENAME, URI.create(server.getJdbcUrl()), config);
+    PgSQLTablespace tablespace = new PgSQLTablespace(SPACENAME, URI.create(getJdbcUrlForAdmin()), config);
     tablespace.init(new TajoConf());
 
     TablespaceManager.addTableSpaceForTest(tablespace);
   }
 
   public String getJdbcUrl() {
-    return server.getJdbcUrl();
+    return server.getJdbcUrl() + "&connectTimeout=5&socketTimeout=5";
+  }
+
+  public String getJdbcUrlForAdmin() {
+    String url = server.getJdbcUrl().split("\\?")[0];
+    url += "?user=postgres&connectTimeout=5&socketTimeout=5";
+    return url;
   }
 
   public TestingPostgreSqlServer getServer() {

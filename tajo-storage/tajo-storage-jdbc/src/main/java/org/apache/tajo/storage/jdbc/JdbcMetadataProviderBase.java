@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.util.KeyValueSet;
@@ -187,7 +188,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       // get columns
       resultForColumns = connection.getMetaData().getColumns(databaseName, schemaName, tableName, null);
 
-      List<Pair<Integer, Column>> columns = Lists.newArrayList();
+      final List<Pair<Integer, Column>> columns = Lists.newArrayList();
 
       while(resultForColumns.next()) {
         final int ordinalPos = resultForColumns.getInt("ORDINAL_POSITION");
@@ -208,19 +209,27 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       });
 
       // transform the pair list into collection for columns
-      Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
+      final Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
         @Override
         public Column apply(@Nullable Pair<Integer, Column> columnPair) {
           return columnPair.getSecond();
         }
       }));
 
-      return new TableDesc(
+
+      // fill the table stats
+      final TableStats stats = new TableStats();
+      stats.setNumRows(-1); // unknown
+
+      final TableDesc table = new TableDesc(
           CatalogUtil.buildFQName(databaseName, name),
           schema,
           new TableMeta("rowstore", new KeyValueSet()),
           space.getTableUri(databaseName, name)
       );
+      table.setStats(stats);
+
+      return table;
 
     } catch (SQLException e) {
       throw new TajoInternalError(e);

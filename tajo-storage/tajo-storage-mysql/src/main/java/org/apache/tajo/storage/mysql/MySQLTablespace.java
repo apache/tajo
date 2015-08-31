@@ -18,11 +18,17 @@
 
 package org.apache.tajo.storage.mysql;
 
+import com.google.common.base.Preconditions;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.jdbc.JdbcFragment;
 import org.apache.tajo.storage.jdbc.JdbcTablespace;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -41,5 +47,28 @@ public class MySQLTablespace extends JdbcTablespace {
 
   public MetadataProvider getMetadataProvider() {
     return new MySQLMetadataProvider(this, database);
+  }
+
+  @Override
+  public Scanner getScanner(TableMeta meta,
+                            Schema schema,
+                            Fragment fragment,
+                            @Nullable Schema target) throws IOException {
+    if (!(fragment instanceof JdbcFragment)) {
+      throw new TajoInternalError("fragment must be JdbcFragment");
+    }
+
+    if (target == null) {
+      target = schema;
+    }
+
+    if (fragment.isEmpty()) {
+      Scanner scanner = new NullScanner(conf, schema, meta, fragment);
+      scanner.setTarget(target.toArray());
+
+      return scanner;
+    }
+
+    return new MySQLJdbcScanner(getDatabaseMetaData(), schema, meta, (JdbcFragment) fragment);
   }
 }

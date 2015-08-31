@@ -35,6 +35,8 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -126,9 +128,14 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri) throws IOException {
+  public long getTableVolume(URI uri) throws UnsupportedException {
     Path path = new Path(uri);
-    ContentSummary summary = fs.getContentSummary(path);
+    ContentSummary summary;
+    try {
+      summary = fs.getContentSummary(path);
+    } catch (IOException e) {
+      throw new TajoInternalError(e);
+    }
     return summary.getLength();
   }
 
@@ -146,7 +153,7 @@ public class FileTablespace extends Tablespace {
   public Scanner getFileScanner(TableMeta meta, Schema schema, Path path, FileStatus status)
       throws IOException {
     Fragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
-    return getScanner(meta, schema, fragment);
+    return getScanner(meta, schema, fragment, null);
   }
 
   public FileSystem getFileSystem() {

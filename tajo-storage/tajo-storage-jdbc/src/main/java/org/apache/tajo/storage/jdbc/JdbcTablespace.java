@@ -25,20 +25,22 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.storage.FormatProperty;
-import org.apache.tajo.storage.StorageProperty;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TupleRange;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -52,6 +54,7 @@ public abstract class JdbcTablespace extends Tablespace {
   static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
   static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
 
+  private Connection conn;
 
   public JdbcTablespace(String name, URI uri, JSONObject config) {
     super(name, uri, config);
@@ -59,11 +62,16 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   protected void storageInit() throws IOException {
+    try {
+      this.conn = DriverManager.getConnection(uri.toASCIIString());
+    } catch (SQLException e) {
+      throw new IOException(e);
+    }
   }
 
   @Override
-  public long getTableVolume(URI uri) throws IOException {
-    return 0;
+  public long getTableVolume(URI uri) throws UnsupportedException {
+    throw new UnsupportedException();
   }
 
   @Override
@@ -138,4 +146,18 @@ public abstract class JdbcTablespace extends Tablespace {
   }
 
   public abstract MetadataProvider getMetadataProvider();
+
+  @Override
+  public abstract Scanner getScanner(TableMeta meta,
+                            Schema schema,
+                            Fragment fragment,
+                            @Nullable Schema target) throws IOException;
+
+  public DatabaseMetaData getDatabaseMetaData() {
+    try {
+      return conn.getMetaData();
+    } catch (SQLException e) {
+      throw new TajoInternalError(e);
+    }
+  }
 }

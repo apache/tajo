@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,8 +33,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.UriUtil;
 
@@ -75,13 +76,14 @@ public class TablespaceManager implements StorageService {
   protected static final Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newHashMap();
   protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newHashMap();
 
-  public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class, JSONObject.class};
+  public static final Class[] TABLESPACE_PARAM = new Class[]{String.class, URI.class, JSONObject.class};
 
   public static final String TABLESPACE_SPEC_CONFIGS_KEY = "configs";
 
   static {
     instance = new TablespaceManager();
   }
+
   /**
    * Singleton instance
    */
@@ -130,7 +132,7 @@ public class TablespaceManager implements StorageService {
   private JSONObject loadFromConfig(String fileName) {
     String json;
     try {
-      json = FileUtil.readTextFileFromResource(fileName);
+      json = JavaResourceUtil.readTextFromResource(fileName);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -182,7 +184,7 @@ public class TablespaceManager implements StorageService {
     String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
 
     return new Pair<String, Class<? extends Tablespace>>(
-        storageType,(Class<? extends Tablespace>) Class.forName(handlerClass));
+        storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
   }
 
   private void loadTableSpaces(JSONObject json, boolean override) {
@@ -339,7 +341,7 @@ public class TablespaceManager implements StorageService {
 
     // Find the longest matched one. For example, assume that the caller tries to find /x/y/z, and
     // there are /x and /x/y. In this case, /x/y will be chosen because it is more specific.
-    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.headMap(URI.create(uri), true).entrySet()) {
+    for (Map.Entry<URI, Tablespace> entry : TABLE_SPACES.headMap(URI.create(uri), true).entrySet()) {
       if (uri.startsWith(entry.getKey().toString())) {
         lastOne = entry.getValue();
       }
@@ -399,6 +401,11 @@ public class TablespaceManager implements StorageService {
   public URI getTableURI(@Nullable String spaceName, String databaseName, String tableName) {
     Tablespace space = spaceName == null ? getDefault() : getByName(spaceName).get();
     return space.getTableUri(databaseName, tableName);
+  }
+
+  @Override
+  public long getTableVolumn(URI tableUri) throws UnsupportedException {
+    return get(tableUri).get().getTableVolume(tableUri);
   }
 
   public static Iterable<Tablespace> getAllTablespaces() {

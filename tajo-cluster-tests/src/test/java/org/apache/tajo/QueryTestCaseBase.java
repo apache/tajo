@@ -40,6 +40,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.InsufficientPrivilegeException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.master.GlobalEngine;
@@ -225,11 +226,19 @@ public class QueryTestCaseBase {
     // if the current database is "default", shouldn't drop it.
     if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
       for (String tableName : catalog.getAllTableNames(currentDatabase)) {
-        client.updateQuery("DROP TABLE IF EXISTS " + tableName);
+        try {
+          client.updateQuery("DROP TABLE IF EXISTS " + tableName);
+        } catch (InsufficientPrivilegeException i) {
+          LOG.warn("relation '" + tableName + "' is read only.");
+        }
       }
 
       client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME);
-      client.dropDatabase(currentDatabase);
+      try {
+        client.dropDatabase(currentDatabase);
+      } catch (InsufficientPrivilegeException e) {
+        LOG.warn("database '" + currentDatabase + "' is read only.");
+      }
     }
     client.close();
   }

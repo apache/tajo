@@ -44,10 +44,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.DataTypeMismatchException;
-import org.apache.tajo.exception.InvalidTablePropertyException;
-import org.apache.tajo.exception.MissingTablePropertyException;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
@@ -102,8 +99,8 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri) throws IOException {
-    return 0;
+  public long getTableVolume(URI uri) throws UnsupportedException {
+    throw new UnsupportedException();
   }
 
   @Override
@@ -738,8 +735,6 @@ public class HBaseTablespace extends Tablespace {
 
   public List<Set<EvalNode>> findIndexablePredicateSet(@Nullable EvalNode qual,
                                                        Column[] indexableColumns) throws IOException {
-    Preconditions.checkNotNull(qual);
-
     List<Set<EvalNode>> indexablePredicateList = new ArrayList<Set<EvalNode>>();
 
     // if a query statement has a search condition, try to find indexable predicates

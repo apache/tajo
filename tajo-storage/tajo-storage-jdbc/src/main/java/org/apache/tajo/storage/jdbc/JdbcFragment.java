@@ -60,20 +60,8 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
     return inputSourceId;
   }
 
-  @Override
-  public CatalogProtos.FragmentProto getProto() {
-    JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
-    builder.setInputSourceId(this.inputSourceId);
-    builder.setUri(this.uri);
-    if(hostNames != null) {
-      builder.addAllHosts(TUtil.newList(hostNames));
-    }
-
-    CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();
-    fragmentBuilder.setId(this.inputSourceId);
-    fragmentBuilder.setStoreType(BuiltinStorages.TEXT);
-    fragmentBuilder.setContents(builder.buildPartial().toByteString());
-    return fragmentBuilder.build();
+  public String getUri() {
+    return uri;
   }
 
   @Override
@@ -94,6 +82,22 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
   @Override
   public boolean isEmpty() {
     return false;
+  }
+
+  @Override
+  public CatalogProtos.FragmentProto getProto() {
+    JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
+    builder.setInputSourceId(this.inputSourceId);
+    builder.setUri(this.uri);
+    if(hostNames != null) {
+      builder.addAllHosts(TUtil.newList(hostNames));
+    }
+
+    CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();
+    fragmentBuilder.setId(this.inputSourceId);
+    fragmentBuilder.setStoreType("JDBC");
+    fragmentBuilder.setContents(builder.buildPartial().toByteString());
+    return fragmentBuilder.build();
   }
 
   @Override

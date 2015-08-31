@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.jdbc;
+package org.apache.tajo.storage.pgsql;
 
-public abstract class JdbcTablespaceTestBase {
+import org.apache.tajo.QueryTestCaseBase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+public class TestPgSQLSimpleQueryTests extends QueryTestCaseBase {
+
+  public TestPgSQLSimpleQueryTests() {
+    super(EmbedPgSQLServer.DATABASE_NAME);
+  }
+
+  @BeforeClass
+  public static void setUp() {
+    QueryTestCaseBase.testingCluster.getMaster().refresh();
+  }
+
+  @SimpleTest
+  @Test
+  public void testSelectAll() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testSelectLimit() throws Exception {
+    runSimpleTests();
+  }
 }

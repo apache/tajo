@@ -18,7 +18,10 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.tajo.exception.UnsupportedException;
+
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -35,4 +38,6 @@ public interface StorageService {
    * @return Table URI
    */
   URI getTableURI(@Nullable String spaceName, String databaseName, String tableName);
+
+  long getTableVolumn(URI uri) throws UnsupportedException;
 }

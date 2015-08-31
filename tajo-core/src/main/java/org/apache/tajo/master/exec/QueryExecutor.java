@@ -257,6 +257,7 @@ public class QueryExecutor {
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
       maxRow = (int) limitNode.getFetchFirstNum();
+      scanNode.setLimit(maxRow);
     }
     if (desc.getStats().getNumRows() == 0) {
       desc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);

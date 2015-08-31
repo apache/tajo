@@ -42,7 +42,7 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -342,7 +342,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
     if (storeType.equalsIgnoreCase("AVRO")) {
-      String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
+      String path = JavaResourceUtil.getResourceURL("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
@@ -379,7 +379,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  sm.getScanner(meta, schema, fragment);
+    Scanner scanner =  sm.getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -468,7 +468,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -543,7 +543,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -612,7 +612,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -681,7 +681,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -755,7 +755,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -800,7 +800,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+      Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
       scanner.init();
 
       Tuple retrieved;
@@ -936,7 +936,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = sm.getScanner(meta, schema, fragment);
+    Scanner scanner = sm.getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -997,7 +997,7 @@ public class TestStorages {
     inSchema.addColumn("col5", Type.INT8);
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, inSchema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, inSchema, fragment, null);
 
     Schema target = new Schema();
 

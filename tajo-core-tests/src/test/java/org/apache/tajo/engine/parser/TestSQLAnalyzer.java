@@ -22,10 +22,9 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -51,8 +50,8 @@ public class TestSQLAnalyzer {
   }
 
   public void assertParseResult(String sqlFileName, String resultFileName) throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/TestSQLAnalyzer/" + sqlFileName);
-    String result = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/" + resultFileName);
+    String sql = JavaResourceUtil.readTextFromResource("queries/TestSQLAnalyzer/" + sqlFileName);
+    String result = JavaResourceUtil.readTextFromResource("results/TestSQLAnalyzer/" + resultFileName);
 
     Expr expr = parseQuery(sql);
     assertEquals(result.trim(), expr.toJson().trim());
@@ -61,223 +60,223 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testSelect1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/select_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/select_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSelect2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/select_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/select_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSelect3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/select_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/select_3.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSelect4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/select_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/select_4.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSelect5() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/select_5.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/select_5.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testAsterisk1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/asterisk_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/asterisk_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testAsterisk2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/asterisk_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/asterisk_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testAsterisk3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/asterisk_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/asterisk_3.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testAsterisk4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/asterisk_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/asterisk_4.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testGroupby1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/groupby_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/groupby_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_3.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_4.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin5() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_5.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_5.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin6() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_6.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_6.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin7() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_7.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_7.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin8() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_8.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_8.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin9() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_9.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_9.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin10() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_10.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_10.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testJoin11() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/join_11.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/join_11.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSet1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/set_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/set_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSet2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/set_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/set_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSet3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/set_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/set_3.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testSet4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/set_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/set_4.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testDropTable() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/drop_table.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/drop_table.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_3.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_4.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable5() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_5.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_5.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable6() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_6.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_6.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable7() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_7.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_7.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable8() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_8.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_8.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable9() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_9.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_9.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTable10() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_10.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_10.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testCreateTableLike1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_like_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_like_1.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
     CreateTable createTable = (CreateTable) expr;
@@ -286,7 +285,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testCreateTablePartitionByHash1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_partition_by_hash_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_partition_by_hash_1.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
     CreateTable createTable = (CreateTable) expr;
@@ -299,7 +298,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testCreateTablePartitionByHash2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_partition_by_hash_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_partition_by_hash_2.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
     CreateTable createTable = (CreateTable) expr;
@@ -313,7 +312,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testCreateTablePartitionByRange() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_partition_by_range.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_partition_by_range.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
     CreateTable createTable = (CreateTable) expr;
@@ -326,7 +325,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testCreateTablePartitionByList() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_partition_by_list.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_partition_by_list.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
     CreateTable createTable = (CreateTable) expr;
@@ -351,7 +350,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testCreateTablePartitionByColumn() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/create_table_partition_by_column.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/create_table_partition_by_column.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.CreateTable, expr.getType());
     CreateTable createTable = (CreateTable) expr;
@@ -366,7 +365,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableAddPartition1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_add_partition_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_add_partition_1.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -384,7 +383,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableAddPartition2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_add_partition_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_add_partition_2.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -403,7 +402,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableAddPartition3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_add_partition_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_add_partition_3.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -425,7 +424,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableAddPartition4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_add_partition_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_add_partition_4.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -440,7 +439,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableAddPartition5() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_add_partition_5.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_add_partition_5.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -455,7 +454,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableDropPartition1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_drop_partition_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_drop_partition_1.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -474,7 +473,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableDropPartition2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_drop_partition_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_drop_partition_2.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -496,7 +495,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableDropPartition3() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_drop_partition_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_drop_partition_3.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -512,7 +511,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableDropPartition4() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_drop_partition_4.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_drop_partition_4.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -528,7 +527,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableSetProperty1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_set_property_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_set_property_1.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -540,7 +539,7 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testAlterTableSetProperty2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_set_property_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_set_property_2.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -553,7 +552,7 @@ public class TestSQLAnalyzer {
   @Test
   public void testAlterTableSetProperty3() throws IOException {
     // update multiple table properties with a single 'SET PROPERTY' sql
-    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_set_property_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/alter_table_set_property_3.sql");
     Expr expr = parseQuery(sql);
     assertEquals(OpType.AlterTable, expr.getType());
     AlterTable alterTable = (AlterTable)expr;
@@ -567,73 +566,73 @@ public class TestSQLAnalyzer {
 
   @Test
   public void testTableSubQuery1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/table_subquery1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/table_subquery1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testTableSubQuery2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/table_subquery2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/table_subquery2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInSubquery1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/in_subquery_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/in_subquery_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInSubquery2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/in_subquery_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/in_subquery_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testExistsPredicate1() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/exists_predicate_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/exists_predicate_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testExistsPredicate2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/exists_predicate_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/exists_predicate_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInsertIntoTable() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/insert_into_select_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/insert_into_select_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInsertIntoLocation() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/insert_into_select_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/insert_into_select_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInsertIntoTable2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/insert_into_select_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/insert_into_select_3.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInsertOverwriteIntoTable() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/insert_overwrite_into_select_1.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/insert_overwrite_into_select_1.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInsertOverwriteIntoLocation() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/insert_overwrite_into_select_2.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/insert_overwrite_into_select_2.sql");
     parseQuery(sql);
   }
 
   @Test
   public void testInsertOverwriteIntoTable2() throws IOException {
-    String sql = FileUtil.readTextFileFromResource("queries/default/insert_overwrite_into_select_3.sql");
+    String sql = JavaResourceUtil.readTextFromResource("queries/default/insert_overwrite_into_select_3.sql");
     parseQuery(sql);
   }
 

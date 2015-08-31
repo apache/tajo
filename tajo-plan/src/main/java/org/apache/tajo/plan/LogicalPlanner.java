@@ -24,9 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
@@ -35,18 +32,13 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.UndefinedColumnException;
-import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -1317,7 +1309,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ScanNode scanNode = block.getNodeFromExpr(expr);
-    updatePhysicalInfo(context, scanNode.getTableDesc());
+    updatePhysicalInfo(scanNode.getTableDesc());
 
     // Find expression which can be evaluated at this relation node.
     // Except for column references, additional expressions used in select list, where clause, order-by clauses
@@ -1376,24 +1368,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
-  private void updatePhysicalInfo(PlanContext planContext, TableDesc desc) {
-    if (desc.getUri() != null &&
-        !desc.getMeta().getStoreType().equals("SYSTEM") &&
-        !desc.getMeta().getStoreType().equals("FAKEFILE") && // FAKEFILE is used for test
-        PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
+  private void updatePhysicalInfo(TableDesc desc) {
+
+    // FAKEFILE is used for test{
+    if (!desc.getMeta().getStoreType().equals("SYSTEM") && !desc.getMeta().getStoreType().equals("FAKEFILE")) {
       try {
-        Path path = new Path(desc.getUri());
-        FileSystem fs = path.getFileSystem(planContext.queryContext.getConf());
-        FileStatus status = fs.getFileStatus(path);
-        if (desc.getStats() != null && (status.isDirectory() || status.isFile())) {
-          ContentSummary summary = fs.getContentSummary(path);
-          if (summary != null) {
-            long volume = summary.getLength();
-            desc.getStats().setNumBytes(volume);
-          }
+        if (desc.getStats() != null) {
+          desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
         }
       } catch (Throwable t) {
-        LOG.warn(t, t);
+        LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume().");
       }
     }
   }

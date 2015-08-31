@@ -97,7 +97,7 @@ public abstract class Tablespace {
     return name + "=" + uri.toString();
   }
 
-  public abstract long getTableVolume(URI uri) throws IOException;
+  public abstract long getTableVolume(URI uri) throws UnsupportedException;
 
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,
@@ -150,7 +150,7 @@ public abstract class Tablespace {
    * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is USING_STORAGE_MANAGER.
    * In general Repartitioner determines the partition range using previous output statistics data.
    * In the special cases, such as HBase Repartitioner uses the result of this method.
-   *
+   *ㅂ                                               ㅂ
    * @param queryContext The current query context which contains query properties.
    * @param tableDesc The table description for the target data.
    * @param inputSchema The input schema
@@ -187,38 +187,18 @@ public abstract class Tablespace {
    * @param meta The table meta
    * @param schema The input schema
    * @param fragment The fragment for scanning
-   * @param target Columns which are selected.
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
-    return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {
-    return getScanner(meta, schema, fragment, schema);
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
    * @param target The output schema
    * @return Scanner instance
    * @throws java.io.IOException
    */
-  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
+  public Scanner getScanner(TableMeta meta,
+                            Schema schema,
+                            Fragment fragment,
+                            @Nullable Schema target) throws IOException {
+    if (target == null) {
+      target = schema;
+    }
+
     if (fragment.isEmpty()) {
       Scanner scanner = new NullScanner(conf, schema, meta, fragment);
       scanner.setTarget(target.toArray());
@@ -255,7 +235,7 @@ public abstract class Tablespace {
    */
   public synchronized SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, FragmentProto fragment,
                                                          Schema target) throws IOException {
-    return (SeekableScanner)this.getScanner(meta, schema, fragment, target);
+    return (SeekableScanner)this.getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
   }
 
   /**
@@ -404,5 +384,10 @@ public abstract class Tablespace {
 
   public MetadataProvider getMetadataProvider() {
     throw new TajoRuntimeException(new UnsupportedException("Linked Metadata Provider for " + name));
+  }
+
+  @SuppressWarnings("unused")
+  public int markAccetablePlanPart(LogicalPlan plan) {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 }

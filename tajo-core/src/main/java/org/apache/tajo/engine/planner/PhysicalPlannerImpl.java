@@ -120,6 +120,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     PhysicalExec leftExec;
     PhysicalExec rightExec;
 
+    //ctx.getEnforcer().getEnforceProperties().get
+
     switch (logicalNode.getType()) {
 
       case ROOT:
