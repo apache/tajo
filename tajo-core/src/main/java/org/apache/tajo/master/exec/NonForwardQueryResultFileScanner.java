@@ -25,23 +25,30 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import org.apache.tajo.common.TajoDataTypes.CodecType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.physical.PartitionMergeScanExec;
 import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.tuple.memory.MemoryBlock;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.util.CompressionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,9 +64,17 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private TaskAttemptContext taskContext;
   private TajoConf tajoConf;
   private ScanNode scanNode;
+  private MemoryRowBlock rowBlock;
+  private CodecType codecType;
+  private boolean eof;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-      TableDesc tableDesc, int maxRow) throws IOException {
+                                          TableDesc tableDesc, int maxRow) throws IOException {
+    this(tajoConf, sessionId, queryId, scanNode, tableDesc, maxRow, null);
+  }
+
+  public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
+      TableDesc tableDesc, int maxRow, CodecType codecType) throws IOException {
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
@@ -67,10 +82,12 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.tableDesc = tableDesc;
     this.maxRow = maxRow;
     this.rowEncoder = RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
+    this.codecType = codecType;
   }
 
   public void init() throws IOException, TajoException {
     initSeqScanExec();
+    eof = false;
   }
 
   private void initSeqScanExec() throws IOException, TajoException {
@@ -90,8 +107,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           new QueryContext(tajoConf), null,
           new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0),
           fragmentProtos, null);
-      scanExec = new PartitionMergeScanExec(taskContext, scanNode, fragmentProtos);
-      scanExec.init();
+      this.scanExec = new PartitionMergeScanExec(taskContext, scanNode, fragmentProtos);
+      this.scanExec.init();
     }
   }
 
@@ -112,15 +129,20 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     return currentNumRows;
   }
 
-  public void close() throws Exception {
+  public void close() throws IOException {
     if (scanExec != null) {
       scanExec.close();
       scanExec = null;
     }
+
+    if(rowBlock != null) {
+      rowBlock.release();
+      rowBlock = null;
+    }
   }
 
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
-    List<ByteString> rows = new ArrayList<ByteString>();
+    List<ByteString> rows = new ArrayList<>();
     if (scanExec == null) {
       return rows;
     }
@@ -128,8 +150,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     while (true) {
       Tuple tuple = scanExec.next();
       if (tuple == null) {
-        scanExec.close();
-        scanExec = null;
+        eof = true;
         break;
       }
 
@@ -140,12 +161,73 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
         break;
       }
       if (currentNumRows >= maxRow) {
-        scanExec.close();
-        scanExec = null;
+        eof = true;
         break;
       }
     }
+
+    if(eof) {
+      close();
+    }
     return rows;
+  }
+
+  @Override
+  public SerializedResultSet nextRowBlock(int fetchRowNum) throws IOException {
+    int rowCount = 0;
+
+    SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
+    resultSetBuilder.setSchema(getLogicalSchema().getProto());
+    resultSetBuilder.setRows(rowCount);
+    if (scanExec == null) {
+      return resultSetBuilder.build();
+    }
+
+    int endRow = currentNumRows + fetchRowNum;
+    while (currentNumRows < endRow) {
+      Tuple tuple = scanExec.next();
+      if (tuple == null) {
+        eof = true;
+        break;
+      } else {
+        if (rowBlock == null) {
+          rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(tableDesc.getLogicalSchema()));
+        }
+
+        rowBlock.getWriter().addTuple(tuple);
+        rowCount++;
+        currentNumRows++;
+        if(currentNumRows >= maxRow) {
+          eof = true;
+          break;
+        }
+      }
+    }
+
+    if (rowCount > 0) {
+      resultSetBuilder.setRows(rowCount);
+      MemoryBlock memoryBlock = rowBlock.getMemory();
+
+      if (codecType != null) {
+        byte[] uncompressedBytes = new byte[memoryBlock.readableBytes()];
+        memoryBlock.getBuffer().getBytes(0, uncompressedBytes);
+
+        byte[] compressedBytes = CompressionUtil.compress(codecType, uncompressedBytes);
+        resultSetBuilder.setDecompressedLength(uncompressedBytes.length);
+        resultSetBuilder.setDecompressCodec(codecType);
+        resultSetBuilder.setSerializedTuples(ByteString.copyFrom(compressedBytes));
+      } else {
+        ByteBuffer uncompressed = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());
+        resultSetBuilder.setDecompressedLength(uncompressed.remaining());
+        resultSetBuilder.setSerializedTuples(ByteString.copyFrom(uncompressed));
+      }
+      rowBlock.clear();
+    }
+
+    if (eof) {
+      close();
+    }
+    return resultSetBuilder.build();
   }
 
   @Override

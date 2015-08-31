@@ -147,6 +147,8 @@ public enum SessionVars implements ConfigKey {
       Integer.class, Validators.min("0")),
   BLOCK_ON_RESULT(ConfVars.$RESULT_SET_BLOCK_WAIT, "Whether to block result set on query execution", DEFAULT,
       Boolean.class, Validators.bool()),
+  RESULT_COMPRESS(ConfVars.$RESULT_SET_COMPRESS, "Enable resultSet compression", CLI_SIDE_VAR,
+      Boolean.class, Validators.bool()),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing

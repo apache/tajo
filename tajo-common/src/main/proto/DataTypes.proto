@@ -114,3 +114,7 @@ message DataType {
    */
   optional int32 num_nested_fields = 4;
 }
+
+enum CodecType {
+      SNAPPY = 0;
+}
