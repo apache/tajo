@@ -273,11 +273,6 @@ message GetPartitionsByDirectSqlRequest {
   required string directSql = 3;
 }
 
-message PartitionFilterDescProto {
-  required string columnName = 1;
-  repeated string parameterValue = 2;
-}
-
 message TablespaceProto {
   required string spaceName = 1;
   required string uri = 2;
