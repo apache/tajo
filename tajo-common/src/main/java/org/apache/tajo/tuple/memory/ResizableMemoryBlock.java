@@ -39,16 +39,16 @@ public class ResizableMemoryBlock implements MemoryBlock {
   protected ByteBuf buffer;
   protected ResizableLimitSpec limitSpec;
 
-  protected ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
+  public ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
     this.buffer = buffer;
     this.limitSpec = limitSpec;
   }
 
-  protected ResizableMemoryBlock(ByteBuf buffer) {
+  public ResizableMemoryBlock(ByteBuf buffer) {
     this(buffer, new ResizableLimitSpec(buffer.capacity()));
   }
 
-  protected ResizableMemoryBlock(ByteBuffer buffer) {
+  public ResizableMemoryBlock(ByteBuffer buffer) {
     this.buffer = Unpooled.wrappedBuffer(buffer);
     this.limitSpec = new ResizableLimitSpec(buffer.capacity());
   }
