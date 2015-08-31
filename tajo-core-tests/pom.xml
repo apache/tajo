@@ -74,7 +74,7 @@
           <systemProperties>
             <tajo.test>TRUE</tajo.test>
           </systemProperties>
-          <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
+          <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8 -Dderby.storage.pageSize=2048</argLine>
         </configuration>
       </plugin>
       <plugin>
