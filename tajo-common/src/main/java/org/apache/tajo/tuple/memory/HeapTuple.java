@@ -33,7 +33,6 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
@@ -203,7 +202,7 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    return getText(fieldId).getBytes();
+    return getText(fieldId).getBytes(TextDatum.DEFAULT_CHARSET);
   }
 
   @Override
@@ -233,7 +232,7 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
 
   @Override
   public String getText(int fieldId) {
-    return new String(getBytes(fieldId));
+    return asDatum(fieldId).asChars();
   }
 
   @Override
@@ -270,7 +269,7 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
 
     byte [] bytes = new byte[len];
     buffer.getBytes(pos + SizeOf.SIZE_OF_INT, bytes);
-    return StringUtils.convertBytesToChars(bytes, Charset.forName("UTF-8"));
+    return StringUtils.convertBytesToChars(bytes, TextDatum.DEFAULT_CHARSET);
   }
 
   @Override
