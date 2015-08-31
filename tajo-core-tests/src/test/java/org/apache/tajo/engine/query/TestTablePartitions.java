@@ -23,10 +23,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -1303,6 +1300,47 @@ public class TestTablePartitions extends QueryTestCaseBase {
     // Check row count.
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(numRows, new Long(rowCount));
+    }
+  }
+
+  @Test
+  public final void testDuplicatedPartitions() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testDuplicatedPartitions");
+
+    try {
+      executeString("CREATE TABLE lineitem2 as select * from lineitem").close();
+
+      // Execute UNION ALL statement for creating multiple output files.
+      if (nodeType == NodeType.INSERT) {
+        executeString(
+          "create table " + tableName + " (col1 int4, col2 int4) partition by column(key text) ").close();
+
+        executeString(
+          "insert overwrite into " + tableName
+            + " select a.l_orderkey, a.l_partkey, a.l_returnflag from lineitem a union all"
+            + " select b.l_orderkey, b.l_partkey, b.l_returnflag from lineitem2 b"
+        ).close();
+      } else {
+        executeString(
+          "create table " + tableName + "(col1 int4, col2 int4) partition by column(key text) as "
+            + " select a.l_orderkey, a.l_partkey, a.l_returnflag from lineitem a union all"
+            + " select b.l_orderkey, b.l_partkey, b.l_returnflag from lineitem2 b"
+        ).close();
+      }
+
+      // If duplicated partitions had been removed, partitions just will contain 'KEY=N' partition and 'KEY=R'
+      // partition. In previous Query and Stage, duplicated partitions were not deleted because they had been in List.
+      // If you want to verify duplicated partitions, you need to use List instead of Set with DerbyStore.
+      List<PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, tableName);
+      assertEquals(2, partitions.size());
+
+      PartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");
+      assertNotNull(firstPartition);
+      PartitionDescProto secondPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=R");
+      assertNotNull(secondPartition);
+    } finally {
+      executeString("DROP TABLE lineitem2 PURGE");
+      executeString("DROP TABLE " + tableName + " PURGE");
     }
   }
 }

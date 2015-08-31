@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
@@ -40,13 +41,14 @@ import java.util.List;
  */
 public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
-  protected final List<Column[]> joinKeyPairs;
-
   // temporal tuples and states for nested loop join
   protected boolean first = true;
   protected TupleMap<T> tupleSlots;
 
   protected Iterator<Tuple> iterator;
+
+  protected final boolean isCrossJoin;
+  protected final List<Column[]> joinKeyPairs;
 
   protected final int rightNumCols;
   protected final int leftNumCols;
@@ -54,36 +56,61 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   protected final Column[] leftKeyList;
   protected final Column[] rightKeyList;
 
-  protected boolean finished;
   protected final KeyProjector leftKeyExtractor;
+
+  protected boolean finished;
+
+  protected TableStats tableStatsOfCachedRightChild = null;
 
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
 
-    // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
-        inner.getSchema(), false);
+    switch (plan.getJoinType()) {
 
-    leftKeyList = new Column[joinKeyPairs.size()];
-    rightKeyList = new Column[joinKeyPairs.size()];
+      case CROSS:
+        if (hasJoinQual) {
+          throw new TajoInternalError("Cross join cannot evaluate join conditions.");
+        } else {
+          isCrossJoin = true;
+          joinKeyPairs = null;
+          rightNumCols = leftNumCols = -1;
+          leftKeyList = rightKeyList = null;
+          leftKeyExtractor = null;
+        }
+        break;
 
-    for (int i = 0; i < joinKeyPairs.size(); i++) {
-      leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
-      rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+      case INNER:
+        // Other join types except INNER join can have empty join condition.
+        if (!hasJoinQual) {
+          throw new TajoInternalError("Inner join must have any join conditions.");
+        }
+      default:
+        isCrossJoin = false;
+        // HashJoin only can manage equi join key pairs.
+        this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
+            inner.getSchema(), false);
+
+        leftKeyList = new Column[joinKeyPairs.size()];
+        rightKeyList = new Column[joinKeyPairs.size()];
+
+        for (int i = 0; i < joinKeyPairs.size(); i++) {
+          leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
+          rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+        }
+
+        leftNumCols = outer.getSchema().size();
+        rightNumCols = inner.getSchema().size();
+
+        leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
+        break;
     }
-
-    leftNumCols = outer.getSchema().size();
-    rightNumCols = inner.getSchema().size();
-
-    leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
   }
 
   protected void loadRightToHashTable() throws IOException {
     ScanExec scanExec = PhysicalPlanUtil.findExecutor(rightChild, ScanExec.class);
     if (scanExec.canBroadcast()) {
       /* If this table can broadcast, all tasks in a node will share the same cache */
-      TableCacheKey key = CacheHolder.BroadcastCacheHolder.getCacheKey(
-          context, scanExec.getCanonicalName(), scanExec.getFragments());
+      TableCacheKey key = CacheHolder.BroadcastCacheHolder.getCacheKey(context, scanExec);
       loadRightFromCache(key);
     } else {
       this.tupleSlots = convert(buildRightToHashTable(), false);
@@ -105,10 +132,31 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
         sharedResource.addBroadcastCache(key, holder);
       }
     }
+    this.tableStatsOfCachedRightChild = holder.getTableStats();
     this.tupleSlots = convert(holder.getData(), true);
   }
 
   protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
+    if (isCrossJoin) {
+      return buildRightToHashTableForCrossJoin();
+    } else {
+      return buildRightToHashTableForNonCrossJoin();
+    }
+  }
+
+  protected TupleMap<TupleList> buildRightToHashTableForCrossJoin() throws IOException {
+    Tuple tuple;
+    TupleMap<TupleList> map = new TupleMap<>(1);
+    TupleList tuples = new TupleList();
+
+    while (!context.isStopped() && (tuple = rightChild.next()) != null) {
+      tuples.add(tuple);
+    }
+    map.put(null, tuples);
+    return map;
+  }
+
+  protected TupleMap<TupleList> buildRightToHashTableForNonCrossJoin() throws IOException {
     Tuple tuple;
     TupleMap<TupleList> map = new TupleMap<TupleList>(100000);
     KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);
@@ -162,7 +210,8 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
       inputStats.setNumRows(leftInputStats.getNumRows());
     }
 
-    TableStats rightInputStats = rightChild.getInputStats();
+    TableStats rightInputStats = tableStatsOfCachedRightChild == null ?
+        rightChild.getInputStats() : tableStatsOfCachedRightChild;
     if (rightInputStats != null) {
       inputStats.setNumBytes(inputStats.getNumBytes() + rightInputStats.getNumBytes());
       inputStats.setReadBytes(inputStats.getReadBytes() + rightInputStats.getReadBytes());
