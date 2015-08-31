@@ -105,7 +105,6 @@ class PythonStreamingController:
 
     def main(self,
              module_name, file_path, cache_path, output_schema, name, func_type):
-             # output_stream_path, error_stream_path, log_file_name, output_schema, name, func_type):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.

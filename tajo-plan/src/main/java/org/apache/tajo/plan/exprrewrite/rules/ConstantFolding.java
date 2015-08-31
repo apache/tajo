@@ -105,7 +105,6 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
           evalNode.bind(evalContext, null);
           Datum funcRes = evalNode.eval(null);
           executor.shutdown();
-          PythonScriptEngine.clearPythonScriptEngineFiles();
           return new ConstEval(funcRes);
         } catch (IOException e) {
           throw new RuntimeException(e);

@@ -446,7 +446,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static File pythonScriptControllerCopy = null;
   private static File pythonScriptUtilCopy = null;
 
-  public static synchronized void initPythonScriptEngineFiles() throws IOException {
+  public static void initPythonScriptEngineFiles() throws IOException {
     if (pythonScriptBaseDir == null ){
       pythonScriptBaseDir = new File(PythonScriptEngine.getBaseDirPath());
     }
@@ -460,21 +460,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
     if (!pythonScriptBaseDir.exists()) {
       pythonScriptBaseDir.mkdirs();
     }
-    if (!pythonScriptControllerCopy.exists()) {
-      PythonScriptEngine.loadController(pythonScriptControllerCopy);
-    }
-    if (!pythonScriptUtilCopy.exists()) {
-      PythonScriptEngine.loadTajoUtil(pythonScriptUtilCopy);
-    }
-  }
-
-  public static synchronized void clearPythonScriptEngineFiles() {
-    if (pythonScriptControllerCopy != null) {
-      pythonScriptControllerCopy.delete();
-    }
-    if (pythonScriptUtilCopy != null) {
-      pythonScriptUtilCopy.delete();
-    }
+    // Controller and util should be always overwritten.
+    PythonScriptEngine.loadController(pythonScriptControllerCopy);
+    PythonScriptEngine.loadTajoUtil(pythonScriptUtilCopy);
   }
 
   public static void loadController(File controllerCopy) throws IOException {

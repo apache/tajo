@@ -347,7 +347,6 @@ public class QueryExecutor {
     for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
       executor.shutdown();
     }
-    PythonScriptEngine.clearPythonScriptEngineFiles();
   }
 
   /**

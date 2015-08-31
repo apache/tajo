@@ -147,7 +147,5 @@ public class ExecutionBlockSharedResource {
       }
       classLoader = null;
     }
-
-    PythonScriptEngine.clearPythonScriptEngineFiles();
   }
 }
