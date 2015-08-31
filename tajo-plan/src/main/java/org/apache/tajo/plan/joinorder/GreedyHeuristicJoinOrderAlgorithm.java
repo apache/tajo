@@ -364,23 +364,23 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         // TODO - improve cost estimation
         // for outer joins, filter factor does not matter
         case LEFT_OUTER:
-          factor *= SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
-              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
+          factor *= (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
           break;
         case RIGHT_OUTER:
-          factor *= SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
-              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema());
+          factor *= (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+              (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema());
           break;
         case FULL_OUTER:
-          factor *= Math.max(SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
-              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema()),
-                  SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
-                  SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
+          factor *= Math.max((float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+                  (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema()),
+              (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
+                  (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
           break;
         case LEFT_ANTI:
         case LEFT_SEMI:
           factor *= DEFAULT_SELECTION_FACTOR * SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema()) /
-              SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
+              (float)SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema());
           break;
         case INNER:
         default:
@@ -388,7 +388,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           // filter factor * output tuple width / input tuple width
           factor *= Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size())
               * SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getSchema())
-              / (SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema())
+              / (float)(SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getLeftVertex().getSchema())
               + SchemaUtil.estimateRowByteSizeWithSchema(joinEdge.getRightVertex().getSchema()));
           break;
       }

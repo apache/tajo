@@ -59,7 +59,12 @@ public class HashJoinExec extends CommonHashJoinExec<TupleList> {
       frameTuple.setLeft(leftTuple);
 
       // getting corresponding right
-      Iterable<Tuple> hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
+      Iterable<Tuple> hashed;
+      if (!isCrossJoin) {
+        hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
+      } else {
+        hashed = tupleSlots.get(null);
+      }
       Iterator<Tuple> rightTuples = rightFiltered(hashed);
       if (rightTuples.hasNext()) {
         iterator = rightTuples;
