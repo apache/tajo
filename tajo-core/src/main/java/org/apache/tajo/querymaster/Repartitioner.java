@@ -88,7 +88,7 @@ public class Repartitioner {
 
     // initialize variables from the child operators
     for (int i = 0; i < scans.length; i++) {
-      TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
+      TableDesc tableDesc = masterContext.getTableDesc(scans[i]);
 
       if (tableDesc == null) { // if it is a real table stored on storage
         if (execBlock.getUnionScanMap() != null && !execBlock.getUnionScanMap().isEmpty()) {
@@ -376,7 +376,7 @@ public class Repartitioner {
       for (ScanNode eachScan: broadcastScans) {
 
         Path[] partitionScanPaths = null;
-        TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
+        TableDesc tableDesc = masterContext.getTableDesc(eachScan);
         Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
 
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
@@ -498,7 +498,7 @@ public class Repartitioner {
     List<Fragment> broadcastFragments = new ArrayList<Fragment>();
     for (int i = 0; i < scans.length; i++) {
       ScanNode scan = scans[i];
-      TableDesc desc = stage.getContext().getTableDescMap().get(scan.getCanonicalName());
+      TableDesc desc = stage.getContext().getTableDesc(scan);
       TableMeta meta = desc.getMeta();
 
       Collection<Fragment> scanFragments;
