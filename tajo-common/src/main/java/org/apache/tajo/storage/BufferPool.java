@@ -105,7 +105,7 @@ public class BufferPool {
    * @return allocated ByteBuf from pool
    */
   public static ByteBuf directBuffer(int size, int max) {
-    return ALLOCATOR.directBuffer(size, max).order(ByteOrder.nativeOrder());
+    return ALLOCATOR.directBuffer(size, max).order(ByteOrder.LITTLE_ENDIAN);
   }
 
   /**
@@ -115,7 +115,7 @@ public class BufferPool {
    * @return heap ByteBuf
    */
   public static ByteBuf heapBuffer(int size, int max) {
-    return Unpooled.buffer(size, max).order(ByteOrder.nativeOrder());
+    return Unpooled.buffer(size, max).order(ByteOrder.LITTLE_ENDIAN);
   }
 
   @InterfaceStability.Unstable
@@ -129,7 +129,7 @@ public class BufferPool {
    * @param minWritableBytes required minimum writable size
    */
   public static ByteBuf ensureWritable(ByteBuf buf, int minWritableBytes) {
-    return buf.ensureWritable(minWritableBytes).order(ByteOrder.nativeOrder());
+    return buf.ensureWritable(minWritableBytes).order(ByteOrder.LITTLE_ENDIAN);
   }
 
   /**

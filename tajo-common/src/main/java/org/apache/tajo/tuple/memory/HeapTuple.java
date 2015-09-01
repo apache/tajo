@@ -48,7 +48,7 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
   }
 
   protected void set(final byte[] bytes, final DataType[] types) {
-    this.buffer = Unpooled.wrappedBuffer(bytes).order(ByteOrder.nativeOrder());
+    this.buffer = Unpooled.wrappedBuffer(bytes).order(ByteOrder.LITTLE_ENDIAN);
     this.types = types;
     super.set(0, bytes.length);
   }

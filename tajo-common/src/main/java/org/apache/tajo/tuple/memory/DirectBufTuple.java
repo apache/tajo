@@ -29,7 +29,7 @@ public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
   private MemoryBlock memoryBlock;
 
   public DirectBufTuple(int length, DataType[] types) {
-    ByteBuffer bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+    ByteBuffer bb = ByteBuffer.allocateDirect(length).order(ByteOrder.LITTLE_ENDIAN);
     memoryBlock = new ResizableMemoryBlock(bb);
 
     set(memoryBlock, 0, length, types);
