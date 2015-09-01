@@ -19,13 +19,13 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -563,8 +563,8 @@ public class AlgebraicUtil {
 
   private static void toConjunctiveNormalFormArrayRecursive(Expr node, List<Expr> found) {
     if (node.getType() == OpType.And) {
-      toConjunctiveNormalFormArrayRecursive(((BinaryOperator)node).getLeft(), found);
-      toConjunctiveNormalFormArrayRecursive(((BinaryOperator)node).getRight(), found);
+      toConjunctiveNormalFormArrayRecursive(((BinaryOperator) node).getLeft(), found);
+      toConjunctiveNormalFormArrayRecursive(((BinaryOperator) node).getRight(), found);
     } else {
       found.add(node);
     }
@@ -619,12 +619,13 @@ public class AlgebraicUtil {
    * @param conjunctiveForms
    * @return
    */
-  public static List<Expr> getAccumulatedFiltersByExpr(String tableName,
-   List<CatalogProtos.ColumnProto> partitionColumns, Expr[] conjunctiveForms) throws TajoException {
-    List<Expr> accumulatedFilters = Lists.newArrayList();
+  public static Expr[] getAccumulatedFiltersByExpr(String tableName,
+    List<CatalogProtos.ColumnProto> partitionColumns, Expr[] conjunctiveForms) throws TajoException {
+    Expr[] filters = new Expr[partitionColumns.size()];
     Column target;
 
     for (int i = 0; i < partitionColumns.size(); i++) {
+      List<Expr> accumulatedFilters = TUtil.newList();
       target = new Column(partitionColumns.get(i));
       ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
 
@@ -638,12 +639,48 @@ public class AlgebraicUtil {
           }
         }
 
-        if (accumulatedFilters.size() < (i + 1)) {
+        if (accumulatedFilters.size() == 0) {
           accumulatedFilters.add(new IsNullPredicate(true, columnReference));
         }
       }
+
+      Expr filterPerLevel = AlgebraicUtil.createSingletonExprFromCNFByExpr(
+        accumulatedFilters.toArray(new Expr[accumulatedFilters.size()]));
+      filters[i] = filterPerLevel;
     }
 
-    return accumulatedFilters;
+    return filters;
   }
+
+  public static Expr createSingletonExprFromCNFByExpr(Collection<Expr> cnfExprs) {
+    return createSingletonExprFromCNFByExpr(cnfExprs.toArray(new Expr[cnfExprs.size()]));
+  }
+
+  /**
+   * Convert a list of conjunctive normal forms into a singleton expression.
+   *
+   * @param cnfExprs
+   * @return The EvalNode object that merges all CNF-formed expressions.
+   */
+  public static Expr createSingletonExprFromCNFByExpr(Expr... cnfExprs) {
+    if (cnfExprs.length == 1) {
+      return cnfExprs[0];
+    }
+
+    return createSingletonExprFromCNFRecursiveByExpr(cnfExprs, 0);
+  }
+
+  private static Expr createSingletonExprFromCNFRecursiveByExpr(Expr[] exprs, int idx) {
+    if (idx >= exprs.length) {
+      throw new ArrayIndexOutOfBoundsException("index " + idx + " is exceeded the maximum length ("+
+        exprs.length+") of EvalNode");
+    }
+
+    if (idx == exprs.length - 2) {
+      return new BinaryOperator(OpType.And, exprs[idx], exprs[idx + 1]);
+    } else {
+      return new BinaryOperator(OpType.And, exprs[idx], createSingletonExprFromCNFRecursiveByExpr(exprs, idx + 1));
+    }
+  }
+
 }

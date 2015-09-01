@@ -19,8 +19,12 @@
 package org.apache.tajo.plan.util;
 
 import org.apache.tajo.algebra.*;
+import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.Stack;
 
@@ -141,6 +145,9 @@ public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
   @Override
   protected EvalNode visitConst(Object o, ConstEval evalNode, Stack<EvalNode> stack) {
     Expr value = null;
+    DateValue dateValue;
+    TimeValue timeValue;
+
     switch (evalNode.getValueType().getType()) {
       case NULL_TYPE:
         value = new NullLiteral();
@@ -162,6 +169,25 @@ public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
         break;
       case TEXT:
         value = new LiteralValue(evalNode.getValue().asChars(), LiteralValue.LiteralType.String);
+        break;
+      case DATE:
+        DateDatum dateDatum = (DateDatum) evalNode.getValue();
+
+        dateValue = new DateValue(""+dateDatum.getYear(),
+          ""+dateDatum.getMonthOfYear(), ""+dateDatum.getDayOfMonth());
+        value = new DateLiteral(dateValue);
+
+        break;
+      case TIMESTAMP:
+        TimestampDatum timestampDatum = (TimestampDatum) evalNode.getValue();
+
+        dateValue = new DateValue(""+timestampDatum.getYear(),
+          ""+timestampDatum.getMonthOfYear(), ""+timestampDatum.getDayOfMonth());
+
+        timeValue = new TimeValue(""+timestampDatum.getHourOfDay()
+        , ""+timestampDatum.getMinuteOfHour(), ""+timestampDatum.getSecondOfMinute());
+
+        value = new TimestampLiteral(dateValue, timeValue);
         break;
       default:
         throw new RuntimeException("Unsupported type: " + evalNode.getValueType().getType().name());

@@ -46,6 +46,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
@@ -2194,7 +2195,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
 
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
-
       conn = getConnection();
 
       directSQL = getDirectSQL(tableDesc.getTableName(), tableDesc.getPartition()
@@ -2234,6 +2234,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
               break;
             case FLOAT8:
               pstmt.setDouble(currentIndex, Double.parseDouble(parameter));
+              break;
+            case DATE:
+              pstmt.setDate(currentIndex, Date.valueOf(parameter));
+              break;
+            case TIMESTAMP:
+              pstmt.setTimestamp(currentIndex, Timestamp.valueOf(parameter));
+              break;
+            case TIME:
+              pstmt.setTime(currentIndex, Time.valueOf(parameter));
               break;
             default:
               pstmt.setString(currentIndex, parameter);
@@ -2308,7 +2317,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
 
-    List<Expr> accumulatedFilters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
+    Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
 
     StringBuffer sb = new StringBuffer();
     sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
@@ -2327,7 +2336,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       visitor.setColumn(target);
       visitor.setTableAlias(tableAlias);
-      visitor.visit(null, new Stack<Expr>(), accumulatedFilters.get(i));
+      visitor.visit(null, new Stack<Expr>(), filters[i]);
 
       sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
         .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
@@ -2354,7 +2363,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     tableAlias = "T1";
     visitor.setColumn(target);
     visitor.setTableAlias(tableAlias);
-    visitor.visit(null, new Stack<Expr>(), accumulatedFilters.get(0));
+    visitor.visit(null, new Stack<Expr>(), filters[0]);
 
     sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
     sb.append(visitor.getResult())

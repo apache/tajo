@@ -19,36 +19,33 @@
 
 package org.apache.tajo.plan.util;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Stack;
+import java.util.TimeZone;
 
 /**
- *  This build SQL statements for getting partitions informs on CatalogStore with algebra expressions. *
+ *  This build SQL statements for getting partitions informs on CatalogStore with algebra expressions.
+ *  This visitor assumes that all columns of algebra expressions are reserved for one table.
  *
  */
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
-  private boolean isHiveCatalog = false;
-  private boolean existRowCostant = false;
   private String tableAlias;
   private Column column;
 
   private Stack<String> queries = new Stack<String>();
   private List<String> parameters = TUtil.newList();
-
-  public boolean isHiveCatalog() {
-    return isHiveCatalog;
-  }
-
-  public void setIsHiveCatalog(boolean isHiveCatalog) {
-    this.isHiveCatalog = isHiveCatalog;
-  }
 
   public String getTableAlias() {
     return tableAlias;
@@ -82,14 +79,6 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     return queries.pop();
   }
 
-  public boolean isExistRowCostant() {
-    return existRowCostant;
-  }
-
-  public void setExistRowCostant(boolean existRowCostant) {
-    this.existRowCostant = existRowCostant;
-  }
-
   @Override
   public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
     if (expr.getType() == OpType.LikePredicate) {
@@ -99,34 +88,63 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     } else if (expr.getType() == OpType.Regexp) {
       return visitRegexpPredicate(ctx, stack, (PatternMatchPredicate) expr);
     }
-
     return super.visit(ctx, stack, expr);
+  }
+
+  @Override
+  public Expr visitDateLiteral(Object ctx, Stack<Expr> stack, DateLiteral expr) throws TajoException {
+    StringBuilder sb = new StringBuilder();
+
+    sb.append("?").append(" )");
+    parameters.add(expr.getDate().toString());
+    queries.push(sb.toString());
+
+    return expr;
+  }
+
+  @Override
+  public Expr visitTimestampLiteral(Object ctx, Stack<Expr> stack, TimestampLiteral expr) throws TajoException {
+    StringBuilder sb = new StringBuilder();
+
+    DateValue dateValue = expr.getDate();
+    TimeValue timeValue = expr.getTime();
+
+    int [] dates = ExprAnnotator.dateToIntArray(dateValue.getYears(),
+      dateValue.getMonths(),
+      dateValue.getDays());
+    int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
+      timeValue.getMinutes(),
+      timeValue.getSeconds(),
+      timeValue.getSecondsFraction());
+
+    long timestamp;
+    if (timeValue.hasSecondsFraction()) {
+      timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
+        times[3] * 1000);
+    } else {
+      timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
+    }
+
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+
+    TimeZone tz = TimeZone.getDefault();
+    DateTimeUtil.toUTCTimezone(tm, tz);
+
+    sb.append("?").append(" )");
+    parameters.add((new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm))).toString()));
+
+    queries.push(sb.toString());
+
+    return expr;
   }
 
   @Override
   public Expr visitLiteral(Object ctx, Stack<Expr> stack, LiteralValue expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
 
-    if (!isHiveCatalog) {
-      sb.append("?").append(" )");
-      parameters.add(expr.getValue());
-    } else {
-      switch (column.getDataType().getType()) {
-        case INT1:
-        case INT2:
-        case INT4:
-        case INT8:
-        case FLOAT4:
-        case FLOAT8:
-          sb.append(expr.getValue());
-          break;
-        default:
-//           In hive, Filtering can be done only on string partition keys. for example "part1 = \"p1_abc\" and part2
-//           <= "\p2_test\"".
-          sb.append("\"").append(expr.getValue()).append("\"");
-          break;
-      }
-    }
+    sb.append("?").append(" )");
+    parameters.add(expr.getValue());
     queries.push(sb.toString());
 
     return expr;
@@ -134,27 +152,19 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   @Override
   public Expr visitValueListExpr(Object ctx, Stack<Expr> stack, ValueListExpr expr) throws TajoException {
-    existRowCostant = true;
-
     StringBuilder sb = new StringBuilder();
     sb.append("(");
     for(int i = 0; i < expr.getValues().length; i++) {
       if (i > 0) {
         sb.append(", ");
       }
-      if (!isHiveCatalog) {
-        sb.append("?");
-        stack.push(expr.getValues()[i]);
-        visit(ctx, stack, expr.getValues()[i]);
-        parameters.add(queries.pop());
-        stack.pop();
-      }
+      sb.append("?");
+      stack.push(expr.getValues()[i]);
+      visit(ctx, stack, expr.getValues()[i]);
+      stack.pop();
     }
     sb.append(")");
-
-    if (!isHiveCatalog) {
-      sb.append(" )");
-    }
+    sb.append(" )");
     queries.push(sb.toString());
     return expr;
   }
@@ -163,13 +173,9 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   public Expr visitColumnReference(Object ctx, Stack<Expr> stack, ColumnReferenceExpr expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
 
-    if (!isHiveCatalog) {
-      sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
-        .append(" = '").append(expr.getName()).append("'")
-        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
-    } else {
-      sb.append(expr.getName());
-    }
+    sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
+      .append(" = '").append(expr.getName()).append("'")
+      .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
 
     queries.push(sb.toString());
     return expr;
@@ -200,9 +206,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       }
     }
 
-    if (!isHiveCatalog) {
-      sb.append(" )");
-    }
+    sb.append(" )");
     queries.push(sb.toString());
 
     return expr;
@@ -217,13 +221,13 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
     visit(ctx, stack, expr.begin());
     String beginSql= queries.pop();
-    if (!isHiveCatalog && beginSql.endsWith(")")) {
+    if (beginSql.endsWith(")")) {
       beginSql = beginSql.substring(0, beginSql.length()-1);
     }
 
     visit(ctx, stack, expr.end());
     String endSql = queries.pop();
-    if (!isHiveCatalog && endSql.endsWith(")")) {
+    if (endSql.endsWith(")")) {
       endSql = beginSql.substring(0, endSql.length()-1);
     }
 
@@ -233,9 +237,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     sb.append(beginSql);
     sb.append(" AND ");
     sb.append(endSql);
-    if (!isHiveCatalog) {
-      sb.append(")");
-    }
+    sb.append(")");
     queries.push(sb.toString());
 
     return expr;
@@ -257,7 +259,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       result = queries.pop();
 
       String whenSql = condition + " " + result;
-      if (!isHiveCatalog && whenSql.endsWith(")")) {
+      if (whenSql.endsWith(")")) {
         whenSql = whenSql.substring(0, whenSql.length()-1);
       }
 
@@ -267,16 +269,14 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     if (expr.hasElseResult()) {
       visit(ctx, stack, expr.getElseResult());
       String elseSql = queries.pop();
-      if (!isHiveCatalog && elseSql.endsWith(")")) {
+      if (elseSql.endsWith(")")) {
         elseSql = elseSql.substring(0, elseSql.length()-1);
       }
 
       sb.append("ELSE ").append(elseSql).append(" END");
     }
 
-    if (!isHiveCatalog) {
-      sb.append(")");
-    }
+    sb.append(")");
     stack.pop();
     return expr;
   }

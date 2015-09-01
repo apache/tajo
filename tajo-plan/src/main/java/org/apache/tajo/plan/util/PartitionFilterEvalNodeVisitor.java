@@ -28,6 +28,7 @@ import java.util.Stack;
 
 /**
  *  This build SQL statements for getting partitions informs on CatalogStore with partition filters.
+ *  This visitor assumes that all columns of EvalNodes are reserved for one table.
  *
  *  This can get partition informs by two columns value, such as, column name, partition value.
  *  And above columns type are text type. Thus this will assume type of FieldEval to text type.
