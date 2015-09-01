@@ -18,8 +18,10 @@
 
 package org.apache.tajo.engine.utils;
 
+import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.planner.physical.TupleList;
 import org.apache.tajo.engine.planner.physical.TupleMap;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -77,19 +79,17 @@ public interface CacheHolder<T> {
       if(rowBlock != null) rowBlock.release();
     }
 
-    public static TableCacheKey getCacheKey(TaskAttemptContext ctx, String canonicalName,
-                                                 CatalogProtos.FragmentProto[] fragments) throws IOException {
-      String pathNameKey = "";
-      if (fragments != null) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (CatalogProtos.FragmentProto f : fragments) {
-          Fragment fragement = FragmentConvertor.convert(ctx.getConf(), f);
-          stringBuilder.append(fragement.getKey());
-        }
-        pathNameKey = stringBuilder.toString();
-      }
+    public static TableCacheKey getCacheKey(TaskAttemptContext ctx, ScanExec scanExec) throws IOException {
 
-      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(), canonicalName, pathNameKey);
+      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(),
+          scanExec.getCanonicalName(), getUniqueKey(ctx, scanExec));
+    }
+
+    public static String getUniqueKey(TaskAttemptContext context, ScanExec scanExec) {
+      QueryId queryId = context.getTaskId().getTaskId().getExecutionBlockId().getQueryId();
+      int pid = scanExec.getScanNode().getPID();
+
+      return queryId.toString() + "_" + pid;
     }
   }
 }

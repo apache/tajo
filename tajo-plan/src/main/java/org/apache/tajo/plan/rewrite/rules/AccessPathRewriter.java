@@ -122,6 +122,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
         } else {
           PlannerUtil.replaceNode(plan, stack.peek(), scanNode, indexScanNode);
         }
+        block.registerNode(indexScanNode);
       }
       return null;
     }

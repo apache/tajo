@@ -145,7 +145,7 @@ public class Aggregation extends UnaryOperator {
     }
   }
 
-  public static enum GroupType {
+  public enum GroupType {
     OrdinaryGroup(""),
     Cube("Cube"),
     Rollup("Rollup"),

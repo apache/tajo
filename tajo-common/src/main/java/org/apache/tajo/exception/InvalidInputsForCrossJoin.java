@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,15 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan;
+package org.apache.tajo.exception;
 
-public class PlanningException extends Exception {
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-  public PlanningException(String message) {
-    super(message);
+/**
+ *
+ * This exception occurs when both inputs of a cross join are not the simple relation.
+ */
+public class InvalidInputsForCrossJoin extends TajoException {
+
+  public InvalidInputsForCrossJoin(ReturnState e) {
+    super(e);
   }
 
-  public PlanningException(Throwable e) {
-    super(e);
+  public InvalidInputsForCrossJoin() {
+    super(ResultCode.INVALID_INPUTS_FOR_CROSS_JOIN);
   }
 }

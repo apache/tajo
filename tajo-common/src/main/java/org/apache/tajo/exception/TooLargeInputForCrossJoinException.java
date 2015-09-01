@@ -16,12 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.verifier;
+package org.apache.tajo.exception;
 
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import org.apache.tajo.util.StringUtils;
 
-public class VerifyException extends PlanningException {
-  public VerifyException(String message) {
-    super(message);
+/**
+ *
+ * This exception occurs when the cross join cannot be executed with the broadcast join.
+ */
+public class TooLargeInputForCrossJoinException extends TajoException {
+
+  public TooLargeInputForCrossJoinException(ReturnState e) {
+    super(e);
+  }
+
+  public TooLargeInputForCrossJoinException(String[] relations, long currentBroadcastThreshold) {
+    super(ResultCode.TOO_LARGE_INPUT_FOR_CROSS_JOIN, StringUtils.join(relations), "" + currentBroadcastThreshold);
   }
 }

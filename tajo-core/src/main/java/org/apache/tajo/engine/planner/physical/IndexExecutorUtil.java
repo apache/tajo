@@ -16,23 +16,18 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan;
+package org.apache.tajo.engine.planner.physical;
 
-public class IllegalQueryStatusException extends Exception {
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 
-  public IllegalQueryStatusException() {
+public class IndexExecutorUtil {
 
-  }
-
-  public IllegalQueryStatusException(String msg) {
-    super(msg);
-  }
-
-  public IllegalQueryStatusException(Exception e) {
-    super(e);
-  }
-
-  public IllegalQueryStatusException(String msg, Exception e) {
-    super(msg, e);
+  public static String getIndexFileName(FragmentProto fragmentProto) {
+    FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, fragmentProto);
+    StringBuilder sb = new StringBuilder();
+    sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
+    return sb.toString();
   }
 }

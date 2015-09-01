@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
@@ -110,7 +111,7 @@ public class QueryResultResource {
   private static NonForwardQueryResultScanner getNonForwardQueryResultScanner(
       MasterContext masterContext,
       Session session,
-      QueryId queryId) throws IOException {
+      QueryId queryId) throws IOException, TajoException {
     NonForwardQueryResultScanner resultScanner = session.getNonForwardQueryResultScanner(queryId);
     if (resultScanner == null) {
       QueryInfo queryInfo = masterContext.getQueryJobManager().getFinishedQuery(queryId);
