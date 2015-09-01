@@ -310,6 +310,7 @@ message AlterTableDescProto {
   required AlterTableType alterTableType = 5;
   optional PartitionDescProto partitionDesc = 6;
   optional KeyValueSetProto params = 7;
+  optional string newTablePath = 8;
 }
 
 message AlterColumnProto {
