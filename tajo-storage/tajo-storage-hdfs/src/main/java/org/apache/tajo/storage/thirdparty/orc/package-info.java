@@ -20,7 +20,17 @@
  * Provides read and write support for ORC files.
  * Source files in this packages are from Hive.
  * But, some files are modified for supporting the concept of Tajo Tuple and Datum.
- * One of representative files is WriterImpl.java. Others are almost same as ones in Hive.
+ * Followings are listing of modified files. When updating library, be careful for
+ * the files.
+ *
+ *
+ * ColumnStatisticsImpl.java
+ * FileOrcDataSource.java
+ * HdfsOrcDataSource.java
+ * OrcConf.java
+ * OrcFile.java
+ * Writer.java
+ * WriterImpl.java
  * </p>
  */
 

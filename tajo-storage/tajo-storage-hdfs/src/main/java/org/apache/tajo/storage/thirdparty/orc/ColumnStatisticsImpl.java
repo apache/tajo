@@ -21,8 +21,6 @@ import org.apache.hadoop.hive.common.type.HiveDecimal;
 import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
-import org.apache.tajo.datum.BlobDatum;
-import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
 
 import java.sql.Date;
