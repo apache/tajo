@@ -18,11 +18,11 @@
 
 package org.apache.tajo.datum;
 
-import com.google.protobuf.Message;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -71,7 +71,7 @@ public class DatumFactory {
       case NULL_TYPE:
         return NullDatum.class;
       default:
-        throw new UnsupportedOperationException(type.name());
+        throw new TajoRuntimeException(Errors.ResultCode.UNSUPPORTED_DATATYPE, type.name());
     }
   }
 
@@ -107,7 +107,7 @@ public class DatumFactory {
     case INET4:
       return createInet4(value);
     default:
-      throw new UnsupportedOperationException(dataType.toString());
+      throw new TajoRuntimeException(Errors.ResultCode.UNSUPPORTED_DATATYPE, dataType.toString());
     }
   }
 
@@ -147,10 +147,10 @@ public class DatumFactory {
           return ProtobufDatumFactory.createDatum(dataType, bytes);
         } catch (IOException e) {
           e.printStackTrace();
-          throw new RuntimeException(e);
+          throw new TajoRuntimeException(Errors.ResultCode.IO_ERROR, e.getMessage());
         }
       default:
-        throw new UnsupportedOperationException(dataType.toString());
+        throw new TajoRuntimeException(Errors.ResultCode.UNSUPPORTED_DATATYPE, dataType.toString());
     }
   }
 
@@ -161,7 +161,7 @@ public class DatumFactory {
     case DATE:
       return new DateDatum(val);
     default:
-      throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT4");
+      throw new TajoRuntimeException(Errors.ResultCode.UNSUPPORTED_DATATYPE, type.getType().name());
     }
   }
 
@@ -174,7 +174,7 @@ public class DatumFactory {
     case TIME:
       return createTime(val); 
     default:
-      throw new UnsupportedOperationException("Cannot create " + type.getType().name() + " datum from INT8");
+      throw new TajoRuntimeException(Errors.ResultCode.UNSUPPORTED_DATATYPE, type.getType().name());
     }
   }
 
@@ -330,7 +330,7 @@ public class DatumFactory {
     case DATE:
       return (DateDatum) datum;
     default:
-      throw new InvalidCastException(datum.type(), Type.DATE);
+      throw new TajoRuntimeException(Errors.ResultCode.INVALID_CAST, datum.type().toString(), Type.DATE.name());
     }
   }
 
@@ -349,7 +349,7 @@ public class DatumFactory {
     case TIME:
       return (TimeDatum) datum;
     default:
-      throw new InvalidCastException(datum.type(), Type.TIME);
+      throw new TajoRuntimeException(Errors.ResultCode.INVALID_CAST, datum.type().name(), Type.TIME.name());
     }
   }
 
@@ -362,7 +362,7 @@ public class DatumFactory {
       case TIMESTAMP:
         return (TimestampDatum) datum;
       default:
-        throw new InvalidCastException(datum.type(), Type.TIMESTAMP);
+        throw new TajoRuntimeException(Errors.ResultCode.INVALID_CAST, datum.type().name(), Type.TIMESTAMP.name());
     }
   }
 
@@ -459,7 +459,7 @@ public class DatumFactory {
     case ANY:
       return DatumFactory.createAny(operandDatum);
     default:
-      throw new InvalidCastException(operandDatum.type(), target.getType());
+      throw new TajoRuntimeException(Errors.ResultCode.INVALID_CAST, operandDatum.type().name(), target.getType().name());
     }
   }
 }
