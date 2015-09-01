@@ -34,6 +34,7 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -60,6 +61,8 @@ public class SeqScanExec extends ScanExec {
 
   // scanner iterator with filter or without filter
   private ScanIterator scanIt;
+
+  private boolean needProjection;
 
   public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
@@ -198,7 +201,34 @@ public class SeqScanExec extends ScanExec {
       // for non-projected fields.
       Schema actualInSchema = scanner.isProjectable() ? projectedFields : inSchema;
 
-      this.projector = new Projector(context, actualInSchema, outSchema, plan.getTargets());
+      Target[] realTargets;
+      if (plan.getTargets() == null) {
+        realTargets = PlannerUtil.schemaToTargets(outSchema);
+      } else {
+        realTargets = plan.getTargets();
+      }
+
+      //if all column is selected and there is no have expression, projection can be skipped
+      if (realTargets.length == inSchema.size()) {
+        for (int i = 0; i < inSchema.size(); i++) {
+          if (realTargets[i].getEvalTree() instanceof FieldEval) {
+            FieldEval f = realTargets[i].getEvalTree();
+            if(!f.getColumnRef().equals(inSchema.getColumn(i))) {
+              needProjection = true;
+              break;
+            }
+          } else {
+            needProjection = true;
+            break;
+          }
+        }
+      } else {
+        needProjection = true;
+      }
+
+      if(needProjection) {
+        projector = new Projector(context, actualInSchema, outSchema, plan.getTargets());
+      }
 
       if (plan.hasQual()) {
         qual.bind(context.getEvalContext(), actualInSchema);
@@ -253,6 +283,8 @@ public class SeqScanExec extends ScanExec {
 
     while(scanIt.hasNext()) {
       Tuple t = scanIt.next();
+      if(!needProjection) return t;
+
       Tuple outTuple = projector.eval(t);
       outTuple.setOffset(t.getOffset());
       return outTuple;

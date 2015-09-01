@@ -35,7 +35,6 @@ public class Projector {
   private final EvalNode[] evals;
 
   private final Tuple outTuple;
-  private boolean needProjection;
 
   public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, Target [] targets) {
     this.context = context;
@@ -45,16 +44,6 @@ public class Projector {
       realTargets = PlannerUtil.schemaToTargets(outSchema);
     } else {
       realTargets = targets;
-    }
-
-    //if all column is selected and there is no have expression, projection can be skipped
-    if (realTargets.length == inSchema.size()) {
-      for (int i = 0; i < inSchema.size(); i++) {
-        if (!inSchema.getColumn(i).equals(realTargets[i].getNamedColumn())) {
-          needProjection = true;
-          break;
-        }
-      }
     }
 
     outTuple = new VTuple(realTargets.length);
@@ -81,8 +70,6 @@ public class Projector {
   }
 
   public Tuple eval(Tuple in) {
-    if(!needProjection) return in;
-
     for (int i = 0; i < evals.length; i++) {
       outTuple.put(i, evals[i].eval(in));
     }
