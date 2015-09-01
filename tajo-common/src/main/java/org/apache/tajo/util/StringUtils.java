@@ -406,7 +406,7 @@ public class StringUtils {
    * @return A joined string
    */
   public static String join(Object[] objects) {
-    return join(objects, ",");
+    return join(objects, ", ");
   }
 
   /**

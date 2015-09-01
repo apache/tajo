@@ -40,6 +40,7 @@ import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.DuplicateIndexException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
@@ -493,19 +494,7 @@ public class QueryExecutor {
                                       SubmitQueryResponse.Builder responseBuilder) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
-    if (tableDesc != null) {
-
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-      FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
-
-      if (!formatProperty.isInsertable()) {
-        throw new UnsupportedException(
-            String.format("INSERT operation on %s tablespace", tableDesc.getUri().toString()));
-      }
-
-      space.prepareTable(rootNode.getChild());
-    }
+    prepareForCreateTableOrInsert(catalog, plan);
 
     hookManager.doHooks(queryContext, plan);
 
@@ -523,6 +512,24 @@ public class QueryExecutor {
     responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
     LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
         " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+  }
+
+  private void prepareForCreateTableOrInsert(CatalogService catalog, LogicalPlan plan)
+      throws TajoException, IOException {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
+    if (tableDesc != null) {
+
+      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+      FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
+
+      if (!formatProperty.isInsertable()) {
+        throw new UnsupportedException (
+            String.format("INSERT operation on %s tablespace", tableDesc.getUri().toString()));
+      }
+
+      space.prepareTable(rootNode.getChild());
+    }
   }
 
   private void checkIndexExistence(final QueryContext queryContext, final CreateIndexNode createIndexNode)

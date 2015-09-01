@@ -1259,6 +1259,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     JoinNode join = plan.createNode(JoinNode.class);
     join.init(JoinType.CROSS, left, right);
     join.setInSchema(merged);
+    block.addJoinType(join.getJoinType());
 
     EvalNode evalNode;
     List<String> newlyEvaluatedExprs = TUtil.newList();

@@ -31,7 +31,7 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 public class TestPgSQLMetadataProvider {
-  static final String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrl();
+  static final String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrlForAdmin();
 
   @BeforeClass
   public static void setUp() throws Exception {

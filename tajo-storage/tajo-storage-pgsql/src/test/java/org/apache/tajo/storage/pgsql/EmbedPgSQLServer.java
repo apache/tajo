@@ -50,7 +50,7 @@ public class EmbedPgSQLServer {
   public static final String SPACENAME = "pgsql_cluster";
   public static final String DATABASE_NAME = "tpch";
 
-  private TestingPostgreSqlServer server;
+  private final TestingPostgreSqlServer server;
 
   static {
     try {
@@ -68,6 +68,17 @@ public class EmbedPgSQLServer {
     server = new TestingPostgreSqlServer("testuser",
         "tpch"
     );
+
+    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          server.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+      }
+    }));
 
     loadTPCHTables();
     registerTablespace();
@@ -89,9 +100,10 @@ public class EmbedPgSQLServer {
         statement.executeBatch();
 
         for (String tableName : TPCH_TABLES) {
-          String table = JavaResourceUtil.readTextFromResource("tpch/" + tableName + ".tbl");
+          String csvTable = JavaResourceUtil.readTextFromResource("tpch/" + tableName + ".tbl");
+          String fixedCsvTable = fixExtraColumn(csvTable);
           Path filePath = new Path(testPath, tableName + ".tbl");
-          FileUtil.writeTextToFile(table, filePath);
+          FileUtil.writeTextToFile(fixedCsvTable, filePath);
 
           String copyCommand =
               "COPY " + tableName + " FROM '" + filePath.toUri().getPath() + "' WITH (FORMAT csv, DELIMITER '|');";
@@ -103,6 +115,22 @@ public class EmbedPgSQLServer {
         throw t;
       }
     }
+  }
+
+  private String fixExtraColumn(String csvTable) {
+    final String [] lines = csvTable.split("\n");
+    final StringBuilder rewritten = new StringBuilder();
+
+    for (String l : lines) {
+      if (l.charAt(l.length() - 1) == '|') {
+        rewritten.append(l.substring(0, l.length() - 1));
+      } else {
+        rewritten.append(l.substring(0, l.length()));
+      }
+      rewritten.append("\n");
+    }
+
+    return rewritten.toString();
   }
 
   private void registerTablespace() throws IOException {
@@ -119,11 +147,22 @@ public class EmbedPgSQLServer {
     TablespaceManager.addTableSpaceForTest(tablespace);
   }
 
+  /**
+   * get JDBC URL for a created user
+   *
+   * @return JDBC URL for the created user
+   */
   public String getJdbcUrl() {
     return server.getJdbcUrl() + "&connectTimeout=5&socketTimeout=5";
   }
 
+  /**
+   * get JDBC URL for the Admin user
+   *
+   * @return JDBC URL for the Admin user
+   */
   public String getJdbcUrlForAdmin() {
+    // replace 'user' by postgres (admin)
     String url = server.getJdbcUrl().split("\\?")[0];
     url += "?user=postgres&connectTimeout=5&socketTimeout=5";
     return url;
