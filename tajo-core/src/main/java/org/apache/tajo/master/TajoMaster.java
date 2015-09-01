@@ -27,7 +27,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -38,10 +37,12 @@ import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
-import org.apache.tajo.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.store.AbstractDBStore;
+import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.exception.DuplicateDatabaseException;
 import org.apache.tajo.exception.DuplicateTablespaceException;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoResourceManager;
@@ -396,8 +397,6 @@ public class TajoMaster extends CompositeService {
 
     if (webServer != null) webServer.stop();
 
-    IOUtils.cleanup(LOG, catalogServer);
-
     if (systemMetrics != null) systemMetrics.stop();
 
     if (pauseMonitor != null) pauseMonitor.stop();
@@ -539,6 +538,12 @@ public class TajoMaster extends CompositeService {
         LOG.info("TajoMaster received SIGINT Signal");
         LOG.info("============================================");
         stop();
+
+        // If embedded derby is used as catalog, shutdown it.
+        if (catalogServer.getStoreClassName().equals("org.apache.tajo.catalog.store.DerbyStore")
+            && AbstractDBStore.needShutdown(catalogServer.getStoreUri())) {
+          DerbyStore.shutdown();
+        }
         RpcChannelFactory.shutdownGracefully();
       }
     }
