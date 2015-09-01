@@ -191,7 +191,7 @@ public class TestPhysicalPlanner {
 
     VTuple tuple = new VTuple(scoreSchmea.size());
     int m = 0;
-    for (int i = 1; i <= 40000; i++) {
+    for (int i = 1; i <= 30000; i++) {
       for (int k = 3; k < 5; k++) { // |{3,4}| = 2
         for (int j = 1; j <= 3; j++) { // |{1,2,3}| = 3
           tuple.put(
