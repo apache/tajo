@@ -71,7 +71,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-      {NodeType.CREATE_TABLE},
+//      {NodeType.CREATE_TABLE},
     });
   }
 
@@ -1588,5 +1588,78 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
   }
 
+/*
+  @Test
+  public final void testTimePartitionColumn() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testTimePartitionColumn");
+    String actualResult, expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      executeString("create table " + tableName
+        + " (col1 int4, col2 int4) partition by column(key time) ").close();
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + tableName
+          + " select l_orderkey, l_partkey, cast(l_shipdate as time)from lineitem");
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key time) "
+          + " as select l_orderkey, l_partkey, cast(l_shipdate as time)from lineitem");
+    }
+
+    assertTrue(client.existTable(tableName));
+    // LessThanOrEquals
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key <= cast('1995-09-01' as time) order by col1, col2, key");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,02:02:02\n" +
+      "3,3,01:11:09\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    // LessThan and GreaterThan
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > cast('1993-01-01' as time) and " +
+      "key < cast('1996-01-01' as time) order by col1, col2, key desc");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,02:02:02\n" +
+      "3,3,01:11:09\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    // Between
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key between cast('1993-01-01' as time) " +
+      "and cast('1997-01-01' as time) order by col1, col2, key desc");
+
+    actualResult = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,04:04:12\n" +
+      "1,1,04:03:13\n" +
+      "3,2,02:02:02\n" +
+      "3,3,01:11:09\n";
+
+    assertEquals(expectedResult, actualResult);
+    res.close();
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+
+  }
+*/
 
 }
