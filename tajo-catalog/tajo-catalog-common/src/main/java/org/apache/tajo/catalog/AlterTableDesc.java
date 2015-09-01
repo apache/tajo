@@ -20,12 +20,15 @@ package org.apache.tajo.catalog;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.KeyValueSet;
+
+import java.net.URI;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTableDescProto;
 
@@ -47,6 +50,8 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   protected PartitionDesc partitionDesc; //optional
   @Expose
   protected KeyValueSet properties;
+  @Expose
+  protected URI newTablePath; // optional
 
   public AlterTableDesc() {
     init();
@@ -124,6 +129,14 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     return this.properties.get(key);
   }
 
+  public void setNewTablePath(Path path) {
+    newTablePath = path.toUri();
+  }
+
+  public URI getNewTablePath() {
+    return newTablePath;
+  }
+
   @Override
   public String toString() {
     Gson gson = new GsonBuilder().setPrettyPrinting().
@@ -141,6 +154,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.addColumn = addColumn;
     newAlter.partitionDesc = partitionDesc;
     newAlter.properties = (KeyValueSet)properties.clone();
+    newAlter.newTablePath = URI.create(newTablePath.toString());
     return newAlter;
   }
 
@@ -196,6 +210,10 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
 
     if (null != this.partitionDesc) {
       builder.setPartitionDesc(partitionDesc.getProto());
+    }
+
+    if (null != this.newTablePath) {
+      builder.setNewTablePath(newTablePath.toString());
     }
 
     return builder.build();

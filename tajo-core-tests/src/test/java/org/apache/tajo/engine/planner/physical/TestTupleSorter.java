@@ -47,8 +47,8 @@ public class TestTupleSorter {
   public final void testSortBench() {
     final int MAX_SORT_KEY = 3;
     final int ITERATION = 10;
-    final int LENGTH = 1000000;
-    final int SAMPLING = 100;
+    final int LENGTH = 5000;
+    final int SAMPLING = 10;
 
     Tuple[] tuples = new Tuple[LENGTH];
     for (int i = 0; i < LENGTH; i++) {

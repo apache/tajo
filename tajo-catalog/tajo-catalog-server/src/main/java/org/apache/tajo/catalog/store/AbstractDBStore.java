@@ -26,10 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
@@ -41,11 +38,9 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
@@ -78,6 +73,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private Connection conn;
   
   protected XMLCatalogSchemaManager catalogSchemaManager;
+
+  public static boolean needShutdown(String catalogUri) {
+    URI uri = URI.create(catalogUri);
+    // If the current catalog is embedded in-memory derby, shutdown is required.
+    if (uri.getHost() == null) {
+      String schemeSpecificPart = uri.getSchemeSpecificPart();
+      if (schemeSpecificPart != null) {
+        return schemeSpecificPart.contains("memory");
+      }
+    }
+    return false;
+  }
 
   protected abstract String getCatalogDriverName();
   
@@ -181,6 +188,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
+  public String getUri() {
+    return catalogUri;
+  }
+
   public int getDriverVersion() {
     return catalogSchemaManager.getCatalogStore().getSchema().getVersion();
   }
@@ -203,7 +214,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       isValid = conn.isValid(timeout);
     } catch (SQLException e) {
-      e.printStackTrace();
+      LOG.warn(e);
     }
     return isValid;
   }
@@ -216,7 +227,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         conn = createConnection(conf);
       }
     } catch (SQLException e) {
-      e.printStackTrace();
+      throw new TajoInternalError(e);
     }
     return conn;
   }
@@ -760,8 +771,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   enum TableType {
-    BASE_TABLE,
-    EXTERNAL_TABLE
+    MANAGED,
+    EXTERNAL
   }
 
   @Override
@@ -800,9 +811,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, dbid);
       pstmt.setString(2, tableName);
       if (table.getIsExternal()) {
-        pstmt.setString(3, TableType.EXTERNAL_TABLE.name());
+        pstmt.setString(3, TableType.EXTERNAL.name());
       } else {
-        pstmt.setString(3, TableType.BASE_TABLE.name());
+        pstmt.setString(3, TableType.MANAGED.name());
       }
       pstmt.setString(4, table.getPath());
       pstmt.setString(5, table.getMeta().getStoreType());
@@ -1011,7 +1022,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (existTable(databaseName, alterTableDescProto.getNewTableName())) {
         throw new DuplicateTableException(alterTableDescProto.getNewTableName());
       }
-      renameTable(tableId, alterTableDescProto.getNewTableName());
+      if (alterTableDescProto.hasNewTablePath()) {
+        renameManagedTable(tableId, alterTableDescProto.getNewTableName(), alterTableDescProto.getNewTablePath());
+      } else {
+        renameExternalTable(tableId, alterTableDescProto.getNewTableName());
+      }
       break;
     case RENAME_COLUMN:
       if (existColumn(tableId, alterTableDescProto.getAlterColumnName().getNewColumnName())) {
@@ -1119,7 +1134,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  private void renameTable(final int tableId, final String tableName) {
+  private void renameExternalTable(final int tableId, final String tableName) {
 
     final String updtaeRenameTableSql = "UPDATE " + TB_TABLES + " SET " + COL_TABLES_NAME + " = ? " + " WHERE TID = ?";
 
@@ -1136,6 +1151,34 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(updtaeRenameTableSql);
       pstmt.setString(1, tableName);
       pstmt.setInt(2, tableId);
+      pstmt.executeUpdate();
+
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
+  }
+
+  private void renameManagedTable(final int tableId, final String tableName, final String newTablePath) {
+
+    final String updtaeRenameTableSql = "UPDATE " + TB_TABLES + " SET " + COL_TABLES_NAME + " = ? , PATH = ?"
+        + " WHERE TID = ?";
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(updtaeRenameTableSql);
+    }
+
+    Connection conn;
+    PreparedStatement pstmt = null;
+
+    try {
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(updtaeRenameTableSql);
+      pstmt.setString(1, tableName);
+      pstmt.setString(2, newTablePath);
+      pstmt.setInt(3, tableId);
       pstmt.executeUpdate();
 
     } catch (SQLException se) {
@@ -1596,7 +1639,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       int tableId = res.getInt(1);
       tableBuilder.setTableName(CatalogUtil.buildFQName(databaseName, res.getString(2).trim()));
       TableType tableType = TableType.valueOf(res.getString(3));
-      if (tableType == TableType.EXTERNAL_TABLE) {
+      if (tableType == TableType.EXTERNAL) {
         tableBuilder.setIsExternal(true);
       }
 
@@ -1768,7 +1811,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         TableType tableType = TableType.valueOf(tableTypeString);
         builder.setTableType(tableTypeString);
 
-        if (tableType == TableType.BASE_TABLE) {
+        if (tableType == TableType.MANAGED) {
           builder.setPath(resultSet.getString("SPACE_URI") + "/" + tableName);
         } else {
           builder.setPath(resultSet.getString("PATH"));
@@ -2300,17 +2343,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
+      final SortSpec[] keySortSpecs = new SortSpec[proto.getKeySortSpecsCount()];
+      for (int i = 0; i < keySortSpecs.length; i++) {
+        keySortSpecs[i] = new SortSpec(proto.getKeySortSpecs(i));
+      }
+
       StringBuilder columnNamesBuilder = new StringBuilder();
       StringBuilder dataTypesBuilder= new StringBuilder();
       StringBuilder ordersBuilder = new StringBuilder();
       StringBuilder nullOrdersBuilder = new StringBuilder();
-      for (SortSpecProto columnSpec : proto.getKeySortSpecsList()) {
+      for (SortSpec columnSpec : keySortSpecs) {
         // Since the key columns are always sorted in order of their occurrence position in the relation schema,
         // the concatenated name can be uniquely identified.
-        columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
-        dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
-        ordersBuilder.append(columnSpec.getAscending()).append(",");
-        nullOrdersBuilder.append(columnSpec.getNullFirst()).append(",");
+        columnNamesBuilder.append(columnSpec.getSortKey().getSimpleName()).append(",");
+        dataTypesBuilder.append(columnSpec.getSortKey().getDataType().getType().name()).append(",");
+        ordersBuilder.append(columnSpec.isAscending()).append(",");
+        nullOrdersBuilder.append(columnSpec.isNullFirst()).append(",");
       }
       columnNamesBuilder.deleteCharAt(columnNamesBuilder.length()-1);
       dataTypesBuilder.deleteCharAt(dataTypesBuilder.length()-1);
@@ -2414,9 +2462,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         throw new UndefinedIndexException(indexName);
       }
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-      resultToIndexDescProtoBuilder(builder, res);
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      resultToIndexDescProtoBuilder(CatalogUtil.buildFQName(databaseName, tableName), builder, res);
 
       try {
         builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
@@ -2459,8 +2507,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
-      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
-          CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
+      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames);
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
@@ -2472,7 +2519,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-      resultToIndexDescProtoBuilder(builder, res);
+      resultToIndexDescProtoBuilder(CatalogUtil.buildFQName(databaseName, tableName), builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       builder.setTargetRelationSchema(tableDescProto.getSchema());
       proto = builder.build();
@@ -2544,8 +2591,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
-      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
-          CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames));
+      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames);
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
@@ -2647,7 +2693,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return indexDescProtos;
   }
 
-  private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
+  private void resultToIndexDescProtoBuilder(final String qualifier,
+                                             final IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
     builder.setIndexName(res.getString("index_name"));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
@@ -2660,7 +2707,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     int columnNum = columnNames.length;
     for (int i = 0; i < columnNum; i++) {
       SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
-      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(columnNames[i])
+      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(CatalogUtil.buildFQName(qualifier, columnNames[i]))
           .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
       colSpecBuilder.setAscending(orders[i].equals("true"));
       colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
@@ -2733,7 +2780,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   public void close() {
     CatalogUtil.closeQuietly(conn);
-    LOG.info("Shutdown database (" + catalogUri + ")");
+    LOG.info("Close database (" + catalogUri + ")");
   }
 
   @Override

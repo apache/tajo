@@ -143,11 +143,6 @@ public class ExternalSortExec extends SortExec {
     setChild(child);
   }
 
-  @VisibleForTesting
-  public void setSortBufferBytesNum(int sortBufferBytesNum) {
-    this.sortBufferBytesNum = sortBufferBytesNum;
-  }
-
   public void init() throws IOException {
     inputStats = new TableStats();
     super.init();
