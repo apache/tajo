@@ -468,6 +468,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   public static String getBaseDirPath() {
+    LOG.info("Python base dir is " + BASE_DIR);
     return BASE_DIR;
   }
 
@@ -502,7 +503,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
     Datum result = null;
     try {
-      result = outputHandler.getNext().asDatum(0);
+      Tuple next = outputHandler.getNext();
+      if (next != null) {
+        result = next.asDatum(0);
+      } else {
+        throw new RuntimeException("Cannot get output result from python controller");
+      }
     } catch (Throwable e) {
       throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
@@ -643,7 +649,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     Datum result = null;
     try {
-      result = outputHandler.getNext().asDatum(0);
+      Tuple next = outputHandler.getNext();
+      if (next != null) {
+        result = next.asDatum(0);
+      } else {
+        throw new RuntimeException("Cannot get output result from python controller");
+      }
     } catch (Exception e) {
       throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
