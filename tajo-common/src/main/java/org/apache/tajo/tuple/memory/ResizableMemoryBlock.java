@@ -41,7 +41,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
   protected ResizableLimitSpec limitSpec;
 
   public ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
-    this.buffer = buffer.order(ByteOrder.nativeOrder());
+    this.buffer = buffer.order(ByteOrder.LITTLE_ENDIAN);
     this.limitSpec = limitSpec;
   }
 
@@ -50,7 +50,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
   }
 
   public ResizableMemoryBlock(ByteBuffer buffer) {
-    this.buffer = Unpooled.wrappedBuffer(buffer).order(ByteOrder.nativeOrder());
+    this.buffer = Unpooled.wrappedBuffer(buffer).order(ByteOrder.LITTLE_ENDIAN);
     this.limitSpec = new ResizableLimitSpec(buffer.capacity());
   }
 
