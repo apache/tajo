@@ -29,6 +29,10 @@ import org.apache.tajo.util.TUtil;
 import java.util.List;
 import java.util.Stack;
 
+/**
+ *  This build SQL statements for getting partitions informs on CatalogStore with algebra expressions. *
+ *
+ */
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
   private boolean isHiveCatalog = false;
   private boolean existRowCostant = false;
