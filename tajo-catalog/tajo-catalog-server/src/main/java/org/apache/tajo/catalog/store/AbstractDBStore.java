@@ -2169,14 +2169,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
+  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException {
     throw new UndefinedOperatorException("getPartitionsByDirectSql");
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
+  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
       UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException {
     Connection conn = null;
@@ -2186,7 +2186,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     int currentIndex = 1;
     String directSQL = null;
 
-    List<TablePartitionProto> partitions = TUtil.newList();
+    List<PartitionDescProto> partitions = TUtil.newList();
     List<PartitionFilterSet> filterSets = TUtil.newList();
 
     try {
@@ -2246,10 +2246,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
+        PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
 
-        builder.setPartitionId(res.getInt(COL_PARTITIONS_PK));
-        builder.setTid(tableId);
+        builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
         builder.setPath(res.getString("PATH"));
 

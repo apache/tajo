@@ -28,7 +28,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByDirectSqlProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.*;
@@ -129,7 +129,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
-    List<TablePartitionProto> partitions = null;
+    List<PartitionDescProto> partitions = null;
 
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 

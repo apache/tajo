@@ -860,19 +860,19 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request)
+  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException {
     throw new UndefinedOperatorException("getPartitionsByAlgebra");
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
+  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException {
 
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
-    List<TablePartitionProto> partitions = null;
+    List<PartitionDescProto> partitions = null;
 
     try {
       String databaseName = request.getDatabaseName();
@@ -886,7 +886,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         , request.getDirectSql(), (short) -1);
 
       for (Partition hivePartition : hivePartitions) {
-        CatalogProtos.TablePartitionProto.Builder builder = CatalogProtos.TablePartitionProto.newBuilder();
+        CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
         builder.setPath(hivePartition.getSd().getLocation());
 
         int startIndex = hivePartition.getSd().getLocation().indexOf(tableName) + tableName.length();

@@ -282,7 +282,7 @@ public class TestHiveCatalogStore {
     directSQLRequest.setTableName(NATION);
     directSQLRequest.setDirectSql("n_nationkey = 10 or n_nationkey = 20");
 
-    List<CatalogProtos.TablePartitionProto> tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
+    List<CatalogProtos.PartitionDescProto> tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
     assertEquals(tablePartitions.size(), 4);
 
     directSQLRequest = CatalogProtos.PartitionsByDirectSqlProto.newBuilder();

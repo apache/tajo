@@ -1077,7 +1077,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetTablePartitionsResponse getPartitionsByAlgebra(RpcController controller,
+    public GetPartitionsResponse getPartitionsByAlgebra(RpcController controller,
       PartitionsByAlgebraProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
@@ -1086,17 +1086,17 @@ public class CatalogServer extends AbstractService {
         // linked meta data do not support partition.
         // So, the request that wants to get partitions in this db will be failed.
         if (linkedMetadataManager.existsDatabase(dbName)) {
-          return GetTablePartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
-        return GetTablePartitionsResponse.newBuilder()
+        return GetPartitionsResponse.newBuilder()
           .setState(returnError(t))
           .build();
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
-        return GetTablePartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
 
       rlock.lock();
@@ -1109,30 +1109,30 @@ public class CatalogServer extends AbstractService {
           if (contain) {
 
             if (store.existPartitionMethod(dbName, tbName)) {
-              GetTablePartitionsResponse.Builder builder = GetTablePartitionsResponse.newBuilder();
-              List<TablePartitionProto> partitions = store.getPartitionsByAlgebra(request);
-              builder.addAllPart(partitions);
+              GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+              List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
+              builder.addAllPartition(partitions);
               builder.setState(OK);
               return builder.build();
             } else {
-              return GetTablePartitionsResponse.newBuilder()
+              return GetPartitionsResponse.newBuilder()
                 .setState(errUndefinedPartitionMethod(tbName))
                 .build();
             }
           } else {
-            return GetTablePartitionsResponse.newBuilder()
+            return GetPartitionsResponse.newBuilder()
               .setState(errUndefinedTable(tbName))
               .build();
           }
         } else {
-          return GetTablePartitionsResponse.newBuilder()
+          return GetPartitionsResponse.newBuilder()
             .setState(errUndefinedDatabase(dbName))
             .build();
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetTablePartitionsResponse.newBuilder()
+        return GetPartitionsResponse.newBuilder()
             .setState(returnError(t))
             .build();
 
@@ -1142,7 +1142,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetTablePartitionsResponse getPartitionsByDirectSql(RpcController controller,
+    public GetPartitionsResponse getPartitionsByDirectSql(RpcController controller,
                                                  PartitionsByDirectSqlProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
@@ -1151,17 +1151,17 @@ public class CatalogServer extends AbstractService {
         // linked meta data do not support partition.
         // So, the request that wants to get partitions in this db will be failed.
         if (linkedMetadataManager.existsDatabase(dbName)) {
-          return GetTablePartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
-        return GetTablePartitionsResponse.newBuilder()
+        return GetPartitionsResponse.newBuilder()
           .setState(returnError(t))
           .build();
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
-        return GetTablePartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
 
       rlock.lock();
@@ -1174,30 +1174,30 @@ public class CatalogServer extends AbstractService {
           if (contain) {
 
             if (store.existPartitionMethod(dbName, tbName)) {
-              GetTablePartitionsResponse.Builder builder = GetTablePartitionsResponse.newBuilder();
-              List<TablePartitionProto> partitions = store.getPartitionsByDirectSql(request);
-              builder.addAllPart(partitions);
+              GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+              List<PartitionDescProto> partitions = store.getPartitionsByDirectSql(request);
+              builder.addAllPartition(partitions);
               builder.setState(OK);
               return builder.build();
             } else {
-              return GetTablePartitionsResponse.newBuilder()
+              return GetPartitionsResponse.newBuilder()
                 .setState(errUndefinedPartitionMethod(tbName))
                 .build();
             }
           } else {
-            return GetTablePartitionsResponse.newBuilder()
+            return GetPartitionsResponse.newBuilder()
               .setState(errUndefinedTable(tbName))
               .build();
           }
         } else {
-          return GetTablePartitionsResponse.newBuilder()
+          return GetPartitionsResponse.newBuilder()
             .setState(errUndefinedDatabase(dbName))
             .build();
         }
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetTablePartitionsResponse.newBuilder()
+        return GetPartitionsResponse.newBuilder()
           .setState(returnError(t))
           .build();
 

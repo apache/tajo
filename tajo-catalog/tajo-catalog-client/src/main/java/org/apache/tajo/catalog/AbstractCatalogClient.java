@@ -457,14 +457,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
+  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException {
     try {
       final BlockingInterface stub = getStub();
-      GetTablePartitionsResponse response = stub.getPartitionsByAlgebra(null, request);
+      GetPartitionsResponse response = stub.getPartitionsByAlgebra(null, request);
       ensureOk(response.getState());
-    return response.getPartList();
+    return response.getPartitionList();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
@@ -472,14 +472,14 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request) throws
+  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException {
     try {
       final BlockingInterface stub = getStub();
-      GetTablePartitionsResponse response = stub.getPartitionsByDirectSql(null, request);
+      GetPartitionsResponse response = stub.getPartitionsByDirectSql(null, request);
       ensureOk(response.getState());
-      return response.getPartList();
+      return response.getPartitionList();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
