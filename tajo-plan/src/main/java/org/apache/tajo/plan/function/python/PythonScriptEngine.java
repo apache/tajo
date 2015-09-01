@@ -442,21 +442,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
     stderr = new DataInputStream(new BufferedInputStream(process.getErrorStream()));
   }
 
-  private static File pythonScriptBaseDir = null;
-  private static File pythonScriptControllerCopy = null;
-  private static File pythonScriptUtilCopy = null;
+  private static final File pythonScriptBaseDir = new File(PythonScriptEngine.getBaseDirPath());
+  private static final File pythonScriptControllerCopy = new File(PythonScriptEngine.getControllerPath());
+  private static final File pythonScriptUtilCopy = new File(PythonScriptEngine.getTajoUtilPath());
 
   public static void initPythonScriptEngineFiles() throws IOException {
-    if (pythonScriptBaseDir == null ){
-      pythonScriptBaseDir = new File(PythonScriptEngine.getBaseDirPath());
-    }
-    if (pythonScriptControllerCopy == null) {
-      pythonScriptControllerCopy = new File(PythonScriptEngine.getControllerPath());
-    }
-    if (pythonScriptUtilCopy == null) {
-      pythonScriptUtilCopy = new File(PythonScriptEngine.getTajoUtilPath());
-    }
-
     if (!pythonScriptBaseDir.exists()) {
       pythonScriptBaseDir.mkdirs();
     }
@@ -466,20 +456,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   public static void loadController(File controllerCopy) throws IOException {
-    InputStream controllerInputStream = PythonScriptEngine.class.getResourceAsStream(PYTHON_CONTROLLER_JAR_PATH);
-    try {
+    try (InputStream controllerInputStream = PythonScriptEngine.class.getResourceAsStream(PYTHON_CONTROLLER_JAR_PATH)) {
       FileUtils.copyInputStreamToFile(controllerInputStream, controllerCopy);
-    } finally {
-      controllerInputStream.close();
     }
   }
 
   public static void loadTajoUtil(File utilCopy) throws IOException {
-    InputStream utilInputStream = PythonScriptEngine.class.getResourceAsStream(PYTHON_TAJO_UTIL_JAR_PATH);
-    try {
+    try (InputStream utilInputStream = PythonScriptEngine.class.getResourceAsStream(PYTHON_TAJO_UTIL_JAR_PATH)) {
       FileUtils.copyInputStreamToFile(utilInputStream, utilCopy);
-    } finally {
-      utilInputStream.close();
     }
   }
 
