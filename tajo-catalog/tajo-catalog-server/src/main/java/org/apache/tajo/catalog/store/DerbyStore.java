@@ -21,6 +21,8 @@
  */
 package org.apache.tajo.catalog.store;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.exception.TajoInternalError;
@@ -31,6 +33,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DerbyStore extends AbstractDBStore {
+
+  private static final Log LOG = LogFactory.getLog(DerbyStore.class);
 
   private static final String CATALOG_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
 
@@ -51,8 +55,7 @@ public class DerbyStore extends AbstractDBStore {
     return super.readSchemaFile("derby/" + filename);
   }
 
-  @Override
-  public final void close() {
+  public static void shutdown() {
     Connection conn = null;
     // shutdown embedded database.
     try {
@@ -64,12 +67,12 @@ public class DerbyStore extends AbstractDBStore {
         // tajo got the expected exception
         LOG.info("Derby shutdown complete normally.");
       } else {
-        LOG.info("Derby shutdown complete abnormally. - message:" + se.getMessage());
+        LOG.info("Derby shutdown complete abnormally. - message: " + se.getMessage());
       }
     } finally {
       CatalogUtil.closeQuietly(conn);
     }
-    LOG.info("Shutdown database (" + catalogUri + ")");
+    LOG.info("Shutdown database");
   }
 
   @Override

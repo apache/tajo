@@ -59,6 +59,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   private static final int CLIENT_POOL_SIZE = 2;
   private final HiveCatalogStoreClientPool clientPool;
   private final String defaultTableSpaceUri;
+  private final String catalogUri;
 
   public HiveCatalogStore(final Configuration conf) {
     if (!(conf instanceof TajoConf)) {
@@ -67,6 +68,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     this.conf = conf;
     this.defaultTableSpaceUri = TajoConf.getWarehouseDir((TajoConf) conf).toString();
     this.clientPool = new HiveCatalogStoreClientPool(CLIENT_POOL_SIZE, conf);
+    this.catalogUri = conf.get(CATALOG_URI);
   }
 
   @Override
@@ -285,6 +287,11 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     } finally {
       if(client != null) client.release();
     }
+  }
+
+  @Override
+  public String getUri() {
+    return catalogUri;
   }
 
   @Override

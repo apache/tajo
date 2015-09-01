@@ -49,9 +49,9 @@ enum Query {
   FAILED            = 5;
   KILLED            = 6;
 
-  NUM_PER_HOUR      = 6;
-  MAX_IO_THROUGHPUT = 7;
-  AVG_IO_THROUGHPUT = 8;
+  NUM_PER_HOUR      = 7;
+  MAX_IO_THROUGHPUT = 8;
+  AVG_IO_THROUGHPUT = 9;
 
-  PENDING_QUERIES   = 9;
+  PENDING_QUERIES   = 10;
 }

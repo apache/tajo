@@ -461,6 +461,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1803: Use in-memory derby as the default catalog for unit tests. 
+    (jihoon)
+
     TAJO-1755: Add documentation for missing built-in functions. (jihoon)
 
     TAJO-1750: Upgrade hadoop dependency to 2.7.1. (jinho)
