@@ -675,9 +675,8 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     try {
       assertTrue("should have result set", statement.execute());
       TajoResultSetBase result = (TajoResultSetBase) statement.getResultSet();
-      Thread.sleep(1000);   // todo query master is not killed properly if it's compiling the query (use 100, if you want see)
       statement.cancel();
-
+      Thread.sleep(1000);
       QueryStatus status = client.getQueryStatus(result.getQueryId());
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, status.getState());
     } finally {
