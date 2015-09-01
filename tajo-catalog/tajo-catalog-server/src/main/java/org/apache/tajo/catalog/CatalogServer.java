@@ -1078,7 +1078,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public GetTablePartitionsResponse getPartitionsByAlgebra(RpcController controller,
-      GetPartitionsByAlgebraRequest request) throws ServiceException {
+      PartitionsByAlgebraProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
@@ -1143,7 +1143,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public GetTablePartitionsResponse getPartitionsByDirectSql(RpcController controller,
-                                                 GetPartitionsByDirectSqlRequest request) throws ServiceException {
+                                                 PartitionsByDirectSqlProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 

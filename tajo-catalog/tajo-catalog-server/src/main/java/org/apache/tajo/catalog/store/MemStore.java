@@ -586,14 +586,14 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request)
+  public List<TablePartitionProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException {
     throw new UndefinedOperatorException("getPartitionsByAlgebra");
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request)
+  public List<TablePartitionProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException {
     throw new UndefinedOperatorException("getPartitionsByDirectSql");

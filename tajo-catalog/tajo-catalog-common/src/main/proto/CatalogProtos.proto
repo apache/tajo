@@ -261,13 +261,13 @@ message PartitionIdentifierProto {
   optional string partitionName = 3;
 }
 
-message GetPartitionsByAlgebraRequest {
+message PartitionsByAlgebraProto {
   required string databaseName = 1;
   required string tableName = 2;
   required string algebra = 3;
 }
 
-message GetPartitionsByDirectSqlRequest {
+message PartitionsByDirectSqlProto {
   required string databaseName = 1;
   required string tableName = 2;
   required string directSql = 3;

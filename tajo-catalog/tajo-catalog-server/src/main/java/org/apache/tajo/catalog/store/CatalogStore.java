@@ -117,11 +117,11 @@ public interface CatalogStore extends Closeable {
    * @return list of TablePartitionProto
    * @throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException
    */
-  List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
+  List<TablePartitionProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException;
 
-  List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request) throws
+  List<TablePartitionProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException;
 

@@ -2169,14 +2169,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByDirectSql(GetPartitionsByDirectSqlRequest request)
+  public List<TablePartitionProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException {
     throw new UndefinedOperatorException("getPartitionsByDirectSql");
   }
 
   @Override
-  public List<TablePartitionProto> getPartitionsByAlgebra(GetPartitionsByAlgebraRequest request) throws
+  public List<TablePartitionProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
       UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException {
     Connection conn = null;

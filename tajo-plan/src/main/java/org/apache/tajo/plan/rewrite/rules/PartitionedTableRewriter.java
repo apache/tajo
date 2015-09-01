@@ -26,8 +26,8 @@ import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsByAlgebraRequest;
-import org.apache.tajo.catalog.proto.CatalogProtos.GetPartitionsByDirectSqlRequest;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByDirectSqlProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -135,12 +135,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     try {
       if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
-        GetPartitionsByDirectSqlRequest request = buildDirectSQLWithHiveCatalogStore(splits[0], splits[1],
+        PartitionsByDirectSqlProto request = buildDirectSQLWithHiveCatalogStore(splits[0], splits[1],
           partitionColumns, conjunctiveForms);
         partitions = catalog.getPartitionsByDirectSql(request);
       } else if (!store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")
         && catalog.existPartitions(splits[0], splits[1])) {
-        GetPartitionsByAlgebraRequest request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
+        PartitionsByAlgebraProto request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
       }
 
@@ -235,10 +235,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsByAlgebraRequest buildDirectSQLWithDBStore(
+  public static PartitionsByAlgebraProto buildDirectSQLWithDBStore(
     String databaseName, String tableName, EvalNode [] conjunctiveForms) {
 
-    GetPartitionsByAlgebraRequest.Builder request = GetPartitionsByAlgebraRequest.newBuilder();
+    PartitionsByAlgebraProto.Builder request = PartitionsByAlgebraProto.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
@@ -271,10 +271,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static GetPartitionsByDirectSqlRequest buildDirectSQLWithHiveCatalogStore(
+  public static PartitionsByDirectSqlProto buildDirectSQLWithHiveCatalogStore(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
-    GetPartitionsByDirectSqlRequest.Builder request = GetPartitionsByDirectSqlRequest.newBuilder();
+    PartitionsByDirectSqlProto.Builder request = PartitionsByDirectSqlProto.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
