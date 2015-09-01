@@ -97,6 +97,8 @@ public class ErrorMessages {
     ADD_MESSAGE(CAT_UPGRADE_REQUIRED, "catalog must be upgraded");
     ADD_MESSAGE(CAT_CANNOT_CONNECT, "cannot connect metadata store '%s': %s", 2);
 
+    ADD_MESSAGE(CAT_UNSUPPORTED_CATALOG_STORE, "unsupported catalog store: %s", 1);
+
     ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     // Storage and Data Format
