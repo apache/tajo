@@ -84,7 +84,7 @@ public class TajoTestingCluster {
 	/**
 	 * Default parent directory for test output.
 	 */
-	public static final String DEFAULT_TEST_DIRECTORY = "target/" +
+	public static final String DEFAULT_TEST_DIRECTORY = "target/" + 
 	    System.getProperty("tajo.test.data.dir", "test-data");
 
   /**
@@ -366,9 +366,9 @@ public class TajoTestingCluster {
         tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort());
     this.conf.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, c.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
-
+    
     InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
-
+    
     this.conf.setIntVar(ConfVars.REST_SERVICE_PORT, tajoRestAddress.getPort());
 
     startTajoWorkers(numSlaves);
@@ -433,7 +433,7 @@ public class TajoTestingCluster {
       workerConf.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
 
       workerConf.setVar(ConfVars.WORKER_QM_RPC_ADDRESS, "localhost:0");
-
+      
       tajoWorker.startWorker(workerConf, new String[0]);
 
       LOG.info("MiniTajoCluster Worker #" + (i + 1) + " started.");
