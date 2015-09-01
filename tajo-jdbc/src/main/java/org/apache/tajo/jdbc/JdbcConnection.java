@@ -18,6 +18,7 @@
 
 package org.apache.tajo.jdbc;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
@@ -30,7 +31,6 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.StringUtils;
 
 import java.net.URI;
 import java.sql.*;
@@ -110,7 +110,7 @@ public class JdbcConnection implements Connection {
     if(properties != null) {
       for(Map.Entry<Object, Object> entry: properties.entrySet()) {
         if(entry.getValue() instanceof Collection) {
-          clientProperties.set(entry.getKey().toString(), StringUtils.join((Collection)entry.getValue(), ","));
+          clientProperties.set(entry.getKey().toString(), StringUtils.join((Collection) entry.getValue(), ","));
         } else {
           clientProperties.set(entry.getKey().toString(), entry.getValue().toString());
         }
