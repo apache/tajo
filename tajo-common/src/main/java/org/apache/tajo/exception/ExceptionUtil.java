@@ -84,7 +84,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(TOO_LARGE_INPUT_FOR_CROSS_JOIN, TooLargeInputForCrossJoinException.class);
     ADD_EXCEPTION(INVALID_INPUTS_FOR_CROSS_JOIN, InvalidInputsForCrossJoin.class);
 
-    ADD_EXCEPTION(UNSUPPORTED_CATALOG_STORE, UnsupportedCatalogStore.class);
+    ADD_EXCEPTION(CAT_UNSUPPORTED_CATALOG_STORE, UnsupportedCatalogStore.class);
   }
 
   private static void ADD_EXCEPTION(Errors.ResultCode code, Class<? extends DefaultTajoException> cls) {

@@ -28,6 +28,6 @@ public class UnsupportedCatalogStore extends TajoException {
   }
 
   public UnsupportedCatalogStore(String name) {
-    super(ResultCode.UNSUPPORTED_CATALOG_STORE, name);
+    super(ResultCode.CAT_UNSUPPORTED_CATALOG_STORE, name);
   }
 }

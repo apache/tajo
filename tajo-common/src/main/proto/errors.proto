@@ -158,7 +158,7 @@ enum ResultCode {
   CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server
 
   // Catalog store
-  UNSUPPORTED_CATALOG_STORE             = 905; // Unsupported type of catalog store
+  CAT_UNSUPPORTED_CATALOG_STORE         = 905; // Unsupported type of catalog store
 
   // Linked Metadata (LMD)
   LMD_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
