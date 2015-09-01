@@ -425,8 +425,8 @@ public class AlgebraicUtil {
 
   private static void toDisjunctiveNormalFormArrayRecursive(EvalNode node, List<EvalNode> found) {
     if (node.getType() == EvalType.OR) {
-      toDisjunctiveNormalFormArrayRecursive(((BinaryEval) node).getLeftExpr(), found);
-      toDisjunctiveNormalFormArrayRecursive(((BinaryEval) node).getRightExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getLeftExpr(), found);
+      toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getRightExpr(), found);
     } else {
       found.add(node);
     }
