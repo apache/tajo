@@ -33,7 +33,6 @@ import org.apache.tajo.engine.utils.TableCache;
 import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.util.Pair;
 
@@ -61,7 +60,6 @@ public class ExecutionBlockSharedResource {
         ExecutionBlockSharedResource.this.context = context;
         initPlan(planJson);
         initCodeGeneration();
-        PythonScriptEngine.initPythonScriptEngineFiles();
         resourceInitSuccess = true;
       } catch (Throwable t) {
         LOG.error(t);

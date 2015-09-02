@@ -329,7 +329,6 @@ public class QueryExecutor {
 
   public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
       throws IOException {
-    PythonScriptEngine.initPythonScriptEngineFiles();
     for (int i = 0; i < targets.length; i++) {
       EvalNode eval = targets[i].getEvalTree();
       if (eval instanceof GeneralFunctionEval) {
