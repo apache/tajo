@@ -24,6 +24,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
@@ -32,13 +35,13 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -1310,7 +1313,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ScanNode scanNode = block.getNodeFromExpr(expr);
-    updatePhysicalInfo(scanNode.getTableDesc());
+    updatePhysicalInfo(context, scanNode.getTableDesc());
 
     // Find expression which can be evaluated at this relation node.
     // Except for column references, additional expressions used in select list, where clause, order-by clauses
@@ -1369,16 +1372,24 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
-  private void updatePhysicalInfo(TableDesc desc) {
-
-    // FAKEFILE is used for test{
-    if (!desc.getMeta().getStoreType().equals("SYSTEM") && !desc.getMeta().getStoreType().equals("FAKEFILE")) {
+  private void updatePhysicalInfo(PlanContext planContext, TableDesc desc) {
+    if (desc.getUri() != null &&
+        !desc.getMeta().getStoreType().equals("SYSTEM") &&
+        !desc.getMeta().getStoreType().equals("FAKEFILE") && // FAKEFILE is used for test
+        PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
       try {
-        if (desc.getStats() != null) {
-          desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
+        Path path = new Path(desc.getUri());
+        FileSystem fs = path.getFileSystem(planContext.queryContext.getConf());
+        FileStatus status = fs.getFileStatus(path);
+        if (desc.getStats() != null && (status.isDirectory() || status.isFile())) {
+          ContentSummary summary = fs.getContentSummary(path);
+          if (summary != null) {
+            long volume = summary.getLength();
+            desc.getStats().setNumBytes(volume);
+          }
         }
       } catch (Throwable t) {
-        LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume().");
+        LOG.warn(t, t);
       }
     }
   }
@@ -2212,11 +2223,19 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
-    createIndexNode.setExternal(createIndex.isExternal());
     Collection<RelationNode> relations = block.getRelations();
-    assert relations.size() == 1;
-    createIndexNode.setKeySortSpecs(relations.iterator().next().getLogicalSchema(),
-        annotateSortSpecs(block, referNames, sortSpecs));
+    if (relations.size() > 1) {
+      throw new UnsupportedException("Index on multiple relations");
+    } else if (relations.size() == 0) {
+      throw new TajoInternalError("No relation for indexing");
+    }
+    RelationNode relationNode = relations.iterator().next();
+    if (!(relationNode instanceof ScanNode)) {
+      throw new UnsupportedException("Index on subquery");
+    }
+
+    createIndexNode.setExternal(createIndex.isExternal());
+    createIndexNode.setKeySortSpecs(relationNode.getLogicalSchema(), annotateSortSpecs(block, referNames, sortSpecs));
     createIndexNode.setIndexMethod(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
     if (createIndex.isExternal()) {
       createIndexNode.setIndexPath(new Path(createIndex.getIndexPath()).toUri());

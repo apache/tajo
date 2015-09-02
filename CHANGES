@@ -234,6 +234,14 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1802: PythonScriptEngine copies controller and tajo util whenever 
+    it is initialized. (jihoon)
+
+    TAJO-1707: Rack local count can be more than actual number of tasks.
+    (jinho)
+
+    TAJO-1808: Wrong table type problem in catalog. (jihoon)
+
     TAJO-1801: Table name is not unique of tableDescMap in QueryMasterTask. 
     (jihoon)
 
@@ -460,6 +468,9 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1803: Use in-memory derby as the default catalog for unit tests. 
+    (jihoon)
 
     TAJO-1755: Add documentation for missing built-in functions. (jihoon)
 

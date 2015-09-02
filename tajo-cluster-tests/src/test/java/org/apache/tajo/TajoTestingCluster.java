@@ -31,13 +31,17 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.tajo.annotation.NotNull;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
+import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
 import org.apache.tajo.querymaster.Query;
@@ -291,17 +295,11 @@ public class TajoTestingCluster {
   public MiniCatalogServer startCatalogCluster() throws Exception {
     if(isCatalogServerRunning) throw new IOException("Catalog Cluster already running");
 
-    TajoConf c = getConfiguration();
-
-    conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
+    CatalogTestingUtil.configureCatalog(conf, clusterTestBuildDir.getAbsolutePath());
     LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
     catalogServer = new MiniCatalogServer(conf);
-    CatalogServer catServer = catalogServer.getCatalogServer();
-    InetSocketAddress sockAddr = catServer.getBindAddress();
-    c.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.normalizeInetSocketAddress(sockAddr));
     isCatalogServerRunning = true;
     return this.catalogServer;
   }
@@ -325,8 +323,8 @@ public class TajoTestingCluster {
   // Tajo Cluster Section
   ////////////////////////////////////////////////////////
   private void startMiniTajoCluster(File testBuildDir,
-                                               final int numSlaves,
-                                               boolean local) throws Exception {
+                                    final int numSlaves,
+                                    boolean local) throws Exception {
     TajoConf c = getConfiguration();
     c.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, "localhost:0");
@@ -334,8 +332,6 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
     c.setIntVar(ConfVars.REST_SERVICE_PORT, 0);
-
-    LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
     if (!local) {
       String tajoRootDir = getMiniDFSCluster().getFileSystem().getUri().toString() + "/tajo";
@@ -352,6 +348,8 @@ public class TajoTestingCluster {
     }
 
     setupCatalogForTesting(c, testBuildDir);
+
+    LOG.info("derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
 
     tajoMaster = new TajoMaster();
     tajoMaster.init(c);
@@ -386,7 +384,7 @@ public class TajoTestingCluster {
     LOG.info("====================================================================================");
   }
 
-  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException {
+  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException, UnsupportedCatalogStore {
     final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
     boolean hiveCatalogClassExists = false;
     try {
@@ -416,8 +414,7 @@ public class TajoTestingCluster {
         throw new IOException(cnfe);
       }
     } else { // for derby
-      c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-      c.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
+      CatalogTestingUtil.configureCatalog(conf, testBuildDir.getAbsolutePath());
     }
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
   }

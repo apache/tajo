@@ -19,10 +19,10 @@
 package org.apache.tajo.plan.exprrewrite.rules;
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.annotator.Prioritized;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizationRule;
-import org.apache.tajo.plan.annotator.Prioritized;
-import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
