@@ -38,10 +38,10 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
-public class EmbedPgSQLServer {
-  private static final Log LOG = LogFactory.getLog(EmbedPgSQLServer.class);
+public class PgSQLTestServer {
+  private static final Log LOG = LogFactory.getLog(PgSQLTestServer.class);
 
-  private static EmbedPgSQLServer instance;
+  private static PgSQLTestServer instance;
 
   public static final String [] TPCH_TABLES = {
       "customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier"
@@ -54,17 +54,17 @@ public class EmbedPgSQLServer {
 
   static {
     try {
-      instance = new EmbedPgSQLServer();
+      instance = new PgSQLTestServer();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public static EmbedPgSQLServer getInstance() {
+  public static PgSQLTestServer getInstance() {
     return instance;
   }
 
-  private EmbedPgSQLServer() throws Exception {
+  private PgSQLTestServer() throws Exception {
     server = new TestingPostgreSqlServer("testuser",
         "tpch"
     );
@@ -84,8 +84,10 @@ public class EmbedPgSQLServer {
     registerTablespace();
   }
 
+  Path testPath = CommonTestingUtil.getTestDir();
+
   private void loadTPCHTables() throws SQLException, IOException {
-    Path testPath = CommonTestingUtil.getTestDir();
+
 
     try (Connection connection = DriverManager.getConnection(getJdbcUrlForAdmin(), "postgres", null)) {
       connection.setCatalog("tpch");
@@ -93,28 +95,45 @@ public class EmbedPgSQLServer {
       try (Statement statement = connection.createStatement()) {
 
         for (String tableName : TPCH_TABLES) {
-          String sql = JavaResourceUtil.readTextFromResource("tpch/pgsql/" + tableName + ".sql");
-          statement.addBatch(sql);
-        }
+          String sql = JavaResourceUtil.readTextFromResource("pgsql/" + tableName + ".sql");
+          statement.executeUpdate(sql);
 
-        statement.executeBatch();
-
-        for (String tableName : TPCH_TABLES) {
-          String csvTable = JavaResourceUtil.readTextFromResource("tpch/" + tableName + ".tbl");
-          String fixedCsvTable = fixExtraColumn(csvTable);
-          Path filePath = new Path(testPath, tableName + ".tbl");
-          FileUtil.writeTextToFile(fixedCsvTable, filePath);
-
-          String copyCommand =
-              "COPY " + tableName + " FROM '" + filePath.toUri().getPath() + "' WITH (FORMAT csv, DELIMITER '|');";
+          // restore the table contents into a file stored in a local file system for PgSQL COPY command
+          String path = restoreTableContents(tableName);
+          String copyCommand = genLoadStatement(tableName, path);
           statement.executeUpdate(copyCommand);
         }
+
+        // load DATETIME_TYPES table
+        String sql = JavaResourceUtil.readTextFromResource("pgsql/datetime_types.sql");
+        statement.executeUpdate(sql);
+        Path filePath = new Path(testPath, "datetime_types.txt");
+        storeTableContents("pgsql/datetime_types.txt", filePath);
+        String copyCommand = genLoadStatement("datetime_types", filePath.toUri().getPath());
+        LOG.info(copyCommand);
+        statement.executeUpdate(copyCommand);
 
       } catch (Throwable t) {
         t.printStackTrace();
         throw t;
       }
     }
+  }
+
+  private String genLoadStatement(String tableName, String path) {
+    return  "COPY " + tableName + " FROM '" + path + "' WITH (FORMAT csv, DELIMITER '|');";
+  }
+
+  private void storeTableContents(String resource, Path path) throws IOException {
+    String csvTable = JavaResourceUtil.readTextFromResource(resource);
+    String fixedCsvTable = fixExtraColumn(csvTable);
+    FileUtil.writeTextToFile(fixedCsvTable, path);
+  }
+
+  private String restoreTableContents(String tableName) throws IOException {
+    Path filePath = new Path(testPath, tableName + ".tbl");
+    storeTableContents("tpch/" + tableName + ".tbl", filePath);
+    return filePath.toUri().getPath();
   }
 
   private String fixExtraColumn(String csvTable) {

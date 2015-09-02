@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestPgSQLEndPointTests extends QueryTestCaseBase {
-  private static final String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrlForAdmin();
+  private static final String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrlForAdmin();
   private static TajoClient client;
 
 
@@ -48,23 +48,23 @@ public class TestPgSQLEndPointTests extends QueryTestCaseBase {
     client.close();
   }
 
-  @Test(timeout = 5000)
+  @Test(timeout = 1000)
   public void testGetAllDatabaseNames() {
     Set<String> retrieved = Sets.newHashSet(client.getAllDatabaseNames());
-    assertTrue(retrieved.contains(EmbedPgSQLServer.DATABASE_NAME));
+    assertTrue(retrieved.contains(PgSQLTestServer.DATABASE_NAME));
   }
 
-  @Test(timeout = 5000)
+  @Test(timeout = 1000)
   public void testGetTableList() {
     Set<String> retrieved = Sets.newHashSet(client.getTableList("tpch"));
-    assertEquals(Sets.newHashSet(EmbedPgSQLServer.TPCH_TABLES), retrieved);
+    assertEquals(Sets.newHashSet(PgSQLTestServer.TPCH_TABLES), retrieved);
   }
 
-  @Test(timeout = 5000)
+  @Test(timeout = 1000)
   public void testGetTable() throws UndefinedTableException {
-    for (String tableName: EmbedPgSQLServer.TPCH_TABLES) {
-      TableDesc retrieved = client.getTableDesc(EmbedPgSQLServer.DATABASE_NAME + "." + tableName);
-      assertEquals(EmbedPgSQLServer.DATABASE_NAME + "." + tableName, retrieved.getName());
+    for (String tableName: PgSQLTestServer.TPCH_TABLES) {
+      TableDesc retrieved = client.getTableDesc(PgSQLTestServer.DATABASE_NAME + "." + tableName);
+      assertEquals(PgSQLTestServer.DATABASE_NAME + "." + tableName, retrieved.getName());
       assertEquals(jdbcUrl + "&table=" + tableName, retrieved.getUri().toASCIIString());
     }
   }

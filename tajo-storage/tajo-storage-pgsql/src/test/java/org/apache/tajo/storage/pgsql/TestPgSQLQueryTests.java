@@ -23,10 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestPgSQLQueryTests extends QueryTestCaseBase {
-  private static final String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrl();
+  private static final String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrl();
 
   public TestPgSQLQueryTests() {
-    super(EmbedPgSQLServer.DATABASE_NAME);
+    super(PgSQLTestServer.DATABASE_NAME);
   }
 
   @BeforeClass
@@ -37,6 +37,42 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @SimpleTest
   @Test
   public void testSimpleFilter() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testProjectedColumns() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testFixedLengthFields() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testVariableLengthFields() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testDateTimeTypes() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testTPCH_Q1() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testTPCH_Q2_Part() throws Exception {
     runSimpleTests();
   }
 }

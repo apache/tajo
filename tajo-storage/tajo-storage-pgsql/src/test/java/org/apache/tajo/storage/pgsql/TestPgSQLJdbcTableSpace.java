@@ -20,10 +20,8 @@ package org.apache.tajo.storage.pgsql;
 
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -37,9 +35,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestPgSQLJdbcTableSpace {
-  static String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrlForAdmin();
+  static String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrlForAdmin();
 
-  @Test(timeout = 5000)
+  @Test(timeout = 1000)
   public void testTablespaceHandler() throws Exception {
     assertTrue((TablespaceManager.getByName("pgsql_cluster").get()) instanceof PgSQLTablespace);
     assertEquals("pgsql_cluster", (TablespaceManager.getByName("pgsql_cluster").get().getName()));
@@ -51,19 +49,19 @@ public class TestPgSQLJdbcTableSpace {
     assertTrue(TablespaceManager.get(jdbcUrl).get().getMetadataProvider() instanceof PgSQLMetadataProvider);
   }
 
-  @Test(timeout = 5000, expected = TajoRuntimeException.class)
+  @Test(timeout = 1000, expected = TajoRuntimeException.class)
   public void testCreateTable() throws IOException, TajoException {
     Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
     space.createTable(null, false);
   }
 
-  @Test(timeout = 5000, expected = TajoRuntimeException.class)
+  @Test(timeout = 1000, expected = TajoRuntimeException.class)
   public void testDropTable() throws IOException, TajoException {
     Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
     space.purgeTable(null);
   }
 
-  @Test(timeout = 5000)
+  @Test(timeout = 1000)
   public void testGetSplits() throws IOException, TajoException {
     Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
     MetadataProvider provider = space.getMetadataProvider();

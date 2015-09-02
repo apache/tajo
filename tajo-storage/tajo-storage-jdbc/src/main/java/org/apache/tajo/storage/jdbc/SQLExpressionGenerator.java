@@ -18,11 +18,13 @@
 
 package org.apache.tajo.storage.jdbc;
 
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.util.Pair;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -34,8 +36,12 @@ import java.util.Stack;
 public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionGenerator.Context> {
   final private DatabaseMetaData dbMetaData;
 
-  final private String DEFAULT_QUOTE_STR = "'";
-  private String QUOTE_STR;
+  private final String LITERAL_QUOTE = "'";
+  @SuppressWarnings("unused")
+  private final String DEFAULT_LITERAL_QUOTE = "'";
+  @SuppressWarnings("unused")
+  private String IDENTIFIER_QUOTE = "\"";
+  private final String DEFAULT_IDENTIFIER_QUOTE = "\"";
 
   public SQLExpressionGenerator(DatabaseMetaData dbMetaData) {
     this.dbMetaData = dbMetaData;
@@ -48,11 +54,11 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
       quoteStr = dbMetaData.getIdentifierQuoteString();
     } catch (SQLException e) {
     }
-    this.QUOTE_STR = quoteStr != null ? quoteStr : DEFAULT_QUOTE_STR;
+    this.IDENTIFIER_QUOTE = quoteStr != null ? quoteStr : DEFAULT_IDENTIFIER_QUOTE;
   }
 
   public String quote(String text) {
-    return QUOTE_STR + text + QUOTE_STR;
+    return LITERAL_QUOTE + text + LITERAL_QUOTE;
   }
 
   public String generate(EvalNode node) {
@@ -131,13 +137,21 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
 
   @Override
   protected EvalNode visitField(Context context, FieldEval field, Stack<EvalNode> stack) {
-    context.put(field.getName());
+    // strip the database name
+    String tableName;
+    if (CatalogUtil.isSimpleIdentifier(field.getQualifier())) {
+      tableName = field.getQualifier();
+    } else {
+      tableName = CatalogUtil.extractSimpleName(field.getQualifier());
+    }
+
+    context.put(CatalogUtil.buildFQName(tableName, field.getColumnName()));
     return field;
   }
 
   @Override
   protected EvalNode visitConst(Context context, ConstEval constant, Stack<EvalNode> stack) {
-    context.sb.append(convertLiteralToSQLRepr(constant.getValue()));
+    context.sb.append(convertLiteralToSQLRepr(constant.getValue())).append(" ");
     return constant;
   }
 

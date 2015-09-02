@@ -195,7 +195,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
         final String qualifier = resultForColumns.getString("TABLE_NAME");
         final String columnName = resultForColumns.getString("COLUMN_NAME");
         final TypeDesc type = convertDataType(resultForColumns);
-        final Column c = new Column(CatalogUtil.buildFQName(qualifier, columnName), type);
+        final Column c = new Column(CatalogUtil.buildFQName(databaseName, qualifier, columnName), type);
 
         columns.add(new Pair<>(ordinalPos, c));
       }

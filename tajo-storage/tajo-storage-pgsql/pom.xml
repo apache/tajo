@@ -55,7 +55,7 @@
             <exclude>src/test/resources/dataset/**</exclude>
             <exclude>src/test/resources/queries/**</exclude>
             <exclude>src/test/resources/results/**</exclude>
-            <exclude>src/test/resources/tpch/**</exclude>
+            <exclude>src/test/resources/pgsql/**</exclude>
           </excludes>
         </configuration>
         <executions>

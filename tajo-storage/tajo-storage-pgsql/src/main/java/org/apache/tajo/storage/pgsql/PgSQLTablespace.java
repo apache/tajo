@@ -66,13 +66,13 @@ public class PgSQLTablespace extends JdbcTablespace {
       target = schema;
     }
 
+    Scanner scanner;
     if (fragment.isEmpty()) {
-      Scanner scanner = new NullScanner(conf, schema, meta, fragment);
-      scanner.setTarget(target.toArray());
-
-      return scanner;
+      scanner = new NullScanner(conf, schema, meta, fragment);
+    } else {
+      scanner = new PgSQLJdbcScanner(getDatabaseMetaData(), schema, meta, (JdbcFragment) fragment);
     }
-
-    return new PgSQLJdbcScanner(getDatabaseMetaData(), schema, meta, (JdbcFragment) fragment);
+    scanner.setTarget(target.toArray());
+    return scanner;
   }
 }

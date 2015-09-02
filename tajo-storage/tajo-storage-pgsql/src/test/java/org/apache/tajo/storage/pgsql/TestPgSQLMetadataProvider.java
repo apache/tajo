@@ -31,7 +31,7 @@ import java.util.Set;
 import static org.junit.Assert.*;
 
 public class TestPgSQLMetadataProvider {
-  static final String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrlForAdmin();
+  static final String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrlForAdmin();
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -64,7 +64,7 @@ public class TestPgSQLMetadataProvider {
     MetadataProvider provider = tablespace.getMetadataProvider();
 
     Set<String> found = Sets.newHashSet(provider.getTables(null, null));
-    assertEquals(Sets.newHashSet(EmbedPgSQLServer.TPCH_TABLES), found);
+    assertEquals(Sets.newHashSet(PgSQLTestServer.TPCH_TABLES), found);
   }
 
   @Test
@@ -72,7 +72,7 @@ public class TestPgSQLMetadataProvider {
     Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
     MetadataProvider provider = tablespace.getMetadataProvider();
 
-    for (String tableName : EmbedPgSQLServer.TPCH_TABLES) {
+    for (String tableName : PgSQLTestServer.TPCH_TABLES) {
       TableDesc table = provider.getTableDescriptor(null, tableName);
       assertEquals("tpch." + tableName, table.getName());
       assertEquals(jdbcUrl + "&table=" + tableName, table.getUri().toASCIIString());

@@ -23,10 +23,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestPgSQLSimpleQueryTests extends QueryTestCaseBase {
-  private static final String jdbcUrl = EmbedPgSQLServer.getInstance().getJdbcUrl();
+  private static final String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrl();
 
   public TestPgSQLSimpleQueryTests() {
-    super(EmbedPgSQLServer.DATABASE_NAME);
+    super(PgSQLTestServer.DATABASE_NAME);
   }
 
   @BeforeClass

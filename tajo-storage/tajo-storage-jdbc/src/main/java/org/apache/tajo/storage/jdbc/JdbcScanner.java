@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
@@ -203,20 +204,23 @@ public abstract class JdbcScanner implements Scanner {
           tuple.put(column_idx, DatumFactory.createFloat8(resultSet.getDouble(resultIdx)));
           break;
         case CHAR:
-        case VARCHAR:
-        case TEXT:
           tuple.put(column_idx, DatumFactory.createText(resultSet.getString(resultIdx)));
           break;
+        case VARCHAR:
+        case TEXT:
+          // TODO - trim is unnecessary in many cases, so we can use it for certain cases
+          tuple.put(column_idx, DatumFactory.createText(resultSet.getString(resultIdx).trim()));
+          break;
         case DATE:
-          Date date = resultSet.getDate(resultIdx);
-          tuple.put(column_idx, DatumFactory.createDate(date.getYear(), date.getMonth(), date.getDay()));
+          final Date date = resultSet.getDate(resultIdx);
+          tuple.put(column_idx, DatumFactory.createDate(1900 + date.getYear(), 1 + date.getMonth(), date.getDate()));
           break;
         case TIME:
-          tuple.put(column_idx, DatumFactory.createTime(resultSet.getTime(resultIdx).getTime()));
+          tuple.put(column_idx, new TimeDatum(resultSet.getTime(resultIdx).getTime() * 1000));
           break;
         case TIMESTAMP:
           tuple.put(column_idx,
-              DatumFactory.createTimestamp(DateTimeUtil.javaTimeToJulianTime(resultSet.getTime(resultIdx).getTime())));
+              DatumFactory.createTimestmpDatumWithJavaMillis(resultSet.getTimestamp(resultIdx).getTime()));
           break;
         case BINARY:
         case VARBINARY:
@@ -303,7 +307,7 @@ public abstract class JdbcScanner implements Scanner {
       try {
         resultSet.close();
       } catch (SQLException e) {
-        LOG.warn(e);;
+        LOG.warn(e);
       }
     }
   }
