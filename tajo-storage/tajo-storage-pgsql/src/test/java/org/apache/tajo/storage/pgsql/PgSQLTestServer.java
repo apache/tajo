@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.jdbc.JdbcTablespace;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.JavaResourceUtil;
@@ -154,7 +155,7 @@ public class PgSQLTestServer {
 
   private void registerTablespace() throws IOException {
     JSONObject configElements = new JSONObject();
-    configElements.put("database", DATABASE_NAME);
+    configElements.put(JdbcTablespace.MAPPED_DATABASE_CONFIG_KEY, DATABASE_NAME);
 
     Map<String, JSONObject> configMap = new HashMap<>();
     configMap.put(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY, configElements);

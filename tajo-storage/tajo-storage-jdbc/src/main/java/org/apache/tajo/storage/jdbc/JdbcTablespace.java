@@ -50,6 +50,7 @@ public abstract class JdbcTablespace extends Tablespace {
 
   static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
   static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
+  public static final String MAPPED_DATABASE_CONFIG_KEY = "mapped_database";
 
   private Connection conn;
 
