@@ -150,7 +150,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           filteredPaths[i] = new Path(partitions.get(i).getPath());
         }
       }
-    } catch (Exception e) {
+    } catch (TajoException e) {
       partitions = null;
     }
 

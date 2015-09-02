@@ -71,7 +71,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-      {NodeType.CREATE_TABLE},
+//      {NodeType.CREATE_TABLE},
     });
   }
 
@@ -1588,7 +1588,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
   }
 
-/*
   @Test
   public final void testTimePartitionColumn() throws Exception {
     ResultSet res = null;
@@ -1605,53 +1604,63 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
       executeString(
         "insert overwrite into " + tableName
-          + " select l_orderkey, l_partkey, cast(l_shipdate as time)from lineitem");
+          + " select l_orderkey, l_partkey " +
+          " , CASE l_shipdate WHEN '1996-03-13' THEN cast ('11:20:40' as time) " +
+          " WHEN '1997-01-28' THEN cast ('12:10:20' as time) " +
+          " WHEN '1994-02-02' THEN cast ('12:10:30' as time) " +
+          " ELSE cast ('00:00:00' as time) END " +
+          " from lineitem");
     } else {
       executeString(
         "create table " + tableName + "(col1 int4, col2 int4) partition by column(key time) "
-          + " as select l_orderkey, l_partkey, cast(l_shipdate as time)from lineitem");
+          + " as select l_orderkey, l_partkey " +
+          " , CASE l_shipdate WHEN '1996-03-13' THEN cast ('11:20:40' as time) " +
+          " WHEN '1997-01-28' THEN cast ('12:10:20' as time) " +
+          " WHEN '1994-02-02' THEN cast ('12:10:30' as time) " +
+          " ELSE cast ('00:00:00' as time) END " +
+          " from lineitem");
     }
 
     assertTrue(client.existTable(tableName));
     // LessThanOrEquals
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key <= cast('1995-09-01' as time) order by col1, col2, key");
+      + " WHERE key <= cast('12:10:20' as time) order by col1, col2, key");
 
     actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
-      "3,2,02:02:02\n" +
-      "3,3,01:11:09\n";
+      "1,1,00:00:00\n" +
+      "1,1,11:20:40\n" +
+      "2,2,12:10:20\n" +
+      "3,3,00:00:00\n";
 
     assertEquals(expectedResult, actualResult);
     res.close();
 
     // LessThan and GreaterThan
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key > cast('1993-01-01' as time) and " +
-      "key < cast('1996-01-01' as time) order by col1, col2, key desc");
+      + " WHERE key > cast('00:00:00' as time) and " +
+      "key < cast('12:10:00' as time) order by col1, col2, key desc");
 
     actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
-      "3,2,02:02:02\n" +
-      "3,3,01:11:09\n";
+      "1,1,11:20:40\n";
 
     assertEquals(expectedResult, actualResult);
     res.close();
 
     // Between
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key between cast('1993-01-01' as time) " +
-      "and cast('1997-01-01' as time) order by col1, col2, key desc");
+      + " WHERE key between cast('11:00:00' as time) " +
+      "and cast('13:00:00' as time) order by col1, col2, key desc");
 
     actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
-      "1,1,04:04:12\n" +
-      "1,1,04:03:13\n" +
-      "3,2,02:02:02\n" +
-      "3,3,01:11:09\n";
+      "1,1,11:20:40\n" +
+      "2,2,12:10:20\n" +
+      "3,2,12:10:30\n";
 
     assertEquals(expectedResult, actualResult);
     res.close();
@@ -1660,6 +1669,5 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
   }
-*/
 
 }

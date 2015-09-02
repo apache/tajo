@@ -19,10 +19,12 @@
 
 package org.apache.tajo.plan.util;
 
-import org.apache.tajo.SessionVars;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
@@ -30,6 +32,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Stack;
@@ -41,6 +44,8 @@ import java.util.TimeZone;
  *
  */
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
+  protected final Log LOG = LogFactory.getLog(getClass());
+
   private String tableAlias;
   private Column column;
 
@@ -133,6 +138,37 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
     sb.append("?").append(" )");
     parameters.add((new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm))).toString()));
+
+    queries.push(sb.toString());
+
+    return expr;
+  }
+
+  @Override
+  public Expr visitTimeLiteral(Object ctx, Stack<Expr> stack, TimeLiteral expr) throws TajoException {
+    StringBuilder sb = new StringBuilder();
+
+    TimeValue timeValue = expr.getTime();
+
+    int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
+      timeValue.getMinutes(),
+      timeValue.getSeconds(),
+      timeValue.getSecondsFraction());
+
+    long time;
+    if (timeValue.hasSecondsFraction()) {
+      time = DateTimeUtil.toTime(times[0], times[1], times[2], times[3] * 1000);
+    } else {
+      time = DateTimeUtil.toTime(times[0], times[1], times[2], 0);
+    }
+    TimeDatum timeDatum = new TimeDatum(time);
+    TimeMeta tm = timeDatum.asTimeMeta();
+
+    TimeZone tz = TimeZone.getDefault();
+    DateTimeUtil.toUTCTimezone(tm, tz);
+
+    sb.append("?").append(" )");
+    parameters.add((new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs))).toString());
 
     queries.push(sb.toString());
 

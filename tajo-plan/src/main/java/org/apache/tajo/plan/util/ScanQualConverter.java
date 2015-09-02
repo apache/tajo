@@ -18,13 +18,14 @@
 
 package org.apache.tajo.plan.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.util.datetime.DateTimeUtil;
-import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.Stack;
 
@@ -33,6 +34,8 @@ import java.util.Stack;
  *
  */
 public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
+  protected final Log LOG = LogFactory.getLog(getClass());
+
   private Stack<Expr> exprs = new Stack<Expr>();
 
   private String tableName;
@@ -188,6 +191,13 @@ public class ScanQualConverter extends SimpleEvalNodeVisitor<Object> {
         , ""+timestampDatum.getMinuteOfHour(), ""+timestampDatum.getSecondOfMinute());
 
         value = new TimestampLiteral(dateValue, timeValue);
+        break;
+      case TIME:
+        TimeDatum timeDatum = (TimeDatum) evalNode.getValue();
+        timeValue = new TimeValue(""+timeDatum.getHourOfDay()
+          , ""+timeDatum.getMinuteOfHour(), ""+timeDatum.getSecondOfMinute());
+
+        value = new TimeLiteral(timeValue);
         break;
       default:
         throw new RuntimeException("Unsupported type: " + evalNode.getValueType().getType().name());
