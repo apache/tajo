@@ -232,6 +232,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1707: Rack local count can be more than actual number of tasks.
+    (jinho)
+
     TAJO-1808: Wrong table type problem in catalog. (jihoon)
 
     TAJO-1801: Table name is not unique of tableDescMap in QueryMasterTask. 
