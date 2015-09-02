@@ -239,7 +239,7 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    return getText(fieldId).getBytes(TextDatum.DEFAULT_CHARSET);
+    return asDatum(fieldId).asTextBytes();
   }
 
   @Override
@@ -270,9 +270,10 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   @Override
   public String getText(int fieldId) {
-    return asDatum(fieldId).asChars();
+    return new String(getBytes(fieldId), TextDatum.DEFAULT_CHARSET);
   }
 
+  @Override
   public IntervalDatum getInterval(int fieldId) {
     long pos = getFieldAddr(fieldId);
     int months = PlatformDependent.getInt(pos);
@@ -309,7 +310,7 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   @Override
   public TimeMeta getTimeDate(int fieldId) {
-    return null;
+    return asDatum(fieldId).asTimeMeta();
   }
 
   @Override

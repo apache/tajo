@@ -202,7 +202,7 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
 
   @Override
   public byte[] getTextBytes(int fieldId) {
-    return getText(fieldId).getBytes(TextDatum.DEFAULT_CHARSET);
+    return asDatum(fieldId).asTextBytes();
   }
 
   @Override
@@ -232,7 +232,7 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
 
   @Override
   public String getText(int fieldId) {
-    return asDatum(fieldId).asChars();
+    return new String(getBytes(fieldId), TextDatum.DEFAULT_CHARSET);
   }
 
   @Override
