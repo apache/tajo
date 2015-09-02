@@ -98,6 +98,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
     schedulerDelay= tajoConf.getIntVar(TajoConf.ConfVars.QUERYMASTER_TASK_SCHEDULER_DELAY);
+    isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
 
     this.schedulingThread = new Thread() {
       public void run() {
@@ -129,7 +130,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   public void start() {
     LOG.info("Start TaskScheduler");
     maximumRequestContainer = tajoConf.getInt(REQUEST_MAX_NUM, stage.getContext().getWorkerMap().size() * 2);
-    isLeaf = stage.getMasterPlan().isLeaf(stage.getBlock());
 
     if (isLeaf) {
       candidateWorkers.addAll(getWorkerIds(getLeafTaskHosts()));
@@ -686,9 +686,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           //find remaining local task
           if (leafTasks.contains(attemptId)) {
             leafTasks.remove(attemptId);
-            //LOG.info(attemptId + " Assigned based on host match " + hostName);
-            hostLocalAssigned++;
-            totalAssigned++;
             return attemptId;
           }
         }
@@ -755,15 +752,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         }
       }
 
-      if (attemptId != null) {
-        rackLocalAssigned++;
-        totalAssigned++;
-
-        LOG.info(String.format("Assigned Local/Rack/Cancel/Total: (%d/%d/%d/%d), Locality: %.2f%%, Rack host: %s",
-            hostLocalAssigned, rackLocalAssigned, cancellation, totalAssigned,
-            ((double) hostLocalAssigned / (double) totalAssigned) * 100, host));
-
-      }
       return attemptId;
     }
 
@@ -775,6 +763,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
       TaskRequestEvent taskRequest;
       while (leafTasks.size() > 0 && (!taskRequests.isEmpty() || !remoteTaskRequests.isEmpty())) {
+        int localAssign = 0;
+        int rackAssign = 0;
+
         taskRequest = taskRequests.pollFirst();
         if(taskRequest == null) { // if there are only remote task requests
           taskRequest = remoteTaskRequests.pollFirst();
@@ -855,13 +846,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             synchronized (leafTasks){
               attemptId = leafTasks.iterator().next();
               leafTasks.remove(attemptId);
-              rackLocalAssigned++;
-              totalAssigned++;
-              LOG.info(String.format("Assigned Local/Remote/Cancel/Total: (%d/%d/%d/%d), Locality: %.2f%%,",
-                  hostLocalAssigned, rackLocalAssigned, cancellation, totalAssigned,
-                  ((double) hostLocalAssigned / (double) totalAssigned) * 100));
             }
           }
+          rackAssign++;
+        } else {
+          localAssign++;
         }
 
         if (attemptId != null) {
@@ -917,6 +906,15 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             LOG.error(e);
           }
           scheduledObjectNum--;
+          totalAssigned++;
+          hostLocalAssigned += localAssign;
+          rackLocalAssigned += rackAssign;
+
+          if(rackAssign > 0) {
+            LOG.info(String.format("Assigned Local/Rack/Total/Cancel: (%d/%d/%d/%d), Locality: %.2f%%, Rack host: %s",
+                hostLocalAssigned, rackLocalAssigned, totalAssigned, cancellation,
+                ((double) hostLocalAssigned / (double) totalAssigned) * 100, host));
+          }
 
         } else {
           throw new RuntimeException("Illegal State!!!!!!!!!!!!!!!!!!!!!");
