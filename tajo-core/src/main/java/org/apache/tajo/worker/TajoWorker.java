@@ -39,6 +39,7 @@ import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.metrics.Node;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.QueryMaster;
 import org.apache.tajo.querymaster.QueryMasterManagerService;
@@ -237,6 +238,8 @@ public class TajoWorker extends CompositeService {
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
     FunctionLoader.loadUserDefinedFunctions(systemConf, new HashMap<FunctionSignature, FunctionDesc>());
+
+    PythonScriptEngine.initPythonScriptEngineFiles();
     
     diagnoseTajoWorker();
   }
