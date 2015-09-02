@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
+/**
+ * An utility for Java resources
+ */
 public class JavaResourceUtil {
 
   public static URL getResourceURL(String resource) throws IOException {

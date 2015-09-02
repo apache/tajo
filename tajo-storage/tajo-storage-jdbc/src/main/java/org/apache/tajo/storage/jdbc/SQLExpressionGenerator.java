@@ -24,7 +24,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.util.Pair;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;

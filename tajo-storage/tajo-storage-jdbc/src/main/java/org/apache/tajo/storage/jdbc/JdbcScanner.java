@@ -36,7 +36,6 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.Closeable;
 import java.io.IOException;

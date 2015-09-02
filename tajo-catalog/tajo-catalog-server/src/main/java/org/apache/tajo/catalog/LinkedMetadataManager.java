@@ -167,19 +167,7 @@ public class LinkedMetadataManager {
                                           @Nullable final String schemaPattern,
                                           @Nullable final String tablePattern) throws UndefinedDatabaseException {
     ensureIfDBExists(dbName);
-
-//    if (tablePattern == null) { // all tables in this database
-      return providerMap.get(dbName).getTables(schemaPattern, tablePattern);
-//
-//    } else {
-//      final Pattern pattern = Pattern.compile(tablePattern);
-//      return filter(providerMap.get(dbName).getTables(schemaPattern, tablePattern), new Predicate<String>() {
-//        @Override
-//        public boolean apply(@Nullable String input) {
-//          return pattern.matcher(tablePattern).matches();
-//        }
-//      });
-//    }
+    return providerMap.get(dbName).getTables(schemaPattern, tablePattern);
   }
 
   /**

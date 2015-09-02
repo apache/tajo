@@ -60,6 +60,7 @@ public interface Scanner extends SchemaObject, Closeable {
   void close() throws IOException;
 
   /**
+   * Push a plan part into scanner. It will be used in future issues.
    *
    * @param planPart
    */

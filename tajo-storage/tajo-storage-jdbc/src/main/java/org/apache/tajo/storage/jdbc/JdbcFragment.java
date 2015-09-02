@@ -20,7 +20,6 @@ package org.apache.tajo.storage.jdbc;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;

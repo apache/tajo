@@ -968,6 +968,15 @@ public class PlannerUtil {
     return inSubqueries;
   }
 
+  /**
+   * Return a list of integers, maps input schema and projected columns.
+   * Each integer value means a column index of input schema corresponding to each project column
+   *
+   * @param inputSchema Input Schema
+   * @param targets Columns to be projected
+   * @return A list of integers, each of which is an index number of input schema corresponding
+   *         to each projected column.
+   */
   public static int [] getTargetIds(Schema inputSchema, Column...targets) {
     int [] targetIds = new int[targets.length];
     for (int i = 0; i < targetIds.length; i++) {

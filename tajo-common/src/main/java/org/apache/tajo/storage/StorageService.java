@@ -21,7 +21,6 @@ package org.apache.tajo.storage;
 import org.apache.tajo.exception.UnsupportedException;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.net.URI;
 
 /**

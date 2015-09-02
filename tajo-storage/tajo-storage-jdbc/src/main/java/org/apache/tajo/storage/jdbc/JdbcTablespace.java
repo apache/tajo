@@ -44,10 +44,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * <h3>URI Examples:</h3>
- * <ul>
- *   <li>jdbc:mysql//primaryhost,secondaryhost1,secondaryhost2/test?profileSQL=true</li>
- * </ul>
+ * JDBC Tablespace
  */
 public abstract class JdbcTablespace extends Tablespace {
 

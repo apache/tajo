@@ -35,10 +35,7 @@ import java.io.IOException;
 import java.net.URI;
 
 /**
- * <h3>URI Examples:</h3>
- * <ul>
- *   <li>jdbc:mysql//primaryhost,secondaryhost1,secondaryhost2/test?profileSQL=true</li>
- * </ul>
+ * Postgresql Database Tablespace
  */
 public class PgSQLTablespace extends JdbcTablespace {
   private final String database;

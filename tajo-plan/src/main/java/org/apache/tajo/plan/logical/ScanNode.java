@@ -38,7 +38,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	@Expose protected EvalNode qual;
 	@Expose protected Target[] targets;
   @Expose protected boolean broadcastTable;
-  @Expose protected long limit = -1; // -1 is infinite
+  @Expose protected long limit = -1; // -1 means no set
 
   protected ScanNode(int pid, NodeType nodeType) {
     super(pid, nodeType);

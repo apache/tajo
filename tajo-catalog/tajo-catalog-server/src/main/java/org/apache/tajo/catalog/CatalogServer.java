@@ -103,7 +103,8 @@ public class CatalogServer extends AbstractService {
     this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
-  public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs) throws IOException {
+  public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs)
+      throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
     this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
@@ -193,6 +194,10 @@ public class CatalogServer extends AbstractService {
     super.serviceStop();
   }
 
+  /**
+   * Refresh the linked metadata manager. This must be used for only testing.
+   * @param metadataProviders
+   */
   @VisibleForTesting
   public void refresh(Collection<MetadataProvider> metadataProviders) {
     this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);

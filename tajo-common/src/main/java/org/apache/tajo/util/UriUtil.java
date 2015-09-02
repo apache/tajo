@@ -20,8 +20,10 @@ package org.apache.tajo.util;
 
 import java.net.URI;
 
+/**
+ * Utility for URI representation
+ */
 public class UriUtil {
-
   public static String getScheme(URI uri) {
     return getScheme(uri.toASCIIString());
   }
