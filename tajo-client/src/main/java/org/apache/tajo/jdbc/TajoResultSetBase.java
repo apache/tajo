@@ -273,7 +273,7 @@ public abstract class TajoResultSetBase implements ResultSet {
       case TIMESTAMP:
         return TimestampDatum.asChars(tuple.getTimeDate(index), timezone, false);
       default :
-        return tuple.getText(index);
+        return tuple.asDatum(index).asChars();
     }
   }
 
