@@ -102,7 +102,7 @@ public class JsonLineSerializer extends TextLineSerializer {
     case DATE:
     case TIME:
     case INTERVAL:
-      json.put(fieldName, input.asDatum(fieldIndex).asChar());
+      json.put(fieldName, input.asDatum(fieldIndex).asChars());
       break;
 
     case BIT:
