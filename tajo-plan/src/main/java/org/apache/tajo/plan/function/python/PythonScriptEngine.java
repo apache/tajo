@@ -253,25 +253,23 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
 
   private static final String PYTHON_LANGUAGE = "python";
-  private static final String PYTHON_ROOT_PATH = "/python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
-  private static final String PYTHON_CONTROLLER_JAR_PATH = PYTHON_ROOT_PATH + File.separator + CONTROLLER_NAME; // Relative to root of tajo jar.
-  private static final String PYTHON_TAJO_UTIL_PATH = PYTHON_ROOT_PATH + File.separator + TAJO_UTIL_NAME; // Relative to root of tajo jar.
-  private static final String DEFAULT_LOG_DIR = "/tmp/tajo-" + System.getProperty("user.name") + "/python";
+  private static final String BASE_DIR = FileUtils.getTempDirectoryPath() + "/tajo-" + System.getProperty("user.name") + "/python";
+  private static final String PYTHON_CONTROLLER_JAR_PATH = "/python" + File.separator + CONTROLLER_NAME; // Relative to root of tajo jar.
+  private static final String PYTHON_TAJO_UTIL_JAR_PATH = "/python" + File.separator + TAJO_UTIL_NAME; // Relative to root of tajo jar.
 
   // Indexes for arguments being passed to external process
-  private static final int UDF_LANGUAGE = 0;
-  private static final int PATH_TO_CONTROLLER_FILE = 1;
-  private static final int UDF_FILE_NAME = 2; // Name of file where UDF function is defined
-  private static final int UDF_FILE_PATH = 3; // Path to directory containing file where UDF function is defined
-  private static final int PATH_TO_FILE_CACHE = 4; // Directory where required files (like tajo_util) are cached on cluster nodes.
-  private static final int STD_OUT_OUTPUT_PATH = 5; // File for output from when user writes to standard output.
-  private static final int STD_ERR_OUTPUT_PATH = 6; // File for output from when user writes to standard error.
-  private static final int CONTROLLER_LOG_FILE_PATH = 7; // Controller log file logs progress through the controller script not user code.
-  private static final int OUT_SCHEMA = 8; // the schema of the output column
-  private static final int FUNCTION_OR_CLASS_NAME = 9; // if FUNCTION_TYPE is UDF, function name; if FUNCTION_TYPE is UDAF, class name.
-  private static final int FUNCTION_TYPE = 10; // UDF or UDAF
+  enum COMMAND_IDX {
+    UDF_LANGUAGE,
+    PATH_TO_CONTROLLER_FILE,
+    UDF_FILE_NAME,
+    UDF_FILE_PATH,
+    PATH_TO_FILE_CACHE,
+    OUT_SCHEMA,
+    FUNCTION_OR_CLASS_NAME,
+    FUNCTION_TYPE,
+  }
 
   private Configuration systemConf;
 
@@ -365,41 +363,26 @@ public class PythonScriptEngine extends TajoScriptEngine {
    * @throws IOException
    */
   private String[] buildCommand() throws IOException {
-    String[] command = new String[11];
-
-    // TODO: support controller logging
-    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
-        DEFAULT_LOG_DIR);
-    if (!standardOutputRootWriteLocation.equals(DEFAULT_LOG_DIR)) {
-      LOG.warn("Currently, logging is not supported for the python controller.");
-    }
-    String controllerLogFileName, outFileName, errOutFileName;
+    String[] command = new String[8];
 
     String funcName = invocationDesc.getName();
     String filePath = invocationDesc.getPath();
 
-    controllerLogFileName = standardOutputRootWriteLocation + funcName + "_controller.log";
-    outFileName = standardOutputRootWriteLocation + funcName + ".out";
-    errOutFileName = standardOutputRootWriteLocation + funcName + ".err";
-
-    command[UDF_LANGUAGE] = PYTHON_LANGUAGE;
-    command[PATH_TO_CONTROLLER_FILE] = getControllerPath();
+    command[COMMAND_IDX.UDF_LANGUAGE.ordinal()] = PYTHON_LANGUAGE;
+    command[COMMAND_IDX.PATH_TO_CONTROLLER_FILE.ordinal()] = getControllerPath();
     int lastSeparator = filePath.lastIndexOf(File.separator) + 1;
     String fileName = filePath.substring(lastSeparator);
     fileName = fileName.endsWith(FILE_EXTENSION) ? fileName.substring(0, fileName.length()-3) : fileName;
-    command[UDF_FILE_NAME] = fileName;
-    command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
+    command[COMMAND_IDX.UDF_FILE_NAME.ordinal()] = fileName;
+    command[COMMAND_IDX.UDF_FILE_PATH.ordinal()] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
     String fileCachePath = systemConf.get(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname());
     if (fileCachePath == null) {
       throw new IOException(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname() + " must be set.");
     }
-    command[PATH_TO_FILE_CACHE] = "'" + fileCachePath + "'";
-    command[STD_OUT_OUTPUT_PATH] = outFileName;
-    command[STD_ERR_OUTPUT_PATH] = errOutFileName;
-    command[CONTROLLER_LOG_FILE_PATH] = controllerLogFileName;
-    command[OUT_SCHEMA] = outSchema.getColumn(0).getDataType().getType().name().toLowerCase();
-    command[FUNCTION_OR_CLASS_NAME] = funcName;
-    command[FUNCTION_TYPE] = invocationDesc.isScalarFunction() ? "UDF" : "UDAF";
+    command[COMMAND_IDX.PATH_TO_FILE_CACHE.ordinal()] = "'" + fileCachePath + "'";
+    command[COMMAND_IDX.OUT_SCHEMA.ordinal()] = outSchema.getColumn(0).getDataType().getType().name().toLowerCase();
+    command[COMMAND_IDX.FUNCTION_OR_CLASS_NAME.ordinal()] = funcName;
+    command[COMMAND_IDX.FUNCTION_TYPE.ordinal()] = invocationDesc.isScalarFunction() ? "UDF" : "UDAF";
 
     return command;
   }
@@ -459,39 +442,48 @@ public class PythonScriptEngine extends TajoScriptEngine {
     stderr = new DataInputStream(new BufferedInputStream(process.getErrorStream()));
   }
 
+  private static final File pythonScriptBaseDir = new File(PythonScriptEngine.getBaseDirPath());
+  private static final File pythonScriptControllerCopy = new File(PythonScriptEngine.getControllerPath());
+  private static final File pythonScriptUtilCopy = new File(PythonScriptEngine.getTajoUtilPath());
+
+  public static void initPythonScriptEngineFiles() throws IOException {
+    if (!pythonScriptBaseDir.exists()) {
+      pythonScriptBaseDir.mkdirs();
+    }
+    // Controller and util should be always overwritten.
+    PythonScriptEngine.loadController(pythonScriptControllerCopy);
+    PythonScriptEngine.loadTajoUtil(pythonScriptUtilCopy);
+  }
+
+  public static void loadController(File controllerCopy) throws IOException {
+    try (InputStream controllerInputStream = PythonScriptEngine.class.getResourceAsStream(PYTHON_CONTROLLER_JAR_PATH)) {
+      FileUtils.copyInputStreamToFile(controllerInputStream, controllerCopy);
+    }
+  }
+
+  public static void loadTajoUtil(File utilCopy) throws IOException {
+    try (InputStream utilInputStream = PythonScriptEngine.class.getResourceAsStream(PYTHON_TAJO_UTIL_JAR_PATH)) {
+      FileUtils.copyInputStreamToFile(utilInputStream, utilCopy);
+    }
+  }
+
+  public static String getBaseDirPath() {
+    LOG.info("Python base dir is " + BASE_DIR);
+    return BASE_DIR;
+  }
+
   /**
    * Find the path to the controller file for the streaming language.
-   *
-   * First check path to job jar and if the file is not found (like in the
-   * case of running hadoop in standalone mode) write the necessary files
-   * to temporary files and return that path.
    *
    * @return
    * @throws IOException
    */
-  private String getControllerPath() throws IOException {
-    String controllerPath = PYTHON_CONTROLLER_JAR_PATH;
-    File controller = new File(PYTHON_CONTROLLER_JAR_PATH);
-    if (!controller.exists()) {
-      File controllerFile = File.createTempFile("controller", FILE_EXTENSION);
-      InputStream pythonControllerStream = this.getClass().getResourceAsStream(PYTHON_CONTROLLER_JAR_PATH);
-      try {
-        FileUtils.copyInputStreamToFile(pythonControllerStream, controllerFile);
-      } finally {
-        pythonControllerStream.close();
-      }
-      controllerFile.deleteOnExit();
-      File tajoUtilFile = new File(controllerFile.getParent() + File.separator + TAJO_UTIL_NAME);
-      tajoUtilFile.deleteOnExit();
-      InputStream pythonUtilStream = this.getClass().getResourceAsStream(PYTHON_TAJO_UTIL_PATH);
-      try {
-        FileUtils.copyInputStreamToFile(pythonUtilStream, tajoUtilFile);
-      } finally {
-        pythonUtilStream.close();
-      }
-      controllerPath = controllerFile.getAbsolutePath();
-    }
-    return controllerPath;
+  public static String getControllerPath() {
+    return BASE_DIR + File.separator + CONTROLLER_NAME;
+  }
+
+  public static String getTajoUtilPath() {
+    return BASE_DIR + File.separator + TAJO_UTIL_NAME;
   }
 
   /**
@@ -511,7 +503,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
     Datum result = null;
     try {
-      result = outputHandler.getNext().asDatum(0);
+      Tuple next = outputHandler.getNext();
+      if (next != null) {
+        result = next.asDatum(0);
+      } else {
+        throw new RuntimeException("Cannot get output result from python controller");
+      }
     } catch (Throwable e) {
       throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }
@@ -652,7 +649,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     Datum result = null;
     try {
-      result = outputHandler.getNext().asDatum(0);
+      Tuple next = outputHandler.getNext();
+      if (next != null) {
+        result = next.asDatum(0);
+      } else {
+        throw new RuntimeException("Cannot get output result from python controller");
+      }
     } catch (Exception e) {
       throwException(stderr, new RuntimeException("Problem getting output: " + e.getMessage(), e));
     }

@@ -17,7 +17,6 @@
 
 import sys
 import os
-import logging
 import base64
 import json
 
@@ -28,7 +27,7 @@ try:
 except ImportError:
     USE_DATEUTIL = False
 
-from tajo_util import write_user_exception, udf_logging
+from tajo_util import write_user_exception
 
 FIELD_DELIMITER = ','
 TUPLE_START = '('
@@ -95,8 +94,6 @@ class PythonStreamingController:
     scalar_func = None
     udaf_instance = None
 
-    should_log = False
-    log_message = logging.info
     module_name = None
     output_schema = None
 
@@ -104,8 +101,7 @@ class PythonStreamingController:
         self.profiling_mode = profiling_mode
 
     def main(self,
-             module_name, file_path, cache_path,
-             output_stream_path, error_stream_path, log_file_name, output_schema, name, func_type):
+             module_name, file_path, cache_path, output_schema, name, func_type):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.
@@ -118,17 +114,9 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        if self.should_log:
-            logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
-            logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
-                         "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
-
         self.module_name = module_name
         self.output_schema = output_schema
         input_str = self.get_next_input()
-
-        if udf_logging.udf_log_level == logging.DEBUG:
-            self.log_message = logging.debug
 
         while input_str != END_OF_STREAM:
 
@@ -171,11 +159,7 @@ class PythonStreamingController:
     def process_input(self, func_name, func, input_str):
         try:
             try:
-                if self.should_log:
-                    self.log_message("Serialized Input: %s" % (input_str))
                 inputs = deserialize_input(input_str)
-                if self.should_log:
-                    self.log_message("Deserialized Input: %s" % (unicode(inputs)))
             except:
                 # Capture errors where the user passes in bad data.
                 write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
@@ -192,8 +176,6 @@ class PythonStreamingController:
                     func_output = func(*inputs)
                     output = serialize_output(func_output, self.output_schema)
 
-                if self.should_log:
-                    self.log_message("Serialized Output: %s" % output)
             except:
                 # These errors should always be caused by user code.
                 write_user_exception(self.module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
@@ -214,7 +196,6 @@ class PythonStreamingController:
 
     def get_next_input(self):
         input_stream = self.input_stream
-        # log_stream = self.log_stream
 
         input_str = input_stream.readline()
 
@@ -466,5 +447,4 @@ def list_to_str(list_of_item, out_schema):
 
 if __name__ == '__main__':
     controller = PythonStreamingController()
-    controller.main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9])
+    controller.main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])
