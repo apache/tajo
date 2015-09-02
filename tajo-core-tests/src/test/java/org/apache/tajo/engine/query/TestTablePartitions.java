@@ -71,7 +71,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-//      {NodeType.CREATE_TABLE},
+      {NodeType.CREATE_TABLE},
     });
   }
 
@@ -1667,7 +1667,5 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
-
   }
-
 }
