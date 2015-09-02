@@ -262,20 +262,25 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return size;
   }
 
-  @VisibleForTesting
-  public boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, LogicalNode node, boolean left)
+  private boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, LogicalNode node, boolean left)
       throws IOException {
     String [] lineage = PlannerUtil.getRelationLineage(node);
     long volume = estimateSizeRecursive(context, lineage);
-    boolean inMemoryInnerJoinFlag = false;
+    return checkIfInMemoryInnerJoinIsPossible(context, lineage, volume, left);
+  }
+
+  @VisibleForTesting
+  public boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, String [] lineage, long tableVolume,
+                                                    boolean left) throws IOException {
+    boolean inMemoryInnerJoinFlag;
 
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT)) {
-      inMemoryInnerJoinFlag = volume <= context.getQueryContext().getLong(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT)
+      inMemoryInnerJoinFlag = tableVolume <= context.getQueryContext().getLong(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT)
           * StorageUnit.MB;
     } else {
-      inMemoryInnerJoinFlag = volume <= context.getQueryContext().getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)
+      inMemoryInnerJoinFlag = tableVolume <= context.getQueryContext().getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)
           * StorageUnit.MB;
     }
 
@@ -283,7 +288,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         context.getTaskId().toString(),
         (left ? "Left" : "Right"),
         StringUtils.join(lineage),
-        FileUtil.humanReadableByteCount(volume, false),
+        FileUtil.humanReadableByteCount(tableVolume, false),
         (inMemoryInnerJoinFlag ? "" : "not ")));
     return inMemoryInnerJoinFlag;
   }
