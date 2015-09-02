@@ -117,7 +117,7 @@ public class OffHeapRowBlockUtils {
         break;
       case CHAR:
       case TEXT:
-        writer.putText(tuple.getTextBytes(i));
+        writer.putText(tuple.getBytes(i));
         break;
       case BLOB:
         writer.putBlob(tuple.getBytes(i));
