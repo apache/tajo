@@ -492,9 +492,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = rightTableVolume <  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
+      hashJoin = rightTableVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     } else {
-      hashJoin = rightTableVolume <  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
+      hashJoin = rightTableVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     }
 
     if (hashJoin) {
@@ -520,9 +520,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = leftTableVolume <  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
+      hashJoin = leftTableVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     } else {
-      hashJoin = leftTableVolume <  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)* StorageUnit.MB;
+      hashJoin = leftTableVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)* StorageUnit.MB;
     }
 
     if (hashJoin){
