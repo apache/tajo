@@ -182,11 +182,10 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     }
 
     if (this.plan.getUri() == null) {
-      // In CTAS, the uri would be null. So,
-      String[] split = CatalogUtil.splitTableName(plan.getTableName());
-      int endIndex = storeTablePath.toString().indexOf(split[1]) + split[1].length();
+      // In CTAS, the uri would be null. So, it get the uri from staging directory.
+      int endIndex = storeTablePath.toString().indexOf(FileTablespace.TMP_STAGING_DIR_PREFIX);
       String outputPath = storeTablePath.toString().substring(0, endIndex);
-      builder.setPath(outputPath + "/" + partition);
+      builder.setPath(outputPath +  partition);
     } else {
       builder.setPath(this.plan.getUri().toString() + "/" + partition);
     }

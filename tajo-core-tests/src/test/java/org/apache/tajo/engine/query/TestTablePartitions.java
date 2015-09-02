@@ -1271,7 +1271,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       }
       query.append(" ").append(partitionColumn);
     }
-    query.append(" FROM ").append(tableName);
+    query.append(" FROM ").append(databaseName).append(".").append(tableName);
     ResultSet res = executeString(query.toString());
 
     StringBuilder partitionName = new StringBuilder();
@@ -1668,4 +1668,60 @@ public class TestTablePartitions extends QueryTestCaseBase {
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
+
+  @Test
+  public final void testRemainPartitionPath() throws Exception {
+    ResultSet res = null;
+    executeString("create database test_partition").close();
+
+    String databaseName = "test_partition";
+    String tableName = CatalogUtil.normalizeIdentifier("part");
+
+    if (nodeType == NodeType.INSERT) {
+      res = executeString(
+        "create table " + databaseName + "." + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
+      res.close();
+
+      assertTrue(catalog.existsTable(databaseName, tableName));
+      assertEquals(2, catalog.getTableDesc(databaseName, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(databaseName, tableName).getLogicalSchema().size());
+
+      res = testBase.execute(
+        "insert overwrite into " + databaseName + "." + tableName + " select l_orderkey, l_partkey, " +
+          "l_quantity from lineitem");
+    } else {
+      res = testBase.execute(
+        "create table "+ databaseName + "." + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
+          + " as select l_orderkey, l_partkey, l_quantity from lineitem");
+    }
+
+    MasterPlan plan = getQueryPlan(res);
+    ExecutionBlock rootEB = plan.getRoot();
+
+    assertEquals(1, plan.getChildCount(rootEB.getId()));
+
+    ExecutionBlock insertEB = plan.getChild(rootEB.getId(), 0);
+    assertNotNull(insertEB);
+
+    assertEquals(nodeType, insertEB.getPlan().getType());
+    assertEquals(1, plan.getChildCount(insertEB.getId()));
+
+    ExecutionBlock scanEB = plan.getChild(insertEB.getId(), 0);
+
+    List<DataChannel> list = plan.getOutgoingChannels(scanEB.getId());
+    assertEquals(1, list.size());
+    DataChannel channel = list.get(0);
+    assertNotNull(channel);
+    assertEquals(SCATTERED_HASH_SHUFFLE, channel.getShuffleType());
+    assertEquals(1, channel.getShuffleKeys().length);
+
+    TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
+    verifyPartitionDirectoryFromCatalog(databaseName, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
+
+    executeString("DROP TABLE " + databaseName + "." + tableName + " PURGE").close();
+    executeString("DROP database " + databaseName).close();
+    res.close();
+  }
+
 }
