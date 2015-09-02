@@ -373,7 +373,7 @@ public class TestMemoryRowBlock {
     builder.putInt8(i);                         // 3
     builder.putFloat4(i);                       // 4
     builder.putFloat8(i);                       // 5
-    builder.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
+    builder.putText(UNICODE_FIELD_PREFIX + i);  // 6
     builder.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
     builder.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
     builder.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
@@ -424,7 +424,7 @@ public class TestMemoryRowBlock {
     if (i % 6 == 0) {
       writer.skipField();
     } else {
-      writer.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
+      writer.putText(UNICODE_FIELD_PREFIX + i);  // 6
     }
 
     if (i % 7 == 0) {
@@ -473,7 +473,7 @@ public class TestMemoryRowBlock {
     tuple.put(3, DatumFactory.createInt8(i));
     tuple.put(4, DatumFactory.createFloat4(i));
     tuple.put(5, DatumFactory.createFloat8(i));
-    tuple.put(6, DatumFactory.createText((UNICODE_FIELD_PREFIX + i).getBytes()));
+    tuple.put(6, DatumFactory.createText(UNICODE_FIELD_PREFIX + i));
     tuple.put(7, DatumFactory.createTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i)); // 7
     tuple.put(8, DatumFactory.createDate(DatumFactory.createDate("2014-04-16").asInt4() + i)); // 8
     tuple.put(9, DatumFactory.createTime(DatumFactory.createTime("08:48:00").asInt8() + i)); // 9
@@ -504,7 +504,7 @@ public class TestMemoryRowBlock {
     assertEquals(j, t.getInt8(3));
     assertTrue(j == t.getFloat4(4));
     assertTrue(j == t.getFloat8(5));
-    assertEquals(new String(UNICODE_FIELD_PREFIX + j), t.getText(6));
+    assertEquals(UNICODE_FIELD_PREFIX + j, t.getText(6));
     assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, t.getInt8(7));
     assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, t.getInt4(8));
     assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, t.getInt8(9));
@@ -553,7 +553,7 @@ public class TestMemoryRowBlock {
     if (j % 6 == 0) {
       tuple.isBlankOrNull(6);
     } else {
-      assertEquals(new String(UNICODE_FIELD_PREFIX + j), tuple.getText(6));
+      assertEquals(UNICODE_FIELD_PREFIX + j, tuple.getText(6));
     }
 
     if (j % 7 == 0) {
