@@ -27,6 +27,7 @@ import org.apache.tajo.storage.NullScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.jdbc.ConnectionInfo;
 import org.apache.tajo.storage.jdbc.JdbcFragment;
 import org.apache.tajo.storage.jdbc.JdbcTablespace;
 
@@ -41,9 +42,16 @@ public class PgSQLTablespace extends JdbcTablespace {
   private final String database;
 
 
-  public PgSQLTablespace(String name, URI uri, JSONObject config) {
-    super(name, uri, config);
-    database = ((JSONObject)config.get(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY)).getAsString("database");
+  public PgSQLTablespace(String name, URI uri, JSONObject space) {
+    super(name, uri, space);
+
+    // mapped database name
+    JSONObject config = ((JSONObject) space.get(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY));
+    if (config.containsKey(MAPPED_DATABASE_CONFIG_KEY)) {
+      database = config.getAsString(MAPPED_DATABASE_CONFIG_KEY);
+    } else {
+      database = ConnectionInfo.fromURI(uri).database();
+    }
   }
 
   public MetadataProvider getMetadataProvider() {
