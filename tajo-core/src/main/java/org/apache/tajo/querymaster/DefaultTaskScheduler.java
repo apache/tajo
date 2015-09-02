@@ -883,6 +883,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
           AsyncRpcClient tajoWorkerRpc = null;
           CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
+          totalAttempts++;
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
@@ -910,9 +911,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           hostLocalAssigned += localAssign;
           rackLocalAssigned += rackAssign;
 
-          if(rackAssign > 0) {
-            LOG.info(String.format("Assigned Local/Rack/Total/Cancel: (%d/%d/%d/%d), Locality: %.2f%%, Rack host: %s",
-                hostLocalAssigned, rackLocalAssigned, totalAssigned, cancellation,
+          if (rackAssign > 0) {
+            LOG.info(String.format("Assigned Local/Rack/Total: (%d/%d/%d), " +
+                    "Attempted Cancel/Assign/Total: (%d/%d/%d), " +
+                    "Locality: %.2f%%, Rack host: %s",
+                hostLocalAssigned, rackLocalAssigned, totalAssigned,
+                cancellation, totalAssigned, totalAttempts,
                 ((double) hostLocalAssigned / (double) totalAssigned) * 100, host));
           }
 
