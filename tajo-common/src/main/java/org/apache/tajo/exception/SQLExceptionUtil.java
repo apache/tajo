@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
+import javax.xml.transform.Result;
 import java.sql.SQLException;
 import java.util.Map;
 
@@ -33,10 +34,28 @@ public class SQLExceptionUtil {
 
   static {
     // TODO - All SQLState should be be filled
-    SQLSTATES.put(ResultCode.FEATURE_NOT_SUPPORTED, "0A000");
-    SQLSTATES.put(ResultCode.NOT_IMPLEMENTED, "0A000");
 
-    SQLSTATES.put(ResultCode.SYNTAX_ERROR, "42601");
+    SQLSTATES.put(ResultCode.INTERNAL_ERROR, "XX000");
+    SQLSTATES.put(ResultCode.NOT_IMPLEMENTED, "0A000");
+    SQLSTATES.put(ResultCode.FEATURE_NOT_SUPPORTED, "0A000");
+    // for future
+    // SQLSTATES.put(ResultCode.INVALID_RPC_CALL, "XX003");
+
+    SQLSTATES.put(ResultCode.SYNTAX_ERROR,                "42601");
+
+    SQLSTATES.put(ResultCode.UNDEFINED_DATABASE,          "42T01");
+    SQLSTATES.put(ResultCode.UNDEFINED_SCHEMA,            "42T02");
+    SQLSTATES.put(ResultCode.UNDEFINED_TABLE,             "42P01");
+    SQLSTATES.put(ResultCode.UNDEFINED_COLUMN,            "42703");
+    SQLSTATES.put(ResultCode.UNDEFINED_FUNCTION,          "42883");
+    SQLSTATES.put(ResultCode.UNDEFINED_INDEX_FOR_TABLE,   "42T03");
+    SQLSTATES.put(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, "42T04");
+    SQLSTATES.put(ResultCode.UNDEFINED_PARTITION,         "42T05");
+    SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_METHOD,  "42T06");
+    SQLSTATES.put(ResultCode.UNDEFINED_OPERATOR,          "42883"); // == UNDEFINED_FUNCTION
+
+    // Client Connection
+    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_EXCEPTION, "08001");
   }
 
   public static boolean isThisError(SQLException e, ResultCode code) {
@@ -73,7 +92,15 @@ public class SQLExceptionUtil {
     }
   }
 
-  public static SQLException toSQLException(TajoException e) throws SQLException {
+  public static String toSQLState(ResultCode code) {
+    if (SQLSTATES.containsKey(code)) {
+      return SQLSTATES.get(code);
+    } else {
+      return "42000";
+    }
+  }
+
+  public static SQLException toSQLException(DefaultTajoException e) throws SQLException {
     return toSQLException(e.getErrorCode(), e.getMessage());
   }
 

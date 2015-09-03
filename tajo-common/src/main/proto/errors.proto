@@ -73,8 +73,8 @@ enum ResultCode {
   WARNING                       = 100; // Warning
 
   // General Errors
-  INTERNAL_ERROR                = 201; // Error caused by internal bugs (See also TajoInternalException.java)
-  NOT_IMPLEMENTED               = 202; // Planned, but not implemented yet.
+  INTERNAL_ERROR                = 201; // SQLState: XX000 - Error caused by internal bugs (See TajoInternalException)
+  NOT_IMPLEMENTED               = 202; // SQLState: 0A000 - Not implemented yet, but planned.
   FEATURE_NOT_SUPPORTED         = 203; // SQLState: 0A000 - Unsupported feature (usually for unreasonable feature)
   INVALID_RPC_CALL              = 204; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
 
@@ -101,9 +101,9 @@ enum ResultCode {
   INSUFFICIENT_PRIVILEGE                = 503; // SQLState: 42501
 
   UNDEFINED_TABLESPACE                  = 511; // ?
-  UNDEFINED_DATABASE                    = 512; // ?
-  UNDEFINED_SCHEMA                      = 513; // ?
-  UNDEFINED_TABLE                       = 514; // ?
+  UNDEFINED_DATABASE                    = 512; // SQLState: 42T01
+  UNDEFINED_SCHEMA                      = 513; // SQLState:
+  UNDEFINED_TABLE                       = 514; // SQLState: 42P01
   UNDEFINED_COLUMN                      = 515; // SQLState: 42703
   UNDEFINED_FUNCTION                    = 516; // SQLState: 42883
   UNDEFINED_INDEX_FOR_TABLE             = 517; // ?
@@ -167,7 +167,7 @@ enum ResultCode {
   INVALID_TABLE_PROPERTY                = 1004; // SQLState: ? - Invalid Table Property
   MISSING_TABLE_PROPERTY                = 1005; // SQLState: ? - Missing table property
 
-
+  // Client Connection
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
   CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08001 -
   CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1103; // SQLState: ?

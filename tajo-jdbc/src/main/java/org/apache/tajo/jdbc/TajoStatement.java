@@ -23,6 +23,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.*;
@@ -182,7 +183,11 @@ public class TajoStatement implements Statement {
   @Override
   public int executeUpdate(String sql) throws SQLException {
     checkConnection("Can't execute update");
-    tajoClient.executeQuery(sql);
+    try {
+      tajoClient.updateQuery(sql);
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
+    }
     return 1;
   }
 

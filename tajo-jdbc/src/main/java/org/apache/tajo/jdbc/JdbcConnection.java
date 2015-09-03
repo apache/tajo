@@ -28,8 +28,8 @@ import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.SQLExceptionUtil;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
@@ -66,17 +66,19 @@ public class JdbcConnection implements Connection {
     this.properties = properties;
 
     try {
+
       if (!rawURI.startsWith(TajoDriver.TAJO_JDBC_URL_PREFIX)) {
-        throw new SQLException("Invalid URL: " + rawURI, "TAJO-001");
+        // its impossible case
+        throw new TajoInternalError("Invalid URL: " + rawURI);
       }
 
       // URI form: jdbc:tajo://hostname:port/databasename
       int startIdx = rawURI.indexOf(":");
       if (startIdx < 0) {
-        throw new SQLException("Invalid URL: " + rawURI, "TAJO-001");
+        throw new TajoInternalError("Invalid URL: " + rawURI);
       }
 
-      String uri = rawURI.substring(startIdx+1, rawURI.length());
+      String uri = rawURI.substring(startIdx + 1, rawURI.length());
       try {
         this.uri = URI.create(uri);
       } catch (IllegalArgumentException iae) {
@@ -116,8 +118,12 @@ public class JdbcConnection implements Connection {
 
     try {
       tajoClient = new TajoClientImpl(RpcUtils.createSocketAddr(hostName, port), databaseName, clientProperties);
-    } catch (Exception e) {
-      throw new SQLException("Cannot create TajoClient instance:" + e.getMessage(), "TAJO-002");
+    } catch (Throwable e) {
+      if (e instanceof DefaultTajoException) {
+        throw SQLExceptionUtil.toSQLException((DefaultTajoException) e);
+      } else {
+        throw new TajoSQLException(Errors.ResultCode.INTERNAL_ERROR, e.getMessage(), e);
+      }
     }
     closed.set(false);
   }
