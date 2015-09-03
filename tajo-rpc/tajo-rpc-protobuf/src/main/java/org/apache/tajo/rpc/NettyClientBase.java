@@ -39,6 +39,8 @@ import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -195,7 +197,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
       if (maxRetries > retries) {
         retries++;
 
-        LOG.warn(getErrorMessage(ExceptionUtils.getMessage(future.cause())) + " Try to reconnect : " + getKey().addr);
+        LOG.warn(getErrorMessage(ExceptionUtils.getMessage(future.cause())) + "\nTry to reconnect : " + getKey().addr);
         try {
           Thread.sleep(RpcConstants.DEFAULT_PAUSE);
         } catch (InterruptedException e) {
@@ -206,8 +208,13 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
           break;
         }
       } else {
-        throw new ConnectTimeoutException("Max retry count has been exceeded. attempts=" + retries
-            + " caused by: " + future.cause());
+        LOG.error("Max retry count has been exceeded. attempts=" + retries + " caused by: " + future.cause());
+
+        if (future.cause() instanceof UnresolvedAddressException) {
+          throw new ConnectException("Can't resolve host name: " + address.toString());
+        } else {
+          throw new ConnectTimeoutException(future.cause().getMessage());
+        }
       }
     }
   }

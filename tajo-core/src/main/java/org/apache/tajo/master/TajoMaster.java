@@ -48,6 +48,7 @@ import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
@@ -203,6 +204,8 @@ public class TajoMaster extends CompositeService {
 
     restServer = new TajoRestService(context);
     addIfService(restServer);
+
+    PythonScriptEngine.initPythonScriptEngineFiles();
     
     // Try to start up all services in TajoMaster.
     // If anyone is failed, the master prints out the errors and immediately should shutdowns

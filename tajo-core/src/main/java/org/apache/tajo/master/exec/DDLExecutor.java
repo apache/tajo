@@ -257,11 +257,12 @@ public class DDLExecutor {
       }
     }
 
-    catalog.createDatabase(databaseName, tablespaceName);
     String normalized = databaseName;
     Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
     FileSystem fs = databaseDir.getFileSystem(context.getConf());
     fs.mkdirs(databaseDir);
+    catalog.createDatabase(databaseName, tablespaceName);
+    LOG.info("database \"" + databaseName + "\" created.");
   }
 
   public void dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)

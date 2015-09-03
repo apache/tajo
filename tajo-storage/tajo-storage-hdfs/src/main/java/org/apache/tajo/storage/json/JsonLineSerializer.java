@@ -21,32 +21,42 @@ package org.apache.tajo.storage.json;
 
 import net.minidev.json.JSONObject;
 import org.apache.commons.net.util.Base64;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.datum.TimeDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class JsonLineSerializer extends TextLineSerializer {
   // Full Path -> Type
   private final Map<String, Type> types;
   private final String [] projectedPaths;
 
+  private final boolean hasTimezone;
+  private final TimeZone timezone;
 
   public JsonLineSerializer(Schema schema, TableMeta meta) {
     super(schema, meta);
 
     projectedPaths = SchemaUtil.convertColumnsToPaths(schema.getAllColumns(), true);
     types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
+
+    hasTimezone = meta.containsOption(StorageConstants.TIMEZONE);
+    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
   @Override
@@ -92,15 +102,32 @@ public class JsonLineSerializer extends TextLineSerializer {
       json.put(fieldName, input.getFloat8(fieldIndex));
       break;
 
-    case CHAR:
+
     case TEXT:
     case VARCHAR:
-    case INET4:
-    case TIMESTAMP:
-    case DATE:
-    case TIME:
-    case INTERVAL:
       json.put(fieldName, input.getText(fieldIndex));
+      break;
+
+    case CHAR:
+    case INET4:
+    case DATE:
+    case INTERVAL:
+      json.put(fieldName, input.asDatum(fieldIndex).asChars());
+      break;
+
+    case TIMESTAMP:
+      if (hasTimezone) {
+        json.put(fieldName, TimestampDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
+      } else {
+        json.put(fieldName, input.asDatum(fieldIndex).asChars());
+      }
+      break;
+    case TIME:
+      if (hasTimezone) {
+        json.put(fieldName, TimeDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
+      } else {
+        json.put(fieldName, input.asDatum(fieldIndex).asChars());
+      }
       break;
 
     case BIT:
