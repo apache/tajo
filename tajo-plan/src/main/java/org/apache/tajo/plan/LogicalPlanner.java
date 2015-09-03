@@ -35,18 +35,13 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.UndefinedColumnException;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -2228,11 +2223,19 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
-    createIndexNode.setExternal(createIndex.isExternal());
     Collection<RelationNode> relations = block.getRelations();
-    assert relations.size() == 1;
-    createIndexNode.setKeySortSpecs(relations.iterator().next().getLogicalSchema(),
-        annotateSortSpecs(block, referNames, sortSpecs));
+    if (relations.size() > 1) {
+      throw new UnsupportedException("Index on multiple relations");
+    } else if (relations.size() == 0) {
+      throw new TajoInternalError("No relation for indexing");
+    }
+    RelationNode relationNode = relations.iterator().next();
+    if (!(relationNode instanceof ScanNode)) {
+      throw new UnsupportedException("Index on subquery");
+    }
+
+    createIndexNode.setExternal(createIndex.isExternal());
+    createIndexNode.setKeySortSpecs(relationNode.getLogicalSchema(), annotateSortSpecs(block, referNames, sortSpecs));
     createIndexNode.setIndexMethod(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
     if (createIndex.isExternal()) {
       createIndexNode.setIndexPath(new Path(createIndex.getIndexPath()).toUri());
