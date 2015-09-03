@@ -332,7 +332,7 @@ public class TestTajoCli {
           tc.executeMetaCommand("\\set ON_ERROR_STOP false");
           assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
 
-          po.write(new String("asdf;\nqwer;\nzxcv;\n").getBytes());
+          po.write(new String("asdf;\nqwe;\nzxcv;\n").getBytes());
 
           if(tc.runShell() == -1)
             Thread.currentThread().interrupt();
