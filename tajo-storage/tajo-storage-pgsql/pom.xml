@@ -52,6 +52,7 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
+            <exclude>derby.log</exclude>
             <exclude>src/test/resources/dataset/**</exclude>
             <exclude>src/test/resources/queries/**</exclude>
             <exclude>src/test/resources/results/**</exclude>
