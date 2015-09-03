@@ -40,6 +40,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -116,6 +117,14 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     if (scanExec != null) {
       scanExec.close();
       scanExec = null;
+    }
+
+    //remove temporal final output
+    if (!tajoConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
+      Path temporalResultDir = TajoConf.getTemporalResultDir(tajoConf, queryId);
+      if (tableDesc.getUri().equals(temporalResultDir.toUri())) {
+        temporalResultDir.getParent().getFileSystem(tajoConf).delete(temporalResultDir, true);
+      }
     }
   }
 
