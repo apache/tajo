@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
+import javax.xml.transform.Result;
 import java.sql.SQLException;
 import java.util.Map;
 
