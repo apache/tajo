@@ -134,16 +134,29 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 
     try {
+      // HiveCatalogStore provides list of table partitions with where clause because hive just provides api using
+      // the filter string. So, this rewriter need to differentiate HiveCatalogStore and other catalogs.
       if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
         PartitionsByDirectSqlProto request = buildDirectSQLWithHiveCatalogStore(splits[0], splits[1],
           partitionColumns, conjunctiveForms);
-        partitions = catalog.getPartitionsByDirectSql(request);
-      } else if (!store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")
-        && catalog.existPartitions(splits[0], splits[1])) {
-        PartitionsByAlgebraProto request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
-        partitions = catalog.getPartitionsByAlgebra(request);
+
+        if ((conjunctiveForms == null) || (conjunctiveForms != null && !request.getDirectSql().equals(""))) {
+          partitions = catalog.getPartitionsByDirectSql(request);
+        }
+      } else {
+        // Only when exists table partitions on catalog, try to get list of table partitions.
+        if (catalog.existPartitions(splits[0], splits[1])) {
+          // If there are no filters, this don't need to build direct sql for getting table partitions.
+          if (conjunctiveForms == null) {
+            partitions = catalog.getPartitions(splits[0], splits[1]);
+          } else {
+            PartitionsByAlgebraProto request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
+            partitions = catalog.getPartitionsByAlgebra(request);
+          }
+        }
       }
 
+      // If catalog returns list of table partitions successfully, build path lists for scanning table data.
       if (partitions != null) {
         filteredPaths = new Path[partitions.size()];
         for (int i = 0; i < partitions.size(); i++) {
@@ -154,6 +167,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       partitions = null;
     }
 
+    // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
+    // objects with the path-filter.
     if (partitions == null || filteredPaths == null) {
       PathFilter [] filters;
       if (conjunctiveForms == null) {
@@ -281,7 +296,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     PartitionFilterEvalNodeVisitor visitor = new PartitionFilterEvalNodeVisitor();
     visitor.setIsHiveCatalog(true);
 
-    List<EvalNode> accumulatedFilters = getAccumulatedFilters(partitionColumns, conjunctiveForms);
+    EvalNode[] filters = buildEvalNodesForAllLevels(partitionColumns, conjunctiveForms);
 
     StringBuffer sb = new StringBuffer();
 
@@ -290,13 +305,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       Column target = partitionColumns.getColumn(i);
 
       // Hive api doesn't support not null statement.
-      if (!(accumulatedFilters.get(i) instanceof IsNullEval)) {
+      if (!(filters[i] instanceof IsNullEval)) {
         if (sb.length() > 0) {
           sb.append(" AND ");
         }
 
         visitor.setColumn(target);
-        visitor.visit(null, accumulatedFilters.get(i), new Stack<EvalNode>());
+        visitor.visit(null, filters[i], new Stack<EvalNode>());
 
         // Hive api doesn't support row constant statement;
         if (visitor.isExistRowCostant()) {
@@ -307,6 +322,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         visitor.clearParameters();
       }
     }
+    request.setDirectSql(sb.toString());
 
     return request.build();
   }
@@ -331,7 +347,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  private static List<EvalNode> getAccumulatedFilters(Schema partitionColumns, EvalNode[] conjunctiveForms) {
+  private static EvalNode[] buildEvalNodesForAllLevels(Schema partitionColumns, EvalNode[] conjunctiveForms) {
+    EvalNode[] filters = new EvalNode[partitionColumns.size()];
     List<EvalNode> accumulatedFilters = Lists.newArrayList();
     Column target;
 
@@ -352,9 +369,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
         }
       }
+      EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
+        accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
+      filters[i] = filterPerLevel;
+
     }
 
-    return accumulatedFilters;
+    return filters;
   }
 
   /**
