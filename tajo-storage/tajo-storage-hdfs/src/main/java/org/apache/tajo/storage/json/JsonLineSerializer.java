@@ -35,6 +35,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
+import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
 import java.io.OutputStream;
