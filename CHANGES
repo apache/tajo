@@ -244,6 +244,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1811: Catalog server address must be set dynamically during test.
+    (jihoon)
+
     TAJO-1802: PythonScriptEngine copies controller and tajo util whenever 
     it is initialized. (jihoon)
 

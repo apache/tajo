@@ -979,7 +979,8 @@ public class QueryTestCaseBase {
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
         String tableName = createTable.getTableName();
-        assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
+        assertTrue("Table [" + tableName + "] creation is failed.",
+            client.updateQuery(parsedResult.getHistoryStatement()));
 
         TableDesc createdTable = client.getTableDesc(tableName);
         String createdTableName = createdTable.getName();
