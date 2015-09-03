@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.storage.Tuple;
 
 /**
  * The call sequence should be as follows:
@@ -33,41 +34,47 @@ import org.apache.tajo.datum.ProtobufDatum;
  */
 public interface RowWriter {
 
-  public TajoDataTypes.DataType [] dataTypes();
+  TajoDataTypes.DataType [] dataTypes();
 
-  public boolean startRow();
+  boolean startRow();
 
-  public void endRow();
+  void endRow();
 
-  public void skipField();
+  void skipField();
 
-  public void putBool(boolean val);
+  void clear();
 
-  public void putInt2(short val);
+  void putByte(byte val);
 
-  public void putInt4(int val);
+  void putBool(boolean val);
 
-  public void putInt8(long val);
+  void putInt2(short val);
 
-  public void putFloat4(float val);
+  void putInt4(int val);
 
-  public void putFloat8(double val);
+  void putInt8(long val);
 
-  public void putText(String val);
+  void putFloat4(float val);
 
-  public void putText(byte[] val);
+  void putFloat8(double val);
 
-  public void putBlob(byte[] val);
+  void putText(String val);
 
-  public void putTimestamp(long val);
+  void putText(byte[] val);
 
-  public void putTime(long val);
+  void putBlob(byte[] val);
 
-  public void putDate(int val);
+  void putTimestamp(long val);
 
-  public void putInterval(IntervalDatum val);
+  void putTime(long val);
 
-  public void putInet4(int val);
+  void putDate(int val);
 
-  public void putProtoDatum(ProtobufDatum datum);
+  void putInterval(IntervalDatum val);
+
+  void putInet4(int val);
+
+  void putProtoDatum(ProtobufDatum datum);
+
+  void addTuple(Tuple tuple);
 }
