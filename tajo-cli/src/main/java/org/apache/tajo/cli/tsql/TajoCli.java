@@ -421,7 +421,7 @@ public class TajoCli {
             history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
           }
 
-          System.out.println(exitCode = executeParsedResults(parsedResults));
+          exitCode = executeParsedResults(parsedResults);
           latestState = parser.getState();
           currentPrompt = updatePrompt(latestState);
 
