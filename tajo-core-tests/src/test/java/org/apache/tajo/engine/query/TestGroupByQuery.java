@@ -24,14 +24,11 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.querymaster.Query;
-import org.apache.tajo.querymaster.QueryMasterTask;
-import org.apache.tajo.querymaster.Stage;
-import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.worker.TajoWorker;
+import org.apache.tajo.util.history.QueryHistory;
+import org.apache.tajo.util.history.StageHistory;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -42,7 +39,7 @@ import org.junit.runners.Parameterized.Parameters;
 import java.sql.ResultSet;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
@@ -693,8 +690,6 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNumShufflePartition() throws Exception {
-
-    Thread.sleep(5000);
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -740,40 +735,18 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       }
       assertEquals(uniqKeys.size(), numRows);
 
-      // find last QueryMasterTask
-      List<QueryMasterTask> qmTasks = new ArrayList<QueryMasterTask>();
+      QueryId queryId = getQueryId(res);
+      QueryHistory queryHistory = testingCluster.getQueryHistory(queryId);
 
-      for(TajoWorker worker: testingCluster.getTajoWorkers()) {
-        qmTasks.addAll(worker.getWorkerContext().getQueryMaster().getFinishedQueryMasterTasks());
-      }
-
-      assertTrue(!qmTasks.isEmpty());
-
-      Collections.sort(qmTasks, new Comparator<QueryMasterTask>() {
-        @Override
-        public int compare(QueryMasterTask o1, QueryMasterTask o2) {
-          long l1 = o1.getQuerySubmitTime();
-          long l2 = o2.getQuerySubmitTime();
-          return l1 < l2 ? - 1 : (l1 > l2 ? 1 : 0);
-        }
-      });
-
-      // Getting the number of partitions. It should be 2.
-      Set<Integer> partitionIds = new HashSet<Integer>();
-
-      Query query = qmTasks.get(qmTasks.size() - 1).getQuery();
-      Collection<Stage> stages = query.getStages();
-      assertNotNull(stages);
-      assertTrue(!stages.isEmpty());
-      for (Stage stage : stages) {
-        if (stage.getId().toStringNoPrefix().endsWith("_000001")) {
-          for (Task.IntermediateEntry eachInterm: stage.getHashShuffleIntermediateEntries()) {
-            partitionIds.add(eachInterm.getPartId());
-          }
+      int shuffles = 0;
+      for (StageHistory stage : queryHistory.getStageHistories()) {
+        if (stage.getExecutionBlockId().endsWith("_000001")) {
+          // Getting the number of partitions. It should be 2.
+          shuffles = stage.getNumShuffles();
         }
       }
 
-      assertEquals(2, partitionIds.size());
+      assertEquals(2, shuffles);
       executeString("DROP TABLE testnumshufflepartition PURGE").close();
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,

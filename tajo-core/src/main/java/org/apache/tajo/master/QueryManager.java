@@ -35,13 +35,14 @@ import org.apache.tajo.ResourceProtos.TajoHeartbeatRequest;
 import org.apache.tajo.ResourceProtos.TajoHeartbeatResponse;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.scheduler.QuerySchedulingInfo;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.util.history.HistoryReader;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -61,9 +62,9 @@ public class QueryManager extends CompositeService {
   private AsyncDispatcher dispatcher;
 
   private final Map<QueryId, QueryInProgress> submittedQueries = Maps.newConcurrentMap();
-
   private final Map<QueryId, QueryInProgress> runningQueries = Maps.newConcurrentMap();
-  private final LRUMap historyCache = new LRUMap(HistoryReader.DEFAULT_PAGE_SIZE);
+
+  private LRUMap historyCache;
 
   private AtomicLong minExecutionTime = new AtomicLong(Long.MAX_VALUE);
   private AtomicLong maxExecutionTime = new AtomicLong();
@@ -83,6 +84,8 @@ public class QueryManager extends CompositeService {
 
       this.dispatcher.register(QueryJobEvent.Type.class, new QueryJobManagerEventHandler());
 
+      TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+      this.historyCache = new LRUMap(tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_CACHE_SIZE));
     } catch (Exception e) {
       LOG.error("Failed to init service " + getName() + " by exception " + e, e);
     }
