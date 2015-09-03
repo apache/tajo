@@ -6,6 +6,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1812: Timezone support in JSON file format. (hyunsik)
+
     TAJO-1486: Text file should support to skip header rows when creating 
     external table. (Contributed by Jongyoung Park. Committed by jinho)
 
