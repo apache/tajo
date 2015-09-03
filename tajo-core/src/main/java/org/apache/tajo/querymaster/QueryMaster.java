@@ -30,29 +30,28 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.QueryId;
-
+import org.apache.tajo.ResourceProtos.TajoHeartbeatRequest;
+import org.apache.tajo.ResourceProtos.TajoHeartbeatResponse;
+import org.apache.tajo.ResourceProtos.WorkerConnectionsResponse;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
-import org.apache.tajo.ResourceProtos.TajoHeartbeatRequest;
-import org.apache.tajo.ResourceProtos.TajoHeartbeatResponse;
-import org.apache.tajo.ResourceProtos.WorkerConnectionsResponse;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.master.event.QueryStopEvent;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.history.HistoryReader;
+import org.apache.tajo.util.history.HistoryWriter.WriterFuture;
+import org.apache.tajo.util.history.HistoryWriter.WriterHolder;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -76,8 +75,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private Map<QueryId, QueryMasterTask> queryMasterTasks = Maps.newConcurrentMap();
 
-  private final LRUMap
-      finishedQueryMasterTasksCache = new LRUMap(HistoryReader.DEFAULT_PAGE_SIZE);
+  private LRUMap finishedQueryMasterTasksCache;
 
   private ClientSessionTimeoutCheckThread clientSessionTimeoutCheckThread;
 
@@ -88,8 +86,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private QueryContext queryContext;
 
   private QueryHeartbeatThread queryHeartbeatThread;
-
-  private FinishedQueryMasterTaskCleanThread finishedQueryMasterTaskCleanThread;
 
   private TajoWorker.WorkerContext workerContext;
 
@@ -114,6 +110,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     queryMasterContext = new QueryMasterContext(systemConf);
 
     clock = new SystemClock();
+    finishedQueryMasterTasksCache = new LRUMap(systemConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_CACHE_SIZE));
 
     this.dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
@@ -134,9 +131,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     clientSessionTimeoutCheckThread = new ClientSessionTimeoutCheckThread();
     clientSessionTimeoutCheckThread.start();
 
-    finishedQueryMasterTaskCleanThread = new FinishedQueryMasterTaskCleanThread();
-    finishedQueryMasterTaskCleanThread.start();
-
     eventExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     singleEventExecutor = Executors.newSingleThreadExecutor();
     super.serviceStart();
@@ -153,10 +147,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     if(clientSessionTimeoutCheckThread != null) {
       clientSessionTimeoutCheckThread.interrupt();
-    }
-
-    if(finishedQueryMasterTaskCleanThread != null) {
-      finishedQueryMasterTaskCleanThread.interrupt();
     }
 
     if(eventExecutor != null){
@@ -210,7 +200,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
     return queryMasterTasks.get(queryId);
   }
 
-  @Deprecated
   public QueryMasterTask getQueryMasterTask(QueryId queryId, boolean includeFinished) {
     QueryMasterTask queryMasterTask = queryMasterTasks.get(queryId);
     if (queryMasterTask != null) {
@@ -234,10 +223,12 @@ public class QueryMaster extends CompositeService implements EventHandler {
     return queryMasterTasks.values();
   }
 
-  @Deprecated
-  public Collection<QueryMasterTask> getFinishedQueryMasterTasks() {
-    synchronized (finishedQueryMasterTasksCache) {
-      return new ArrayList<QueryMasterTask>(finishedQueryMasterTasksCache.values());
+  public QueryHistory getQueryHistory(QueryId queryId) throws IOException {
+    QueryMasterTask queryMasterTask = getQueryMasterTask(queryId, true);
+    if(queryMasterTask != null) {
+      return queryMasterTask.getQuery().getQueryHistory();
+    } else {
+      return workerContext.getHistoryReader().getQueryHistory(queryId.toString());
     }
   }
 
@@ -284,7 +275,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return dispatcher.getEventHandler();
     }
 
-    public void stopQuery(QueryId queryId) {
+    public void stopQuery(final QueryId queryId) {
       QueryMasterTask queryMasterTask = queryMasterTasks.get(queryId);
       if(queryMasterTask == null) {
         LOG.warn("No query info:" + queryId);
@@ -325,8 +316,19 @@ public class QueryMaster extends CompositeService implements EventHandler {
         QueryHistory queryHisory = query.getQueryHistory();
         if (queryHisory != null) {
           try {
+            WriterFuture<WriterHolder> writerFuture = new WriterFuture<WriterHolder>(queryHisory) {
+              @Override
+              public void done(WriterHolder writerHolder) {
+                super.done(writerHolder);
+
+                //remove memory cache, if history file writer is done
+                synchronized (finishedQueryMasterTasksCache) {
+                  finishedQueryMasterTasksCache.remove(queryId);
+                }
+              }
+            };
             query.context.getQueryMasterContext().getWorkerContext().
-                getTaskHistoryWriter().appendAndFlush(queryHisory);
+                getTaskHistoryWriter().appendHistory(writerFuture);
           } catch (Throwable e) {
             LOG.warn(e, e);
           }
@@ -450,51 +452,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
             } catch (Exception e) {
               LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
             }
-          }
-        }
-      }
-    }
-  }
-
-  class FinishedQueryMasterTaskCleanThread extends Thread {
-    public void run() {
-      int expireIntervalTime = systemConf.getIntVar(TajoConf.ConfVars.QUERYMASTER_CACHE_EXPIRE_PERIOD);
-      LOG.info("FinishedQueryMasterTaskCleanThread started: expire interval minutes = " + expireIntervalTime);
-      while(!isStopped) {
-        try {
-          synchronized (this) {
-            this.wait(60 * 1000);  // minimum interval minutes
-          }
-        } catch (InterruptedException e) {
-          break;
-        }
-        try {
-          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000l;
-          cleanExpiredFinishedQueryMasterTask(expireTime);
-        } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
-        }
-      }
-    }
-
-    private void cleanExpiredFinishedQueryMasterTask(long expireTime) {
-      List<Object> finishedList;
-      synchronized (finishedQueryMasterTasksCache) {
-        finishedList = new ArrayList<Object>(finishedQueryMasterTasksCache.values());
-      }
-
-      for(Object finishedTask: finishedList) {
-        QueryMasterTask queryMasterTask = (QueryMasterTask) finishedTask;
-          /* If a query are abnormal termination, the finished time will be zero. */
-        long finishedTime = queryMasterTask.getStartTime();
-        Query query = queryMasterTask.getQuery();
-        if (query != null && query.getFinishTime() > 0) {
-          finishedTime = query.getFinishTime();
-        }
-
-        if(finishedTime < expireTime) {
-          synchronized (finishedQueryMasterTasksCache) {
-            finishedQueryMasterTasksCache.remove(queryMasterTask.getQueryId());
           }
         }
       }

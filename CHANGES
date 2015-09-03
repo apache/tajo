@@ -32,6 +32,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1810: Remove QueryMasterTask cache immediately, if it stored to 
+    persistent storage. (jinho)
+
     TAJO-993: Cleanup the result data in HDFS after query finished.
     (jinho)
 
