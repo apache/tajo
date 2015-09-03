@@ -18,23 +18,18 @@
 
 package org.apache.tajo.jdbc;
 
-import com.google.common.collect.Maps;
-import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.error.Errors;
+import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.exception.SQLExceptionUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.sql.*;
-import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.exception.SQLExceptionUtil.toSQLState;
@@ -61,9 +56,63 @@ public class TestTajoJdbcNegative extends QueryTestCaseBase {
       + "/default");
   }
 
-  @Test //(expected = SQLException.class)
-  public void testConnectionRefused() throws SQLException {
-    DriverManager.getConnection("jdbc:tajo://tajo-unknown-asdnkl213.asd:2002/default");
+  @Test
+  public void testUnresolvedError() throws SQLException {
+    try {
+      DriverManager.getConnection("jdbc:tajo://tajo-unknown-asdnkl213.asd:2002/default");
+    } catch (SQLException s) {
+      assertEquals(toSQLState(ResultCode.CLIENT_CONNECTION_EXCEPTION), s.getSQLState());
+      assertEquals("Can't resolve host name: tajo-unknown-asdnkl213.asd:2002", s.getMessage());
+    }
+  }
+
+  @Test
+  public void testConnectionRefused() throws SQLException, IOException {
+    Integer port = null;
+    try {
+      ServerSocket s = new ServerSocket(0);
+      port = s.getLocalPort();
+      s.close();
+      DriverManager.getConnection("jdbc:tajo://localhost:" + port + "/default");
+      fail("Must be failed.");
+    } catch (SQLException s) {
+      assertEquals(toSQLState(ResultCode.CLIENT_CONNECTION_EXCEPTION), s.getSQLState());
+      assertEquals("Connection refused: localhost/127.0.0.1:" + port, s.getMessage());
+    }
+  }
+
+  @Test
+  public void testConnectionClosedAtCreateStmt() throws SQLException, IOException {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    conn.close();
+    try (Statement stmt = conn.createStatement()) {
+      fail("Must be failed.");
+      stmt.isClosed();
+    } catch (SQLException s) {
+      assertEquals(toSQLState(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST), s.getSQLState());
+      assertEquals("This connection has been closed.", s.getMessage());
+    }
+  }
+
+  @Test
+  public void testConnectionClosed() throws SQLException, IOException {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    try (Statement stmt = conn.createStatement()) {
+      conn.close();
+      stmt.executeUpdate("SELECT 1;");
+      fail("Must be failed.");
+    } catch (SQLException s) {
+      assertEquals(toSQLState(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST), s.getSQLState());
+      assertEquals("This connection has been closed.", s.getMessage());
+    }
   }
 
   @Test

@@ -19,6 +19,7 @@
 package org.apache.tajo.jdbc;
 
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.ErrorMessages;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -32,7 +33,11 @@ public class TajoSQLException extends SQLException {
         ExceptionUtil.toTajoException(returnState));
   }
 
-  public TajoSQLException(Errors.ResultCode code, String message, Throwable t) {
-    super(message, SQLExceptionUtil.toSQLState(code), t);
+  public TajoSQLException(Errors.ResultCode code, String...args) {
+    super(ErrorMessages.getMessage(code, args), SQLExceptionUtil.toSQLState(code));
+  }
+
+  public TajoSQLException(Errors.ResultCode code, Throwable t, String...args) {
+    super(ErrorMessages.getMessage(code, args), SQLExceptionUtil.toSQLState(code), t);
   }
 }
