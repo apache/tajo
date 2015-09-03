@@ -46,6 +46,7 @@ import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -134,11 +135,20 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       scanExec.close();
       scanExec = null;
     }
-
+    
     if(rowBlock != null) {
       rowBlock.release();
       rowBlock = null;
     }
+
+    //remove temporal final output
+    if (!tajoConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
+      Path temporalResultDir = TajoConf.getTemporalResultDir(tajoConf, queryId);
+      if (tableDesc.getUri().equals(temporalResultDir.toUri())) {
+        temporalResultDir.getParent().getFileSystem(tajoConf).delete(temporalResultDir, true);
+      }
+    }
+
   }
 
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
