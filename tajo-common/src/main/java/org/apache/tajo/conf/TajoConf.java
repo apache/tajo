@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.service.BaseServiceTracker;
@@ -771,6 +772,19 @@ public class TajoConf extends Configuration {
       return path;
     }
     return new Path(stagingDirString);
+  }
+
+  /**
+   * It returns the temporal query directory
+   * An example dir is <pre>/{staging-dir}/{queryId}/RESULT</pre>.
+   *
+   * @param conf TajoConf
+   * @param queryId queryId
+   * @throws IOException
+   */
+  public static Path getTemporalResultDir(TajoConf conf, QueryId queryId) throws IOException {
+    Path queryDir = new Path(getDefaultRootStagingDir(conf), queryId.toString());
+    return new Path(queryDir, TajoConstants.RESULT_DIR_NAME);
   }
 
   public static Path getQueryHistoryDir(TajoConf conf) throws IOException {
