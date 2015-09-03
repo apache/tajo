@@ -22,14 +22,17 @@ package org.apache.tajo.plan.util;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes.*;
 import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
@@ -45,8 +48,8 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   private String tableAlias;
   private Column column;
 
-  private Stack<String> queries = new Stack<String>();
-  private List<String> parameters = TUtil.newList();
+  private Stack<String> queries = new Stack();
+  private List<Pair<Type, Object>> parameters = TUtil.newList();
 
   public String getTableAlias() {
     return tableAlias;
@@ -64,11 +67,11 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     this.column = column;
   }
 
-  public List<String> getParameters() {
+  public List<Pair<Type, Object>> getParameters() {
     return parameters;
   }
 
-  public void setParameters(List<String> parameters) {
+  public void setParameters(List<Pair<Type, Object>> parameters) {
     this.parameters = parameters;
   }
 
@@ -97,7 +100,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     StringBuilder sb = new StringBuilder();
 
     sb.append("?").append(" )");
-    parameters.add(expr.getDate().toString());
+    parameters.add(new Pair(Type.DATE, Date.valueOf(expr.toString())));
     queries.push(sb.toString());
 
     return expr;
@@ -118,22 +121,23 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       timeValue.getSeconds(),
       timeValue.getSecondsFraction());
 
-    long timestamp;
+    long julianTimestamp;
     if (timeValue.hasSecondsFraction()) {
-      timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
+      julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
         times[3] * 1000);
     } else {
-      timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
+      julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
     }
 
     TimeMeta tm = new TimeMeta();
-    DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+    DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
 
     TimeZone tz = TimeZone.getDefault();
     DateTimeUtil.toUTCTimezone(tm, tz);
 
     sb.append("?").append(" )");
-    parameters.add((new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm))).toString()));
+    Timestamp timestamp = new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
+    parameters.add(new Pair(Type.TIMESTAMP, timestamp));
 
     queries.push(sb.toString());
 
@@ -164,7 +168,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     DateTimeUtil.toUTCTimezone(tm, tz);
 
     sb.append("?").append(" )");
-    parameters.add((new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs))).toString());
+    parameters.add(new Pair(Type.TIME, new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs))));
 
     queries.push(sb.toString());
 
@@ -176,7 +180,20 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     StringBuilder sb = new StringBuilder();
 
     sb.append("?").append(" )");
-    parameters.add(expr.getValue());
+    switch (expr.getValueType()) {
+      case Boolean:
+        parameters.add(new Pair(Type.BOOLEAN, Boolean.valueOf(expr.getValue())));
+        break;
+      case Unsigned_Float:
+        parameters.add(new Pair(Type.FLOAT8, Double.valueOf(expr.getValue())));
+        break;
+      case String:
+        parameters.add(new Pair(Type.TEXT, expr.getValue()));
+        break;
+      default:
+        parameters.add(new Pair(Type.INT8, Long.valueOf(expr.getValue())));
+        break;
+    }
     queries.push(sb.toString());
 
     return expr;

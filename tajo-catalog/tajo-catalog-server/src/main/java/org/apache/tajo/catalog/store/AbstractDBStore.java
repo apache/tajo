@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.common.TajoDataTypes.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.*;
@@ -2229,7 +2229,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
-    ColumnProto column = null;
     int currentIndex = 1;
     String directSQL = null;
 
@@ -2253,45 +2252,32 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       currentIndex++;
 
       for (PartitionFilterSet filter : filterSets) {
-        // Find column data type
-        for(ColumnProto field : tableDesc.getPartition().getExpressionSchema().getFieldsList()) {
-          if (field.getName().equals(filter.getColumnName())) {
-            column = field;
-            break;
-          }
-        }
-
         // Set table id by force because all filters have table id as first parameter.
         pstmt.setInt(currentIndex, tableId);
         currentIndex++;
 
-        for (String parameter : filter.getParameters()) {
-          switch (column.getDataType().getType()) {
-            case INT1:
-            case INT2:
-            case INT4:
-              pstmt.setInt(currentIndex, Integer.parseInt(parameter));
+        for (Pair<Type, Object> parameter : filter.getParameters()) {
+          switch (parameter.getFirst()) {
+            case BOOLEAN:
+              pstmt.setBoolean(currentIndex, (Boolean)parameter.getSecond());
               break;
             case INT8:
-              pstmt.setLong(currentIndex, Long.parseLong(parameter));
-              break;
-            case FLOAT4:
-              pstmt.setFloat(currentIndex, Float.parseFloat(parameter));
+              pstmt.setLong(currentIndex, (Long) parameter.getSecond());
               break;
             case FLOAT8:
-              pstmt.setDouble(currentIndex, Double.parseDouble(parameter));
+              pstmt.setDouble(currentIndex, (Double) parameter.getSecond());
               break;
             case DATE:
-              pstmt.setDate(currentIndex, Date.valueOf(parameter));
+              pstmt.setDate(currentIndex, (Date) parameter.getSecond());
               break;
             case TIMESTAMP:
-              pstmt.setTimestamp(currentIndex, Timestamp.valueOf(parameter));
+              pstmt.setTimestamp(currentIndex, (Timestamp) parameter.getSecond());
               break;
             case TIME:
-              pstmt.setTime(currentIndex, Time.valueOf(parameter));
+              pstmt.setTime(currentIndex, (Time) parameter.getSecond());
               break;
             default:
-              pstmt.setString(currentIndex, parameter);
+              pstmt.setString(currentIndex, (String) parameter.getSecond());
               break;
           }
           currentIndex++;
@@ -2396,7 +2382,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       PartitionFilterSet filterSet = new PartitionFilterSet();
       filterSet.setColumnName(target.getSimpleName());
 
-      List<String> list = TUtil.newList();
+      List<Pair<Type, Object>> list = TUtil.newList();
       list.addAll(visitor.getParameters());
       filterSet.addParameters(list);
 
@@ -2420,7 +2406,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PartitionFilterSet filterSet = new PartitionFilterSet();
     filterSet.setColumnName(target.getSimpleName());
 
-    List<String> list = TUtil.newList();
+    List<Pair<Type, Object>> list = TUtil.newList();
     list.addAll(visitor.getParameters());
     filterSet.addParameters(list);
 
@@ -3094,7 +3080,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   class PartitionFilterSet {
     private String columnName;
-    private List<String> parameters;
+    private List<Pair<Type, Object>> parameters;
 
     public PartitionFilterSet() {
       parameters = TUtil.newList();
@@ -3108,15 +3094,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       this.columnName = columnName;
     }
 
-    public List<String> getParameters() {
+    public List<Pair<Type, Object>> getParameters() {
       return parameters;
     }
 
-    public void setParameters(List<String> parameters) {
+    public void setParameters(List<Pair<Type, Object>> parameters) {
       this.parameters = parameters;
     }
 
-    public void addParameters(List<String> parameters) {
+    public void addParameters(List<Pair<Type, Object>> parameters) {
       this.parameters.addAll(parameters);
     }
   }

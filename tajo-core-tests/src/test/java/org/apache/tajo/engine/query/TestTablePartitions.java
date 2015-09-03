@@ -1348,7 +1348,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   public final void testPatternMatchingPredicatesAndStringFunctions() throws Exception {
     ResultSet res = null;
     String tableName = CatalogUtil.normalizeIdentifier("testPatternMatchingPredicatesAndStringFunctions");
-    String actualResult, expectedResult;
+    String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
       executeString("create table " + tableName
@@ -1372,50 +1372,46 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeString("SELECT * FROM " + tableName
       + " WHERE l_shipdate LIKE '1996%' and l_returnflag = 'N' order by l_shipdate");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
       "-------------------------------\n" +
       "1,1,1996-03-13,N\n" +
       "1,1,1996-04-12,N\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Not like
     res = executeString("SELECT * FROM " + tableName
       + " WHERE l_shipdate NOT LIKE '1996%' and l_returnflag IN ('R') order by l_shipdate");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
       "-------------------------------\n" +
       "3,3,1993-11-09,R\n" +
       "3,2,1994-02-02,R\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // In
     res = executeString("SELECT * FROM " + tableName
       + " WHERE l_shipdate IN ('1993-11-09', '1994-02-02', '1997-01-28') AND l_returnflag = 'R' order by l_shipdate");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
       "-------------------------------\n" +
       "3,3,1993-11-09,R\n" +
       "3,2,1994-02-02,R\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Similar to
     res = executeString("SELECT * FROM " + tableName + " WHERE l_shipdate similar to '1993%' order by l_shipdate");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
       "-------------------------------\n" +
       "3,3,1993-11-09,R\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Regular expression
@@ -1423,25 +1419,23 @@ public class TestTablePartitions extends QueryTestCaseBase {
       + " WHERE l_shipdate regexp '[1-2][0-9][0-9][3-9]-[0-1][0-9]-[0-3][0-9]' "
       + " AND l_returnflag <> 'N' ORDER BY l_shipdate");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
       "-------------------------------\n" +
       "3,3,1993-11-09,R\n" +
       "3,2,1994-02-02,R\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Concatenate
     res = executeString("SELECT * FROM " + tableName
       + " WHERE l_shipdate = ( '1996' || '-' || '03' || '-' || '13' ) order by l_shipdate");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
       "-------------------------------\n" +
       "1,1,1996-03-13,N\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
@@ -1452,7 +1446,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   public final void testDatePartitionColumn() throws Exception {
     ResultSet res = null;
     String tableName = CatalogUtil.normalizeIdentifier("testDatePartitionColumn");
-    String actualResult, expectedResult;
+    String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
       executeString("create table " + tableName + " (col1 int4, col2 int4) partition by column(key date) ").close();
@@ -1474,13 +1468,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
     // LessThanOrEquals
     res = executeString("SELECT * FROM " + tableName + " WHERE key <= date '1995-09-01' order by col1, col2, key");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "3,2,1994-02-02\n" +
       "3,3,1993-11-09\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // LessThan and GreaterThan
@@ -1488,20 +1481,18 @@ public class TestTablePartitions extends QueryTestCaseBase {
       + " WHERE key > to_date('1993-01-01', 'YYYY-MM-DD') " +
       " and key < to_date('1996-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "3,2,1994-02-02\n" +
       "3,3,1993-11-09\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Between
     res = executeString("SELECT * FROM " + tableName
       + " WHERE key between date '1993-01-01' and date '1997-01-01' order by col1, col2, key desc");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "1,1,1996-04-12\n" +
@@ -1509,7 +1500,51 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "3,2,1994-02-02\n" +
       "3,3,1993-11-09\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Cast
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < '1997-01-01'::timestamp order by col1, col2, key ");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13\n" +
+      "1,1,1996-04-12\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Interval
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < date '1994-01-01' + interval '1 year' order by col1, col2, key ");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // DateTime Function #1
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < add_months(date '1994-01-01', 12) order by col1, col2, key ");
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // DateTime Function #2
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < add_months('1994-01-01'::timestamp, 12) order by col1, col2, key ");
+
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
@@ -1520,7 +1555,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   public final void testTimeStampPartitionColumn() throws Exception {
     ResultSet res = null;
     String tableName = CatalogUtil.normalizeIdentifier("testTimeStampPartitionColumn");
-    String actualResult, expectedResult;
+    String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
       executeString("create table " + tableName
@@ -1545,13 +1580,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeString("SELECT * FROM " + tableName
       + " WHERE key <= to_timestamp('1995-09-01', 'YYYY-MM-DD') order by col1, col2, key");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "3,2,1994-02-02 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // LessThan and GreaterThan
@@ -1559,13 +1593,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
       + " WHERE key > to_timestamp('1993-01-01', 'YYYY-MM-DD') and " +
       "key < to_timestamp('1996-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "3,2,1994-02-02 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Between
@@ -1573,7 +1606,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       + " WHERE key between to_timestamp('1993-01-01', 'YYYY-MM-DD') " +
       "and to_timestamp('1997-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "1,1,1996-04-12 00:00:00\n" +
@@ -1581,7 +1613,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "3,2,1994-02-02 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
@@ -1592,7 +1624,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   public final void testTimePartitionColumn() throws Exception {
     ResultSet res = null;
     String tableName = CatalogUtil.normalizeIdentifier("testTimePartitionColumn");
-    String actualResult, expectedResult;
+    String  expectedResult;
 
     if (nodeType == NodeType.INSERT) {
       executeString("create table " + tableName
@@ -1626,7 +1658,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeString("SELECT * FROM " + tableName
       + " WHERE key <= cast('12:10:20' as time) order by col1, col2, key");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "1,1,00:00:00\n" +
@@ -1634,7 +1665,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "2,2,12:10:20\n" +
       "3,3,00:00:00\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // LessThan and GreaterThan
@@ -1642,12 +1673,11 @@ public class TestTablePartitions extends QueryTestCaseBase {
       + " WHERE key > cast('00:00:00' as time) and " +
       "key < cast('12:10:00' as time) order by col1, col2, key desc");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "1,1,11:20:40\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     // Between
@@ -1655,14 +1685,13 @@ public class TestTablePartitions extends QueryTestCaseBase {
       + " WHERE key between cast('11:00:00' as time) " +
       "and cast('13:00:00' as time) order by col1, col2, key desc");
 
-    actualResult = resultSetToString(res);
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
       "1,1,11:20:40\n" +
       "2,2,12:10:20\n" +
       "3,2,12:10:30\n";
 
-    assertEquals(expectedResult, actualResult);
+    assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
