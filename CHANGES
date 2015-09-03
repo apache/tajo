@@ -34,6 +34,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-993: Cleanup the result data in HDFS after query finished.
+    (jinho)
+
     TAJO-1766: Improve the performance of cross join. (jihoon)
 
     TAJO-1792: tajo-cluster-tests is not available when it is used as an 
@@ -233,6 +236,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1802: PythonScriptEngine copies controller and tajo util whenever 
+    it is initialized. (jihoon)
 
     TAJO-1707: Rack local count can be more than actual number of tasks.
     (jinho)
