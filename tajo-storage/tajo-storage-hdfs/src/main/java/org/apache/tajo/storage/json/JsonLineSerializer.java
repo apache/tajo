@@ -120,14 +120,14 @@ public class JsonLineSerializer extends TextLineSerializer {
       if (hasTimezone) {
         json.put(fieldName, TimestampDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
       } else {
-        json.put(fieldName, input.getText(fieldIndex));
+        json.put(fieldName, input.asDatum(fieldIndex).asChars());
       }
       break;
     case TIME:
       if (hasTimezone) {
         json.put(fieldName, TimeDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
       } else {
-        json.put(fieldName, input.getText(fieldIndex));
+        json.put(fieldName, input.asDatum(fieldIndex).asChars());
       }
       break;
 
