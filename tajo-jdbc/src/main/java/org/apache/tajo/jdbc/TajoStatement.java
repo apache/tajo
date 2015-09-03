@@ -17,19 +17,16 @@
  */
 package org.apache.tajo.jdbc;
 
-import com.google.common.collect.Lists;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.apache.tajo.client.TajoClientUtil.NULL_RESULT_SET;
 
 public class TajoStatement implements Statement {
   protected JdbcConnection conn;
@@ -79,7 +76,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public void cancel() throws SQLException {
-    checkConnection("Can't cancel query");
+    checkConnection();
     if (resultSet == null || resultSet.getQueryId().isNull()) {
       return;
     }
@@ -99,7 +96,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public void clearWarnings() throws SQLException {
-    checkConnection("Can't clear warnings");
+    checkConnection();
     warningChain = null;
   }
 
@@ -146,7 +143,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
-    checkConnection("Can't execute");
+    checkConnection();
     return executeSQL(sql);
   }
 
@@ -173,16 +170,20 @@ public class TajoStatement implements Statement {
     }
   }
 
-  protected void checkConnection(String errorMsg) throws SQLException {
-    if (isClosed) {
-      throw new SQLException(errorMsg + " after statement has been closed");
+  protected void checkConnection() throws SQLException {
+    if (isClosed || conn.isClosed()) {
+      throw new TajoSQLException(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST);
     }
   }
 
   @Override
   public int executeUpdate(String sql) throws SQLException {
-    checkConnection("Can't execute update");
-    tajoClient.executeQuery(sql);
+    checkConnection();
+    try {
+      tajoClient.updateQuery(sql);
+    } catch (TajoException e) {
+      throw SQLExceptionUtil.toSQLException(e);
+    }
     return 1;
   }
 
@@ -203,19 +204,19 @@ public class TajoStatement implements Statement {
 
   @Override
   public Connection getConnection() throws SQLException {
-    checkConnection("Can't get connection");
+    checkConnection();
     return conn;
   }
 
   @Override
   public int getFetchDirection() throws SQLException {
-    checkConnection("Can't get fetch direction");
+    checkConnection();
     return ResultSet.FETCH_FORWARD;
   }
 
   @Override
   public int getFetchSize() throws SQLException {
-    checkConnection("Can't get fetch size");
+    checkConnection();
     return fetchSize;
   }
 
@@ -252,7 +253,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public ResultSet getResultSet() throws SQLException {
-    checkConnection("Can't get result set");
+    checkConnection();
     return resultSet;
   }
 
@@ -282,7 +283,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    checkConnection("Can't get warnings");
+    checkConnection();
     return warningChain;
   }
 
@@ -321,7 +322,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    checkConnection("Can't set fetch size");
+    checkConnection();
     fetchSize = rows;
   }
 
