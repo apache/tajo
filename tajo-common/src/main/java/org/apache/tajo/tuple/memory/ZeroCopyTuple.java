@@ -16,26 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
-import org.apache.tajo.util.Deallocatable;
-import org.apache.tajo.util.UnsafeUtil;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.storage.Tuple;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+public abstract class ZeroCopyTuple implements Tuple {
 
-import static org.apache.tajo.common.TajoDataTypes.DataType;
+  protected int relativePos;
+  protected int length;
 
-public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
-  private ByteBuffer bb;
+  public abstract void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types);
 
-  public DirectBufTuple(int length, DataType[] types) {
-    bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
-    set(bb, 0, length, types);
+  void set(int relativePos, int length) {
+    this.relativePos = relativePos;
+    this.length = length;
+  }
+
+  public int getRelativePos() {
+    return relativePos;
+  }
+
+  public int getLength() {
+    return length;
   }
 
   @Override
-  public void release() {
-    UnsafeUtil.free(bb);
+  public Tuple clone() throws CloneNotSupportedException {
+    return (Tuple) super.clone();
   }
 }

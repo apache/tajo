@@ -16,33 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple.offheap;
+package org.apache.tajo.tuple.memory;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoInternalError;
 
 public class OffHeapRowBlockWriter extends OffHeapRowWriter {
-  OffHeapRowBlock rowBlock;
+  private RowBlock rowBlock;
 
-  OffHeapRowBlockWriter(OffHeapRowBlock rowBlock) {
-    super(rowBlock.dataTypes);
+  OffHeapRowBlockWriter(RowBlock rowBlock) {
+    super(rowBlock.getDataTypes());
     this.rowBlock = rowBlock;
+    if (!rowBlock.getMemory().hasAddress()) {
+      throw new TajoInternalError(rowBlock.getMemory().getClass().getSimpleName()
+          + " does not support to direct memory access");
+    }
   }
 
   public long address() {
-    return rowBlock.address();
+    return rowBlock.getMemory().address();
   }
 
   public int position() {
-    return rowBlock.position();
+    return rowBlock.getMemory().writerPosition();
   }
 
   @Override
   public void forward(int length) {
-    rowBlock.position(position() + length);
+    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() + length);
   }
 
   public void ensureSize(int size) {
-    rowBlock.ensureSize(size);
+    rowBlock.getMemory().ensureSize(size);
   }
 
   @Override
@@ -53,6 +58,6 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
 
   @Override
   public TajoDataTypes.DataType[] dataTypes() {
-    return rowBlock.dataTypes;
+    return rowBlock.getDataTypes();
   }
 }
