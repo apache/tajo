@@ -56,8 +56,11 @@ public class TestPgSQLEndPointTests extends QueryTestCaseBase {
 
   @Test(timeout = 1000)
   public void testGetTableList() {
-    Set<String> retrieved = Sets.newHashSet(client.getTableList("tpch"));
-    assertEquals(Sets.newHashSet(PgSQLTestServer.TPCH_TABLES), retrieved);
+    final Set<String> expected = Sets.newHashSet(PgSQLTestServer.TPCH_TABLES);
+    expected.add("datetime_types");
+    final Set<String> retrieved = Sets.newHashSet(client.getTableList("tpch"));
+
+    assertEquals(expected, retrieved);
   }
 
   @Test(timeout = 1000)

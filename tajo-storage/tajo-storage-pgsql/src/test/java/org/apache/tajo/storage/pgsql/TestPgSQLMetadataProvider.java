@@ -63,8 +63,11 @@ public class TestPgSQLMetadataProvider {
     Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
     MetadataProvider provider = tablespace.getMetadataProvider();
 
-    Set<String> found = Sets.newHashSet(provider.getTables(null, null));
-    assertEquals(Sets.newHashSet(PgSQLTestServer.TPCH_TABLES), found);
+    final Set<String> expected = Sets.newHashSet(PgSQLTestServer.TPCH_TABLES);
+    expected.add("datetime_types");
+    final Set<String> found = Sets.newHashSet(provider.getTables(null, null));
+
+    assertEquals(expected, found);
   }
 
   @Test
