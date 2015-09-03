@@ -547,6 +547,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1749: Refine JDBC exceptions to better handle exceptional 
+    cases. (hyunsik)
+
     TAJO-1737: Implement SQL Parser rule for Map type. (hyunsik)
 
     TAJO-1787: Remove unused and legacy exceptions. (hyunsik)
