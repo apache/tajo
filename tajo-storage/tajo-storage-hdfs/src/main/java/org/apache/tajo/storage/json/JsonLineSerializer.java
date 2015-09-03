@@ -103,15 +103,17 @@ public class JsonLineSerializer extends TextLineSerializer {
       json.put(fieldName, input.getFloat8(fieldIndex));
       break;
 
-    case CHAR:
+
     case TEXT:
     case VARCHAR:
-    case INET4:
-
-    case DATE:
-
-    case INTERVAL:
       json.put(fieldName, input.getText(fieldIndex));
+      break;
+
+    case CHAR:
+    case INET4:
+    case DATE:
+    case INTERVAL:
+      json.put(fieldName, input.asDatum(fieldIndex).asChars());
       break;
 
     case TIMESTAMP:
