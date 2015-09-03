@@ -6,6 +6,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1812: Timezone support in JSON file format. (hyunsik)
+
     TAJO-1486: Text file should support to skip header rows when creating 
     external table. (Contributed by Jongyoung Park. Committed by jinho)
 
@@ -33,6 +35,11 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1738: Improve off-heap RowBlock. (jinho)
+
+    TAJO-1810: Remove QueryMasterTask cache immediately, if it stored to 
+    persistent storage. (jinho)
 
     TAJO-993: Cleanup the result data in HDFS after query finished.
     (jinho)
@@ -236,6 +243,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1811: Catalog server address must be set dynamically during test.
+    (jihoon)
 
     TAJO-1802: PythonScriptEngine copies controller and tajo util whenever 
     it is initialized. (jihoon)
@@ -541,6 +551,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1749: Refine JDBC exceptions to better handle exceptional 
+    cases. (hyunsik)
 
     TAJO-1737: Implement SQL Parser rule for Map type. (hyunsik)
 
