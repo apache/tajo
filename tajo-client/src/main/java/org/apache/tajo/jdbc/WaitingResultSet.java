@@ -18,7 +18,6 @@
 
 package org.apache.tajo.jdbc;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -27,12 +26,10 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClientUtil;
-import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
-import org.omg.CORBA.INTERNAL;
 
 import java.sql.SQLException;
 
