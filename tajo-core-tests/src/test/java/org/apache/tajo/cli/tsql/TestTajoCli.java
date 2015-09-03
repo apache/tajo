@@ -27,6 +27,7 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
@@ -40,6 +41,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.junit.rules.Timeout;
 
 import java.io.*;
 import java.net.URL;
@@ -316,19 +318,35 @@ public class TestTajoCli {
   }
 
   private void verifyRunWhenError() throws Exception {
-    PipedOutputStream po = new PipedOutputStream();
-    InputStream is = new PipedInputStream(po);
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    Thread t = new Thread() {
+      public void run() {
+        try {
+          PipedOutputStream po = new PipedOutputStream();
+          InputStream is = new PipedInputStream(po);
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-    TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
+          TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+          setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
 
-    tc.executeMetaCommand("\\set ON_ERROR_STOP false");
-    assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
+          tc.executeMetaCommand("\\set ON_ERROR_STOP false");
+          assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
 
-    po.write(new String("asdf;\n\\q\n").getBytes());
-    assertTrue((tc.runShell()) == 0);
+          po.write(new String("asdf;\nqwer;\nzxcv;\n").getBytes());
+
+          if(tc.runShell() == -1)
+            Thread.currentThread().interrupt();
+
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    };
+
+    t.start();
+    Thread.sleep(5000);
+    if(!t.isAlive())
+      assertTrue(false);
   }
 
   @Test

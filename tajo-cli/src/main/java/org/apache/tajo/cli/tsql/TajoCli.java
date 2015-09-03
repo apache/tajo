@@ -405,7 +405,7 @@ public class TajoCli {
 
     SimpleParser parser = new SimpleParser();
     try {
-      while (!(line = reader.readLine(currentPrompt + "> ")).equals("\\q")) {
+      while (!(line = reader.readLine(currentPrompt + "> ")).equals(null)) {
         if (line.equals("")) {
           continue;
         }
@@ -421,15 +421,13 @@ public class TajoCli {
             history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
           }
 
-          exitCode = executeParsedResults(parsedResults);
+          System.out.println(exitCode = executeParsedResults(parsedResults));
           latestState = parser.getState();
           currentPrompt = updatePrompt(latestState);
 
           // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
           if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP))
             break;
-          else
-            exitCode = 0;
         }
       }
     } catch (Exception e) {
