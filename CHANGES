@@ -244,6 +244,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1815: Catalog store initialization with PostgreSQL failed.
+    (Contributed by Jongyoung Park, Committed by hyunsik)
+
     TAJO-1811: Catalog server address must be set dynamically during test.
     (jihoon)
 
