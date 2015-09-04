@@ -77,7 +77,7 @@ public abstract class JdbcScanner implements Scanner {
     this.tableMeta = tableMeta;
     this.fragment = fragment;
     this.stats = new TableStats();
-    builder = getSQLBuilder(getSQLExprBuilder());
+    builder = getSQLBuilder();
   }
 
   @Override
@@ -172,7 +172,7 @@ public abstract class JdbcScanner implements Scanner {
     return schema;
   }
 
-  protected SQLBuilder getSQLBuilder(SQLExpressionGenerator exprBuilder) {
+  protected SQLBuilder getSQLBuilder() {
     return new SQLBuilder(dbMetaData, getSQLExprBuilder());
   }
   protected SQLExpressionGenerator getSQLExprBuilder() {

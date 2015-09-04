@@ -51,7 +51,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
   }
 
   private String [] extractHosts(String uri) {
-    return new String [] {};
+    return new String[] {ConnectionInfo.fromURI(uri).host};
   }
 
   @Override

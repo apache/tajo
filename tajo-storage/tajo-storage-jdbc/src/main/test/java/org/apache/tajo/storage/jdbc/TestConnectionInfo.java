@@ -28,6 +28,7 @@ public class TestConnectionInfo {
   public final void testGetConnectionInfoType1() {
     ConnectionInfo c1 = ConnectionInfo.fromURI("jdbc:mysql://localhost:55840?user=testuser&password=testpass");
     assertEquals("jdbc:mysql", c1.scheme);
+    assertEquals("localhost", c1.host);
     assertEquals("testuser", c1.user);
     assertEquals("testpass", c1.password);
     assertNull(c1.dbName);
@@ -40,6 +41,7 @@ public class TestConnectionInfo {
     ConnectionInfo c1 = ConnectionInfo.fromURI(
         "jdbc:mysql://localhost:55840/db1?table=tb1&user=testuser&password=testpass&TZ=GMT+9");
     assertEquals("jdbc:mysql", c1.scheme);
+    assertEquals("localhost", c1.host);
     assertEquals("testuser", c1.user);
     assertEquals("testpass", c1.password);
     assertEquals("db1", c1.dbName);

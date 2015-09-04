@@ -26,6 +26,7 @@ import java.util.Map;
 
 public class ConnectionInfo {
   String scheme;
+  String host;
   String dbName;
   String tableName;
   String user;
@@ -67,6 +68,8 @@ public class ConnectionInfo {
       int idx = uriStr.indexOf(':');
       uri = URI.create(uriStr.substring(idx + 1));
     }
+
+    connInfo.host = uri.getHost();
 
     String path = uri.getPath();
     if (path != null && !path.isEmpty()) {
