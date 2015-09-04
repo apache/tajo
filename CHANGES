@@ -482,6 +482,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1809: Change default value of several configurations. (jihoon)
+
     TAJO-1803: Use in-memory derby as the default catalog for unit tests. 
     (jihoon)
 
