@@ -574,12 +574,6 @@ public class TajoMasterClientService extends AbstractService {
 
         builder.setResultSet(resultSet);
         builder.setState(OK);
-
-        LOG.info(String.format("\"Send result to client for %s, queryId: %s %s rows: %d",
-            request.getSessionId().getId(), queryId,
-            resultSet.hasDecompressCodec() ? ", compression: " + resultSet.getDecompressCodec() : "",
-            resultSet.getRows()
-        ));
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         builder.setState(returnError(t));

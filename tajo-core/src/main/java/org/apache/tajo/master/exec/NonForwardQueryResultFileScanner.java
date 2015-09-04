@@ -20,6 +20,8 @@ package org.apache.tajo.master.exec;
 
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
@@ -54,6 +56,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NonForwardQueryResultFileScanner implements NonForwardQueryResultScanner {
+  private final static Log LOG = LogFactory.getLog(NonForwardQueryResultFileScanner.class);
 
   private QueryId queryId;
   private String sessionId;
@@ -62,12 +65,14 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private RowStoreEncoder rowEncoder;
   private int maxRow;
   private int currentNumRows;
+  private long totalRows;
   private TaskAttemptContext taskContext;
   private TajoConf tajoConf;
   private ScanNode scanNode;
   private MemoryRowBlock rowBlock;
   private CodecType codecType;
   private boolean eof;
+  private volatile boolean isStopped;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
                                           TableDesc tableDesc, int maxRow) throws IOException {
@@ -131,6 +136,11 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   }
 
   public void close() throws IOException {
+    if(isStopped) {
+      return;
+    }
+
+    isStopped = true;
     if (scanExec != null) {
       scanExec.close();
       scanExec = null;
@@ -149,6 +159,12 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       }
     }
 
+
+    LOG.info(String.format("\"Sent result to client for %s, queryId: %s %s rows: %d",
+        sessionId, queryId,
+        codecType != null ? ", compression: " + codecType : "",
+        totalRows
+    ));
   }
 
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
@@ -157,7 +173,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       return rows;
     }
     int rowCount = 0;
-    while (true) {
+    while (!eof) {
       Tuple tuple = scanExec.next();
       if (tuple == null) {
         eof = true;
@@ -232,6 +248,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
         resultSetBuilder.setSerializedTuples(ByteString.copyFrom(uncompressed));
       }
       rowBlock.clear();
+      totalRows += rowCount;
     }
 
     if (eof) {
