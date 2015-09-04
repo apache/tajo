@@ -42,13 +42,13 @@ public class PgSQLTablespace extends JdbcTablespace {
   private final String database;
 
 
-  public PgSQLTablespace(String name, URI uri, JSONObject space) {
-    super(name, uri, space);
+  public PgSQLTablespace(String name, URI uri, JSONObject config) {
+    super(name, uri, config);
 
     // mapped database name
-    JSONObject config = ((JSONObject) space.get(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY));
+
     if (config.containsKey(MAPPED_DATABASE_CONFIG_KEY)) {
-      database = config.getAsString(MAPPED_DATABASE_CONFIG_KEY);
+      database = this.config.getAsString(MAPPED_DATABASE_CONFIG_KEY);
     } else {
       database = ConnectionInfo.fromURI(uri).database();
     }

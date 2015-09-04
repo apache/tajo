@@ -157,11 +157,7 @@ public class PgSQLTestServer {
     JSONObject configElements = new JSONObject();
     configElements.put(JdbcTablespace.MAPPED_DATABASE_CONFIG_KEY, DATABASE_NAME);
 
-    Map<String, JSONObject> configMap = new HashMap<>();
-    configMap.put(TablespaceManager.TABLESPACE_SPEC_CONFIGS_KEY, configElements);
-    JSONObject config = new JSONObject(configMap);
-
-    PgSQLTablespace tablespace = new PgSQLTablespace(SPACENAME, URI.create(getJdbcUrlForAdmin()), config);
+    PgSQLTablespace tablespace = new PgSQLTablespace(SPACENAME, URI.create(getJdbcUrlForAdmin()), configElements);
     tablespace.init(new TajoConf());
 
     TablespaceManager.addTableSpaceForTest(tablespace);
