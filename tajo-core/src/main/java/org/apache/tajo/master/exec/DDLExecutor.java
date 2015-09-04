@@ -618,9 +618,11 @@ public class DDLExecutor {
 
     // Find missing partitions from filesystem
     List<PartitionDescProto> existingPartitions = catalog.getPartitions(databaseName, simpleTableName);
+    List<String> existingPartitionNames = TUtil.newList();
     Path existingPartitionPath = null;
     for(PartitionDescProto existingPartition : existingPartitions) {
       existingPartitionPath = new Path(existingPartition.getPath());
+      existingPartitionNames.add(existingPartition.getPartitionName());
       if (!fs.exists(existingPartitionPath)) {
         LOG.info("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
       }
@@ -630,8 +632,7 @@ public class DDLExecutor {
     List<PartitionDescProto> targetPartitions = TUtil.newList();
     for(Path filteredPath : filteredPaths) {
       PartitionDescProto targetPartition = getPartitionDesc(simpleTableName, filteredPath);
-
-      if (!existingPartitions.contains(targetPartition)) {
+      if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
         LOG.info("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
         targetPartitions.add(targetPartition);
       }
