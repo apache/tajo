@@ -1279,7 +1279,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitCreate_table_statement(SQLParser.Create_table_statementContext ctx) {
-    String tableName = buildTableName(ctx.table_name());
+    String tableName = ctx.table_name().get(0).getText();
     CreateTable createTable = new CreateTable(tableName, checkIfExist(ctx.if_not_exists()));
     if(checkIfExist(ctx.LIKE()))  {
       createTable.setLikeParentTable(ctx.like_table_name.getText());
@@ -1962,25 +1962,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
     return evaluateAlterTableOperationTye(val);
-  }
-
-  public String buildTableName(@NotNull List<SQLParser.Table_nameContext> ctx) {
-//    return StringUtils.join(
-//        Collections2.transform(ctx.get(0).identifier(), new Function<IdentifierContext, String>() {
-//
-//          @Override
-//          public String apply(IdentifierContext identifierContext) {
-//            return identifierContext.getText();
-//          }
-//        }), ".");
-
-    for (Table_nameContext n :ctx) {
-      for (IdentifierContext i : n.identifier()) {
-        System.out.println(i);
-      }
-    }
-
-    return ctx.get(0).getText();
   }
 
   private AlterTableOpType evaluateAlterTableOperationTye(final int value) {
