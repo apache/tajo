@@ -43,6 +43,8 @@ import static org.apache.tajo.catalog.CatalogUtil.newSimpleDataType;
 public abstract class JdbcMetadataProviderBase implements MetadataProvider {
   protected static final Log LOG = LogFactory.getLog(JdbcMetadataProviderBase.class);
 
+  public static String [] GENERAL_TABLE_TYPES = new String [] {"TABLE"};
+
   protected final JdbcTablespace space;
   protected final String databaseName;
 
@@ -100,7 +102,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     ResultSet res = null;
     List<String> tableNames = Lists.newArrayList();
     try {
-      res = connection.getMetaData().getTables(databaseName, schemaPattern, tablePattern, null);
+      res = connection.getMetaData().getTables(databaseName, schemaPattern, tablePattern, GENERAL_TABLE_TYPES);
       while(res.next()) {
         tableNames.add(res.getString("TABLE_NAME"));
       }
@@ -131,6 +133,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     case Types.INTEGER:
       return new TypeDesc(newSimpleDataType(Type.INT4));
 
+    case Types.DISTINCT: // sequence for postgresql
     case Types.BIGINT:
       return new TypeDesc(newSimpleDataType(Type.INT8));
 
