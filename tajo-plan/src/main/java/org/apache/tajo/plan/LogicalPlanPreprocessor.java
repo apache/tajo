@@ -195,6 +195,11 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       return exprNode;
     }
 
+    NamedExpr[] projectTargetExprs = expr.getNamedExprs();
+    if (projectTargetExprs.length == 1 && projectTargetExprs[0].getChild().getType() == OpType.CountRowsFunction) {
+      ctx.isSimpleCountQuery = true;
+    }
+
     stack.push(expr); // <--- push
     LogicalNode child = visit(ctx, stack, expr.getChild());
 
@@ -203,7 +208,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       expr.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs()));
     }
 
-    NamedExpr[] projectTargetExprs = expr.getNamedExprs();
+    projectTargetExprs = expr.getNamedExprs();
     for (int i = 0; i < expr.getNamedExprs().length; i++) {
       NamedExpr namedExpr = projectTargetExprs[i];
 
@@ -399,6 +404,10 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       scanNode.init(desc, relation.getAlias());
     } else {
       scanNode.init(desc);
+    }
+
+    if (ctx.isSimpleCountQuery) {
+      scanNode.setCountQuery(true);
     }
 
     TablePropertyUtil.setTableProperty(ctx.getQueryContext(), scanNode);

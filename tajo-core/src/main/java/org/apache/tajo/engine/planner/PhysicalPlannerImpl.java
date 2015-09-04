@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
@@ -47,9 +48,7 @@ import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 import org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.FileTablespace;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -903,24 +902,28 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
+    String canonicalName = scanNode.getCanonicalName();
+    FragmentProto [] fragments = ctx.getTables(canonicalName);
+
     // check if an input is sorted in the same order to the subsequence sort operator.
     // TODO - it works only if input files are raw files. We should check the file format.
     // Since the default intermediate file format is raw file, it is not problem right now.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (ctx.getTable(canonicalName) == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new ExternalSortExec(ctx, (SortNode) node.peek(), fragments);
     } else {
       Enforcer enforcer = ctx.getEnforcer();
+      TableDesc tableDesc = scanNode.getTableDesc();
+      FileTablespace space = (FileTablespace) TablespaceManager.get(tableDesc.getUri()).get();
 
       // check if this table is broadcasted one or not.
       boolean broadcastFlag = false;
       if (enforcer != null && enforcer.hasEnforceProperty(EnforceType.BROADCAST)) {
         List<EnforceProperty> properties = enforcer.getEnforceProperties(EnforceType.BROADCAST);
         for (EnforceProperty property : properties) {
-          broadcastFlag |= scanNode.getCanonicalName().equals(property.getBroadcast().getTableName());
+          broadcastFlag |= canonicalName.equals(property.getBroadcast().getTableName());
         }
       }
 
@@ -932,23 +935,28 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = TUtil.newList();
 
-          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri()).get();
           for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(TUtil.newList(space.split(scanNode.getCanonicalName(), path)));
+            fileFragments.addAll(TUtil.newList(space.split(canonicalName, path)));
           }
 
-          FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
+          FragmentProto[] fragmentProtos =
+                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new Fragment[fileFragments.size()]));
 
-          ctx.addFragments(scanNode.getCanonicalName(), fragments);
-          return new PartitionMergeScanExec(ctx, scanNode, fragments);
+          ctx.addFragments(canonicalName, fragmentProtos);
+          return new PartitionMergeScanExec(ctx, scanNode, fragmentProtos);
         }
       }
 
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (ctx.getTable(canonicalName) == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+
+      FormatProperty formatProp = space.getFormatProperty(tableDesc.getMeta());
+
+      if (scanNode.isCountQuery() && formatProp.isCountableByStats()) {
+        return new StatCountExec(ctx, scanNode, fragments);
+      }
+
       return new SeqScanExec(ctx, scanNode, fragments);
     }
   }

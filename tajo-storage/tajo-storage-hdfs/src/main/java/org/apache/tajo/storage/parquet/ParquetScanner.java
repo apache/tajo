@@ -21,6 +21,12 @@ package org.apache.tajo.storage.parquet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.parquet.bytes.BytesUtils;
+import org.apache.parquet.format.FileMetaData;
+import org.apache.parquet.format.Util;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -28,6 +34,7 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
@@ -126,5 +133,27 @@ public class ParquetScanner extends FileScanner {
   @Override
   public boolean isSplittable() {
     return false;
+  }
+
+  public static long getCount(Configuration conf, FileFragment fragment) throws IOException {
+    final int PARQUET_FOOTER_LENGTH = 4;
+    final int PARQUET_MAGIC_LENGTH = 4;
+
+    Path path = fragment.getPath();
+    FileSystem fs = path.getFileSystem(conf);
+    FSDataInputStream ins = fs.open(path);
+    long len = fs.getFileStatus(path).getLen();
+    long footerLengthIndex = len - PARQUET_FOOTER_LENGTH - PARQUET_MAGIC_LENGTH;
+
+    ins.seek(footerLengthIndex);
+    int footerLen = BytesUtils.readIntLittleEndian(ins);
+    long footerIndex = footerLengthIndex - footerLen;
+
+    ins.seek(footerIndex);
+
+    FileMetaData metadata = Util.readFileMetaData(ins);
+    ins.close();
+
+    return metadata.getNum_rows();
   }
 }
