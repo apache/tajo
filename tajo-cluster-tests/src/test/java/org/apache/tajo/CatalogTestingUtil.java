@@ -23,6 +23,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.UnsupportedCatalogStore;
 
 public class CatalogTestingUtil {
@@ -54,6 +55,7 @@ public class CatalogTestingUtil {
                                                                                String catalogUri) {
     conf.set(CatalogConstants.STORE_CLASS, catalogClass.getCanonicalName());
     conf.set(CatalogConstants.CATALOG_URI, catalogUri);
+    conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
     return conf;
   }
 

@@ -43,6 +43,8 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InsufficientPrivilegeException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.jdbc.FetchResultSet;
+import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -990,7 +992,8 @@ public class QueryTestCaseBase {
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
         String tableName = createTable.getTableName();
-        assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
+        assertTrue("Table [" + tableName + "] creation is failed.",
+            client.updateQuery(parsedResult.getHistoryStatement()));
 
         TableDesc createdTable = client.getTableDesc(tableName);
         String createdTableName = createdTable.getName();
@@ -1139,5 +1142,15 @@ public class QueryTestCaseBase {
       }
     }
     return result;
+  }
+
+  public static QueryId getQueryId(ResultSet resultSet) {
+    if (resultSet instanceof TajoMemoryResultSet) {
+      return ((TajoMemoryResultSet) resultSet).getQueryId();
+    } else if (resultSet instanceof FetchResultSet) {
+      return ((FetchResultSet) resultSet).getQueryId();
+    } else {
+      throw new IllegalArgumentException(resultSet.toString());
+    }
   }
 }

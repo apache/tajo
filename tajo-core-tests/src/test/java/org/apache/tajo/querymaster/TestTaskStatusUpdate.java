@@ -19,18 +19,21 @@
 package org.apache.tajo.querymaster;
 
 import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.worker.TajoWorker;
+import org.apache.tajo.util.history.QueryHistory;
+import org.apache.tajo.util.history.StageHistory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -58,8 +61,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       long[] expectedNumRows = new long[]{5, 2, 2, 2};
       long[] expectedNumBytes = new long[]{604, 18, 18, 8};
       long[] expectedReadBytes = new long[]{604, 604, 18, 0};
+      QueryId queryId = getQueryId(res);
 
-      assertStatus(2, expectedNumRows, expectedNumBytes, expectedReadBytes);
+      assertStatus(queryId, 2, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
       cleanupQuery(res);
     }
@@ -77,7 +81,8 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       long[] expectedNumBytes = new long[]{604, 162, 162, 138, 138, 194};
       long[] expectedReadBytes = new long[]{604, 604, 162, 0, 138, 0};
 
-      assertStatus(3, expectedNumRows, expectedNumBytes, expectedReadBytes);
+      QueryId queryId = getQueryId(res);
+      assertStatus(queryId, 3, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
       cleanupQuery(res);
     }
@@ -105,7 +110,8 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       long[] expectedNumBytes = new long[]{20, 75, 8, 34, 109, 34, 34, 18};
       long[] expectedReadBytes = new long[]{20, 20, 8, 8, 109, 0, 34, 0};
 
-      assertStatus(4, expectedNumRows, expectedNumBytes, expectedReadBytes);
+      QueryId queryId = getQueryId(res);
+      assertStatus(queryId, 4, expectedNumRows, expectedNumBytes, expectedReadBytes);
     } finally {
       cleanupQuery(res);
     }
@@ -128,61 +134,37 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
     res.close();
   }
 
-  private void assertStatus(int numStages,
+  private void assertStatus(QueryId queryId, int numStages,
                             long[] expectedNumRows,
                             long[] expectedNumBytes,
                             long[] expectedReadBytes) throws Exception {
-      List<TajoWorker> tajoWorkers = testingCluster.getTajoWorkers();
-      Collection<QueryMasterTask> finishedTasks = null;
-      for (TajoWorker eachWorker: tajoWorkers) {
-        finishedTasks = eachWorker.getWorkerContext().getQueryMaster().getFinishedQueryMasterTasks();
-        if (finishedTasks != null && !finishedTasks.isEmpty()) {
-          break;
-        }
-      }
 
-      assertNotNull(finishedTasks);
-      assertTrue(!finishedTasks.isEmpty());
 
-      List<QueryMasterTask> finishedTaskList = new ArrayList<QueryMasterTask>(finishedTasks);
+      QueryHistory queryHistory  = testingCluster.getQueryHistory(queryId);
 
-      Collections.sort(finishedTaskList, new Comparator<QueryMasterTask>() {
-        @Override
-        public int compare(QueryMasterTask o1, QueryMasterTask o2) {
-          return o2.getQueryId().compareTo(o1.getQueryId());
-        }
-      });
+      assertNotNull(queryHistory);
 
-      Query query = finishedTaskList.get(0).getQuery();
-
-      assertNotNull(query);
-
-      List<Stage> stages = new ArrayList<Stage>(query.getStages());
+      List<StageHistory> stages = queryHistory.getStageHistories();
       assertEquals(numStages, stages.size());
 
-      Collections.sort(stages, new Comparator<Stage>() {
+      Collections.sort(stages, new Comparator<StageHistory>() {
         @Override
-        public int compare(Stage o1, Stage o2) {
-          return o1.getId().compareTo(o2.getId());
+        public int compare(StageHistory o1, StageHistory o2) {
+          return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
         }
       });
 
       int index = 0;
-      for (Stage eachStage : stages) {
-        TableStats inputStats = eachStage.getInputStats();
-        TableStats resultStats = eachStage.getResultStats();
+      for (StageHistory eachStage : stages) {
 
-        assertNotNull(inputStats);
-        assertEquals(expectedNumRows[index], inputStats.getNumRows().longValue());
-        assertEquals(expectedNumBytes[index], inputStats.getNumBytes().longValue());
-        assertEquals(expectedReadBytes[index], inputStats.getReadBytes().longValue());
+        assertEquals(expectedNumRows[index], eachStage.getTotalReadRows());
+        assertEquals(expectedNumBytes[index], eachStage.getTotalInputBytes());
+        assertEquals(expectedReadBytes[index], eachStage.getTotalReadBytes());
 
         index++;
 
-        assertNotNull(resultStats);
-        assertEquals(expectedNumRows[index], resultStats.getNumRows().longValue());
-        assertEquals(expectedNumBytes[index], resultStats.getNumBytes().longValue());
-        assertEquals(expectedReadBytes[index], resultStats.getReadBytes().longValue());
+        assertEquals(expectedNumRows[index], eachStage.getTotalWriteRows());
+        assertEquals(expectedNumBytes[index],eachStage.getTotalWriteBytes());
 
         index++;
       }

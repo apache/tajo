@@ -26,12 +26,14 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
 import org.apache.commons.net.util.Base64;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
@@ -39,6 +41,7 @@ import org.apache.tajo.storage.text.TextLineParsingError;
 import java.io.IOException;
 import java.nio.charset.CharsetDecoder;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
   private JSONParser parser;
@@ -48,11 +51,17 @@ public class JsonLineDeserializer extends TextLineDeserializer {
   private final String [] projectedPaths;
   private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
 
+  private final boolean hasTimezone;
+  private final TimeZone timezone;
+
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
 
     projectedPaths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
     types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
+
+    hasTimezone = meta.containsOption(StorageConstants.TIMEZONE);
+    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
   @Override
@@ -151,7 +160,11 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     case TIMESTAMP:
       String timestampStr = object.getAsString(fieldName);
       if (timestampStr != null) {
-        output.put(fieldIndex, DatumFactory.createTimestamp(timestampStr));
+        if (hasTimezone) {
+          output.put(fieldIndex, DatumFactory.createTimestamp(timestampStr, timezone));
+        } else {
+          output.put(fieldIndex, DatumFactory.createTimestamp(timestampStr));
+        }
       } else {
         output.put(fieldIndex, NullDatum.get());
       }
@@ -159,7 +172,11 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     case TIME:
       String timeStr = object.getAsString(fieldName);
       if (timeStr != null) {
-        output.put(fieldIndex, DatumFactory.createTime(timeStr));
+        if (hasTimezone) {
+          output.put(fieldIndex, DatumFactory.createTime(timeStr, timezone));
+        } else {
+          output.put(fieldIndex, DatumFactory.createTime(timeStr));
+        }
       } else {
         output.put(fieldIndex, NullDatum.get());
       }

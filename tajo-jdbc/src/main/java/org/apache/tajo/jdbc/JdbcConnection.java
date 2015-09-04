@@ -27,14 +27,17 @@ import org.apache.tajo.client.CatalogAdminClient;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.v2.exception.ClientConnectionException;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.SQLExceptionUtil;
-import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.sql.*;
 import java.util.List;
@@ -66,17 +69,19 @@ public class JdbcConnection implements Connection {
     this.properties = properties;
 
     try {
+
       if (!rawURI.startsWith(TajoDriver.TAJO_JDBC_URL_PREFIX)) {
-        throw new SQLException("Invalid URL: " + rawURI, "TAJO-001");
+        // its impossible case
+        throw new TajoInternalError("Invalid URL: " + rawURI);
       }
 
       // URI form: jdbc:tajo://hostname:port/databasename
       int startIdx = rawURI.indexOf(":");
       if (startIdx < 0) {
-        throw new SQLException("Invalid URL: " + rawURI, "TAJO-001");
+        throw new TajoInternalError("Invalid URL: " + rawURI);
       }
 
-      String uri = rawURI.substring(startIdx+1, rawURI.length());
+      String uri = rawURI.substring(startIdx + 1, rawURI.length());
       try {
         this.uri = URI.create(uri);
       } catch (IllegalArgumentException iae) {
@@ -116,8 +121,12 @@ public class JdbcConnection implements Connection {
 
     try {
       tajoClient = new TajoClientImpl(RpcUtils.createSocketAddr(hostName, port), databaseName, clientProperties);
-    } catch (Exception e) {
-      throw new SQLException("Cannot create TajoClient instance:" + e.getMessage(), "TAJO-002");
+    } catch (Throwable t) {
+      if (t instanceof DefaultTajoException) {
+        throw SQLExceptionUtil.toSQLException((DefaultTajoException) t);
+      } else {
+        throw new TajoSQLException(ResultCode.INTERNAL_ERROR, t, t.getMessage());
+      }
     }
     closed.set(false);
   }
@@ -182,7 +191,7 @@ public class JdbcConnection implements Connection {
   @Override
   public Statement createStatement() throws SQLException {
     if (isClosed()) {
-      throw new SQLException("Can't create Statement, connection is closed");
+      throw new TajoSQLException(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST);
     }
     return new TajoStatement(this, tajoClient);
   }

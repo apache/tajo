@@ -31,10 +31,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.tajo.annotation.NotNull;
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
@@ -53,8 +50,8 @@ import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.File;
@@ -156,7 +153,7 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
 
     // Memory cache termination
-    conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
+    conf.setIntVar(ConfVars.HISTORY_QUERY_CACHE_SIZE, 10);
 
     // Python function path
     conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
@@ -771,5 +768,16 @@ public class TajoTestingCluster {
       }
     }
     return qmt;
+  }
+
+  public QueryHistory getQueryHistory(QueryId queryId) throws IOException {
+    QueryHistory queryHistory = null;
+    for (TajoWorker worker : getTajoWorkers()) {
+      queryHistory = worker.getWorkerContext().getQueryMaster().getQueryHistory(queryId);
+      if (queryHistory != null) {
+        break;
+      }
+    }
+    return queryHistory;
   }
 }

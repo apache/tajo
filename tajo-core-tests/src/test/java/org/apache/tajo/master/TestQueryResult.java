@@ -18,13 +18,11 @@
 
 package org.apache.tajo.master;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.jdbc.FetchResultSet;
-import org.apache.tajo.jdbc.TajoMemoryResultSet;
-import org.apache.hadoop.fs.Path;
 import org.junit.Test;
 
 import java.sql.ResultSet;
@@ -60,15 +58,5 @@ public class TestQueryResult extends QueryTestCaseBase {
     assertFalse(testingCluster.getDefaultFileSystem().exists(resultPath));
     assertResultSet(res);
     cleanupQuery(res);
-  }
-
-  private QueryId getQueryId(ResultSet resultSet) {
-    if (resultSet instanceof TajoMemoryResultSet) {
-      return ((TajoMemoryResultSet) resultSet).getQueryId();
-    } else if (resultSet instanceof FetchResultSet) {
-      return ((FetchResultSet) resultSet).getQueryId();
-    } else {
-      throw new IllegalArgumentException(resultSet.toString());
-    }
   }
 }

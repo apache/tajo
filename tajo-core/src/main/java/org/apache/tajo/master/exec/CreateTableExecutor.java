@@ -108,6 +108,7 @@ public class CreateTableExecutor {
 
     tableSpace.createTable(desc, ifNotExists);
     catalog.createTable(desc);
+    LOG.info("relation '" + qualifiedName + "' created.");
     return desc;
   }
 
