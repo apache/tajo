@@ -180,7 +180,6 @@ public class MergeScanner implements Scanner {
 
   @Override
   public void setLimit(long num) {
-    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override

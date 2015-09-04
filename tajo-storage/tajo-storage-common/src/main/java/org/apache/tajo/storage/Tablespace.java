@@ -150,7 +150,7 @@ public abstract class Tablespace {
    * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is USING_STORAGE_MANAGER.
    * In general Repartitioner determines the partition range using previous output statistics data.
    * In the special cases, such as HBase Repartitioner uses the result of this method.
-   *ㅂ                                               ㅂ
+   *
    * @param queryContext The current query context which contains query properties.
    * @param tableDesc The table description for the target data.
    * @param inputSchema The input schema
