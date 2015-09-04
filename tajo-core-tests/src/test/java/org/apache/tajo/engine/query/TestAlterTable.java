@@ -162,6 +162,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=2")));
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
 
+    // Remove all partitions
     res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 1 , col2 = 1)");
     res.close();
 
@@ -190,6 +191,29 @@ public class TestAlterTable extends QueryTestCaseBase {
     partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), 4);
+
+
+    // Remove just one of existing partitions
+    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)");
+    res.close();
+
+    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
+    res.close();
+
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 4);
+
+
+    // Remove a partition directory from filesystem
+    fs.delete(new Path(tablePath.toUri() + "/col1=3/col2=3"), true);
+    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
+    res.close();
+
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 4);
+
 
     catalog.dropTable(tableName);
   }

@@ -52,6 +52,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
@@ -615,13 +616,33 @@ public class DDLExecutor {
       filteredPaths = PartitionedTableRewriter.toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
 
-    List<PartitionDescProto> partitions = TUtil.newList();
-    for(Path filteredPath : filteredPaths) {
-      partitions.add(getPartitionDesc(simpleTableName, filteredPath));
+    // Find missing partitions from filesystem
+    List<PartitionDescProto> existingPartitions = catalog.getPartitions(databaseName, simpleTableName);
+    Path existingPartitionPath = null;
+    for(PartitionDescProto existingPartition : existingPartitions) {
+      existingPartitionPath = new Path(existingPartition.getPath());
+      if (!fs.exists(existingPartitionPath)) {
+        LOG.info("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
+      }
     }
-    catalog.addPartitions(databaseName, simpleTableName, partitions, true);
 
-    LOG.info("Added partition directories: " + partitions.size());
+    // Find missing partitions from CatalogStore
+    List<PartitionDescProto> targetPartitions = TUtil.newList();
+    for(Path filteredPath : filteredPaths) {
+      PartitionDescProto targetPartition = getPartitionDesc(simpleTableName, filteredPath);
+
+      if (!existingPartitions.contains(targetPartition)) {
+        LOG.info("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+        targetPartitions.add(targetPartition);
+      }
+    }
+
+    catalog.addPartitions(databaseName, simpleTableName, targetPartitions, true);
+
+    for(PartitionDescProto targetPartition: targetPartitions) {
+      LOG.info("Repair: Added partition to CatalogStore " + tableName + ":" + targetPartition.getPartitionName());
+    }
+    LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
   }
 
   private PartitionDescProto getPartitionDesc(String tableName, Path path) throws IOException {
