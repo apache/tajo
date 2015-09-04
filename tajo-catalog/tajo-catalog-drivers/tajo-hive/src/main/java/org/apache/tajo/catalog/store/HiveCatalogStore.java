@@ -595,7 +595,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     final String databaseName = split[0];
     final String tableName = split[1];
     String partitionName = null;
-    GetPartitionDescProto partitionDesc = null;
+    CatalogProtos.PartitionDescProto partitionDesc = null;
 
     switch (alterTableDescProto.getAlterTableType()) {
       case RENAME_TABLE:
@@ -739,14 +739,15 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     }
   }
 
-  private void dropPartition(String databaseName, String tableName, GetPartitionDescProto partitionDescProto) {
+  private void dropPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
+    partitionDescProto) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
 
       List<String> values = Lists.newArrayList();
-      for(GetPartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+      for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
         values.add(keyProto.getPartitionValue());
       }
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
@@ -844,40 +845,35 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<GetPartitionDescProto> getPartitions(String databaseName,
+  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName,
                                                          String tableName) {
     throw new UnsupportedOperationException();
   }
 
 
   @Override
-  public GetPartitionDescProto getPartition(String databaseName, String tableName,
+  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                        String partitionName) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
-    GetPartitionDescProto.Builder builder = null;
+    CatalogProtos.PartitionDescProto.Builder builder = null;
 
     try {
       client = clientPool.getClient();
 
       Partition partition = client.getHiveClient().getPartition(databaseName, tableName, partitionName);
-      builder = GetPartitionDescProto.newBuilder();
+      builder = CatalogProtos.PartitionDescProto.newBuilder();
       builder.setPartitionName(partitionName);
       builder.setPath(partition.getSd().getLocation());
-      // These are dummy values because there is no way to get partition id and table id in HiveMetaStore.
-      builder.setPartitionId(0);
-      builder.setTid(0);
 
       String[] partitionNames = partitionName.split("/");
 
       for (int i = 0; i < partition.getValues().size(); i++) {
         String value = partition.getValues().get(i);
-        GetPartitionKeyProto.Builder keyBuilder = GetPartitionKeyProto.newBuilder();
+        CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
 
         String columnName = partitionNames[i].split("=")[0];
         keyBuilder.setColumnName(columnName);
         keyBuilder.setPartitionValue(value);
-        // This is dummy value because there is no way to get partition id in HiveMetaStore.
-        keyBuilder.setPartitionId(0);
         builder.addPartitionKeys(keyBuilder);
       }
     } catch (NoSuchObjectException e) {
@@ -1016,12 +1012,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<GetPartitionDescProto> getAllPartitions() {
+  public List<TablePartitionProto> getAllPartitions() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public List<GetPartitionKeyProto> getAllPartitionKeys() {
+  public List<TablePartitionKeyProto> getAllPartitionKeys() {
     throw new UnsupportedOperationException();
   }
 
@@ -1030,7 +1026,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     , boolean ifNotExists) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<Partition> addPartitions = TUtil.newList();
-    GetPartitionDescProto existingPartition = null;
+    CatalogProtos.PartitionDescProto existingPartition = null;
 
     try {
       client = clientPool.getClient();

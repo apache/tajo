@@ -932,7 +932,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        GetPartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
+        PartitionDescProto partitionDesc = store.getPartition(dbName, tbName, partitionName);
         if (partitionDesc != null) {
           return GetPartitionDescResponse.newBuilder()
               .setState(OK)
@@ -980,10 +980,10 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        List<GetPartitionDescProto> partitions = store.getPartitions(dbName, tbName);
+        List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        for (GetPartitionDescProto partition : partitions) {
+        for (PartitionDescProto partition : partitions) {
           builder.addPartition(partition);
         }
 
@@ -1003,19 +1003,21 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetPartitionsResponse getAllPartitions(RpcController controller, NullProto request) {
+    public GetTablePartitionsResponse getAllPartitions(RpcController controller, NullProto request)
+        throws ServiceException {
+
       rlock.lock();
 
       try {
-        return GetPartitionsResponse.newBuilder()
+        return GetTablePartitionsResponse.newBuilder()
             .setState(OK)
-            .addAllPartition(store.getAllPartitions())
+            .addAllPart(store.getAllPartitions())
             .build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetPartitionsResponse.newBuilder()
+        return GetTablePartitionsResponse.newBuilder()
             .setState(returnError(t))
             .build();
 
@@ -1046,11 +1048,11 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetPartitionKeysResponse getAllPartitionKeys(RpcController controller, NullProto request) {
+    public GetTablePartitionKeysResponse getAllPartitionKeys(RpcController controller, NullProto request) {
       rlock.lock();
 
       try {
-        return GetPartitionKeysResponse.newBuilder()
+        return GetTablePartitionKeysResponse.newBuilder()
           .setState(OK)
           .addAllPartitionKey(store.getAllPartitionKeys())
           .build();
@@ -1058,7 +1060,7 @@ public class CatalogServer extends AbstractService {
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
-        return GetPartitionKeysResponse.newBuilder()
+        return GetTablePartitionKeysResponse.newBuilder()
           .setState(returnError(t))
           .build();
 

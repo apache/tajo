@@ -145,6 +145,19 @@ message TableOptionProto {
   required KeyValueProto keyval = 2;
 }
 
+message TablePartitionProto {
+  required int32 partition_id = 1;
+  required int32 tid = 2;
+  optional string partitionName = 3;
+  optional string path = 4;
+}
+
+message TablePartitionKeyProto {
+  required string columnName = 1;
+  optional string partitionValue = 2;
+  required int32 partition_id = 3;
+}
+
 message GetFunctionsResponse {
   required ReturnState state = 1;
   repeated FunctionDescProto functionDesc = 2;
@@ -240,25 +253,12 @@ message PartitionDescProto {
   required string partitionName = 1;
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
+  optional int32 id = 4;
 }
 
 message PartitionKeyProto {
   required string columnName = 1;
-  optional string partitionValue = 3;
-}
-
-message GetPartitionDescProto {
-  required string partitionName = 1;
-  repeated GetPartitionKeyProto partitionKeys = 2;
-  optional string path = 3;
-  required int32 partition_id = 4;
-  required int32 tid = 5;
-}
-
-message GetPartitionKeyProto {
-  required string columnName = 1;
-  optional string partitionValue = 3;
-  required int32 partition_id = 4;
+  optional string partitionValue = 2;
 }
 
 message PartitionIdentifierProto {

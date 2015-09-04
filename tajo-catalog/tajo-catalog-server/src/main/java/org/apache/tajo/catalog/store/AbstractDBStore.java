@@ -1012,7 +1012,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final String databaseName = splitted[0];
     final String tableName = splitted[1];
     String partitionName = null;
-    GetPartitionDescProto partitionDesc = null;
+    CatalogProtos.PartitionDescProto partitionDesc = null;
 
     int databaseId = getDatabaseId(databaseName);
     int tableId = getTableId(databaseId, databaseName, tableName);
@@ -1056,7 +1056,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       if (partitionDesc == null) {
         throw new UndefinedPartitionException(partitionName);
       }
-      dropPartition(partitionDesc.getPartitionId());
+      dropPartition(partitionDesc.getId());
       break;
     case SET_PROPERTY:
       setProperties(tableId, alterTableDescProto.getParams());
@@ -2058,7 +2058,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public GetPartitionDescProto getPartition(String databaseName, String tableName,
+  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                        String partitionName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedPartitionException {
@@ -2070,7 +2070,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
-    GetPartitionDescProto.Builder builder = null;
+    PartitionDescProto.Builder builder = null;
 
     try {
       String sql = "SELECT PATH, " + COL_PARTITIONS_PK + " FROM " + TB_PARTTIONS +
@@ -2087,9 +2087,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       if (res.next()) {
-        builder = GetPartitionDescProto.newBuilder();
-        builder.setTid(tableId);
-        builder.setPartitionId(res.getInt(COL_PARTITIONS_PK));
+        builder = PartitionDescProto.newBuilder();
+        builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
@@ -2104,7 +2103,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return builder.build();
   }
 
-  private void setPartitionKeys(int pid, GetPartitionDescProto.Builder partitionDesc) {
+  private void setPartitionKeys(int pid, PartitionDescProto.Builder partitionDesc) {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2119,10 +2118,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        GetPartitionKeyProto.Builder builder = GetPartitionKeyProto.newBuilder();
+        PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
         builder.setColumnName(res.getString(COL_COLUMN_NAME));
         builder.setPartitionValue(res.getString(COL_PARTITION_VALUE));
-        builder.setPartitionId(pid);
         partitionDesc.addPartitionKeys(builder);
       }
     } catch (SQLException se) {
@@ -2133,14 +2131,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<GetPartitionDescProto> getPartitions(String databaseName, String tableName)
+  public List<PartitionDescProto> getPartitions(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
-    GetPartitionDescProto.Builder builder = null;
-    List<GetPartitionDescProto> partitions = new ArrayList<GetPartitionDescProto>();
+    PartitionDescProto.Builder builder = null;
+    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
 
     final int databaseId = getDatabaseId(databaseName);
     final int tableId = getTableId(databaseId, databaseName, tableName);
@@ -2160,9 +2158,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        builder = GetPartitionDescProto.newBuilder();
-        builder.setTid(tableId);
-        builder.setPartitionId(res.getInt(COL_PARTITIONS_PK));
+        builder = PartitionDescProto.newBuilder();
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
@@ -2177,22 +2173,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<GetPartitionDescProto> getAllPartitions() {
+  public List<TablePartitionProto> getAllPartitions() {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<GetPartitionDescProto> partitions = new ArrayList<GetPartitionDescProto>();
+    List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
 
     try {
-      String sql = "SELECT A." + COL_PARTITIONS_PK + ", A." + COL_TABLES_PK + ", A.PARTITION_NAME, A.PATH "
-        + " FROM " + TB_PARTTIONS + " A ";
+      String sql = "SELECT " + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", PARTITION_NAME, " +
+        " PATH FROM " + TB_PARTTIONS;
 
       conn = getConnection();
       stmt = conn.createStatement();
       resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
-        GetPartitionDescProto.Builder builder = GetPartitionDescProto.newBuilder();
+        TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
 
         builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
         builder.setTid(resultSet.getInt(COL_TABLES_PK));
@@ -2230,7 +2226,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     // To insert partition keys
     PreparedStatement pstmt4 = null;
 
-    GetPartitionDescProto partitionDesc = null;
+    PartitionDescProto partitionDesc = null;
 
     try {
       conn = getConnection();
@@ -2252,11 +2248,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           partitionDesc = getPartition(databaseName, tableName, partition.getPartitionName());
           // Delete existing partition and partition keys
           if (ifNotExists) {
-            pstmt1.setInt(1, partitionDesc.getPartitionId());
+            pstmt1.setInt(1, partitionDesc.getId());
             pstmt1.addBatch();
             pstmt1.clearParameters();
 
-            pstmt2.setInt(1, partitionDesc.getPartitionId());
+            pstmt2.setInt(1, partitionDesc.getId());
             pstmt2.addBatch();
             pstmt2.clearParameters();
           }
@@ -2325,12 +2321,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
   @Override
-  public List<GetPartitionKeyProto> getAllPartitionKeys() {
+  public List<TablePartitionKeyProto> getAllPartitionKeys() {
     Connection conn = null;
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<GetPartitionKeyProto> partitions = new ArrayList<GetPartitionKeyProto>();
+    List<TablePartitionKeyProto> partitions = new ArrayList<TablePartitionKeyProto>();
 
     try {
       String sql = " SELECT A." + COL_PARTITIONS_PK + ", A.COLUMN_NAME, A.PARTITION_VALUE " +
@@ -2340,7 +2336,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       stmt = conn.createStatement();
       resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
-        GetPartitionKeyProto.Builder builder = GetPartitionKeyProto.newBuilder();
+        TablePartitionKeyProto.Builder builder = TablePartitionKeyProto.newBuilder();
 
         builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
         builder.setColumnName(resultSet.getString("COLUMN_NAME"));

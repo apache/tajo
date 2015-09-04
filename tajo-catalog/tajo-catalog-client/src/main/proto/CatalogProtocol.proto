@@ -66,7 +66,7 @@ message GetPartitionMethodResponse {
 
 message GetPartitionDescResponse {
   required ReturnState state = 1;
-  optional GetPartitionDescProto partition = 2;
+  optional PartitionDescProto partition = 2;
 }
 
 message GetIndexeDescResponse {
@@ -81,12 +81,17 @@ message GetIndexByColumnNamesRequest {
 
 message GetPartitionsResponse {
   required ReturnState state = 1;
-  repeated GetPartitionDescProto partition = 2;
+  repeated PartitionDescProto partition = 2;
 }
 
-message GetPartitionKeysResponse {
+message GetTablePartitionsResponse {
   required ReturnState state = 1;
-  repeated GetPartitionKeyProto partitionKey = 2;
+  repeated TablePartitionProto part = 2;
+}
+
+message GetTablePartitionKeysResponse {
+  required ReturnState state = 1;
+  repeated TablePartitionKeyProto partitionKey = 2;
 }
 
 service CatalogProtocolService {
@@ -122,9 +127,9 @@ service CatalogProtocolService {
 
   rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
   rpc getPartitionsByTableName(PartitionIdentifierProto) returns (GetPartitionsResponse);
-  rpc getAllPartitions(NullProto) returns (GetPartitionsResponse);
+  rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
   rpc addPartitions(AddPartitionsProto) returns (ReturnState);
-  rpc getAllPartitionKeys(NullProto) returns (GetPartitionKeysResponse);
+  rpc getAllPartitionKeys(NullProto) returns (GetTablePartitionKeysResponse);
 
   rpc createIndex(IndexDescProto) returns (ReturnState);
   rpc dropIndex(IndexNameProto) returns (ReturnState);

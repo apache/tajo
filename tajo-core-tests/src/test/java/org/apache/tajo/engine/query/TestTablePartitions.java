@@ -30,7 +30,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -1279,7 +1279,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     ResultSet res = executeString(query.toString());
 
     StringBuilder partitionName = new StringBuilder();
-    GetPartitionDescProto partitionDescProto = null;
+    PartitionDescProto partitionDescProto = null;
 
     // Check whether that partition's directory exist or doesn't exist.
     while(res.next()) {
@@ -1335,12 +1335,12 @@ public class TestTablePartitions extends QueryTestCaseBase {
       // If duplicated partitions had been removed, partitions just will contain 'KEY=N' partition and 'KEY=R'
       // partition. In previous Query and Stage, duplicated partitions were not deleted because they had been in List.
       // If you want to verify duplicated partitions, you need to use List instead of Set with DerbyStore.
-      List<GetPartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, tableName);
+      List<PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, tableName);
       assertEquals(2, partitions.size());
 
-      GetPartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");
+      PartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");
       assertNotNull(firstPartition);
-      GetPartitionDescProto secondPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=R");
+      PartitionDescProto secondPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=R");
       assertNotNull(secondPartition);
     } finally {
       executeString("DROP TABLE lineitem2 PURGE");

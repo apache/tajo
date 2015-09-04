@@ -401,7 +401,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final GetPartitionDescProto getPartition(final String databaseName, final String tableName,
+  public final PartitionDescProto getPartition(final String databaseName, final String tableName,
                                                final String partitionName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
       UndefinedPartitionMethodException {
@@ -428,7 +428,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final List<GetPartitionDescProto> getPartitions(final String databaseName, final String tableName) {
+  public final List<PartitionDescProto> getPartitions(final String databaseName, final String tableName) {
     try {
       final BlockingInterface stub = getStub();
       final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
@@ -446,13 +446,13 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<GetPartitionDescProto> getAllPartitions() {
+  public List<TablePartitionProto> getAllPartitions() {
     try {
       final BlockingInterface stub = getStub();
-      final GetPartitionsResponse response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
+      final GetTablePartitionsResponse response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
 
       ensureOk(response.getState());
-      return response.getPartitionList();
+      return response.getPartList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -491,10 +491,10 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<GetPartitionKeyProto> getAllPartitionKeys() {
+  public List<TablePartitionKeyProto> getAllPartitionKeys() {
     try {
       final BlockingInterface stub = getStub();
-      final GetPartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);
+      final GetTablePartitionKeysResponse response = stub.getAllPartitionKeys(null, ProtoUtil.NULL_PROTO);
       ensureOk(response.getState());
 
       return response.getPartitionKeyList();

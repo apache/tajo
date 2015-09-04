@@ -158,18 +158,18 @@ public interface CatalogService {
   boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException,
       UndefinedDatabaseException;
 
-  GetPartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
+  PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
       throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
       UndefinedTableException;
 
-  List<GetPartitionDescProto> getPartitions(String databaseName, String tableName);
+  List<PartitionDescProto> getPartitions(String databaseName, String tableName);
 
-  List<GetPartitionDescProto> getAllPartitions();
+  List<TablePartitionProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
     , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException;
 
-  List<GetPartitionKeyProto> getAllPartitionKeys();
+  List<TablePartitionKeyProto> getAllPartitionKeys();
 
   boolean createIndex(IndexDesc index);
 
