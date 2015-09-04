@@ -29,7 +29,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.storage.parquet.TajoParquetReader;
+import org.apache.tajo.storage.parquet.ParquetScanner;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -84,7 +84,7 @@ public class StatCountExec extends ScanExec {
       if (fragment == null)
         continue;
 
-      numRows += TajoParquetReader.getCount(context.getConf(), (FileFragment)fragment);
+      numRows += ParquetScanner.getCount(context.getConf(), (FileFragment) fragment);
 
       totalLen += fragment.getLength();
       totalBlocks++;
@@ -102,6 +102,11 @@ public class StatCountExec extends ScanExec {
         tableStats.addColumnStat(columnStats);
       }
     }
+  }
+
+  @Override
+  public ScanNode getScanNode() {
+    return plan;
   }
 
   @Override
