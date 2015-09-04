@@ -98,11 +98,9 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   @Override
   public Expr visitDateLiteral(Object ctx, Stack<Expr> stack, DateLiteral expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
-
     sb.append("?").append(" )");
     parameters.add(new Pair(Type.DATE, Date.valueOf(expr.toString())));
     queries.push(sb.toString());
-
     return expr;
   }
 
