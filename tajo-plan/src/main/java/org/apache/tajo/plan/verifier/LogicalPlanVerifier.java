@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.verifier;
 
 import com.google.common.base.Preconditions;
-import com.sun.org.apache.xml.internal.resolver.Catalog;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
