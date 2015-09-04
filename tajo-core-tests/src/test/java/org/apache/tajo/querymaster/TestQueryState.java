@@ -24,10 +24,15 @@ import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.master.QueryInfo;
+import org.apache.tajo.util.history.QueryHistory;
+import org.apache.tajo.util.history.StageHistory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -80,17 +85,16 @@ public class TestQueryState {
       queryState = client.getQueryStatus(queryId);
     }
 
-    QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
-    Query query = qmt.getQuery();
+    QueryInfo queryInfo = cluster.getMaster().getContext().getQueryJobManager().getFinishedQuery(queryId);
+    assertEquals(queryId, queryInfo.getQueryId());
+    assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, queryInfo.getQueryState());
 
-    assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, qmt.getState());
-    assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, query.getSynchronizedState());
-    assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, query.getState());
+    QueryHistory history = cluster.getQueryHistory(queryId);
+    List<StageHistory> stages = history.getStageHistories();
 
-    assertFalse(query.getStages().isEmpty());
-    for (Stage stage : query.getStages()) {
-      assertEquals(StageState.SUCCEEDED, stage.getSynchronizedState());
-      assertEquals(StageState.SUCCEEDED, stage.getState());
+    assertFalse(stages.isEmpty());
+    for (StageHistory stage : stages) {
+      assertEquals(StageState.SUCCEEDED.toString(), stage.getState());
     }
 
     /* get status from TajoMaster */

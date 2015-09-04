@@ -21,6 +21,7 @@ package org.apache.tajo.querymaster;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.Event;
@@ -458,9 +459,8 @@ public class Stage implements EventHandler<StageEvent> {
     long totalReadRows = 0;
     long totalWriteBytes = 0;
     long totalWriteRows = 0;
-    int numShuffles = 0;
+
     for(Task eachTask : getTasks()) {
-      numShuffles = eachTask.getShuffleOutpuNum();
       if (eachTask.getLastAttempt() != null) {
         TableStats inputStats = eachTask.getLastAttempt().getInputStats();
         if (inputStats != null) {
@@ -476,12 +476,17 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
+    Set<Integer> partitions = Sets.newHashSet();
+    for (IntermediateEntry entry : getHashShuffleIntermediateEntries()) {
+       partitions.add(entry.getPartId());
+    }
+
     stageHistory.setTotalInputBytes(totalInputBytes);
     stageHistory.setTotalReadBytes(totalReadBytes);
     stageHistory.setTotalReadRows(totalReadRows);
     stageHistory.setTotalWriteBytes(totalWriteBytes);
     stageHistory.setTotalWriteRows(totalWriteRows);
-    stageHistory.setNumShuffles(numShuffles);
+    stageHistory.setNumShuffles(partitions.size());
     stageHistory.setProgress(getProgress());
     return stageHistory;
   }

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.jdbc;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -27,6 +26,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.SQLExceptionUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
@@ -59,15 +59,13 @@ public class WaitingResultSet extends FetchResultSet {
       QueryStatus status = TajoClientUtil.waitCompletion(tajoClient, queryId);
 
       if (status.getState() != TajoProtos.QueryState.QUERY_SUCCEEDED) {
-        throw new ServiceException(status.getErrorMessage() != null ? status.getErrorMessage() :
-            status.getErrorTrace() != null ? status.getErrorTrace() :
-                "Failed to execute query by unknown reason");
+        throw new SQLException(status.getErrorMessage() != null ? status.getErrorMessage() : "unknown error",
+            SQLExceptionUtil.toSQLState(ResultCode.INTERNAL_ERROR), ResultCode.INTERNAL_ERROR.getNumber());
       }
+
       ClientProtos.GetQueryResultResponse response = tajoClient.getResultResponse(queryId);
       TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
       return tableDesc.getLogicalSchema();
-    } catch (ServiceException e) {
-      throw new SQLException(e);
     } catch (TajoException e) {
       throw SQLExceptionUtil.toSQLException(e);
     }

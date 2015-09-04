@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
@@ -46,6 +47,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.Closeable;
@@ -136,7 +138,7 @@ public class SessionConnection implements Closeable {
         connections.incrementAndGet();
 
       } catch (Throwable t) {
-        throw new ClientConnectionException(t);
+        throw new TajoRuntimeException(new ClientConnectionException(t));
       }
 
       return client;
