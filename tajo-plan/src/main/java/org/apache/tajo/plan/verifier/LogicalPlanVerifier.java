@@ -245,6 +245,11 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       throws TajoException {
     for (int i = 0; i < schema.size(); i++) {
 
+      // null can be used anywhere
+      if (schema.getColumn(i).getDataType().getType() == Type.NULL_TYPE) {
+        continue;
+      }
+
       // checking castable between two data types
       if (!TUtil.containsInNestedMap(CatalogUtil.OPERATION_CASTING_MAP,
           schema.getColumn(i).getDataType().getType(), targetTableScheme.getColumn(i).getDataType().getType())) {
