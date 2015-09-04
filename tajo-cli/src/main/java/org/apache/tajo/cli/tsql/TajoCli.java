@@ -404,6 +404,7 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
+
     try {
       while((line = reader.readLine(currentPrompt + "> ")) != null) {
         if (line.equals("")) {
@@ -433,15 +434,17 @@ public class TajoCli {
       }
     } catch (Exception e) {
       System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
+
       if (client != null) {
         client.close();
       }
+
       throw e;
     }
     return 0;
   }
 
- private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
+  private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
     int exitCode = 0;
     for (ParsedResult parsedResult : parsedResults) {
       if (parsedResult.getType() == StatementType.META) {
