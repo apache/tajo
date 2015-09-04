@@ -74,7 +74,7 @@ public class QueryClientImpl implements QueryClient {
     this.defaultFetchRows = this.conn.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
         SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
     this.maxRows = 0;
-    this.executor = Executors.newFixedThreadPool(2);
+    this.executor = Executors.newSingleThreadExecutor();
   }
 
   @Override
