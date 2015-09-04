@@ -61,6 +61,8 @@ public abstract class JdbcScanner implements Scanner {
   protected String generatedSql;
   protected ResultSetIterator iter;
 
+  protected int recordCount = 0;
+
   public JdbcScanner(final DatabaseMetaData dbMetaData,
                      final Schema tableSchema,
                      final TableMeta tableMeta,
@@ -285,6 +287,7 @@ public abstract class JdbcScanner implements Scanner {
       }
       didNext = false;
       convertTuple(resultSet, outTuple);
+      recordCount++;
       return outTuple;
     }
 
@@ -307,6 +310,10 @@ public abstract class JdbcScanner implements Scanner {
         resultSet.close();
       } catch (SQLException e) {
         LOG.warn(e);
+      }
+
+      if (stats != null) {
+        stats.setNumRows(recordCount);
       }
     }
   }

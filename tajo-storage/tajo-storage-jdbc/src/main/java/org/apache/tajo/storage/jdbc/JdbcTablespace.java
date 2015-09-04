@@ -20,6 +20,8 @@ package org.apache.tajo.storage.jdbc;
 
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
@@ -47,6 +49,7 @@ import java.util.List;
  * JDBC Tablespace
  */
 public abstract class JdbcTablespace extends Tablespace {
+  private static final Log LOG = LogFactory.getLog(JdbcTablespace.class);
 
   static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
   static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
@@ -96,6 +99,11 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   public void close() {
+    try {
+      conn.close();
+    } catch (SQLException e) {
+      LOG.warn(e);
+    }
   }
 
   @Override
