@@ -445,6 +445,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
     scanBuilder.setBroadcast(scan.isBroadcastTable());
     scanBuilder.setNameResolveBase(scan.isNameResolveBase());
+    scanBuilder.setIsCountQuery(scan.isCountQuery());
     return scanBuilder;
   }
 

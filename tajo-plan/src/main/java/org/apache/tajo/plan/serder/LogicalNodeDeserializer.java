@@ -436,6 +436,11 @@ public class LogicalNodeDeserializer {
     if(scanProto.hasBroadcast()){
       scan.setBroadcastTable(scanProto.getBroadcast());
     }
+
+    if (scanProto.hasIsCountQuery()) {
+      scan.setCountQuery(scanProto.getIsCountQuery());
+    }
+
     scan.setInSchema(convertSchema(protoNode.getInSchema()));
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
     scan.setNameResolveBase(scanProto.getNameResolveBase());

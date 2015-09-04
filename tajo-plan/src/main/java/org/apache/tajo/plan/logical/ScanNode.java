@@ -37,6 +37,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	@Expose protected EvalNode qual;
 	@Expose protected Target[] targets;
   @Expose protected boolean broadcastTable;
+  @Expose protected boolean isCountQuery;
 
   protected ScanNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
@@ -153,8 +154,16 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   public TableDesc getTableDesc() {
     return tableDesc;
   }
-	
-	public String toString() {
+
+  public boolean isCountQuery() {
+    return isCountQuery;
+  }
+
+  public void setCountQuery(boolean isCountQuery) {
+    this.isCountQuery = isCountQuery;
+  }
+
+  public String toString() {
     StringBuilder sb = new StringBuilder("Scan (table=").append(getTableName());
     if (hasAlias()) {
       sb.append(", alias=").append(alias);
