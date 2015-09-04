@@ -11,22 +11,40 @@ How to Create a Column Partitioned Table
 You can create a partitioned table by using the ``PARTITION BY`` clause. For a column partitioned table, you should use
 the ``PARTITION BY COLUMN`` clause with partition keys.
 
-For example, assume there is a table ``orders`` composed of the following schema. ::
-
-  id          INT,
-  item_name   TEXT,
-  price       FLOAT
-
-Also, assume that you want to use ``order_date TEXT`` and ``ship_date TEXT`` as the partition keys.
-Then, you should create a table as follows:
+For example, assume there is a table ``student`` composed of the following schema.
 
 .. code-block:: sql
 
-  CREATE TABLE orders (
-    id INT,
-    item_name TEXT,
-    price
-  ) PARTITION BY COLUMN (order_date TEXT, ship_date TEXT);
+  id     INT,
+  name   TEXT,
+  grade  TEXT
+
+Now you want to partition on country. Your Tajo definition would be this:
+
+.. code-block:: sql
+
+  CREATE TABLE student (
+    id     INT,
+    name   TEXT,
+    grade  TEXT
+  ) PARTITION BY COLUMN (country TEXT);
+
+Now your users will still query on ``WHERE country = '...'`` but the 2nd column will be the original values.
+Here's an example statement to create a table:
+
+.. code-block:: sql
+
+  CREATE TABLE student (
+    id     INT,
+    name   TEXT,
+    grade  TEXT
+  ) USING PARQUET
+  PARTITION BY COLUMN (country TEXT, city TEXT);
+
+The statement above creates the student table with id, name, grade. The table is also partitioned and data is stored in parquet files.
+
+You might have noticed that while the partitioning key columns are a part of the table DDL, they’re only listed in the ``PARTITION BY`` clause. In Tajo, as data is written to disk, each partition of data will be automatically split out into different folders, e.g. country=USA/city=NEWYORK. During a read operation, Tajo will use the folder structure to quickly locate the right partitions and also return the partitioning columns as columns in the result set.
+
 
 ==================================================
 Partition Pruning on Column Partitioned Tables
@@ -44,9 +62,154 @@ during query planning phase.
 * LIKE predicates with a leading wild-card character
 * IN list predicates
 
+.. code-block:: sql
+
+  SELECT * FROM student WHERE country = 'KOREA' AND city = 'SEOUL';
+  SELECT * FROM student WHERE country = 'USA' AND (city = 'NEWYORK' OR city = 'BOSTON');
+  SELECT * FROM student WHERE country = 'USA' AND city <> 'NEWYORK';
+
+
+==================================================
+Add data to Partition Table
+==================================================
+
+Tajo provides a very useful feature of dynamic partitioning. You don't need to use any syntax with both ``INSERT INTO ... SELECT`` and ``Create Table As Select(CTAS)`` statments for dynamic partitioning. Tajo will automatically filter the data, create directories, move filtered data to appropriate directory and create partition over it.
+
+For example, assume there are both ``student_source`` and ``student`` tables composed of the following schema.
+
+.. code-block:: sql
+
+  CREATE TABLE student_source (
+    id        INT,
+    name      TEXT,
+    gender    char(1),
+    grade     TEXT,
+    country   TEXT,
+    city      TEXT,
+    phone     TEXT
+  );
+
+  CREATE TABLE student (
+    id     INT,
+    name   TEXT,
+    grade  TEXT
+  ) PARTITION BY COLUMN (country TEXT, city TEXT);
+
+
+How to INSERT dynamically to partition table
+--------------------------------------------------------
+
+If you want to load an entire country or an entire city in one fell swoop:
+
+.. code-block:: sql
+
+  INSERT OVERWRITE INTO student
+  SELECT id, name, grade, country, city
+  FROM   student_source;
+
+
+How to CTAS dynamically to partition table
+--------------------------------------------------------
+
+when a partition table is created:
+
+.. code-block:: sql
+
+  DROP TABLE if exists student;
+
+  CREATE TABLE student (
+    id     INT,
+    name   TEXT,
+    grade  TEXT
+  ) PARTITION BY COLUMN (country TEXT, city TEXT)
+  AS SELECT id, name, grade, country, city
+  FROM   student_source;
+
+
+.. note::
+
+  When loading data into a partition, it’s necessary to include the partition columns as the last columns in the query. The column names in the source query don’t need to match the partition column names.
+
+
 ==================================================
 Compatibility Issues with Apache Hive™
 ==================================================
 
 If partitioned tables of Hive are created as external tables in Tajo, Tajo can process the Hive partitioned tables directly.
-There haven't known compatibility issues yet.
+
+
+How to create partition table
+--------------------------------------------------------
+
+If you create a partition table as follows in Tajo:
+
+.. code-block:: sql
+
+  default> CREATE TABLE student (
+    id     INT,
+    name   TEXT,
+    grade  TEXT
+  ) PARTITION BY COLUMN (country TEXT, city TEXT);
+
+
+And then you can get table information in Hive:
+
+.. code-block:: sql
+
+  hive> desc student;
+  OK
+  id                  	int
+  name                	string
+  grade               	string
+  country             	string
+  city                	string
+
+  # Partition Information
+  # col_name            	data_type           	comment
+
+  country             	string
+  city                	string
+
+
+Or as you create the table in Hive:
+
+.. code-block:: sql
+
+  hive > CREATE TABLE student (
+    id int,
+    name string,
+    grade string
+  ) PARTITIONED BY (country string, city string)
+  ROW FORMAT DELIMITED
+    FIELDS TERMINATED BY '|' ;
+
+You will see table information in Tajo:
+
+.. code-block:: sql
+
+  default> \d student;
+  table name: default.student
+  table uri: hdfs://your_hdfs_namespace/user/hive/warehouse/student
+  store type: TEXT
+  number of rows: 0
+  volume: 0 B
+  Options:
+    'text.null'='\\N'
+    'transient_lastDdlTime'='1438756422'
+    'text.delimiter'='|'
+
+  schema:
+  id	INT4
+  name	TEXT
+  grade	TEXT
+
+  Partitions:
+  type:COLUMN
+  columns::default.student.country (TEXT), default.student.city (TEXT)
+
+
+How to add data to partition table
+--------------------------------------------------------
+
+In Tajo, you can add data dynamically to partition table of Hive with both ``INSERT INTO ... SELECT`` and ``Create Table As Select (CTAS)`` statments. Tajo will automatically filter the data to HiveMetastore, create directories and move filtered data to appropriate directory on the distributed file system
+
