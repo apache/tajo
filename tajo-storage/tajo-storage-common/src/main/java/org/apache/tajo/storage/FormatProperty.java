@@ -29,11 +29,14 @@ public class FormatProperty {
   private boolean directInsert;
   /** if this format supports staging phase */
   private boolean stagingSupport;
+  /** returns true if format have the number of total rows as something like stat(e.g.: ORC, Parquet) */
+  private boolean countableByStats;
 
-  public FormatProperty(boolean insertable, boolean directInsert, boolean stagingSupport) {
+  public FormatProperty(boolean insertable, boolean directInsert, boolean stagingSupport, boolean countable) {
     this.insertable = insertable;
     this.stagingSupport = stagingSupport;
     this.directInsert = directInsert;
+    this.countableByStats = countable;
   }
 
   /**
@@ -59,5 +62,13 @@ public class FormatProperty {
    */
   public boolean isStagingSupport() {
     return stagingSupport;
+  }
+
+  /**
+   * if format have the number of total rows as something like stat(e.g.: ORC, Parquet)
+   * @return True if format have the number of total rows as something like stat
+   */
+  public boolean isCountableByStats() {
+    return countableByStats;
   }
 }
