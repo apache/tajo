@@ -162,19 +162,17 @@ public interface CatalogService {
       throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
       UndefinedTableException;
 
-  List<PartitionDescProto> getPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
+  List<PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException, UndefinedOperatorException;
 
   boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
   UndefinedTableException, UndefinedPartitionMethodException;
 
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException;
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
   List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException;
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
   List<TablePartitionProto> getAllPartitions();
 

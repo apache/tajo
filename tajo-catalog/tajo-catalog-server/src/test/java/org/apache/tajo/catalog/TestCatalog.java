@@ -900,14 +900,14 @@ public class TestCatalog {
     testAddPartition(tableName, "id=10/name=aaa");
     testAddPartition(tableName, "id=20/name=bbb");
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
 
     testDropPartition(tableName, "id=10/name=aaa");
     testDropPartition(tableName, "id=20/name=bbb");
 
-    partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
 

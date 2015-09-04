@@ -148,7 +148,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         if (catalog.existPartitions(splits[0], splits[1])) {
           // If there are no filters, this don't need to build direct sql for getting table partitions.
           if (conjunctiveForms == null) {
-            partitions = catalog.getPartitions(splits[0], splits[1]);
+            partitions = catalog.getAllPartitions(splits[0], splits[1]);
           } else {
             PartitionsByAlgebraProto request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
             partitions = catalog.getPartitionsByAlgebra(request);

@@ -979,32 +979,16 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
-
-        contain = store.existDatabase(dbName);
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-            if (store.existPartitionMethod(dbName, tbName)) {
-              if (store.existPartitions(dbName, tbName)) {
-                return OK;
-              } else {
-                return errUndefinedPartitions(tbName);
-              }
-            } else {
-              return errUndefinedPartitionMethod(tbName);
-            }
-
-          } else {
-            return errUndefinedTable(tbName);
-          }
+        if (store.existPartitions(dbName, tbName)) {
+          return OK;
         } else {
-          return errUndefinedDatabase(dbName);
-
+          return errUndefinedPartitions(tbName);
         }
+
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         return returnError(t);
+
       } finally {
         rlock.unlock();
       }
@@ -1105,40 +1089,17 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
-
-        contain = store.existDatabase(dbName);
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-
-            if (store.existPartitionMethod(dbName, tbName)) {
-              GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-              List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
-              builder.addAllPartition(partitions);
-              builder.setState(OK);
-              return builder.build();
-            } else {
-              return GetPartitionsResponse.newBuilder()
-                .setState(errUndefinedPartitionMethod(tbName))
-                .build();
-            }
-          } else {
-            return GetPartitionsResponse.newBuilder()
-              .setState(errUndefinedTable(tbName))
-              .build();
-          }
-        } else {
-          return GetPartitionsResponse.newBuilder()
-            .setState(errUndefinedDatabase(dbName))
-            .build();
-        }
+        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+        List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
+        builder.addAllPartition(partitions);
+        builder.setState(OK);
+        return builder.build();
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 
         return GetPartitionsResponse.newBuilder()
-            .setState(returnError(t))
-            .build();
+          .setState(returnError(t))
+          .build();
 
       } finally {
         rlock.unlock();
@@ -1170,34 +1131,11 @@ public class CatalogServer extends AbstractService {
 
       rlock.lock();
       try {
-        boolean contain;
-
-        contain = store.existDatabase(dbName);
-        if (contain) {
-          contain = store.existTable(dbName, tbName);
-          if (contain) {
-
-            if (store.existPartitionMethod(dbName, tbName)) {
-              GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-              List<PartitionDescProto> partitions = store.getPartitionsByDirectSql(request);
-              builder.addAllPartition(partitions);
-              builder.setState(OK);
-              return builder.build();
-            } else {
-              return GetPartitionsResponse.newBuilder()
-                .setState(errUndefinedPartitionMethod(tbName))
-                .build();
-            }
-          } else {
-            return GetPartitionsResponse.newBuilder()
-              .setState(errUndefinedTable(tbName))
-              .build();
-          }
-        } else {
-          return GetPartitionsResponse.newBuilder()
-            .setState(errUndefinedDatabase(dbName))
-            .build();
-        }
+        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+        List<PartitionDescProto> partitions = store.getPartitionsByDirectSql(request);
+        builder.addAllPartition(partitions);
+        builder.setState(OK);
+        return builder.build();
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
 

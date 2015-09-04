@@ -1342,7 +1342,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       // If duplicated partitions had been removed, partitions just will contain 'KEY=N' partition and 'KEY=R'
       // partition. In previous Query and Stage, duplicated partitions were not deleted because they had been in List.
       // If you want to verify duplicated partitions, you need to use List instead of Set with DerbyStore.
-      List<PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, tableName);
+      List<PartitionDescProto> partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, tableName);
       assertEquals(2, partitions.size());
 
       PartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");

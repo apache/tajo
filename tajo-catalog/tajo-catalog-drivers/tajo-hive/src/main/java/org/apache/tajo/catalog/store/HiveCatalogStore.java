@@ -854,29 +854,23 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName,
-                                                         String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException{
-    throw new UnsupportedOperationException();
+  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) {
+    throw new TajoRuntimeException(new UnsupportedException("getPartitions"));
   }
 
   @Override
-  public boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException {
-    throw new UnsupportedOperationException();
+  public boolean existPartitions(String databaseName, String tableName) {
+    throw new TajoRuntimeException(new UnsupportedException("existPartitions"));
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request)
-    throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException {
-    throw new UndefinedOperatorException("getPartitionsByAlgebra");
+  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) {
+    throw new TajoRuntimeException(new UnsupportedException("getPartitionsByAlgebra"));
   }
 
   @Override
   public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
-      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      UndefinedOperatorException {
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<PartitionDescProto> partitions = null;
@@ -884,6 +878,18 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+
+      if (!existDatabase(databaseName)) {
+        throw new UndefinedDatabaseException(tableName);
+      }
+
+      if (!existTable(databaseName, tableName)) {
+        throw new UndefinedTableException(tableName);
+      }
+
+      if (!existPartitionMethod(databaseName, tableName)) {
+        throw new UndefinedPartitionMethodException(tableName);
+      }
 
       partitions = TUtil.newList();
 
@@ -903,7 +909,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         partitions.add(builder.build());
       }
     } catch (NoSuchObjectException e) {
-      return null;
+      throw new TajoInternalError(e);
     } catch (Exception e) {
       throw new TajoInternalError(e);
     } finally {

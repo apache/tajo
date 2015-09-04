@@ -2187,15 +2187,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     boolean result = false;
 
     try {
+      int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+
+      if (!existPartitionMethod(databaseName, tableName)) {
+        throw new UndefinedPartitionMethodException(tableName);
+      }
+
       String sql = "SELECT COUNT(*) CNT FROM "
         + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
-
-      int databaseId = getDatabaseId(databaseName);
-      int tableId = getTableId(databaseId, databaseName, tableName);
 
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
@@ -2216,16 +2220,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
-    throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException {
-    throw new UndefinedOperatorException("getPartitionsByDirectSql");
+  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request) {
+    throw new TajoRuntimeException(new UnsupportedException("getPartitionsByDirectSql"));
   }
 
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      UndefinedOperatorException {
+      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -2238,6 +2239,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       int databaseId = getDatabaseId(request.getDatabaseName());
       int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
+      if (!existPartitionMethod(request.getDatabaseName(), request.getTableName())) {
+        throw new UndefinedPartitionMethodException(request.getTableName());
+      }
 
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
       conn = getConnection();
