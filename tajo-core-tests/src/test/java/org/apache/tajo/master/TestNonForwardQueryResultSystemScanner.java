@@ -77,7 +77,8 @@ public class TestNonForwardQueryResultSystemScanner extends QueryTestCaseBase {
 
     // Setting select statement for getting partition keys.
     String selectPartitionKeys = "SELECT count(*) FROM INFORMATION_SCHEMA.PARTITION_KEYS WHERE partition_id IN (";
-    resultSet = executeString("SELECT partition_id FROM INFORMATION_SCHEMA.PARTITIONS ");
+
+    resultSet = executeString("SELECT partition_id FROM INFORMATION_SCHEMA.PARTITIONS WHERE tid = " + tid);
     int i = 0;
     while (resultSet.next()) {
       if (i > 0) {
