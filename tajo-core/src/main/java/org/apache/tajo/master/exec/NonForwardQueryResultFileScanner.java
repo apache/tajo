@@ -145,7 +145,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
       Path temporalResultDir = TajoConf.getTemporalResultDir(tajoConf, queryId);
       if (tableDesc.getUri().equals(temporalResultDir.toUri())) {
-        temporalResultDir.getParent().getFileSystem(tajoConf).delete(temporalResultDir, true);
+        temporalResultDir.getFileSystem(tajoConf).delete(temporalResultDir.getParent(), true);
       }
     }
 

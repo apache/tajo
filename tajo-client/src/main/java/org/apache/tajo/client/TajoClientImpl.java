@@ -40,6 +40,7 @@ import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.Future;
 
 @ThreadSafe
 public class TajoClientImpl extends SessionConnection implements TajoClient, QueryClient, CatalogAdminClient {
@@ -85,6 +86,13 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   public TajoClientImpl(ServiceTracker serviceTracker, @Nullable String baseDatabase) throws SQLException {
     this(serviceTracker, baseDatabase, new KeyValueSet());
   }
+
+  @Override
+  public void close() {
+    queryClient.close();
+    super.close();
+  }
+
   /*------------------------------------------------------------------------*/
   // QueryClient wrappers
   /*------------------------------------------------------------------------*/
@@ -131,6 +139,11 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
 
   public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException {
     return queryClient.fetchNextQueryResult(queryId, fetchRowNum);
+  }
+
+  @Override
+  public Future<TajoMemoryResultSet> asyncFetchNextQueryResult(QueryId queryId, int fetchRowNum) {
+    return queryClient.asyncFetchNextQueryResult(queryId, fetchRowNum);
   }
 
   public boolean updateQuery(final String sql) throws TajoException {

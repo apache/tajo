@@ -18,11 +18,15 @@
 
 package org.apache.tajo.client;
 
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -45,6 +49,9 @@ import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.exception.ExceptionUtil.throwIfError;
@@ -56,6 +63,7 @@ import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientPro
 public class QueryClientImpl implements QueryClient {
   private static final Log LOG = LogFactory.getLog(QueryClientImpl.class);
   private static final CodecType DEFAULT_CODEC = CodecType.SNAPPY;
+  private final ExecutorService executor;
   private final SessionConnection conn;
   private final int defaultFetchRows;
   // maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
@@ -66,6 +74,7 @@ public class QueryClientImpl implements QueryClient {
     this.defaultFetchRows = this.conn.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
         SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
     this.maxRows = 0;
+    this.executor = Executors.newFixedThreadPool(2);
   }
 
   @Override
@@ -90,6 +99,7 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public void close() {
+    executor.shutdownNow();
   }
 
   @Override
@@ -317,6 +327,23 @@ public class QueryClientImpl implements QueryClient {
     throwsIfThisError(response.getState(), QueryNotFoundException.class);
     ensureOk(response.getState());
     return response;
+  }
+
+  @Override
+  public Future<TajoMemoryResultSet> asyncFetchNextQueryResult(final QueryId queryId, final int fetchRowNum) {
+
+    final SettableFuture<TajoMemoryResultSet> future = SettableFuture.create();
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          future.set(fetchNextQueryResult(queryId, fetchRowNum));
+        } catch (TajoException e) {
+          future.setException(e);
+        }
+      }
+    });
+    return future;
   }
 
   @Override
