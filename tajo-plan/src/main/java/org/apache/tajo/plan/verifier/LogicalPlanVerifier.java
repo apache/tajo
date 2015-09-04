@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.verifier;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -241,7 +242,8 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   private static void ensureDomains(VerificationState state, Schema targetTableScheme, Schema schema)
       throws TajoException {
     for (int i = 0; i < schema.size(); i++) {
-      if (!schema.getColumn(i).getDataType().equals(targetTableScheme.getColumn(i).getDataType())) {
+      if (!CatalogUtil.isCompatibleType(
+          schema.getColumn(i).getDataType().getType(), targetTableScheme.getColumn(i).getDataType().getType())) {
         Column targetColumn = targetTableScheme.getColumn(i);
         Column insertColumn = schema.getColumn(i);
         state.addVerification(makeDataTypeMisMatch(insertColumn, targetColumn));
@@ -254,6 +256,10 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
                                       CreateTableNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitCreateTable(context, plan, block, node, stack);
     // here, we don't need check table existence because this check is performed in PreLogicalPlanVerifier.
+
+    if (node.hasSubQuery()) {
+      ensureDomains(context.state, node.getLogicalSchema(), node.getChild(0).getOutSchema());
+    }
     return node;
   }
 
