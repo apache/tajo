@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -780,11 +781,15 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
-  public static AlterTableDesc renameTable(String tableName, String newTableName, AlterTableType alterTableType) {
+  public static AlterTableDesc renameTable(String tableName, String newTableName, AlterTableType alterTableType,
+                                           @Nullable Path newTablePath) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setNewTableName(newTableName);
     alterTableDesc.setAlterTableType(alterTableType);
+    if (newTablePath != null) {
+      alterTableDesc.setNewTablePath(newTablePath);
+    }
     return alterTableDesc;
   }
 
@@ -986,7 +991,7 @@ public class CatalogUtil {
     Arrays.sort(simpleNames, new ColumnPosComparator(originalSchema));
     StringBuilder sb = new StringBuilder();
     for (String colName : simpleNames) {
-      sb.append(colName).append("_");
+      sb.append(colName).append(",");
     }
     sb.deleteCharAt(sb.length()-1);
     return sb.toString();

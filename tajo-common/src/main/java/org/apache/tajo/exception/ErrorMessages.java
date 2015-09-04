@@ -96,6 +96,8 @@ public class ErrorMessages {
     ADD_MESSAGE(CAT_UPGRADE_REQUIRED, "catalog must be upgraded");
     ADD_MESSAGE(CAT_CANNOT_CONNECT, "cannot connect metadata store '%s': %s", 2);
 
+    ADD_MESSAGE(CAT_UNSUPPORTED_CATALOG_STORE, "unsupported catalog store: %s", 1);
+
     ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     // Storage and Data Format
@@ -114,8 +116,9 @@ public class ErrorMessages {
     ADD_MESSAGE(INVALID_INPUTS_FOR_CROSS_JOIN, "At least one of both inputs for the cross join must be a simple " +
         "relation.");
 
-    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
+    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "%s", 1);
     ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);
+    ADD_MESSAGE(CLIENT_CONNECTION_DOES_NOT_EXIST, "This connection has been closed.");
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {
@@ -167,7 +170,9 @@ public class ErrorMessages {
         }
 
       } else {
-        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + concat(args));
+        throw new TajoInternalError(
+            "Error message arguments are invalid: code=" + code.name() + ", args=" + concat(args) +
+                ". Please report this bug to https://issues.apache.org/jira/browse/TAJO.");
       }
     }
   }

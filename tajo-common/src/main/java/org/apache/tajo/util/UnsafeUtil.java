@@ -18,7 +18,7 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Preconditions;
-import sun.misc.Cleaner;
+import io.netty.util.internal.PlatformDependent;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
@@ -132,12 +132,6 @@ public class UnsafeUtil {
   }
 
   public static void free(ByteBuffer bb) {
-    Preconditions.checkNotNull(bb);
-    Preconditions.checkState(bb.isDirect());
-
-    Cleaner cleaner = ((DirectBuffer) bb).cleaner();
-    if (cleaner != null) {
-      cleaner.clean();
-    }
+    PlatformDependent.freeDirectBuffer(bb);
   }
 }

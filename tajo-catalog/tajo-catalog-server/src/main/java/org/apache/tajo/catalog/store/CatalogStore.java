@@ -28,6 +28,8 @@ import java.util.Collection;
 import java.util.List;
 
 public interface CatalogStore extends Closeable {
+  String getUri();
+
   /*************************** Tablespace ******************************/
   void createTablespace(String spaceName, String spaceUri) throws DuplicateTablespaceException;
 

@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ByteBufLineReader implements Closeable {
-  public static int DEFAULT_BUFFER = 64 * 1024;
+  public static final int DEFAULT_BUFFER = 64 * 1024;
 
   private int bufferSize;
   private long readBytes;
@@ -100,7 +100,7 @@ public class ByteBufLineReader implements Closeable {
       tailBytes = this.buffer.writerIndex();
       if (!this.buffer.isWritable()) {
         // a line bytes is large than the buffer
-        BufferPool.ensureWritable(buffer, bufferSize * 2);
+        this.buffer = BufferPool.ensureWritable(buffer, bufferSize * 2);
         this.bufferSize = buffer.capacity();
       }
       this.startIndex = 0;

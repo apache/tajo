@@ -145,6 +145,10 @@ public class CatalogServer extends AbstractService {
     return store.getClass().getCanonicalName();
   }
 
+  public String getStoreUri() {
+    return store.getUri();
+  }
+
   private void initBuiltinFunctions(Collection<FunctionDesc> functions)
       throws ServiceException {
     for (FunctionDesc desc : functions) {

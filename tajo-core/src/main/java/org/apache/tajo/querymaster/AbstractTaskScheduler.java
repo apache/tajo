@@ -32,6 +32,8 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
   protected int rackLocalAssigned;
   protected int totalAssigned;
   protected int cancellation;
+  protected int totalAttempts;
+
   protected Set<String> leafTaskHosts = Sets.newHashSet();
 
   /**
@@ -57,6 +59,10 @@ public abstract class AbstractTaskScheduler extends AbstractService implements E
 
   public int getCancellation() {
     return cancellation;
+  }
+
+  public int getTotalAttempts() {
+    return totalAttempts;
   }
 
   public abstract void releaseTaskAttempt(TaskAttempt taskAttempt);

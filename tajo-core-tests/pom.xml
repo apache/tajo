@@ -55,7 +55,6 @@
         </executions>
         <configuration>
           <excludes>
-            <exclude>derby.log</exclude>
             <exclude>benchmark/**</exclude>
             <exclude>src/test/tpch/**</exclude>
             <exclude>src/test/resources/dataset/**</exclude>
@@ -74,7 +73,7 @@
           <systemProperties>
             <tajo.test>TRUE</tajo.test>
           </systemProperties>
-          <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
+          <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8 -Dderby.storage.pageSize=1024 -Dderby.stream.error.file=/dev/null</argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -226,6 +225,10 @@
           <groupId>com.sun.jersey.jersey-test-framework</groupId>
           <artifactId>jersey-test-framework-grizzly2</artifactId>
         </exclusion>
+        <exclusion>
+          <artifactId>netty-all</artifactId>
+          <groupId>io.netty</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -281,12 +284,24 @@
       <version>${hbase.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>netty-all</artifactId>
+          <groupId>io.netty</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
       <artifactId>hbase-server</artifactId>
       <version>${hbase.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>netty-all</artifactId>
+          <groupId>io.netty</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hbase</groupId>
@@ -345,7 +360,7 @@
               <forkCount>${maven.fork.count}</forkCount>
               <reuseForks>true</reuseForks>
               <trimStackTrace>false</trimStackTrace>
-              <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8</argLine>
+              <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=152m -Dfile.encoding=UTF-8 -Dderby.storage.pageSize=1024 -Dderby.stream.error.file=/dev/null</argLine>
               <useSystemClassLoader>true</useSystemClassLoader>
               <useManifestOnlyJar>true</useManifestOnlyJar>
               <systemProperties>
