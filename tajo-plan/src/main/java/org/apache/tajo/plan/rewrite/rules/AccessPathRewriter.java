@@ -114,7 +114,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
 
       if (optimalPath != null && optimalPath.getScanType() == AccessPathInfo.ScanTypeControl.INDEX_SCAN) {
         IndexScanInfo indexScanInfo = (IndexScanInfo) optimalPath;
-        plan.addHistory("AccessPathRewriter chooses the index scan for " + scanNode.getTableName());
+        plan.addHistory("AccessPathRewriter chooses index scan for " + scanNode.getTableName());
         IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode, indexScanInfo.getKeySchema(),
             indexScanInfo.getPredicates(), indexScanInfo.getIndexPath());
         if (stack.empty() || block.getRoot().equals(scanNode)) {

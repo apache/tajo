@@ -30,6 +30,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -40,8 +41,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
-import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
-import org.apache.tajo.tuple.offheap.RowWriter;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.tuple.memory.RowWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.ProtoUtil;
@@ -147,7 +148,7 @@ public class TestDirectRawFile {
         CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()));
   }
 
-  public FileStatus writeRowBlock(TajoConf conf, TableMeta meta, OffHeapRowBlock rowBlock, Path outputFile)
+  public FileStatus writeRowBlock(TajoConf conf, TableMeta meta, MemoryRowBlock rowBlock, Path outputFile)
       throws IOException {
     DirectRawFileWriter writer = new DirectRawFileWriter(conf, null, schema, meta, outputFile);
     writer.init();
@@ -160,7 +161,7 @@ public class TestDirectRawFile {
     return status;
   }
 
-  public FileStatus writeRowBlock(TajoConf conf, TableMeta meta, OffHeapRowBlock rowBlock) throws IOException {
+  public FileStatus writeRowBlock(TajoConf conf, TableMeta meta, MemoryRowBlock rowBlock) throws IOException {
     Path outputDir = new Path(testDir, UUID.randomUUID() + "");
     outputDir.getFileSystem(conf).mkdirs(outputDir);
     Path outputFile = new Path(outputDir, "output.draw");
@@ -171,7 +172,7 @@ public class TestDirectRawFile {
   public void testRWForAllTypesWithNextTuple() throws IOException {
     int rowNum = 10000;
 
-    OffHeapRowBlock rowBlock = createRowBlock(rowNum);
+    MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
@@ -201,7 +202,7 @@ public class TestDirectRawFile {
   public void testRepeatedScan() throws IOException {
     int rowNum = 2;
 
-    OffHeapRowBlock rowBlock = createRowBlock(rowNum);
+    MemoryRowBlock rowBlock = createRowBlock(rowNum);
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
 
@@ -229,7 +230,7 @@ public class TestDirectRawFile {
   public void testReset() throws IOException {
     int rowNum = 2;
 
-    OffHeapRowBlock rowBlock = createRowBlock(rowNum);
+    MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
@@ -264,11 +265,11 @@ public class TestDirectRawFile {
     reader.close();
   }
 
-  public static OffHeapRowBlock createRowBlock(int rowNum) {
+  public static MemoryRowBlock createRowBlock(int rowNum) {
     long allocateStart = System.currentTimeMillis();
-    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 8);
+    MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), StorageUnit.KB * 128);
     long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.size(), true) + " bytes allocated "
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.capacity(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();

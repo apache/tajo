@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
@@ -26,10 +27,11 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientConnectionException;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.NoSuchSessionVariableException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.ClientProtos.UpdateSessionVariableRequest;
@@ -45,6 +47,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.Closeable;
@@ -59,9 +62,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
-import static org.apache.tajo.error.Errors.ResultCode.UNDEFINED_DATABASE;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
-import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
 
@@ -137,7 +138,7 @@ public class SessionConnection implements Closeable {
         connections.incrementAndGet();
 
       } catch (Throwable t) {
-        throw new ClientConnectionException(t);
+        throw new TajoRuntimeException(new ClientConnectionException(t));
       }
 
       return client;
@@ -388,7 +389,7 @@ public class SessionConnection implements Closeable {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }
       } else {
-        throw new InvalidClientSessionException(sessionId.getId());
+        throw new TajoRuntimeException(response.getState());
       }
     }
   }

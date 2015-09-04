@@ -19,13 +19,8 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Lists;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;

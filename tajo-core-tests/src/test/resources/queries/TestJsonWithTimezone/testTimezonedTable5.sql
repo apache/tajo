@@ -1,0 +1,2 @@
+SET SESSION TIMEZONE = 'GMT+9';
+SELECT * FROM timezoned5;

@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -58,41 +59,41 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestStorages {
-	private TajoConf conf;
-	private static String TEST_PATH = "target/test-data/TestStorages";
+  private TajoConf conf;
+  private static String TEST_PATH = "target/test-data/TestStorages";
 
   private static String TEST_PROJECTION_AVRO_SCHEMA =
       "{\n" +
-      "  \"type\": \"record\",\n" +
-      "  \"namespace\": \"org.apache.tajo\",\n" +
-      "  \"name\": \"testProjection\",\n" +
-      "  \"fields\": [\n" +
-      "    { \"name\": \"id\", \"type\": \"int\" },\n" +
-      "    { \"name\": \"age\", \"type\": \"long\" },\n" +
-      "    { \"name\": \"score\", \"type\": \"float\" }\n" +
-      "  ]\n" +
-      "}\n";
+          "  \"type\": \"record\",\n" +
+          "  \"namespace\": \"org.apache.tajo\",\n" +
+          "  \"name\": \"testProjection\",\n" +
+          "  \"fields\": [\n" +
+          "    { \"name\": \"id\", \"type\": \"int\" },\n" +
+          "    { \"name\": \"age\", \"type\": \"long\" },\n" +
+          "    { \"name\": \"score\", \"type\": \"float\" }\n" +
+          "  ]\n" +
+          "}\n";
 
   private static String TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA =
       "{\n" +
-      "  \"type\": \"record\",\n" +
-      "  \"namespace\": \"org.apache.tajo\",\n" +
-      "  \"name\": \"testNullHandlingTypes\",\n" +
-      "  \"fields\": [\n" +
-      "    { \"name\": \"col1\", \"type\": [\"null\", \"boolean\"] },\n" +
-      "    { \"name\": \"col2\", \"type\": [\"null\", \"string\"] },\n" +
-      "    { \"name\": \"col3\", \"type\": [\"null\", \"int\"] },\n" +
-      "    { \"name\": \"col4\", \"type\": [\"null\", \"int\"] },\n" +
-      "    { \"name\": \"col5\", \"type\": [\"null\", \"long\"] },\n" +
-      "    { \"name\": \"col6\", \"type\": [\"null\", \"float\"] },\n" +
-      "    { \"name\": \"col7\", \"type\": [\"null\", \"double\"] },\n" +
-      "    { \"name\": \"col8\", \"type\": [\"null\", \"string\"] },\n" +
-      "    { \"name\": \"col9\", \"type\": [\"null\", \"bytes\"] },\n" +
-      "    { \"name\": \"col10\", \"type\": [\"null\", \"bytes\"] },\n" +
-      "    { \"name\": \"col11\", \"type\": \"null\" },\n" +
-      "    { \"name\": \"col12\", \"type\": [\"null\", \"bytes\"] }\n" +
-      "  ]\n" +
-      "}\n";
+          "  \"type\": \"record\",\n" +
+          "  \"namespace\": \"org.apache.tajo\",\n" +
+          "  \"name\": \"testNullHandlingTypes\",\n" +
+          "  \"fields\": [\n" +
+          "    { \"name\": \"col1\", \"type\": [\"null\", \"boolean\"] },\n" +
+          "    { \"name\": \"col2\", \"type\": [\"null\", \"string\"] },\n" +
+          "    { \"name\": \"col3\", \"type\": [\"null\", \"int\"] },\n" +
+          "    { \"name\": \"col4\", \"type\": [\"null\", \"int\"] },\n" +
+          "    { \"name\": \"col5\", \"type\": [\"null\", \"long\"] },\n" +
+          "    { \"name\": \"col6\", \"type\": [\"null\", \"float\"] },\n" +
+          "    { \"name\": \"col7\", \"type\": [\"null\", \"double\"] },\n" +
+          "    { \"name\": \"col8\", \"type\": [\"null\", \"string\"] },\n" +
+          "    { \"name\": \"col9\", \"type\": [\"null\", \"bytes\"] },\n" +
+          "    { \"name\": \"col10\", \"type\": [\"null\", \"bytes\"] },\n" +
+          "    { \"name\": \"col11\", \"type\": \"null\" },\n" +
+          "    { \"name\": \"col12\", \"type\": [\"null\", \"bytes\"] }\n" +
+          "  ]\n" +
+          "}\n";
 
   private static String TEST_MAX_VALUE_AVRO_SCHEMA =
       "{\n" +
@@ -112,18 +113,20 @@ public class TestStorages {
   private boolean splitable;
   private boolean statsable;
   private boolean seekable;
+  private boolean internalType;
   private Path testDir;
   private FileSystem fs;
 
-  public TestStorages(String type, boolean splitable, boolean statsable, boolean seekable) throws IOException {
+  public TestStorages(String type, boolean splitable, boolean statsable, boolean seekable, boolean internalType)
+      throws IOException {
     this.storeType = type;
     this.splitable = splitable;
     this.statsable = statsable;
     this.seekable = seekable;
-
+    this.internalType = internalType;
     conf = new TajoConf();
 
-    if (storeType.equalsIgnoreCase("RCFILE")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       conf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, 100);
     }
 
@@ -134,19 +137,20 @@ public class TestStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
-        //type, splitable, statsable, seekable
-        {"RAW", false, true, true},
-        {"RCFILE", true, true, false},
-        {"PARQUET", false, false, false},
-        {"ORC", false, true, false},
-        {"SEQUENCEFILE", true, true, false},
-        {"AVRO", false, false, false},
-        {"TEXT", true, true, true},
-        {"JSON", true, true, false},
+        //type, splitable, statsable, seekable, internalType
+        {BuiltinStorages.RAW, false, true, true, true},
+        {BuiltinStorages.DRAW, false, true, true, true},
+        {BuiltinStorages.RCFILE, true, true, false, false},
+        {BuiltinStorages.PARQUET, false, false, false, false},
+        {BuiltinStorages.ORC, false, true, false, false},
+        {BuiltinStorages.SEQUENCE_FILE, true, true, false, false},
+        {BuiltinStorages.AVRO, false, false, false, false},
+        {BuiltinStorages.TEXT, true, true, true, false},
+        {BuiltinStorages.JSON, true, true, false, false},
     });
   }
 
-	@Test
+  @Test
   public void testSplitable() throws IOException {
     if (splitable) {
       Schema schema = new Schema();
@@ -199,11 +203,11 @@ public class TestStorages {
 
       assertEquals(tupleNum, tupleCnt);
     }
-	}
+  }
 
   @Test
   public void testRCFileSplitable() throws IOException {
-    if (storeType.equalsIgnoreCase("StoreType.RCFILE")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT8);
@@ -265,9 +269,9 @@ public class TestStorages {
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
-    if (storeType.equalsIgnoreCase("AVRO")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
-                     TEST_PROJECTION_AVRO_SCHEMA);
+          TEST_PROJECTION_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
@@ -310,8 +314,8 @@ public class TestStorages {
       assertTrue(tupleCnt + 2 == tuple.getInt8(0));
       assertTrue(tupleCnt + 3 == tuple.getFloat4(1));
     } else {
-      // RAW and ROW always project all fields.
-      if (!storeType.equalsIgnoreCase("RAW") && !storeType.equalsIgnoreCase("ROWFILE")) {
+      // Internal storage always project all fields.
+      if (!internalType) {
         assertTrue(tuple.isBlankOrNull(0));
       }
       assertTrue(tupleCnt + 2 == tuple.getInt8(1));
@@ -321,7 +325,7 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
-    boolean handleProtobuf = !storeType.equalsIgnoreCase("JSON");
+    boolean handleProtobuf = !storeType.equalsIgnoreCase(BuiltinStorages.JSON);
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -342,7 +346,7 @@ public class TestStorages {
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
-    if (storeType.equalsIgnoreCase("AVRO")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
@@ -394,7 +398,7 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    boolean handleProtobuf = !storeType.equalsIgnoreCase("JSON");
+    boolean handleProtobuf = !storeType.equalsIgnoreCase(BuiltinStorages.JSON);
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -491,7 +495,7 @@ public class TestStorages {
 
   @Test
   public void testRCFileTextSerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase("RCFILE")) return;
+    if(!storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -560,7 +564,7 @@ public class TestStorages {
 
   @Test
   public void testRCFileBinarySerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase("RCFILE")) return;
+    if(!storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -629,7 +633,7 @@ public class TestStorages {
 
   @Test
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase("SEQUENCEFILE")) return;
+    if(!storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -702,7 +706,7 @@ public class TestStorages {
 
   @Test
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase("SEQUENCEFILE")) return;
+    if(!storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -776,7 +780,7 @@ public class TestStorages {
 
   @Test
   public void testTime() throws IOException {
-    if (storeType.equalsIgnoreCase("TEXT") || storeType.equalsIgnoreCase("RAW")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT) || internalType) {
       Schema schema = new Schema();
       schema.addColumn("col1", Type.DATE);
       schema.addColumn("col2", Type.TIME);
@@ -870,7 +874,7 @@ public class TestStorages {
     long readRows = 0;
     for (long offset : offsets) {
       scanner = TablespaceManager.getLocalFs().getScanner(meta, schema,
-	        new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
+          new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
       scanner.init();
 
       while (scanner.next() != null) {
@@ -904,11 +908,11 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    if (storeType.equalsIgnoreCase("AVRO")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
 
-    if (storeType.equalsIgnoreCase("RAW")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.RAW)) {
       OldStorageManager.clearCache();
       /* TAJO-1250 reproduce BufferOverflow of RAWFile */
       int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
@@ -949,16 +953,17 @@ public class TestStorages {
     scanner.close();
 
 
-    if (storeType.equalsIgnoreCase("RAW")){
+    if (internalType){
       OldStorageManager.clearCache();
     }
   }
 
   @Test
   public void testLessThanSchemaSize() throws IOException {
-    /* RAW is internal storage. It must be same with schema size */
-    if (storeType.equalsIgnoreCase("RAW") || storeType.equalsIgnoreCase("AVRO")
-        || storeType.equalsIgnoreCase("PARQUET") || storeType.equalsIgnoreCase("ORC")){
+    /* Internal storage must be same with schema size */
+    if (internalType || storeType.equalsIgnoreCase(BuiltinStorages.AVRO)
+        || storeType.equalsIgnoreCase(BuiltinStorages.PARQUET)
+        || storeType.equalsIgnoreCase(BuiltinStorages.ORC)) {
       return;
     }
 
@@ -1021,10 +1026,10 @@ public class TestStorages {
 
   @Test
   public final void testInsertFixedCharTypeWithOverSize() throws Exception {
-    if (storeType.equalsIgnoreCase("TEXT") == false &&
-        storeType.equalsIgnoreCase("SEQUENCEFILE") == false &&
-        storeType.equalsIgnoreCase("RCFILE") == false &&
-        storeType.equalsIgnoreCase("PARQUET") == false) {
+    if (!storeType.equalsIgnoreCase(BuiltinStorages.TEXT) &&
+        !storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE) &&
+        !storeType.equalsIgnoreCase(BuiltinStorages.RCFILE) &&
+        !storeType.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
       return;
     }
 

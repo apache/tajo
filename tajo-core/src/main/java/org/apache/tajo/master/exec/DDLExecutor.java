@@ -251,11 +251,12 @@ public class DDLExecutor {
       }
     }
 
-    catalog.createDatabase(databaseName, tablespaceName);
     String normalized = databaseName;
     Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
     FileSystem fs = databaseDir.getFileSystem(context.getConf());
     fs.mkdirs(databaseDir);
+    catalog.createDatabase(databaseName, tablespaceName);
+    LOG.info("database \"" + databaseName + "\" created.");
   }
 
   public void dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)
@@ -439,10 +440,11 @@ public class DDLExecutor {
         throw new DuplicateTableException(alterTable.getNewTableName());
       }
 
+      Path newPath = null;
       if (!desc.isExternal()) { // if the table is the managed table
         Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
             databaseName, simpleTableName);
-        Path newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
+        newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
             databaseName, alterTable.getNewTableName());
         FileSystem fs = oldPath.getFileSystem(context.getConf());
 
@@ -456,7 +458,7 @@ public class DDLExecutor {
         fs.rename(oldPath, newPath);
       }
       catalog.alterTable(CatalogUtil.renameTable(qualifiedName, alterTable.getNewTableName(),
-          AlterTableType.RENAME_TABLE));
+          AlterTableType.RENAME_TABLE, newPath));
       break;
     case RENAME_COLUMN:
       if (ensureColumnExistance(qualifiedName, alterTable.getNewColumnName())) {

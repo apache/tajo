@@ -136,6 +136,13 @@ public class HistoryWriter extends AbstractService {
     return future;
   }
 
+  public void appendHistory(WriterFuture<WriterHolder> future) {
+    historyQueue.add(future);
+    synchronized (writerThread) {
+      writerThread.notifyAll();
+    }
+  }
+
   /* asynchronously flush to history file */
   public WriterFuture<WriterHolder> appendAndFlush(History history) {
     WriterFuture<WriterHolder> future = new WriterFuture<WriterHolder>(history) {
@@ -524,7 +531,7 @@ public class HistoryWriter extends AbstractService {
     return new Path(fileParent, processName + "_" + hour + "_" + maxSeq + HISTORY_FILE_POSTFIX);
   }
 
-  static class WriterHolder implements Closeable {
+  public static class WriterHolder implements Closeable {
     long lastWritingTime;
     Path path;
     FSDataOutputStream out;
@@ -542,7 +549,7 @@ public class HistoryWriter extends AbstractService {
     }
   }
 
-  static class WriterFuture<T> implements Future<T> {
+  public static class WriterFuture<T> implements Future<T> {
     private boolean done = false;
     private T result;
     private History history;
