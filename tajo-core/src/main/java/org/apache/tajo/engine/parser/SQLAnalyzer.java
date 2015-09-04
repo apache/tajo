@@ -513,7 +513,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
-    WindowFrameEndBoundType boundType = null;
+    WindowFrameEndBoundType boundType;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
     } else if (checkIfExist(context.unsigned_value_specification())) {

@@ -27,7 +27,6 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
@@ -41,7 +40,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.junit.rules.Timeout;
 
 import java.io.*;
 import java.net.URL;
@@ -310,8 +308,8 @@ public class TestTajoCli {
     assertSessionVar(tajoCli, SessionVars.ON_ERROR_STOP.keyname(), "true");
 
     tajoCli.executeScript("select count(*) from lineitem; " +
-            "select count(*) from lineitem2; " +
-            "select count(*) from orders");
+      "select count(*) from lineitem2; " +
+      "select count(*) from orders");
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);

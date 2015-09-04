@@ -398,14 +398,15 @@ public class TajoCli {
   public int runShell() throws Exception {
     String line;
     String currentPrompt = context.getCurrentDatabase();
-    int exitCode = 0;
+    int exitCode;
     ParsingState latestState = SimpleParser.START_STATE;
 
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
+
     try {
-      while (!(line = reader.readLine(currentPrompt + "> ")).equals(null)) {
+      while((line = reader.readLine(currentPrompt + "> ")) != null) {
         if (line.equals("")) {
           continue;
         }
@@ -427,20 +428,19 @@ public class TajoCli {
 
           // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
           if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP))
-            break;
+            return exitCode;
         }
       }
     } catch (Exception e) {
       System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
 
-      throw e;
-    } finally {
       if (client != null) {
         client.close();
       }
-    }
 
-    return exitCode;
+      throw e;
+    }
+    return 0;
   }
 
 
