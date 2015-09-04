@@ -98,7 +98,7 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public TableDesc getTableDescriptor(String schemaName, String tableName) throws UndefinedTablespaceException {
+    public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table1")) {
         return TABLE1;
       } else if (tableName.equals("table2")) {
@@ -137,7 +137,7 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public TableDesc getTableDescriptor(String schemaName, String tableName) throws UndefinedTablespaceException {
+    public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table3")) {
         return TABLE3;
       } else if (tableName.equals("table4")) {

@@ -172,7 +172,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
   }
 
   @Override
-  public TableDesc getTableDescriptor(String schemaName, String tableName) throws UndefinedTablespaceException {
+  public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
     ResultSet resultForTable = null;
     ResultSet resultForColumns = null;
     try {

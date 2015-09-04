@@ -5,7 +5,7 @@ PostgreSQL Storage Handler
 Overview
 ========
 
-PostgreSQL storage handler available by default in Tajo. It enables users' queries to access database objects in PostgreSQL. Tables in PostgreSQL will be shown as tables in Tajo too. Most of the SQL queries used for PostgreSQL are available in Tajo via this storage handles. Its main advantages is to allow federated query processing among tables in stored HDFS and PostgreSQL.
+PostgreSQL storage handler is available by default in Tajo. It enables users' queries to access database objects in PostgreSQL. Tables in PostgreSQL will be shown as tables in Tajo too. Most of the SQL queries used for PostgreSQL are available in Tajo via this storage handles. Its main advantages is to allow federated query processing among tables in stored HDFS and PostgreSQL.
 
 Configuration
 =============
@@ -26,4 +26,4 @@ PostgreSQL storage handler is a builtin storage handler. So, you can eaisly regi
     }
   }
 
-Its configuration change add the tablespace named ``pgsql_db1`` mapped to the database ``db1`` in PostgreSQL. ``uri`` should be just a JDBC connection url. ``mapped_database`` is a database name shown in Tajo for the database ``db1`` in PostgreSQL. The tablespace will be available after you restart a tajo cluster.
+Its configuration change add the tablespace named ``pgsql_db1`` mapped to the database ``db1`` in PostgreSQL. ``uri`` should be just a JDBC connection url. ``mapped_database`` specifies a database name shown in Tajo for the mapped database ``db1`` in PostgreSQL. The tablespace will be available after you restart a tajo cluster.

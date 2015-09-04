@@ -76,7 +76,7 @@ public class TestPgSQLMetadataProvider {
     MetadataProvider provider = tablespace.getMetadataProvider();
 
     for (String tableName : PgSQLTestServer.TPCH_TABLES) {
-      TableDesc table = provider.getTableDescriptor(null, tableName);
+      TableDesc table = provider.getTableDesc(null, tableName);
       assertEquals("tpch." + tableName, table.getName());
       assertEquals(jdbcUrl + "&table=" + tableName, table.getUri().toASCIIString());
     }

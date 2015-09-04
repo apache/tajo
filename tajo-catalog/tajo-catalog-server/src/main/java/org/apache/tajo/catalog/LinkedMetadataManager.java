@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import static com.google.common.collect.Collections2.filter;
 
@@ -224,6 +223,6 @@ public class LinkedMetadataManager {
 
     ensureIfDBExists(dbName);
 
-    return providerMap.get(dbName).getTableDescriptor(schemaName, tbName);
+    return providerMap.get(dbName).getTableDesc(schemaName, tbName);
   }
 }

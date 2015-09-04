@@ -65,7 +65,7 @@ public class TestPgSQLJdbcTableSpace {
   public void testGetSplits() throws IOException, TajoException {
     Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
     MetadataProvider provider = space.getMetadataProvider();
-    TableDesc table = provider.getTableDescriptor(null, "lineitem");
+    TableDesc table = provider.getTableDesc(null, "lineitem");
     List<Fragment> fragments = space.getSplits("lineitem", table, null);
     assertNotNull(fragments);
     assertEquals(1, fragments.size());
