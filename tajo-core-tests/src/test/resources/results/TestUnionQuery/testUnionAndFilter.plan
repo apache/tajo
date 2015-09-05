@@ -1,0 +1,42 @@
+explain
+-------------------------------
+TABLE_SUBQUERY(7) as default.a
+  => Targets: default.a.c_custkey (INT4), default.a.ret (FLOAT8)
+  => out schema: {(2) default.a.c_custkey (INT4), default.a.ret (FLOAT8)}
+  => in  schema: {(2) default.a.c_custkey (INT4), default.a.ret (FLOAT8)}
+   HAVING(14) (default.#SQ_0.ret (FLOAT8) > 0.02)
+      GROUP_BY(11)(c_custkey,ret)
+        => target list: default.#SQ_0.c_custkey (INT4), default.#SQ_0.ret (FLOAT8)
+        => out schema:{(2) default.#SQ_0.c_custkey (INT4), default.#SQ_0.ret (FLOAT8)}
+        => in schema:{(2) default.#SQ_0.c_custkey (INT4), default.#SQ_0.ret (FLOAT8)}
+         TABLE_SUBQUERY(10) as default.#SQ_0
+           => Targets: default.#SQ_0.c_custkey (INT4), default.#SQ_0.ret (FLOAT8)
+           => out schema: {(2) default.#SQ_0.c_custkey (INT4), default.#SQ_0.ret (FLOAT8)}
+           => in  schema: {(2) default.#SQ_0.c_custkey (INT4), default.#SQ_0.ret (FLOAT8)}
+            UNION(6)
+               PROJECTION(5)
+                 => Targets: default.customer.c_custkey (INT4), round(?sum_5 (FLOAT8) / CAST (?sum_6 (INT8) AS FLOAT8),4) as ret
+                 => out schema: {(2) default.customer.c_custkey (INT4), ret (FLOAT8)}
+                 => in  schema: {(3) ?sum_5 (FLOAT8), ?sum_6 (INT8), default.customer.c_custkey (INT4)}
+                  GROUP_BY(4)(c_custkey)
+                    => exprs: (sum(?multiply_4 (FLOAT8)),sum(15000000))
+                    => target list: default.customer.c_custkey (INT4), ?sum_5 (FLOAT8), ?sum_6 (INT8)
+                    => out schema:{(3) ?sum_5 (FLOAT8), ?sum_6 (INT8), default.customer.c_custkey (INT4)}
+                    => in schema:{(3) ?multiply_4 (FLOAT8), default.customer.c_acctbal (FLOAT8), default.customer.c_custkey (INT4)}
+                     SCAN(3) on default.customer
+                       => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_custkey (INT4), default.customer.c_acctbal (FLOAT8) * 1.5E7 as ?multiply_4
+                       => out schema: {(3) ?multiply_4 (FLOAT8), default.customer.c_acctbal (FLOAT8), default.customer.c_custkey (INT4)}
+                       => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}
+               PROJECTION(2)
+                 => Targets: default.customer.c_custkey (INT4), round(?sum_2 (FLOAT8) / CAST (?sum_3 (INT8) AS FLOAT8),4) as ret
+                 => out schema: {(2) default.customer.c_custkey (INT4), ret (FLOAT8)}
+                 => in  schema: {(3) ?sum_2 (FLOAT8), ?sum_3 (INT8), default.customer.c_custkey (INT4)}
+                  GROUP_BY(1)(c_custkey)
+                    => exprs: (sum(?multiply_1 (FLOAT8)),sum(15000000))
+                    => target list: default.customer.c_custkey (INT4), ?sum_2 (FLOAT8), ?sum_3 (INT8)
+                    => out schema:{(3) ?sum_2 (FLOAT8), ?sum_3 (INT8), default.customer.c_custkey (INT4)}
+                    => in schema:{(3) ?multiply_1 (FLOAT8), default.customer.c_acctbal (FLOAT8), default.customer.c_custkey (INT4)}
+                     SCAN(0) on default.customer
+                       => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_custkey (INT4), default.customer.c_acctbal (FLOAT8) * 1.5E7 as ?multiply_1
+                       => out schema: {(3) ?multiply_1 (FLOAT8), default.customer.c_acctbal (FLOAT8), default.customer.c_custkey (INT4)}
+                       => in schema: {(8) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT)}

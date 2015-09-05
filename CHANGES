@@ -244,6 +244,11 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1800: WHERE clause is ignored with UNION. (hyunsik)
+
+    TAJO-1815: Catalog store initialization with PostgreSQL failed.
+    (Contributed by Jongyoung Park, Committed by hyunsik)
+
     TAJO-1811: Catalog server address must be set dynamically during test.
     (jihoon)
 
@@ -481,6 +486,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1809: Change default value of several configurations. (jihoon)
 
     TAJO-1803: Use in-memory derby as the default catalog for unit tests. 
     (jihoon)
