@@ -244,6 +244,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1800: WHERE clause is ignored with UNION. (hyunsik)
+
     TAJO-1815: Catalog store initialization with PostgreSQL failed.
     (Contributed by Jongyoung Park, Committed by hyunsik)
 
