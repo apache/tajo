@@ -1289,6 +1289,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
+      if (checkIfExist(ctx.TABLESPACE())) {
+        String spaceName = ctx.spacename.getText();
+        createTable.setTableSpaceName(spaceName);
+      }
+
       ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
       String storageType = ctx.storage_type.getText();
       createTable.setTableElements(elements);
