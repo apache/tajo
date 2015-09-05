@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.parser;
+package org.apache.tajo.parser.sql;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -30,7 +30,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.SQLParser.SqlContext;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
@@ -66,7 +65,7 @@ public class TestSQLAnalyzer {
     parser.setBuildParseTree(true);
 
     SQLAnalyzer visitor = new SQLAnalyzer();
-    SqlContext context = parser.sql();
+    SQLParser.SqlContext context = parser.sql();
     return visitor.visitSql(context);
   }
 

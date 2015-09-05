@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.builtin.SumInt;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlanner;
