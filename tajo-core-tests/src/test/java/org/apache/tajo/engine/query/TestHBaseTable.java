@@ -680,14 +680,14 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       assertTableExists("external_hbase_mapped_table");
 
-      ResultSet rs = executeString("SELECT * FROM hbase_mapped_table");
-      String result1 = resultSetToString(rs);
-      rs.close();
+      ResultSet resultSet = executeString("SELECT * FROM hbase_mapped_table");
+      String managedTableResult = resultSetToString(resultSet);
+      resultSet.close();
 
-      rs = executeString("SELECT * FROM external_hbase_mapped_table");
-      String result2 = resultSetToString(rs);
+      resultSet = executeString("SELECT * FROM external_hbase_mapped_table");
+      String externalTableResult = resultSetToString(resultSet);
 
-      assertEquals(result1, result2);
+      assertEquals(managedTableResult, externalTableResult);
 
     } finally {
       executeString("DROP TABLE external_hbase_mapped_table").close();
