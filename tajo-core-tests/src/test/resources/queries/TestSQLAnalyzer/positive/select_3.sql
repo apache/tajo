@@ -1,0 +1,1 @@
+select name, addr, sum(score) from students group by name, addr

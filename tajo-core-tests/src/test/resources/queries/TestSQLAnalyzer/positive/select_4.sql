@@ -1,0 +1,1 @@
+select name, addr, age from people where age > 30

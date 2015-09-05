@@ -1,0 +1,1 @@
+select id, name, age, gender from people

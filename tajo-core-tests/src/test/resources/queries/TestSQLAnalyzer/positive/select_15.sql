@@ -1,0 +1,1 @@
+select id,  point::text as point, score::INT4 as score from table1

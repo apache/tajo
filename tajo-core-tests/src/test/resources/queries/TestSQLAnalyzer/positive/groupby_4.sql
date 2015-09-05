@@ -1,0 +1,1 @@
+select trim(name), count(1) from table1 group by trim(name)

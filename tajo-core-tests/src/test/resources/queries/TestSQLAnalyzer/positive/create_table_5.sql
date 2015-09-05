@@ -1,0 +1,1 @@
+create table name (name text, age int) as select * from test

@@ -1,0 +1,1 @@
+select name, addr from people left outer join student on people.name = student.name

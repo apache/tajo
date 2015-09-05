@@ -1,0 +1,11 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "SET_PROPERTY",
+  "TableProperties": {
+    "text.delimiter": "\u0026"
+  },
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}

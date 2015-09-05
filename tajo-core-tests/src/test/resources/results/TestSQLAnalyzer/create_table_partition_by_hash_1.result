@@ -1,0 +1,32 @@
+{
+  "IsExternal": false,
+  "TableName": "sales",
+  "Attributes": [
+    {
+      "ColumnDefName": "col1",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "col2",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    }
+  ],
+  "PartitionMethodDesc": {
+    "Columns": [
+      {
+        "ColumnName": "col1",
+        "OpType": "Column"
+      }
+    ],
+    "Quantity": {
+      "Value": "2",
+      "ValueType": "Unsigned_Integer",
+      "OpType": "Literal"
+    },
+    "PartitionType": "HASH"
+  },
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}
