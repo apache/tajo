@@ -1,1 +1,0 @@
-select a,b,c from table1 intersect select a,b,c from table2 intersect all select a,b,c from table3

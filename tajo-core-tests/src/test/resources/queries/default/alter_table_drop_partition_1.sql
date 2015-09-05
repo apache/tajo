@@ -1,1 +1,0 @@
-ALTER TABLE table1 DROP PARTITION (col1 = 1 , col2 = 2)

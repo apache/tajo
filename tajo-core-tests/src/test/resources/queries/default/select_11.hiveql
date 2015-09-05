@@ -1,4 +1,0 @@
-select A.member_id, A.member_name
-from table1 A
-where A.member_id between '10000' and '20000'
-and A.age between 30 and 50

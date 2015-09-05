@@ -1,1 +1,0 @@
-select * from people cross join students

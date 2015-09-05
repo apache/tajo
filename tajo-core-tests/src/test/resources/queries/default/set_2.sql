@@ -1,1 +1,0 @@
-select a,b,c from table1 union distinct select a,b,c from table2 except all select a,b,c from table3

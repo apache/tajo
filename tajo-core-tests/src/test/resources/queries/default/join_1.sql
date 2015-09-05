@@ -1,1 +1,0 @@
-select name, addr from people natural join student natural join professor

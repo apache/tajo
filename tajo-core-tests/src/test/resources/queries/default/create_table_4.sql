@@ -1,1 +1,0 @@
-create table name as select * from test

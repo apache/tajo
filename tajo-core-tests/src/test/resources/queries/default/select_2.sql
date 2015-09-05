@@ -1,1 +1,0 @@
-select id, name, age, gender from people as p, students as s

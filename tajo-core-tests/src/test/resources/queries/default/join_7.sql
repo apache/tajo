@@ -1,1 +1,0 @@
-select name, addr from people right outer join student on people.name = student.name

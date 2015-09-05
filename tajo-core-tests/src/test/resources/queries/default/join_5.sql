@@ -1,1 +1,0 @@
-select name, addr from people cross join student

@@ -1,1 +1,0 @@
-create table name (name text, age int) using rcfile with ('rcfile.buffer'= 4096) as select * from test

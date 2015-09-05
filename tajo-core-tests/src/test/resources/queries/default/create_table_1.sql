@@ -1,1 +1,0 @@
-create table name (name text, age int)

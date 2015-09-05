@@ -1,1 +1,0 @@
-create table widetable (col1 float(10), col2 float) as select * from test

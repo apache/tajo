@@ -1,1 +1,0 @@
-select c1,c2,c3 from table1 union select c4,c5,c6 from table2 union all select c7, c8 from table3

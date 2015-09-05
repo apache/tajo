@@ -1,1 +1,0 @@
-select * from a cross join b cross join c cross join d cross join e

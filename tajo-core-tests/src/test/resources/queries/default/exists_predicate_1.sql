@@ -1,1 +1,0 @@
-select c1,c2,c3 from table1 where exists (select c4 from table2 where c4 = table1.c1);

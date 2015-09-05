@@ -1,1 +1,0 @@
-select * from x, y, (select * from a, b, c WHERE something) as ss where somethingelse
