@@ -191,6 +191,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     assertTableExists("external_hbase_mapped_table");
 
+    sql = String.format(
+      "CREATE EXTERNAL TABLE external_hbase_mapped_table_tablespace (rk text, col1 text, col2 text, col3 text) " +
+        "TABLESPACE cluster1 " +
+        "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b') ");
+    executeString(sql).close();
+
+    assertTableExists("external_hbase_mapped_table_tablespace");
+
+    executeString("DROP TABLE external_hbase_mapped_table_tablespace").close();
+
     executeString("DROP TABLE external_hbase_mapped_table").close();
 
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -649,7 +659,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
   }
 
   @Test
-  public void testInsertIntoAndCreateExternalTableWithTableSpace() throws Exception {
+  public void testInsertInto() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
         "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
 
@@ -671,26 +681,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
       scanner = htable.getScanner(scan);
 
       assertStrings(resultSetToString(scanner,
-          new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
-          new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
-          new boolean[]{false, false, false, true}, tableDesc.getSchema()));
-
-      executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
-        "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b')").close();
-
-      assertTableExists("external_hbase_mapped_table");
-
-      ResultSet resultSet = executeString("SELECT * FROM hbase_mapped_table");
-      String managedTableResult = resultSetToString(resultSet);
-      resultSet.close();
-
-      resultSet = executeString("SELECT * FROM external_hbase_mapped_table");
-      String externalTableResult = resultSetToString(resultSet);
-
-      assertEquals(managedTableResult, externalTableResult);
+        new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
+        new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
+        new boolean[]{false, false, false, true}, tableDesc.getSchema()));
 
     } finally {
-      executeString("DROP TABLE external_hbase_mapped_table").close();
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
       if (scanner != null) {
