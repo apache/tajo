@@ -195,6 +195,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       "CREATE EXTERNAL TABLE external_hbase_mapped_table_tablespace (rk text, col1 text, col2 text, col3 text) " +
         "TABLESPACE cluster1 " +
         "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b') ");
+    
     executeString(sql).close();
 
     assertTableExists("external_hbase_mapped_table_tablespace");
