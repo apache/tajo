@@ -37,6 +37,7 @@ import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,8 +65,9 @@ public class TestCatalog {
 	static CatalogService catalog;
   static String testDir;
 
-  public static TajoConf newTajoConfForCatalogTest(String testDir) throws IOException, UnsupportedCatalogStore {
-    return CatalogTestingUtil.configureCatalog(new TajoConf(), testDir);
+  public static Pair<TajoConf, String> newTajoConfForCatalogTest() throws IOException, UnsupportedCatalogStore {
+    String testDir = CommonTestingUtil.getTestDir().toString();
+    return new Pair<>(CatalogTestingUtil.configureCatalog(new TajoConf(), testDir), testDir);
   }
 
 	@BeforeClass
@@ -73,10 +75,11 @@ public class TestCatalog {
 
 
     Path defaultTableSpace = CommonTestingUtil.getTestDir();
+    Pair<TajoConf, String> confAndTestDir = newTajoConfForCatalogTest();
+    testDir = confAndTestDir.getSecond();
 
 	  server = new CatalogServer();
-    testDir = CommonTestingUtil.getTestDir().toString();
-    server.init(newTajoConfForCatalogTest(testDir));
+    server.init(confAndTestDir.getFirst());
     server.start();
     catalog = new LocalCatalogWrapper(server);
     if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {

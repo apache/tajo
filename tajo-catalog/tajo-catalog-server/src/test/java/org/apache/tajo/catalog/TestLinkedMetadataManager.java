@@ -30,6 +30,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -157,10 +158,12 @@ public class TestLinkedMetadataManager {
     TajoConf conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
-    testDir = CommonTestingUtil.getTestDir().toString();
+    Pair<TajoConf, String> confAndTestDir = TestCatalog.newTajoConfForCatalogTest();
+    testDir = confAndTestDir.getSecond();
+
     server = new CatalogServer(
         Sets.newHashSet(new MockupMetadataProvider1(), new MockupMetadataProvider2()), Collections.EMPTY_LIST);
-    server.init(TestCatalog.newTajoConfForCatalogTest(testDir));
+    server.init(confAndTestDir.getFirst());
     server.start();
     catalog = new LocalCatalogWrapper(server);
 
