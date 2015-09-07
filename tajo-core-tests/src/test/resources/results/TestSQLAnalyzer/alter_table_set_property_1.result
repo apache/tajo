@@ -1,0 +1,11 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "SET_PROPERTY",
+  "TableProperties": {
+    "timezone": "GMT-7"
+  },
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}

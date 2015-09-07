@@ -1,0 +1,30 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "DROP_PARTITION",
+  "Columns": [
+    {
+      "ColumnName": "col1",
+      "OpType": "Column"
+    },
+    {
+      "ColumnName": "col2",
+      "OpType": "Column"
+    }
+  ],
+  "Values": [
+    {
+      "Value": "1",
+      "ValueType": "Unsigned_Integer",
+      "OpType": "Literal"
+    },
+    {
+      "Value": "2",
+      "ValueType": "Unsigned_Integer",
+      "OpType": "Literal"
+    }
+  ],
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}
