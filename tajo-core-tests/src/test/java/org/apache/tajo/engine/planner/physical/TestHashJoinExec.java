@@ -29,7 +29,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
@@ -42,6 +42,7 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -205,7 +206,7 @@ public class TestHashJoinExec {
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    ctx.getQueryContext().setLong(SessionVars.HASH_JOIN_SIZE_LIMIT.keyname(), 100l);
+    ctx.getQueryContext().setLong(SessionVars.HASH_JOIN_SIZE_LIMIT.keyname(), 1); // set hash join limit as 1 MB
     PhysicalPlannerImpl phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
@@ -224,9 +225,9 @@ public class TestHashJoinExec {
    * we use some boolean variable <code>leftSmaller</code> to indicate which side is small.
    */
   private static boolean assertCheckInnerJoinRelatedFunctions(TaskAttemptContext ctx,
-                                                       PhysicalPlannerImpl phyPlanner,
-                                                       JoinNode joinNode, BinaryPhysicalExec joinExec) throws
-      IOException {
+                                                              PhysicalPlannerImpl phyPlanner,
+                                                              JoinNode joinNode, BinaryPhysicalExec joinExec)
+      throws IOException {
 
     String [] left = PlannerUtil.getRelationLineage(joinNode.getLeftChild());
     String [] right = PlannerUtil.getRelationLineage(joinNode.getRightChild());
@@ -268,12 +269,18 @@ public class TestHashJoinExec {
       assertEquals("default.p", right[0]);
     }
 
+    // To test the behaviour of PhysicalPlannerImpl.checkIfInMemoryInnerJoinIsPossible(),
+    // use a fake value for table volumes.
     if (leftSmaller) {
-      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getLeftChild(), true));
-      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getRightChild(), false));
+      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx,
+          PlannerUtil.getRelationLineage(joinNode.getLeftChild()), 1 * StorageUnit.MB, true));
+      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx,
+          PlannerUtil.getRelationLineage(joinNode.getRightChild()), 5 * StorageUnit.MB, false));
     } else {
-      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getLeftChild(), true));
-      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx, joinNode.getRightChild(), false));
+      assertFalse(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx,
+          PlannerUtil.getRelationLineage(joinNode.getLeftChild()), 5 * StorageUnit.MB, true));
+      assertTrue(phyPlanner.checkIfInMemoryInnerJoinIsPossible(ctx,
+          PlannerUtil.getRelationLineage(joinNode.getRightChild()), 1 * StorageUnit.MB, false));
     }
 
     return leftSmaller;

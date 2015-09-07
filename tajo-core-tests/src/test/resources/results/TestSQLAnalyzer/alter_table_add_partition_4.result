@@ -1,0 +1,21 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "ADD_PARTITION",
+  "Columns": [
+    {
+      "ColumnName": "col1",
+      "OpType": "Column"
+    }
+  ],
+  "Values": [
+    {
+      "Value": "TAJO",
+      "ValueType": "String",
+      "OpType": "Literal"
+    }
+  ],
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}

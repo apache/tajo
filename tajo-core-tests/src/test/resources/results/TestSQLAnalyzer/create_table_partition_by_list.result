@@ -1,0 +1,65 @@
+{
+  "IsExternal": false,
+  "TableName": "sales",
+  "Attributes": [
+    {
+      "ColumnDefName": "col1",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "col2",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    }
+  ],
+  "PartitionMethodDesc": {
+    "Columns": [
+      {
+        "ColumnName": "col1",
+        "OpType": "Column"
+      }
+    ],
+    "Specifiers": [
+      {
+        "ValueList": {
+          "Values": [
+            {
+              "Value": "Seoul",
+              "ValueType": "String",
+              "OpType": "Literal"
+            },
+            {
+              "Value": "서울",
+              "ValueType": "String",
+              "OpType": "Literal"
+            }
+          ],
+          "OpType": "ValueList"
+        },
+        "PartitionSpecName": "col1"
+      },
+      {
+        "ValueList": {
+          "Values": [
+            {
+              "Value": "Busan",
+              "ValueType": "String",
+              "OpType": "Literal"
+            },
+            {
+              "Value": "부산",
+              "ValueType": "String",
+              "OpType": "Literal"
+            }
+          ],
+          "OpType": "ValueList"
+        },
+        "PartitionSpecName": "col2"
+      }
+    ],
+    "PartitionType": "LIST"
+  },
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}

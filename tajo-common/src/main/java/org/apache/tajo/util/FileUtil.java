@@ -96,7 +96,7 @@ public class FileUtil {
     if (stream != null) {
       return readTextFromStream(stream);
     } else {
-      return null;
+      throw new FileNotFoundException(resource);
     }
   }
 

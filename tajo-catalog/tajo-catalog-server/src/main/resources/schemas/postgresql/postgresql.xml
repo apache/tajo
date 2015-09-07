@@ -122,7 +122,6 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   					NULL_ORDERS VARCHAR(128) NOT NULL, -- array of null orderings
   					IS_UNIQUE BOOLEAN NOT NULL,
   					IS_CLUSTERED BOOLEAN NOT NULL,
-  					CONSTRAINT INDEXES_PKEY PRIMARY KEY (INDEX_ID),
   					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
   					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
