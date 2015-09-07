@@ -249,6 +249,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1823: Can't start TajoMaster. (hyunsik)
+
     TAJO-1820: Fix wrong case sensitivity rules of non-reserved keywords.
     (hyunsik)
 
