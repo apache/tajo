@@ -70,6 +70,17 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testTAJO_1610() throws Exception {
+    executeString("CREATE DATABASE tweets").close();
+    List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets.tweets");
+    assertEquals(TUtil.newList("tweets.tweets"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testNestedFieldAsGroupbyKey1() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
     assertEquals(TUtil.newList("tweets"), tables);
