@@ -249,6 +249,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1820: Fix wrong case sensitivity rules of non-reserved keywords.
+    (hyunsik)
+
     TAJO-1610: Cannot find column when the same name is used for table 
     and database. (hyunsik)
 
