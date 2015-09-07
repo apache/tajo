@@ -74,21 +74,21 @@ public class TajoCli {
   private boolean wasError = false;
 
   private static final Class [] registeredCommands = {
-      DescTableCommand.class,
-      DescFunctionCommand.class,
-      HelpCommand.class,
-      ExitCommand.class,
-      CopyrightCommand.class,
-      VersionCommand.class,
-      ConnectDatabaseCommand.class,
-      ListDatabaseCommand.class,
-      SetCommand.class,
-      UnsetCommand.class,
-      ExecExternalShellCommand.class,
-      HdfsCommand.class,
-      TajoAdminCommand.class,
-      TajoGetConfCommand.class,
-      TajoHAAdminCommand.class
+          DescTableCommand.class,
+          DescFunctionCommand.class,
+          HelpCommand.class,
+          ExitCommand.class,
+          CopyrightCommand.class,
+          VersionCommand.class,
+          ConnectDatabaseCommand.class,
+          ListDatabaseCommand.class,
+          SetCommand.class,
+          UnsetCommand.class,
+          ExecExternalShellCommand.class,
+          HdfsCommand.class,
+          TajoAdminCommand.class,
+          TajoGetConfCommand.class,
+          TajoHAAdminCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
@@ -275,11 +275,11 @@ public class TajoCli {
       }
     } catch (Exception e) {
       System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
-      
+
       if (client != null) {
         client.close();
       }
-      
+
       throw e;
     }
 
@@ -360,8 +360,8 @@ public class TajoCli {
     for (Class clazz : registeredCommands) {
       TajoShellCommand cmd = null;
       try {
-         Constructor cons = clazz.getConstructor(new Class[] {TajoCliContext.class});
-         cmd = (TajoShellCommand) cons.newInstance(context);
+        Constructor cons = clazz.getConstructor(new Class[] {TajoCliContext.class});
+        cmd = (TajoShellCommand) cons.newInstance(context);
       } catch (Exception e) {
         System.err.println(e.getMessage());
         throw new RuntimeException(e.getMessage());
@@ -405,7 +405,7 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
-    
+
     try {
       while((line = reader.readLine(currentPrompt + "> ")) != null) {
         if (line.equals("")) {
@@ -435,11 +435,11 @@ public class TajoCli {
       }
     } catch (Exception e) {
       System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
-      
+
       if (client != null) {
         client.close();
       }
-      
+
       throw e;
     }
     return 0;
@@ -498,15 +498,15 @@ public class TajoCli {
 
     if (ReturnStateUtil.isSuccess(response.getState())) {
       switch (response.getResultType()) {
-      case FETCH:
-        QueryId queryId = new QueryId(response.getQueryId());
-        waitForQueryCompleted(queryId);
-        break;
-      case ENCLOSED:
-        localQueryCompleted(response, startTime);
-        break;
-      default:
-        displayFormatter.printMessage(sout, "OK");
+        case FETCH:
+          QueryId queryId = new QueryId(response.getQueryId());
+          waitForQueryCompleted(queryId);
+          break;
+        case ENCLOSED:
+          localQueryCompleted(response, startTime);
+          break;
+        default:
+          displayFormatter.printMessage(sout, "OK");
       }
 
     } else {
@@ -529,17 +529,17 @@ public class TajoCli {
 
       switch (response.getResultType()) {
 
-      case FETCH:
-        QueryId queryId = new QueryId(response.getQueryId());
-        waitForQueryCompleted(queryId);
-        break;
+        case FETCH:
+          QueryId queryId = new QueryId(response.getQueryId());
+          waitForQueryCompleted(queryId);
+          break;
 
-      case ENCLOSED:
-        localQueryCompleted(response, startTime);
-        break;
+        case ENCLOSED:
+          localQueryCompleted(response, startTime);
+          break;
 
-      default:
-        displayFormatter.printMessage(sout, "OK");
+        default:
+          displayFormatter.printMessage(sout, "OK");
       }
 
     } else {
