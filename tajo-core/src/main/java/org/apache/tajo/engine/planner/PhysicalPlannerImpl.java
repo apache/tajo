@@ -916,7 +916,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     } else {
       Enforcer enforcer = ctx.getEnforcer();
       TableDesc tableDesc = scanNode.getTableDesc();
-      FileTablespace space = (FileTablespace) TablespaceManager.get(tableDesc.getUri()).get();
+      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
 
       // check if this table is broadcasted one or not.
       boolean broadcastFlag = false;
@@ -936,7 +936,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           List<Fragment> fileFragments = TUtil.newList();
 
           for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(TUtil.newList(space.split(canonicalName, path)));
+            fileFragments.addAll(TUtil.newList(((FileTablespace)space).split(canonicalName, path)));
           }
 
           FragmentProto[] fragmentProtos =
