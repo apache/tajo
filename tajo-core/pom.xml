@@ -31,8 +31,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <antlr4.visitor>true</antlr4.visitor>
-    <antlr4.listener>true</antlr4.listener>
     <metrics.version>3.1.0</metrics.version>
     <maven.fork.count>3</maven.fork.count>
   </properties>
@@ -75,17 +73,6 @@
       </plugin>
       <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.antlr</groupId>
-        <artifactId>antlr4-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>antlr4</goal>
-            </goals>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -230,6 +217,10 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-sql-parser</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-thirdparty-asm</artifactId>
     </dependency>
     <dependency>
@@ -265,10 +256,6 @@
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.antlr</groupId>
-      <artifactId>antlr4</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>

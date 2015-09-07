@@ -89,6 +89,7 @@
     <module>tajo-client</module>
     <module>tajo-client-example</module>
     <module>tajo-jdbc</module>
+    <module>tajo-sql-parser</module>
     <module>tajo-storage</module>
     <module>tajo-pullserver</module>
     <module>tajo-dist</module>

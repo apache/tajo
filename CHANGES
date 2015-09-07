@@ -34,6 +34,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1818: Separate sql parser into an independent maven module.
+    (hyunsik) 
+
     TAJO-1816: Refactor SQL parser tests. (hyunsik)
 
     TAJO-1738: Improve off-heap RowBlock. (jinho)
