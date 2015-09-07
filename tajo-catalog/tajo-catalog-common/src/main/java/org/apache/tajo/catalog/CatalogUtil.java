@@ -873,7 +873,10 @@ public class CatalogUtil {
     return pair;
   }
 
-  /* It is the relationship graph of type conversions. */
+  /*
+   * It is the relationship graph of type conversions. Each map represents <from type>, <
+   *
+   */
   public static final Map<Type, Map<Type, Type>> OPERATION_CASTING_MAP = Maps.newHashMap();
 
   static {
@@ -928,9 +931,10 @@ public class CatalogUtil {
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.FLOAT8, Type.FLOAT8);
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.TEXT, Type.TEXT);
 
+    /*
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TIMESTAMP, Type.TIMESTAMP);
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TIMESTAMP, Type.TIMESTAMP);
-    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);*/
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIME, Type.TIME, Type.TIME);
