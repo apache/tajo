@@ -1,1 +1,0 @@
-select name as n, func(score, 3+4, 3>4) as total, 3+4 as id from people where age = 30

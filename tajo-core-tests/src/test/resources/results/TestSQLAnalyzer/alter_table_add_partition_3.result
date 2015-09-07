@@ -1,0 +1,40 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "ADD_PARTITION",
+  "Columns": [
+    {
+      "ColumnName": "col1",
+      "OpType": "Column"
+    },
+    {
+      "ColumnName": "col2",
+      "OpType": "Column"
+    },
+    {
+      "ColumnName": "col3",
+      "OpType": "Column"
+    }
+  ],
+  "Values": [
+    {
+      "Value": "2015",
+      "ValueType": "String",
+      "OpType": "Literal"
+    },
+    {
+      "Value": "01",
+      "ValueType": "String",
+      "OpType": "Literal"
+    },
+    {
+      "Value": "11",
+      "ValueType": "String",
+      "OpType": "Literal"
+    }
+  ],
+  "location": "hdfs://xxx.com/warehouse/table1/col1\u003d2015/col2\u003d01/col3\u003d11",
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}
