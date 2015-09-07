@@ -249,6 +249,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1610: Cannot find column when the same name is used for table 
+    and database. (hyunsik)
+
     TAJO-1800: WHERE clause is ignored with UNION. (hyunsik)
 
     TAJO-1815: Catalog store initialization with PostgreSQL failed.
