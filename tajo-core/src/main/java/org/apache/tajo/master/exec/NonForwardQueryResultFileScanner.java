@@ -99,7 +99,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
 
   public void init() throws IOException, TajoException {
     initSeqScanExec();
-    eof = false;
   }
 
   private void initSeqScanExec() throws IOException, TajoException {
@@ -244,8 +243,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
         }
       }
 
-      rowBlock.clear();
-
       // pre-fetch
       if (!eof) {
         nextFetch = fetchNextRowBlock(fetchRowNum);
@@ -281,6 +278,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       @Override
       public void run() {
         try {
+          rowBlock.clear();
           int endRow = currentNumRows + fetchRowNum;
           while (currentNumRows < endRow) {
             Tuple tuple = scanExec.next();
